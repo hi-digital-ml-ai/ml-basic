@@ -1,0 +1,27 @@
+---
+title: "3 · Supervised learning"
+description: "Regression, classification, and tree-based methods — and how to choose between them for a given scientific question."
+categories: [supervised, regression, classification, trees-ensembles]
+---
+
+Supervised learning means learning from examples where you already know the answer:
+casts where the water mass was identified, hauls where the catch was recorded, images
+where a specialist labelled the species. The model learns the relationship, then
+applies it to cases where the answer is unknown.
+
+This is the family of methods most marine work needs. This section covers the
+workhorses, from linear regression through to boosted trees, and — more importantly —
+how to pick one. The best method is rarely the most sophisticated; it is the one whose
+assumptions match your data and whose output answers your actual question.
+
+## In this section
+
+- Regression and classification problems
+- Linear and polynomial regression
+- Logistic regression
+- Decision trees, random forests, and boosting
+- Choosing a method according to the scientific question and dataset
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

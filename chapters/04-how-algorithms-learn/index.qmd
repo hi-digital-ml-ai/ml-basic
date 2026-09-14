@@ -1,0 +1,31 @@
+---
+title: "4 · How machine-learning algorithms learn"
+description: "What is actually happening when a model 'fits': loss functions, gradient descent, and the link back to maximum likelihood."
+categories: [optimisation]
+---
+
+"Fitting a model" sounds like a single act. It is really a search. The algorithm has a
+way of scoring how wrong it currently is, and a rule for changing its parameters to be
+slightly less wrong, and it repeats until further changes stop helping.
+
+Understanding that loop is worth an hour of your time, because it explains a great
+deal that otherwise looks arbitrary: why models need scaled inputs, why fits
+sometimes fail to converge, why two runs give different answers, and what a
+regularisation penalty is actually penalising.
+
+It also connects to ground you may already stand on. Least-squares regression and
+maximum likelihood are not a separate world from machine learning — they are the same
+machinery with a different scorecard.
+
+## In this section
+
+- Loss and objective functions
+- Parameter estimation
+- Gradient descent
+- Maximum likelihood estimation (MLE)
+- Maximum a posteriori estimation (MAP)
+- Basic interpretation of model optimisation
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

@@ -1,0 +1,32 @@
+---
+title: "7 · Model validation and performance assessment"
+description: "Cross-validation done properly for spatial and temporal data, and choosing measures that match the scientific objective."
+categories: [validation, metrics, spatial-temporal, uncertainty]
+---
+
+A performance number is a claim about the future: *this is roughly how well the model
+will do on data it has not seen.* Validation is the process of earning the right to
+make that claim.
+
+Done casually, it produces flattering nonsense. Randomly splitting autocorrelated
+survey data puts near-identical observations on both sides of the split, so the model
+is tested on what it has effectively already seen. Reporting accuracy on a problem
+where the positive class is two per cent of the data rewards a model that never
+predicts it at all.
+
+This section covers doing it properly, and choosing measures that reflect what you
+actually care about — which is rarely the default.
+
+## In this section
+
+- Cross-validation
+- Spatial and temporal cross-validation
+- Regression performance measures
+- Classification performance measures
+- Confusion matrix, precision, recall, and related measures
+- Uncertainty and stability of model results
+- Selecting evaluation measures appropriate to the scientific objective
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

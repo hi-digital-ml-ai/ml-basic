@@ -1,0 +1,34 @@
+---
+title: "8 · Unsupervised learning"
+description: "Finding structure when you have no labels — clustering, PCA, dimensionality reduction — and how far you can trust what you find."
+categories: [unsupervised]
+---
+
+Sometimes there is no answer key. You have hundreds of CTD profiles and no water-mass
+classification, or a community matrix with a hundred taxa and no hypothesis about how
+they group. Unsupervised methods look for structure in the data itself.
+
+They are genuinely useful for exploration and for reducing unwieldy data to something
+you can plot. They are also the easiest methods to over-read. Clustering algorithms
+return clusters whether or not clusters exist; a PCA axis is a mathematical
+convenience, not necessarily an ecological gradient.
+
+This section covers the main methods and, just as importantly, the discipline of
+interpreting them cautiously.
+
+## In this section
+
+- Clustering
+- Principal component analysis
+- Dimensionality reduction
+- Pattern detection in marine datasets
+- Interpretation and limitations of unsupervised methods
+
+::: {.callout-warning}
+k-means will happily return five clusters from data with no group structure at all.
+Finding clusters is not evidence that clusters exist.
+:::
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

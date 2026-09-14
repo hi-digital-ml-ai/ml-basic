@@ -1,0 +1,79 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "ML Basics for Marine Science"
+  description: "A plain-English introduction to machine learning for marine researchers, with worked tidymodels examples."
+  site-url: https://hi-digital-ml-ai.github.io/ml-basic/
+  repo-url: https://github.com/hi-digital-ml-ai/ml-basic
+  search: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: chapters/index.qmd
+        text: Course
+      - href: contributed/index.qmd
+        text: Contributed
+  sidebar:
+    style: floating
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: Welcome
+      - section: "Course sections"
+        contents:
+          - href: chapters/01-introduction/index.qmd
+            text: "1 · Introduction"
+          - href: chapters/02-marine-data/index.qmd
+            text: "2 · Marine datasets"
+          - href: chapters/03-supervised-learning/index.qmd
+            text: "3 · Supervised learning"
+          - href: chapters/04-how-algorithms-learn/index.qmd
+            text: "4 · How algorithms learn"
+          - href: chapters/05-generalisation/index.qmd
+            text: "5 · Generalisation"
+          - href: chapters/06-assumptions-limitations/index.qmd
+            text: "6 · Assumptions & limitations"
+          - href: chapters/07-validation/index.qmd
+            text: "7 · Validation"
+          - href: chapters/08-unsupervised-learning/index.qmd
+            text: "8 · Unsupervised learning"
+          - href: chapters/09-neural-networks/index.qmd
+            text: "9 · Neural networks"
+          - href: chapters/10-interpretation/index.qmd
+            text: "10 · Interpretation & responsible use"
+      - section: "More"
+        contents:
+          - href: chapters/index.qmd
+            text: All pages
+          - href: contributed/index.qmd
+            text: Contributed pages
+  page-footer:
+    left: "Machine Learning Basics for Marine Science"
+    right: "Built with [Quarto](https://quarto.org) and [tidymodels](https://www.tidymodels.org)"
+
+format:
+  html:
+    theme: [cosmo, styles.scss]
+    toc: true
+    toc-depth: 3
+    code-copy: true
+    code-overflow: wrap
+    code-link: true
+    fig-align: center
+    df-print: kable
+
+execute:
+  freeze: auto
+  warning: false
+  message: false
+
+knitr:
+  opts_chunk:
+    dev: png
+    dpi: 200
+    fig-width: 7
+    fig-height: 4.5
+    comment: "#>"
