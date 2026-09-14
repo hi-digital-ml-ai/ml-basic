@@ -1,0 +1,22 @@
+# Quarto build output
+/_site/
+/.quarto/
+*_files/
+*_cache/
+
+# R
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+
+# renv library (renv.lock is committed)
+renv/library/
+renv/staging/
+renv/python/
+renv/sandbox/
+
+# OS
+.DS_Store
+Thumbs.db
