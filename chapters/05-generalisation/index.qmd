@@ -1,0 +1,31 @@
+---
+title: "5 · Generalisation and model complexity"
+description: "Why a model that fits the data perfectly is usually a bad model, and how complexity, bias and variance trade off."
+categories: [generalisation, tuning]
+---
+
+Any sufficiently flexible model can reproduce your data exactly. It can pass through
+every point, explain every wobble, and report an almost perfect fit. It will also be
+worthless, because it has learned the noise in your particular survey along with the
+signal.
+
+This is overfitting, and it is the central problem of machine learning. Everything in
+this section — the bias–variance trade-off, regularisation, hyperparameter selection —
+is a response to it.
+
+The marine version of the problem is sharper than the textbook version. With
+autocorrelated data, a model can look like it is generalising when it is really just
+memorising the neighbourhood.
+
+## In this section
+
+- Training performance versus performance on new data
+- Underfitting and overfitting
+- The bias–variance trade-off
+- Model complexity
+- Regularisation
+- Hyperparameter selection
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

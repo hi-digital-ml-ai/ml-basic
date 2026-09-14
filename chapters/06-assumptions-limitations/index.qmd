@@ -1,0 +1,39 @@
+---
+title: "6 · Model assumptions and limitations"
+description: "What your model quietly assumes about the ocean, and what happens when the ocean disagrees."
+categories: [assumptions, spatial-temporal, class-imbalance]
+---
+
+Machine-learning methods are often described as assumption-free. They are not. They
+make fewer assumptions about the *shape* of relationships than a linear model does,
+which is a real advantage. But they make strong assumptions about how the data were
+collected, and marine data violates most of them.
+
+Two stations ten metres apart are not independent observations. A time series sampled
+monthly for three years tells you little about a decadal cycle. Survey effort follows
+ports, weather windows and funding. Predicting into unsampled depth or an unprecedented
+temperature is extrapolation, whatever the model's confidence output says.
+
+This is the section that determines whether the rest of the course helps you or
+misleads you.
+
+## In this section
+
+- Independence of observations
+- Linearity and nonlinearity
+- Distributional assumptions
+- Spatial and temporal dependence
+- Uneven sampling and extrapolation
+- Class imbalance
+- When standard validation methods are inappropriate
+- The limits of predicting outside the observed data range
+
+::: {.callout-important}
+If observations are spatially or temporally dependent, ordinary cross-validation will
+overstate performance — sometimes dramatically. The fix is in
+[7 · Validation](../07-validation/index.qmd).
+:::
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

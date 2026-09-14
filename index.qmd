@@ -1,0 +1,64 @@
+---
+title: "Machine Learning Basics for Marine Science"
+description: "A plain-English course for marine researchers who want to use machine learning well — and know when not to."
+toc: false
+---
+
+Machine learning has become hard to avoid in marine science. It is used to map
+habitats, identify species from images and sound, fill gaps in patchy time series,
+and predict where animals will be next season. Much of it works. Some of it works
+for the wrong reasons, and the difference is not always visible from the outside.
+
+This course is for researchers who want to tell those apart.
+
+## Who this is for
+
+You work in marine science — ecology, oceanography, fisheries, genomics, acoustics —
+and you know your own data and your own field well. You may have years of experience
+with statistical models. What you have not had is a careful introduction to what
+machine learning actually does, where it differs from the modelling you already know,
+and which of its habits are dangerous in data like yours.
+
+No prior machine-learning experience is assumed. Some familiarity with R helps, but
+every example is written to be readable even if you would have written it differently.
+
+## How the course works
+
+Ten sections, meant to be read in order. Each explains an idea in plain English
+first, then shows it working on marine data using
+[tidymodels](https://www.tidymodels.org), then says plainly where it breaks down.
+
+Marine data breaks several of the assumptions that machine learning quietly relies
+on. Observations near each other in space or time are not independent. Sampling
+follows ship tracks and good weather, not study design. The interesting class — a
+rare species, a bleaching event — is usually the scarce one. These problems are not
+footnotes here; they run through the whole course.
+
+::: {.callout-tip}
+## Start here
+New to this? Begin with [1 · Introduction](chapters/01-introduction/index.qmd).
+Looking for one specific method? The [course index](chapters/index.qmd) is
+filterable by topic.
+:::
+
+## The ten sections
+
+| | Section | What it answers |
+| --- | --- | --- |
+| 1 | [Introduction](chapters/01-introduction/index.qmd) | What is machine learning, and how is it different from what I already do? |
+| 2 | [Marine datasets](chapters/02-marine-data/index.qmd) | How do I get my data into a state a model can use — without cheating? |
+| 3 | [Supervised learning](chapters/03-supervised-learning/index.qmd) | Which method fits my question: regression, classification, trees? |
+| 4 | [How algorithms learn](chapters/04-how-algorithms-learn/index.qmd) | What is actually happening when a model "fits"? |
+| 5 | [Generalisation](chapters/05-generalisation/index.qmd) | Why does a model that fits beautifully fail on new data? |
+| 6 | [Assumptions & limitations](chapters/06-assumptions-limitations/index.qmd) | What is my model quietly assuming about the ocean? |
+| 7 | [Validation](chapters/07-validation/index.qmd) | How do I know how good it really is? |
+| 8 | [Unsupervised learning](chapters/08-unsupervised-learning/index.qmd) | What if I have no labels, only patterns? |
+| 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and do I need one? (Usually not.) |
+| 10 | [Interpretation & responsible use](chapters/10-interpretation/index.qmd) | What can I honestly claim from this model? |
+
+## Work by participants
+
+The [contributed pages](contributed/index.qmd) are analyses that course participants
+built from their own data — real, messy, domain-specific problems rather than tidy
+teaching examples. They are the most useful part of the site for seeing how the
+methods survive contact with actual marine data.

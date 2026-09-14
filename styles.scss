@@ -1,0 +1,40 @@
+/*-- scss:defaults --*/
+
+// Restrained, readable palette. Ocean-ish without being a theme park.
+$primary:        #1b6a87 !default;
+$body-color:     #1f2933 !default;
+$link-color:     #15607a !default;
+
+$font-family-sans-serif: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif !default;
+$font-size-root: 17px !default;
+$line-height-base: 1.6 !default;
+
+$code-block-bg: #f6f8fa !default;
+
+/*-- scss:rules --*/
+
+// Long-form teaching text: keep measure comfortable.
+main {
+  p, li { max-width: 42rem; }
+}
+
+h2 {
+  margin-top: 2.2rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e3e8ec;
+}
+
+// Figure captions read as part of the teaching, not as fine print.
+figcaption {
+  font-size: 0.92rem;
+  color: #55606a;
+}
+
+// Listing cards
+.quarto-grid-item .card-text {
+  font-size: 0.92rem;
+}
+
+.quarto-category {
+  font-size: 0.78rem;
+}

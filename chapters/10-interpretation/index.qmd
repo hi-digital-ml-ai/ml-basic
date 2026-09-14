@@ -1,0 +1,29 @@
+---
+title: "10 · Interpretation and responsible application"
+description: "Working out what a model has learned, and what you can honestly claim from it in a paper."
+categories: [interpretation, reproducibility, uncertainty]
+---
+
+A model that predicts well has not thereby explained anything. It has found patterns
+that are useful for prediction, which may be causal, may be proxies, and may be
+artefacts of how the data were collected. A habitat model can achieve excellent
+accuracy by learning where the survey vessels went.
+
+This final section is about the step between having a model and making a scientific
+claim: working out which features actually drive the predictions, deciding whether an
+interpretable model would serve you better than an accurate black box, reporting the
+work so that someone else could repeat it, and being straight about uncertainty.
+
+It is the section that determines whether the work holds up in review — and after.
+
+## In this section
+
+- Feature importance and model interpretation
+- Black-box models versus interpretable models
+- Reproducibility and transparent reporting
+- Communicating uncertainty and limitations
+- Practical marine-science examples and exercises
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

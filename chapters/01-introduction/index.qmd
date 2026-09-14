@@ -1,0 +1,28 @@
+---
+title: "1 · Introduction to machine learning in marine science"
+description: "What machine learning is, how it differs from statistical modelling, and when prediction is not the same as understanding."
+categories: [foundations]
+---
+
+Most marine scientists already fit models. You have written a GLM, checked residuals,
+looked at a p-value, and drawn a conclusion about how temperature affects abundance.
+So the obvious question about machine learning is: what is different?
+
+The short answer is *what the model is for*. A statistical model is usually built to
+tell you something about the world — the size of an effect, whether it is
+distinguishable from noise. A machine-learning model is usually built to make good
+predictions about cases it has not seen. Those two goals pull in different directions,
+and a model that excels at one can be useless at the other.
+
+This section sets up that distinction and the vocabulary the rest of the course uses.
+
+## In this section
+
+- What machine learning is, and how it differs from traditional statistical modelling
+- Examples of machine-learning applications in marine science
+- The main types of learning: supervised, unsupervised, and neural-network-based
+- Prediction versus explanation, and what each can support scientifically
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::

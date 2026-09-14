@@ -1,0 +1,32 @@
+---
+title: "9 · Introduction to neural networks"
+description: "How neural networks work, what they need to work well, and the common marine problems where they are the wrong tool."
+categories: [neural-networks, optimisation]
+---
+
+Neural networks attract attention out of proportion to how often they are the right
+choice. The mechanics are less mysterious than the reputation suggests: a network is
+a stack of simple weighted sums with a nonlinearity between them, trained by the same
+gradient descent introduced in
+[4 · How algorithms learn](../04-how-algorithms-learn/index.qmd).
+
+They shine on data with structure a person cannot easily summarise into features —
+images, audio, video. Marine science has plenty of that: benthic imagery, echosounder
+returns, whale call recordings. For a table of environmental covariates with a few
+thousand rows, a boosted tree will usually match or beat a network with a fraction of
+the effort and far more interpretability.
+
+This section covers what they are, and gives you a basis for deciding you do not need
+one.
+
+## In this section
+
+- Neurons, layers, weights, and activation functions
+- Forward propagation and backpropagation
+- Loss functions and gradient descent
+- Strengths, limitations, and data requirements
+- When neural networks are — and are not — appropriate
+
+::: {.callout-note}
+Pages for this section are in preparation.
+:::
