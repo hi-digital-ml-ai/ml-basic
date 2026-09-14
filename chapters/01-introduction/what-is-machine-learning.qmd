@@ -1,0 +1,232 @@
+---
+title: "What machine learning is"
+description: "How machine learning differs from the statistical modelling you already do — demonstrated on the same data, with the same question."
+order: 1
+categories: [foundations]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## Why this matters
+
+You already fit models. You have written a GLM, checked the residuals, looked at a
+coefficient and its confidence interval, and drawn a conclusion about how temperature
+affects abundance. So when a colleague suggests a random forest instead, the useful
+question is not "is machine learning better?" but "what is it *for*, and is that what
+I want?"
+
+This page answers that by doing the same thing twice. One dataset, one question, two
+approaches — and a result that is more interesting than "the new method wins".
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+A statistical model is usually built to **estimate something about the world**. You
+specify a form — abundance changes linearly with temperature — and the fitting
+procedure returns a number for that change, with an interval around it and a test of
+whether it differs from zero. The output is a *statement*: temperature is associated
+with an increase of so many individuals per degree, plus or minus. You can put it in a
+paper and someone can argue with it.
+
+A machine-learning model is usually built to **predict well on cases it has not
+seen**. You do not specify the form of the relationship; the algorithm searches for
+whatever shape fits, including shapes you would never have written down. The output is
+a *machine*: give it a new station's depth and temperature, and it returns an expected
+abundance. It generally cannot tell you why.
+
+Three practical differences follow.
+
+**Who chooses the form.** In a linear model, you do. That is a constraint, and
+constraints are how interpretation becomes possible: a single slope is meaningful
+precisely because you forced the relationship to be a single slope. Machine-learning
+methods relax the constraint and lose the interpretation along with it.
+
+**What counts as success.** Statistical modelling asks whether the estimated effect is
+distinguishable from noise. Machine learning asks how close the predictions land on
+data the model has never seen. A model can do well on one and badly on the other.
+
+**Where the honesty check sits.** In statistical modelling it is in the assumptions —
+residual plots, distributional checks. In machine learning it is almost entirely in
+holding data back, and measuring performance on the part the model never saw. That
+idea, the *test set*, runs through the whole course.
+
+## Worked example
+
+Our stations record depth, temperature, chlorophyll, salinity and substrate, and the
+catch of one benthic species. We want to relate abundance to the environment.
+
+First, split the data. Three quarters to train on, one quarter held back and not
+looked at until the end.
+
+```{r}
+#| label: split
+survey <- load_coastal_survey()
+
+split <- initial_split(survey, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate
+```
+
+The statistical approach: a linear model, which returns coefficients.
+
+```{r}
+#| label: fit-lm
+lm_fit <- linear_reg() |>
+  fit(predictors, data = train)
+
+tidy(lm_fit, conf.int = TRUE) |>
+  select(term, estimate, conf.low, conf.high, p.value) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Read that as you normally would. Chlorophyll has a clear positive association. Muddy
+stations hold more than sandy ones, rocky ones fewer. Salinity shows nothing — its
+interval comfortably spans zero. Depth declines significantly, if weakly.
+
+And temperature? An estimate of about $-0.07$ individuals per degree, an interval
+spanning zero, $p = 0.31$. On this evidence you would report that temperature shows no
+detectable association with abundance.
+
+Now the machine-learning approach. Same data, same variables, no specified form.
+
+```{r}
+#| label: fit-rf
+rf_fit <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 123) |>
+  set_mode("regression") |>
+  fit(predictors, data = train)
+
+rf_fit
+```
+
+There are no coefficients to print. A forest of 500 trees has no single number
+describing what temperature does. What it has instead is predictions, so let us look
+at what it and the linear model have each concluded about temperature.
+
+```{r}
+#| label: fig-temperature
+#| fig-cap: "Abundance against temperature in the training data. The straight line is the linear model's view; the curve is a flexible smoother. A straight line through a hump is flat — which is why the linear model reports no temperature effect."
+#| fig-alt: "Scatter plot of abundance against temperature. Points form a hump peaking near 9 degrees. A nearly flat straight line runs through them, while a curved smoother rises to a peak at 9 degrees and falls away on both sides."
+#| fig-width: 7
+#| fig-height: 4.5
+ggplot(train, aes(temperature_c, abundance)) +
+  geom_point(alpha = 0.25, colour = ml_palette[["grey"]]) +
+  geom_smooth(method = "lm", se = FALSE,
+              aes(colour = "What the linear model sees"), linewidth = 1.1) +
+  geom_smooth(method = "loess", span = 0.6, se = FALSE,
+              aes(colour = "What is actually there"), linewidth = 1.1) +
+  scale_colour_manual(values = c("What the linear model sees" = ml_palette[["vermilion"]],
+                                 "What is actually there"     = ml_palette[["blue"]])) +
+  labs(x = "Temperature (°C)", y = "Abundance (individuals per station)",
+       colour = NULL,
+       title = "The linear model is not wrong about its line. Its line is wrong.")
+```
+
+The species has an optimum around 9 °C and thins out in colder and warmer water. The
+linear model was required to answer with a single slope. Averaged over a hump, the
+best straight line is nearly flat — so it reports, correctly and uselessly, that the
+slope is indistinguishable from zero.
+
+(The straight line above uses temperature on its own, while the coefficient table
+adjusts for the other variables, so the two are not numerically identical — one tilts
+very slightly up, the other very slightly down. Both are flat, which is the point.)
+
+The forest was never asked for a slope, so the hump costs it nothing.
+
+## What the results mean
+
+Does the forest therefore predict better? Compare them on the held-back test set, and
+on the training data as well.
+
+```{r}
+#| label: compare
+performance <- function(fit, data, model) {
+  augment(fit, data) |>
+    rmse(truth = abundance, estimate = .pred) |>
+    transmute(model, rmse = round(.estimate, 2))
+}
+
+bind_rows(
+  bind_cols(set = "Training", performance(lm_fit, train, "Linear regression")),
+  bind_cols(set = "Training", performance(rf_fit, train, "Random forest")),
+  bind_cols(set = "Test",     performance(lm_fit, test,  "Linear regression")),
+  bind_cols(set = "Test",     performance(rf_fit, test,  "Random forest"))
+) |>
+  pivot_wider(names_from = set, values_from = rmse)
+```
+
+This is the interesting part, and it is not the tidy story you might expect.
+
+On the **training** data the forest looks twice as good — a typical error of about two
+individuals against the linear model's four. On the **test** data, the data neither
+model has seen, the gap almost vanishes: roughly 4.1 against 4.2.
+
+Most of the forest's apparent advantage was not knowledge about the species. It was
+the forest memorising the particular stations it was trained on. This is
+**overfitting**, and it is so central that [section 5](../05-generalisation/index.qmd)
+is devoted to it. Note what caught it: the test set, and nothing else. Both models look
+fine on their own residuals.
+
+So the honest summary of this comparison is:
+
+- the forest understood the temperature relationship and the linear model did not;
+- the forest barely predicted better on new data;
+- only the linear model produced a number you could put in a paper.
+
+None of those three follows from the others. That is the whole point.
+
+## Where this breaks down
+
+**"Machine learning is more powerful" is not a general fact.** It is a claim about a
+specific dataset, and here it bought almost nothing. Flexible methods need enough data
+to pin down the shapes they are free to invent. With 600 noisy training rows, that
+freedom mostly bought memorisation.
+
+**Prediction accuracy is not understanding.** A model can predict well for reasons that
+have nothing to do with ecology — a habitat model can score highly by learning where
+the survey vessels went. [Section 10](../10-interpretation/index.qmd) deals with what
+you can honestly claim.
+
+**The linear model was not defeated, it was misused.** Given a quadratic term, or
+fitted as a GAM, it would have found the temperature optimum and still given you
+interpretable output. "Linear model" and "cannot bend" are not the same limitation.
+The real division is between *you specifying the form* and *the algorithm searching for
+it*.
+
+**Neither model can extrapolate.** Ask either about 22 °C water and you get an
+answer, confidently, from nothing. See [section 6](../06-assumptions-limitations/index.qmd).
+
+::: {.callout-tip}
+## Key points
+- Statistical modelling estimates *something about the world*; machine learning builds
+  *something that predicts*. They are different goals, not different quality tiers.
+- You choose the form in a statistical model. That constraint is what makes a
+  coefficient interpretable — and what makes it wrong when the constraint is false.
+- A flat, non-significant coefficient can mean "no relationship" or "a relationship my
+  model cannot express". They look identical in the output.
+- Performance on the training data tells you almost nothing. The held-back test set is
+  the honesty check, and it is the reason to split your data before you start.
+- Flexible does not mean better. Here the forest fit the training data twice as well
+  and predicted new data barely better at all.
+:::
+
+## Try it yourself
+
+1. Add a quadratic temperature term to the linear model
+   (`abundance ~ poly(temperature_c, 2) + ...`) and re-read the coefficients. Does the
+   temperature effect become detectable? What does this say about reporting "no
+   effect"?
+2. Refit the forest with `trees = 5` instead of 500. Which changes more, the training
+   error or the test error — and why?

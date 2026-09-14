@@ -1,0 +1,260 @@
+---
+title: "The main types of learning"
+description: "Supervised, unsupervised, and where neural networks actually fit — one dataset asked three different questions."
+order: 3
+categories: [foundations, supervised, unsupervised]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyclust)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## Why this matters
+
+The division into supervised and unsupervised learning sounds like taxonomy, the sort
+of thing to memorise and forget. It is not. It is the first question anyone should ask
+about a proposed analysis, because it is determined by *what you have*, not by what you
+would like.
+
+If a specialist has labelled some of your data, you are in supervised territory and
+your central problem is validation. If nothing is labelled, you are in unsupervised
+territory and your central problem is knowing whether what you found is real.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+**Supervised learning** learns from examples where the answer is known. Each row has
+predictors and an outcome — a labelled image, a station with a recorded catch — and the
+model learns the mapping from one to the other. It splits by the kind of outcome:
+*regression* for a quantity, *classification* for a category.
+
+**Unsupervised learning** has no outcome column. You hand the algorithm a table of
+measurements and ask what structure is in it: which stations resemble each other, which
+variables move together. Nothing tells the algorithm what a good answer looks like,
+which is exactly why the results need care.
+
+**Neural networks** are the third item in most introductions, including this course's
+own outline, and it is worth being straight about a wrinkle there.
+
+::: {.callout-important}
+## A correction worth making early
+Neural networks are not a third *type of learning*. They are a family of *models* — one
+choice among many for the "model" slot — and they are used for supervised learning,
+unsupervised learning, and other things besides.
+
+The real contrast is: supervised versus unsupervised describes **what your data lets you
+ask**. Random forest versus neural network describes **which machine you use to answer
+it**. The first decision is forced by your data; the second is yours to make.
+
+Grouping them as three parallel types is common, and it quietly suggests that reaching
+for a neural network is a different kind of science. It is not.
+:::
+
+There is a genuine third paradigm — **reinforcement learning**, where an agent learns
+from the consequences of its actions. It is central to robotics and appears in marine
+science mainly in autonomous vehicle path planning. It is out of scope here.
+
+## Worked example
+
+One dataset, three questions.
+
+```{r}
+#| label: data
+survey <- load_coastal_survey()
+split  <- initial_split(survey, prop = 0.75, strata = present)
+train  <- training(split)
+test   <- testing(split)
+```
+
+### Supervised, regression: *how many?*
+
+The outcome is a count, so this is regression. This is the model from
+[the first page](what-is-machine-learning.qmd), so we will not repeat it — the outcome
+was that predicting abundance from environment is hard, and neither method did well.
+
+### Supervised, classification: *is it here at all?*
+
+The outcome is now a category: present or absent. Same predictors, same forest, one
+changed line — `set_mode("classification")`.
+
+```{r}
+#| label: fit-classification
+outcome <- present ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate
+
+rf_class <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 123) |>
+  set_mode("classification") |>
+  fit(outcome, data = train)
+
+predictions <- augment(rf_class, test)
+
+predictions |> accuracy(truth = present, estimate = .pred_class)
+```
+
+Seventy-nine per cent accurate. That sounds respectable. Hold that thought.
+
+### Unsupervised: *what kinds of station are there?*
+
+Now we remove the outcome entirely. No abundance, no presence — only the water
+properties. The algorithm is asked to sort 800 stations into three groups, with no
+notion of what makes a group good.
+
+```{r}
+#| label: fit-clusters
+cluster_recipe <- recipe(~ depth_m + temperature_c + salinity_psu + chlorophyll_mg_m3,
+                         data = survey) |>
+  step_normalize(all_numeric_predictors())
+
+clusters <- workflow() |>
+  add_recipe(cluster_recipe) |>
+  add_model(k_means(num_clusters = 3) |> set_engine("stats")) |>
+  fit(survey)
+
+clustered <- bind_cols(survey, extract_cluster_assignment(clusters))
+```
+
+Normalising first is not optional. Depth ranges over hundreds of metres and
+temperature over about fourteen degrees; without rescaling, the clustering would be
+almost entirely about depth. [Section 2](../02-marine-data/index.qmd) returns to this.
+
+What did it find?
+
+```{r}
+#| label: cluster-summary
+clustered |>
+  group_by(.cluster) |>
+  summarise(
+    stations         = n(),
+    `depth (m)`      = round(mean(depth_m)),
+    `temp (°C)`      = round(mean(temperature_c), 1),
+    `chl (mg m⁻³)`   = round(mean(chlorophyll_mg_m3), 2),
+    `mean abundance` = round(mean(abundance), 2)
+  )
+```
+
+Three recognisable habitats: a deep cold one, a shallow warm one, and a shallow
+productive one with three times the chlorophyll.
+
+```{r}
+#| label: fig-clusters
+#| fig-cap: "Left: stations in depth–chlorophyll space, coloured by the cluster k-means assigned. Right: abundance in each cluster. The clustering never saw abundance, yet the productive shallow cluster holds roughly twice as many individuals as the other two."
+#| fig-alt: "Two panels. The left panel is a scatter plot of chlorophyll on a logarithmic scale against depth, with points coloured into three clusters: deep and cold on the right, shallow and warm at lower chlorophyll, and shallow and productive at high chlorophyll. The right panel is a boxplot of abundance for each of the three clusters; the shallow productive cluster has a visibly higher median and a longer upper tail than the other two."
+#| fig-width: 8.5
+#| fig-height: 4.5
+labels <- c(Cluster_1 = "Shallow, warm", Cluster_2 = "Deep, cold", Cluster_3 = "Shallow, productive")
+
+clustered <- clustered |> mutate(habitat = labels[as.character(.cluster)])
+
+p_space <- ggplot(clustered, aes(depth_m, chlorophyll_mg_m3, colour = habitat)) +
+  geom_point(alpha = 0.7, size = 1.6) +
+  scale_y_log10() +
+  labs(x = "Depth (m)", y = "Chlorophyll (mg m⁻³, log scale)", colour = NULL,
+       title = "What the algorithm was given")
+
+p_abund <- ggplot(clustered, aes(habitat, abundance, fill = habitat)) +
+  geom_boxplot(alpha = 0.8, outlier.alpha = 0.3) +
+  coord_cartesian(ylim = c(0, 20)) +
+  guides(fill = "none") +
+  labs(x = NULL, y = "Abundance", title = "What it was never told") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+p_space + p_abund + plot_layout(widths = c(1.25, 1))
+```
+
+One caution about that left panel: the clusters were formed in four dimensions, and
+any two-dimensional view of them is a shadow. Plot temperature instead of chlorophyll
+and the productive cluster looks scattered rather than distinct — not because the
+clustering is poor, but because the variable separating it is not on the axes. Judging
+clusters from a convenient 2-D plot is a reliable way to fool yourself, and
+[section 8](../08-unsupervised-learning/index.qmd) deals with it properly.
+
+This is unsupervised learning working well. Given only water properties, it recovered
+groupings that turn out to matter ecologically. It is also unsupervised learning at its
+most seductive, and [section 8](../08-unsupervised-learning/index.qmd) explains why: run
+it with `num_clusters = 6` and you get six equally confident habitats.
+
+## What the results mean
+
+Return to that 79 per cent accuracy, and compare it with the laziest possible model:
+always answer "present".
+
+```{r}
+#| label: baseline
+predictions |>
+  count(present) |>
+  mutate(proportion = round(n / sum(n), 3))
+```
+
+The species is present at about 78 per cent of test stations. A model that ignores
+every measurement and answers "present" every time scores 78 per cent. Our forest,
+with five environmental predictors and 500 trees, scored 79.
+
+Look at what it is actually doing:
+
+```{r}
+#| label: confusion
+predictions |> conf_mat(truth = present, estimate = .pred_class)
+```
+
+It almost never predicts absence. Of the genuinely absent stations it catches a
+handful and misses most. If you are mapping where the species *is not* — the usual
+reason for modelling absence — this model is close to useless, and its headline
+accuracy conceals that completely.
+
+This is the imbalance trap from [the previous page](applications-in-marine-science.qmd),
+reproduced in eight lines of code. It is the single most common way marine
+classification results are oversold, and it takes one comparison to catch: **always
+check your accuracy against the always-guess-the-common-class baseline.**
+[Section 7](../07-validation/index.qmd) covers the measures that do not have this
+weakness.
+
+Curiously, a small neural network does somewhat better here on the same data — not
+because networks are more powerful in any general sense, but because this particular
+one, penalised and normalised, happened to suit the problem. That is the lesson of
+[section 9](../09-neural-networks/index.qmd) in advance: the network is another model,
+not another category of insight.
+
+## Where this breaks down
+
+**"Unsupervised" does not mean "assumption-free".** Choosing k-means, choosing three
+clusters, choosing which variables to include and how to scale them — every one of
+those is a modelling decision that shapes the answer.
+
+**Labels are often less solid than they look.** Two specialists annotating the same
+imagery disagree more than most people expect. A supervised model can never be more
+reliable than its labels, and its ceiling is the agreement rate between annotators.
+
+**The boundary is blurry in practice.** Semi-supervised learning uses a few labels and
+much unlabelled data; self-supervised learning manufactures labels from the data's own
+structure — the gap-filling task on the previous page is exactly this. The clean
+division is a teaching device, not a law.
+
+::: {.callout-tip}
+## Key points
+- Supervised or unsupervised is decided by your data, not your preference: do you have
+  labelled examples or not?
+- Supervised splits by outcome type — regression for a quantity, classification for a
+  category. In tidymodels that is one argument, `set_mode()`.
+- Neural networks are a *model*, not a type of learning. Choosing one is a choice of
+  machine, not a different kind of science.
+- Unsupervised methods will always return groups. Finding structure is not evidence
+  that structure exists.
+- Always compare classification accuracy with the always-guess-the-common-class
+  baseline. Here, five predictors and 500 trees beat that baseline by one point.
+:::
+
+## Try it yourself
+
+1. Refit the clustering with `num_clusters = 6`, then with `num_clusters = 2`. Do the
+   habitats still look convincing? What would make you believe one answer over another?
+2. Use `sensitivity()` and `specificity()` on `predictions` in place of `accuracy()`.
+   Which one collapses, and does that match what the confusion matrix showed?

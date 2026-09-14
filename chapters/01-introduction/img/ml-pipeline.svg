@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 330" width="100%" role="img" aria-label="Four-stage pipeline shared by marine machine-learning applications">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/>
+    </marker>
+    <style>
+      .box   { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; rx: 8; }
+      .num   { font: bold 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1b6a87; }
+      .head  { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body  { font: 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .note  { font: italic 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .cost  { font: bold 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #D55E00; }
+    </style>
+  </defs>
+
+  <rect class="box" x="8"   y="40" width="210" height="150"/>
+  <rect class="box" x="250" y="40" width="210" height="150"/>
+  <rect class="box" x="492" y="40" width="210" height="150"/>
+  <rect class="box" x="734" y="40" width="198" height="150"/>
+
+  <text class="num"  x="24"  y="64">1</text>
+  <text class="head" x="24"  y="86">Data you already have</text>
+  <text class="body" x="24"  y="110">Imagery, echosounder</text>
+  <text class="body" x="24"  y="128">returns, call recordings,</text>
+  <text class="body" x="24"  y="146">CTD casts, tracks,</text>
+  <text class="body" x="24"  y="164">satellite fields.</text>
+  <text class="note" x="24"  y="182">Abundant.</text>
+
+  <text class="num"  x="266" y="64">2</text>
+  <text class="head" x="266" y="86">Labels from experts</text>
+  <text class="body" x="266" y="110">A specialist names the</text>
+  <text class="body" x="266" y="128">species, the water mass,</text>
+  <text class="body" x="266" y="146">the call. Slow, costly,</text>
+  <text class="body" x="266" y="164">and never complete.</text>
+  <text class="cost" x="266" y="182">The bottleneck.</text>
+
+  <text class="num"  x="508" y="64">3</text>
+  <text class="head" x="508" y="86">Model learns the map</text>
+  <text class="body" x="508" y="110">It finds whatever in the</text>
+  <text class="body" x="508" y="128">data predicts the label —</text>
+  <text class="body" x="508" y="146">not necessarily what a</text>
+  <text class="body" x="508" y="164">specialist would use.</text>
+  <text class="note" x="508" y="182">Fast, once labelled.</text>
+
+  <text class="num"  x="750" y="64">4</text>
+  <text class="head" x="750" y="86">Applied at scale</text>
+  <text class="body" x="750" y="110">Run on everything that</text>
+  <text class="body" x="750" y="128">was never labelled, and</text>
+  <text class="body" x="750" y="146">on next year's survey.</text>
+  <text class="cost" x="750" y="176">Only valid where the</text>
+  <text class="cost" x="750" y="192">new data resembles</text>
+  <text class="cost" x="750" y="208">the labelled data.</text>
+
+  <line x1="220" y1="115" x2="246" y2="115" stroke="#8a949c" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="462" y1="115" x2="488" y2="115" stroke="#8a949c" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="704" y1="115" x2="730" y2="115" stroke="#8a949c" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <text class="head" x="8" y="258">The value is in step 4; the risk is in step 2.</text>
+  <text class="body" x="8" y="280">Whatever the labelled subset over- or under-represents — a season, a depth range, one survey's gear —</text>
+  <text class="body" x="8" y="298">the model inherits, and then applies confidently to everything else.</text>
+</svg>
