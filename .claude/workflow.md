@@ -13,19 +13,106 @@ committed.
 
 ## R environment
 
-`renv` pins package versions so every author renders the same results.
+`renv` pins package versions so every author renders the same results. The project
+library lives in `renv/library/` (git-ignored); `renv.lock` is the record and **is**
+committed.
 
 ```bash
 Rscript -e 'renv::restore()'    # after cloning, or when renv.lock changes
-Rscript -e 'renv::snapshot()'   # after adding a package to a page
+Rscript -e 'renv::status()'     # is the library in sync with the lockfile?
+Rscript -e 'renv::install("pkg")' && Rscript -e 'renv::snapshot()'
 ```
 
 Commit `renv.lock` in the same commit as the page that needs the new package.
 
-Packages beyond tidymodels that the curriculum implies: `ranger`, `xgboost`,
-`glmnet`, `vip`, `DALEX`, `themis` (class imbalance), `spatialsample` (spatial CV),
-`sf` (spatial data), and `torch` or `keras3` for §9. Install them as sections need
-them, not up front.
+`snapshot.type` is set to `"all"`, so the lockfile records the whole project library
+rather than only packages renv can find `library()` calls for. Packages here are
+installed ahead of the pages that use them, and the default implicit snapshotter
+would drop almost all of them.
+
+`.Rprofile` points R at Posit Package Manager's prebuilt binaries on Ubuntu and at
+CRAN everywhere else. That is an install-speed choice only — the lockfile pins
+versions either way — but it is the difference between a two-minute install and an
+hour of compilation. On a non-Ubuntu Linux machine it falls back to CRAN source
+packages, so expect a slow first `renv::restore()`.
+
+### System dependencies
+
+`sf` needs GDAL, GEOS and PROJ, which are present on this machine (`gdal-config`,
+`geos-config`, `proj`). A new machine needs them installed at the OS level first.
+
+`kknn` (k-nearest neighbours) is deliberately **not** installed: it pulls in `igraph`,
+whose binary needs `libglpk.so.40`, a system library that is not present and needs
+root to install. k-NN is not in the curriculum, so dropping it was cheaper than
+taking on a system dependency. If a page ever wants k-NN, `libglpk40` has to be
+installed first.
+
+### vip is archived on CRAN
+
+`vip` was removed from CRAN on 2026-07-08 ("issues were not corrected despite
+reminder"), so `available.packages()` no longer lists it and a plain
+`renv::install("vip")` fails. We pin `vip@0.4.6`, which Posit Package Manager still
+serves as a binary, and the lockfile records it that way — so `renv::restore()`
+works without reaching into the CRAN archive.
+
+It works fine today, but it is unmaintained. `DALEXtra::explain_tidymodels()` with
+`DALEX::model_parts()` gives model-agnostic permutation importance from maintained
+packages, so §10 should show that route as well as `vip::vi()` rather than resting
+the whole section on an archived package.
+
+### renv rolls back everything on one failure
+
+renv installs transactionally. One package failing at the end — `vip` failing to
+download after 205 others had installed — discards the entire batch and leaves the
+library as it was. The log reads "Successfully installed 205 packages" immediately
+before the rollback, which is misleading: check the library, not the log.
+
+When a large install fails on one package, install the troublesome package
+separately first, then re-run the batch. The renv cache makes the second run take
+seconds.
+
+### Known install failure: gridExtra and rlang
+
+A fresh install of the full set can die with:
+
+```
+Error: error testing if 'gridExtra' can be loaded
+  there is no package called 'rlang'
+```
+
+`gridExtra` 2.3.1 declares `Imports: gtable, grid, grDevices, graphics, utils` in the
+repository metadata, but at load time it needs `rlang` (through `gtable`). renv builds
+its install order from that metadata, so it can load-test `gridExtra` before `rlang`
+exists, and the whole transaction rolls back — leaving an empty library, which makes
+it look worse than it is. Serialising installs does not help; the ordering is wrong,
+not raced.
+
+Fix: install the infrastructure first, then everything else.
+
+```r
+renv::install(c("rlang", "cli", "glue", "lifecycle", "vctrs", "gtable"))
+renv::restore()   # or renv::install(<the rest>)
+```
+
+### What is installed, and for which section
+
+| Packages | Used by |
+| --- | --- |
+| `tidyverse`, `tidymodels`, `here`, `knitr`, `rmarkdown` | everywhere |
+| `skimr`, `naniar` | §2 EDA and missing-data patterns |
+| `glmnet`, `rpart`, `rpart.plot`, `ranger`, `xgboost`, `nnet` | §3 model engines, §5 regularisation |
+| `themis` | §2, §6 class imbalance |
+| `sf`, `spatialsample` | §6, §7 spatial dependence and blocked resampling |
+| `probably` | §7 thresholds and calibration |
+| `tidyclust`, `embed` | §8 clustering and dimensionality reduction |
+| `vip`, `DALEX`, `DALEXtra`, `pdp` | §10 feature importance and interpretation |
+| `patchwork`, `ggrepel`, `gt` | figures and tables throughout |
+
+**Not installed: `torch` / `brulee` / `keras3`.** §9 can teach neurons, layers and
+backpropagation with `nnet` through the parsnip `mlp` engine, which costs nothing.
+A real deep-learning demonstration needs libtorch (a ~2 GB runtime download beyond
+the R package) or a Python/TensorFlow stack, and it would make CI restores heavy.
+Decide that when §9 is actually written.
 
 ## Freeze
 
