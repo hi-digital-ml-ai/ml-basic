@@ -24,8 +24,17 @@ website:
         text: Welcome
       - section: "Course sections"
         contents:
-          - href: chapters/01-introduction/index.qmd
-            text: "1 · Introduction"
+          - section: "1 · Introduction"
+            href: chapters/01-introduction/index.qmd
+            contents:
+              - href: chapters/01-introduction/what-is-machine-learning.qmd
+                text: "What machine learning is"
+              - href: chapters/01-introduction/applications-in-marine-science.qmd
+                text: "Where it is already used"
+              - href: chapters/01-introduction/types-of-learning.qmd
+                text: "The main types of learning"
+              - href: chapters/01-introduction/prediction-and-explanation.qmd
+                text: "Prediction versus explanation"
           - href: chapters/02-marine-data/index.qmd
             text: "2 · Marine datasets"
           - href: chapters/03-supervised-learning/index.qmd
