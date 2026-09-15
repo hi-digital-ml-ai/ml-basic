@@ -1,0 +1,286 @@
+---
+title: "Hierarchical and model-based clustering"
+description: "One distance matrix, four linkage rules and four different answers; mixture models that give each station a probability instead of a label; and the index that measures how far two partitions disagree."
+order: 3
+categories: [unsupervised]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyclust)
+library(tidyverse)
+library(mclust, include.only = c("Mclust", "mclustBIC", "adjustedRandIndex"))
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+k-means has two properties you may not want. It insists on round clusters of comparable
+size, and it insists on $k$ before it will tell you anything. Two other families relax
+those, in different directions.
+
+**Hierarchical clustering** builds a whole tree of nested groupings in one pass, so you
+choose $k$ afterwards by deciding where to cut. **Mixture models** replace the hard label
+with a probability, so a station on a boundary is allowed to be 60% one thing and 40%
+another — which is a fairer description of most seabed.
+
+Both bring new decisions with them, and this page is mostly about one of those decisions,
+because it is the one that quietly determines the answer.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## Hierarchical clustering
+
+The algorithm starts with every station as its own cluster and repeatedly merges the two
+closest, until everything is in one. Recording the order of merges gives a tree; cutting
+the tree at a height gives a partition.
+
+"The two closest" needs a definition, because after the first merge you are measuring the
+distance between *groups*, not points. That definition is the **linkage**:
+
+| Linkage | Distance between two groups is |
+| --- | --- |
+| **single** | the distance between their two closest members |
+| **complete** | the distance between their two furthest members |
+| **average** | the mean distance over all cross-group pairs |
+| **Ward** | the increase in within-cluster sum of squares caused by merging them |
+
+These sound like technical variants of one idea. They are not.
+
+```{r}
+#| label: linkage-sweep
+survey <- load_coastal_survey_clean()
+community <- load_coastal_community()
+
+taxa_only <- community |> dplyr::select(starts_with("tax"))
+
+prepared <- recipe(~ ., data = taxa_only) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors()) |>
+  prep() |>
+  bake(new_data = NULL) |>
+  as.matrix()
+
+distances <- dist(prepared)
+
+bottom <- community |>
+  inner_join(dplyr::select(survey, station_id, substrate), by = "station_id") |>
+  mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft")) |>
+  pull(bottom)
+
+linkages <- expand_grid(linkage = c("single", "average", "complete", "ward.D2"), k = 2:6) |>
+  mutate(result = map2(linkage, k, \(method, k) {
+    groups <- cutree(hclust(distances, method = method), k)
+    tibble(agreement_with_substrate = adjustedRandIndex(groups, bottom),
+           largest_cluster = max(table(groups)) / length(groups))
+  })) |>
+  unnest(result)
+
+linkages |>
+  dplyr::select(linkage, k, agreement_with_substrate) |>
+  pivot_wider(names_from = k, values_from = agreement_with_substrate,
+              names_prefix = "k=") |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+Note that the tree is built once, from one distance matrix, and `cutree()` reads
+partitions off it for any $k$ you like. That is hierarchical clustering's real
+convenience.
+
+## The adjusted Rand index
+
+The column we just filled needs defining, since it is how the rest of this section
+compares partitions to each other.
+
+Take every pair of stations. Two partitions **agree** about a pair if both put the pair
+together or both keep the pair apart. The proportion of pairs they agree about is the
+**Rand index**. Two random partitions already agree about most pairs — with many
+clusters, nearly every pair is "apart" in both — so the **adjusted** Rand index subtracts
+the agreement expected by chance and rescales:
+
+- **1** — identical partitions (cluster *labels* do not matter, only the grouping)
+- **0** — no more agreement than two random partitions of the same sizes
+- below 0 — less agreement than chance
+
+`mclust::adjustedRandIndex()` computes it. Here we use it against the true hard/soft
+substrate split, which we know only because the data is simulated; in real work you would
+use it to compare two methods, or one method across two resamples.
+
+## What the results mean
+
+```{r}
+#| label: fig-linkage
+#| fig-cap: "The same 800 stations, the same distance matrix, four linkage rules. Left: agreement with the true hard/soft substrate split. Right: the share of stations swept into the single largest cluster."
+#| fig-alt: "Two line charts against number of clusters from 2 to 6, one line per linkage rule. Left, adjusted Rand index against the true substrate split: Ward starts highest at 0.89 at k equals 2 then falls to about 0.25; complete linkage starts at 0.33, jumps to 0.84 at k equals 3, holds at k equals 4 then drops to about 0.37; average linkage stays between 0.03 and 0.29; single linkage never rises above 0.03. Right, share of stations in the largest cluster: single linkage stays above 0.99 throughout and average above 0.92, while complete falls from 0.92 to 0.47 and Ward from 0.78 to 0.28."
+#| fig-width: 9
+#| fig-height: 4.2
+linkage_panel <- function(column, label) {
+  ggplot(linkages, aes(k, .data[[column]], colour = linkage)) +
+    geom_line(linewidth = 0.8) +
+    geom_point(size = 2.2) +
+    scale_x_continuous(breaks = 2:6) +
+    labs(x = "number of clusters (k)", y = label, colour = NULL)
+}
+
+(linkage_panel("agreement_with_substrate", "adjusted Rand index vs substrate") |
+ linkage_panel("largest_cluster", "share of stations in largest cluster")) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+**Single linkage fails completely.** At every $k$ from 2 to 6 it puts more than 99% of
+stations in one cluster and peels off one or two on their own. This is **chaining**: since
+the distance between groups is the distance between their nearest members, a thread of
+intermediate stations lets one group absorb another. On data with a continuous gradient
+running through it, there is always such a thread. Single linkage is an outlier detector
+here, not a clustering method.
+
+**Average linkage does the same thing more slowly**, still holding 92% of stations in one
+cluster at $k = 6$.
+
+**Complete and Ward both find the substrate split, at different $k$.** Ward gets it at
+$k = 2$ with an adjusted Rand index of **0.889**. Complete gets it at $k = 3$, scoring
+**0.843** — it spends its first split isolating a group of 66 unusual stations, and only
+its second cut is the ecological one.
+
+So: one dataset, one distance matrix, five defensible values of $k$, and answers ranging
+from 0.005 to 0.889. The linkage is not a detail.
+
+::: {.callout-warning}
+`hclust()`'s default linkage is `"complete"`. At the $k$ most people try first — $k = 2$ —
+it scores 0.332 here, less than half of what Ward gets at the same $k$. Defaults are not
+recommendations.
+:::
+
+Ward's advantage on this data is not an accident. Ward merges the pair that adds least to
+the within-cluster sum of squares, which is the quantity k-means minimises — so Ward and
+k-means are looking for the same kind of cluster, and they agree here almost exactly
+(adjusted Rand index 0.935 between their $k = 2$ partitions). If you want the tree *and*
+k-means-like behaviour, Ward is the linkage to ask for.
+
+```{r}
+#| label: tidyclust-hier
+hier_fit <- workflow() |>
+  add_recipe(recipe(~ ., data = taxa_only) |>
+               step_log(all_numeric_predictors(), offset = 1) |>
+               step_normalize(all_numeric_predictors())) |>
+  add_model(hier_clust(num_clusters = 2, linkage_method = "ward.D2")) |>
+  fit(data = taxa_only)
+
+extract_cluster_assignment(hier_fit) |> count(.cluster)
+```
+
+## Mixture models: a probability instead of a label
+
+A **Gaussian mixture model** says the data was generated by a handful of overlapping
+multivariate normal distributions, and estimates their means, their shapes and how much
+of the data each one produced. Because it is a real probability model, it gives you two
+things k-means cannot: clusters that may be elongated or differently sized, and a
+posterior probability of membership for every station.
+
+`mclust` fits these, choosing both the number of components and the shape family by BIC.
+We fit it on the first five principal components rather than all 24 taxa, because a full
+covariance matrix in 24 dimensions has 300 free parameters per component.
+
+```{r}
+#| label: mixture
+scores <- prcomp(prepared)$x[, 1:5]
+
+set.seed(104)
+mixture <- Mclust(scores, G = 1:6, verbose = FALSE)
+
+c(components = mixture$G, model = mixture$modelName,
+  agreement_with_substrate = round(adjustedRandIndex(mixture$classification, bottom), 3))
+```
+
+Three components, model `VEV` — ellipsoids of equal volume with varying shape and
+orientation — and an adjusted Rand index against substrate of 0.426, far below Ward's
+0.889. That is not a failure to find the substrate split; it is a decision to describe
+something else.
+
+```{r}
+#| label: components
+community |>
+  mutate(component = mixture$classification, bottom = bottom) |>
+  inner_join(dplyr::select(survey, station_id, depth_m), by = "station_id") |>
+  summarise(stations = n(),
+            `hard bottom` = sum(bottom == "hard"),
+            `median depth (m)` = round(median(depth_m), 1),
+            .by = component) |>
+  arrange(component)
+```
+
+Component 1 is the hard bottom, essentially intact. Components 2 and 3 are the soft
+bottom cut in half along depth, at median depths of 123 m and 60 m. The mixture found the
+substrate boundary *and then* split a gradient, because a long curved cloud of stations
+is not one Gaussian, and BIC will buy a second Gaussian to cover it. This is the same
+result as the BIC choice on
+[the previous page](choosing-the-number-of-clusters.qmd), seen from the inside.
+
+The consolation is that the model tells you which stations it is unsure about.
+
+```{r}
+#| label: fig-uncertainty
+#| fig-cap: "Mixture-model uncertainty, one point per station, on the first two principal components. Stations the model cannot confidently assign are not scattered at random — they line the boundary between the two soft-bottom components, which is a depth gradient with no real edge in it."
+#| fig-alt: "Scatter plot of principal component 2 against principal component 1 for 800 stations, coloured by mixture component and sized by assignment uncertainty. Component 1 occupies the right-hand third of the plot, from PC1 about 1 to 6, as a loose cloud of its own whose points are nearly all small. Components 2 and 3 together fill the left and lower centre as one continuous cloud, component 2 above and component 3 below, with no gap between them. The large points marking uncertain assignments run in a diagonal band through the middle of that cloud where the two colours meet, and are almost absent from its outer edges and from component 1."
+#| fig-width: 6.5
+#| fig-height: 5
+tibble(PC1 = scores[, 1], PC2 = scores[, 2],
+       component = factor(mixture$classification),
+       uncertainty = mixture$uncertainty) |>
+  ggplot(aes(PC1, PC2, colour = component, size = uncertainty)) +
+  geom_point(alpha = 0.7) +
+  scale_size_continuous(range = c(0.7, 4), breaks = c(0, 0.2, 0.4)) +
+  labs(subtitle = "Point size is how unsure the model is of the assignment")
+```
+
+The median station has an uncertainty of 0.002 — the model is sure about almost
+everything. But **69 stations have an uncertainty above 0.25**, and they are not spread
+evenly: they sit where components 2 and 3 meet, which is the middle of the depth
+gradient. That is the honest answer for a station halfway along a continuum, and a hard
+partition simply never reports it.
+
+## Where this breaks down
+
+**A dendrogram looks more authoritative than it is.** It is a picture of one linkage's
+merge order. Change the linkage and you get a different tree from the same data, as the
+table above shows, and nothing in the picture warns you.
+
+**Hierarchical clustering is greedy and final.** A merge made early is never undone, so an
+early mistake propagates all the way up the tree.
+
+**It costs memory.** The distance matrix is $n(n-1)/2$ entries: fine for 800 stations,
+about 12 GB for 50,000 CTD profiles.
+
+**Mixture models assume Gaussian components.** Community counts are not Gaussian even
+after a log transform, which is part of why we ran the mixture on principal-component
+scores. The components you get back are features of the fitted density, not species
+assemblages, and the two coincide only sometimes.
+
+::: {.callout-tip}
+## Key points
+
+- Hierarchical clustering builds one tree and lets you cut it at any $k$ afterwards.
+- **The linkage rule decides the answer.** On the same distance matrix, agreement with the
+  true split ranged from 0.005 (single) to 0.889 (Ward).
+- Single and average linkage **chain**: they peel off one station at a time and leave 99%
+  of the data in a single cluster. Suspect chaining whenever one cluster holds almost
+  everything.
+- `hclust()` defaults to complete linkage, which scored 0.332 at $k = 2$ here. Ward is the
+  sensible default when you want k-means-like clusters with a tree attached.
+- The **adjusted Rand index** compares two partitions pair by pair: 1 is identical, 0 is
+  chance.
+- Mixture models return a probability per station. Here 69 stations were genuinely
+  ambiguous, all of them on the depth gradient — information a hard partition throws away.
+:::
+
+## Try it yourself
+
+1. Cut the Ward tree at $k = 2$ and the complete-linkage tree at $k = 3$ and compare them
+   with `adjustedRandIndex()`. They score 0.889 and 0.843 against substrate — how similar
+   are they to *each other*?
+2. Run `Mclust()` on the first two principal components instead of five. Does it still
+   choose three components, and does the uncertainty band survive?

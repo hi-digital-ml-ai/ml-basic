@@ -125,8 +125,21 @@ website:
                 text: "Uncertainty and stability"
               - href: chapters/07-validation/choosing-a-metric.qmd
                 text: "Choosing measures that match the objective"
-          - href: chapters/08-unsupervised-learning/index.qmd
-            text: "8 · Unsupervised learning"
+          - section: "8 · Unsupervised learning"
+            href: chapters/08-unsupervised-learning/index.qmd
+            contents:
+              - href: chapters/08-unsupervised-learning/clustering.qmd
+                text: "Clustering"
+              - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+                text: "Choosing the number of clusters"
+              - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
+                text: "Hierarchical and model-based clustering"
+              - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+                text: "Principal component analysis"
+              - href: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+                text: "Dimensionality reduction in practice"
+              - href: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+                text: "Interpreting patterns, and their limits"
           - href: chapters/09-neural-networks/index.qmd
             text: "9 · Neural networks"
           - href: chapters/10-interpretation/index.qmd

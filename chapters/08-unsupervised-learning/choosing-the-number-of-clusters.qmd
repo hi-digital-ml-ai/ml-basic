@@ -1,0 +1,277 @@
+---
+title: "Choosing the number of clusters"
+description: "The elbow, the silhouette and the gap statistic on the same data, why their absolute values mean nothing, and the reference dataset that makes them mean something."
+order: 2
+categories: [unsupervised]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyclust)
+library(tidyverse)
+library(cluster)
+library(mclust, include.only = c("Mclust", "mclustBIC"))
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+$k$ is an input. The previous page put `num_clusters = 2` into the specification and the
+algorithm obeyed, as it would have obeyed 3, or 9. Nothing in k-means objects to a bad
+$k$, so the number of habitat types your survey contains is, procedurally, your decision
+and not the data's.
+
+There are standard tools for making that decision, and they are worth knowing precisely
+because the first thing you notice when you run all of them is that they disagree.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## Setting up
+
+The same community matrix and the same recipe as [the clustering page](clustering.qmd),
+now wrapped in a function so we can sweep $k$.
+
+```{r}
+#| label: sweep-setup
+community <- load_coastal_community()
+taxa_only <- community |> dplyr::select(starts_with("tax"))
+
+cluster_recipe <- function(data) {
+  recipe(~ ., data = data) |>
+    step_log(all_numeric_predictors(), offset = 1) |>
+    step_normalize(all_numeric_predictors())
+}
+
+fit_k <- function(data, k) {
+  set.seed(101)
+  workflow() |>
+    add_recipe(cluster_recipe(data)) |>
+    add_model(k_means(num_clusters = k) |> set_engine("stats", nstart = 25, iter.max = 100)) |>
+    fit(data = data)
+}
+
+sweep_k <- function(data, ks = 2:8) {
+  map_dfr(ks, \(k) {
+    fitted <- fit_k(data, k)
+    tibble(k = k,
+           sse_ratio  = sse_ratio(fitted)$.estimate,
+           silhouette = silhouette_avg(fitted, new_data = data)$.estimate)
+  })
+}
+
+observed <- sweep_k(taxa_only)
+observed |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+Two measures. `sse_ratio` is the within-cluster sum of squares as a fraction of the
+total — the quantity k-means minimises, scaled so that $k = 1$ would be 1.0.
+`silhouette_avg` is the average **silhouette width**, which for each station compares how
+far it sits from its own cluster's members to how far it sits from the nearest other
+cluster's members. It runs from $-1$ (in the wrong cluster) through 0 (on the boundary)
+to $+1$ (unambiguously placed).
+
+## The elbow, and why there isn't one
+
+The oldest recipe is to plot the within-cluster sum of squares against $k$ and look for
+the bend where adding clusters stops helping.
+
+Our numbers fall 0.878, 0.779, 0.736, 0.707, 0.690, 0.676, 0.661. That is a smooth
+decay. There is no bend. The elbow method has no answer here, and on real data it very
+often does not, because the sum of squares *must* fall with every extra cluster —
+the question is only how fast.
+
+The silhouette does better: it peaks at $k = 2$, at 0.179. But now look up what 0.179
+means. The rule of thumb in wide circulation says that above 0.7 is strong structure,
+above 0.5 is reasonable, and below about 0.25 means no substantial structure has been
+found.
+
+By that table we have found nothing. We know from [the previous page](clustering.qmd)
+that $k = 2$ recovered a real ecological boundary and got 785 of 800 stations on the
+correct side of it.
+
+::: {.callout-important}
+Absolute thresholds for silhouette width are worthless in high dimensions. With 24
+columns, 54% of them zero, every station is fairly far from everything — including its
+own cluster's centre — so the ratio the silhouette computes is compressed towards zero
+whatever the structure. 0.179 is not a weak result. It is a number that has to be
+compared with something before it means anything at all.
+:::
+
+## The fix: compare against data with no structure
+
+The something to compare against is the same dataset with its structure removed. Shuffle
+each taxon's counts independently across stations. Every taxon keeps its own abundance
+distribution, its own zeros, its own skew — and all co-occurrence between taxa is
+destroyed, so by construction there are no station groups left to find.
+
+```{r}
+#| label: null-sweep
+set.seed(102)
+shuffled <- taxa_only |> mutate(across(everything(), \(x) sample(x)))
+
+reference <- sweep_k(shuffled)
+
+comparison <- bind_rows(mutate(observed, data = "observed"),
+                        mutate(reference, data = "shuffled"))
+
+comparison |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: fig-k-sweep
+#| fig-cap: "Two criteria for choosing k, computed on the community matrix and on the same matrix with every taxon column shuffled independently. Only the gap between the two lines carries information."
+#| fig-alt: "Two line charts against number of clusters from 2 to 8. Left, within-cluster sum of squares as a fraction of the total: the observed line starts at 0.88 and falls smoothly to 0.66 with no bend, running roughly 0.08 to 0.14 below the shuffled line all the way across. Right, average silhouette width: the observed line is highest at k equals 2 at 0.18, drops to 0.13 at k equals 3, rises slightly to 0.14 at k equals 4, then falls to about 0.08 and flattens. The shuffled line stays low, drifting gently upward from 0.037 at k equals 2 to about 0.055 at k equals 7. The vertical gap between the two lines is by far the largest at k equals 2."
+#| fig-width: 9
+#| fig-height: 4
+panel <- function(column, label) {
+  ggplot(comparison, aes(k, .data[[column]], colour = data)) +
+    geom_line(linewidth = 0.8) +
+    geom_point(size = 2.4) +
+    scale_x_continuous(breaks = 2:8) +
+    labs(x = "number of clusters (k)", y = label, colour = NULL)
+}
+
+(panel("sse_ratio", "within-cluster SS / total SS") |
+ panel("silhouette", "average silhouette width")) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+Read the right-hand panel. The shuffled data stays between 0.037 and 0.055 for every $k$,
+drifting slightly upward — that is what "no structure" looks like when you measure it
+with this statistic in this many dimensions. Against that floor, 0.179 is nearly five
+times the no-structure value, and the gap between the lines is twice as wide at $k = 2$
+as at any other $k$. By $k = 3$ the observed line has fallen to 0.126, more than a third
+of the way back to the floor.
+
+The observed line is not monotone: $k = 4$ comes back up to 0.136, above $k = 3$. Small
+non-monotonicities like this are normal and are not evidence for four clusters — the
+$k = 4$ partition simply cuts each of the two substrate groups in two along depth — the
+four median depths are 48, 60, 110 and 125 m — and halving a gradient can tidy up the
+silhouette a little without discovering anything. The gap against the
+null is what matters, and at $k = 4$ it is 0.091 against 0.142.
+
+The left-hand panel says the same thing more quietly. The observed sum of squares is
+lower than the shuffled one at every $k$, as it must be, and the *extra* drop is largest
+at $k = 2$: 0.878 against 0.962.
+
+## The gap statistic, and choosing your reference
+
+That comparison is exactly the idea behind the **gap statistic**, which formalises it:
+cluster a reference dataset with no structure, and pick the $k$ where the observed
+within-cluster dispersion falls furthest below the reference's. `cluster::clusGap()`
+implements it.
+
+```{r}
+#| label: gap
+prepped <- prep(cluster_recipe(taxa_only)) |> bake(new_data = NULL) |> as.matrix()
+
+set.seed(103)
+gap_result <- clusGap(prepped, FUN = kmeans, K.max = 8, B = 20, nstart = 10, iter.max = 50)
+
+gap_table <- as_tibble(gap_result$Tab) |> mutate(k = row_number(), .before = 1)
+
+gap_table |>
+  mutate(chosen = if_else(k == maxSE(gap, SE.sim, method = "firstSEmax"), "<- chosen", ""),
+         across(where(is.double), \(x) round(x, 3))) |>
+  dplyr::select(k, gap, SE.sim, chosen)
+```
+
+It chooses six. This is not a bug and it is worth understanding, because it is the same
+trap as the silhouette threshold in a different costume. `clusGap()`'s default reference
+is a **uniform sample from the bounding box** of the data. Our 800 stations live on a
+thin, curved sheet inside a 24-dimensional box, and they fill almost none of it. So the
+reference is much more spread out than the observed data at *every* $k$, the gap is
+positive everywhere, and it keeps growing as $k$ rises.
+
+The remedy is the same one the shuffled data used: choose a reference that resembles your
+data in every respect except the structure you are testing for. `clusGap()` will take one
+— set `spaceH0 = "original"` to draw the reference inside the data's own principal-
+component box instead of the raw bounding box — but a permutation of your own columns is
+usually easier to defend to a reviewer, because you can say exactly what it preserves.
+
+::: {.callout-warning}
+Every method in this family compares your data to a null. If you do not choose the null,
+the package chooses it for you, and its choice knows nothing about community matrices.
+The number that comes out is only as good as that comparison.
+:::
+
+## A criterion from a different family
+
+k-means has no likelihood, so there is no AIC or BIC for it. A **Gaussian mixture model**
+does have one — it is a genuine probability model, covered properly on
+[the next page](beyond-k-means.qmd) — and `mclust` will select the number of components
+by BIC.
+
+::: {.callout-warning}
+`library(mclust)` masks `purrr::map()` with a function of its own, which breaks every
+`map()` call later in your script with an error that names neither package. Attach it as
+`library(mclust, include.only = c("Mclust", "mclustBIC"))`.
+:::
+
+```{r}
+#| label: mclust-bic
+scores <- prcomp(prepped)$x[, 1:5]
+
+set.seed(104)
+mixture <- Mclust(scores, G = 1:6, verbose = FALSE)
+
+c(components = mixture$G, bic = round(mixture$bic, 1))
+```
+
+It chooses three.
+
+So: the elbow abstains, the silhouette against a permutation null says two, the gap
+statistic with its default reference says six, and BIC says three. The truth built into
+this dataset is **two** — hard bottom and soft bottom.
+
+BIC's three is not really a wrong answer to its own question. BIC asks how many Gaussian
+components it takes to describe the *density* of the data, and a community with two
+substrate groups and a continuous depth gradient running through both is not well
+described by two Gaussians. It needs a third to cover the tail of the gradient. The
+number of components a density needs and the number of groups an ecosystem has are
+different quantities, and only one of them was what you asked.
+
+## Where this breaks down
+
+**No criterion tests whether any clusters exist.** Every method here compares $k=2$ with
+$k=3$ and so on. A comparison with $k=1$ is available from the gap statistic alone, and
+only if its reference is a fair one.
+
+**$k$ is often not a scientific quantity.** If composition varies continuously with
+depth, as it does here, there is no true number of depth classes — only a number of
+classes that is useful for a particular purpose. Habitat mapping for spatial planning may
+need five because five is what a management plan can act on. That is a legitimate reason
+to pick five and an illegitimate reason to claim five exist.
+
+**Criteria are computed on the data that produced the clusters.** The silhouette rewards
+the partition that k-means already optimised. Resampling, on
+[the last page](interpreting-patterns.qmd), asks a harder and more useful question.
+
+::: {.callout-tip}
+## Key points
+
+- The within-cluster sum of squares always falls as $k$ rises, so an elbow is a hope, not
+  a method. Here the decay is smooth and the elbow method abstains.
+- **Silhouette widths have no absolute meaning.** 0.179 sounds like nothing and was in
+  fact a near-perfect recovery of a real boundary.
+- Compare every criterion against a **reference dataset with the structure removed**.
+  Shuffling each column independently preserves each taxon's distribution and destroys
+  co-occurrence, which is exactly the null you want.
+- That comparison is the gap statistic. Its default uniform reference is wrong for sparse
+  high-dimensional data and chose six here; the permutation reference chose two.
+- Different criteria answer different questions. BIC's three components describe a
+  density; they are not three ecosystems.
+- Report which criterion you used, on which reference, and what the runners-up said.
+:::
+
+## Try it yourself
+
+1. Re-run `clusGap()` with `spaceH0 = "original"`. Does moving the reference into the
+   data's own principal-component box change its choice?
+2. Sweep $k$ on the environmental table (depth, temperature, salinity, chlorophyll)
+   instead, against a shuffled reference. Is there any $k$ where the observed silhouette
+   stands clear of the null?

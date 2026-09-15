@@ -1,0 +1,288 @@
+---
+title: "Clustering"
+description: "Grouping stations without labels: what k-means actually optimises, why the units you measure in decide the answer, and what it does to data with no groups in it."
+order: 1
+categories: [unsupervised]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyclust)
+library(tidyverse)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+You have 800 grab samples and counts of two dozen taxa, and somebody asks which habitat
+types the survey covers. Nobody has classified the stations. There is no column to
+predict. The question is whether the stations fall into recognisable kinds at all.
+
+That is clustering: partitioning rows into groups so that rows in a group resemble each
+other more than they resemble rows elsewhere. It is the most used and the most
+over-read family of methods in this course, and the reason is simple — it always
+returns an answer.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+::: {.callout-note collapse="true"}
+## About the community data on this page
+§8 uses a second simulated file, `data/coastal-community.csv`: the same 800 stations
+with counts of 24 benthic taxa. Two things were deliberately built into it. Depth acts
+as a **continuum** — each taxon has a depth optimum and the optima are spread evenly
+from 20 m to 160 m, so composition turns over smoothly and there are no depth-defined
+assemblages. Substrate acts as a **genuine split** — six taxa live essentially only on
+rock and gravel, eight essentially only on sand and mud. So there is exactly one real
+grouping of stations, hard bottom against soft bottom, and we can check any method
+against it. See `data/README.md`.
+:::
+
+## The idea
+
+**k-means** is the standard starting point. You choose $k$, the number of clusters. The
+algorithm then places $k$ centres and assigns each row to its nearest one, moving the
+centres to the mean of what they have collected, until nothing moves.
+
+What it is minimising is the **within-cluster sum of squares**: the total squared
+distance from each row to its own cluster's centre. Two consequences follow immediately
+and neither is obvious from the name.
+
+First, "nearest" means Euclidean distance in whatever units your columns happen to be
+in. Second, minimising squared distance to a centre favours clusters that are round and
+about the same size — so k-means will impose that shape whether or not the data has it.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+For rows $x_i$, a partition $C_1,\dots,C_k$ and centres $\mu_j$, k-means minimises
+
+$$W = \sum_{j=1}^{k} \sum_{i \in C_j} \lVert x_i - \mu_j \rVert^2$$
+
+where $\lVert \cdot \rVert$ is ordinary Euclidean distance. $W$ falls monotonically as
+$k$ rises — at $k = n$ it is zero — so $W$ alone can never tell you what $k$ should be.
+That is the subject of [the next page](choosing-the-number-of-clusters.qmd).
+:::
+
+## Units decide the answer
+
+Before any marine example, a warning that costs people real results. Here are the four
+environmental variables from the survey, in the units they were measured in.
+
+```{r}
+#| label: env-scales
+survey <- load_coastal_survey_clean()
+
+env <- survey |>
+  dplyr::select(depth_m, temperature_c, salinity_psu, chlorophyll_mg_m3) |>
+  drop_na()
+
+tibble(variable = names(env),
+       sd = map_dbl(env, sd),
+       range = map_dbl(env, \(x) diff(range(x))),
+       `share of total variance` = map_dbl(env, var) / sum(map_dbl(env, var)))
+```
+
+Depth carries **99.4%** of the total variance, not because depth matters more but
+because metres are small units and there are a lot of them. Euclidean distance adds
+those variances up. So clustering these columns as they stand is, arithmetically,
+clustering depth alone.
+
+```{r}
+#| label: raw-vs-scaled
+set.seed(51)
+raw_clusters <- kmeans(env, centers = 3, nstart = 25, iter.max = 100)
+
+set.seed(51)
+scaled_clusters <- kmeans(scale(env), centers = 3, nstart = 25, iter.max = 100)
+
+cluster_means <- function(cl, label) {
+  env |>
+    mutate(cluster = cl) |>
+    summarise(across(everything(), mean), .by = cluster) |>
+    arrange(depth_m) |>
+    mutate(clustered_on = label, .before = 1, cluster = row_number())
+}
+
+bind_rows(cluster_means(raw_clusters$cluster, "measured units"),
+          cluster_means(scaled_clusters$cluster, "standardised")) |>
+  mutate(across(where(is.double), \(x) round(x, 2)))
+```
+
+The two sets of clusters are different objects. In measured units the three groups are
+three depth bands — 46 m, 93 m and 139 m — and their chlorophyll and salinity means are
+almost incidental. Standardised, one group separates on chlorophyll instead: 5.4
+mg m^-3^ against 1.3 in a group at almost the same depth. Those are spring blooms in
+shallow water, and the unscaled run could not see them.
+
+```{r}
+#| label: fig-scaling
+#| fig-cap: "Clustering the same 720 stations into three groups, with and without standardising first. Left: in measured units, the clusters are depth bands. Right: after standardising, one cluster is defined by high chlorophyll at moderate depth. Cluster numbers are arbitrary labels and do not correspond between the panels."
+#| fig-alt: "Two scatter plots of chlorophyll against depth, each point a station coloured by cluster. In the left panel the colours form three clean vertical bands split at about 70 and 115 metres, with chlorophyll ignored. In the right panel one colour picks out the high-chlorophyll points above about 3 milligrams per cubic metre across a wide depth range, while the other two split the remaining low-chlorophyll points by depth."
+#| fig-width: 9
+#| fig-height: 4
+plot_clusters <- function(cl, subtitle) {
+  ggplot(env, aes(depth_m, chlorophyll_mg_m3, colour = factor(cl))) +
+    geom_point(alpha = 0.75, size = 1.6) +
+    labs(x = "depth (m)", y = expression(chlorophyll~(mg~m^-3)),
+         colour = "cluster", subtitle = subtitle)
+}
+
+(plot_clusters(raw_clusters$cluster, "Measured units") |
+ plot_clusters(scaled_clusters$cluster, "Standardised")) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+The adjusted Rand index between the two partitions — a similarity measure for
+groupings, [defined on the next page but one](beyond-k-means.qmd) — is 0.33. Neither is
+wrong. But "standardise, unless you have a reason not to" is the sane default, because
+otherwise the answer is decided by whoever picked the units.
+
+::: {.callout-warning}
+Standardising is a choice too. It says every variable deserves equal weight, which is
+defensible for a set of environmental sensors and indefensible if three of your columns
+are near-duplicates of each other — they will then jointly outvote everything else.
+:::
+
+## Worked example: do the stations fall into habitat types?
+
+Now the community matrix. Counts are skewed and full of zeros, so we take `log1p` first
+and then standardise each taxon, and we do both inside a recipe so the steps travel with
+the model.
+
+```{r}
+#| label: community-workflow
+community <- load_coastal_community()
+
+taxa_only <- community |> dplyr::select(starts_with("tax"))
+
+cluster_recipe <- recipe(~ ., data = taxa_only) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors())
+
+kmeans_spec <- k_means(num_clusters = 2) |>
+  set_engine("stats", nstart = 25, iter.max = 100)
+
+set.seed(41)
+habitat_fit <- workflow() |>
+  add_recipe(cluster_recipe) |>
+  add_model(kmeans_spec) |>
+  fit(data = taxa_only)
+
+assignments <- extract_cluster_assignment(habitat_fit)
+count(assignments, .cluster)
+```
+
+`tidyclust` is the tidymodels package for clustering, and it keeps the shape you already
+know from §3 and §7: a recipe, a specification, a workflow, a fit. The engine is plain
+`stats::kmeans`; `nstart = 25` restarts it from 25 random initialisations and keeps the
+best, which matters because k-means can settle into a poor local optimum.
+
+We picked `num_clusters = 2` here to keep this page about what clustering *is*. Where
+that 2 came from is the whole of the next page.
+
+## What the results mean
+
+The point of a simulated dataset is that we can ask the question no real study can
+answer: did it find the structure that is actually there?
+
+```{r}
+#| label: check-against-truth
+stations <- community |>
+  mutate(cluster = assignments$.cluster) |>
+  inner_join(dplyr::select(survey, station_id, depth_m, substrate), by = "station_id") |>
+  mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft"))
+
+table(stations$cluster, stations$bottom)
+```
+
+617 stations in one cluster, 183 in the other, and the split is the hard/soft bottom
+division almost exactly: 15 stations out of 800 land on the wrong side. Nothing told the
+algorithm about substrate. It recovered a real ecological boundary from counts alone,
+which is what clustering is for.
+
+```{r}
+#| label: depth-check
+stations |>
+  summarise(stations = n(),
+            `hard bottom %` = round(100 * mean(bottom == "hard")),
+            `median depth (m)` = round(median(depth_m), 1),
+            `10th-90th percentile depth` = paste(round(quantile(depth_m, 0.1)), "-",
+                                                 round(quantile(depth_m, 0.9))),
+            .by = cluster)
+```
+
+Now look at depth, which is the *strongest* gradient in this dataset and the strongest
+driver of composition. The two clusters differ in median depth by 30 m — but each of
+them spans most of the shelf, roughly 27–132 m against 42–148 m. That 30 m is inherited,
+not found: rock sits shallow on this shelf (median 50 m) and mud sits deep (median
+105 m), so a substrate split comes with a depth tilt attached.
+
+What k-means did not do is cut the depth gradient itself. It had every opportunity —
+depth explains more compositional variation than substrate does — and it went for the
+substrate boundary instead, because a gradient has no gap in it to split on. Ask for
+three clusters and it will cut the gradient anyway, at a depth of its own choosing. Hold
+on to that; it is the subject of the [last page](interpreting-patterns.qmd).
+
+## Where this breaks down
+
+**It always returns clusters.** Give k-means uniform noise and ask for four groups and
+you get four tidy, convincing, meaningless groups. There is no null hypothesis in the
+algorithm and no "no structure found" output.
+
+```{r}
+#| label: fig-noise
+#| fig-cap: "k-means asked for four clusters in 800 points drawn from a single uniform square. The partition is clean, stable and entirely an artefact of the question."
+#| fig-alt: "A square scatter plot of 800 uniformly scattered points divided into four coloured quadrant-like regions with straight boundaries meeting near the centre. There is no gap or density change anywhere in the cloud."
+#| fig-width: 5
+#| fig-height: 4.6
+set.seed(77)
+noise <- tibble(x = runif(800), y = runif(800))
+noise$cluster <- factor(kmeans(noise, 4, nstart = 25)$cluster)
+
+ggplot(noise, aes(x, y, colour = cluster)) +
+  geom_point(size = 1.5, alpha = 0.8) +
+  labs(x = NULL, y = NULL, subtitle = "Uniform noise, four clusters, no structure")
+```
+
+**It assumes round, comparable clusters.** The within-cluster sum of squares is
+minimised by compact balls of similar size. An elongated assemblage along a front, or a
+small rare-habitat group of twenty stations beside a large common one, are both
+mis-served — the [hierarchical and model-based methods](beyond-k-means.qmd) exist partly
+for this reason.
+
+**Every row gets a label.** A station that belongs to nothing in particular is still
+assigned, with the same confidence as a station at the centre of a group.
+
+**The distance is Euclidean.** For community counts that is a real assumption: it treats
+a joint absence of a taxon as evidence of similarity between two stations, which
+ecologists have argued about for fifty years. Community ecology has its own distances —
+Bray–Curtis and the Hellinger transformation among them — and if that is your field,
+prefer them.
+
+::: {.callout-tip}
+## Key points
+
+- k-means minimises within-cluster squared distance. That single sentence explains both
+  what it is good at and the round-equal-sized shape it imposes.
+- **The units decide the answer.** Depth alone is 99.4% of the variance of the raw
+  environmental table; clustering it unstandardised is clustering depth.
+- Put the transformation and the standardisation in a **recipe**, so they travel with
+  the model and are applied the same way every time.
+- On the community matrix, $k = 2$ recovered the hard/soft substrate split with 15
+  stations misplaced out of 800 — from counts alone, with no substrate column.
+- It found nothing about depth, because depth is a **gradient**, and a gradient has no
+  gap to split on.
+- Clustering never reports "no structure". Uniform noise yields tidy clusters, so
+  finding clusters is not evidence that clusters exist.
+:::
+
+## Try it yourself
+
+1. Re-run the community clustering with `step_normalize()` removed. The common taxa now
+   dominate the distance. How many stations change cluster, and does the split still
+   match substrate?
+2. Cluster the environmental table into two groups instead of three, standardised, and
+   cross-tabulate against `substrate`. Does the environment know about the seabed?

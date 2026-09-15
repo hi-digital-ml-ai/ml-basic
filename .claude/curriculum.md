@@ -196,13 +196,72 @@ identical folds it is 0.33 wide.
 reproduces the bias, and no validation scheme detects it. That is the handover to §10.
 
 ## 8. Unsupervised learning
-`chapters/08-unsupervised-learning/` · categories: `unsupervised`
+`chapters/08-unsupervised-learning/` · categories: `unsupervised`, `interpretation`
 
 - Clustering
 - Principal component analysis
 - Dimensionality reduction
 - Pattern detection in marine datasets
 - Interpretation and limitations of unsupervised methods
+
+**Written as six pages, splitting one subtopic and merging two.** "Clustering" became three
+pages, because the method, the choice of *k* and the choice of algorithm are three separate
+decisions and a single page could only gesture at two of them. "Pattern detection in marine
+datasets" and "interpretation and limitations" became one page, `interpreting-patterns.qmd`,
+because the honest way to teach pattern detection is to detect a pattern and then interrogate
+it — separating them would have produced one credulous page and one abstract one.
+
+### A second dataset
+
+§8 needs many correlated columns, which the single-species survey does not have, so
+`R/make-community-data.R` generates `data/coastal-community.csv`: the same 800 stations with
+counts of 24 benthic taxa. It joins on `station_id`, so the environment is the survey's.
+
+Two things are built into it and every page depends on the contrast:
+
+- **Depth is a continuum.** Taxon depth optima are spread evenly from 20 m to 160 m, so
+  composition turns over smoothly and there are no depth-defined assemblages.
+- **Substrate is a genuine split.** Six taxa are effectively hard-bottom only, eight
+  soft-bottom only. The one real grouping of stations is hard versus soft — two groups.
+
+Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They load at
+zero on both principal components, which is how `principal-component-analysis.qmd` shows PCA
+ignoring noise columns unprompted.
+
+### Two conventions that hold the section together
+
+**Run the identical pipeline on a structure-free null.** Shuffle each column independently:
+every variable keeps its own distribution, all co-occurrence is destroyed. Almost no
+unsupervised statistic can be read on an absolute scale, and this is what supplies the scale.
+It is used for cluster-count selection, for parallel analysis, and for UMAP. `clusGap()`'s
+default uniform-bounding-box reference chose six clusters against the permutation null's two —
+keep that example, it is the argument for choosing your own null.
+
+**Validate against a variable the method never saw, and mind its type.** Agreement with a
+*categorical* external variable is evidence of groups; agreement with a *binned continuous* one
+is evidence only of a gradient. This asymmetry is the whole of `interpreting-patterns.qmd`.
+
+### Three findings the pages are built on
+
+- **Stability is necessary, not sufficient.** The most stable result in the section
+  corresponds to nothing: splitting the soft-bottom stations by depth reproduces at ARI 0.890,
+  never below 0.71, and the generator contains no soft-sediment assemblages. A stable algorithm
+  cuts a stable gradient in a stable place. This is the section's headline and the reason the
+  community data was built with a continuum in it.
+- **Bimodal stability.** The whole-survey bootstrap at *k* = 2 returns 53 replicates recovering
+  the substrate split (ARI > 0.9) and 7 recovering a depth split (ARI < 0.15), with nothing in
+  between; the mean of 0.881 describes neither. Keep the histogram — it is the argument for
+  reporting distributions rather than averages, and it echoes §7's stability page.
+- **Defaults decide the answer.** Depth is 99.4% of the raw environmental table's variance;
+  `hclust()`'s default complete linkage scores 0.332 at *k* = 2 where Ward scores 0.889; the
+  "80% of variance" rule keeps 16 of 24 components where cross-validated prediction needs 2.
+  Every page names a default and shows what it costs.
+
+### Aimed at §9 and §10
+
+`interpreting-patterns.qmd` hands two things forward. To §9: an autoencoder is PCA without the
+linearity and inherits every interpretation problem on that page. To §10: a single number from
+a single run, reported without its distribution, is how a plausible result becomes a wrong one.
 
 ## 9. Introduction to neural networks
 `chapters/09-neural-networks/` · categories: `neural-networks`
@@ -235,3 +294,7 @@ Repeat these deliberately rather than treating them as one section's property:
   and is the most common mistake in marine applications.
 - **Gradient descent** (§4) is reused directly by neural networks (§9).
 - **Extrapolation limits** (§6) frame the responsible-use discussion (§10).
+- **Comparing against a structure-free null** (§8) is the same move as §7's baseline models:
+  neither a silhouette width nor an R² means anything until you know what no-skill looks like.
+- **Groups versus gradients** (§8) is why §6's spatial dependence matters — a smooth field has
+  no edges, and every method in the course will invent one if asked.

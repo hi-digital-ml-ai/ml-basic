@@ -1,0 +1,287 @@
+---
+title: "Dimensionality reduction in practice"
+description: "How many components to keep, why three common rules give three different answers, putting PCA inside a workflow, and what a UMAP picture is and is not evidence for."
+order: 5
+categories: [unsupervised, data-preparation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(uwot)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+[The previous page](principal-component-analysis.qmd) used two components because two is
+what fits on a page. That is a reason to plot two, not a reason to *keep* two.
+
+Reduction is usually a step towards something else: feeding a supervised model without
+giving it 24 collinear predictors, or compressing a hundred sensor channels into
+something a colleague can interpret. Those uses need a number, and the rules in
+circulation for choosing it disagree with each other by a factor of five.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+community <- load_coastal_community()
+
+taxa_only <- community |> dplyr::select(starts_with("tax"))
+
+prepared <- recipe(~ ., data = taxa_only) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors()) |>
+  prep() |>
+  bake(new_data = NULL)
+
+pca <- prcomp(prepared)
+eigenvalues <- pca$sdev^2
+proportion <- eigenvalues / sum(eigenvalues)
+```
+
+## Three rules, three answers
+
+```{r}
+#| label: rules
+set.seed(21)
+shuffled_eigenvalues <- replicate(200, {
+  reshuffled <- prepared |> mutate(across(everything(), \(x) sample(x)))
+  prcomp(reshuffled)$sdev^2 / ncol(prepared)
+})
+
+null_threshold <- apply(shuffled_eigenvalues, 1, quantile, 0.95)
+
+tibble(rule = c("variance explained reaches 80%",
+                "eigenvalue greater than 1 (Kaiser)",
+                "above the 95th percentile of shuffled data (parallel analysis)"),
+       components = c(which(cumsum(proportion) >= 0.8)[1],
+                      sum(eigenvalues > 1),
+                      sum(proportion > null_threshold)))
+```
+
+Sixteen, seven, or three. They disagree because they are asking different questions.
+
+**The 80% rule** asks how much of the total spread you want to carry with you. In sparse
+count data most of the spread is sampling noise, so the rule ends up demanding almost
+every component — sixteen of twenty-four here, which reduces nothing.
+
+**Kaiser's rule** keeps components that explain more than one standardised variable's
+worth of variance. It is a reasonable idea and it is known to over-keep, which it does
+here.
+
+**Parallel analysis** is the same comparison the clustering criteria needed on
+[an earlier page](choosing-the-number-of-clusters.qmd): shuffle each column
+independently, so every taxon keeps its distribution but co-occurrence is destroyed, and
+keep only the components that beat what that shuffling produces. It says three. The truth
+built into the data is two gradients, and PC3's excess over the null is slight —
+0.062 against a threshold of 0.053 — so three is one component of wishful thinking, which
+is a much smaller error than thirteen.
+
+::: {.callout-note collapse="true"}
+## Why the shuffled eigenvalues are not all equal to 1
+If shuffling destroys all correlation, you might expect every shuffled eigenvalue to come
+out at 1. They do not: the largest averages 1.32 and the smallest 0.72, because
+with 800 rows the sample correlation matrix is never exactly the identity, and PCA
+deliberately seeks out whatever accidental correlation there is. That spread is exactly
+what parallel analysis is correcting for, and it is why "eigenvalue greater than 1" keeps
+too many.
+:::
+
+## Letting the question choose the number
+
+Better than any rule of thumb: if the components are going to be used for something,
+measure how many that something needs.
+
+Community composition is used as an environmental indicator all the time — the taxa
+present tell you about the habitat. So let us reverse the usual direction and predict
+**depth from composition**, choosing the number of components by cross-validation.
+
+```{r}
+#| label: tune-components
+depth_data <- community |>
+  inner_join(dplyr::select(survey, station_id, depth_m), by = "station_id") |>
+  dplyr::select(depth_m, starts_with("tax"))
+
+pca_recipe <- recipe(depth_m ~ ., data = depth_data) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors()) |>
+  step_pca(all_numeric_predictors(), num_comp = tune())
+
+set.seed(61)
+folds <- vfold_cv(depth_data, v = 10)
+
+tuned <- tune_grid(
+  workflow() |> add_recipe(pca_recipe) |> add_model(linear_reg()),
+  resamples = folds,
+  grid = tibble(num_comp = c(1, 2, 3, 4, 5, 6, 8, 10, 14, 18, 24)),
+  metrics = metric_set(rmse, rsq)
+)
+
+collect_metrics(tuned) |>
+  dplyr::select(num_comp, .metric, mean, std_err) |>
+  pivot_wider(names_from = .metric, values_from = c(mean, std_err)) |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+One component predicts depth to an RMSE of 30.4 m. **Two components take that to 21.2 m**,
+and an R² of 0.73. Everything after that is flat: the best value on the grid is 20.8 m at
+four or five components, an improvement of 0.4 m against a standard error of 0.8, and all
+24 components do no better than two.
+
+```{r}
+#| label: fig-components
+#| fig-cap: "Cross-validated error when depth is predicted from principal components of community composition. Two components carry essentially all of the usable signal; the remaining twenty-two contribute nothing that survives out of sample."
+#| fig-alt: "Line chart of cross-validated root mean squared error in metres against the number of principal components used, from 1 to 24, with vertical error bars. The error falls steeply from 30.4 metres at one component to 21.2 at two, edges down to about 20.8 between four and six components, and is flat thereafter out to 24, ending at 21.0. A dashed vertical line marks two components. Every value from two onwards lies within one standard error of every other."
+#| fig-width: 6.5
+#| fig-height: 4.2
+collect_metrics(tuned) |>
+  filter(.metric == "rmse") |>
+  ggplot(aes(num_comp, mean)) +
+  geom_vline(xintercept = 2, linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err),
+                width = 0.4, colour = ml_palette[["grey"]]) +
+  geom_line(colour = ml_palette[["blue"]], linewidth = 0.8) +
+  geom_point(colour = ml_palette[["blue"]], size = 2.4) +
+  labs(x = "number of components kept", y = "cross-validated RMSE (m)",
+       subtitle = "Predicting station depth from community composition")
+```
+
+That is a stronger argument than any of the three rules, because it is made against an
+external criterion instead of an internal one. It also agrees with what the data was
+built from.
+
+::: {.callout-important}
+`step_pca()` is inside the recipe, so the rotation is computed on each fold's analysis set
+and applied to its assessment set. Running `prcomp()` on the whole table first and then
+cross-validating the scores would let every fold's training data see the held-out rows —
+the leakage §2 warned about and §7 spent a section on. PCA leaks less than a supervised
+preprocessing step would, because it never looks at the response, but the recipe costs you
+nothing and removes the question.
+:::
+
+## Non-linear reduction
+
+PCA can only bend data along straight lines. Methods such as **UMAP** and **t-SNE** relax
+that: they try to place points in two dimensions so that each point's *nearest neighbours*
+stay nearest, and they are willing to distort everything else to do it.
+
+```{r}
+#| label: umap
+composition <- as.matrix(prepared)
+
+set.seed(31)
+embedding <- umap(composition, n_neighbors = 15, min_dist = 0.1,
+                  verbose = FALSE, n_threads = 1)
+
+set.seed(102)
+shuffled <- apply(composition, 2, sample)
+
+set.seed(31)
+null_embedding <- umap(shuffled, n_neighbors = 15, min_dist = 0.1,
+                       verbose = FALSE, n_threads = 1)
+```
+
+```{r}
+#| label: fig-umap
+#| fig-cap: "The same UMAP settings applied to the community matrix and to the same matrix with every taxon column shuffled independently. Only the left panel has any structure to find."
+#| fig-alt: "Two scatter plots of UMAP dimension 2 against dimension 1. Left, the observed data: soft-bottom stations shown as triangles form a large rounded mass on the left with a clean colour gradient from dark shallow points at the bottom to pale deep points at the top, and hard-bottom stations shown as circles form a narrow separate arm trailing away to the lower right, also shaded by depth. Right, the shuffled data: one irregular blob of points with lumpy edges and a few interior gaps, and colours scattered at random throughout with no gradient anywhere."
+#| fig-width: 9.5
+#| fig-height: 4.4
+stations <- community |>
+  inner_join(dplyr::select(survey, station_id, depth_m, substrate), by = "station_id") |>
+  mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft"))
+
+umap_panel <- function(coords, subtitle, shapes) {
+  p <- tibble(UMAP1 = coords[, 1], UMAP2 = coords[, 2],
+              depth = stations$depth_m, bottom = stations$bottom) |>
+    ggplot(aes(UMAP1, UMAP2, colour = depth))
+  p <- if (shapes) p + geom_point(aes(shape = bottom), size = 1.5, alpha = 0.85)
+       else p + geom_point(size = 1.5, alpha = 0.85, shape = 16)
+  p + scale_colour_viridis_c(name = "depth (m)") + labs(subtitle = subtitle, shape = NULL)
+}
+
+(umap_panel(embedding, "observed", TRUE) |
+ umap_panel(null_embedding, "columns shuffled", FALSE)) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+The left panel is a better picture than the PCA ordination was. The hard-bottom stations
+are pulled out into a distinct arm instead of merely leaning away, and the depth gradient
+runs smoothly along both the arm and the main mass. The two are still joined by a bridge
+of stations rather than fully separated — which is honest, since some stations genuinely
+sit between them — but if the aim is to *show* someone the structure, UMAP wins here.
+
+The right panel is why you must not stop there. It is data with nothing in it, and it
+still produces a shape — an outline with lumps in it and a couple of interior gaps. There
+are no islands in it and nobody would call it three clusters, but it is not the
+featureless disc people expect a null to look like, and on a smaller dataset or with a
+smaller `n_neighbors` it separates into pieces readily. The colouring is what gives it
+away: no gradient, no grouping, nothing.
+
+::: {.callout-warning}
+## What a UMAP plot is not evidence for
+
+- **Distance between groups.** Two islands twice as far apart as another pair are not
+  twice as different. The algorithm optimises neighbourhoods and the space between groups
+  is unconstrained.
+- **Relative sizes.** A tight clump and a diffuse cloud may hold the same number of
+  equally variable stations.
+- **The number of groups.** UMAP will split a smooth gradient into pieces if
+  `n_neighbors` is small, and merge real groups if it is large.
+
+What it *is* evidence for: which stations are each other's nearest neighbours in the
+original high-dimensional space. Everything else on the page is decoration.
+:::
+
+The settings matter, and you should report them. Here the embedding is fairly robust —
+the correlation between the second UMAP dimension and depth is 0.81, 0.84 and 0.84 at
+`n_neighbors` of 5, 15 and 50 — but robustness is something to check rather than assume,
+and it is not general.
+
+For the tidymodels route, `embed::step_umap()` puts the same thing in a recipe, with the
+same protection that `step_pca()` gave above.
+
+## Where this breaks down
+
+**Reduced components are harder to explain than the columns they replace.** A manager can
+act on "mud below 100 m"; nobody can act on "PC2 above 1.4". If the result must be
+communicated, weigh that against the compression.
+
+**UMAP and t-SNE have no transform for new data by default.** PCA gives you a rotation
+matrix you can apply to next year's survey. `uwot` can save and reapply a model, but the
+naive workflow of re-running UMAP on the combined data gives a different picture every
+time.
+
+**Neither method ranks its output by importance for your question.** PC1 is the
+largest-variance direction, which is not the same as the most useful one; here the depth
+prediction needed both components and got most of the way with the *pair*, not with PC1.
+
+::: {.callout-tip}
+## Key points
+
+- The common rules disagree badly: 80% of variance kept **16** components, Kaiser kept
+  **7**, parallel analysis kept **3**. Two is the truth.
+- **Parallel analysis** — compare each eigenvalue against column-shuffled data — is the
+  one to reach for, and it is the same null trick that fixed cluster-count selection.
+- Better still, let the downstream task choose. Predicting depth from composition needed
+  two components (RMSE 21.2 m); the other twenty-two added nothing out of sample.
+- Put `step_pca()` **inside the recipe** so the rotation is refitted on every fold.
+- UMAP shows local structure beautifully and distorts everything global. Never read a
+  distance, a cluster size or a cluster count off one.
+- Run your null through the same pipeline. Shuffled data still produces a shaped UMAP
+  picture; only the absence of any colour structure gives it away.
+:::
+
+## Try it yourself
+
+1. Re-run the UMAP with `n_neighbors = 3`. How many apparent islands does the observed
+   data break into, and do they correspond to anything in `survey`?
+2. Replace `linear_reg()` with `rand_forest()` in the tuning workflow. Does a flexible
+   model make later components worth keeping?
