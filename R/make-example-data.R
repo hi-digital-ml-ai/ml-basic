@@ -86,8 +86,20 @@ survey <- data.frame(
 
 survey <- survey[order(survey$station_id), ]
 
+# The true expected count at each station, before negative-binomial sampling.
+# Not part of the survey — no real dataset has this column — but the pages on
+# bias and variance need to compare estimates against something, and this is the
+# only reason the dataset is simulated in the first place.
+truth <- data.frame(
+  station_id = sprintf("ST%04d", seq_len(n)),
+  true_mean  = round(exp(log_mu), 5),
+  stringsAsFactors = FALSE
+)
+truth <- truth[order(truth$station_id), ]
+
 dir.create("data", showWarnings = FALSE)
 write.csv(survey, "data/coastal-survey.csv", row.names = FALSE)
+write.csv(truth, "data/coastal-survey-truth.csv", row.names = FALSE)
 
 cat("rows:", nrow(survey), "\n")
 cat("present rate:", round(mean(survey$present == "yes"), 3), "\n")

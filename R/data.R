@@ -89,3 +89,24 @@ load_coastal_survey_clean <- function() {
       rare_species = factor(rare_species, levels = c("yes", "no"))
     )
 }
+
+#' The true expected count behind each station.
+#'
+#' One row per station: `station_id` and `true_mean`, the expected count the
+#' simulation drew from before negative-binomial noise was added.
+#'
+#' No real survey has this column. It exists because knowing the truth is the whole
+#' point of simulating the data: it lets §5 separate a model's bias from its variance,
+#' which cannot be done from observed counts alone. Join it on `station_id`.
+#'
+#' Never use it as a predictor, and never quote a metric computed against it as
+#' though it were achievable in practice.
+load_coastal_survey_truth <- function() {
+  readr::read_csv(
+    here::here("data", "coastal-survey-truth.csv"),
+    col_types = readr::cols(
+      station_id = readr::col_character(),
+      true_mean  = readr::col_double()
+    )
+  )
+}

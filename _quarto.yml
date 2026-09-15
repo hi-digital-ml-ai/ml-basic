@@ -80,8 +80,21 @@ website:
                 text: "MAP estimation and priors"
               - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
                 text: "Reading a fit"
-          - href: chapters/05-generalisation/index.qmd
-            text: "5 · Generalisation"
+          - section: "5 · Generalisation"
+            href: chapters/05-generalisation/index.qmd
+            contents:
+              - href: chapters/05-generalisation/training-versus-new-data.qmd
+                text: "Training error vs the error that matters"
+              - href: chapters/05-generalisation/underfitting-and-overfitting.qmd
+                text: "Underfitting and overfitting"
+              - href: chapters/05-generalisation/model-complexity.qmd
+                text: "Model complexity"
+              - href: chapters/05-generalisation/bias-variance.qmd
+                text: "The bias–variance trade-off"
+              - href: chapters/05-generalisation/regularisation.qmd
+                text: "Regularisation"
+              - href: chapters/05-generalisation/hyperparameter-selection.qmd
+                text: "Hyperparameter selection"
           - href: chapters/06-assumptions-limitations/index.qmd
             text: "6 · Assumptions & limitations"
           - href: chapters/07-validation/index.qmd

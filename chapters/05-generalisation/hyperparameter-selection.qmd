@@ -1,0 +1,364 @@
+---
+title: "Hyperparameter selection"
+description: "Finding the bottom of the U-curve without spending your test set — and how unstable that choice really is."
+order: 6
+categories: [generalisation, tuning]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(rpart)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(506)
+```
+
+## Why this matters
+
+Every page in this section has ended in the same place. There is a setting — tree depth, λ,
+`minbucket` — with a best value, and the best value cannot be read off the training data because
+the training curve has no minimum. Each page has also cheated, choosing the setting by looking at
+the test set, and said so.
+
+This page stops cheating. It is the procedural heart of applied machine learning: how to choose
+the knob honestly, what tidymodels calls the pieces, and — the part usually left out — how much
+that choice moves if you had sampled different stations.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+A **hyperparameter** is a setting fixed before fitting, which the fitting cannot choose because
+its job is to constrain the fitting. Tree depth, the number of neighbours in k-NN, λ in ridge,
+the learning rate in boosting. Parameters are learned; hyperparameters are selected.
+
+Selecting them needs data the model has not been fitted to. There are two ways to get it.
+
+**A validation split.** Divide the training data again: fit on one part, score on the other,
+choose the setting with the best score. Simple, and it wastes data and depends heavily on which
+stations happened to fall in the validation part.
+
+**k-fold cross-validation.** Divide the training data into *k* parts. Fit on *k*−1 and score on
+the remaining one, *k* times, so every station is scored exactly once by a model that did not see
+it. Average the *k* scores. Nothing is wasted, and the average is far steadier — that steadiness
+is measured below.
+
+So the split is three-way:
+
+| Data | Used for | How often |
+| --- | --- | --- |
+| Training folds | Fitting parameters | Every candidate setting |
+| Held-out fold | Choosing hyperparameters | Every candidate setting |
+| **Test set** | Estimating performance | **Once, at the very end** |
+
+The test set is spent the first time you look at it and adjust. There is no way to unspend it,
+which is why it is set aside in
+[section 2](../02-marine-data/splitting-data.qmd) before any modelling happens.
+
+## Worked example
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+set.seed(506)
+d <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season) |>
+  drop_na()
+
+split <- initial_split(d, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+folds <- vfold_cv(train, v = 10)
+
+c(folds = nrow(folds),
+  fitted_on = nrow(analysis(folds$splits[[1]])),
+  scored_on = nrow(assessment(folds$splits[[1]])))
+```
+
+A tree with two hyperparameters to choose: how deep it may grow, and how many stations a node
+needs before it may split. `tune()` marks each as a value to be filled in later.
+
+```{r}
+#| label: tune
+tree_spec <- decision_tree(
+  tree_depth      = tune(),
+  min_n           = tune(),
+  cost_complexity = 0
+) |>
+  set_engine("rpart") |>
+  set_mode("regression")
+
+tree_workflow <- workflow() |>
+  add_formula(abundance ~ .) |>
+  add_model(tree_spec)
+
+grid <- expand_grid(
+  tree_depth = c(2, 3, 4, 6, 8, 12),
+  min_n      = c(2, 5, 10, 20, 40, 80)
+)
+
+tuned <- tune_grid(tree_workflow, resamples = folds, grid = grid,
+                   metrics = metric_set(rmse))
+
+collect_metrics(tuned) |>
+  arrange(mean) |>
+  select(tree_depth, min_n, mean, std_err) |>
+  slice_head(n = 6) |>
+  mutate(across(c(mean, std_err), \(x) round(x, 4)))
+```
+
+Thirty-six candidate settings, each scored on ten folds — 360 model fits, which is why tuning is
+the expensive step.
+
+```{r}
+#| label: fig-surface
+#| fig-cap: "Cross-validated RMSE across the grid of tree depth and minimum node size. The best cell is 4.482, at depth 3 with min_n = 10. The surface is almost flat across most of the grid; only the deep, small-node corner at the top left — where the tree is allowed to grow to depth 8 or 12 with nodes of 2 to 10 stations — is clearly bad."
+#| fig-alt: "A grid of tiles with minimum node size on the horizontal axis at values 2, 5, 10, 20, 40 and 80, and tree depth on the vertical axis at 2, 3, 4, 6, 8 and 12 running upward. Each tile is shaded by cross-validated RMSE and labelled with its value. Most tiles read between 4.48 and 4.73 and are shaded a similar pale green. Five tiles in the top-left corner — depth 8 and 12 at node sizes 2, 5 and 10 — are distinctly darker, reading 5.06, 5.09, 5.16, 5.59 and 5.76. The best tile, 4.48, sits at depth 3 and node size 10 and is outlined in black."
+#| fig-width: 7
+#| fig-height: 4.6
+surface <- collect_metrics(tuned)
+best <- select_best(tuned, metric = "rmse")
+
+ggplot(surface, aes(factor(min_n), factor(tree_depth), fill = mean)) +
+  geom_tile(colour = "white", linewidth = 0.6) +
+  geom_text(aes(label = sprintf("%.2f", mean)), size = 3,
+            colour = if_else(surface$mean > 5, "white", "grey15")) +
+  geom_tile(data = best, fill = NA, colour = "black", linewidth = 1) +
+  scale_fill_viridis_c(option = "mako", direction = -1,
+                       breaks = c(4.5, 5.0, 5.5)) +
+  labs(x = "min_n — stations required to split a node", y = "tree_depth",
+       fill = "CV RMSE",
+       title = "Most of this grid is a tie",
+       subtitle = "Outlined: the best cell. Ten-fold cross-validation on 540 stations.") +
+  theme(panel.grid.major = element_blank())
+```
+
+How many of the thirty-six settings are genuinely distinguishable from the winner?
+
+```{r}
+#| label: one-se
+one_se <- select_by_one_std_err(tuned, metric = "rmse", tree_depth, desc(min_n))
+
+best_row <- collect_metrics(tuned) |> slice_min(mean, n = 1)
+
+c(`settings within one SE of the best` =
+    sum(collect_metrics(tuned)$mean <= best_row$mean + best_row$std_err),
+  `grid points` = nrow(grid))
+```
+
+```{r}
+#| label: one-se-choice
+one_se |> select(tree_depth, min_n)
+```
+
+### Finalising, and spending the test set once
+
+```{r}
+#| label: finalise
+final_fit <- tree_workflow |>
+  finalize_workflow(best) |>
+  last_fit(split, metrics = metric_set(rmse, rsq, mae))
+
+collect_metrics(final_fit) |>
+  select(.metric, .estimate) |>
+  mutate(.estimate = round(.estimate, 4))
+```
+
+`last_fit()` is the only function in this section that touches the test set. It refits the chosen
+workflow on the whole training set and scores it on the test set, once. Everything before it used
+cross-validation.
+
+### How reliable is the choice?
+
+The CV surface picks depth 3 and `min_n` 10. To see whether that is a finding, we repeat the
+selection with a single validation split — the simpler procedure — forty times, each time with a
+different random split of the same training data.
+
+```{r}
+#| label: instability
+rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+
+set.seed(61)
+winners <- map_dfr(1:40, \(r) {
+  rows <- sample(nrow(train), round(0.75 * nrow(train)))
+  inner_train <- train[rows, ]
+  validation  <- train[-rows, ]
+
+  errors <- pmap_dbl(grid, \(tree_depth, min_n) {
+    fit <- rpart(abundance ~ ., data = inner_train,
+                 control = rpart.control(cp = 0, maxdepth = tree_depth,
+                                         minsplit = min_n,
+                                         minbucket = ceiling(min_n / 3)))
+    rmse_of(validation$abundance, predict(fit, validation))
+  })
+
+  grid[which.min(errors), ] |>
+    mutate(replicate = r, winning_rmse = min(errors))
+})
+
+c(`distinct winning settings` = nrow(distinct(winners, tree_depth, min_n)),
+  `grid points` = nrow(grid))
+```
+
+```{r}
+#| label: instability-detail
+winners |>
+  count(tree_depth, min_n, sort = TRUE) |>
+  slice_head(n = 6)
+```
+
+```{r}
+#| label: instability-spread
+c(lowest_claimed = min(winners$winning_rmse),
+  highest_claimed = max(winners$winning_rmse),
+  sd = sd(winners$winning_rmse)) |>
+  round(3)
+```
+
+```{r}
+#| label: fig-instability
+#| fig-cap: "Which grid cell wins, across forty different single validation splits of the same training data. Sixteen of the thirty-six cells win at least once, spanning the full range of both hyperparameters. The reported score of the winner ranges from 3.36 to 5.53 — a spread of more than two individuals, caused entirely by which stations landed in the validation set."
+#| fig-alt: "Two panels. The left panel is a grid of tiles matching the tuning surface, shaded by how many of forty validation splits chose each cell; sixteen cells are shaded at all, scattered across the whole grid rather than clustered, and the darkest cell was chosen five times. The right panel is a histogram of the winning validation RMSE across the forty splits, spread from 3.4 to 5.5 with a broad peak near 4.4."
+#| fig-width: 8
+#| fig-height: 3.8
+p1 <- winners |>
+  count(tree_depth, min_n) |>
+  right_join(grid, by = c("tree_depth", "min_n")) |>
+  mutate(n = replace_na(n, 0)) |>
+  ggplot(aes(factor(min_n), factor(tree_depth), fill = n)) +
+  geom_tile(colour = "white", linewidth = 0.6) +
+  scale_fill_gradient(low = "#f2f5f7", high = ml_palette[["vermilion"]]) +
+  labs(x = "min_n", y = "tree_depth", fill = "times\nchosen",
+       title = "Where the winner landed") +
+  theme(panel.grid.major = element_blank())
+
+p2 <- ggplot(winners, aes(winning_rmse)) +
+  geom_histogram(bins = 14, fill = ml_palette[["blue"]], colour = "white") +
+  labs(x = "Validation RMSE of the chosen setting", y = "Splits",
+       title = "And what it claimed to score")
+
+p1 + p2
+```
+
+## What the results mean
+
+**Most of the grid is a tie.** The best cross-validated RMSE is 4.482 with a standard error of
+0.187. Nineteen of the thirty-six settings are within one standard error of it. "Depth 3 with
+`min_n` 10 is optimal" is not supportable; what the data supports is "keep the tree shallow, and
+do not let nodes get small".
+
+**A single validation split chooses almost at random.** Forty splits of the same training data
+produced **sixteen different winners**, using every depth from 2 to 8 and every node size from 2
+to 80 — the entire grid range on both axes. The winning setting's own reported RMSE ranged from
+3.36 to 5.53. If you tune with one validation split and report the validation score, you are
+reporting the best of thirty-six noisy numbers and calling it performance.
+
+Cross-validation does not remove this, but it averages ten estimates instead of one, and the
+effect on stability is large. This is the whole argument for *k*-fold, and it is worth the tenfold
+computing cost.
+
+**The 1-SE rule.** When many settings tie, the convention is to take the *simplest* one within one
+standard error of the best rather than the best itself. Here that is depth 2 with `min_n` 20 — a
+tree you could print on a postcard — chosen on the grounds that the more elaborate model's
+advantage is not distinguishable from noise and simpler models generalise more safely. It is a
+convention, not a theorem, and worth applying deliberately rather than by default.
+
+**And tuning bought very little here.** The tuned tree scores 4.463 on the test set. Predicting the
+training mean at every station scores 4.492. Careful ten-fold tuning of a tree over thirty-six
+settings improved on using no predictors at all by 0.6%.
+
+That is not a failure of the procedure. It is the
+[bias–variance page's](bias-variance.qmd) finding arriving in practice: the irreducible noise in
+these counts dwarfs what any model can extract, so the room tuning has to work in is narrow. The
+procedure is still correct, and on a problem with more signal — or with the penalised models of
+[the previous page](regularisation.qmd), where the untuned fit scored 7.41 against 4.64 — the same
+machinery is worth a great deal.
+
+::: {.callout-warning}
+The CV score of the *selected* setting is optimistic as an estimate of that setting's performance,
+because it is the minimum of thirty-six noisy numbers. Here CV said 4.482 and the test set said
+4.463, so the bias is invisible against the noise of one 180-station test set — but it is real,
+and it grows with the size of the grid. This is why a test set held back from tuning is not
+optional, and why [section 7](../07-validation/index.qmd) covers nested resampling for the cases
+where you cannot afford one.
+:::
+
+### Searching a larger space
+
+A regular grid costs the product of its axes. Two hyperparameters at six values each is 36
+settings; four at six values is 1,296, times ten folds. Two standard escapes:
+
+```{r}
+#| label: grids
+#| eval: false
+# Regular grid: every combination. Fine for one or two hyperparameters.
+grid_regular(tree_depth(), min_n(), levels = 6)
+
+# Space-filling: spreads points to cover the space evenly. Much better once
+# you have three or more hyperparameters, at the same computational budget.
+grid_space_filling(
+  trees(range = c(200, 1500)),
+  learn_rate(range = c(-3, -0.5)),
+  tree_depth(range = c(2, 10)),
+  loss_reduction(),
+  size = 40
+)
+```
+
+Space-filling designs win for a reason worth knowing: hyperparameters differ enormously in how
+much they matter, and a regular grid wastes most of its evaluations re-testing the ones that do
+not. Forty well-spread points usually beat a 1,296-point grid on the same budget.
+
+## Where this breaks down
+
+**Tuning on cross-validation, then reporting the cross-validation score, is circular.** The
+resampling was used to choose; it can no longer be used to estimate. The fix is a held-out test
+set, as above, or **nested resampling** — an inner loop that tunes and an outer loop that
+estimates — which [section 7](../07-validation/index.qmd) covers.
+
+**Every preprocessing step must go inside the resampling.** Imputing, centring, selecting
+variables or balancing classes on the whole training set before cross-validating leaks
+information from each held-out fold into the model that will score it. `recipe()` inside a
+`workflow()` exists precisely to prevent this, and it is why
+[section 2](../02-marine-data/information-leakage.qmd) insisted on recipes over `mutate()`.
+
+**Random k-fold is wrong for this dataset.** These 720 stations come from 160 repeatedly visited
+sites, so ordinary `vfold_cv()` puts visits to the same site in both the training and the held-out
+fold. The tuning above is therefore optimistic in a way this page cannot fix — `group_vfold_cv()`
+and `spatial_block_cv()` can, and [section 7](../07-validation/index.qmd) is where they belong.
+
+**A winning hyperparameter is not a scientific result.** Depth 3 beat depth 4 by 0.05 on this
+survey. Nothing follows from that about trees, about this species, or about the next survey. The
+tuned value is a setting, not a finding, and it should be reported as one.
+
+::: {.callout-tip}
+## Key points
+
+- Hyperparameters need data the model was not fitted to. Use cross-validation on the training set,
+  and keep the test set for one final measurement.
+- The tidymodels route is `tune()` → `vfold_cv()` → `tune_grid()` → `select_best()` →
+  `finalize_workflow()` → `last_fit()`. Only the last touches the test set.
+- **The choice is much less certain than it looks.** Nineteen of thirty-six settings were within
+  one standard error of the best, and forty single validation splits picked sixteen different
+  winners spanning the whole grid.
+- Prefer the **simplest setting within one standard error** of the best.
+- Tuning is worth what the signal allows: 0.6% over the mean for this tree, against a 37%
+  improvement for penalised regression on the previous page.
+
+:::
+
+## Try it yourself
+
+1. Re-run the instability experiment using `vfold_cv(v = 5)` inside each replicate instead of a
+   single validation split. How many distinct winners now, and how much does the spread of winning
+   scores narrow?
+2. Swap `vfold_cv()` for `group_vfold_cv(group = site_id)` — you will need to keep `site_id` in the
+   data. Does the chosen tree get simpler or more complex, and why should honest resampling push it
+   in that direction?
