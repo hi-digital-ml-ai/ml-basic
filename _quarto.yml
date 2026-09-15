@@ -95,8 +95,21 @@ website:
                 text: "Regularisation"
               - href: chapters/05-generalisation/hyperparameter-selection.qmd
                 text: "Hyperparameter selection"
-          - href: chapters/06-assumptions-limitations/index.qmd
-            text: "6 · Assumptions & limitations"
+          - section: "6 · Assumptions & limitations"
+            href: chapters/06-assumptions-limitations/index.qmd
+            contents:
+              - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
+                text: "Independence of observations"
+              - href: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+                text: "Linearity and nonlinearity"
+              - href: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+                text: "Distributional assumptions"
+              - href: chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd
+                text: "Spatial and temporal dependence"
+              - href: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+                text: "Uneven sampling and extrapolation"
+              - href: chapters/06-assumptions-limitations/class-imbalance.qmd
+                text: "Class imbalance"
           - href: chapters/07-validation/index.qmd
             text: "7 · Validation"
           - href: chapters/08-unsupervised-learning/index.qmd

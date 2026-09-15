@@ -4,6 +4,12 @@
 *_files/
 *_cache/
 
+# Stray output from rendering a single .qmd outside the project context.
+# Real site output goes to _site/ only; these are never wanted in the repo.
+/site_libs/
+chapters/**/*.html
+chapters/**/index-listing.json
+
 # R
 .Rproj.user/
 .Rhistory

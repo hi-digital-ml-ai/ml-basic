@@ -103,7 +103,8 @@ Rules for using it are in `data/README.md`: join on `station_id`, never pass it 
 never quote a score against it without saying no real study could compute one.
 
 ## 6. Model assumptions and limitations
-`chapters/06-assumptions-limitations/` · categories: `assumptions`
+`chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
+`class-imbalance`
 
 - Independence of observations
 - Linearity and nonlinearity
@@ -113,6 +114,33 @@ never quote a score against it without saying no real study could compute one.
 - Class imbalance
 - When standard validation methods are inappropriate
 - Limitations of predictions outside the observed data range
+
+**Written as six pages, merging two pairs of subtopics:**
+
+- "When standard validation methods are inappropriate" is folded into
+  `spatial-and-temporal-dependence.qmd`, which is where the demonstration lives, with the
+  remedy pointed forward to §7.
+- "Limitations of predictions outside the observed data range" is folded into
+  `sampling-and-extrapolation.qmd` — uneven coverage and extrapolation are the same problem
+  at two severities and read badly when separated.
+
+### Two threads that must be kept if these pages are edited
+
+**RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
+Different folds or splits hold different distributions of the response, so a "harder" scheme
+can report a *lower* RMSE. Use R², or the same test set for both. §3's leakage page found it
+first; §6 repeats it deliberately.
+
+**A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
+the GAM has the best AIC of three models by a wide margin and the most wrong depth response,
+because depth is confounded with temperature, chlorophyll and an unmodelled spatial field.
+Flexibility buys shape, not identifiability.
+
+### Uses of `coastal-survey-truth.csv`
+
+`linearity-and-nonlinearity.qmd` compares fitted smooths against the true generating curves,
+and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
+than observed counts. Both say in the text that no real study could do this.
 
 ## 7. Model validation and performance assessment
 `chapters/07-validation/` · categories: `validation`
