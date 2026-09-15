@@ -140,8 +140,21 @@ website:
                 text: "Dimensionality reduction in practice"
               - href: chapters/08-unsupervised-learning/interpreting-patterns.qmd
                 text: "Interpreting patterns, and their limits"
-          - href: chapters/09-neural-networks/index.qmd
-            text: "9 · Neural networks"
+          - section: "9 · Neural networks"
+            href: chapters/09-neural-networks/index.qmd
+            contents:
+              - href: chapters/09-neural-networks/what-a-network-is.qmd
+                text: "Neurons, layers and activations"
+              - href: chapters/09-neural-networks/forward-and-backward.qmd
+                text: "Forward propagation and backpropagation"
+              - href: chapters/09-neural-networks/training-a-network.qmd
+                text: "Training a network"
+              - href: chapters/09-neural-networks/how-much-data.qmd
+                text: "How much data a network needs"
+              - href: chapters/09-neural-networks/autoencoders.qmd
+                text: "Autoencoders"
+              - href: chapters/09-neural-networks/when-to-use-one.qmd
+                text: "When a network is the right tool"
           - href: chapters/10-interpretation/index.qmd
             text: "10 · Interpretation & responsible use"
       - section: "More"

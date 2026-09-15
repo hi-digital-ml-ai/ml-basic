@@ -1,0 +1,288 @@
+---
+title: "Neurons, layers and activations"
+description: "A neuron is a regression you already know. What a hidden layer adds, why the activation function is the whole trick, and how to count the parameters you are about to fit."
+order: 1
+categories: [neural-networks]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(nnet)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+Neural networks arrive with more mystique than any other method in this course, and the
+mystique gets in the way twice. It makes people reach for one when a linear model would
+do, and it makes people who could easily understand the mechanics assume they cannot.
+
+The mechanics are unremarkable. A neuron is a weighted sum of its inputs passed through
+one fixed function. A layer is several neurons reading the same inputs. A network is a
+couple of layers stacked. Everything that makes deep learning hard in practice —
+training, tuning, the compute — sits on top of that, and none of it changes what the
+object is.
+
+This page builds one up from a regression you have already fitted.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea: one neuron is a regression
+
+A **neuron** takes the inputs $x_1, \dots, x_p$, multiplies each by a **weight**, adds a
+constant called the **bias**, and passes the total through an **activation function** $g$:
+
+$$h = g(w_1 x_1 + w_2 x_2 + \dots + w_p x_p + b)$$
+
+Read that without the word "neuron" and it is a generalised linear model: the weights are
+regression coefficients, the bias is the intercept, and the activation is the inverse link
+function. If $g$ is the identity, you have linear regression. If $g$ is the logistic
+function, you have logistic regression.
+
+That is not an analogy. It is the same arithmetic, and we can check it.
+
+```{r}
+#| label: one-neuron-linear
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  transmute(y     = log1p(abundance),
+            depth = as.numeric(scale(depth_m)),
+            temp  = as.numeric(scale(temperature_c)),
+            chl   = as.numeric(scale(log1p(chlorophyll_mg_m3)))) |>
+  drop_na()
+
+linear <- lm(y ~ depth + temp + chl, data = d)
+
+set.seed(1)
+one_neuron <- nnet(y ~ depth + temp + chl, data = d,
+                   size = 0, skip = TRUE, linout = TRUE,
+                   maxit = 2000, trace = FALSE)
+
+tibble(term = names(coef(linear)),
+       `lm()` = round(coef(linear), 4),
+       `one neuron` = round(as.numeric(coef(one_neuron)), 4))
+```
+
+`size = 0, skip = TRUE` asks `nnet` for a network with no hidden layer — inputs wired
+straight to the output — and `linout = TRUE` makes the output activation the identity. The
+two fits agree to eight decimal places. Swap `linout` for `entropy = TRUE` and the same
+call reproduces `glm(family = binomial)` to four.
+
+So a neuron on its own buys you nothing. The interesting question is what a *layer* of
+them buys.
+
+## What a hidden layer adds
+
+A **hidden layer** is a set of neurons that read the inputs and whose outputs are read by
+the next layer rather than by you. They are hidden in the sense that nothing outside the
+model ever sees their values.
+
+![A network with three inputs, one hidden layer of four units and one output. Every arrow
+carries a weight; every circle in the hidden and output layers also has a bias. The
+highlighted arrow is $w_{21}$, the weight from temperature into the first hidden
+unit.](img/network-schematic.svg){#fig-schematic fig-alt="A diagram in three columns. On
+the left, three circles labelled depth, temp and chl. In the middle, four circles labelled
+h1 to h4. On the right, a single circle labelled y-hat. Arrows run from every input circle
+to every hidden circle, and from every hidden circle to the output circle. One arrow, from
+temp to h1, is drawn in blue and labelled w21. A note below reads: each hidden unit
+computes h equals g of w1 times depth plus w2 times temp plus w3 times chl plus b."}
+
+Here is the part that matters, and it is worth stating bluntly because it is usually
+buried. **If the activation function $g$ is linear, the whole network is linear.** A
+weighted sum of weighted sums is a weighted sum; stacking a hundred layers of them gets
+you a straight line with a hundred times as many parameters. The nonlinearity of $g$ is
+not a detail of implementation. It is the only reason a network can do anything a linear
+model cannot.
+
+```{r}
+#| label: fig-activations
+#| fig-cap: "Four activation functions. The identity is what makes a network collapse to a linear model. The other three bend, each in its own way, and that bend is the entire source of a network's flexibility."
+#| fig-alt: "Four small line plots side by side over an input range of minus four to four. Identity is a straight diagonal line. Logistic is an S-curve rising from zero to one, centred at zero. Tanh is a similar S-curve rising from minus one to one. ReLU is flat at zero for negative inputs then rises as a straight diagonal for positive ones, giving a sharp corner at the origin."
+#| fig-width: 8.5
+#| fig-height: 2.8
+grid_z <- seq(-4, 4, length.out = 400)
+
+tibble(z = rep(grid_z, 4),
+       value = c(grid_z, plogis(grid_z), tanh(grid_z), pmax(grid_z, 0)),
+       activation = rep(c("identity", "logistic", "tanh", "ReLU"), each = length(grid_z))) |>
+  mutate(activation = fct_inorder(activation)) |>
+  ggplot(aes(z, value)) +
+  geom_hline(yintercept = 0, colour = "#c9d1d7", linewidth = 0.4) +
+  geom_line(colour = ml_palette[["blue"]], linewidth = 0.9) +
+  facet_wrap(~ activation, nrow = 1, scales = "free_y") +
+  labs(x = "weighted sum entering the unit", y = NULL)
+```
+
+The logistic and tanh curves are S-shaped: flat, then rising, then flat again. ReLU
+(*rectified linear unit*) is flat below zero and a straight line above it. All three are
+just bends — none of them is doing anything clever on its own.
+
+## Worked example: two bends make a hump
+
+Abundance in this survey peaks at an intermediate temperature and falls away either side.
+A straight line cannot represent a hump. Let us see how much hidden layer it takes.
+
+```{r}
+#| label: temp-sweep
+temp_data <- survey |>
+  transmute(y = log1p(abundance), temp = as.numeric(scale(temperature_c))) |>
+  drop_na()
+
+fit_units <- function(h) {
+  set.seed(9)
+  if (h == 0) {
+    nnet(y ~ temp, data = temp_data, size = 0, skip = TRUE, linout = TRUE,
+         maxit = 2000, trace = FALSE)
+  } else {
+    nnet(y ~ temp, data = temp_data, size = h, linout = TRUE, decay = 1e-4,
+         maxit = 2000, trace = FALSE)
+  }
+}
+
+sweep <- map_dfr(c(0, 1, 2, 3, 5, 10), \(h) {
+  f <- fit_units(h)
+  tibble(`hidden units` = h,
+         weights = length(coef(f)),
+         `training RMSE` = round(sqrt(mean((temp_data$y - as.numeric(predict(f, temp_data)))^2)), 4))
+})
+sweep
+```
+
+Nothing happens until the second hidden unit, and then everything happens at once. Zero
+units is a straight line, RMSE 0.877 — and note in @fig-hump that the best straight line
+through a hump *rises*, because the cold tail of this survey is lower than the warm one.
+A linear fit here does not just miss the optimum, it reports the wrong sign. One unit is a
+single S-curve — still monotone, still unable to come back down — and it improves the fit
+by 0.016. Two units drop the RMSE to 0.776, and units three, five and ten add essentially
+nothing after that.
+
+Two is the magic number because **two opposing S-curves subtract to make a bump**. One
+unit switches on as temperature rises; the second switches on a little later with a
+negative weight into the output, pulling the curve back down. That is the whole mechanism,
+and it generalises: a hidden layer builds arbitrary shapes by adding and subtracting
+shifted copies of one bend.
+
+```{r}
+#| label: fig-hump
+#| fig-cap: "Fitted temperature response with zero, one, two and five hidden units, over the binned station means. A straight line cannot turn over; one S-curve cannot come back down; two can. The true optimum in the simulation is 9 °C."
+#| fig-alt: "A scatter of pale binned mean points forming a hump: about 0.29 at three and a half degrees, rising to a peak of about 1.63 near eight and a half degrees, then falling to about 0.66 at fourteen and a half. Four fitted lines are overlaid. The zero-unit line is straight and rises gently from about 1.03 on the left to about 1.39 on the right, passing through the hump without following it. The one-unit line is nearly flat at about 1.27 across most of the range, then bends down after about eleven degrees to about 0.52 at the right edge. The two-unit and five-unit lines lie almost on top of each other: both climb steeply from near zero at the left edge to a peak of about 1.67 just below nine degrees, then fall away to about 0.4 at the right."
+#| fig-width: 7.5
+#| fig-height: 4.6
+temp_mean <- mean(survey$temperature_c, na.rm = TRUE)
+temp_sd   <- sd(survey$temperature_c, na.rm = TRUE)
+
+grid <- tibble(temp = seq(min(temp_data$temp), max(temp_data$temp), length.out = 300))
+
+curves <- map_dfr(c(0, 1, 2, 5), \(h) {
+  grid |> mutate(y = as.numeric(predict(fit_units(h), grid)),
+                 `hidden units` = factor(h))
+}) |>
+  mutate(temperature_c = temp * temp_sd + temp_mean)
+
+binned <- survey |>
+  drop_na(temperature_c) |>
+  mutate(bin = cut(temperature_c, breaks = seq(2, 18, by = 1))) |>
+  summarise(temperature_c = mean(temperature_c), y = mean(log1p(abundance)),
+            n = n(), .by = bin) |>
+  filter(n >= 10)
+
+ggplot(curves, aes(temperature_c, y)) +
+  geom_point(data = binned, colour = "#9aa5ad", size = 2.4) +
+  geom_vline(xintercept = 9, linetype = "dashed", colour = "#c9d1d7") +
+  geom_line(aes(colour = `hidden units`), linewidth = 0.9) +
+  annotate("text", x = 9.25, y = 0.25, label = "true optimum", hjust = 0,
+           size = 3.2, colour = "#77818a") +
+  labs(x = "temperature (°C)", y = "mean log1p(abundance)", colour = "hidden units")
+```
+
+## What the results mean
+
+Two hidden units, seven weights, and the curve lands its peak at 8.7 °C against a true
+optimum of 9.0 °C — recovered from the data with no one telling the model that the
+relationship was humped.
+
+That is the real selling point of a network, and it is worth being precise about it. A
+polynomial term or a spline would have found the same hump, faster and with a standard
+error attached. What the network did *not* need was for you to know in advance which
+variable to bend and how. On one predictor that is a small convenience. On forty, where
+the shape might be an interaction between three of them, it stops being small.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+With $H$ hidden units, weights $W \in \mathbb{R}^{p \times H}$, hidden biases
+$b \in \mathbb{R}^{H}$, output weights $v \in \mathbb{R}^{H}$ and output bias $c$, the
+network computes
+
+$$\hat y = v^{\top} g(W^{\top} x + b) + c$$
+
+where $g$ is applied elementwise. If $g$ is the identity this is
+$\hat y = (Wv)^{\top} x + (v^{\top}b + c)$ — a linear model with coefficients $Wv$, no
+matter how large $H$ is.
+:::
+
+## How many parameters is that?
+
+Every arrow in @fig-schematic is a number to be estimated, and the count grows faster than
+people expect. For $p$ inputs, one hidden layer of $H$ units and one output:
+
+$$\text{weights} = \underbrace{(p + 1)H}_{\text{into the hidden layer}} + \underbrace{H + 1}_{\text{out of it}}$$
+
+```{r}
+#| label: parameter-count
+tibble(`hidden units` = c(1, 2, 4, 8, 16, 32)) |>
+  mutate(`weights (12 inputs)` = 13 * `hidden units` + `hidden units` + 1,
+         `rows per weight, n = 720` = round(720 / `weights (12 inputs)`, 1))
+```
+
+The survey has 12 predictor columns once `substrate` and `season` are dummy-coded. At 16
+hidden units that is 225 weights for 720 stations — three rows per parameter. A linear
+model on the same columns fits 13. There is no rule that says three rows per parameter is
+too few, but you should know the number before you fit, not after the result looks odd.
+
+## Where this breaks down
+
+**The weights do not mean anything individually.** In a linear model, the coefficient on
+depth is the effect of depth. In a network, depth's contribution is spread across $H$
+weights that interact through the activations, and two networks fitted to the same data
+reach different weights with the same predictions. There is nothing to report. §10 covers
+[what you can extract instead](../10-interpretation/feature-importance.qmd).
+
+**Nothing is stopping the flexibility.** The hump on this page was fitted with
+`decay = 1e-4`, a regularisation penalty, precisely because an unpenalised ten-unit
+network will happily fit the noise between the station bins. Everything §5 said about
+[model complexity](../05-generalisation/model-complexity.qmd) applies with more force here,
+not less.
+
+**It is a model of the inputs you gave it.** A network reads a table of numbers. It has no
+idea that two of your columns are longitude and latitude, or that your rows are a time
+series. The architectures that exploit that structure — convolutional, recurrent — are
+about *wiring*, not about neurons, and they are outside this course.
+
+::: {.callout-tip}
+## Key points
+
+- A single neuron with an identity activation **is** linear regression; with a logistic
+  activation it **is** logistic regression. We reproduced both to four decimal places or better.
+- A **hidden layer** is several neurons reading the same inputs. Their values are never
+  reported and have no units.
+- **The activation function is the whole trick.** With a linear activation, any number of
+  layers collapses to one linear model.
+- Two hidden units — seven weights — were enough to recover a humped temperature response
+  with its peak at 8.7 °C against a true 9.0 °C. One was not enough, and five added
+  nothing.
+- Count your parameters before you fit. Sixteen hidden units on this survey is 225 weights
+  for 720 rows.
+:::
+
+## Try it yourself
+
+1. Refit the temperature sweep with `decay = 0`. How much does the ten-unit training RMSE
+   improve, and what happens to the shape of the fitted curve between the binned points?
+2. Replace `log1p(abundance)` with the binary `present` column and `linout = TRUE` with
+   `entropy = TRUE`. Does two hidden units still capture the temperature optimum?
