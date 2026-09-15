@@ -58,3 +58,34 @@ load_coastal_survey_raw <- function() {
       .default          = readr::col_character()
     ))
 }
+
+#' The survey after the section 2 cleaning.
+#'
+#' Reads the raw export and applies exactly the decisions argued for in section 2:
+#' drop duplicate rows, turn -999 sentinels into NA, correct the ten detectable
+#' decimal-point errors in depth, and collapse the twelve substrate spellings into
+#' four levels. Chlorophyll is left with its gaps — imputation belongs inside the
+#' resampling, not here.
+#'
+#' Sections 3 onwards use this, so their pages can start from the modelling rather
+#' than repeating fifteen lines of cleaning.
+load_coastal_survey_clean <- function() {
+  load_coastal_survey_raw() |>
+    dplyr::distinct() |>
+    dplyr::mutate(
+      salinity_psu  = dplyr::na_if(salinity_psu, -999),
+      temperature_c = dplyr::na_if(temperature_c, -999),
+      depth_m       = dplyr::if_else(depth_m > 250, depth_m / 10, depth_m),
+      substrate     = factor(tolower(trimws(substrate))),
+      substrate     = forcats::fct_collapse(
+        substrate,
+        sand   = c("sand", "sandy"),
+        mud    = c("mud", "muddy"),
+        gravel = "gravel",
+        rock   = c("rock", "rocky")
+      ),
+      season       = factor(season, levels = c("spring", "summer", "autumn", "winter")),
+      present      = factor(present, levels = c("yes", "no")),
+      rare_species = factor(rare_species, levels = c("yes", "no"))
+    )
+}
