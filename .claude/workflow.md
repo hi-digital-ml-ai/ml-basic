@@ -108,11 +108,23 @@ renv::restore()   # or renv::install(<the rest>)
 | `vip`, `DALEX`, `DALEXtra`, `pdp` | §10 feature importance and interpretation |
 | `patchwork`, `ggrepel`, `gt` | figures and tables throughout |
 
-**Not installed: `torch` / `brulee` / `keras3`.** §9 can teach neurons, layers and
-backpropagation with `nnet` through the parsnip `mlp` engine, which costs nothing.
-A real deep-learning demonstration needs libtorch (a ~2 GB runtime download beyond
-the R package) or a Python/TensorFlow stack, and it would make CI restores heavy.
-Decide that when §9 is actually written.
+**Not installed: `torch` / `brulee` / `keras3`. Settled when §9 was written: not needed.**
+Section 9 teaches neurons, layers, forward propagation and backpropagation with about
+forty lines of base R — including a finite-difference gradient check — and uses `nnet`
+through the parsnip `mlp` engine for everything else. Nothing in the section needs a
+second layer, a GPU, or an autodiff framework.
+
+Two consequences to keep in mind before adding one:
+
+- `nnet` optimises with **BFGS**, not gradient descent, and parsnip maps `epochs` to
+  `maxit`. There is no learning rate to tune. §9 says so explicitly in two places; a
+  `torch`- or `keras`-backed engine would change that and those passages would need
+  editing.
+- A real deep-learning demonstration (convolutional or recurrent architectures on imagery
+  or acoustics) needs libtorch — a ~2 GB runtime download beyond the R package — or a
+  Python/TensorFlow stack, and would make CI restores heavy. §9's
+  `when-to-use-one.qmd` explains why those architectures matter and deliberately stops
+  short of running one.
 
 ## Freeze
 
