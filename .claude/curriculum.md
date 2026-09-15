@@ -56,6 +56,20 @@ page. It is not in the original outline and it is a genuine marine trap.
 - Maximum a posteriori estimation (MAP)
 - Basic interpretation of model optimisation
 
+**Written, one page per subtopic, in the order listed.** The last subtopic became
+`reading-a-fit.qmd`, framed as a diagnostic page rather than a conceptual one, because
+"interpreting optimisation" is only useful as a set of things to check.
+
+Three deliberate spillovers outside the section's own subject:
+
+- Gradient descent carries the *real* justification for §2's scaling advice (a factor of
+  about ninety in iterations on this data). §2 could only assert it.
+- MAP derives ridge regression, which §5 will then present as a technique. The two pages
+  must stay consistent: §5 should refer back rather than re-deriving.
+- `reading-a-fit.qmd` uses §2's leaked `catch_weight_kg` column to produce separation, and
+  measures random-forest run-to-run noise (0.037 RMSE) as the resolution limit for §3's
+  ten-model comparison.
+
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`
 

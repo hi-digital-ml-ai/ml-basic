@@ -65,8 +65,21 @@ website:
                 text: "Trees, forests and boosting"
               - href: chapters/03-supervised-learning/choosing-a-method.qmd
                 text: "Choosing a method"
-          - href: chapters/04-how-algorithms-learn/index.qmd
-            text: "4 · How algorithms learn"
+          - section: "4 · How algorithms learn"
+            href: chapters/04-how-algorithms-learn/index.qmd
+            contents:
+              - href: chapters/04-how-algorithms-learn/loss-functions.qmd
+                text: "Loss and objective functions"
+              - href: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+                text: "Parameter estimation"
+              - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
+                text: "Gradient descent"
+              - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
+                text: "Maximum likelihood"
+              - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
+                text: "MAP estimation and priors"
+              - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
+                text: "Reading a fit"
           - href: chapters/05-generalisation/index.qmd
             text: "5 · Generalisation"
           - href: chapters/06-assumptions-limitations/index.qmd
