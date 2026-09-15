@@ -110,8 +110,21 @@ website:
                 text: "Uneven sampling and extrapolation"
               - href: chapters/06-assumptions-limitations/class-imbalance.qmd
                 text: "Class imbalance"
-          - href: chapters/07-validation/index.qmd
-            text: "7 · Validation"
+          - section: "7 · Validation"
+            href: chapters/07-validation/index.qmd
+            contents:
+              - href: chapters/07-validation/cross-validation.qmd
+                text: "Cross-validation"
+              - href: chapters/07-validation/spatial-and-temporal-cv.qmd
+                text: "Spatial and temporal cross-validation"
+              - href: chapters/07-validation/regression-metrics.qmd
+                text: "Regression performance measures"
+              - href: chapters/07-validation/classification-metrics.qmd
+                text: "Classification measures and the confusion matrix"
+              - href: chapters/07-validation/uncertainty-and-stability.qmd
+                text: "Uncertainty and stability"
+              - href: chapters/07-validation/choosing-a-metric.qmd
+                text: "Choosing measures that match the objective"
           - href: chapters/08-unsupervised-learning/index.qmd
             text: "8 · Unsupervised learning"
           - href: chapters/09-neural-networks/index.qmd

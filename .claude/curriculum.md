@@ -143,7 +143,7 @@ and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_m
 than observed counts. Both say in the text that no real study could do this.
 
 ## 7. Model validation and performance assessment
-`chapters/07-validation/` · categories: `validation`
+`chapters/07-validation/` · categories: `validation`, `metrics`, `uncertainty`
 
 - Cross-validation
 - Spatial and temporal cross-validation
@@ -152,6 +152,48 @@ than observed counts. Both say in the text that no real study could do this.
 - Confusion matrix, precision, recall, and related measures
 - Uncertainty and stability of model results
 - Selecting evaluation measures appropriate to the scientific objective
+
+**Written as six pages, merging one pair of subtopics:** "classification performance measures"
+and "confusion matrix, precision, recall" are the same material and read badly apart, so they
+are one page, `classification-metrics.qmd`, organised around the matrix as the object and every
+threshold-dependent measure as a ratio of its four cells.
+
+### Two conventions that hold the section together
+
+Both were adopted to fix problems §6 ran into, and editing either page must keep them.
+
+**Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
+each row exactly once, so pooling gives one metric over identical rows for every scheme. This is
+the proper answer to §6's "RMSE is not comparable across resampling schemes" thread, and
+`spatial-and-temporal-cv.qmd` depends on it — without pooling, its five-scheme table would not
+be a comparison.
+
+**Use the same resamples object for every model compared.** `uncertainty-and-stability.qmd`
+quantifies why: unpaired, the GLM-versus-forest interval is 1.54 wide and covers zero; paired on
+identical folds it is 0.33 wide.
+
+### Three findings the pages are built on
+
+- **Selection optimism.** `cross-validation.qmd` searches 100 candidate predictor sets drawn
+  from 8 real and 20 pure-noise columns. The winner contains three noise columns; nested CV puts
+  the honest RMSE 0.38 above what the search reported, and a fixed no-search model beats the
+  searched one on all five outer folds. About 0.04 of that gap is bookkeeping (five large folds
+  rather than ten small ones), and the page says so.
+- **The score is a function of fold separation.** `spatial-and-temporal-cv.qmd` measures the
+  median distance from each held-out station to its nearest training station and plots R²
+  against it. Blocked CV is not "more correct" — it is a harder question, chosen deliberately.
+  Leave-one-year-out sits off the trend because it separates in time, and `survey_year` has no
+  effect in the generator, so the diagnostic correctly reports nothing there.
+- **Measures disagree, informatively.** `regression-metrics.qmd` and `choosing-a-metric.qmd` are
+  a pair: the first shows MAE and RMSE picking different winners because the log-transformed
+  model under-predicts the survey total by 31%, the second shows that same model *winning* the
+  fifty-station shortlist. Keep both, and keep the mean-only row — it scores a perfect 1.000 on
+  the total and has no skill, which is the argument against aggregate-only validation.
+
+### Aimed at §10
+
+`choosing-a-metric.qmd` ends on observation bias: a model that reproduces biased survey data
+reproduces the bias, and no validation scheme detects it. That is the handover to §10.
 
 ## 8. Unsupervised learning
 `chapters/08-unsupervised-learning/` · categories: `unsupervised`
@@ -187,6 +229,8 @@ than observed counts. Both say in the text that no real study could do this.
 Repeat these deliberately rather than treating them as one section's property:
 
 - **Leakage** (§2) reappears in every resampling example (§7).
+- **Calibration** (§7) is what makes the cost-based threshold rule $k/(1+k)$ valid, and is the
+  property §6's rebalancing destroys.
 - **Spatial/temporal dependence** (§6) drives the choice of resampling scheme (§7)
   and is the most common mistake in marine applications.
 - **Gradient descent** (§4) is reused directly by neural networks (§9).
