@@ -1,0 +1,321 @@
+---
+title: "Spatial and temporal dependence"
+description: "Nearby stations are not independent, which makes ordinary cross-validation flattering — and makes adding coordinates to a model look better than it is."
+order: 4
+categories: [assumptions, spatial-temporal]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+library(sf)
+library(spatialsample)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(604)
+```
+
+## Why this matters
+
+Everything within a few kilometres of a station tends to resemble it. That is not a nuisance —
+it is the structure of the ocean, and it is why oceanography works at all. It is also why the
+standard machine-learning workflow quietly breaks on marine data.
+
+Ordinary cross-validation puts a station in the held-out fold and its neighbours in the training
+fold. The model does not need to have learned anything transferable to predict it; it needs only
+to have memorised the neighbourhood. The resulting score describes performance at *unsampled
+stations between sampled ones*, which is a genuine use case, but it is almost never the one the
+paper claims — mapping to unsurveyed areas, or forecasting a future year.
+
+[The independence page](independence-of-observations.qmd) dealt with repeat visits. This is the
+harder version: even if every row were a different site, the sites are not independent of one
+another.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+Tobler's first law — near things are more related than distant things — is the working assumption
+of every marine survey design, and the exact opposite of the independence assumption the models
+make.
+
+Two diagnostics measure it, both applied to a **fitted model's residuals** rather than to the raw
+response. Structure in the response is expected, since the covariates are themselves spatially
+structured. Structure left over *after* the covariates have done their work is what violates the
+assumption.
+
+- **Moran's I** gives one number: positive means nearby residuals resemble each other, zero means
+  no spatial pattern.
+- The **variogram** shows how residual dissimilarity grows with separation. Its shape gives you
+  the *nugget* (variation at zero distance — pure noise), the *sill* (total variation), and the
+  **range**, the distance beyond which points are effectively independent. The range is the number
+  that should set your block size.
+
+## Worked example
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(site_id, longitude, latitude, abundance, depth_m, temperature_c,
+         chlorophyll_mg_m3, salinity_psu, substrate, season) |>
+  drop_na()
+
+environmental <- glm(
+  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
+    log1p(chlorophyll_mg_m3) + substrate,
+  data = d, family = poisson
+)
+
+d$residual <- residuals(environmental, "pearson")
+```
+
+### Is there spatial structure left over?
+
+```{r}
+#| label: moran
+coords <- as.matrix(d[, c("longitude", "latitude")])
+distances <- as.matrix(dist(coords))
+
+# Inverse-distance weights among stations within 0.3 degrees of each other.
+weights <- 1 / distances
+diag(weights) <- 0
+weights[distances > 0.3] <- 0
+
+morans_i <- function(x) {
+  z <- x - mean(x)
+  (length(x) / sum(weights)) * sum(weights * outer(z, z)) / sum(z^2)
+}
+
+observed_i <- morans_i(d$residual)
+
+set.seed(2)
+permuted <- map_dbl(1:499, \(i) morans_i(sample(d$residual)))
+
+c(`Moran's I`            = observed_i,
+  `expected under no structure` = -1 / (nrow(d) - 1),
+  `permutation p`        = (sum(permuted >= observed_i) + 1) / 500) |>
+  round(4)
+```
+
+Positive, and far outside what reshuffling the same residuals produces — the permutation
+standard deviation is 0.016, so the observed value sits about six standard deviations above
+chance. The environmental covariates have not absorbed the spatial structure — which is exactly right, because the simulation adds a smooth
+spatial field that no covariate represents.
+
+```{r}
+#| label: fig-map
+#| fig-cap: "Mean Pearson residual at each site visited three or more times. Orange is where the environmental model under-predicts, blue where it over-predicts; the scale is clipped at ±1.5 so the middle of the range is visible. There is a mild tendency for like colours to sit together — orange along the western edge, blue through the south — but it is not obvious, and that is the point of the figure: a Moran's I of 0.093 is real, matters for cross-validation, and is not something you can reliably see."
+#| fig-alt: "A map with longitude from 140 to 142.5 on the horizontal axis and latitude from 41 to 43 on the vertical, showing 137 points sized by number of visits and coloured on a blue-to-orange diverging scale by mean residual, with most points pale. The points are spread evenly across the rectangle and the colours look close to randomly mixed at first glance; on inspection there is a concentration of orange along the left-hand edge around longitude 140 to 140.6, and a group of blue points across the southern strip below latitude 41.5."
+#| fig-width: 6.5
+#| fig-height: 5
+site_residuals <- d |>
+  summarise(longitude = mean(longitude), latitude = mean(latitude),
+            residual = mean(residual), visits = n(), .by = site_id) |>
+  filter(visits >= 3)
+
+ggplot(site_residuals, aes(longitude, latitude, colour = residual, size = visits)) +
+  geom_point(alpha = 0.85) +
+  scale_colour_gradient2(low = ml_palette[["blue"]], mid = "grey88",
+                         high = ml_palette[["orange"]], midpoint = 0,
+                         limits = c(-1.5, 1.5), oob = scales::squish,
+                         breaks = c(-1.5, 0, 1.5)) +
+  scale_size_continuous(range = c(1.5, 4.5), guide = "none") +
+  coord_quickmap() +
+  labs(x = "Longitude", y = "Latitude", colour = "Mean\nresidual",
+       title = "Leftover error, placed on the shelf",
+       subtitle = "Sites with three or more visits; point size is number of visits")
+```
+
+```{r}
+#| label: fig-variogram
+#| fig-cap: "Empirical variogram of the site-level residuals. Semivariance rises from 0.66 at the shortest separations to about 0.81 beyond one degree, against a total residual variance of 0.79. Roughly a fifth of the residual variation is therefore spatially structured, and it flattens out — reaches its range — at about 0.8 degrees."
+#| fig-alt: "A scatter of eleven points with distance between sites in degrees from 0.16 to 1.15 on the horizontal axis and semivariance from 0.55 to 0.9 on the vertical. The points rise from about 0.66 at the left, with some scatter, to about 0.81 at the right, flattening out beyond 0.8 degrees. A dashed horizontal line at 0.79 marks the total variance of the site residuals, which the points approach at the largest separations."
+#| fig-width: 7
+#| fig-height: 4
+site_dist <- as.matrix(dist(as.matrix(site_residuals[, c("longitude", "latitude")])))
+r <- site_residuals$residual
+edges <- seq(0, 1.2, by = 0.1)
+
+variogram <- map_dfr(seq_len(length(edges) - 1), \(k) {
+  chosen <- site_dist > edges[k] & site_dist <= edges[k + 1] & upper.tri(site_dist)
+  pairs <- which(chosen, arr.ind = TRUE)
+  if (nrow(pairs) < 30) return(NULL)
+  tibble(distance = mean(site_dist[chosen]),
+         semivariance = 0.5 * mean((r[pairs[, 1]] - r[pairs[, 2]])^2),
+         pairs = nrow(pairs))
+})
+
+ggplot(variogram, aes(distance, semivariance)) +
+  geom_hline(yintercept = var(r), linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_point(size = 2.6, colour = ml_palette[["blue"]]) +
+  geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
+              colour = ml_palette[["blue"]], linewidth = 0.6, alpha = 0.5) +
+  labs(x = "Distance between sites (degrees)", y = "Semivariance",
+       title = "How far does a residual's influence reach?",
+       subtitle = "Dashed: total variance of the site residuals")
+```
+
+### What it does to cross-validation
+
+Now the question that matters. We score three models under two resampling schemes: ordinary
+10-fold, and `spatial_block_cv()`, which divides the shelf into a 3 × 3 grid and holds out whole
+blocks.
+
+```{r}
+#| label: cv-comparison
+d_sf <- st_as_sf(d, coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
+
+make_workflow <- function(formula) {
+  workflow() |>
+    add_recipe(recipe(formula, data = d) |> step_impute_median(all_numeric_predictors())) |>
+    add_model(rand_forest(trees = 400, min_n = 5) |>
+                set_engine("ranger") |> set_mode("regression"))
+}
+
+candidates <- list(
+  "Coordinates only" = abundance ~ longitude + latitude,
+  "Environment only" = abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+    salinity_psu + substrate + season,
+  "Environment + coordinates" = abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+    salinity_psu + substrate + season + longitude + latitude
+)
+
+comparison <- map_dfr(names(candidates), \(name) {
+  wf <- make_workflow(candidates[[name]])
+  set.seed(604)
+  random <- fit_resamples(wf, vfold_cv(d, v = 10), metrics = metric_set(rsq, rmse))
+  set.seed(604)
+  blocked <- fit_resamples(wf, spatial_block_cv(d_sf, v = 9, n = c(3, 3)),
+                           metrics = metric_set(rsq, rmse))
+  bind_rows(
+    collect_metrics(random)  |> mutate(scheme = "Random 10-fold"),
+    collect_metrics(blocked) |> mutate(scheme = "Spatial block")
+  ) |>
+    mutate(model = name)
+})
+
+comparison |>
+  filter(.metric == "rsq") |>
+  select(model, scheme, R2 = mean, std_err) |>
+  pivot_wider(names_from = scheme, values_from = c(R2, std_err)) |>
+  mutate(`% of apparent R² that survives` =
+           100 * `R2_Spatial block` / `R2_Random 10-fold`) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: fig-cv
+#| fig-cap: "Cross-validated R² under random and spatially blocked resampling, for three models. A model built only from position loses 85% of its apparent explanatory power when the folds are blocked. A model built only from environment loses nothing. Adding coordinates to the environmental model raises random-fold R² by 29% and blocked R² by 11%, so most of that apparent gain is not real."
+#| fig-alt: "A grouped dot plot with three models on the vertical axis and R-squared from zero to 0.22 on the horizontal. Each model has two points joined by a line, one for random 10-fold and one for spatial block. For coordinates only, the points are at 0.075 and 0.011, a long line pointing left. For environment only, the points are at 0.147 and 0.152, essentially on top of each other. For environment plus coordinates, they are at 0.190 and 0.169, a short line pointing left."
+#| fig-width: 7
+#| fig-height: 3.6
+comparison |>
+  filter(.metric == "rsq") |>
+  mutate(model = factor(model, levels = rev(names(candidates)))) |>
+  ggplot(aes(mean, model, colour = scheme)) +
+  geom_line(aes(group = model), colour = ml_palette[["grey"]], linewidth = 0.6) +
+  geom_point(size = 3.4) +
+  labs(x = "Cross-validated R²", y = NULL, colour = NULL,
+       title = "How much of the apparent performance survives honest resampling") +
+  theme(panel.grid.major.y = element_blank())
+```
+
+## What the results mean
+
+**A model made of nothing but position looks like it works.** Under random 10-fold,
+`abundance ~ longitude + latitude` reaches an R² of 0.075. Under spatially blocked folds it
+reaches **0.011** — 15% of what it claimed. The first number is not a measurement of ecological
+knowledge; it is a measurement of how densely the shelf was sampled. Held-out stations had
+training stations a few kilometres away, and the forest simply looked them up.
+
+**A model made of environment loses nothing.** R² 0.147 random, 0.152 blocked. Spatial blocking
+costs it nothing because it never had a spatial shortcut to take: depth, temperature and
+chlorophyll transfer to a new block, so being asked about a new block is no harder.
+
+**The combined model is the trap.** Adding coordinates to the environmental model raises
+random-fold R² from 0.147 to 0.190 — a 29% improvement, and exactly the kind of result that gets
+coordinates written into a species-distribution model. Under honest resampling the same addition
+takes 0.152 to 0.169, an 11% improvement. In absolute terms the random folds credit coordinates with 0.043 of R² and
+the blocked folds with 0.017: **about 60% of the apparent benefit of adding position was the
+validation scheme flattering itself.**
+
+::: {.callout-warning}
+Compare **R²**, not RMSE, across resampling schemes. The spatially blocked folds have lower RMSE
+than the random folds for all three models here — which does not mean blocking is easier, it means
+the blocks contain different distributions of abundance, so their RMSEs are not on a common scale.
+[Section 3 hit the same trap](../02-marine-data/information-leakage.qmd) comparing grouped and
+random splits, and the resolution is the same: a scale-free metric, or the same test set for both.
+:::
+
+### The temporal version
+
+Everything above has a time analogue, and it is usually worse because the intended use is
+explicitly forecasting.
+
+| | Spatial | Temporal |
+| --- | --- | --- |
+| The dependence | Nearby stations resemble each other | Nearby times resemble each other |
+| What random CV leaks | The neighbourhood | **The future** |
+| Diagnostic | Moran's I, variogram | Autocorrelation function of residuals |
+| Honest scheme | `spatial_block_cv()` | `rolling_origin()`, `sliding_period()` |
+
+The temporal case has a strict asymmetry the spatial one does not: predicting 2021 from 2022 is
+not merely optimistic, it is impossible in deployment. Any scheme that lets a model train on data
+later than what it predicts is answering a question that cannot be asked in practice. This survey
+cannot demonstrate it — `survey_year` has no effect at all by construction — but the principle
+does not depend on a demonstration.
+
+## Where this breaks down
+
+**Blocking can be too aggressive.** If the blocks are much larger than the range of dependence,
+blocked CV measures extrapolation to genuinely different regions, and that will understate
+performance for the intended use. The variogram is the guide: blocks should be at least as large
+as the range — about 0.8° here — and not enormously larger. A buffer between training and test, as
+in `spatial_leave_location_out_cv()`, is the finer-grained option.
+
+**The honest number depends on what you will do with the model.** Interpolating between surveyed
+stations really is the random-CV problem, and for that use the random-CV number is correct.
+Mapping to an unsurveyed bank is the blocked-CV problem. Neither number is universally right;
+what is always wrong is reporting one and describing the other.
+
+**Coordinates are not automatically illegitimate.** A smooth spatial term is often the honest way
+to represent processes you did not measure, and `s(longitude, latitude)` in a GAM is standard
+practice. The requirement is that its contribution be assessed under blocked resampling, where
+this one earned 11% rather than 29%.
+
+**Spatial structure in residuals may mean a missing covariate.** Patches of consistent error are
+what an unmeasured driver looks like — a front, a sediment type, a fishing closure. Before
+treating it as autocorrelation to be resampled around, ask what is physically there. Here it is a
+spatial field with no physical cause, because we put one in; in real data it is usually
+information.
+
+::: {.callout-tip}
+## Key points
+
+- Test for leftover spatial structure in **residuals**, not the response. Here Moran's I was 0.093
+  with a permutation *p* of 0.002, and the site-level variogram showed a range of about 0.8°.
+- Random cross-validation on spatial data measures interpolation between sampled points. Say so,
+  or block the folds.
+- A forest using **only longitude and latitude** scored R² 0.075 under random folds and **0.011**
+  under blocked folds.
+- Adding coordinates to an environmental model looked worth 29% under random folds and 11% under
+  blocked ones. Most of the apparent gain was the scheme.
+- Compare **R²** across resampling schemes, never RMSE — different folds hold different
+  distributions of the response.
+
+:::
+
+## Try it yourself
+
+1. Re-run the comparison with `n = c(6, 6)` so the blocks are smaller than the variogram range.
+   Predict first whether the coordinates-only model's blocked R² should rise or fall, then check.
+2. Fit the environmental GAM from
+   [the linearity page](linearity-and-nonlinearity.qmd) with `s(longitude, latitude)` added, and
+   recompute Moran's I on its residuals. How much of the 0.093 does an explicit spatial term
+   absorb?
