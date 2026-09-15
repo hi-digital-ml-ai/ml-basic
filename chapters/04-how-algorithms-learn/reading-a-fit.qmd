@@ -1,0 +1,283 @@
+---
+title: "Reading a fit"
+description: "How to tell whether the optimisation actually worked — the warnings that matter, the ones that do not, and the signatures of silent failure."
+order: 6
+categories: [optimisation, reproducibility]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## Why this matters
+
+Everything so far in this section has described fitting as a search. A search can fail, and
+the useful thing about failure is that it leaves signatures. This page is about recognising
+them.
+
+The reason to care is that a failed fit does not usually look like a failed fit. It returns
+coefficients. It prints a summary. It makes predictions. Section 3 contained one model that
+produced a perfectly respectable ROC AUC while predicting presence at zero stations, and the
+optimisation there was working exactly as instructed — which is precisely why you cannot rely
+on output looking reasonable.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+Three things can go wrong between asking for a fit and getting one:
+
+1. **The search did not finish.** It ran out of iterations and returned wherever it had
+   reached.
+2. **The search finished somewhere arbitrary.** The objective had several minima and the
+   starting point chose between them.
+3. **The search finished nowhere.** The objective has no minimum in the direction the
+   algorithm was heading, and it kept going until a limit stopped it.
+
+Each has a recognisable fingerprint, and all three are demonstrated below on this survey.
+
+## Worked example
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, present, catch_weight_kg, depth_m, temperature_c,
+         chlorophyll_mg_m3, salinity_psu, substrate, season) |>
+  drop_na()
+```
+
+### Failure 1: the search did not finish
+
+Iterative fits stop either because they converged or because they hit a cap. These are
+completely different outcomes and the printed coefficients look the same.
+
+```{r}
+#| label: maxit
+#| warning: true
+stopped_early <- glm(present ~ chlorophyll_mg_m3 + depth_m, data = d,
+                     family = binomial, control = glm.control(maxit = 2))
+
+full_fit <- glm(present ~ chlorophyll_mg_m3 + depth_m, data = d, family = binomial)
+
+tibble(
+  fit        = c("maxit = 2", "run to convergence"),
+  converged  = c(stopped_early$converged, full_fit$converged),
+  iterations = c(stopped_early$iter, full_fit$iter),
+  chlorophyll = c(coef(stopped_early)[2], coef(full_fit)[2]),
+  depth       = c(coef(stopped_early)[3], coef(full_fit)[3])
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 4)))
+```
+
+The truncated fit reports a chlorophyll coefficient of −0.312 against the correct −0.344 —
+9% out, and entirely plausible-looking on its own. The only thing distinguishing them is
+`$converged`, which is a field you have to ask for.
+
+The habit worth forming: **after any iterative fit, check the convergence flag rather than
+the coefficients.** For `glm()` it is `fit$converged`. For `glm.nb()` it is a warning. For
+`nnet` and `glmnet` it is in the object. Under tidymodels, `extract_fit_engine()` gets you
+to it.
+
+### Failure 2: the search finished nowhere
+
+This one produces the most memorable output in applied statistics. `catch_weight_kg` is the
+leaked column from [section 2](../02-marine-data/information-leakage.qmd) — it is computed
+from `abundance`, so it separates present from absent almost perfectly.
+
+```{r}
+#| label: separation
+#| warning: true
+separated <- glm(present ~ catch_weight_kg, data = d, family = binomial)
+
+round(summary(separated)$coefficients, 3)
+```
+
+```{r}
+#| label: separation-flags
+c(converged = separated$converged, iterations = separated$iter)
+```
+
+A coefficient of −157.7 with a standard error of 13,515 and a *p*-value of 0.99. Read that
+plainly: the model has found a predictor that classifies the response essentially perfectly,
+and reports it as the least significant variable you have ever seen.
+
+Both numbers are correct and neither is meaningful. When one predictor separates the classes,
+the likelihood has no maximum — pushing the coefficient further from zero always makes the
+data slightly more probable, forever. The algorithm walks off in that direction until it hits
+its iteration cap at 25, and the standard error, being the curvature of a surface that is
+flattening out towards infinity, goes to infinity with it.
+
+::: {.callout-warning}
+**A gigantic coefficient with a gigantic standard error is not weak evidence. It is a
+separation warning.** The clue is the ratio: an estimate of 158 with an error of 13,515 is
+not an estimate at all. If you see this, look for a predictor that encodes the answer — which
+in real work usually means [leakage](../02-marine-data/information-leakage.qmd), as it does
+here. R does print `fitted probabilities numerically 0 or 1 occurred`, and it is one of the
+few warnings that always means something.
+:::
+
+### Failure 3: the search finished somewhere arbitrary
+
+Not every algorithm lands in the same place twice. Random forests choose bootstrap samples
+and variable subsets at random, so an unseeded fit is a different model each time.
+
+```{r}
+#| label: ranger-runs
+set.seed(1)
+split <- initial_split(d |> select(-present, -catch_weight_kg), prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+unseeded <- map_dbl(1:5, \(i) {
+  forest <- ranger(abundance ~ ., data = train, num.trees = 500)
+  sqrt(mean((test$abundance - predict(forest, test)$predictions)^2))
+})
+
+round(unseeded, 4)
+```
+
+Five runs, five answers, spanning 0.037 RMSE. That is small — and it is the point. Section 3's
+[ten-model comparison](../03-supervised-learning/choosing-a-method.qmd) separated several
+models by less than that, which is exactly why that page refused to treat small gaps in the
+table as a ranking. **Run-to-run noise is a measurement you can make, and it sets the
+resolution of every comparison you go on to draw.**
+
+For k-means the same instability is much larger, because the objective genuinely has multiple
+minima:
+
+```{r}
+#| label: kmeans-starts
+X <- scale(d |> select(depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu))
+
+single_starts <- map_dbl(1:20, \(i) kmeans(X, centers = 5, nstart = 1, iter.max = 50)$tot.withinss)
+
+tibble(
+  `distinct solutions found` = n_distinct(round(single_starts, 3)),
+  best  = min(single_starts),
+  worst = max(single_starts),
+  `with nstart = 25` = kmeans(X, centers = 5, nstart = 25)$tot.withinss
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 1)))
+```
+
+Twenty runs of the same algorithm on the same data found ten different answers, the worst 5%
+worse than the best. Every one of them converged. This is the difference between the convex
+objectives of [regression](parameter-estimation.qmd) — one minimum, always found — and
+objectives that are merely bumpy, and it is why
+[section 8](../08-unsupervised-learning/index.qmd) insists on `nstart`.
+
+```{r}
+#| label: fig-instability
+#| fig-cap: "Run-to-run variation from two algorithms with no seed set. The random forest's test RMSE varies over a narrow band; k-means' objective across twenty single random starts takes ten distinct values spanning 5%. Both algorithms reported success every time."
+#| fig-alt: "Two panels of dot strips. The upper panel shows five random-forest test RMSE values clustered between 4.72 and 4.76, a span of under 0.04. The lower panel shows twenty k-means objective values scattered between 1094 and 1152, clumping at several distinct levels rather than spreading evenly, with a marked point at the lowest value labelled as the solution found with twenty-five restarts."
+#| fig-width: 7
+#| fig-height: 3.6
+p1 <- tibble(value = unseeded) |>
+  ggplot(aes(value, 0)) +
+  geom_point(size = 3, alpha = 0.6, colour = ml_palette[["blue"]]) +
+  labs(x = "Test RMSE (individuals)", y = NULL,
+       title = "Random forest, 5 unseeded runs") +
+  theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
+
+p2 <- tibble(value = single_starts) |>
+  ggplot(aes(value, 0)) +
+  geom_point(size = 3, alpha = 0.6, colour = ml_palette[["vermilion"]]) +
+  annotate("point", x = min(single_starts), y = 0, shape = 1,
+           size = 6, stroke = 1, colour = "black") +
+  labs(x = "Total within-cluster sum of squares", y = NULL,
+       title = "k-means, 20 single random starts",
+       subtitle = "Circled: the value nstart = 25 also finds") +
+  theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
+
+p1 / p2
+```
+
+## What the results mean
+
+The three failures need three different responses.
+
+| Signature | What happened | What to do |
+| --- | --- | --- |
+| `converged = FALSE`, or a `maxit` warning | Ran out of iterations | Raise the cap; if it still fails, the model is wrong for the data |
+| Huge coefficient, huge standard error, *p* ≈ 1 | Separation — no maximum exists | Find the predictor that encodes the answer; suspect leakage |
+| Different answer each run | Stochastic algorithm, possibly multiple minima | Set a seed for reproducibility; measure the spread to know your resolution |
+| `NaN` loss, or coefficients exploding | Learning rate above the stable limit | Lower it; [scale the predictors](gradient-descent.qmd) |
+| Coefficients change wildly on small data changes | Flat valley, near-collinearity | Check correlations; consider [a prior](map-and-priors.qmd) |
+
+Two of these deserve emphasis because they are routinely misread.
+
+**Setting a seed makes a fit reproducible. It does not make it stable.** A seeded random
+forest returns the same number every time, which is necessary for a reproducible paper and
+tells you nothing about whether that number is reliable. The way to find out is to remove the
+seed deliberately and run it several times, as above. Reproducibility and stability are
+different properties and only one of them is about your science.
+
+**Warnings are not all equal.** `fitted probabilities numerically 0 or 1 occurred` always
+means something. So does `algorithm did not converge`. By contrast, the rank-deficiency and
+`NA` coefficients that `lm()` produces from collinear predictors arrive with no warning at
+all — R simply drops a term and prints `NA` in the table, and nothing tells you it happened.
+The loud messages are not a reliable guide to the dangerous failures.
+
+### A checklist
+
+After fitting any model in this course, before reading a single coefficient:
+
+1. Did it converge? Not "did it print output" — check the flag.
+2. Are any coefficients absurd in size, or are any `NA`?
+3. Is any standard error orders of magnitude larger than its estimate?
+4. If the algorithm is stochastic, what does it do on a second run without a seed?
+5. Are the predictions in a possible range — no negative counts, no probabilities outside
+   (0, 1), nothing outside what the species can do?
+
+Item 5 catches more real mistakes than the other four combined, and it needs no statistics at
+all.
+
+## Where this breaks down
+
+**A converged fit can still be the wrong model.** Everything on this page is about whether the
+optimisation did what it was asked. It cannot tell you whether you asked for the right thing.
+A Poisson model on overdispersed counts converges beautifully;
+[section 6](../06-assumptions-limitations/index.qmd) is about that second question.
+
+**Convergence tolerances are set by package authors, not by you.** "Converged" means "changed
+by less than some default on the last iteration", and defaults vary between packages fitting
+the same model. Two packages can disagree in the third decimal and both report success.
+
+**Some failures have no signature at all.** Section 2's
+[stratified split](../02-marine-data/splitting-data.qmd) silently ignored the stratification
+variable, produced a worse balance than not stratifying, and issued no warning of any kind.
+No checklist would have caught it. Only checking that the result was what you asked for did.
+
+::: {.callout-tip}
+## Key points
+
+- Check the **convergence flag**, not the plausibility of the coefficients. A fit stopped
+  after two iterations here was 9% out and looked entirely normal.
+- A huge coefficient with a huge standard error and *p* ≈ 1 means **separation**, not weak
+  evidence — here, a coefficient of −158 with an error of 13,515 from a leaked predictor.
+- Stochastic algorithms give a different answer per run: the forest varied by 0.037 RMSE,
+  k-means found ten distinct solutions out of twenty runs.
+- **Seeding gives reproducibility, not stability.** Remove the seed on purpose to measure how
+  much your result moves, and treat that spread as the resolution of your comparisons.
+- The warnings that print loudest are not the failures most likely to mislead you.
+
+:::
+
+## Try it yourself
+
+1. Fit `glm(present ~ abundance, family = binomial)` on this data. `present` is defined as
+   `abundance > 0`, so the separation is exact. Compare the coefficient and standard error to
+   the `catch_weight_kg` version — which is worse, and why does that ordering make sense?
+2. Run the k-means block with `centers = 2` instead of 5. Does the number of distinct solutions
+   go up or down, and what does that suggest about the relationship between model complexity
+   and the number of places an algorithm can get stuck?

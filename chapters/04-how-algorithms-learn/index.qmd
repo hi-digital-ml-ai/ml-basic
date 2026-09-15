@@ -2,6 +2,14 @@
 title: "4 · How machine-learning algorithms learn"
 description: "What is actually happening when a model 'fits': loss functions, gradient descent, and the link back to maximum likelihood."
 categories: [optimisation]
+listing:
+  contents: "*.qmd"
+  type: table
+  sort: "order"
+  fields: [title, description]
+  field-display-names:
+    title: "Page"
+    description: "Covers"
 ---
 
 "Fitting a model" sounds like a single act. It is really a search. The algorithm has a
@@ -17,15 +25,21 @@ It also connects to ground you may already stand on. Least-squares regression an
 maximum likelihood are not a separate world from machine learning — they are the same
 machinery with a different scorecard.
 
-## In this section
-
-- Loss and objective functions
-- Parameter estimation
-- Gradient descent
-- Maximum likelihood estimation (MLE)
-- Maximum a posteriori estimation (MAP)
-- Basic interpretation of model optimisation
+This section settles three debts. Section 2 asked you to
+[scale your predictors](../02-marine-data/scaling-and-encoding.qmd) without giving the real
+reason; [gradient descent](gradient-descent.qmd) supplies it, and it is worth a factor of
+about ninety in computing. [Section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd)
+showed a linear model predicting negative fish; [maximum likelihood](maximum-likelihood.qmd)
+explains that this was a distributional assumption made silently, not a flaw in the method.
+And the regularisation that [section 5](../05-generalisation/regularisation.qmd) is about to
+introduce as a technique turns out, on the [MAP page](map-and-priors.qmd), to be a statement
+of prior belief with the Bayesian label removed.
 
 ::: {.callout-note}
-Pages for this section are in preparation.
+There is more arithmetic here than elsewhere in the course, and it is all optional depth.
+If you read only two pages, read [loss functions](loss-functions.qmd) — because the loss is
+a scientific choice your software makes for you by default — and
+[reading a fit](reading-a-fit.qmd), which is the practical one.
 :::
+
+## Pages in this section
