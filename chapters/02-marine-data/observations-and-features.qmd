@@ -1,0 +1,194 @@
+---
+title: "What one row is"
+description: "Observations, features, responses and labels — and the question marine data makes genuinely hard: how many independent observations do you actually have?"
+order: 1
+categories: [data-preparation, marine-data]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+Machine learning wants a rectangle: rows of observations, columns of variables, one
+column singled out as the thing to predict. Getting your data into that shape looks
+clerical. It is not. The choice of what a row represents fixes what the model can
+learn, what "independent" means, and — as we will see — how much data you actually
+have, which is usually less than the row count suggests.
+
+This is also where marine data stops resembling the textbook. A trawl, a CTD cast, a
+photograph, a fish, a monitoring site: any of them could be "one observation", and
+they give different answers.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+### The vocabulary, and its synonyms
+
+Machine learning grew up in computer science and statistics separately, so the same
+thing has two or three names. Reading across literatures is much easier once you have
+the map.
+
+| In this course | Also called | What it is |
+| --- | --- | --- |
+| **Observation** | row, instance, example, sample, case | One thing you measured |
+| **Feature** | predictor, covariate, independent variable, input, attribute | Something you know about it |
+| **Response** | outcome, target, dependent variable, $y$ | The thing you want the model to produce |
+| **Label** | class, annotation, ground truth | The response when it is a category, usually assigned by a person |
+
+Two notes on the traps in that table. "Sample" means a single observation in machine
+learning and the whole collection of them in field science — be careful which you mean
+in a mixed-discipline meeting. And "ground truth" is a confident phrase for something
+that is usually one specialist's opinion; [section 7](../07-validation/index.qmd)
+returns to the fact that your labels have an error rate too.
+
+### The harder question
+
+The vocabulary is easy. This is not:
+
+> **What is one observation?**
+
+Consider a survey that visits 160 monitoring sites, several times each, over six years.
+A row could reasonably be:
+
+- **one trawl** — what the database stores;
+- **one site-year** — if you average the trawls, because repeat trawls at a site on the
+  same day are not independent;
+- **one site** — if the site's character, not the visit, is what varies;
+- **one fish** — if you are modelling individual growth rather than abundance.
+
+There is no universally right answer. There is an answer that matches your scientific
+question, and the cost of getting it wrong is that your model, and every confidence
+interval and cross-validation score attached to it, silently treats correlated rows as
+independent evidence.
+
+## Worked example
+
+Here is the survey as it came off the ship, rather than the tidy extract used in
+[section 1](../01-introduction/index.qmd).
+
+```{r}
+#| label: load
+raw <- load_coastal_survey_raw()
+
+dim(raw)
+names(raw)
+```
+
+Seventeen columns and 815 rows. So $n = 815$?
+
+```{r}
+#| label: counting
+tibble(
+  `rows in the file`       = nrow(raw),
+  `after removing exact duplicates` = nrow(distinct(raw)),
+  `distinct stations`      = n_distinct(raw$station_id),
+  `distinct sites`         = n_distinct(raw$site_id)
+)
+```
+
+Three different numbers, and the gap between the first and the last is a factor of
+five.
+
+```{r}
+#| label: fig-what-is-n
+#| fig-cap: "Four defensible answers to 'how many observations do I have?' from one file. Which is right depends on the question, but a model given the raw table will assume the first."
+#| fig-alt: "Horizontal bar chart with four bars: rows in the file, 815; unique rows, 800; distinct stations, 800; distinct monitoring sites, 160. The final bar is dramatically shorter than the others."
+#| fig-width: 7
+#| fig-height: 3.6
+counts <- tibble(
+  what = c("Rows in the file", "Unique rows", "Distinct stations", "Distinct sites"),
+  n    = c(nrow(raw), nrow(distinct(raw)), n_distinct(raw$station_id), n_distinct(raw$site_id))
+) |>
+  mutate(what = fct_rev(fct_inorder(what)))
+
+ggplot(counts, aes(n, what)) +
+  geom_col(fill = ml_palette[["blue"]], width = 0.62) +
+  geom_text(aes(label = n), hjust = -0.2, size = 4) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.12))) +
+  labs(x = "Count", y = NULL, title = "How many observations is this?")
+```
+
+Why so few sites? Because the survey revisits fixed stations.
+
+```{r}
+#| label: site-visits
+raw |>
+  count(site_id, name = "visits") |>
+  count(visits, name = "number_of_sites") |>
+  arrange(visits)
+```
+
+Most sites appear four to six times; one appears fifteen times.
+
+## What the results mean
+
+Fit a model on this table and it will treat all 815 rows as independent evidence. They
+are not, in three separate ways.
+
+**Fifteen rows are exact duplicates** — the same station entered twice. They add no
+information at all, but they add weight: a duplicated station counts double in the
+fitting, and, worse, can land in the training set *and* the test set at once, where it
+guarantees a perfect prediction it did not earn. That is leakage, and it has
+[its own page](information-leakage.qmd).
+
+**Stations at the same site are not independent of each other.** They are metres to
+hundreds of metres apart, in the same water, on the same substrate, often on the same
+day. Statistically they are closer to one observation with replicates than to five
+observations. This is pseudo-replication, and ecologists have been warning about it for
+decades; machine learning simply gives you faster ways to commit it.
+
+**Even across sites, nearby is not independent.** Two sites ten kilometres apart share
+water mass, depth and season. [Section 6](../06-assumptions-limitations/index.qmd) takes
+this seriously.
+
+The practical consequence is that **your effective sample size is nearer 160 than 815**,
+and every performance figure computed as though it were 815 will be optimistic. Not by
+a rounding error — typically by a lot.
+
+Note what this does *not* mean. You should not throw away rows. The extra visits carry
+real information about within-site variation. What you must do is stop the *resampling*
+scheme from splitting a site across training and test data, which
+[section 7](../07-validation/index.qmd) handles with grouped resampling. The fix lives
+in how you validate, not in how much data you keep.
+
+## Where this breaks down
+
+**Rectangles lose structure.** Flattening a depth profile into one row per cast throws
+away the shape of the profile; keeping one row per depth bin multiplies
+non-independent rows. Neither is free. The [next page](marine-data-types.qmd) deals
+with this.
+
+**The database schema is not a scientific decision.** Your data arrives at whatever
+granularity the survey software wrote it. That choice was made for data entry, not for
+your question, and it should not be adopted by default.
+
+**"Independent" is a property of the question, not the file.** Two trawls at one site
+are nearly the same observation for a habitat model, and two distinct observations for
+a model of gear variability. You cannot answer it by looking at the data alone.
+
+::: {.callout-tip}
+## Key points
+- Observation, feature, response, label — learn the synonyms, because the literature
+  will use all of them.
+- Deciding what one row represents is a scientific decision, not a data-entry one.
+- The row count is not the sample size. Here: 815 rows, 800 unique, 160 sites.
+- Repeat visits, duplicate rows and spatial proximity all make rows share information.
+  A model handed the raw table assumes none of that.
+- The fix is in the resampling scheme, not in deleting data — keep the rows, and keep
+  a site's rows together.
+:::
+
+## Try it yourself
+
+1. Which site appears fifteen times? Look at its rows. How different are they from one
+   another, compared with two rows drawn from different sites?
+2. For your own data, write one sentence defining an observation, and one sentence
+   naming what makes two of your rows non-independent. Almost every later decision in
+   this course follows from those two sentences.

@@ -22,11 +22,19 @@ page; short subtopics may be merged into a sibling page rather than left thin.
 
 - Observations, features, responses, and labels
 - Continuous, categorical, spatial, temporal, and profile data
+- Exploratory data analysis before modelling
 - Missing values, outliers, measurement errors, and class imbalance
 - Feature scaling, transformation, and encoding
-- Exploratory data analysis before modelling
 - Training, validation, and test datasets
 - Avoiding information leakage
+
+**Written, with one change from the original outline:** exploratory analysis moved
+*ahead* of missing values and outliers. You find the sentinel values and the impossible
+depths by looking, so the looking has to come first; the cleaning page then acts on what
+the EDA page found. The subtopics are otherwise as listed.
+
+Circular data (month, day of year, bearing, tidal phase) was added to the data-types
+page. It is not in the original outline and it is a genuine marine trap.
 
 ## 3. Supervised learning
 `chapters/03-supervised-learning/` · categories: `supervised`, `regression`,
