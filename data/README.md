@@ -13,6 +13,7 @@ Small datasets used by the course pages. Rules:
 | --- | --- | --- | --- | --- |
 | `coastal-survey.csv` | One survey station: position, water properties, substrate, and catch of one benthic species | **Simulated** — `R/make-example-data.R` | Notional 2018–2023 | CC0 (no real data) |
 | `coastal-survey-raw.csv` | The same 800 station visits as they came off the ship, plus 15 duplicated rows and extra columns | **Simulated** — `R/make-raw-data.R` | Notional 2018–2023 | CC0 (no real data) |
+| `coastal-survey-truth.csv` | One station and the expected count the simulation drew from, before noise | **Simulated** — `R/make-example-data.R` | Notional 2018–2023 | CC0 (no real data) |
 
 ## About `coastal-survey.csv`
 
@@ -64,5 +65,18 @@ What is deliberately wrong with it:
 
 The last two rows are the ones that matter most later. `site_id` is what makes a naive
 random split dishonest, and it is what §7 needs for grouped resampling.
+
+## About `coastal-survey-truth.csv`
+
+Two columns, `station_id` and `true_mean`: the expected count `exp(log_mu)` that each
+station's observed count was drawn around. Written by the same script and the same seed as
+`coastal-survey.csv`, so the two always agree.
+
+**No real dataset has this file**, and that is the point. Observed counts confound a
+model's error with negative-binomial noise, so bias and variance cannot be separated from
+them. With the truth available they can, which is what §5's bias–variance page uses it for.
+
+Rules for pages: join it on `station_id`, never pass it to a model as a predictor, and never
+report a score computed against it without saying that no real study could compute it.
 
 Keep `coastal-survey.csv` clean. New kinds of damage belong in the raw file.

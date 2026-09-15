@@ -1,0 +1,295 @@
+---
+title: "Training error and the error that matters"
+description: "Why the number your model reports about itself is not an estimate of anything you care about."
+order: 1
+categories: [generalisation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+library(rpart)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(501)
+```
+
+## Why this matters
+
+A model will tell you how well it fits. That number is free, it is printed by default, and it
+is the single most misleading quantity in applied machine learning.
+
+The problem is not that training error is inaccurate. It is that it answers a question nobody
+asked: *how well does this model reproduce the stations it was built from?* You want to know
+how it will do on next year's survey, on the stations you could not reach, on the shelf to the
+north. Those are different questions, and on this page the two give opposite answers — not
+slightly different, opposite.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+Any model with enough flexibility can reproduce your data exactly. A tree grown until every
+leaf holds one station will predict every training station perfectly, and has learned nothing:
+it has stored the data, not a relationship.
+
+The useful mental separation is between **signal** — structure that will appear again in the
+next survey — and **noise** — the part specific to the stations you happened to visit, the day
+you visited them, and how the net behaved. Training error cannot tell them apart. Fitting the
+noise lowers training error just as effectively as fitting the signal, and lowers future
+performance just as effectively as fitting the signal raises it.
+
+The gap between the two is called **optimism**, and it is not a constant. It grows with model
+flexibility and shrinks with sample size, which is why "my training R² is 0.95" means nothing
+until you say how many stations and how many parameters.
+
+## Worked example
+
+Five models, one split, one set of predictors. Nothing here is tuned — that is
+[a later page](hyperparameter-selection.qmd) — and the default settings are exactly what makes
+the point.
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+set.seed(501)
+d <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season) |>
+  drop_na()
+
+split <- initial_split(d, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+
+c(training_stations = nrow(train), test_stations = nrow(test))
+```
+
+```{r}
+#| label: five-models
+linear     <- lm(abundance ~ ., data = train)
+small_tree <- rpart(abundance ~ ., data = train,
+                    control = rpart.control(maxdepth = 3, cp = 0))
+full_tree  <- rpart(abundance ~ ., data = train,
+                    control = rpart.control(minsplit = 2, minbucket = 1, cp = 0))
+forest     <- ranger(abundance ~ ., data = train, num.trees = 500, seed = 1)
+
+boosted <- workflow() |>
+  add_recipe(recipe(abundance ~ ., data = train) |> step_dummy(all_nominal_predictors())) |>
+  add_model(boost_tree(trees = 500, tree_depth = 6, learn_rate = 0.1) |>
+              set_engine("xgboost") |> set_mode("regression")) |>
+  fit(train)
+
+predict_on <- function(model, newdata) {
+  if (inherits(model, "ranger")) predict(model, newdata)$predictions
+  else if (inherits(model, "workflow")) predict(model, newdata)$.pred
+  else predict(model, newdata)
+}
+
+results <- tibble(
+  model = c("Linear regression", "Tree, depth 3", "Tree, grown out",
+            "Random forest", "Boosted trees"),
+  fit   = list(linear, small_tree, full_tree, forest, boosted)
+) |>
+  mutate(
+    training = map_dbl(fit, \(m) rmse_of(train$abundance, predict_on(m, train))),
+    test     = map_dbl(fit, \(m) rmse_of(test$abundance,  predict_on(m, test))),
+    optimism = test - training
+  ) |>
+  select(-fit)
+
+results |> mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: fig-crossing
+#| fig-cap: "Training and test RMSE for the five models, joined by a line. Every line slopes upward — test error is always worse — but the slopes are so different that the order reverses completely. The model that fits the training stations perfectly is the worst on new ones, and the dashed line marks the error from ignoring all predictors and predicting the training mean."
+#| fig-alt: "A slope chart with two vertical positions, Training on the left and Test on the right, and RMSE on the vertical axis from zero to about seven. Five lines connect a training value to a test value. Linear regression and the depth-3 tree start near 4.1 and rise gently to about 4.9. The random forest starts at 2.0 and rises to 5.0. Boosted trees start at almost zero and rise steeply to 5.7. The fully grown tree starts at exactly zero and rises most steeply of all to 6.9. A dashed horizontal line at 5.29 marks the baseline, and the two steepest lines finish above it."
+#| fig-width: 7
+#| fig-height: 4.8
+baseline <- rmse_of(test$abundance, mean(train$abundance))
+
+results |>
+  pivot_longer(c(training, test), names_to = "set", values_to = "rmse") |>
+  mutate(set = factor(set, levels = c("training", "test"),
+                      labels = c("Training", "Test"))) |>
+  ggplot(aes(set, rmse, group = model, colour = model)) +
+  geom_hline(yintercept = baseline, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.6) +
+  annotate("text", x = 1.5, y = baseline + 0.18, label = "predict the mean",
+           colour = ml_palette[["grey"]], size = 3.4) +
+  labs(x = NULL, y = "RMSE (individuals)", colour = NULL,
+       title = "The ranking reverses completely")
+```
+
+## What the results mean
+
+Read the two columns in order.
+
+By training error the ranking is: fully grown tree (0.000), boosted trees (0.046), random
+forest (2.045), depth-3 tree (4.138), linear regression (4.144).
+
+By test error it is: linear regression (4.867), depth-3 tree (4.918), random forest (4.994),
+boosted trees (5.747), fully grown tree (6.923).
+
+**That is the same list, exactly reversed.** On this dataset, training error is not merely an
+unreliable guide to which model to choose — it is an almost perfect guide to choosing the wrong
+one.
+
+Two details are worth more than the ordering.
+
+**A perfect fit.** The fully grown tree achieves a training RMSE of exactly zero. Every leaf
+contains one station, so every training prediction is that station's own count. It is a lookup
+table with a flowchart on the front, and on new stations it scores 6.923 — considerably worse
+than 5.292, which is what you get by ignoring every predictor and guessing the training mean.
+Two of the five models are beaten by that baseline.
+
+**A useful free estimate.** The random forest has a third number available:
+
+```{r}
+#| label: oob
+c(training = rmse_of(train$abundance, predict(forest, train)$predictions),
+  out_of_bag = sqrt(forest$prediction.error),
+  test = rmse_of(test$abundance, predict(forest, test)$predictions)) |>
+  round(3)
+```
+
+Each tree in a forest is fitted to a bootstrap sample, so about a third of the stations are
+unseen by any given tree. Scoring each station using only the trees that did not see it gives
+the **out-of-bag** estimate: 4.313 against a test value of 4.994. Not perfect — it is still
+optimistic, because all the trees saw the dataset as a whole — but it is a far better answer
+than 2.045, and it costs nothing. If you fit a forest and quote its training error, you have
+ignored a better number the model already computed.
+
+### Optimism is not a fixed quantity
+
+Whether training error misleads you a little or catastrophically depends on how much data you
+have relative to how flexible the model is.
+
+```{r}
+#| label: optimism-curve
+num <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu) |>
+  drop_na()
+
+set.seed(5011)
+num_split <- initial_split(num, prop = 0.75)
+num_train <- training(num_split)
+num_test  <- testing(num_split)
+
+flexible <- abundance ~ poly(depth_m, 3) + poly(temperature_c, 3) +
+  poly(chlorophyll_mg_m3, 2) + salinity_psu
+
+optimism_at <- function(n, replicates = 40) {
+  map_dfr(seq_len(replicates), \(r) {
+    s <- num_train[sample(nrow(num_train), n), ]
+    fit_lm <- lm(flexible, data = s)
+    fit_rf <- ranger(abundance ~ ., data = s, num.trees = 300)
+    tibble(
+      `10-parameter model, training` = rmse_of(s$abundance, predict(fit_lm, s)),
+      `10-parameter model, test`     = rmse_of(num_test$abundance, predict(fit_lm, num_test)),
+      `Random forest, training`      = rmse_of(s$abundance, predict(fit_rf, s)$predictions),
+      `Random forest, test`          = rmse_of(num_test$abundance, predict(fit_rf, num_test)$predictions)
+    )
+  }) |>
+    summarise(across(everything(), mean)) |>
+    mutate(n = n)
+}
+
+curve <- map_dfr(c(15, 25, 50, 100, 200, 400, nrow(num_train)), optimism_at)
+
+curve |>
+  mutate(across(where(is.numeric), \(x) round(x, 2))) |>
+  select(n, everything())
+```
+
+```{r}
+#| label: fig-optimism
+#| fig-cap: "Training and test RMSE against the number of training stations, averaged over 40 random subsets at each size. Note the separate vertical scales. For the ten-parameter polynomial model the two curves converge as data accumulates. For the random forest they do not: its training error is fixed by how much the forest smooths, not by how many stations it has, so the gap only narrows from 3.4 to 2.9 across a thirty-six-fold increase in data."
+#| fig-alt: "Two panels sharing a logarithmic horizontal axis of training stations from 15 to 540, with separate vertical scales. In the left panel, labelled ten-parameter model, the test curve starts at 25.8 at fifteen stations and drops steeply, reaching about 5.8 by two hundred and 4.9 at the right-hand edge, while the training curve rises gently from 2.2 to 4.1; the two converge to a narrow gap. In the right panel, labelled random forest, the test curve declines only slightly from 5.5 to 4.9 across the whole range and the training curve is flat near 2.0, so the vertical gap between them barely closes."
+#| fig-width: 7.5
+#| fig-height: 4
+curve |>
+  pivot_longer(-n, names_to = "series", values_to = "rmse") |>
+  separate_wider_delim(series, delim = ", ", names = c("model", "set")) |>
+  mutate(set = str_to_title(set)) |>
+  ggplot(aes(n, rmse, colour = set)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1.8) +
+  facet_wrap(~model, scales = "free_y") +
+  scale_x_log10() +
+  labs(x = "Training stations (log scale)", y = "RMSE (individuals)", colour = NULL,
+       title = "How badly training error misleads depends on both terms")
+```
+
+At fifteen stations the polynomial model reports a training RMSE of 2.17 and achieves 25.8 on
+new data — worse by a factor of twelve. It is not a bad model that happens to look good; on
+fifteen stations with ten parameters there is almost nothing left over, so the fit is close to
+interpolation. The gap closes slowly: 3.3 at a hundred stations, 1.1 at four hundred, 0.8 at
+540. Even at the full training set it has not vanished.
+
+The forest panel is the more instructive one. Its training error is pinned near 2.0 at every
+sample size, because what determines it is how much each tree smooths within a leaf, not how
+many stations it has. So the gap barely moves — 3.40 at fifteen stations, 2.91 at 540 — while
+the polynomial model’s gap fell by a factor of nearly thirty over the same range. Waiting for a
+bigger survey will make a fixed-complexity model's training error honest. It will not do the
+same for a forest's.
+
+::: {.callout-warning}
+Nothing on this page is an argument against flexible models. The random forest here is a
+perfectly respectable model — it is within 0.13 of the best of the five on test data, and
+[section 3 showed a tuned one doing better](../03-supervised-learning/choosing-a-method.qmd).
+The argument is only that its self-report is worthless. Judge it on held-out data, or
+out-of-bag, and it does fine.
+:::
+
+## Where this breaks down
+
+**One split is one number.** Everything above rests on a single random 75/25 division of 720
+stations. Re-split and the test values move — by rather more than the 0.13 separating the top
+three. That is what [cross-validation](../07-validation/index.qmd) is for, and until you get
+there, treat small differences in this table as noise. Section 4 measured the relevant scale:
+an [unseeded forest alone varies by about 0.04](../04-how-algorithms-learn/reading-a-fit.qmd).
+
+**A random split flatters everything here.** These 720 stations come from 160 monitoring sites
+visited repeatedly, so almost every test station has a sibling in the training set. The
+"unseen" data is not unseen at all. [Section 6](../06-assumptions-limitations/index.qmd) is
+about why this matters and section 7 about what to do instead; the honest reading of every
+number on this page is that it is the optimistic version.
+
+**Test error is only unbiased if the test set was used once.** Look at the test column, pick
+the winner, adjust, and look again, and the test set has become a second training set. This is
+the quiet failure mode of the whole enterprise, and the reason
+[section 2](../02-marine-data/splitting-data.qmd) insisted on a three-way split.
+
+::: {.callout-tip}
+## Key points
+
+- Training error measures how well a model reproduces the data it was fitted to. It is not an
+  estimate of future performance and is not a basis for choosing between models.
+- Here the training ranking of five models was the **exact reverse** of the test ranking.
+- A fully grown tree scored 0.000 on training data and 6.923 on new data, against 5.292 for
+  predicting the mean and ignoring every predictor.
+- The **optimism** grows with flexibility and shrinks with sample size — but only for
+  fixed-complexity models. The forest's gap stayed near 3 from 15 stations to 540.
+- A random forest computes an out-of-bag estimate for free: 4.313 here, against a test value of
+  4.994 and a training value of 2.045. Quote that one, never the training error.
+
+:::
+
+## Try it yourself
+
+1. Change the split proportion from 0.75 to 0.5 and re-run. Which numbers move most, and does
+   the reversal of the ranking survive?
+2. Set the fully grown tree's `minbucket` to 5, 10 and 25. Plot training and test RMSE against
+   that setting. You have just drawn the figure that [the next page](underfitting-and-overfitting.qmd)
+   is about — where is its minimum?

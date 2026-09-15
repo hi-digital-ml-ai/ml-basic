@@ -71,7 +71,7 @@ Three deliberate spillovers outside the section's own subject:
   ten-model comparison.
 
 ## 5. Generalisation and model complexity
-`chapters/05-generalisation/` · categories: `generalisation`
+`chapters/05-generalisation/` · categories: `generalisation`, `tuning`
 
 - Training performance versus performance on new data
 - Underfitting and overfitting
@@ -79,6 +79,28 @@ Three deliberate spillovers outside the section's own subject:
 - Model complexity
 - Regularisation
 - Hyperparameter selection
+
+**Written, one page per subtopic, in the order listed** (complexity before bias–variance,
+so the axis is defined before it is decomposed).
+
+Every page before the last deliberately chooses its complexity by looking at the test set,
+and says so each time; `hyperparameter-selection.qmd` is where that is done properly. Keep
+that framing if these pages are edited — it is what makes §7 feel necessary rather than
+pedantic.
+
+`regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
+[MAP page](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
+and §5 refers back. The same applies in reverse if §4 is edited.
+
+### New dataset: `data/coastal-survey-truth.csv`
+
+`bias-variance.qmd` needs the true expected count per station, which observed counts cannot
+supply. `R/make-example-data.R` now also writes `data/coastal-survey-truth.csv`
+(`station_id`, `true_mean`), loaded by `load_coastal_survey_truth()`. The addition does not
+change `coastal-survey.csv` — same seed, same bytes, verified.
+
+Rules for using it are in `data/README.md`: join on `station_id`, never pass it to a model,
+never quote a score against it without saying no real study could compute one.
 
 ## 6. Model assumptions and limitations
 `chapters/06-assumptions-limitations/` · categories: `assumptions`
