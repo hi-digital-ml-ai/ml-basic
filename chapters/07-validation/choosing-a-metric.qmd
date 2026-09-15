@@ -1,0 +1,292 @@
+---
+title: "Choosing measures that match the objective"
+description: "Work backwards from the sentence you intend to write. Four models, three objectives, and a threshold chosen from costs rather than from a default."
+order: 6
+categories: [validation, metrics]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+library(MASS, include.only = "glm.nb")
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+Every page in this section has compared models by a number. None of them has asked where the
+number came from, and the honest answer is usually "it was the default".
+
+Defaults encode an objective. RMSE assumes you care about squared error at every station
+equally. Accuracy assumes the two kinds of mistake cost the same. A 0.5 threshold assumes it
+even harder. If your actual objective is a stock total, or a shortlist of fifty stations to
+dive, those defaults will happily rank the models in the wrong order — and this page shows them
+doing it.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+Write the sentence from the discussion section first, then choose the measure that would be
+false if the sentence were false.
+
+| The sentence you want to write | The measure that tests it |
+| --- | --- |
+| "We mapped predicted abundance across the shelf" | per-station error: RMSE or MAE |
+| "Total abundance in the survey area is about *N*" | bias in the sum, not per-station error |
+| "These fifty stations are where the species is densest" | what a ranked shortlist actually finds |
+| "Flag a station for follow-up if …" | expected cost at the chosen threshold |
+| "Abundance peaks at 80 m" | none of the above — see §6 on confounding |
+
+The last row is a reminder rather than a recipe. No predictive measure tests whether a
+relationship is causal, and a model can be excellent at the first four while being wrong about
+the fifth.
+
+## Worked example: four models, three objectives
+
+Same five models as the [regression measures page](regression-metrics.qmd), same folds, same
+pooled out-of-fold predictions.
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  dplyr::select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
+                substrate, season, longitude, latitude) |>
+  drop_na()
+
+formula_env <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
+  log1p(chlorophyll_mg_m3) + salinity_psu + substrate + season + longitude + latitude
+
+fitters <- list(
+  `mean only`          = \(tr, te) rep(mean(tr$abundance), nrow(te)),
+  `Poisson GLM`        = \(tr, te) predict(glm(formula_env, tr, family = poisson),
+                                           te, type = "response"),
+  `negative binomial`  = \(tr, te) predict(glm.nb(formula_env, tr), te, type = "response"),
+  `log-transformed lm` = \(tr, te) expm1(predict(lm(update(formula_env, log1p(abundance) ~ .),
+                                                    tr), te)),
+  `random forest`      = \(tr, te) predict(ranger(abundance ~ ., tr, num.trees = 500,
+                                                  seed = 1), te)$predictions
+)
+
+set.seed(61)
+folds <- vfold_cv(d, v = 10)
+
+out_of_fold <- imap_dfr(fitters, \(f, name) {
+  map_dfr(folds$splits, \(s) {
+    tr <- analysis(s); te <- assessment(s)
+    tibble(model = name, obs = te$abundance, pred = f(tr, te))
+  })
+})
+```
+
+The third objective needs a definition. Suppose the ship can revisit fifty stations. We send it
+to the fifty the model ranks highest, and count how many individuals are actually there.
+
+```{r}
+#| label: objectives
+budget <- 50
+observed <- filter(out_of_fold, model == "mean only")$obs
+perfect  <- sum(sort(observed, decreasing = TRUE)[seq_len(budget)])
+
+objectives <- out_of_fold |>
+  summarise(
+    `mapping: RMSE`            = rmse_vec(obs, pred),
+    `stock total: pred / obs`  = sum(pred) / sum(obs),
+    `targeting: caught in 50`  = sum(obs[order(pred, decreasing = TRUE)][seq_len(budget)]),
+    .by = model) |>
+  mutate(`share of a perfect shortlist` = `targeting: caught in 50` / perfect)
+
+objectives |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: benchmarks
+c(`individuals in the whole survey`   = sum(observed),
+  `a perfect shortlist of 50 finds`   = perfect,
+  `50 stations chosen at random find` = budget * mean(observed)) |> round(0)
+```
+
+## What the results mean
+
+Three objectives, and the table reads differently down each column.
+
+**The mean-only model is perfect at estimating the total.** Its predicted total is exactly the
+observed total — ratio 1.000 — because that is what a mean is. It has no skill whatsoever: it
+gives the same answer at every station, has the worst RMSE in the table, and a shortlist built
+from its rankings finds 183 individuals, essentially what fifty stations picked at random would
+find. **A measure that checks only an aggregate can be satisfied by a model with no
+information in it.** If you report a total, report a per-station error beside it.
+
+**The ranking objective reverses two models.** The random forest beats the log-transformed
+linear model on RMSE, 4.363 to 4.461. Send the ship out on their rankings and the log model's
+fifty stations hold 481 individuals against the forest's 456 — 5% more, from the model with the
+worse RMSE. Squared error punished the log model for its low predictions; the shortlist does
+not care what numbers it printed, only what order it put the stations in.
+
+**And no model is close to perfect.** The best shortlist here finds 499 of the 851 individuals
+a clairvoyant ranking would find — 59%. That is the honest sentence for a survey plan: not
+"our model has R² 0.24", which means nothing to a ship's officer, but *"targeting the fifty
+stations this model ranks highest should find roughly two and a half times as many individuals
+as fifty stations chosen at random, and about three-fifths of the theoretical maximum."*
+
+::: {.callout-note collapse="true"}
+## Why the shortlist measure is not just R² in disguise
+
+R² and RMSE are computed from the *values* the model predicts; the shortlist depends only on
+their *order*. Any monotone transformation of the predictions — halving them all, taking their
+square root — leaves the shortlist identical and changes RMSE completely. That is exactly the
+independence you want when the decision is "which stations", not "how many at each".
+
+It works the other way too. A model can order stations perfectly and be badly biased, which is
+why the log-transformed model does well here and disastrously on the total.
+:::
+
+## Worked example: a threshold from costs
+
+The [classification page](classification-metrics.qmd) showed that accuracy, F1, MCC and
+Youden's J each want a different cut-off. None of them is the right one, because none of them
+knows what a mistake costs you.
+
+Suppose the decision is whether to send a dive team to confirm presence. A **wasted dive** — a
+station flagged where nothing is there — costs ship time. A **missed station** costs a gap in
+the record. Let their relative cost be $k$ dives per missed station, and compute the expected
+cost per station across all thresholds.
+
+```{r}
+#| label: costs
+presence <- survey |>
+  select(present, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
+         substrate, season, longitude, latitude) |>
+  drop_na()
+
+rec <- recipe(present ~ ., data = presence) |> step_dummy(all_nominal_predictors())
+
+set.seed(71)
+presence_folds <- vfold_cv(presence, v = 10, strata = present)
+
+probabilities <- map_dfr(presence_folds$splits, \(s) {
+  fitted <- fit(workflow() |> add_recipe(rec) |> add_model(logistic_reg()),
+                analysis(s))
+  held <- assessment(s)
+  tibble(truth = held$present,
+         .pred_yes = predict(fitted, held, type = "prob")$.pred_yes)
+})
+
+expected_cost <- function(threshold, k) {
+  flagged <- probabilities$.pred_yes >= threshold
+  missed  <- sum(!flagged & probabilities$truth == "yes")
+  wasted  <- sum( flagged & probabilities$truth == "no")
+  (missed + k * wasted) / nrow(probabilities)
+}
+
+cost_curves <- expand_grid(k = c(1, 3, 10, 30), cut_off = seq(0.01, 0.99, by = 0.005)) |>
+  mutate(cost = map2_dbl(cut_off, k, expected_cost))
+
+cost_table <- cost_curves |>
+  summarise(`cheapest threshold` = cut_off[which.min(cost)],
+            `cost there`         = min(cost),
+            `cost at 0.5`        = expected_cost(0.5, first(k)),
+            .by = k) |>
+  mutate(`theory: k/(1+k)`        = k / (1 + k),
+         `saved by not using 0.5` = 1 - `cost there` / `cost at 0.5`) |>
+  select(`a wasted dive costs` = k, `cheapest threshold`, `theory: k/(1+k)`,
+         `cost there`, `cost at 0.5`, `saved by not using 0.5`)
+
+cost_table |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: fig-cost
+#| fig-cap: "Expected cost per station against the decision threshold, for four exchange rates between a wasted dive and a missed station. Each curve is scaled to its own minimum, marked with a dot; the dashed line is 0.5. When both errors cost the same the cheapest threshold is 0.52. As wasted dives get more expensive the minimum slides right — 0.75, then 0.965 — and the penalty for leaving the threshold at 0.5 grows from under 1% to 87%."
+#| fig-alt: "Four labelled curves on a shared horizontal axis of decision threshold from 0 to 1, with expected cost relative to each curve's own minimum on a logarithmic vertical axis from 1 to about 8, and a dashed vertical line at 0.5. Each curve is flat across the left of the plot, dips to a marked minimum, then climbs. The equal-cost curve is lowest on the left at about 1.05, has its minimum at 0.52 and rises to nearly 4 at the right-hand edge. The three-times curve starts near 1.15, bottoms at 0.75 and rises modestly. The ten-times and thirty-times curves start far higher — about 2.8 and 7.8 — fall steadily across the middle of the plot and reach their minima together at 0.965, close to the right-hand edge. At the dashed line the four curves sit at roughly 1.0, 1.15, 2.6 and 7.8 times their best values."
+#| fig-width: 7
+#| fig-height: 4.6
+scaled_curves <- cost_curves |>
+  mutate(relative = cost / min(cost), .by = k) |>
+  mutate(label = paste0("a wasted dive costs ", k, "×"))
+
+cost_minima <- slice_min(scaled_curves, relative, by = k, with_ties = FALSE)
+
+ggplot(scaled_curves, aes(cut_off, relative, colour = factor(k))) +
+  geom_vline(xintercept = 0.5, linetype = "dashed",
+             colour = ml_palette[["grey"]], linewidth = 0.4) +
+  geom_line(linewidth = 0.9) +
+  geom_point(data = cost_minima, size = 3) +
+  ggrepel::geom_text_repel(data = cost_minima, aes(label = label), size = 3.1, seed = 3,
+                           direction = "y", nudge_y = 0.12, min.segment.length = 0.3) +
+  scale_y_log10() +
+  scale_colour_ml() +
+  labs(x = "flag the station if the predicted probability exceeds this",
+       y = "expected cost, relative to that curve's best",
+       title = "Where the cheapest threshold sits depends on what a mistake costs") +
+  theme(legend.position = "none")
+```
+
+For a model whose probabilities are calibrated — and
+[the classification page](classification-metrics.qmd) showed this one roughly is — the
+cost-minimising threshold is $k/(1+k)$, where $k$ is the cost of a wasted dive in units of a
+missed station. The table shows the empirical optimum landing on it exactly at $k = 3$ and
+close at $k = 1$ and $k = 30$. At $k = 10$ the empirical best is 0.965 against a theoretical
+0.909, because the cost only changes when a station crosses the threshold, so the curve moves
+in steps and its floor is broad.
+
+The last column is the practical point. At $k = 10$, leaving the threshold at 0.5 costs 2.6
+times what the cheapest threshold costs. At $k = 30$ it costs nearly eight times as much. One
+line of code, and no change to the model at all.
+
+::: {.callout-important}
+## Say what you assumed
+
+You cannot avoid choosing an exchange rate. Using 0.5 is choosing one — it asserts that a
+wasted dive and a missed station cost exactly the same, which is almost never true and which
+nobody writes down.
+
+"We flagged stations above 0.75, on the assumption that a wasted dive costs about three times a
+missed record" is a methods sentence a reviewer can argue with, which is the point. It is also
+the sentence that lets someone with a different ship budget reuse your model.
+:::
+
+## Where this breaks down
+
+The shortlist measure here used a budget of fifty, and the ordering of models can change with
+the budget — a model good at the extreme top of the ranking may be mediocre at 200. Compute it
+at the budget you actually have.
+
+Costs are rarely constant either. The cost of a missed station is not the same for a protected
+species as for a common one, and the cost of a wasted dive depends on where it is. The
+framework still works; the single number $k$ becomes a cost per station, and the threshold
+becomes a per-station threshold.
+
+And none of this touches the biggest risk. Every measure in this section scores predictions
+against observations. If the observations are biased — gear selectivity, observer effects,
+survey effort that follows ports — then a model that reproduces them perfectly reproduces the
+bias too, and no validation scheme will tell you.
+
+::: {.callout-tip}
+## Key points
+
+- Choose the measure from the sentence you intend to write, before you fit anything.
+- An aggregate-only check is not a validation: the mean-only model estimated the survey total
+  exactly and had no skill at all.
+- Rankings and values are different objectives. The log-transformed model lost on RMSE and won
+  the fifty-station shortlist, 481 individuals against the forest's 456.
+- Report decision-shaped numbers: "two and a half times a random shortlist, three-fifths of the
+  theoretical maximum" travels further than "R² 0.24".
+- The cost-minimising threshold is $k/(1+k)$ for calibrated probabilities. Leaving it at 0.5
+  cost up to eight times more here than choosing it.
+- Say what exchange rate you assumed. Using the default is assuming 1:1 silently.
+:::
+
+## Try it yourself
+
+1. Recompute the shortlist column for budgets of 20, 50, 100 and 200. Does the same model win
+   at every budget?
+2. Take the cost framework to the rare-species response from
+   [section 6](../06-assumptions-limitations/class-imbalance.qmd) and find the threshold for
+   *k* = 0.1 — a missed detection costing ten wasted dives. How many stations does that flag?

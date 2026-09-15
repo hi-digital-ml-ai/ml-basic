@@ -1,0 +1,317 @@
+---
+title: "Cross-validation"
+description: "Why a single train/test split is too noisy to trust, how many folds to use, and why you may not quote the winning score from a search."
+order: 1
+categories: [validation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+[Section 5](../05-generalisation/index.qmd) established that training error is not
+performance, and that you must measure on data the model has not seen. It then cheerfully
+broke its own rule on every page, choosing complexity by looking at the test set and saying
+so each time.
+
+This page fixes that. The problem with holding out a test set and looking at it is not
+philosophical fussiness — it is that a single held-out set is a *noisy* measurement, and
+looking at it repeatedly converts that noise into a systematically flattering answer.
+Cross-validation reduces the noise. Nesting the cross-validation removes the flattery.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+A *fold* is a slice of the data. **k-fold cross-validation** cuts the data into $k$ equal
+slices, then fits the model $k$ times: each time, one slice is held out for scoring and the
+other $k - 1$ are used for fitting. Every observation is scored exactly once, by a model that
+never saw it. The $k$ scores are then combined into one number.
+
+You get two things a single split cannot give. The estimate uses *all* the data for scoring
+rather than a quarter of it, so it is far less noisy. And the spread of the $k$ fold-scores
+tells you how uncertain that estimate is — a standard error for your performance number,
+which a single split simply does not have.
+
+## Worked example
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
+         substrate, season, longitude, latitude) |>
+  drop_na()
+
+rec  <- recipe(abundance ~ ., data = d) |> step_dummy(all_nominal_predictors())
+spec <- rand_forest(trees = 300) |> set_engine("ranger", seed = 1) |> set_mode("regression")
+wf   <- workflow() |> add_recipe(rec) |> add_model(spec)
+
+nrow(d)
+```
+
+### How much does a single split actually tell you?
+
+The honest way to ask is to do it many times. We take forty different 75/25 splits of the same
+720 stations, fit the same random forest to each, and look at the spread of the answers. Then
+we do the same for forty different ten-fold cross-validations.
+
+```{r}
+#| label: stability
+set.seed(7)
+single <- map_dfr(1:40, \(i) {
+  sp <- initial_split(d, prop = 0.75)
+  p  <- augment(fit(wf, training(sp)), testing(sp))
+  tibble(scheme = "single 75/25 split", rep = i,
+         rmse = rmse_vec(p$abundance, p$.pred), rsq = rsq_vec(p$abundance, p$.pred))
+})
+
+set.seed(8)
+crossval <- map_dfr(1:40, \(i) {
+  m <- collect_metrics(fit_resamples(wf, vfold_cv(d, v = 10),
+                                     metrics = metric_set(rmse, rsq)))
+  tibble(scheme = "10-fold cross-validation", rep = i,
+         rmse = m$mean[m$.metric == "rmse"], rsq = m$mean[m$.metric == "rsq"])
+})
+
+estimates <- bind_rows(single, crossval)
+
+estimates |>
+  summarise(across(c(rmse, rsq), list(mean = mean, sd = sd, lowest = min, highest = max)),
+            .by = scheme) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Nothing about the model changed between those eighty fits. The data did not change. Only the
+line drawn through it changed — and the answer moved by a factor of four.
+
+```{r}
+#| label: fig-stability
+#| fig-cap: "Forty estimates of the same model's R² from a single 75/25 split (top) and forty estimates from ten-fold cross-validation (bottom). Every point is the same random forest on the same 720 stations; the only difference is how the data were divided. The single-split estimates run from 0.079 to 0.346. The cross-validated estimates run from 0.195 to 0.239."
+#| fig-alt: "Two horizontal strip plots sharing an x-axis labelled R-squared running from below 0.10 to 0.35. The upper strip, labelled single 75/25 split, shows forty orange points: most sit in a loose band between 0.14 and 0.24, with three stragglers down at 0.08 to 0.10 and four more out at 0.26, 0.28, 0.31 and 0.35. The lower strip, labelled ten-fold cross-validation, shows forty blue points packed into a single tight clump between 0.195 and 0.24, about a sixth of the width the orange points occupy, with no stragglers at all."
+#| fig-width: 7
+#| fig-height: 3.2
+estimates |>
+  mutate(scheme = factor(scheme, c("single 75/25 split", "10-fold cross-validation"))) |>
+  ggplot(aes(rsq, y = 0, colour = scheme)) +
+  geom_jitter(width = 0, height = 0.3, alpha = 0.75, size = 2.4) +
+  facet_wrap(~scheme, ncol = 1) +
+  scale_y_continuous(breaks = NULL, limits = c(-0.8, 0.8)) +
+  scale_colour_manual(values = unname(ml_palette[c("orange", "blue")])) +
+  labs(x = expression(R^2~"on held-out stations"), y = NULL,
+       title = "The same model, measured forty times each way") +
+  theme(legend.position = "none")
+```
+
+A single split is not wrong. It is just imprecise, and the imprecision is large enough to
+reverse a comparison between two decent models. If you report R² = 0.34 from one lucky split
+and someone else reports 0.08 from one unlucky split, you have not disagreed about the ocean.
+
+### How many folds?
+
+More folds means each model trains on more of the data, so the estimate is less pessimistic;
+it also means more fits. The extreme is **leave-one-out** cross-validation, where $k = n$ and
+each model is trained on all but a single station.
+
+```{r}
+#| label: folds
+formula_glm <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
+  log1p(chlorophyll_mg_m3) + salinity_psu + substrate + season
+
+fold_scores <- function(v) {
+  parts <- map(vfold_cv(d, v = v)$splits, \(s) {
+    m <- glm(formula_glm, data = analysis(s), family = poisson)
+    tibble(obs = assessment(s)$abundance,
+           pred = predict(m, assessment(s), type = "response"))
+  })
+  all_at_once <- bind_rows(parts)
+  c(pooled   = rmse_vec(all_at_once$obs, all_at_once$pred),
+    per_fold = mean(map_dbl(parts, \(p) rmse_vec(p$obs, p$pred))))
+}
+
+fold_sweep <- map_dfr(c(2, 5, 10, 20), \(v) {
+  set.seed(300 + v)
+  map_dfr(1:25, \(i) as_tibble_row(fold_scores(v))) |> mutate(folds = v)
+})
+
+fold_sweep |>
+  summarise(`RMSE, pooled` = mean(pooled),
+            `sd across repeats` = sd(pooled),
+            `RMSE, averaged per fold` = mean(per_fold), .by = folds) |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+Read the first two numeric columns. Two folds is pessimistic — each model trains on only half
+the stations, and a Poisson model of counts genuinely does worse with 360 stations than with
+648. By ten folds the bias has gone and the estimate has also become four times more stable
+across repeats. Going to twenty folds buys almost nothing for twice the work — and
+leave-one-out, at 720 fits, lands where five- and ten-fold already were:
+
+```{r}
+#| label: loo
+squared_errors <- map_dbl(seq_len(nrow(d)), \(i) {
+  m <- glm(formula_glm, data = d[-i, ], family = poisson)
+  (d$abundance[i] - predict(m, d[i, ], type = "response"))^2
+})
+c(`leave-one-out RMSE` = sqrt(mean(squared_errors))) |> round(3)
+```
+
+That is the practical answer: **five or ten folds**, and ten is the usual default because the
+extra stability is cheap at this size. It is a convention, not a theorem, but on this dataset
+you can see why it became one.
+
+::: {.callout-warning}
+## The third column is not a different model
+
+`collect_metrics()` averages the RMSE of each fold. That is not the same as the RMSE of all
+the out-of-fold predictions pooled together, because the square root is taken before averaging
+instead of after. The gap grows with the number of folds — 0.005 at two folds, **0.119 at
+twenty** — for no reason connected to the model at all.
+
+So an RMSE reported from twenty-fold cross-validation is not comparable with one from
+five-fold, even for the same model on the same data. This is the same trap
+[section 6](../06-assumptions-limitations/index.qmd) hit three times from a different
+direction, and the [regression measures page](regression-metrics.qmd) takes it apart properly.
+:::
+
+### May I quote the winning score?
+
+No, and this is the part that most often goes wrong in practice. Suppose we search for a good
+set of predictors. We add twenty columns of pure random noise to the data, draw 100 candidate
+models that each use five of the twenty-eight available columns, and score every one by
+ten-fold cross-validation.
+
+```{r}
+#| label: search
+set.seed(21)
+noisy <- bind_cols(d, as_tibble(matrix(rnorm(nrow(d) * 20), nrow(d)),
+                                .name_repair = \(x) paste0("noise_", seq_along(x))))
+predictors <- setdiff(names(noisy), "abundance")
+
+set.seed(23)
+candidates <- map(1:100, \(i) sample(predictors, 5))
+
+cv_rmse <- function(data, vars, v, seed) {
+  set.seed(seed)
+  mean(map_dbl(vfold_cv(data, v = v)$splits, \(s) {
+    m <- glm(reformulate(vars, "abundance"), data = analysis(s), family = poisson)
+    rmse_vec(assessment(s)$abundance, predict(m, assessment(s), type = "response"))
+  }))
+}
+
+searched <- map_dbl(candidates, \(v) cv_rmse(noisy, v, 10, 31))
+winner   <- candidates[[which.min(searched)]]
+
+c(best = min(searched), median = median(searched), worst = max(searched)) |> round(3)
+winner
+```
+
+The winning model uses three columns of pure noise out of five. Its cross-validated RMSE of
+`r round(min(searched), 3)` is the best of the hundred, and it is exactly the number that
+would appear in a paper.
+
+**Nested cross-validation** measures what that search is really worth. An outer set of folds
+is held back; inside each outer training set, the whole 100-candidate search is repeated from
+scratch on inner folds; the model that search picks is then scored on the outer fold, which
+the search never touched. To have something to compare against, we also score a fixed model —
+all eight real predictors, no search at all — on those same outer folds.
+
+```{r}
+#| label: nested
+set.seed(32)
+outer_folds <- vfold_cv(noisy, v = 5)
+
+nested <- map_dfr(1:5, \(i) {
+  train <- analysis(outer_folds$splits[[i]])
+  held  <- assessment(outer_folds$splits[[i]])
+  inner <- map_dbl(candidates, \(v) cv_rmse(train, v, 5, 40 + i))
+  chosen <- candidates[[which.min(inner)]]
+  on_held <- function(vars) {
+    m <- glm(reformulate(vars, "abundance"), data = train, family = poisson)
+    rmse_vec(held$abundance, predict(m, held, type = "response"))
+  }
+  tibble(fold = i,
+         `search reported` = min(inner),
+         `search's model, honestly` = on_held(chosen),
+         `no search at all` = on_held(predictors[1:8]),
+         `noise columns chosen` = sum(grepl("noise", chosen)))
+})
+
+nested |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+```{r}
+#| label: nested-summary
+nested |>
+  summarise(across(c(`search reported`, `search's model, honestly`, `no search at all`), mean)) |>
+  round(3)
+```
+
+## What the results mean
+
+The search reported 4.472. The model it chose actually achieves 4.851 — about 8% worse. And
+doing nothing at all, keeping every real predictor and searching for nothing, achieves 4.471
+on the same folds, beating the searched model in **all five**.
+
+The reported number is not a lie about arithmetic; the search really did find the lowest
+cross-validated score among its hundred candidates. It is a lie about the future, because the
+minimum of a hundred noisy estimates is systematically lower than any of them deserves. The
+spread the search explored was 0.313 wide, from 4.485 to 4.798. The optimism it created was
+0.379. **The search moved the reported number by less than it moved the reported number's
+error.**
+
+Part of that gap is bookkeeping rather than optimism. The nested estimate averages over five
+large folds rather than ten small ones, and trains on slightly less data; the fold sweep above
+puts the two together at about 0.04 RMSE. The remaining **0.34 is selection**.
+
+So there are three numbers in any tuned analysis, and they are all different:
+
+1. The **score of the winner**, which tells you which candidate to use and nothing else.
+2. The **nested estimate**, which tells you how well the whole procedure — search included —
+   will do on new data.
+3. The **final model**, which you fit on all the data using the winner's settings, and which
+   has no score of its own at all.
+
+Quoting (1) as if it were (2) is the single most common validation error in applied work.
+
+## Where this breaks down
+
+Everything on this page assumed that a random division of the rows produces folds that are
+independent of each other. For survey data that assumption is false, for exactly the reasons
+[section 6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd) set out: a
+station in the held-out fold usually has a near neighbour in the training fold, and repeat
+visits to one site can be split across both.
+
+That does not make the arithmetic on this page wrong. It makes the *question* wrong. Everything
+here answers "how well does this model predict an unsampled station in the middle of a sampled
+area", and almost no marine study wants to know that. The
+[next page](spatial-and-temporal-cv.qmd) changes the question.
+
+::: {.callout-tip}
+## Key points
+
+- A single train/test split is a noisy measurement. On this data forty splits of the same 720
+  stations gave R² anywhere from 0.079 to 0.346; ten-fold cross-validation gave 0.195 to 0.239.
+- Five or ten folds is a sound default. Two is pessimistic, twenty costs twice as much for no
+  gain, and leave-one-out lands in the same place as ten.
+- The RMSE `collect_metrics()` reports depends on the number of folds through the averaging
+  alone. Do not compare RMSE across schemes.
+- The best score from a search is not a performance estimate. Nested cross-validation gives
+  one; here the gap was 8%, and the search lost to not searching at all on every fold.
+:::
+
+## Try it yourself
+
+1. Rerun the stability comparison with `prop = 0.5` instead of `0.75`. The single-split
+   estimates get worse in two distinct ways — find both.
+2. Add `noise_1` through `noise_20` to the *baseline* model in the nested comparison as well,
+   so both arms carry the same junk. How much of the 0.38 gap survives?
