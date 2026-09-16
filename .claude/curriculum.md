@@ -344,6 +344,61 @@ is §10's "what can you honestly claim" in miniature.
 - Communicating uncertainty and limitations
 - Practical marine-science examples and exercises
 
+**Written as six pages, splitting the first subtopic and turning the last into a capstone.**
+"Feature importance and model interpretation" became two pages, because a ranking and a shape
+are different objects with different failure modes and one page could only do the ranking.
+"Practical marine-science examples and exercises" became `from-model-to-claim.qmd`, which
+takes the survey through the whole course and ends in the two paragraphs you would actually
+write — the exercises are then attached to something concrete rather than free-floating.
+
+### The section's organising move
+
+Every page checks its interpretation against `data/coastal-survey-truth.csv` and the generator
+in `R/make-example-data.R`. `partial-effects.qmd` goes furthest: it recovers the unexplained
+spatial term by subtraction (`log(true_mean)` minus every known term, exact to 7e-15) and can
+therefore compute the *true* partial-dependence function to compare against. That is only
+possible because the data is simulated, and every page that uses it says so in a callout.
+
+### Three findings the pages are built on
+
+- **No interpretation method recovers an effect the design confounded.** The true depth
+  response peaks at 80 m. A forest's partial dependence declines monotonically, ALE agrees,
+  and a negative-binomial GLM given the generator's *exact* functional form estimates the
+  depth quadratic at a fourteenth of its true value with $p = 0.63$. Depth and temperature are
+  correlated at −0.45 and temperature is generated from depth. This is the section's headline
+  and it is why the page does not stop at "blame the black box".
+- **The most accurate model was also the second most interpretable.** On identical folds with
+  pooled out-of-fold predictions, the GAM scored 4.08 against the random forest's 4.28 and
+  untuned boosted trees' 4.74, and closed 83% of the baseline-to-oracle gap. The real
+  trade-off is knowing the functional form (4.25) against not knowing it (4.38), not accuracy
+  against interpretability. Keep the untuned boosted trees: default-against-default is the
+  comparison people actually run.
+- **Observation bias defeats every safeguard in the course.** Halving the recorded catch on
+  rock more than doubles the estimated rock effect *and improves* the cross-validated RMSE and
+  R². This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
+  course says.
+
+### Two conventions that hold the section together
+
+**Every importance table needs a null column and a repeat.** Three `rnorm()` columns give the
+scale (impurity importance ranks them sixth to eighth of sixteen, above every substrate term).
+Eight splits give the stability: chlorophyll runs from rank 1 to rank 11, while salinity and
+`survey_year` — the two true nulls — clear the noise ceiling zero times out of eight. The
+reportable quantity is the *count of splits above the ceiling*, not the ranking. This is §8's
+structure-free null and §7's baseline arriving in a third form.
+
+**Name which interval you are quoting and measure its coverage.** A 95% confidence band on the
+mean covered 29% of observed counts; an interval from a forest's in-sample RMSE covered 77%;
+conformal covered 96.5% at constant width with a lower bound of −9.1 animals. Coverage on
+held-out data is one line of code and is the only evidence an interval works.
+
+### A trap that caught this section twice
+
+`summarise()` and `tibble()` evaluate arguments in order, so
+`summarise(rmse = mean(rmse), lower = quantile(rmse, 0.1))` computes the quantile of the
+*new scalar*, silently collapsing every ribbon to its line. The same shadowing bit §7 and §8.
+Put derived columns before the column they are derived from, or rename.
+
 ---
 
 ## Threads that run across sections
@@ -367,3 +422,9 @@ Repeat these deliberately rather than treating them as one section's property:
 - **Axis-aligned splitting** is the limitation trees and forests share (§3, §9) and the one
   thing a single hidden unit fixes. It is also why the tree in §9 extrapolates "high
   salinity means core" sideways into empty space — §6's extrapolation thread again.
+- **Identifiability** (§10) is the limit on everything §6 to §10 do. A confounded design
+  cannot be rescued by a better model, a better plot or a bigger sample; the honest output is
+  the sentence naming the confounding.
+- **Simulation with a known truth** is what makes §5's bias/variance, §8's cluster validity
+  and §10's interpretation checks possible at all. Any new dataset added to `data/` should
+  come with its generator and, where useful, its truth file.

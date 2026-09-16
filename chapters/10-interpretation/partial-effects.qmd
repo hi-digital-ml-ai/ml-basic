@@ -1,0 +1,374 @@
+---
+title: "Partial effects: shape, not just rank"
+description: "Partial dependence, ICE and ALE on a model whose truth we know — one predictor recovered almost exactly, one not recovered at all, and the same failure from a correctly specified GLM."
+order: 2
+categories: [interpretation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+library(DALEXtra)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Why this matters
+
+An importance ranking tells you which columns a model leans on. It does not tell you whether
+abundance goes up or down with depth, whether the relationship turns over, or where the
+optimum is — and those are the sentences that go in a paper.
+
+**Partial-effect plots** are how you get the shape out of a model that has no coefficients.
+They are also where interpretation quietly stops being about the model and starts being
+about the data, because a shape you cannot estimate is a shape no plotting method will show
+you. This page demonstrates both halves on a survey where we know the answer.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+A **partial dependence plot** (PDP) answers: if every station in the survey had been at 40 m
+depth, what would the model have predicted on average? Then repeat for 45 m, 50 m, and so on,
+and join the dots. Every other column stays as it was recorded, so the curve is the model's
+prediction with one variable swept and the rest left alone.
+
+```{r}
+#| label: pdp-function
+partial_dependence <- function(model, data, variable, grid) {
+  map_dbl(grid, \(value) {
+    swept <- data
+    swept[[variable]] <- value
+    mean(predict(model, swept)$.pred)
+  })
+}
+```
+
+Four lines. That really is the whole method, and writing it out makes its one assumption
+visible: it builds rows that combine a *chosen* value of one variable with the *observed*
+values of all the others, whether or not such a station could exist.
+
+## The truth, and a model
+
+Because the survey is simulated we can compute the exact curve a perfect interpretation
+would recover. The generator's expected count depends on depth and temperature through two
+quadratics, on chlorophyll, on substrate, and on a smooth spatial field. `true_mean` gives us
+the first four directly; the spatial field we can recover by subtraction, because everything
+else in the expression is known.
+
+```{r}
+#| label: recover-truth
+survey <- load_coastal_survey_clean()
+
+known_truth <- survey |>
+  select(station_id, abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season, longitude, latitude) |>
+  drop_na() |>
+  inner_join(load_coastal_survey_truth(), by = "station_id") |>
+  mutate(
+    substrate_effect = c(sand = 0, mud = 0.40, gravel = 0.20,
+                         rock = -0.60)[as.character(substrate)],
+    spatial_term = log(true_mean) -
+      (1.5 - 0.55 * ((depth_m - 80) / 60)^2 - 0.60 * ((temperature_c - 9) / 3)^2 +
+         0.35 * log1p(chlorophyll_mg_m3) + substrate_effect)
+  )
+
+true_partial_dependence <- function(variable, grid) {
+  map_dbl(grid, \(value) {
+    swept <- known_truth
+    swept[[variable]] <- value
+    effect <- c(sand = 0, mud = 0.40, gravel = 0.20,
+                rock = -0.60)[as.character(swept$substrate)]
+    mean(exp(1.5 - 0.55 * ((swept$depth_m - 80) / 60)^2 -
+               0.60 * ((swept$temperature_c - 9) / 3)^2 +
+               0.35 * log1p(swept$chlorophyll_mg_m3) + effect + swept$spatial_term))
+  })
+}
+
+modelling <- known_truth |>
+  select(-station_id, -true_mean, -substrate_effect, -spatial_term)
+
+set.seed(2)
+forest <- workflow() |>
+  add_recipe(recipe(abundance ~ ., data = modelling) |>
+               step_dummy(all_nominal_predictors())) |>
+  add_model(rand_forest(trees = 800) |>
+              set_engine("ranger", seed = 1) |> set_mode("regression")) |>
+  fit(modelling)
+
+nrow(modelling)
+```
+
+::: {.callout-warning}
+`true_mean` and everything derived from it are available here **only because the data is
+simulated**. No real survey has them. They are used on this page as a target to check the
+interpretation against, never as a predictor.
+:::
+
+## Temperature: recovered
+
+```{r}
+#| label: temperature-pdp
+temperature_grid <- seq(3, 16, by = 0.25)
+
+temperature_curves <- tibble(
+  temperature_c = temperature_grid,
+  truth  = true_partial_dependence("temperature_c", temperature_grid),
+  forest = partial_dependence(forest, modelling, "temperature_c", temperature_grid)
+)
+
+temperature_curves |>
+  filter(temperature_c %in% c(3, 6, 9, 12, 15)) |>
+  mutate(across(-temperature_c, \(x) round(x, 2)))
+```
+
+The forest puts the optimum at 7.75 °C against a true 9 °C, and it gets the shape right — up,
+over, down. What it does not get is the amplitude. The truth falls to 0.51 at 3 °C; the
+forest only falls to 3.18. Tree ensembles average many predictions, each bounded by the
+training data, so their partial effects are systematically **flattened at the extremes**.
+If you read an optimum off a forest's PDP you will usually be close. If you read the *size*
+of the effect off it, you will understate it, often by a lot.
+
+## Depth: not recovered
+
+```{r}
+#| label: depth-pdp
+depth_grid <- seq(10, 180, by = 5)
+
+depth_curves <- tibble(
+  depth_m = depth_grid,
+  truth  = true_partial_dependence("depth_m", depth_grid),
+  forest = partial_dependence(forest, modelling, "depth_m", depth_grid)
+)
+
+depth_curves |>
+  filter(depth_m %in% c(10, 40, 80, 120, 160)) |>
+  mutate(across(-depth_m, \(x) round(x, 2)))
+```
+
+The true depth effect is a hump with its peak at 80 m: 2.47 at 10 m, rising to 5.22 at 80,
+falling to 1.96 at 160. The forest's partial dependence declines monotonically from 5.04 to
+3.77 and peaks at the shallowest depth on the grid.
+
+This is not a small error in the optimum. It is the wrong shape, and a paper reporting
+"abundance declines with depth" from this plot would be making a claim the data contradicts.
+
+## Is it the forest's fault?
+
+The obvious next move is to blame the black box and fit something interpretable. So let us
+fit the model that is *exactly* right: a negative-binomial GLM with quadratics in depth and
+temperature — the generator's own functional form.
+
+```{r}
+#| label: glm
+correct_form <- MASS::glm.nb(
+  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
+    log1p(chlorophyll_mg_m3) + substrate + season + salinity_psu,
+  data = modelling
+)
+
+glm_partial <- function(variable, grid) {
+  map_dbl(grid, \(value) {
+    swept <- modelling
+    swept[[variable]] <- value
+    mean(predict(correct_form, swept, type = "response"))
+  })
+}
+
+depth_curves$glm <- glm_partial("depth_m", depth_grid)
+
+depth_curves |>
+  filter(depth_m %in% c(10, 40, 80, 120, 160)) |>
+  mutate(across(-depth_m, \(x) round(x, 2)))
+```
+
+The GLM is worse. Its depth curve falls from 8.19 to 1.80, monotonically, and peaks at the
+shallow end like the forest's. Looking at its coefficients shows why.
+
+```{r}
+#| label: coefficients
+tibble(term = c("depth, linear", "depth, quadratic",
+                "temperature, linear", "temperature, quadratic"),
+       estimate = coef(correct_form)[2:5],
+       `std. error` = sqrt(diag(vcov(correct_form)))[2:5],
+       `true value` = c(2 * 0.55 * 80 / 3600, -0.55 / 3600,
+                        2 * 0.60 * 9 / 9, -0.60 / 9)) |>
+  mutate(`p value` = round(2 * pnorm(-abs(estimate / `std. error`)), 4),
+         across(c(estimate, `std. error`, `true value`), \(x) signif(x, 3)))
+```
+
+**Temperature is recovered almost exactly**: its quadratic coefficient comes back at −0.0674
+against a true −0.0667, its linear term at 1.08 against 1.20, both with enormous $z$
+statistics. **Depth is not recovered at all**: the quadratic term is estimated at about a
+fourteenth of its true value with a $p$ value of 0.63, and the linear term comes back with
+the wrong sign.
+
+So both models — one with no functional form at all, one with precisely the right one —
+tell the same wrong story about depth. That rules out the method.
+
+```{r}
+#| label: fig-partial-effects
+#| fig-cap: "Partial dependence for temperature and depth: the true curve, the random forest's, and a negative-binomial GLM given the generator's exact functional form. Temperature is recovered by both. Depth is recovered by neither — the true hump at 80 m appears as a monotone decline."
+#| fig-alt: "Two panels. In the temperature panel the true curve rises from about 0.5 at three degrees to a peak of 5.6 at nine and falls symmetrically back to 0.5 at fifteen; the GLM curve has the same shape but peaks about a degree earlier and about 0.7 higher, and it crosses the true curve on the way down; the forest curve has the same peak position but is much flatter, running from about 3.2 up to 5.1 and back to 3.5. In the depth panel the true curve is a broad hump peaking at 5.2 around eighty metres; both the GLM and the forest curves decline steadily from left to right with no hump at all, the GLM starting much higher at about 8.2 and ending lowest at about 1.8."
+#| fig-width: 9.5
+#| fig-height: 4.2
+temperature_curves$glm <- glm_partial("temperature_c", temperature_grid)
+
+tidy_curves <- function(data, variable) {
+  data |>
+    pivot_longer(c(truth, forest, glm), names_to = "curve", values_to = "prediction") |>
+    mutate(curve = factor(curve, levels = c("truth", "glm", "forest"),
+                          labels = c("truth", "GLM (correct form)", "random forest")))
+}
+
+panel <- function(data, x, label, marker) {
+  ggplot(tidy_curves(data), aes({{ x }}, prediction, colour = curve)) +
+    geom_vline(xintercept = marker, linetype = "dashed", colour = "#c9d1d7") +
+    geom_line(linewidth = 0.9) +
+    labs(x = label, y = "partial dependence (count)", colour = NULL)
+}
+
+(panel(temperature_curves, temperature_c, "temperature (°C)", 9) |
+ panel(depth_curves, depth_m, "depth (m)", 80)) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+## What went wrong, and why no plot can fix it
+
+Depth and temperature are correlated at −0.45, and not by accident: in the generator,
+temperature is *built from* depth. The two quadratic effects therefore overlap, and the
+survey does not contain the observations that would separate them — there are almost no cold
+shallow stations and almost no warm deep ones.
+
+When two effects cannot be separated, a fitting procedure assigns the shared part to
+whichever predictor explains it better. Temperature wins, because its effect is larger
+(−0.60 per squared unit against −0.55, on a much narrower range) and because it sits closer
+to the response in the causal chain. Depth is left with the residual, which is a monotone
+decline.
+
+Dropping temperature does not help: depth then absorbs the *combined* depth-and-temperature
+effect, which is also monotone over the sampled range.
+
+> **A partial-effect plot cannot separate effects that the sampling design confounded.** No
+> amount of ALE, SHAP or conditional permutation recovers a curve that is not identified in
+> the data. The fix is a different survey, not a different plot.
+
+That is a limitation of the data, and it is the honest thing to report: "depth and
+temperature are confounded in this survey; the fitted decline with depth is not separable
+from the temperature optimum".
+
+## Two refinements worth knowing
+
+**ICE curves** show the same sweep for each station individually instead of averaging them.
+An average can hide the fact that the model says something quite different for different
+rows — and on this model it does.
+
+```{r}
+#| label: fig-ice
+#| fig-cap: "Individual conditional expectation curves for temperature: 60 randomly chosen stations swept across the temperature range, with their average — the PDP — in bold. The curves are not parallel. Their humps differ fourfold in height and peak anywhere between 6 and 11.75 °C, and averaging humps that do not line up flattens the average below all of them."
+#| fig-alt: "Sixty thin grey curves, all roughly hump-shaped but differing greatly in height and sharpness. Most sit between 1 and 7 on the vertical axis with modest humps; a handful rise to peaks of 8 to 10; one outlier runs across the top of the panel between 13 and 18. The humps do not all peak in the same place, spreading between about six and twelve degrees. A single bold blue curve, the average, runs through the lower middle of the bundle with a much shallower hump than most of the individual curves, rising from about 3.2 to 5.3 and back."
+#| fig-width: 7
+#| fig-height: 4.4
+set.seed(31)
+chosen <- modelling[sample(nrow(modelling), 60), ]
+
+ice <- map_dfr(temperature_grid, \(value) {
+  swept <- chosen
+  swept$temperature_c <- value
+  tibble(station = seq_len(nrow(chosen)), temperature_c = value,
+         prediction = predict(forest, swept)$.pred)
+})
+
+ggplot(ice, aes(temperature_c, prediction)) +
+  geom_line(aes(group = station), colour = "#9aa5ad", alpha = 0.45, linewidth = 0.4) +
+  geom_line(data = temperature_curves, aes(temperature_c, forest),
+            colour = ml_palette[["blue"]], linewidth = 1.2) +
+  labs(x = "temperature (°C)", y = "predicted count")
+```
+
+```{r}
+#| label: ice-spread
+ice |>
+  summarise(height = max(prediction) - min(prediction),
+            peak_at = temperature_c[which.max(prediction)], .by = station) |>
+  summarise(`smallest hump` = round(min(height), 2),
+            `median hump` = round(median(height), 2),
+            `largest hump` = round(max(height), 2),
+            `earliest peak` = min(peak_at), `latest peak` = max(peak_at))
+```
+
+The individual humps are between 1.35 and 5.98 counts tall, with a median of 2.73 — and
+they peak anywhere from 6 °C to 11.75 °C. The PDP's own hump is only 1.9 counts tall,
+*shorter than any individual curve on the plot*, because averaging humps that do not line up
+smears them out. That is worth knowing before quoting a partial-effect amplitude: it is not
+the effect at a typical station, it is the effect at a typical station after the misalignment
+between stations has been averaged away.
+
+**Accumulated local effects** (ALE) fix the impossible-rows problem. Instead of sweeping a
+variable across its whole range for every station, ALE looks at small windows of the
+variable and asks how the prediction changes for stations *already in that window* — so it
+never asks the model about a 20 m station at 2 °C.
+
+```{r}
+#| label: ale
+explainer <- explain_tidymodels(forest, data = select(modelling, -abundance),
+                                y = modelling$abundance, verbose = FALSE)
+
+set.seed(5)
+accumulated <- model_profile(explainer, variables = "depth_m",
+                             type = "accumulated", N = NULL)
+
+as_tibble(accumulated$agr_profiles) |>
+  transmute(depth_m = round(`_x_`), `accumulated local effect` = round(`_yhat_`, 2)) |>
+  slice(which(row_number() %in% round(seq(1, n(), length.out = 6))))
+```
+
+ALE gives the same broad decline — 4.63 at the shallowest stations to 3.29 at the deepest,
+with a barely perceptible flat stretch around 100 m and no hump anywhere. That is the right
+lesson to take from it: **ALE fixes
+extrapolation, not confounding.** It is the better default for correlated predictors because
+it stops the model being asked about stations that cannot exist, and it still cannot tell you
+about an effect the data does not identify.
+
+## Where this breaks down
+
+**A partial effect is an average, and averages hide interactions.** If depth matters on rock
+and not on mud, the PDP shows a blend of the two. Check with ICE curves or by faceting the
+sweep within levels of the other variable.
+
+**The curve extends as far as your grid does, not as far as your data.** Sweeping depth to
+180 m when 97% of stations are shallower than 160 m produces a curve that is mostly
+extrapolation on the right. Mark the data range on the plot, or trim the grid to it.
+
+**Nothing here is causal.** Even the temperature curve, recovered almost perfectly, is a
+statement about a simulated world we wrote. In a real survey it would still be conditional on
+what else was measured, and the confounding demonstrated above is the norm rather than the
+exception.
+
+::: {.callout-tip}
+## Key points
+
+- A **partial dependence plot** sweeps one variable and averages the model's prediction. It
+  is four lines of code and one strong assumption: that the rows it constructs could exist.
+- **Forests flatten their partial effects.** The temperature optimum came back at 7.75 °C
+  against a true 9 °C, but the amplitude was understated sixfold at the cold end.
+- **Depth's true hump at 80 m came back as a monotone decline** — from the forest *and* from
+  a negative-binomial GLM given the generator's exact functional form, whose depth quadratic
+  was estimated at a fourteenth of its true value with $p = 0.63$.
+- Depth and temperature are confounded by the survey design. **No interpretation method
+  recovers an effect the data does not identify** — report the confounding instead.
+- **ICE** shows whether the average describes the individuals — here it did not, the PDP's
+  hump being shorter than every one of the sixty individual humps. **ALE** avoids impossible
+  rows. Neither fixes confounding.
+:::
+
+## Try it yourself
+
+1. Compute the partial dependence of `substrate` as a bar chart and compare it with the true
+   effects (mud 0.40, gravel 0.20, sand 0, rock −0.60 on the log scale). Is a categorical
+   effect recovered better than a continuous one?
+2. Restrict the survey to stations between 60 and 110 m, where the depth–temperature
+   correlation is weakest, and refit the GLM. Does the depth quadratic come back?
