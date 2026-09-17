@@ -3,13 +3,14 @@ title: "8 · Unsupervised learning"
 description: "Finding structure when you have no labels — clustering, PCA, dimensionality reduction — and how to tell a real group from a cut through a gradient."
 categories: [unsupervised, interpretation]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 Sometimes there is no answer key. You have hundreds of CTD profiles and no water-mass
@@ -23,6 +24,11 @@ the same thing as an ecological gradient. Nothing in the output says "nothing fo
 
 So this section runs the methods and then spends as long again asking whether what came
 back was real.
+
+## Pages in this section
+
+::: {#pages}
+:::
 
 ## What this section found
 
@@ -69,4 +75,3 @@ A gradient is a finding. "Composition turns over continuously with depth" is a m
 sentence than any cluster count, and on this data it is the true one.
 :::
 
-## Pages in this section

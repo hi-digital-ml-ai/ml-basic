@@ -91,23 +91,83 @@ index, not as a restatement of the title.
 
 ## Listings
 
-`chapters/index.qmd` and `contributed/index.qmd` use Quarto listings:
+Each `chapters/NN-slug/index.qmd` is a dashboard: title, a short framing, then a
+card grid of its pages, then the section's findings. The cards come *before* the
+findings — the findings run to ten dense bullets and would bury the navigation.
 
 ```yaml
 listing:
-  contents: "*/*.qmd"
+  id: pages
+  contents: "*.qmd"
   type: grid
-  categories: true
-  sort: "title"
-  fields: [image, title, description, categories]
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
 ```
 
-Give each page an `image:` when a representative figure exists — the grid looks
-broken with a mixture of thumbnails and blanks, so within one listing either all
-pages have images or none do.
+The `id:` matters. Without it Quarto appends the listing at the end of the
+document; with it, the cards render where the matching div sits:
+
+```markdown
+## Pages in this section
+
+::: {#pages}
+:::
+```
+
+`max-description-length` defaults to 175, which truncates most of these page
+descriptions mid-sentence (the longest is 210 characters).
+
+`chapters/index.qmd` and `contributed/index.qmd` use `type: table` with
+`categories: true`, so the topic filter is the point of those pages.
+
+## Page layout
+
+The site is full-width: a docked sidebar on the left, wide body, margin TOC.
+
+```yaml
+format:
+  html:
+    page-layout: full
+    grid:
+      sidebar-width: 300px
+      body-width: 1250px
+      margin-width: 250px
+      gutter-width: 1.6rem
+```
+
+`page-layout: full` on its own does **not** widen the body — it still honours the
+grid's `body-width`, which defaults to 800px. Both are needed.
+
+The width is for figures, tables and code, not for prose. `styles.scss` keeps
+paragraphs, list items and the YAML `description` at a 42rem measure while
+letting everything else use the column:
+
+| Element | Width at a 1680px window |
+| --- | --- |
+| content column | 1116px |
+| paragraphs, list items | 714px |
+| figures | 1020px (capped at 60rem, centred with their caption) |
+| tables, code blocks | 1116px (full column) |
+
+The `description` is emitted as a `div`, not a `p`, so it needs its own rule or
+it runs the whole column.
+
+**Do not set `toc-depth: 2`.** In Quarto 1.9.38 it emits the table of contents as
+`<ul class="collapse">` and nothing ever adds `show`, so the TOC renders as a
+heading with no entries. `toc-expand` does not fix it. `toc-depth: 3` works, and
+is shallow in practice — pages average 7 `##` and 2 `###` headings, and Quarto
+reveals the `###` entries contextually as you scroll.
 
 ## Sidebar
 
-`_quarto.yml` lists the ten sections in order, each expandable to its pages.
-`contributed/` sits at the bottom as its own section. The sidebar is the table of
-contents for the course; do not hide chapter pages from it.
+`_quarto.yml` lists the ten sections at the top level of `contents:`, each
+expandable to its pages, with `style: docked` and `collapse-level: 1`. All ten
+section titles stay visible; Quarto expands the one containing the current page.
+Keep section labels short enough for one line in a 300px rail — "10 · Interpretation",
+not "10 · Interpretation & responsible use".
+
+`More` sits at the bottom with the course index and `contributed/`. The sidebar is
+the table of contents for the course; do not hide chapter pages from it.

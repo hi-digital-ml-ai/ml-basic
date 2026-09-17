@@ -11,11 +11,54 @@ $line-height-base: 1.6 !default;
 
 $code-block-bg: #f6f8fa !default;
 
+// Docked sidebar: a rail, distinct from the page.
+$sidebar-bg: #f4f7f9 !default;
+$sidebar-fg: #2b3a44 !default;
+
 /*-- scss:rules --*/
 
-// Long-form teaching text: keep measure comfortable.
+// ---------------------------------------------------------------------------
+// Full-width body: wide media, narrow prose.
+//
+// page-layout: full lets the content column use whatever the docked sidebar
+// and the margin TOC leave over. Paragraphs must not follow it out there — a
+// 1200px line of text is unreadable — so prose keeps its own measure while
+// figures, tables and code take the whole column.
+// ---------------------------------------------------------------------------
+
+main.content {
+  max-width: 1280px;          // guard against ultrawide monitors
+}
+
 main {
-  p, li { max-width: 42rem; }
+  p, li, blockquote { max-width: 42rem; }
+
+  // The YAML description renders as a div, not a paragraph, so it needs
+  // the measure applied separately or it runs the whole column.
+  #title-block-header .description { max-width: 42rem; }
+
+  // Callouts are prose in a box; they follow the text measure.
+  .callout { max-width: 48rem; }
+
+  // Figures get the room the layout was widened for, but stay below the
+  // point where a 7in plot starts to look like a poster. The whole block is
+  // capped and centred so the caption lines up with the image above it.
+  figure, .quarto-figure, .cell-output-display > img {
+    max-width: min(100%, 60rem);
+  }
+
+  figure, .quarto-figure { margin-inline: auto; }
+
+  // Tables and code use the full column — the wide summary tables in
+  // sections 9 and 10 are the reason for the change.
+  .cell-output-display > table,
+  .cell-output-display > .table,
+  div.sourceCode, pre {
+    max-width: 100%;
+  }
+
+  // Keep the two-panel patchwork figures from being cropped by the cap above.
+  .cell-output-display { overflow-x: auto; }
 }
 
 h2 {
@@ -30,10 +73,80 @@ figcaption {
   color: #55606a;
 }
 
-// Listing cards
-.quarto-grid-item .card-text {
-  font-size: 0.92rem;
+// ---------------------------------------------------------------------------
+// Docked sidebar
+// ---------------------------------------------------------------------------
+
+#quarto-sidebar.docked {
+  background-color: $sidebar-bg;
+  border-right: 1px solid #dde4e9;
+
+  .sidebar-item-text {
+    font-size: 0.93rem;
+    line-height: 1.35;
+    padding-top: 0.28rem;
+    padding-bottom: 0.28rem;
+  }
+
+  // Section headings (the ten course sections) carry more weight than the
+  // pages nested beneath them.
+  .sidebar-item-section > .sidebar-item-container > .sidebar-item-text {
+    font-weight: 600;
+    color: $sidebar-fg;
+  }
+
+  .sidebar-item .sidebar-item .sidebar-item-text {
+    font-weight: 400;
+  }
+
+  // Current page: an accent bar rather than a colour change alone.
+  .sidebar-link.active,
+  .sidebar-item-text.active {
+    font-weight: 600;
+    color: $primary;
+    box-shadow: inset 3px 0 0 0 $primary;
+  }
 }
+
+// ---------------------------------------------------------------------------
+// On this page
+// ---------------------------------------------------------------------------
+
+#quarto-margin-sidebar {
+  nav[role="doc-toc"] {
+    font-size: 0.86rem;
+
+    > h2, .h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6a757e;
+      border-bottom: none;
+      margin-top: 0;
+    }
+
+    a { color: #52606b; }
+    a:hover, a.active { color: $primary; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Listing cards on the section overview pages
+// ---------------------------------------------------------------------------
+
+.quarto-grid-item {
+  .card-text { font-size: 0.92rem; }
+
+  .listing-title {
+    font-size: 1.02rem;
+    line-height: 1.3;
+  }
+
+  // Cards sit outside the prose measure.
+  p { max-width: none; }
+}
+
+.quarto-listing-cols-3 { max-width: 1180px; }
 
 .quarto-category {
   font-size: 0.78rem;

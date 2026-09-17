@@ -3,13 +3,14 @@ title: "3 · Supervised learning"
 description: "Regression, classification, and tree-based methods — and how to choose between them for a given scientific question."
 categories: [supervised, regression, classification, trees-ensembles]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 Supervised learning means learning from examples where you already know the answer:
@@ -36,3 +37,7 @@ general ranking, and the page says why it turned out that way.
 :::
 
 ## Pages in this section
+
+::: {#pages}
+:::
+
