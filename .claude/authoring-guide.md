@@ -62,6 +62,47 @@ Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
   `freeze: auto`. If a fit is genuinely slow, cache its result into `data/` with a
   script in `R/` rather than letting the page grind on every render.
 
+### Python tabs
+
+Pages in sections 2, 3, 5, 7, 8 and 10 show each modelling step twice, R and
+scikit-learn, in a tabset. The R chunk is the one that runs, so its output
+appears under the R tab; the Python block is displayed only.
+
+````markdown
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fit
+...
+```
+
+## Python
+
+```python
+...
+```
+
+:::
+````
+
+- `group="language"` syncs every tabset on the page, so choosing Python once
+  chooses it throughout.
+- Wrap the modelling steps, not the figures. Figures stay R-only, and so does
+  any step with no honest Python counterpart — `mgcv`'s smooth table, for one.
+  A missing tab is information, not an omission to fill in.
+- The Python is cumulative down the page, exactly as the R chunks are, and must
+  run: `python/check-snippets.py` executes every snippet in the site. Do not add
+  a tab you have not run.
+- Load data through `python/mlbasic_data.py`, never by reading `data/*.csv`
+  directly, so the two halves clean the survey the same way.
+- Where a default differs between the two — regularisation, event level, the
+  need for scaled inputs — say so in a comment in the Python block. That
+  difference is usually the most useful thing on the page.
+- Add `{{< include ../../_snippets/python-tabs.qmd >}}` under the data note, so
+  the reader knows the Python is not what produced the numbers.
+
 ## Figures
 
 Figures carry most of the teaching here, so they are worth real effort.

@@ -29,6 +29,8 @@ data is wins on its own terms.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 ### Linear regression
@@ -78,6 +80,10 @@ of about six. We will check it and deal with it.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -96,7 +102,57 @@ curved_recipe <- base_recipe |>
   step_poly(depth_m, temperature_c, degree = 2)
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (OneHotEncoder, PolynomialFeatures,
+                                   StandardScaler)
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+
+train, test = train_test_split(survey, train_size=0.75, random_state=123)
+
+dummies = OneHotEncoder(drop="first", sparse_output=False)
+
+# Unlike lm(), scikit-learn will not dummy-code a column for you, so every
+# recipe here ends with the encoder.
+base_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", dummies, categorical),
+])
+
+# step_poly() defaults to orthogonal polynomials and PolynomialFeatures is raw;
+# the fitted values are the same, the coefficients are not comparable.
+curved_recipe = ColumnTransformer([
+    ("curved", Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), ["depth_m", "temperature_c"]),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical", dummies, categorical),
+])
+```
+
+:::
+
 Three models: a straight line, a curve, and a curve that knows it is predicting counts.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fit-three
@@ -123,6 +179,38 @@ bind_rows(
 )
 ```
 
+## Python
+
+```python
+from sklearn.linear_model import LinearRegression, PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+
+def evaluate(model, recipe, label):
+    fitted = Pipeline([("recipe", recipe), ("model", model)]).fit(
+        train[predictors], train["abundance"])
+    predicted = fitted.predict(test[predictors])
+    return {
+        "model": label,
+        "rmse": round(root_mean_squared_error(test["abundance"], predicted), 3),
+        "rsq": round(np.corrcoef(predicted, test["abundance"])[0, 1] ** 2, 3),
+        "lowest_prediction": round(predicted.min(), 2),
+        "impossible_predictions": int((predicted < 0).sum()),
+    }
+
+pd.DataFrame([
+    evaluate(LinearRegression(), base_recipe, "Linear"),
+    evaluate(LinearRegression(), curved_recipe, "Polynomial"),
+    # alpha=0 removes the ridge penalty PoissonRegressor applies by default.
+    # Its solver is iterative where glm() is not, so it wants scaled inputs;
+    # with no penalty the scaling changes the arithmetic, not the fit.
+    evaluate(Pipeline([("normalise", StandardScaler()),
+                       ("poisson", PoissonRegressor(alpha=0, max_iter=1000))]),
+             curved_recipe, "Poisson + polynomial"),
+])
+```
+
+:::
+
 There is the debt, paid and then some.
 
 The polynomial model makes **six negative predictions** on 200 test stations, the lowest
@@ -133,6 +221,10 @@ The linear model, meanwhile, manages two negative predictions of its own without
 curvature at all.
 
 ### Reading Poisson coefficients
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: poisson-coefficients
@@ -146,6 +238,34 @@ tidy(poisson_fit) |>
          across(where(is.numeric), \(x) round(x, 3))) |>
   select(term, estimate, multiplier, p.value)
 ```
+
+## Python
+
+```python
+import statsmodels.api as sm
+
+# scikit-learn fits the Poisson model but reports no standard errors, so for a
+# coefficient table with p-values the honest Python answer is statsmodels.
+design = pd.DataFrame(
+    base_recipe.fit_transform(train[predictors]),
+    columns=base_recipe.get_feature_names_out(),
+)
+
+poisson_fit = sm.GLM(
+    train["abundance"].to_numpy(),
+    sm.add_constant(design),
+    family=sm.families.Poisson(),
+).fit()
+
+pd.DataFrame({
+    "term": poisson_fit.params.index,
+    "estimate": poisson_fit.params.round(3),
+    "multiplier": np.exp(poisson_fit.params).round(3),
+    "p.value": poisson_fit.pvalues.round(3),
+}).reset_index(drop=True)
+```
+
+:::
 
 Exponentiate to read them. A rocky station holds about 0.58 times the count of a sandy
 one; the simulation built in 0.55, so that one is recovered well. Salinity, which has no
@@ -165,6 +285,10 @@ we happen to know the answer.
 Poisson regression assumes the variance equals the mean. The check is a ratio that
 should be near 1:
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: overdispersion
 fitted_glm <- extract_fit_engine(poisson_fit)
@@ -176,6 +300,18 @@ tibble(
 )
 ```
 
+## Python
+
+```python
+pd.DataFrame({
+    "residual_deviance": [round(poisson_fit.deviance, 1)],
+    "df": [int(poisson_fit.df_resid)],
+    "ratio": [round(poisson_fit.deviance / poisson_fit.df_resid, 2)],
+})
+```
+
+:::
+
 A ratio of almost 4, not 1. The counts vary far more than Poisson allows, which is the normal
 state of ecological data: individuals aggregate. The consequence is specific — the
 *predictions* are fine, but the standard errors are too small, so confidence intervals
@@ -183,6 +319,10 @@ are too narrow and p-values too small. A model like this will tell you an effect
 significant when it is not.
 
 The negative binomial distribution adds a parameter for exactly this.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: negative-binomial
@@ -201,6 +341,35 @@ tibble(
   aic_negbin  = round(AIC(nb_fit))
 )
 ```
+
+## Python
+
+```python
+# Neither scikit-learn nor statsmodels estimates theta jointly with the
+# coefficients the way MASS::glm.nb() does, so fit the coefficients at a given
+# theta and search over theta for the best likelihood.
+def negative_binomial(theta):
+    return sm.GLM(
+        train["abundance"].to_numpy(),
+        sm.add_constant(design),
+        family=sm.families.NegativeBinomial(alpha=1 / theta),
+    ).fit()
+
+from scipy.optimize import minimize_scalar
+
+search = minimize_scalar(lambda theta: negative_binomial(theta).aic,
+                         bounds=(0.1, 50), method="bounded")
+best = negative_binomial(search.x)
+
+pd.DataFrame({
+    "theta": [round(search.x, 3)],
+    "aic_poisson": [round(poisson_fit.aic)],
+    # one parameter more than the coefficients, for theta itself
+    "aic_negbin": [round(best.aic + 2)],
+})
+```
+
+:::
 
 The estimated $\theta$ of 1.07 sits below the 1.5 built into the simulation. It is the
 right order of magnitude and correctly identifies strong clustering, but it is not a

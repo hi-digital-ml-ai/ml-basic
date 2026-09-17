@@ -28,6 +28,8 @@ missing, or why the number is strange.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 ### Three kinds of missing
@@ -106,6 +108,10 @@ balancing the table by hand beforehand.
 
 ### Sentinels first
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: sentinels
 clean <- raw |>
@@ -121,11 +127,38 @@ clean |>
                         mean = \(x) round(mean(x, na.rm = TRUE), 2))))
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_raw
+
+raw = load_coastal_survey_raw()
+
+clean = raw.drop_duplicates().copy()
+clean["salinity_psu"] = clean["salinity_psu"].replace(-999, np.nan)
+clean["temperature_c"] = clean["temperature_c"].replace(-999, np.nan)
+
+columns = ["temperature_c", "salinity_psu", "chlorophyll_mg_m3"]
+pd.DataFrame({
+    "missing": clean[columns].isna().sum(),
+    "mean": clean[columns].mean().round(2),   # pandas skips NaN, as na.rm does
+})
+```
+
+:::
+
 Salinity's mean moves from 2.24 to 33.9. Nothing was fixed in the data — the `-999`s
 are still missing values — but they are now *honestly* missing, and every summary
 downstream stops lying.
 
 ### Categories
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: categories
@@ -140,6 +173,19 @@ clean <- clean |>
 count(clean, substrate)
 ```
 
+## Python
+
+```python
+substrate = clean["substrate"].str.strip().str.lower()
+clean["substrate"] = substrate.replace(
+    {"sandy": "sand", "muddy": "mud", "rocky": "rock"}
+)
+
+clean["substrate"].value_counts().reset_index()
+```
+
+:::
+
 Note the judgement hidden in that block. Is `sandy` the same category as `sand`, or was
 one observer distinguishing "sand" from "sandy mud"? We have merged them. On a real
 survey this is a question for whoever recorded it, and the honest version of this code
@@ -147,15 +193,32 @@ comes with an answer, not an assumption.
 
 ### Impossible depths
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: depths
 clean |> filter(depth_m > 250) |> select(station_id, depth_m) |> arrange(desc(depth_m))
 ```
 
+## Python
+
+```python
+(clean.loc[clean["depth_m"] > 250, ["station_id", "depth_m"]]
+    .sort_values("depth_m", ascending=False))
+```
+
+:::
+
 Ten stations, all suspiciously close to ten times a plausible shelf depth. Dividing by
 ten puts each one back into the range where its temperature makes sense, which is
 evidence rather than convenience — a station recorded at 1581 m with 6 °C water is
 impossible on this shelf, while the same station at 158 m is ordinary.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fix-depths
@@ -163,6 +226,18 @@ clean <- clean |> mutate(depth_m = if_else(depth_m > 250, depth_m / 10, depth_m)
 
 range(clean$depth_m)
 ```
+
+## Python
+
+```python
+clean["depth_m"] = clean["depth_m"].where(
+    clean["depth_m"] <= 250, clean["depth_m"] / 10
+)
+
+(clean["depth_m"].min(), clean["depth_m"].max())
+```
+
+:::
 
 Two of the twelve decimal errors are still in there, at 125 m and 166 m, and no
 inspection will find them. That is the normal state of a cleaned dataset.
@@ -192,6 +267,10 @@ ggplot(comparison, aes(season, n, fill = dataset)) +
        title = "Where the deleted rows come from")
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: deletion-cost
 tibble(
@@ -202,6 +281,23 @@ tibble(
                                      sum(clean$season == "winter")), 1)
 )
 ```
+
+## Python
+
+```python
+complete = clean.dropna()
+winter = clean["season"] == "winter"
+
+pd.DataFrame({
+    "rows_before": [len(clean)],
+    "rows_after": [len(complete)],
+    "lost": [len(clean) - len(complete)],
+    "winter_lost_pct": [round(
+        100 * (1 - (complete["season"] == "winter").sum() / winter.sum()), 1)],
+})
+```
+
+:::
 
 About 10% of rows overall — and a fifth of winter. If your question involves
 winter conditions, the default has just removed a fifth of your evidence about them,

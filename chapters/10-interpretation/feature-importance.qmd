@@ -29,6 +29,8 @@ disagreeing, then fixes the missing zero.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## What is actually in the data
 
 Because the survey is simulated, we know the answer before we start. From
@@ -47,6 +49,10 @@ Because the survey is simulated, we know the answer before we start. From
 
 And we add three columns of our own, drawn from `rnorm()`, which have no effect by
 construction and no relationship to anything.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: data
@@ -80,6 +86,43 @@ forest <- workflow() |>
 c(train = nrow(train_set), test = nrow(test_set))
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "survey_year",
+           "longitude", "latitude"]
+modelling = survey[columns].dropna().reset_index(drop=True)
+
+rng = np.random.default_rng(20)
+for i in (1, 2, 3):
+    modelling[f"noise_{i}"] = rng.standard_normal(len(modelling))
+
+# The dummies are made once, so that shuffling a column below shuffles the
+# whole factor rather than one of its indicator columns.
+encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+
+train_rows, test_rows = train_test_split(np.arange(len(modelling)),
+                                         train_size=0.5, random_state=4)
+
+forest = RandomForestRegressor(n_estimators=800, random_state=1).fit(
+    encoded.iloc[train_rows], modelling["abundance"].iloc[train_rows])
+
+pd.Series({"train": len(train_rows), "test": len(test_rows)})
+```
+
+:::
+
 The three noise columns are the point of the page. They are the **null reference**: whatever
 number an importance measure assigns to a column that cannot possibly matter is the number
 that measure gives to nothing at all. It is the same habit
@@ -94,6 +137,10 @@ without specifying. Every time a tree splits on a variable it reduces the impuri
 for regression, the within-node variance — of the node it split. Impurity importance adds
 those reductions up across the whole forest.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: impurity
 impurity <- extract_fit_engine(forest)$variable.importance
@@ -102,6 +149,22 @@ tibble(term = names(impurity), importance = impurity / max(impurity)) |>
   arrange(desc(importance)) |>
   mutate(importance = round(importance, 3))
 ```
+
+## Python
+
+```python
+# ranger's importance = "impurity" is feature_importances_: the total drop in
+# node impurity each column gave, measured on the training data.
+impurity = pd.Series(forest.feature_importances_, index=encoded.columns)
+
+(impurity.div(impurity.max())
+    .sort_values(ascending=False)
+    .round(3)
+    .reset_index(name="importance")
+    .rename(columns={"index": "term"}))
+```
+
+:::
 
 Read down to rank six. `noise_3`, `noise_1` and `noise_2` sit in positions **six, seven and
 eight of sixteen** — above salinity, above `survey_year`, and above *every* substrate and
@@ -132,6 +195,10 @@ do it many times, because the shuffle is random.
 
 It is short enough to write out, which is worth doing once.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: permutation
 baseline_rmse <- rmse_vec(test_set$abundance, predict(forest, test_set)$.pred)
@@ -156,6 +223,34 @@ importance |>
   arrange(desc(increase)) |>
   mutate(across(where(is.double), \(x) round(x, 4)))
 ```
+
+## Python
+
+```python
+from sklearn.inspection import permutation_importance
+
+X_test = encoded.iloc[test_rows]
+y_test = modelling["abundance"].iloc[test_rows]
+
+baseline_rmse = root_mean_squared_error(y_test, forest.predict(X_test))
+
+# permutation_importance does exactly the loop the R tab spells out: shuffle
+# one column, re-score, repeat. The scorer is negated RMSE, so an increase in
+# error is a positive importance.
+scored = permutation_importance(
+    forest, X_test, y_test, n_repeats=50, random_state=3,
+    scoring="neg_root_mean_squared_error")
+
+importance = pd.DataFrame({
+    "variable": encoded.columns,
+    "increase": scored.importances_mean,
+    "se": scored.importances_std / np.sqrt(scored.importances.shape[1]),
+})
+
+importance.sort_values("increase", ascending=False).round(4)
+```
+
+:::
 
 Note what changed. Substrate is now a single number rather than three dummies, because we
 permuted the original column and let the recipe re-encode it. Splitting a categorical
@@ -203,6 +298,10 @@ draw?
 Everything above came from one 50/50 split. Repeat the whole procedure on eight different
 splits and count how often each variable clears the highest of the three noise columns.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: across-splits
 importance_for_split <- function(split_seed) {
@@ -232,6 +331,43 @@ repeated |>
             .by = variable) |>
   arrange(`best rank`)
 ```
+
+## Python
+
+```python
+def importance_for_split(split_seed):
+    rows, held = train_test_split(np.arange(len(modelling)), train_size=0.5,
+                                  random_state=split_seed)
+    fitted = RandomForestRegressor(n_estimators=500, random_state=1).fit(
+        encoded.iloc[rows], modelling["abundance"].iloc[rows])
+    scored = permutation_importance(
+        fitted, encoded.iloc[held], modelling["abundance"].iloc[held],
+        n_repeats=15, random_state=3, scoring="neg_root_mean_squared_error")
+
+    result = pd.DataFrame({"variable": encoded.columns,
+                           "increase": scored.importances_mean,
+                           "split": split_seed})
+    result["rank"] = result["increase"].rank(ascending=False)
+    result["noise_ceiling"] = result.loc[
+        result["variable"].str.startswith("noise_"), "increase"].max()
+    return result
+
+repeated = pd.concat([importance_for_split(seed) for seed in range(101, 109)])
+
+(repeated[~repeated["variable"].str.startswith("noise_")]
+    .groupby("variable")
+    .apply(lambda g: pd.Series({
+        "best rank": g["rank"].min(),
+        "worst rank": g["rank"].max(),
+        "splits above the noise ceiling":
+            int((g["increase"] > g["noise_ceiling"]).sum()),
+        "median increase": round(g["increase"].median(), 3),
+    }), include_groups=False)
+    .sort_values("best rank")
+    .reset_index())
+```
+
+:::
 
 Chlorophyll comes first in one split and **eleventh in another**. Depth ranges from fifth to
 twelfth. Season, longitude and latitude all move by five or six places. A variable-importance

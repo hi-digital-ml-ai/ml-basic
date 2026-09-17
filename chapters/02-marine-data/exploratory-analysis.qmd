@@ -28,6 +28,8 @@ The purpose of this pass is not to find results. It is to find out what is wrong
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 A workable order, roughly cheapest first:
@@ -45,6 +47,10 @@ Step 7 is the one most often skipped, and the one that catches instrument drift.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: load
 raw <- load_coastal_survey_raw()
@@ -52,10 +58,28 @@ raw <- load_coastal_survey_raw()
 dim(raw)
 ```
 
+## Python
+
+```python
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_raw
+
+raw = load_coastal_survey_raw()
+
+raw.shape
+```
+
+:::
+
 ### Numeric ranges
 
 The highest-yield ten seconds in all of data preparation: print the minimum and maximum
 of every numeric column and read them as a scientist.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: ranges
@@ -68,6 +92,18 @@ raw |>
   pivot_wider(names_from = stat, values_from = value) |>
   mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
+
+## Python
+
+```python
+(raw.select_dtypes("number")
+    .agg(["min", "mean", "max"])   # pandas skips missing values by default
+    .T
+    .round(2)
+    .reset_index(names="variable"))
+```
+
+:::
 
 Three things there should stop you.
 
@@ -114,10 +150,22 @@ histogram, no statistics, and the problem is unmissable.
 
 ### Every category, with counts
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: categories
 raw |> count(substrate, sort = TRUE)
 ```
+
+## Python
+
+```python
+raw["substrate"].value_counts().reset_index()
+```
+
+:::
 
 Four substrate types, twelve spellings. A model will treat `Sand`, `SAND`, `sand` and
 `sandy` as four unrelated categories, splitting the evidence for sand four ways.
@@ -133,16 +181,34 @@ you.
 
 ### The response
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: response
 raw |> count(rare_species) |> mutate(percent = round(100 * n / sum(n), 1))
 ```
+
+## Python
+
+```python
+counts = raw["rare_species"].value_counts().reset_index()
+counts["percent"] = (100 * counts["count"] / counts["count"].sum()).round(1)
+counts
+```
+
+:::
 
 The rare species is present at 5% of stations. Remember this number: any classifier
 you build for it must be compared against 95% accuracy, which you can get by answering
 "absent" every time.
 
 ### By group
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: by-vessel
@@ -153,6 +219,23 @@ raw |>
             mean_salinity = round(mean(salinity_psu), 2),
             mean_temperature = round(mean(temperature_c[temperature_c != -999]), 2))
 ```
+
+## Python
+
+```python
+valid = raw.assign(
+    temperature_c=raw["temperature_c"].where(raw["temperature_c"] != -999)
+).query("salinity_psu != -999")
+
+(valid.groupby("vessel")
+    .agg(stations=("salinity_psu", "size"),
+         mean_salinity=("salinity_psu", "mean"),
+         mean_temperature=("temperature_c", "mean"))
+    .round(2)
+    .reset_index())
+```
+
+:::
 
 The two vessels differ by 0.42 PSU in mean salinity, with no matching temperature
 difference. Two vessels sampling the same shelf should not disagree like that. This is

@@ -28,6 +28,8 @@ takes more than a random split.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 ### Three roles, not three files
@@ -82,6 +84,10 @@ be high.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_raw() |>
@@ -100,7 +106,29 @@ survey <- load_coastal_survey_raw() |>
 nrow(survey)
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+# The same cleaning as the R tab, kept in python/mlbasic_data.py so it does not
+# have to be repeated on every page.
+survey = load_coastal_survey_clean()
+
+len(survey)
+```
+
+:::
+
 ### A plain random split
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: random-split
@@ -109,9 +137,23 @@ plain <- initial_split(survey, prop = 0.75)
 tibble(training = nrow(training(plain)), testing = nrow(testing(plain)))
 ```
 
+## Python
+
+```python
+plain_train, plain_test = train_test_split(survey, train_size=0.75, random_state=123)
+
+pd.DataFrame({"training": [len(plain_train)], "testing": [len(plain_test)]})
+```
+
+:::
+
 ### Stratifying on a rare class
 
 Our rare species is present at 5% of stations. Ask for a stratified split:
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: stratify
@@ -131,6 +173,27 @@ bind_rows(
   mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
+## Python
+
+```python
+unstrat_train, unstrat_test = train_test_split(
+    survey, train_size=0.75, random_state=2026)
+strat_train, strat_test = train_test_split(
+    survey, train_size=0.75, random_state=2026, stratify=survey["rare_species"])
+
+def prevalence(frame):
+    return round(100 * (frame["rare_species"] == "yes").mean(), 2)
+
+pd.DataFrame([
+    {"split": "Unstratified",
+     "train_pct": prevalence(unstrat_train), "test_pct": prevalence(unstrat_test)},
+    {"split": "Stratified (as asked)",
+     "train_pct": prevalence(strat_train), "test_pct": prevalence(strat_test)},
+])
+```
+
+:::
+
 Look at that carefully. The species is present at 5.1% of all stations, and the
 *stratified* split produced 6.0% in training against 2.5% in test. Stratification does
 not do that. It did not happen.
@@ -144,7 +207,15 @@ no warning either.
 
 This is the quietest failure in the whole section. You asked for the safety measure,
 the code ran, and you did not get it.
+
+scikit-learn has no pooling step, so `stratify=` splits the rare class directly and the
+Python tab holds the prevalence from the start. That is a difference in defaults, not a
+difference in principle: the lesson below applies to whichever you use.
 :::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: stratify-properly
@@ -159,6 +230,20 @@ tibble(
 )
 ```
 
+## Python
+
+```python
+# scikit-learn's stratify has no pooling step to opt out of: it splits each
+# class directly, so the rare class is already divided as closely as the counts
+# allow. The R tab needs pool = 0.01 to get the same behaviour.
+pd.DataFrame({
+    "train_pct": [prevalence(strat_train)],
+    "test_pct": [prevalence(strat_test)],
+})
+```
+
+:::
+
 Now it holds: 5.0% against 5.5%, either side of the 5.1% in the full data. Note that
 lowering `pool` produces a warning of its own, and the warning is fair — stratifying on
 41 positive cases is statistically thin. But thin and honest beats absent and silent.
@@ -167,6 +252,10 @@ The general lesson is bigger than one argument: **check that a safeguard did wha
 asked**, by looking at the result rather than at the code.
 
 ### The split that respects sites
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: group-split
@@ -182,7 +271,28 @@ tibble(
 )
 ```
 
+## Python
+
+```python
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+
+train_g, test_g = survey.iloc[train_rows], survey.iloc[test_rows]
+
+pd.DataFrame({
+    "training_rows": [len(train_g)],
+    "testing_rows": [len(test_g)],
+    "sites_in_both": [len(set(train_g["site_id"]) & set(test_g["site_id"]))],
+})
+```
+
+:::
+
 No site appears in both halves. Compare that with the random split:
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: shared-sites
@@ -195,6 +305,21 @@ tibble(
     round(100 * mean(testing(plain)$site_id %in% training(plain)$site_id), 1)
 )
 ```
+
+## Python
+
+```python
+seen = plain_test["site_id"].isin(plain_train["site_id"])
+
+pd.DataFrame({
+    "random split: sites in both halves":
+        [len(set(plain_train["site_id"]) & set(plain_test["site_id"]))],
+    "random split: test rows at a site the model has seen": [int(seen.sum())],
+    "as a percentage of the test set": [round(100 * seen.mean(), 1)],
+})
+```
+
+:::
 
 Under the random split, *every single one* of the 200 test stations sits at a site the
 model has already trained on. Not most — all of them. Whatever that test set is measuring, it is not performance at
