@@ -3,13 +3,14 @@ title: "6 · Model assumptions and limitations"
 description: "What your model quietly assumes about the ocean, and what happens when the ocean disagrees."
 categories: [assumptions, spatial-temporal, class-imbalance]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 Machine-learning methods are often described as assumption-free. They are not. They
@@ -24,6 +25,11 @@ temperature is extrapolation, whatever the model's confidence output says.
 
 This is the section that determines whether the rest of the course helps you or
 misleads you.
+
+## Pages in this section
+
+::: {#pages}
+:::
 
 ## What this section found
 
@@ -57,4 +63,3 @@ distributions of the response. Use R², or the same test set for both. It is the
 most repeated methodological trap in the course.
 :::
 
-## Pages in this section

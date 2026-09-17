@@ -3,13 +3,14 @@ title: "2 · Understanding and preparing marine datasets"
 description: "Getting real marine data into a state a model can use — and the preparation mistakes that quietly invalidate results."
 categories: [data-preparation, marine-data, eda]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 Marine data arrives in shapes that machine-learning textbooks rarely picture. Depth
@@ -35,3 +36,7 @@ the field. It reappears in every later section — especially
 :::
 
 ## Pages in this section
+
+::: {#pages}
+:::
+

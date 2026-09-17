@@ -3,13 +3,14 @@ title: "4 · How machine-learning algorithms learn"
 description: "What is actually happening when a model 'fits': loss functions, gradient descent, and the link back to maximum likelihood."
 categories: [optimisation]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 "Fitting a model" sounds like a single act. It is really a search. The algorithm has a
@@ -43,3 +44,7 @@ a scientific choice your software makes for you by default — and
 :::
 
 ## Pages in this section
+
+::: {#pages}
+:::
+

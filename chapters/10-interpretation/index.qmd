@@ -3,13 +3,14 @@ title: "10 · Interpretation and responsible application"
 description: "Working out what a model has learned, what it cannot learn from your data, and what you can honestly claim from it in a paper."
 categories: [interpretation, reproducibility, uncertainty]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 A model that predicts well has not thereby explained anything. It has found patterns that are
@@ -24,6 +25,11 @@ it, and how to be straight about uncertainty.
 
 Because the survey is simulated, every claim on these pages can be checked against what was
 actually put into the data. Several of them fail that check, and those are the useful ones.
+
+## Pages in this section
+
+::: {#pages}
+:::
 
 ## What this section found
 
@@ -68,4 +74,3 @@ data passes every check. The defences are gear calibration, an independent metho
 transparent reporting of effort. None of them is a model.
 :::
 
-## Pages in this section

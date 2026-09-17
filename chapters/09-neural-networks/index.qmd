@@ -3,13 +3,14 @@ title: "9 · Introduction to neural networks"
 description: "How neural networks work, built from scratch and checked against arithmetic — what they need to work well, and the common marine problems where they are the wrong tool."
 categories: [neural-networks, optimisation]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 Neural networks attract attention out of proportion to how often they are the right choice.
@@ -23,6 +24,11 @@ They shine on data whose structure a person cannot summarise into features — i
 acoustics, waveforms — and marine science has plenty of that. For a table of environmental
 covariates with a few hundred rows, they usually do not. This section shows both, and the
 reason for the difference turns out to be a single property of the problem.
+
+## Pages in this section
+
+::: {#pages}
+:::
 
 ## What this section found
 
@@ -75,4 +81,3 @@ predictors act more or less one at a time, a forest will beat the network and co
 afternoon instead of a week.
 :::
 
-## Pages in this section

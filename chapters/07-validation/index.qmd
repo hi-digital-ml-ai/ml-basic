@@ -3,13 +3,14 @@ title: "7 · Model validation and performance assessment"
 description: "Cross-validation done properly for spatial and temporal data, and choosing measures that match the scientific objective."
 categories: [validation, metrics, spatial-temporal, uncertainty]
 listing:
+  id: pages
   contents: "*.qmd"
-  type: table
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
   sort: "order"
-  fields: [title, description]
-  field-display-names:
-    title: "Page"
-    description: "Covers"
+  fields: [title, description, categories]
+toc: false
 ---
 
 A performance number is a claim about the future: *this is roughly how well the model will do
@@ -25,6 +26,11 @@ every page, and said so each time. [Section 6](../06-assumptions-limitations/ind
 diagnosed dependence and deferred the remedy. This section settles both debts, and then asks
 the question neither of them did: what should the number have been measuring in the first
 place?
+
+## Pages in this section
+
+::: {#pages}
+:::
 
 ## What this section found
 
@@ -62,4 +68,3 @@ resamples object for every model you intend to compare**, so the fold cancels ou
 difference.
 :::
 
-## Pages in this section
