@@ -19,7 +19,7 @@ worthless, because it has learned the noise in your particular survey along with
 signal.
 
 This is overfitting, and it is the central problem of machine learning. Everything in
-this section — the bias–variance trade-off, regularisation, hyperparameter selection —
+this section, the bias–variance trade-off, regularisation and hyperparameter selection,
 is a response to it.
 
 The marine version of the problem is sharper than the textbook version. With
@@ -31,7 +31,7 @@ memorising the neighbourhood.
 ::: {#pages}
 :::
 
-## What this section found
+## Findings from this section
 
 Four results from these pages are worth knowing before you read them:
 
@@ -39,7 +39,7 @@ Four results from these pages are worth knowing before you read them:
   ranking them by test error. A tree fitted to a training RMSE of zero scored worse on new
   stations than predicting the mean and using no predictors at all.
 - Adding **539 columns of pure random noise** to 540 training stations produced a training
-  R² of exactly 1.000 — and a test RMSE of 185, against a response whose largest observed
+  R² of exactly 1.000, and a test RMSE of 185, against a response whose largest observed
   value is 40.
 - Splitting the error properly shows that the **irreducible noise is more than double**
   everything a model could control. Most of what looks like model error in marine count data
@@ -52,7 +52,7 @@ This section deliberately cheats until its last page: every earlier page chooses
 complexity by looking at the test set, and says so each time.
 [Hyperparameter selection](hyperparameter-selection.qmd) is where that is done honestly, and
 [section 7](../07-validation/index.qmd) is where the resampling itself is made appropriate to
-marine data — because a random split of repeat visits to 160 sites flatters every number in
+marine data, because a random split of repeat visits to 160 sites flatters every number in
 this section.
 :::
 

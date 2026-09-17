@@ -16,11 +16,11 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## A map of twenty-four columns
 
 Twenty-four taxon columns cannot be plotted. You can look at them two at a time, which is
 276 scatter plots, or you can look at correlations, which tells you about taxa and not
-about stations. What you actually want is a map — one picture in which similar stations
+about stations. What you actually want is a map: one picture in which similar stations
 sit near each other and you can see what makes them differ.
 
 Principal component analysis builds that map. It is the oldest and by some distance the
@@ -33,7 +33,7 @@ with it is treating its axes as though they were the ecological gradients themse
 
 ## The idea
 
-PCA constructs new variables — **components** — that are weighted sums of your original
+PCA constructs new variables, called **components**, that are weighted sums of your original
 columns. The first component is the weighted sum with the largest possible variance. The
 second is the largest-variance weighted sum that is uncorrelated with the first, and so
 on. There are as many components as columns, and they are ordered, so keeping the first
@@ -45,7 +45,7 @@ its **score**.
 
 Two properties follow and both matter later. Components are **orthogonal** to each other
 by construction, whether or not the real gradients in your data are. And the sign of a
-component is **arbitrary** — flipping every loading and every score gives an identical
+component is **arbitrary**: flipping every loading and every score gives an identical
 solution, so "high PC1" has no meaning until you look at the loadings.
 
 ::: {.callout-note collapse="true"}
@@ -58,7 +58,7 @@ $$S v_j = \lambda_j v_j , \qquad \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_p
 The eigenvector $v_j$ is the loading vector of component $j$, the score of station $i$ is
 $x_i^\top v_j$, and the eigenvalue $\lambda_j$ is the variance of that component. The
 proportion of variance explained is $\lambda_j / \sum_k \lambda_k$. If you standardised the
-columns first, $S$ is the correlation matrix — which is the usual choice, for exactly the
+columns first, $S$ is the correlation matrix, which is the usual choice, for exactly the
 reason [clustering needed it](clustering.qmd): otherwise the column with the biggest units
 wins.
 :::
@@ -131,7 +131,7 @@ PC1 explains 15.9% of the variance and PC2 explains 13.5%, so the two together h
 
 By the standards of a textbook example that is a poor result. By the standards of a
 community matrix it is entirely ordinary, and here we can prove it is not a failure at
-all — because we know what went into this dataset. There are exactly **two** structures
+all, because we know what went into this dataset. There are exactly **two** structures
 in it: a depth gradient and a hard/soft substrate split. Everything else is
 negative-binomial sampling noise, and three of the twenty-four taxa were given no
 response to anything whatsoever, so at minimum an eighth of the variance is guaranteed to
@@ -176,7 +176,7 @@ The taxa lie around a ring, and three things about where each one sits are corre
 
 Position around the ring tracks the **depth optimum**: shallow taxa at the bottom right,
 sweeping anticlockwise to the deepest at the top left. So the depth gradient is in there.
-**Substrate group rotates a taxon round the ring** by roughly a quarter-turn — the six
+**Substrate group rotates a taxon round the ring** by roughly a quarter-turn: the six
 hard-substrate taxa occupy the upper-right quarter and nothing else does. So the
 substrate split is in there too. And the three taxa built to respond to nothing sit **on
 top of the origin**, loading near zero on both components: PCA gave no weight to columns
@@ -186,7 +186,7 @@ A ring is what you get when two roughly orthogonal gradients are projected onto 
 Each taxon's angle encodes which combination of depth and substrate it responds to, and
 its distance from the centre encodes how strongly.
 
-## Where the axes actually point
+## The direction the axes actually point
 
 Now the part that trips people up. It is tempting to look at that figure and name PC1 "the
 depth axis" and PC2 "the substrate axis", or some such. Check it against the truth.
@@ -274,7 +274,7 @@ pd.DataFrame({
 
 Depth increases along a direction 139° round from the PC1 axis; hard bottom increases
 along one at 41°. Both real gradients lie at roughly 45° to the principal axes, and at
-about 98° to each other — nearly perpendicular, which is what they are in the survey.
+about 98° to each other, so nearly perpendicular, which is what they are in the survey.
 
 The reason is in the variance table. PC1 holds 15.9% and PC2 holds 13.5%: almost the
 same. When two independent gradients contribute nearly equal variance, *any* rotation of
@@ -320,16 +320,16 @@ ggplot(stations, aes(PC1, PC2)) +
 ```
 
 The cloud has two arms meeting near the origin. The hard-bottom arm is a genuine
-boundary — it is what [clustering found](clustering.qmd), and the two arms overlap only
+boundary: it is what [clustering found](clustering.qmd), and the two arms overlap only
 in a narrow band. The depth shading, meanwhile, runs smoothly up each arm with no edge in
 it anywhere: that is a genuine gradient, and it is why clustering found nothing about
 depth until it was forced to. One ordination shows you both kinds of
 structure and distinguishes them, which is something no partition can do.
 
-## Where this breaks down
+## Limits of PCA
 
 **PCA is linear.** It can only find structure that appears as a straight direction in the
-data. A taxon with a hump-shaped response to depth — most taxa, including all of ours —
+data. A taxon with a hump-shaped response to depth, which is most taxa including all of ours,
 is only approximately captured. Long gradients also tend to fold into a curve in the
 ordination, the *arch* or *horseshoe* effect, which ecologists have written about for
 decades. It is mild here because the gradient is short relative to the niche widths; on a
@@ -354,7 +354,7 @@ you are looking at.
   **scores**.
 - **Standardise first** unless every column is already in comparable units.
 - 29.4% of variance in two components is not a bad result for a community matrix. Most of
-  the rest is sampling noise — here, provably so.
+  the rest is sampling noise, and here provably so.
 - Read a component from its **loadings**, never from its number.
 - **Components are not gradients.** Both real gradients here lie at about 45° to the
   principal axes, because they carry almost the same variance and PCA has no way to
@@ -368,4 +368,4 @@ you are looking at.
 1. Run `prcomp()` on the raw counts with `scale. = FALSE`. Which single taxon dominates
    PC1, and what is its mean count?
 2. Colour the ordination by `season` instead of depth. Season affects chlorophyll in this
-   survey but was given no direct effect on the community — does the picture agree?
+   survey but was given no direct effect on the community: does the picture agree?

@@ -18,7 +18,7 @@ looked at a p-value, and drawn a conclusion about how temperature affects abunda
 So the obvious question about machine learning is: what is different?
 
 The short answer is *what the model is for*. A statistical model is usually built to
-tell you something about the world — the size of an effect, whether it is
+tell you something about the world: the size of an effect, or whether it is
 distinguishable from noise. A machine-learning model is usually built to make good
 predictions about cases it has not seen. Those two goals pull in different directions,
 and a model that excels at one can be useless at the other.

@@ -31,13 +31,13 @@ misleads you.
 ::: {#pages}
 :::
 
-## What this section found
+## Findings from this section
 
 - 720 survey visits turned out to be worth **549** independent observations. One
   coefficient's honest standard error was **2.77 times** the naive one, and a fabricated
   site-level variable went from *p* = 0.09 to *p* = 0.19.
-- A flexible model recovered the true temperature optimum almost exactly — 9.30 °C against
-  a true 9 — and put the depth optimum at **15 m where the truth is 80 m**. Same method,
+- A flexible model recovered the true temperature optimum almost exactly, 9.30 °C against
+  a true 9, and put the depth optimum at **15 m where the truth is 80 m**. Same method,
   same data, same flexibility. The difference was confounding.
 - A Poisson model of these counts expects 68 empty stations where **159** were observed,
   and its standard errors are too small by a factor of **1.9**, which moves three terms
@@ -45,20 +45,20 @@ misleads you.
 - A random forest using **only longitude and latitude** scored R² 0.075 under random
   cross-validation and **0.011** under spatially blocked folds.
 - Asked to predict below 100 m having trained above it, a random forest over-predicted by
-  **73%** — models biased by 2–8% in range.
+  **73%**, against models biased by 2–8% in range.
 - Downsampling, upsampling and SMOTE **moved along** the sensitivity–specificity curve
   rather than lifting it; upsampling matched simply setting the threshold to the
   prevalence.
 
 ::: {.callout-important}
 If observations are spatially or temporally dependent, ordinary cross-validation will
-overstate performance — sometimes dramatically. The fix is in
+overstate performance, sometimes dramatically. The fix is in
 [7 · Validation](../07-validation/index.qmd).
 :::
 
 ::: {.callout-note}
 Three of these pages compare models across *different* test sets, and each one notes that
-**RMSE is not comparable between resampling schemes** — different folds hold different
+**RMSE is not comparable between resampling schemes**, because different folds hold different
 distributions of the response. Use R², or the same test set for both. It is the single
 most repeated methodological trap in the course.
 :::

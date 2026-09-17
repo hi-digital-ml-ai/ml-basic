@@ -1,6 +1,6 @@
 ---
 title: "Loss and objective functions"
-description: "The scorecard a model is trying to improve — and why choosing it is a scientific decision, not a technical default."
+description: "The scorecard a model is trying to improve, and why choosing it is a scientific decision, not a technical default."
 order: 1
 categories: [optimisation]
 ---
@@ -16,7 +16,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The scorecard behind every fit
 
 Every model in [section 3](../03-supervised-learning/index.qmd) was fitted by something.
 That something was an algorithm searching for parameter values that made a number as
@@ -36,7 +36,7 @@ which one your question needs.
 
 ### A loss scores one prediction
 
-A **loss function** takes one observation — what you predicted, what actually happened —
+A **loss function** takes one observation, what you predicted and what actually happened,
 and returns a number saying how bad that was. Zero means perfect. Larger is worse.
 
 The station-level residual is the raw material: $r_i = y_i - \hat{y}_i$, where $y_i$ is
@@ -84,10 +84,10 @@ average is the mean squared error, and its square root is the RMSE that section 
 throughout.
 
 An objective can also carry terms that have nothing to do with the data. Add a penalty on
-the size of the coefficients and you get regularisation — the objective becomes "fit the
-data well *and* keep the parameters small". That is [section 5](../05-generalisation/index.qmd)'s
-subject, and [MAP estimation](map-and-priors.qmd) later in this section explains where
-such a term comes from.
+the size of the coefficients and you get regularisation: the objective becomes "fit the
+data well *and* keep the parameters small". That is [section
+5](../05-generalisation/index.qmd)'s subject, and [MAP estimation](map-and-priors.qmd)
+later in this section explains where such a term comes from.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
@@ -104,7 +104,7 @@ $J$ smallest. With $\lambda = 0$ there is no penalty and the objective is the av
 
 ## Worked example
 
-We will fit the same one-predictor model — abundance against chlorophyll — three times,
+We will fit the same one-predictor model, abundance against chlorophyll, three times,
 changing nothing except the loss. `optim()` does the searching; the function we hand it
 is the only difference between the three fits.
 
@@ -137,7 +137,7 @@ individuals and rises 1.15 per mg m⁻³ of chlorophyll; the absolute-error line
 than half as high, at 1.13, and rises slightly more slowly.
 
 Note also that the squared-error row is exactly what `lm()` returns. Least squares is not
-a separate technique — it is this search, with $r^2$ as the loss, and a shortcut that
+a separate technique: it is this search, with $r^2$ as the loss, and a shortcut that
 skips the searching (which is [the next page](parameter-estimation.qmd)).
 
 ```{r}
@@ -158,7 +158,7 @@ ggplot(d, aes(chlorophyll_mg_m3, abundance)) +
   )
 ```
 
-### Where the difference comes from
+### The source of the difference
 
 Squared error is dominated by the worst stations. We can measure that directly.
 
@@ -177,7 +177,7 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
-Thirty-seven stations — 5% of the data — supply **49.7%** of the total squared error and
+Thirty-seven stations, 5% of the data, supply **49.7%** of the total squared error and
 only 21.0% of the total absolute error. When a squared-error algorithm searches for better
 parameters, half of what it is trying to improve comes from those thirty-seven stations.
 The other 712 barely register.
@@ -203,9 +203,9 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
-## What the results mean
+## The price of one station
 
-Removing **one station out of 749** moves the least-squares slope from 1.154 to 0.998 — a
+Removing **one station out of 749** moves the least-squares slope from 1.154 to 0.998, a
 13.5% change in the headline quantity, from deleting 0.13% of the data. The same deletion
 moves the absolute-error slope by 2.1%.
 
@@ -227,7 +227,7 @@ in the methods section, next to the model.
 RMSE is not a neutral referee. If you fit three models by minimising squared error and
 then compare them by RMSE, you have asked a question that squared-error fitting is already
 optimised to answer. Comparing under a different loss than you fitted under is legitimate
-and sometimes revealing — but it will not flatter your models, and you should expect the
+and sometimes revealing, but it will not flatter your models, and you should expect the
 ranking to move.
 :::
 
@@ -244,24 +244,25 @@ and classes are not, and each gets its own loss.
 | Two classes | Log loss (cross-entropy) | Confident wrong answers, severely |
 | Two classes, unequal costs | Weighted log loss | Whichever error you declared expensive |
 
-Poisson deviance is why [section 3's count models](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-behaved sensibly. It scales the penalty with the expected count, so missing by 5 individuals
-matters far more where you expected 2 than where you expected 200 — which is how counting
-animals actually works. Every one of these losses comes out of the same principle, and
-[maximum likelihood](maximum-likelihood.qmd) later in this section is that principle.
+Poisson deviance is why [section 3's count
+models](../03-supervised-learning/linear-and-polynomial-regression.qmd) behaved sensibly.
+It scales the penalty with the expected count, so missing by 5 individuals matters far
+more where you expected 2 than where you expected 200, which is how counting animals
+actually works. Every one of these losses comes out of the same principle, and [maximum
+likelihood](maximum-likelihood.qmd) later in this section is that principle.
 
 Log loss deserves a note of its own. It punishes confident mistakes very hard: predicting
 0.99 for a station that turns out to be empty costs roughly seven times what predicting
 0.5 costs. A model fitted under log loss is therefore a model trained to be honest about
 its uncertainty, which is not the same as being accurate.
 
-## Where this breaks down
+## Limits of a tractable loss
 
 **The loss you can optimise is rarely the loss you care about.** What you want may be
 "rank the top twenty candidate sites correctly" or "never miss a spawning aggregation".
 These are not smooth functions of the parameters, so no gradient-based algorithm can
 minimise them. In practice you fit under a tractable loss and *evaluate* under the one you
-care about — which is [section 7](../07-validation/index.qmd)'s subject, and the reason the
+care about, which is [section 7](../07-validation/index.qmd)'s subject, and the reason the
 two need not be the same function.
 
 **Minimising loss on your data is not the goal.** The objective is computed on the stations
@@ -270,8 +271,8 @@ achievable and is usually a disaster. That is
 [section 5](../05-generalisation/index.qmd), and it is the reason objectives grow penalty
 terms.
 
-**Classification accuracy is not a loss.** It cannot be optimised directly — it is a step
-function, flat almost everywhere with no gradient to follow — which is why classifiers are
+**Classification accuracy is not a loss.** It cannot be optimised directly, being a step
+function, flat almost everywhere with no gradient to follow, which is why classifiers are
 fitted under log loss and only then thresholded. Section 3's
 [logistic model](../03-supervised-learning/logistic-regression.qmd) had a respectable log
 loss and predicted presence zero times; the fitting was working exactly as specified.
@@ -285,7 +286,7 @@ loss and predicted presence zero times; the fitting was working exactly as speci
   supplied half the total squared error, and deleting one station of 749 moved the slope 13.5%.
 - Absolute error and Huber are steadier; use them when the extremes are noise, and squared
   error when the extremes are the science.
-- Counts and classes get their own losses — Poisson deviance, log loss — and they come from
+- Counts and classes get their own losses, Poisson deviance and log loss, and they come from
   the same principle, not from a list of special cases.
 - The loss is a scientific choice. Report it.
 

@@ -1,6 +1,6 @@
 ---
 title: "Partial effects: shape, not just rank"
-description: "Partial dependence, ICE and ALE on a model whose truth we know — one predictor recovered almost exactly, one not recovered at all, and the same failure from a correctly specified GLM."
+description: "Partial dependence, ICE and ALE on a model whose truth we know: one predictor recovered almost exactly, one not recovered at all, and the same failure from a correctly specified GLM."
 order: 2
 categories: [interpretation]
 ---
@@ -16,11 +16,11 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Shape, not just rank
 
 An importance ranking tells you which columns a model leans on. It does not tell you whether
 abundance goes up or down with depth, whether the relationship turns over, or where the
-optimum is — and those are the sentences that go in a paper.
+optimum is, and those are the sentences that go in a paper.
 
 **Partial-effect plots** are how you get the shape out of a model that has no coefficients.
 They are also where interpretation quietly stops being about the model and starts being
@@ -230,7 +230,7 @@ temperature_curves[
 
 :::
 
-The forest puts the optimum at 7.75 °C against a true 9 °C, and it gets the shape right — up,
+The forest puts the optimum at 7.75 °C against a true 9 °C, and it gets the shape right: up,
 over, down. What it does not get is the amplitude. The truth falls to 0.51 at 3 °C; the
 forest only falls to 3.18. Tree ensembles average many predictions, each bounded by the
 training data, so their partial effects are systematically **flattened at the extremes**.
@@ -281,11 +281,11 @@ falling to 1.96 at 160. The forest's partial dependence declines monotonically f
 This is not a small error in the optimum. It is the wrong shape, and a paper reporting
 "abundance declines with depth" from this plot would be making a claim the data contradicts.
 
-## Is it the forest's fault?
+## Whether it is the forest's fault
 
 The obvious next move is to blame the black box and fit something interpretable. So let us
 fit the model that is *exactly* right: a negative-binomial GLM with quadratics in depth and
-temperature — the generator's own functional form.
+temperature, the generator's own functional form.
 
 ::: {.panel-tabset group="language"}
 
@@ -384,12 +384,12 @@ statistics. **Depth is not recovered at all**: the quadratic term is estimated a
 fourteenth of its true value with a $p$ value of 0.63, and the linear term comes back with
 the wrong sign.
 
-So both models — one with no functional form at all, one with precisely the right one —
+So both models, one with no functional form at all and one with precisely the right one,
 tell the same wrong story about depth. That rules out the method.
 
 ```{r}
 #| label: fig-partial-effects
-#| fig-cap: "Partial dependence for temperature and depth: the true curve, the random forest's, and a negative-binomial GLM given the generator's exact functional form. Temperature is recovered by both. Depth is recovered by neither — the true hump at 80 m appears as a monotone decline."
+#| fig-cap: "Partial dependence for temperature and depth: the true curve, the random forest's, and a negative-binomial GLM given the generator's exact functional form. Temperature is recovered by both. Depth is recovered by neither: the true hump at 80 m appears as a monotone decline."
 #| fig-alt: "Two panels. In the temperature panel the true curve rises from about 0.5 at three degrees to a peak of 5.6 at nine and falls symmetrically back to 0.5 at fifteen; the GLM curve has the same shape but peaks about a degree earlier and about 0.7 higher, and it crosses the true curve on the way down; the forest curve has the same peak position but is much flatter, running from about 3.2 up to 5.1 and back to 3.5. In the depth panel the true curve is a broad hump peaking at 5.2 around eighty metres; both the GLM and the forest curves decline steadily from left to right with no hump at all, the GLM starting much higher at about 8.2 and ending lowest at about 1.8."
 #| fig-width: 9.5
 #| fig-height: 4.2
@@ -414,11 +414,11 @@ panel <- function(data, x, label, marker) {
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
-## What went wrong, and why no plot can fix it
+## The confounding no plot can fix
 
 Depth and temperature are correlated at −0.45, and not by accident: in the generator,
 temperature is *built from* depth. The two quadratic effects therefore overlap, and the
-survey does not contain the observations that would separate them — there are almost no cold
+survey does not contain the observations that would separate them: there are almost no cold
 shallow stations and almost no warm deep ones.
 
 When two effects cannot be separated, a fitting procedure assigns the shared part to
@@ -442,11 +442,11 @@ from the temperature optimum".
 
 **ICE curves** show the same sweep for each station individually instead of averaging them.
 An average can hide the fact that the model says something quite different for different
-rows — and on this model it does.
+rows, and on this model it does.
 
 ```{r}
 #| label: fig-ice
-#| fig-cap: "Individual conditional expectation curves for temperature: 60 randomly chosen stations swept across the temperature range, with their average — the PDP — in bold. The curves are not parallel. Their humps differ fourfold in height and peak anywhere between 6 and 11.75 °C, and averaging humps that do not line up flattens the average below all of them."
+#| fig-cap: "Individual conditional expectation curves for temperature: 60 randomly chosen stations swept across the temperature range, with their average, the PDP, in bold. The curves are not parallel. Their humps differ fourfold in height and peak anywhere between 6 and 11.75 °C, and averaging humps that do not line up flattens the average below all of them."
 #| fig-alt: "Sixty thin grey curves, all roughly hump-shaped but differing greatly in height and sharpness. Most sit between 1 and 7 on the vertical axis with modest humps; a handful rise to peaks of 8 to 10; one outlier runs across the top of the panel between 13 and 18. The humps do not all peak in the same place, spreading between about six and twelve degrees. A single bold blue curve, the average, runs through the lower middle of the bundle with a much shallower hump than most of the individual curves, rising from about 3.2 to 5.3 and back."
 #| fig-width: 7
 #| fig-height: 4.4
@@ -478,7 +478,7 @@ ice |>
             `earliest peak` = min(peak_at), `latest peak` = max(peak_at))
 ```
 
-The individual humps are between 1.35 and 5.98 counts tall, with a median of 2.73 — and
+The individual humps are between 1.35 and 5.98 counts tall, with a median of 2.73, and
 they peak anywhere from 6 °C to 11.75 °C. The PDP's own hump is only 1.9 counts tall,
 *shorter than any individual curve on the plot*, because averaging humps that do not line up
 smears them out. That is worth knowing before quoting a partial-effect amplitude: it is not
@@ -487,7 +487,7 @@ between stations has been averaged away.
 
 **Accumulated local effects** (ALE) fix the impossible-rows problem. Instead of sweeping a
 variable across its whole range for every station, ALE looks at small windows of the
-variable and asks how the prediction changes for stations *already in that window* — so it
+variable and asks how the prediction changes for stations *already in that window*, so it
 never asks the model about a 20 m station at 2 °C.
 
 ::: {.panel-tabset group="language"}
@@ -543,14 +543,14 @@ accumulated.iloc[np.linspace(0, len(accumulated) - 1, 6).round().astype(int)].ro
 
 :::
 
-ALE gives the same broad decline — 4.63 at the shallowest stations to 3.29 at the deepest,
+ALE gives the same broad decline, 4.63 at the shallowest stations to 3.29 at the deepest,
 with a barely perceptible flat stretch around 100 m and no hump anywhere. That is the right
 lesson to take from it: **ALE fixes
 extrapolation, not confounding.** It is the better default for correlated predictors because
 it stops the model being asked about stations that cannot exist, and it still cannot tell you
 about an effect the data does not identify.
 
-## Where this breaks down
+## Limits of partial effects
 
 **A partial effect is an average, and averages hide interactions.** If depth matters on rock
 and not on mud, the PDP shows a blend of the two. Check with ICE curves or by faceting the
@@ -572,12 +572,12 @@ exception.
   is four lines of code and one strong assumption: that the rows it constructs could exist.
 - **Forests flatten their partial effects.** The temperature optimum came back at 7.75 °C
   against a true 9 °C, but the amplitude was understated sixfold at the cold end.
-- **Depth's true hump at 80 m came back as a monotone decline** — from the forest *and* from
+- **Depth's true hump at 80 m came back as a monotone decline**, from the forest *and* from
   a negative-binomial GLM given the generator's exact functional form, whose depth quadratic
   was estimated at a fourteenth of its true value with $p = 0.63$.
 - Depth and temperature are confounded by the survey design. **No interpretation method
-  recovers an effect the data does not identify** — report the confounding instead.
-- **ICE** shows whether the average describes the individuals — here it did not, the PDP's
+  recovers an effect the data does not identify**: report the confounding instead.
+- **ICE** shows whether the average describes the individuals. Here it did not, the PDP's
   hump being shorter than every one of the sixty individual humps. **ALE** avoids impossible
   rows. Neither fixes confounding.
 :::

@@ -1,6 +1,6 @@
 ---
 title: "What machine learning is"
-description: "How machine learning differs from the statistical modelling you already do — demonstrated on the same data, with the same question."
+description: "How machine learning differs from the statistical modelling you already do, demonstrated on the same data, with the same question."
 order: 1
 categories: [foundations]
 ---
@@ -15,7 +15,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Starting from what you already do
 
 You already fit models. You have written a GLM, checked the residuals, looked at a
 coefficient and its confidence interval, and drawn a conclusion about how temperature
@@ -24,14 +24,14 @@ question is not "is machine learning better?" but "what is it *for*, and is that
 I want?"
 
 This page answers that by doing the same thing twice. One dataset, one question, two
-approaches — and a result that is more interesting than "the new method wins".
+approaches, and a result that is more interesting than "the new method wins".
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 ## The idea
 
 A statistical model is usually built to **estimate something about the world**. You
-specify a form — abundance changes linearly with temperature — and the fitting
+specify a form, say that abundance changes linearly with temperature, and the fitting
 procedure returns a number for that change, with an interval around it and a test of
 whether it differs from zero. The output is a *statement*: temperature is associated
 with an increase of so many individuals per degree, plus or minus. You can put it in a
@@ -54,7 +54,7 @@ methods relax the constraint and lose the interpretation along with it.
 distinguishable from noise. Machine learning asks how close the predictions land on
 data the model has never seen. A model can do well on one and badly on the other.
 
-**Where the honesty check sits.** In statistical modelling it is in the assumptions —
+**Where the honesty check sits.** In statistical modelling it is in the assumptions:
 residual plots, distributional checks. In machine learning it is almost entirely in
 holding data back, and measuring performance on the part the model never saw. That
 idea, the *test set*, runs through the whole course.
@@ -92,7 +92,7 @@ tidy(lm_fit, conf.int = TRUE) |>
 ```
 
 Read that as you normally would. Chlorophyll has a clear positive association. Muddy
-stations hold more than sandy ones, rocky ones fewer. Salinity shows nothing — its
+stations hold more than sandy ones, rocky ones fewer. Salinity shows nothing: its
 interval comfortably spans zero. Depth declines significantly, if weakly.
 
 And temperature? An estimate of about $-0.07$ individuals per degree, an interval
@@ -117,7 +117,7 @@ at what it and the linear model have each concluded about temperature.
 
 ```{r}
 #| label: fig-temperature
-#| fig-cap: "Abundance against temperature in the training data. The straight line is the linear model's view; the curve is a flexible smoother. A straight line through a hump is flat — which is why the linear model reports no temperature effect."
+#| fig-cap: "Abundance against temperature in the training data. The straight line is the linear model's view; the curve is a flexible smoother. A straight line through a hump is flat, which is why the linear model reports no temperature effect."
 #| fig-alt: "Scatter plot of abundance against temperature. Points form a hump peaking near 9 degrees. A nearly flat straight line runs through them, while a curved smoother rises to a peak at 9 degrees and falls away on both sides."
 #| fig-width: 7
 #| fig-height: 4.5
@@ -136,16 +136,16 @@ ggplot(train, aes(temperature_c, abundance)) +
 
 The species has an optimum around 9 °C and thins out in colder and warmer water. The
 linear model was required to answer with a single slope. Averaged over a hump, the
-best straight line is nearly flat — so it reports, correctly and uselessly, that the
+best straight line is nearly flat, so it reports, correctly and uselessly, that the
 slope is indistinguishable from zero.
 
 (The straight line above uses temperature on its own, while the coefficient table
-adjusts for the other variables, so the two are not numerically identical — one tilts
+adjusts for the other variables, so the two are not numerically identical: one tilts
 very slightly up, the other very slightly down. Both are flat, which is the point.)
 
 The forest was never asked for a slope, so the hump costs it nothing.
 
-## What the results mean
+## Reading the comparison
 
 Does the forest therefore predict better? Compare them on the held-back test set, and
 on the training data as well.
@@ -169,7 +169,7 @@ bind_rows(
 
 This is the interesting part, and it is not the tidy story you might expect.
 
-On the **training** data the forest looks twice as good — a typical error of about two
+On the **training** data the forest looks twice as good, with a typical error of about two
 individuals against the linear model's four. On the **test** data, the data neither
 model has seen, the gap almost vanishes: roughly 4.1 against 4.2.
 
@@ -187,7 +187,7 @@ So the honest summary of this comparison is:
 
 None of those three follows from the others. That is the whole point.
 
-## Where this breaks down
+## Limits of this comparison
 
 **"Machine learning is more powerful" is not a general fact.** It is a claim about a
 specific dataset, and here it bought almost nothing. Flexible methods need enough data
@@ -195,7 +195,7 @@ to pin down the shapes they are free to invent. With 600 noisy training rows, th
 freedom mostly bought memorisation.
 
 **Prediction accuracy is not understanding.** A model can predict well for reasons that
-have nothing to do with ecology — a habitat model can score highly by learning where
+have nothing to do with ecology. A habitat model can score highly by learning where
 the survey vessels went. [Section 10](../10-interpretation/index.qmd) deals with what
 you can honestly claim.
 
@@ -213,7 +213,7 @@ answer, confidently, from nothing. See [section 6](../06-assumptions-limitations
 - Statistical modelling estimates *something about the world*; machine learning builds
   *something that predicts*. They are different goals, not different quality tiers.
 - You choose the form in a statistical model. That constraint is what makes a
-  coefficient interpretable — and what makes it wrong when the constraint is false.
+  coefficient interpretable, and what makes it wrong when the constraint is false.
 - A flat, non-significant coefficient can mean "no relationship" or "a relationship my
   model cannot express". They look identical in the output.
 - Performance on the training data tells you almost nothing. The held-back test set is
@@ -229,4 +229,4 @@ answer, confidently, from nothing. See [section 6](../06-assumptions-limitations
    temperature effect become detectable? What does this say about reporting "no
    effect"?
 2. Refit the forest with `trees = 5` instead of 500. Which changes more, the training
-   error or the test error — and why?
+   error or the test error, and why?

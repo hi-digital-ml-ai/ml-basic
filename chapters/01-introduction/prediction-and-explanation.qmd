@@ -1,6 +1,6 @@
 ---
 title: "Prediction versus explanation"
-description: "Two different scientific goals that pull models in different directions — and why the best predictor is rarely the best explanation."
+description: "Two different scientific goals that pull models in different directions, and why the best predictor is rarely the best explanation."
 order: 4
 categories: [foundations, interpretation]
 ---
@@ -14,7 +14,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The cost of an unstated goal
 
 Almost every disappointing machine-learning project in marine science begins with a
 goal that was never stated. Someone wants to know *why* a species is declining, builds
@@ -26,7 +26,7 @@ The two goals are genuinely different:
 - **Explanation**: how does this driver affect the outcome, and by how much?
 
 A model can be superb at one and useless at the other. Worse, nothing in the output
-warns you — a model with an excellent test score looks equally impressive whichever
+warns you: a model with an excellent test score looks equally impressive whichever
 question you brought.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -37,7 +37,7 @@ Think about what each goal permits.
 
 For **prediction**, any variable that carries information is fair game. Whether it
 causes the outcome is irrelevant. If bird sightings predict fish abundance, use bird
-sightings. Distance from port, survey vessel, day of year — all legitimate, provided
+sightings. Distance from port, survey vessel, day of year are all legitimate, provided
 they will be available when you deploy the model and mean the same thing then.
 
 For **explanation**, the variable must play the right causal role, and which *other*
@@ -48,7 +48,7 @@ system; prediction lets you avoid thinking about it.
 There is a second asymmetry, which is less often said out loud:
 
 ::: {.callout-note}
-For prediction, you can check whether you succeeded — hold data back and measure.
+For prediction, you can check whether you succeeded: hold data back and measure.
 For explanation, you usually cannot. There is no held-out dataset that tells you
 whether your estimate of the temperature effect is the true one. You have arguments,
 assumptions and design, and that is all.
@@ -110,7 +110,7 @@ almost as well as the forest with coordinates added. The best-performing interpr
 model here came not from a more powerful algorithm but from one piece of ecology:
 species have optima, so let the relationship bend.
 
-And what does that model say about temperature — the variable the plain linear model
+And what does that model say about temperature, the variable the plain linear model
 dismissed?
 
 ```{r}
@@ -122,7 +122,7 @@ tidy(fits[["Linear model, with curves"]]) |>
 
 The linear term is still not significant. The quadratic term is overwhelmingly so.
 The "no temperature effect" from [the first page](what-is-machine-learning.qmd) was
-never a fact about the species — it was a fact about a model that could only draw
+never a fact about the species. It was a fact about a model that could only draw
 straight lines.
 
 ```{r}
@@ -162,20 +162,20 @@ the ecology.
 
 Notice also what the curve does at its ends: it predicts *negative* abundance below
 about 3 °C and above about 15 °C. Counts cannot be negative. We fitted a linear model
-to count data, and this is the price — the interpretation is sound near the centre of
+to count data, and this is the price: the interpretation is sound near the centre of
 the data and nonsense at the edges.
 [Section 3](../03-supervised-learning/index.qmd) fixes this properly with a model built
 for counts. It is worth seeing the flaw first: a model can recover a real biological
 optimum and still make impossible predictions, and a plot of only the central range
 would have hidden it.
 
-## What the results mean
+## Reading the four models
 
 Now look at the model that predicted best: the forest with longitude and latitude
 added.
 
 Those two coordinates improved prediction. They are also, ecologically, nothing. No
-fish responds to longitude. What they do is act as a **proxy** — they let the model
+fish responds to longitude. What they do is act as a **proxy**: they let the model
 absorb spatial structure that the environmental variables fail to capture. The model
 has effectively learned *where the good patches were during this survey*.
 
@@ -188,16 +188,16 @@ So we have three models and three different kinds of answer:
 
 | Model | Predicts | Explains | Honest use |
 | --- | --- | --- | --- |
-| Plain linear model | Worst | Misleadingly — reports no temperature effect | None here; the form is wrong |
-| Linear model with curves | Nearly best | Yes — recovers the 9 °C optimum | Either goal |
+| Plain linear model | Worst | Misleadingly: reports no temperature effect | None here; the form is wrong |
+| Linear model with curves | Nearly best | Yes, recovers the 9 °C optimum | Either goal |
 | Random forest | Middling | No coefficients to read | Prediction, with care |
-| Forest + coordinates | Best | No — position is a proxy, not a cause | Prediction inside the surveyed area only |
+| Forest + coordinates | Best | No, position is a proxy, not a cause | Prediction inside the surveyed area only |
 
 The best predictor is the worst explanation. The best explanation is nearly the best
-predictor. Neither of those is a general law — but both are common enough that
+predictor. Neither of those is a general law, but both are common enough that
 assuming the opposite is a real risk.
 
-## Where this breaks down
+## Limits of this separation
 
 **"Interpretable" is not the same as "correct".** The curved model gave a clean
 temperature optimum, and we verified it only because we wrote the simulation. With real
@@ -206,7 +206,7 @@ it more persuasive, not less.
 
 **Proxies are not always obvious.** Longitude is easy to spot. Sampling date standing in
 for a survey-design change, or a sensor serial number standing in for calibration drift,
-is not — and both will improve your test score.
+is not, and both will improve your test score.
 
 **Explanation has prerequisites that no algorithm supplies.** Which covariates to
 include is a causal question, answered with subject knowledge, not by trying
@@ -220,7 +220,7 @@ the parts that embarrass you later.
 
 **Prediction has an expiry date.** A model that learned where the good patches were is
 valid while the patches stay put. Under a shifting climate, the proxy silently stops
-being a proxy — and the model gives no signal that anything has changed.
+being a proxy, and the model gives no signal that anything has changed.
 
 ::: {.callout-tip}
 ## Key points
@@ -229,7 +229,7 @@ being a proxy — and the model gives no signal that anything has changed.
 - For prediction, any informative variable is fair. For explanation, the variable has
   to play the right causal role, and the other covariates change the answer.
 - You can verify prediction by holding data back. You cannot verify explanation the
-  same way — which is why a good test score is not evidence that your effects are real.
+  same way, which is why a good test score is not evidence that your effects are real.
 - Subject knowledge often beats algorithmic flexibility: knowing that species have
   thermal optima was worth more here than 500 trees.
 - A variable that improves prediction can be ecologically meaningless. Position is the
@@ -242,5 +242,5 @@ being a proxy — and the model gives no signal that anything has changed.
    prediction suffer? What does that tell you about how much the coordinates were
    standing in for?
 2. Take the curved model and drop `salinity_psu`. Do the other coefficients move? Now
-   imagine you had no way to know salinity was irrelevant — which is the normal
-   situation — and consider what that implies for reporting effect sizes.
+   imagine you had no way to know salinity was irrelevant, which is the normal
+   situation, and consider what that implies for reporting effect sizes.

@@ -17,7 +17,7 @@ source(here::here("R/data.R"))
 set.seed(504)
 ```
 
-## Why this matters
+## Two reasons behind one curve
 
 The U-shaped curve of [two pages ago](underfitting-and-overfitting.qmd) is a fact without an
 explanation. It descends for one reason and ascends for a different one, and the two reasons
@@ -36,7 +36,7 @@ simulated and we know what the true expected count at each station is.
 
 ## The idea
 
-Imagine repeating your survey many times — same design, same shelf, new stations. Each survey
+Imagine repeating your survey many times: same design, same shelf, new stations. Each survey
 gives a different training set, so each gives a slightly different fitted model, and each of
 those makes a different prediction at some station of interest. Three things then contribute to
 how wrong those predictions are:
@@ -57,7 +57,7 @@ flexible ones at the high-variance end; and the term on the right does not depen
 at all.
 
 ::: {.callout-note}
-Marine analogy: bias is a poorly calibrated instrument, reading 0.3 °C high on every cast — a
+Marine analogy: bias is a poorly calibrated instrument, reading 0.3 °C high on every cast, and a
 thousand casts will not find it. Variance is an instrument with a noisy sensor, right on
 average but unreliable on any single cast. The two need completely different responses, and a
 model has both.
@@ -237,14 +237,14 @@ decomposition |>
   geom_point(size = 2) +
   annotate("text", x = -log10(14), y = irreducible + 1.2, size = 3.4,
            colour = ml_palette[["grey"]],
-           label = "irreducible noise — no model reaches below this") +
+           label = "irreducible noise: no model reaches below this") +
   scale_x_continuous(breaks = -log10(knobs), labels = knobs) +
-  labs(x = "minbucket  —  more flexible to the right",
+  labs(x = "minbucket: more flexible to the right",
        y = "Squared error (individuals²)", colour = NULL,
        title = "Where the U-shaped curve comes from")
 ```
 
-## What the results mean
+## Reading the decomposition
 
 **Bias falls, then stops.** From 12.6 at the most rigid setting to 7.3 at `minbucket = 4`, and
 no further. The remaining 7.3 is structural: these six predictors, fitted by greedy splitting on
@@ -252,7 +252,7 @@ no further. The remaining 7.3 is structural: these six predictors, fitted by gre
 does not buy it, and the small rise at the last two settings is discussed below.
 
 **Variance rises without limit.** From 0.05 to 17.1, a factor of nearly four hundred, and
-the rise steepens. At `minbucket = 1` the variance alone is twice the bias² — two surveys of the
+the rise steepens. At `minbucket = 1` the variance alone is twice the bias²: two surveys of the
 same shelf would produce predictions differing by more than the model's systematic error.
 
 **Their sum is the U.** Minimum 10.4 at `minbucket = 30`, which is both where
@@ -266,19 +266,19 @@ scores 5.76. **More than two-thirds of the squared error in the best model is no
 can remove.**
 
 That reframes the whole exercise. The gap between a mediocre model and a good one on this survey
-is 5.76 against 6.91 — real, worth having, and small next to the 4.76 that neither can go below.
+is 5.76 against 6.91: real, worth having, and small next to the 4.76 that neither can go below.
 If you have ever wondered why marine habitat models have such unimpressive R² values, this is
 usually the answer, and it is a property of counting animals rather than a failure of analysis.
 
 ::: {.callout-note collapse="true"}
-## Why bias² rises slightly at the flexible end
+## The slight rise in bias² at the flexible end
 
-In the textbook decomposition, bias should keep falling as flexibility grows. Here it rises from
-7.34 to 7.90 over the last two settings, and the cause is a real limitation of measuring bias this
-way rather than an error.
+In the textbook decomposition, bias should keep falling as flexibility grows. Here it
+rises from 7.34 to 7.90 over the last two settings, and the cause is a real limitation of
+measuring bias this way rather than an error.
 
 The replicate training sets are drawn from one pool of 360 stations, so they overlap heavily. A
-tree with one station per leaf returns that station's *observed* count, noise included — and the
+tree with one station per leaf returns that station's *observed* count, noise included, and the
 same stations recur across replicates, so averaging does not cancel it. The measured "average
 model" therefore keeps some of the pool's noise, which registers as bias.
 
@@ -287,7 +287,7 @@ resampling from a single dataset is the only option in practice, and this is one
 that approximation shows.
 :::
 
-### How the families sit on this axis
+### The families on this axis
 
 | Model | Bias | Variance | Typical failure |
 | --- | --- | --- | --- |
@@ -298,15 +298,15 @@ that approximation shows.
 | Boosting | Very low | Grows with rounds | Excellent then suddenly not |
 | Ridge / lasso | Raised deliberately | Lowered deliberately | Real effects shrunk towards zero |
 
-The middle two rows are the important ones. A random forest does not reduce bias relative to a
-single tree — the trees are the same kind of object. It reduces *variance*, by averaging models
-whose errors are partly independent, which is why the forest in
-[section 3](../03-supervised-learning/trees-forests-boosting.qmd) beat a single grown-out tree
-while sharing its flexibility. And ridge does the reverse of what you might expect: it accepts
-extra bias on purpose, because the variance it saves is worth more. That trade is exactly what
-[the λ curve](../04-how-algorithms-learn/map-and-priors.qmd) showed.
+The middle two rows are the important ones. A random forest does not reduce bias relative
+to a single tree, because the trees are the same kind of object. It reduces *variance*, by
+averaging models whose errors are partly independent, which is why the forest in [section
+3](../03-supervised-learning/trees-forests-boosting.qmd) beat a single grown-out tree
+while sharing its flexibility. And ridge does the reverse of what you might expect: it
+accepts extra bias on purpose, because the variance it saves is worth more. That trade is
+exactly what [the λ curve](../04-how-algorithms-learn/map-and-priors.qmd) showed.
 
-## Where this breaks down
+## Limits of this decomposition
 
 **You cannot compute this on real data.** Every number above depends on `true_mean`, which
 exists only because the survey is simulated. In practice bias and variance are not separately
@@ -314,7 +314,7 @@ observable; you see their sum through held-out error. The decomposition is a way
 about that sum, not a diagnostic you can run.
 
 **Variance is measurable, though.** The part you can estimate without knowing the truth is the
-spread of predictions across resampled fits — bootstrap the training set, refit, and look at how
+spread of predictions across resampled fits: bootstrap the training set, refit, and look at how
 much the predictions move. That is a genuine measurement, and it is what
 [section 7](../07-validation/index.qmd) uses for stability.
 
@@ -335,7 +335,7 @@ changing the model.
 - Expected error splits into **bias²** (systematically wrong), **variance** (unstable across
   surveys) and **irreducible noise** (not a function of the environment).
 - More flexibility lowers bias and raises variance. The U-curve's minimum is where the exchange
-  stops being worthwhile — here, `minbucket = 30`.
+  stops being worthwhile: here, `minbucket = 30`.
 - Measured on this survey: bias² fell from 12.6 to 7.3; variance rose from 0.05 to 17.1, a
   factor of nearly four hundred.
 - The irreducible noise was **22.7**, more than double the best achievable bias² + variance.
@@ -348,7 +348,7 @@ changing the model.
 ## Try it yourself
 
 1. Replace the tree with `lm(abundance ~ depth_m)` and add it to the decomposition as a single
-   point. Where does it land — and is a straight line through a hump-shaped response high-bias,
+   point. Where does it land, and is a straight line through a hump-shaped response high-bias,
    high-variance, or both?
 2. Raise the replicate training-set size from 200 to 340. Predict first what should happen to
    the variance curve and to the position of the minimum, then check. Which of the two moved

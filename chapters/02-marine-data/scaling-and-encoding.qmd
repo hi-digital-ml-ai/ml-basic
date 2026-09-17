@@ -1,6 +1,6 @@
 ---
 title: "Scaling, transforming and encoding"
-description: "Putting features on terms a model can use — and why a recipe is a specification fitted on training data, not a table you edit."
+description: "Putting features on terms a model can use, and why a recipe is a specification fitted on training data, not a table you edit."
 order: 5
 categories: [data-preparation]
 ---
@@ -16,11 +16,11 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Units a model cannot see past
 
 Depth runs to 200, salinity sits near 34, chlorophyll is mostly under 2. To you these
 are three measurements in three units. To a distance-based or penalised model they are
-three numbers, and depth — simply by being large — dominates.
+three numbers, and depth, simply by being large, dominates.
 
 Whether that matters depends entirely on the model, and the split is sharp enough to
 memorise:
@@ -48,14 +48,14 @@ everything else in tidymodels safe.
 
 You might reasonably standardise your data by computing the mean and standard deviation
 of each column and subtracting. That works, and it is wrong, because those means were
-computed from every row — including the rows you intend to hold back for testing. Your
+computed from every row, including the rows you intend to hold back for testing. Your
 "unseen" test data has already influenced the training data's scaling.
 
 A `recipe` separates the two things people usually do at once:
 
-1. **Specify** the steps — impute, log, dummy, normalise.
-2. **Estimate** the quantities each step needs — the medians, the means, the standard
-   deviations, the set of category levels — from *training data only*.
+1. **Specify** the steps: impute, log, dummy, normalise.
+2. **Estimate** the quantities each step needs, the medians, the means, the standard
+   deviations and the set of category levels, from *training data only*.
 3. **Apply** those stored quantities to any new data.
 
 Which is why a recipe is written before the data is split, estimated after, and applied
@@ -70,7 +70,7 @@ magnitude with a long right tail, which drags means around and gives extreme val
 disproportionate influence on anything that squares a residual.
 
 A log transform makes the distribution roughly symmetric and turns multiplicative
-relationships into additive ones — usually closer to how the ecology works. Counts
+relationships into additive ones, usually closer to how the ecology works. Counts
 often take a square root; `step_YeoJohnson()` will choose a transformation for you if
 you have no reason to prefer one, at the cost of interpretability.
 
@@ -86,9 +86,9 @@ Only do this when equal spacing is defensible.
 
 **High cardinality is the real problem.** Our `site_id` has 160 levels. Dummy-encoding
 it adds 159 columns, most of which are almost entirely zero. Options are to group rare
-levels together (`step_other()`), or to encode each level by something numeric about it
-— target encoding, in the `embed` package — which is powerful and is a leakage trap in
-its own right, because it uses the response.
+levels together (`step_other()`), or to encode each level by something numeric about
+it, which is target encoding, in the `embed` package. That is powerful and a leakage
+trap in its own right, because it uses the response.
 
 ## Worked example
 
@@ -222,7 +222,7 @@ pd.DataFrame({"terms": numeric, "value": imputer.statistics_})
 
 :::
 
-Those are the medians that will be used to fill gaps — in the training data *and*, later,
+Those are the medians that will be used to fill gaps, in the training data *and*, later,
 in the test data. They came only from `train`.
 
 ::: {.panel-tabset group="language"}
@@ -253,7 +253,7 @@ Four substrate levels have become three `substrate_*` columns, four seasons thre
 `season_*` columns, and every numeric predictor now has mean zero and standard
 deviation one.
 
-### What the log did
+### The effect of the log
 
 ```{r}
 #| label: fig-transform
@@ -274,9 +274,9 @@ p_log <- ggplot(chl, aes(log(raw_value + 0.01))) +
 p_raw + p_log
 ```
 
-### Does it change the answer?
+### Whether it changes the answer
 
-For a random forest, no — and this is worth seeing rather than taking on trust.
+For a random forest, no, and this is worth seeing rather than taking on trust.
 
 ::: {.panel-tabset group="language"}
 
@@ -336,17 +336,17 @@ pd.DataFrame([
 
 :::
 
-Essentially identical — they differ in the fourth decimal place, from floating-point
+Essentially identical: they differ in the fourth decimal place, from floating-point
 tie-breaking as the forest searches for split points, not from anything meaningful. The
 reason is that a tree splits on *order*, and neither standardising nor taking logs
 changes the order of any column. Scaling a random forest
 is harmless, pointless, and makes the model harder to interpret.
 
-Swap in a penalised regression and the picture reverses — without normalisation, the
+Swap in a penalised regression and the picture reverses. Without normalisation, the
 penalty falls almost entirely on the small-numbered variables, and the model is decided
 by your choice of units.
 
-## What the results mean
+## Three consequences
 
 Three things follow.
 
@@ -363,7 +363,7 @@ sentence anyone can say out loud. That is a fair price when predicting and a rea
 when explaining, which is the trade-off from
 [section 1](../01-introduction/prediction-and-explanation.qmd).
 
-## Where this breaks down
+## Limits of these steps
 
 **`step_log()` fails on zeros and negatives.** Chlorophyll can be zero; hence the
 `offset`. The offset is arbitrary and it changes the shape of the low end, so choose it

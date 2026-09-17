@@ -17,27 +17,28 @@ source(here::here("R/data.R"))
 set.seed(605)
 ```
 
-## Why this matters
+## The shape of survey effort
 
-Marine survey effort is not a random sample of the ocean. It follows ports, weather windows,
-vessel availability, funding cycles and the last decade's research priorities. Shallow water near
-a lab is sampled hundreds of times; the shelf break in February is sampled never.
+Marine survey effort is not a random sample of the ocean. It follows ports, weather
+windows, vessel availability, funding cycles and the last decade's research priorities.
+Shallow water near a lab is sampled hundreds of times; the shelf break in February is
+sampled never.
 
-A model built on that effort learns the relationships that hold *where you went*. Ask it about
-anywhere else and it will answer — confidently, with no warning — and this page measures how wrong
-that answer is, using the simulation's known truth to do it.
+A model built on that effort learns the relationships that hold *where you went*. Ask it
+about anywhere else and it will answer, confidently and with no warning, and this page
+measures how wrong that answer is, using the simulation's known truth to do it.
 
-There are two distinct problems here and they need separating. **Uneven sampling** means some
-regions of the environment are represented weakly. **Extrapolation** means some are not
-represented at all. The second is the one that ends careers, and the trap is that it is hard to
-detect: a station can be inside the observed range of every single variable and still be somewhere
-your survey has never been.
+There are two distinct problems here and they need separating. **Uneven sampling** means
+some regions of the environment are represented weakly. **Extrapolation** means some are
+not represented at all. The second is the one that ends careers, and the trap is that it
+is hard to detect: a station can be inside the observed range of every single variable and
+still be somewhere your survey has never been.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 ## The idea
 
-### What each model family does past the edge
+### Each model family past the edge
 
 Nothing in a fitted model marks where the data stopped. Asked about a station outside it, each
 family does something different and none of them says so.
@@ -52,13 +53,13 @@ family does something different and none of them says so.
 
 The tree row is the dangerous one, and it runs against intuition. A forest never produces an
 absurd number, which makes it feel safe outside the data. What it actually does is repeat the
-value from the closest region it *did* see — so if abundance was falling with depth when the data
+value from the closest region it *did* see, so if abundance was falling with depth when the data
 ran out, the forest predicts that it simply stops falling.
 
 ## Worked example
 
-We simulate a common situation: a survey that only worked shallow water, and a model asked to map
-the deeper shelf.
+We simulate a common situation: a survey that only worked shallow water, and a model asked
+to map the deeper shelf.
 
 ```{r}
 #| label: prepare
@@ -101,7 +102,7 @@ extrapolated <- predictions(shallow, deep)
 ```
 
 Because the survey is simulated we can compare against `true_mean`, the expected count the
-generating process used — so the comparison is not blurred by negative-binomial noise.
+generating process used, so the comparison is not blurred by negative-binomial noise.
 
 ```{r}
 #| label: bias
@@ -121,7 +122,7 @@ tibble(
 
 ```{r}
 #| label: fig-extrapolation
-#| fig-cap: "Mean prediction against the true mean, in depth bands. Left of the dashed line is where the models were trained; right of it they are extrapolating. Beyond the boundary the truth keeps falling — from 3.7 to 1.1 individuals — while the random forest flattens near 5, the Poisson GLM flattens near 3.5, and the quadratic turns back upward, finishing highest of the three."
+#| fig-cap: "Mean prediction against the true mean, in depth bands. Left of the dashed line is where the models were trained; right of it they are extrapolating. Beyond the boundary the truth keeps falling, from 3.7 to 1.1 individuals, while the random forest flattens near 5, the Poisson GLM flattens near 3.5, and the quadratic turns back upward, finishing highest of the three."
 #| fig-alt: "A line chart with depth band on the horizontal axis running from zero-to-40 metres through to 160-to-200 metres, and mean count from about 1 to 7 on the vertical. A dashed vertical line after the 70-to-100 band separates training from extrapolation. A thick black truth line starts at 7.2, drops steeply to 4.4, eases to 3.9 and 3.7 at the boundary, then continues down through 3.3 and 2.1 to 1.1 in the deepest band. In the shallowest band all three model lines sit about a unit below the truth; through the middle training bands they track it closely. To the right of the dashed line the random forest line jumps to 5.3, stays there for two bands and ends near 4.9; the Poisson line sits flat between 3.5 and 3.7; and the linear line climbs steadily from 3.7 to 5.1, ending above the random forest and nearly five units above the truth."
 #| fig-width: 7.5
 #| fig-height: 4.4
@@ -162,7 +163,7 @@ ggplot(both, aes(band, mean_count, colour = series, group = series,
 
 ### The harder problem: novel combinations
 
-The example above is easy to spot — you can see that you are predicting at 180 m having trained
+The example above is easy to spot: you can see that you are predicting at 180 m having trained
 below 100 m. The dangerous case is subtler. Suppose the survey only sailed in summer and autumn,
 and the model is asked about spring and winter.
 
@@ -195,8 +196,8 @@ tibble(
 
 ```{r}
 #| label: fig-novelty
-#| fig-cap: "Temperature against chlorophyll, for a survey that sailed only in summer and autumn (grey) and the spring and winter stations it is being asked about. Orange stations are inside the surveyed range of every variable taken one at a time, yet sit in a combination of conditions the survey essentially never encountered — cold water with high chlorophyll, which is a spring bloom."
-#| fig-alt: "A scatter plot with temperature from 2 to 16 degrees on the horizontal axis and chlorophyll on a logarithmic vertical axis from 0.07 to 14. Grey points, the summer and autumn survey, form a broad cloud concentrated between 8 and 16 degrees with chlorophyll mostly under 3. Blue points sit within that cloud. Orange points cluster to the upper left of it — colder than 9 degrees and with chlorophyll above 2 — a region where grey points are sparse. A dashed rectangle marks the surveyed range of each variable separately, and almost all the orange points fall inside it."
+#| fig-cap: "Temperature against chlorophyll, for a survey that sailed only in summer and autumn (grey) and the spring and winter stations it is being asked about. Orange stations are inside the surveyed range of every variable taken one at a time, yet sit in a combination of conditions the survey essentially never encountered: cold water with high chlorophyll, which is a spring bloom."
+#| fig-alt: "A scatter plot with temperature from 2 to 16 degrees on the horizontal axis and chlorophyll on a logarithmic vertical axis from 0.07 to 14. Grey points, the summer and autumn survey, form a broad cloud concentrated between 8 and 16 degrees with chlorophyll mostly under 3. Blue points sit within that cloud. Orange points cluster to the upper left of it, colder than 9 degrees and with chlorophyll above 2, a region where grey points are sparse. A dashed rectangle marks the surveyed range of each variable separately, and almost all the orange points fall inside it."
 #| fig-width: 7
 #| fig-height: 4.6
 novelty_plot <- unsampled |>
@@ -225,11 +226,11 @@ ggplot(mapping = aes(temperature_c, chlorophyll_mg_m3)) +
        subtitle = "Grey: the summer/autumn survey. Dashed box: each variable's observed range.")
 ```
 
-## What the results mean
+## Honest in range, wrong outside it
 
 **In range, all three models are honest on average.** Predicting held-out shallow stations, the
 biases are +2%, +5% and +8%. They do under-predict the very shallowest band, where the truth is
-7.2 and all three say about 6 — the smoothing you would expect at the edge of any dataset — but
+7.2 and all three say about 6, the smoothing you would expect at the edge of any dataset, but
 nothing here is broken.
 
 **Past the edge, they diverge sharply and none of them warns you.**
@@ -245,54 +246,57 @@ The forest is the worst by a wide margin, and the depth-band figure shows exactl
 too high, and it predicts almost the same value at 100 m as at 190 m. It has no mechanism for
 "keeps decreasing". It repeats the last thing it saw.
 
-The Poisson GLM does better because its functional form carries an instruction about what happens
-next, and on the log scale that instruction keeps bending downward — though it too flattens out
-around 3.5 rather than following the truth to 1.1.
+The Poisson GLM does better because its functional form carries an instruction about what
+happens next, and on the log scale that instruction keeps bending downward, though it too
+flattens out around 3.5 rather than following the truth to 1.1.
 
-The linear model with quadratic terms shows the other failure in the table. It tracks the decline
-for one band past the boundary and then **turns back upward**, finishing at 5.1 in the deepest
-band — above the forest, and nearly five times the truth. A quadratic has a turning point; fitted
-to shallow data, that turning point lands somewhere arbitrary, and past it the curve rises. This
-is the same arithmetic that put [the linearity page's](linearity-and-nonlinearity.qmd) depth
-optimum at 293 m, beyond any station in the survey.
+The linear model with quadratic terms shows the other failure in the table. It tracks the
+decline for one band past the boundary and then **turns back upward**, finishing at 5.1 in
+the deepest band, above the forest and nearly five times the truth. A quadratic has a
+turning point; fitted to shallow data, that turning point lands somewhere arbitrary, and
+past it the curve rises. This is the same arithmetic that put [the linearity
+page's](linearity-and-nonlinearity.qmd) depth optimum at 293 m, beyond any station in the
+survey.
 
 **And the range check you would naturally run does not catch the hard case.** Of the 356
-spring-and-winter stations, **251 (71%)** are inside the observed range of every single variable.
-But **143 of them — 40% of all the stations to be predicted — are simultaneously inside every
-individual range and outside the region the survey actually occupied.** Those are cold, high-
-chlorophyll stations: a spring bloom. The survey saw cold water (in autumn) and it saw high
-chlorophyll (in summer), just never together.
+spring-and-winter stations, **251 (71%)** are inside the observed range of every single
+variable. But **143 of them, 40% of all the stations to be predicted, are simultaneously
+inside every individual range and outside the region the survey actually occupied.** Those
+are cold, high- chlorophyll stations: a spring bloom. The survey saw cold water (in
+autumn) and it saw high chlorophyll (in summer), just never together.
 
 ::: {.callout-important}
-Checking `min()` and `max()` of each predictor is the standard extrapolation check and it is not
-sufficient. Combinations matter, and as the number of predictors grows the surveyed region becomes
-a vanishingly small part of the box that contains it. Report a multivariate novelty measure —
-Mahalanobis distance to the training centre, distance to the nearest training point, or a formal
-tool such as ExDet — alongside any prediction map.
+Checking `min()` and `max()` of each predictor is the standard extrapolation check and it
+is not sufficient. Combinations matter, and as the number of predictors grows the surveyed
+region becomes a vanishingly small part of the box that contains it. Report a multivariate
+novelty measure, such as Mahalanobis distance to the training centre, distance to the
+nearest training point, or a formal tool such as ExDet, alongside any prediction map.
 :::
 
-## Where this breaks down
+## Limits of these novelty checks
 
-**Mahalanobis distance assumes an ellipse.** It treats the surveyed region as one ellipsoid around
-the mean, which is reasonable for roughly symmetric predictors and wrong when the survey covers two
-separate clusters — inshore and offshore, say. Then the gap between them scores as covered, when
-it is exactly the place with no data. A nearest-neighbour distance handles that shape better.
+**Mahalanobis distance assumes an ellipse.** It treats the surveyed region as one
+ellipsoid around the mean, which is reasonable for roughly symmetric predictors and wrong
+when the survey covers two separate clusters, inshore and offshore, say. Then the gap
+between them scores as covered, when it is exactly the place with no data. A
+nearest-neighbour distance handles that shape better.
 
-**Extrapolating is sometimes the whole point.** Climate projections require predicting temperatures
-no survey has recorded. The answer is not to refuse, but to be explicit: state that the prediction
-is an extrapolation, prefer a model whose functional form you can defend mechanistically over a
-flexible one, and widen the uncertainty far beyond what the model reports.
+**Extrapolating is sometimes the whole point.** Climate projections require predicting
+temperatures no survey has recorded. The answer is not to refuse, but to be explicit:
+state that the prediction is an extrapolation, prefer a model whose functional form you
+can defend mechanistically over a flexible one, and widen the uncertainty far beyond what
+the model reports.
 
-**Uneven sampling biases the fit, not just the coverage.** If 80% of your stations are shallow, the
-fitted relationship is mostly a shallow-water relationship, and it will be reported as though it
-applied everywhere. Weighting, or stratified resampling, addresses this; noticing it is the harder
-part.
+**Uneven sampling biases the fit, not just the coverage.** If 80% of your stations are
+shallow, the fitted relationship is mostly a shallow-water relationship, and it will be
+reported as though it applied everywhere. Weighting, or stratified resampling, addresses
+this; noticing it is the harder part.
 
-**The forest's flatness is not always worse.** Where the true relationship really does saturate —
-many physiological responses do — repeating the last value is more nearly right than a quadratic
-that keeps bending. The forest's failure here is specific: the truth kept declining. Which
-behaviour is safer depends on knowing something about the process, which is a scientific judgement
-and not a modelling one.
+**The forest's flatness is not always worse.** Where the true relationship really does
+saturate, as many physiological responses do, repeating the last value is more nearly
+right than a quadratic that keeps bending. The forest's failure here is specific: the
+truth kept declining. Which behaviour is safer depends on knowing something about the
+process, which is a scientific judgement and not a modelling one.
 
 ::: {.callout-tip}
 ## Key points
@@ -301,7 +305,7 @@ and not a modelling one.
 - **Trees and forests flatten past the edge**, repeating the nearest leaf. Here the forest
   predicted 4.91 against a true 1.05 in the 160–200 m band.
 - Extrapolation bias in this example: Poisson GLM **+19%**, linear-with-quadratics **+39%**,
-  random forest **+73%** — from models biased by 2–8% in range.
+  random forest **+73%**, against models biased by 2–8% in range.
 - A per-variable range check is not enough. **40% of the stations to be predicted passed every
   single-variable check while sitting outside the region the survey occupied.**
 - Report a multivariate novelty measure with any prediction map, and say plainly which parts of it

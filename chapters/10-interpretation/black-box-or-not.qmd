@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## The trade-off as usually framed
 
 The standard framing is a trade-off: interpretable models are transparent but weak, black
 boxes are accurate but opaque, and you choose according to whether you need to explain or to
@@ -245,7 +245,7 @@ field. That is precisely the class of model a GAM is: smooth additive terms and 
 smoother. The GAM won because it was right about the shape of the world.
 
 ::: {.callout-note collapse="true"}
-## Why the boosted trees did so badly
+## The boosted trees' poor showing
 `boost_tree()` with 400 rounds and no tuning overfits a noisy count response, and unlike a
 random forest it has no averaging to protect it. §5's
 [hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) would fix most
@@ -253,7 +253,7 @@ of that. It is included untuned deliberately: the comparison people actually run
 against default, and this is what that looks like.
 :::
 
-## What interpretability actually buys
+## The return on interpretability
 
 It is not just the ranking. Here is the GAM's own summary, which comes free with the fit.
 
@@ -303,8 +303,8 @@ Every line of that is a scientific statement with an uncertainty attached.
 
 - **Temperature** has 4.6 effective degrees of freedom and a $\chi^2$ of 116: strongly
   nonlinear and the dominant term.
-- **Chlorophyll** has 1.0 effective degrees of freedom — the GAM has decided the effect is
-  linear on the link scale — and $p = 0.011$. Recall that
+- **Chlorophyll** has 1.0 effective degrees of freedom, since the GAM has decided the effect
+  is linear on the link scale, and $p = 0.011$. Recall that
   [permutation importance put chlorophyll inside the noise band](feature-importance.qmd). A
   model that *estimates an effect* and a measure that *quantifies reliance* are answering
   different questions, and here they disagree completely.
@@ -314,14 +314,14 @@ Every line of that is a scientific statement with an uncertainty attached.
   and −0.48 against true values of 0.20, 0, −0.20 and −0.80. The ordering is exactly right.
   Recall that [impurity importance ranked substrate below three columns of random
   numbers](feature-importance.qmd).
-- **Salinity** is 0.064 ± 0.122, $p = 0.60$ — correctly identified as nothing, which is the
+- **Salinity** is 0.064 ± 0.122, $p = 0.60$, correctly identified as nothing, which is the
   truth.
 
 You can also read the shapes straight off, with intervals.
 
 ```{r}
 #| label: fig-smooths
-#| fig-cap: "The GAM's fitted smooth terms with 95% intervals, against the true curves from the generator (both centred, so only the shape is compared). Temperature is recovered with the right amplitude and its peak one degree early. The depth smooth is flatter than the truth and peaks at 52 m rather than 80 — but its interval contains the true curve at 197 of 200 grid points, and is wide enough to contain a flat line everywhere shallower than 155 m."
+#| fig-cap: "The GAM's fitted smooth terms with 95% intervals, against the true curves from the generator (both centred, so only the shape is compared). Temperature is recovered with the right amplitude and its peak one degree early. The depth smooth is flatter than the truth and peaks at 52 m rather than 80, but its interval contains the true curve at 197 of 200 grid points, and is wide enough to contain a flat line everywhere shallower than 155 m."
 #| fig-alt: "Two panels on the link scale, each with a solid fitted line, a shaded 95% interval and a dashed true curve. In the temperature panel the fitted smooth rises from about minus 2.5 at two degrees to a maximum just above zero near eight, then falls to about minus 2 at sixteen; the dashed true curve runs very close to it throughout, peaking one degree later. The interval is narrow in the middle and widens sharply at both ends. In the depth panel the fitted smooth is a broad flat-topped hump, rising gently from about minus 0.1 at five metres to a shallow maximum near fifty, staying level to about a hundred and ten, then declining to about minus 1.2 at the deepest stations; the dashed true curve is a more pronounced hump peaking at eighty metres and dropping lower at both ends, and it lies inside the shaded interval almost everywhere."
 #| fig-width: 9.5
 #| fig-height: 4.2
@@ -356,7 +356,7 @@ smooth_panel <- function(frame, label, marker) {
               "depth (m)", 80))
 ```
 
-## What the depth panel is actually saying
+## Reading the depth panel
 
 Look at depth before concluding either that the interpretable model solved the problem or
 that it failed. Its smooth peaks at 52 m rather than 80, it is flatter than the truth, and
@@ -377,7 +377,7 @@ visibly uncertain.
 model to tell you that the data cannot answer your question. A partial-dependence plot has no
 mechanism for saying so.
 
-## So when is a black box worth it?
+## The measured case for a black box
 
 The measured case for one, from this course:
 
@@ -386,7 +386,7 @@ The measured case for one, from this course:
   where 17 network weights beat a 500-tree forest and logistic regression never exceeded
   AUC 0.72. A GAM with additive smooths would fail there too.
 - **When you have no idea what the form is.** The GAM won here because smooth-additive is
-  the right family. Choose it wrongly — the linear-terms GLM at 4.38 — and you give up the
+  the right family. Choose it wrongly, as with the linear-terms GLM at 4.38, and you give up the
   accuracy you thought interpretability was costing you. A forest is insurance against not
   knowing.
 - **When the inputs are raw.** Pixels, spectra and waveforms have no interpretable
@@ -396,11 +396,11 @@ The measured case for one, from this course:
   [prediction versus explanation](../01-introduction/prediction-and-explanation.qmd)
   distinction decides which column of the table above you should be reading.
 
-And the case against: every method in §10 for getting an effect out of a black box —
-importance, partial dependence, ALE — is an *approximation* of a quantity a GAM reports
+And the case against: every method in §10 for getting an effect out of a black box,
+whether importance, partial dependence or ALE, is an *approximation* of a quantity a GAM reports
 directly, with an interval, for free.
 
-## Where this breaks down
+## Limits of this comparison
 
 **One dataset, one generating process.** This survey was built from smooth additive effects,
 so a smooth additive model was always going to do well. On data with strong interactions the
@@ -426,14 +426,14 @@ after a search is wider than the one the software prints.
   form against not knowing it.** The same GLM family scored 4.25 with the right form and 4.38
   with linear terms.
 - An interpretable fit reports **effects with uncertainty**. The GAM recovered the substrate
-  ordering, the temperature optimum to within a degree, and salinity's null effect —
+  ordering, the temperature optimum to within a degree, and salinity's null effect:
   all things the importance measures on the previous pages got wrong or could not say.
 - **On depth, where the survey is confounded, the GAM produced a wide answer rather than a
-  wrong one** — its interval covers the truth at 197 of 200 grid points and excludes zero
+  wrong one**: its interval covers the truth at 197 of 200 grid points and excludes zero
   only beyond 155 m. The forest's partial dependence, on the same data, drew a confident
   monotone decline with no interval at all.
 - Reach for a black box when the structure is not additive, when the inputs are raw, or when
-  you do not know the form — not because you assume it will predict better.
+  you do not know the form, not because you assume it will predict better.
 :::
 
 ## Try it yourself

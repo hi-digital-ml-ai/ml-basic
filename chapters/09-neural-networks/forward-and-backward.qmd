@@ -1,6 +1,6 @@
 ---
 title: "Forward propagation and backpropagation"
-description: "Building a two-layer network from scratch in base R, deriving its gradients by the chain rule, and checking them numerically — so that 'the network trains' stops being a black box."
+description: "Building a two-layer network from scratch in base R, deriving its gradients by the chain rule, and checking them numerically, so that 'the network trains' stops being a black box."
 order: 2
 categories: [neural-networks, optimisation]
 ---
@@ -15,14 +15,14 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## The case for looking at the machinery
 
 You will almost certainly never write backpropagation yourself. Every framework does it
 for you, and does it better. So why look?
 
 Because the failures you will actually meet are failures of this machinery, and they are
 unreadable without it. A network that trains to a flat line, a loss that goes to `NaN` on
-the third epoch, a "deep" model that performs exactly like a shallow one — each of those
+the third epoch, a "deep" model that performs exactly like a shallow one: each of those
 has a specific cause in the arithmetic below, and none of them is diagnosable from the
 outside. Forty lines of base R buys you the vocabulary.
 
@@ -36,8 +36,8 @@ values. That is the same problem §4 set up in
 [gradient descent](../04-how-algorithms-learn/gradient-descent.qmd): write down a loss,
 find the slope of the loss with respect to each parameter, step downhill, repeat.
 
-The only new difficulty is that a weight in the first layer affects the loss *indirectly*
-— through a hidden unit, through the output weight, through the prediction. So its slope
+The only new difficulty is that a weight in the first layer affects the loss *indirectly*,
+through a hidden unit, through the output weight, through the prediction. So its slope
 is a product of several slopes. That product is the chain rule, and applying it
 systematically from the output backwards is all **backpropagation** is.
 
@@ -108,8 +108,8 @@ par <- initialise(3)
 round(loss(par, X, y), 4)
 ```
 
-Two matrix multiplications and one `tanh`. `Z1` is 741 × 4 — one weighted sum per station
-per hidden unit — and `A1` is the same shape after the bend. The loss is mean squared
+Two matrix multiplications and one `tanh`. `Z1` is 741 × 4, one weighted sum per station
+per hidden unit, and `A1` is the same shape after the bend. The loss is mean squared
 error, so this is the regression case; for classification you would swap in a logistic
 output and cross-entropy, and everything below changes only in one line.
 
@@ -121,7 +121,7 @@ for every row so that backpropagation can reuse them.
 
 Start at the output and work left. Write $\hat y$ for the prediction and $L$ for the loss.
 
-1. $\partial L / \partial \hat y = -2(y - \hat y)/n$ — how the loss responds to the prediction.
+1. $\partial L / \partial \hat y = -2(y - \hat y)/n$, which is how the loss responds to the prediction.
 2. The output weights see the hidden activations directly, so their gradient is
    $A_1^{\top}(\partial L/\partial \hat y)$.
 3. The hidden activations feed the output through $w_2$, so
@@ -153,12 +153,12 @@ round(gradients$w2, 5)
 
 Five lines. Every symbol in them came out of the forward pass. Note that step 4 is where
 the `tanh` derivative enters, and that it is the only place the choice of activation
-function appears — swapping `tanh` for ReLU changes `1 - A1^2` to `Z1 > 0` and nothing
+function appears: swapping `tanh` for ReLU changes `1 - A1^2` to `Z1 > 0` and nothing
 else.
 
 ## Checking that it is right
 
-If you ever write a gradient yourself — a custom loss, an unusual link — check it against
+If you ever write a gradient yourself, for a custom loss or an unusual link, check it against
 finite differences before you trust it. Nudge one weight up and down by a tiny amount, see
 how the loss moves, and compare with what the analytic gradient predicted.
 
@@ -184,10 +184,10 @@ tibble(parameter = names(par),
          sprintf("%.1e", max(abs(as.numeric(gradients[[nm]]) - as.numeric(numeric[[nm]]))))))
 ```
 
-Agreement to about eleven decimal places — the disagreement is smaller than the rounding
+Agreement to about eleven decimal places, and the disagreement is smaller than the rounding
 error in the finite difference itself. This check is the single most useful thing on the page:
 it is cheap on a small network, it is unambiguous, and a hand-derived gradient that is
-subtly wrong will still *train* — just to the wrong place, slowly, with no error message.
+subtly wrong will still *train*, just to the wrong place, slowly, with no error message.
 
 ::: {.callout-warning}
 The numerical gradient costs two forward passes **per weight**. For the 21 weights here
@@ -244,10 +244,10 @@ step 90 would have concluded the network was no better than a straight line.
 The narrow spike near step 2,250 is worth a sentence too. Gradient descent guarantees the
 loss will fall for a *small enough* step; it does not guarantee that your step is small
 enough. On 69 of these 3,000 steps the loss went up. That is harmless here, and it is the
-same mechanism that, at a larger learning rate, destroys a run outright — which is
+same mechanism that, at a larger learning rate, destroys a run outright, which is
 [the next page](training-a-network.qmd).
 
-## What the results mean
+## The source of the improvement
 
 The point is not the improvement. Three predictors and a genuine humped response in two of
 them is a case where a polynomial would do as well. The point is that the improvement came
@@ -266,7 +266,7 @@ tibble(fit = c("hand-written, 3000 gradient steps", "nnet::nnet, BFGS"),
                                 mean((y - as.numeric(predict(engine_fit, X)))^2)), 4))
 ```
 
-The two land within 0.005 of each other, and our hand-written loop is marginally *ahead* —
+The two land within 0.005 of each other, and our hand-written loop is marginally *ahead*,
 which says nothing about either method, because that gap is smaller than the spread between
 different starting weights that [the next page](training-a-network.qmd) measures.
 
@@ -276,11 +276,11 @@ the curvature of the loss surface and takes a step tailored to it. Backpropagati
 how it obtains the gradient. **The gradient and what you do with it are separate choices**,
 and this page is about the first.
 
-## Where this breaks down
+## Limits of this machinery
 
 **Saturation kills the gradient.** Look at step 4: `d_Z1` is multiplied by `1 - A1^2`. If
 a hidden unit's input is large, `tanh` returns nearly ±1, that factor is nearly zero, and
-the unit's weights stop updating — the unit is stuck wherever it happened to land.
+the unit's weights stop updating, and the unit is stuck wherever it happened to land.
 
 ```{r}
 #| label: saturation
@@ -294,21 +294,21 @@ tibble(initialisation = c("small weights (sd 0.5)", "large weights (sd 10)"),
                                              max(abs(backward(saturated, X, y)$W1))), 3))
 ```
 
-With weights twenty times larger the mean hidden activation moves from 0.479 to 0.962 —
-the units are pinned against the flat ends of the curve — and the largest gradient reaching
-the first layer shrinks from 0.143 to 0.0118, a factor of twelve. Multiply that shrinkage
-across ten layers and the first layer receives nothing at all. This is the
+With weights twenty times larger the mean hidden activation moves from 0.479 to 0.962,
+because the units are pinned against the flat ends of the curve, and the largest gradient
+reaching the first layer shrinks from 0.143 to 0.0118, a factor of twelve. Multiply that
+shrinkage across ten layers and the first layer receives nothing at all. This is the
 **vanishing gradient** problem, it is the reason deep networks were impractical for
-decades, and ReLU — whose derivative is exactly 1 wherever the unit is active — is the
-main reason they stopped being impractical.
+decades, and ReLU, whose derivative is exactly 1 wherever the unit is active, is the main
+reason they stopped being impractical.
 
 **Sensible initialisation is not optional.** The scale of the starting weights decides
 whether you begin in the useful part of the activation or on its flat shoulder. Real
 frameworks default to a scheme (Glorot, He) that sets it from the layer's width; `nnet`
 uses `rang = 0.7` by default and rescales your inputs' influence accordingly.
 
-**The loss surface is not convex.** Different starting weights reach different minima —
-[the next page](training-a-network.qmd) measures how much different — so there is no
+**The loss surface is not convex.** Different starting weights reach different minima, and
+[the next page](training-a-network.qmd) measures how much different, so there is no
 "the" answer to report, only the one your seed found.
 
 ::: {.callout-tip}
@@ -322,7 +322,7 @@ uses `rang = 0.7` by default and rescales your inputs' influence accordingly.
   places; a wrong gradient trains silently to the wrong answer.
 - The activation function enters the gradient in exactly one place, as its derivative.
 - **Saturated units have no gradient.** Large initial weights pushed `tanh` to its flat
-  ends and shrank the first-layer gradient twelvefold — the vanishing gradient problem in
+  ends and shrank the first-layer gradient twelvefold: the vanishing gradient problem in
   one table, and it compounds with every extra layer.
 :::
 

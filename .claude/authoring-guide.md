@@ -7,13 +7,13 @@ How a chapter page should read, compute, and look. Applies to everything under
 ## Voice
 
 The reader is a working marine scientist who knows their own field well and ML not
-at all. They are not a beginner in general — do not talk down — but every ML term is
+at all. They are not a beginner in general, so do not talk down, but every ML term is
 new.
 
 - **Concept → marine example → code → interpretation.** In that order. A page that
   opens with a code block has been written backwards.
 - Define each jargon term the first time it appears, in one sentence, inline.
-  "A *feature* is simply one of the measured variables you feed the model — depth,
+  "A *feature* is simply one of the measured variables you feed the model: depth,
   temperature, chlorophyll."
 - Short sentences. Active voice. Say "we" for what the page does together with the
   reader.
@@ -23,6 +23,15 @@ new.
 - Avoid ML folklore and unexplained rules of thumb ("use 80/20"). If a number is
   conventional rather than principled, say so.
 - British spelling: modelling, generalisation, centre, behaviour.
+- **No em dashes (—) anywhere.** An em dash is always standing in for a comma, a
+  colon, a semicolon, a full stop or a pair of brackets, and naming which one makes
+  the sentence say what it means. A parenthetical pair becomes commas or brackets; an
+  elaboration becomes a colon; two independent clauses become two sentences. This
+  applies to prose, YAML `description:` fields, figure captions, alt text, table cells
+  and code comments alike.
+- En dashes stay where they are typographically right: numeric ranges (`2–16 °C`) and
+  coupled-noun compounds (bias–variance, Bray–Curtis, temperature–salinity). Do not
+  use one as punctuation in a sentence.
 
 ## Page skeleton
 
@@ -33,14 +42,24 @@ description: ...
 categories: [...]
 ---
 
-## Why this matters            <- 2–4 sentences, marine motivation
+## <the motivation, named>     <- 2–4 sentences, marine motivation
 ## The idea                    <- plain English, usually with a figure
 ## Worked example              <- tidymodels on a dataset from data/
-## What the results mean       <- interpretation, and what would go wrong
-## Where this breaks down      <- honest limitations; links to §6
+## <what the results say>      <- interpretation, and what would go wrong
+## Limits of <this thing>      <- honest limitations; links to §6
 ## Key points                  <- callout-tip, 3–5 bullets
 ## Try it yourself             <- 1–2 small exercises (optional)
 ```
+
+**Headings are declarative, and named for the page.** The first, fourth and fifth
+slots used to read "Why this matters", "What the results mean" and "Where this breaks
+down" on every page, which told a reader scanning the sidebar nothing and made
+seventy pages look like one. Write what the section actually says instead: "A debt
+from two earlier pages", "Two measures, two winners", "Limits of a single split".
+Avoid opening a heading with Why, What, Where, How, Which, When or Does; a question
+as a heading postpones the answer that the section is about to give. `The idea`,
+`Worked example`, `Key points` and `Try it yourself` stay fixed, because they are
+labels rather than claims.
 
 Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
 
@@ -48,13 +67,13 @@ Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
 
 - tidymodels idiom throughout: `initial_split()` → `recipe()` → `*_spec()` →
   `workflow()` → `fit()` → `predict()` → `yardstick` metrics. Show the workflow even
-  when a one-liner would do — the point is the pattern.
+  when a one-liner would do; the point is the pattern.
 - `set.seed()` before anything random, in the same chunk.
 - Chunks are labelled and echoed: `#| label: fit-forest`, `#| echo: true`.
   Setup chunks use `#| include: false`.
 - Keep chunks short enough to explain in the prose that follows. One idea per chunk.
 - Prose between chunks, never two code chunks back to back without explanation.
-- No `install.packages()` in pages — dependencies go through `renv`
+- No `install.packages()` in pages; dependencies go through `renv`
   (see `.claude/workflow.md`).
 - Load shared helpers with `source(here::here("R/theme.R"))`; paths are always
   `here::here()`, never relative or absolute.
@@ -90,15 +109,15 @@ appears under the R tab; the Python block is displayed only.
 - `group="language"` syncs every tabset on the page, so choosing Python once
   chooses it throughout.
 - Wrap the modelling steps, not the figures. Figures stay R-only, and so does
-  any step with no honest Python counterpart — `mgcv`'s smooth table, for one.
+  any step with no honest Python counterpart, such as `mgcv`'s smooth table.
   A missing tab is information, not an omission to fill in.
 - The Python is cumulative down the page, exactly as the R chunks are, and must
   run: `python/check-snippets.py` executes every snippet in the site. Do not add
   a tab you have not run.
 - Load data through `python/mlbasic_data.py`, never by reading `data/*.csv`
   directly, so the two halves clean the survey the same way.
-- Where a default differs between the two — regularisation, event level, the
-  need for scaled inputs — say so in a comment in the Python block. That
+- Where a default differs between the two, whether regularisation, event level or the
+  need for scaled inputs, say so in a comment in the Python block. That
   difference is usually the most useful thing on the page.
 - Add `{{< include ../../_snippets/python-tabs.qmd >}}` under the data note, so
   the reader knows the Python is not what produced the numbers.
@@ -111,7 +130,7 @@ Figures carry most of the teaching here, so they are worth real effort.
   (overfitting as a wiggly line through noisy points) over a table of numbers.
 - Generated with ggplot2 using `R/theme.R`, so the whole site shares one look.
 - Every figure gets `#| fig-cap:` and `#| fig-alt:`. The alt text describes what the
-  figure shows, for a reader who cannot see it — it is not a duplicate of the caption.
+  figure shows, for a reader who cannot see it; it is not a duplicate of the caption.
 - Label directly on the plot where possible instead of relying on a legend.
 - Colour must survive greyscale and colour-blind viewers: use viridis or Okabe–Ito,
   never red/green for a two-class contrast.
@@ -131,6 +150,6 @@ Figures carry most of the teaching here, so they are worth real effort.
 
 ## Cross-references
 
-Link forward and back between sections by relative path — the threads listed at the
+Link forward and back between sections by relative path; the threads listed at the
 bottom of `.claude/curriculum.md` should be visibly linked, not just implied.
 Use Quarto cross-refs (`@fig-...`, `@eq-...`) for figures and equations within a page.

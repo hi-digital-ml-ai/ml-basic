@@ -32,7 +32,7 @@ place?
 ::: {#pages}
 :::
 
-## What this section found
+## Findings from this section
 
 - Forty different 75/25 splits of the same 720 stations put the same model's R² anywhere
   between **0.079 and 0.346**. Ten-fold cross-validation put it between 0.195 and 0.239.
@@ -49,7 +49,7 @@ place?
   scored a rule that flags every station at 0.878 against the fitted model's 0.882.
 - Comparing two models unpaired gave a confidence interval **1.54 wide** that covered zero.
   Pairing the identical numbers fold by fold gave one **0.33 wide**.
-- A model that lost on RMSE won the fifty-station shortlist, 481 individuals against 456 — and
+- A model that lost on RMSE won the fifty-station shortlist, 481 individuals against 456, and
   leaving a decision threshold at 0.5 cost up to **eight times** the cheapest threshold.
 
 ::: {.callout-important}
@@ -62,7 +62,7 @@ most common validation error in applied work.
 ::: {.callout-note}
 Two habits make everything on these pages comparable, and nothing here works without them.
 **Pool the out-of-fold predictions before computing a metric**, so every scheme is scored on
-identical rows — this is the proper fix for the trap
+identical rows. This is the proper fix for the trap
 [section 6 hit three times](../06-assumptions-limitations/index.qmd). And **use the same
 resamples object for every model you intend to compare**, so the fold cancels out of the
 difference.

@@ -31,8 +31,8 @@ installed ahead of the pages that use them, and the default implicit snapshotter
 would drop almost all of them.
 
 `.Rprofile` points R at Posit Package Manager's prebuilt binaries on Ubuntu and at
-CRAN everywhere else. That is an install-speed choice only — the lockfile pins
-versions either way — but it is the difference between a two-minute install and an
+CRAN everywhere else. That is an install-speed choice only, since the lockfile pins
+versions either way, but it is the difference between a two-minute install and an
 hour of compilation. On a non-Ubuntu Linux machine it falls back to CRAN source
 packages, so expect a slow first `renv::restore()`.
 
@@ -52,7 +52,7 @@ installed first.
 `vip` was removed from CRAN on 2026-07-08 ("issues were not corrected despite
 reminder"), so `available.packages()` no longer lists it and a plain
 `renv::install("vip")` fails. We pin `vip@0.4.6`, which Posit Package Manager still
-serves as a binary, and the lockfile records it that way — so `renv::restore()`
+serves as a binary, and the lockfile records it that way, so `renv::restore()`
 works without reaching into the CRAN archive.
 
 It works fine today, but it is unmaintained. `DALEXtra::explain_tidymodels()` with
@@ -62,8 +62,8 @@ the whole section on an archived package.
 
 ### renv rolls back everything on one failure
 
-renv installs transactionally. One package failing at the end — `vip` failing to
-download after 205 others had installed — discards the entire batch and leaves the
+renv installs transactionally. One package failing at the end, such as `vip` failing to
+download after 205 others had installed, discards the entire batch and leaves the
 library as it was. The log reads "Successfully installed 205 packages" immediately
 before the rollback, which is misleading: check the library, not the log.
 
@@ -83,7 +83,7 @@ Error: error testing if 'gridExtra' can be loaded
 `gridExtra` 2.3.1 declares `Imports: gtable, grid, grDevices, graphics, utils` in the
 repository metadata, but at load time it needs `rlang` (through `gtable`). renv builds
 its install order from that metadata, so it can load-test `gridExtra` before `rlang`
-exists, and the whole transaction rolls back — leaving an empty library, which makes
+exists, and the whole transaction rolls back, leaving an empty library, which makes
 it look worse than it is. Serialising installs does not help; the ordering is wrong,
 not raced.
 
@@ -110,7 +110,7 @@ renv::restore()   # or renv::install(<the rest>)
 
 **Not installed: `torch` / `brulee` / `keras3`. Settled when §9 was written: not needed.**
 Section 9 teaches neurons, layers, forward propagation and backpropagation with about
-forty lines of base R — including a finite-difference gradient check — and uses `nnet`
+forty lines of base R, including a finite-difference gradient check, and uses `nnet`
 through the parsnip `mlp` engine for everything else. Nothing in the section needs a
 second layer, a GPU, or an autodiff framework.
 
@@ -121,7 +121,7 @@ Two consequences to keep in mind before adding one:
   `torch`- or `keras`-backed engine would change that and those passages would need
   editing.
 - A real deep-learning demonstration (convolutional or recurrent architectures on imagery
-  or acoustics) needs libtorch — a ~2 GB runtime download beyond the R package — or a
+  or acoustics) needs libtorch, a ~2 GB runtime download beyond the R package, or a
   Python/TensorFlow stack, and would make CI restores heavy. §9's
   `when-to-use-one.qmd` explains why those architectures matter and deliberately stops
   short of running one.
@@ -138,7 +138,7 @@ execute:
 Rendered R results are cached in `_freeze/`, **which is committed**. Consequences:
 
 - A page re-executes only when its source changes, so full builds stay fast.
-- CI can render the site with Quarto alone — no R, no package installs, no
+- CI can render the site with Quarto alone: no R, no package installs, no
   multi-minute model fits on every push.
 - If a page's output looks stale after changing a helper in `R/`, delete that page's
   folder under `_freeze/` and re-render.
@@ -164,7 +164,7 @@ Never commit directly to `main`. Commit and push only when asked.
 Target: GitHub Action that renders on push to `main` and deploys to Pages.
 
 ```yaml
-# .github/workflows/publish.yml — sketch
+# .github/workflows/publish.yml, sketch
 on:
   push:
     branches: [main]
@@ -192,7 +192,7 @@ Simpler interim route, run locally: `quarto publish gh-pages`.
 1. The repo is private. GitHub Pages from a private repo needs a paid plan
    (Pro / Team / Enterprise); on a free org the repo must be made public. Decide
    which before wiring the Action.
-2. Making the repo public publishes everything in its history — check no embargoed
+2. Making the repo public publishes everything in its history, so check no embargoed
    participant data was ever committed (see `.claude/contributed-pages.md`).
 
 `_quarto.yml` needs `site-url: https://hi-digital-ml-ai.github.io/ml-basic/` for

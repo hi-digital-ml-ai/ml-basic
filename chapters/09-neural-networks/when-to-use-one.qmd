@@ -15,12 +15,12 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## The other half of the story
 
 This section has been unflattering. On the coastal survey a network needed careful
 training, was sensitive to its seed, and still lost to a random forest and to linear
 regression. If that were the whole story, the honest advice would be "do not bother", and
-it is not the whole story — because neural networks are demonstrably the right tool for a
+it is not the whole story, because neural networks are demonstrably the right tool for a
 great deal of modern marine work.
 
 So the useful question is not whether networks are good. It is **what property of a problem
@@ -32,8 +32,8 @@ responsible, and then turns that into something you can check.
 ## A water mass is a diagonal band
 
 Marine scientists already think in a rotated coordinate system. A **T–S diagram** plots
-temperature against salinity, and a water mass appears on it as a compact region — often a
-diagonal band — because what identifies the water is a *relationship* between the two
+temperature against salinity, and a water mass appears on it as a compact region, often a
+diagonal band, because what identifies the water is a *relationship* between the two
 variables, not a threshold on either one.
 
 That is a useful test case, so we simulate one directly. Temperature spans 2–16 °C,
@@ -67,7 +67,7 @@ survey has no example of the structure in question.
 
 Two things about this task are worth noticing before any model sees it. Only two predictors
 are involved, so there is no curse of dimensionality. And the boundary is made of straight
-lines — the band has two parallel straight edges. It is not a hard problem. It is just not
+lines, since the band has two parallel straight edges. It is not a hard problem. It is just not
 an *axis-aligned* one.
 
 ## Four models
@@ -108,7 +108,7 @@ network, with **seventeen weights**, reaches 0.998.
 ```{r}
 #| label: fig-boundaries
 #| fig-cap: "What each model believes, over the whole temperature–salinity plane. Shading is the predicted probability of being in the water-mass core; points are the 200 training stations. The truth is the diagonal band the network has drawn."
-#| fig-alt: "Four panels of temperature on the horizontal axis against salinity on the vertical, each shaded by predicted probability from dark blue at zero through green to yellow at one. Logistic regression shows a smooth gradient, brightest in the upper-left corner and darkest in the lower-right, with a single straight transition running diagonally between them — one side of a line, not a band. The decision tree shows coarse rectangular blocks: a green block low and left where most core points sit, and a bright yellow strip across the whole top of the panel where almost no training points lie. The random forest shows the same arrangement at much finer resolution, a chain of bright patches following the diagonal, with the top-right corner also bright. The neural network shows a clean straight-edged diagonal stripe, green against a dark blue background, its two parallel edges lying exactly along the run of core points."
+#| fig-alt: "Four panels of temperature on the horizontal axis against salinity on the vertical, each shaded by predicted probability from dark blue at zero through green to yellow at one. Logistic regression shows a smooth gradient, brightest in the upper-left corner and darkest in the lower-right, with a single straight transition running diagonally between them: one side of a line, not a band. The decision tree shows coarse rectangular blocks: a green block low and left where most core points sit, and a bright yellow strip across the whole top of the panel where almost no training points lie. The random forest shows the same arrangement at much finer resolution, a chain of bright patches following the diagonal, with the top-right corner also bright. The neural network shows a clean straight-edged diagonal stripe, green against a dark blue background, its two parallel edges lying exactly along the run of core points."
 #| fig-width: 9.5
 #| fig-height: 7.2
 plane <- expand_grid(temperature_c = seq(2, 16, length.out = 220),
@@ -130,7 +130,7 @@ panels <- imap(fits, \(fitted, nm) {
 wrap_plots(panels, nrow = 2) + plot_layout(guides = "collect")
 ```
 
-## What the property is
+## The property at work
 
 Look at the logistic panel. A linear model on two predictors can place exactly one straight
 boundary, so it can say "above this line" but never "between these two lines". More data
@@ -147,14 +147,14 @@ Two details in that figure are worth more than the scores.
 The tree and the forest both paint the **top of the panel bright**, predicting core at high
 salinity regardless of temperature. That is not a mistake in the fitting; it is what the
 training data says. The band rises with temperature, so of the 14 training stations above
-34.8 PSU, 13 are core — and an axis-aligned splitter reads that as "high salinity means
+34.8 PSU, 13 are core, and an axis-aligned splitter reads that as "high salinity means
 core" and extrapolates it sideways into a region with no data at all. This is §6's
 [extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) problem in one
 picture, and it is the forest's version of the same limitation, not a separate one.
 
 The network's stripe, meanwhile, is green rather than yellow. Its predicted probability
 never leaves the range 0.27 to 0.73 anywhere on the plane. It ranks the stations almost
-perfectly — hence AUC 0.998 — while being systematically under-confident about every one of
+perfectly, hence AUC 0.998, while being systematically under-confident about every one of
 them. **A network's output is not a calibrated probability unless you check that it is**,
 and §7's [calibration](../07-validation/classification-metrics.qmd) tools apply here exactly
 as they do to any other classifier.
@@ -177,7 +177,7 @@ map_dfr(c(100, 400, 1600), \(n) {
 The network is at 0.994 with **one hundred** training stations, and at 1.000 with four
 hundred. The forest needs 1,600 to get to 0.996. Logistic regression never moves.
 
-The reason is the hidden unit. A hidden unit computes $g(w_1 T + w_2 S + b)$ — it is
+The reason is the hidden unit. A hidden unit computes $g(w_1 T + w_2 S + b)$, so it is
 *already* a rotated coordinate. Two of them, one switching on at each edge of the band,
 subtract to give the stripe, which is the same "two bends make a bump" mechanism from
 [the first page of this section](what-a-network-is.qmd), now in two dimensions.
@@ -185,7 +185,7 @@ subtract to give the stripe, which is the same "two bends make a bump" mechanism
 So the property is this:
 
 > **Networks win when what matters is a combination of your inputs rather than the inputs
-> themselves — and you do not know which combination.**
+> themselves, and you do not know which combination.**
 
 If you did know, you would add `salinity_psu - 0.16 * temperature_c` as a column and
 logistic regression would score 1.000 with three parameters. Feature engineering beats
@@ -196,7 +196,7 @@ of inputs, because the number of combinations does.
 That is also, exactly, why networks dominate images and sound. A pixel is meaningless; an
 edge is a combination of nine pixels; a fish is a combination of edges. Nobody can write
 those combinations down, and there are millions of candidates. Convolutional architectures
-are a way of restricting that search to combinations that are local and repeated — which is
+are a way of restricting that search to combinations that are local and repeated, which is
 a statement about wiring, not about neurons.
 
 ## An honest checklist for marine work
@@ -205,8 +205,8 @@ Everything below is measured somewhere in this section or in §7.
 
 **Reach for a network when:**
 
-- Your inputs are raw and structured — imagery, spectra, acoustic returns, waveforms,
-  sequence — and the meaningful features are combinations you cannot enumerate.
+- Your inputs are raw and structured, such as imagery, spectra, acoustic returns, waveforms
+  or sequence, and the meaningful features are combinations you cannot enumerate.
 - You have thousands of labelled examples, or you can start from a pre-trained model and
   fine-tune it on hundreds. Transfer learning is how most marine imaging work is actually
   done, and it changes the data requirement by an order of magnitude.
@@ -218,7 +218,7 @@ Everything below is measured somewhere in this section or in §7.
 **Do not reach for one when:**
 
 - You have a table of a few hundred rows and a dozen ecological covariates. A random forest
-  or a boosted tree will match or beat it with far less work — [measured on this
+  or a boosted tree will match or beat it with far less work, as [measured on this
   survey](how-much-data.qmd) and consistently reported in the tabular-data literature.
 - Your response is a noisy count, presence/absence with few positives, or anything where
   the [baseline and the ceiling are close together](how-much-data.qmd).
@@ -230,7 +230,7 @@ Everything below is measured somewhere in this section or in §7.
   ten identical runs on
   [page 3](training-a-network.qmd) varied by 0.046 in validation MSE.
 
-## Where this breaks down
+## Limits of this demonstration
 
 **The demonstration was rigged, on purpose.** A perfectly straight diagonal band is the
 best possible case for a sigmoid hidden unit and the worst for an axis-aligned splitter.
@@ -238,7 +238,7 @@ Real T–S structure is curved and overlapping, and the forest would close most 
 The rigging is what makes the mechanism visible; it is not a performance claim.
 
 **We compared four defaults, not four tuned models.** A tuned boosted tree with enough
-depth would do better than the tree here. The ordering would not change — the staircase is
+depth would do better than the tree here. The ordering would not change: the staircase is
 a property of the method, not of its settings.
 
 **Nothing here is deep learning.** One hidden layer of four units is a neural network in the
@@ -252,7 +252,7 @@ what this page is for.
 
 - A network with **17 weights** reached AUC 0.998 on a task where a 500-tree random forest
   reached 0.926 and logistic regression could not exceed 0.72 at any sample size.
-- The task was a **diagonal band in temperature–salinity space** — easy, low-dimensional,
+- The task was a **diagonal band in temperature–salinity space**: easy, low-dimensional,
   and not axis-aligned.
 - **A hidden unit is a rotated coordinate.** That is the whole advantage: trees must
   approximate a diagonal with a staircase, and a linear model can draw only one boundary.
@@ -269,5 +269,5 @@ what this page is for.
 1. Add `combination = salinity_psu - 0.16 * temperature_c` to the recipe with
    `step_mutate()` and refit logistic regression. How many parameters does it need to reach
    the network's AUC?
-2. Curve the band — replace the linear edge with a quadratic in temperature — and refit all
+2. Curve the band by replacing the linear edge with a quadratic in temperature, and refit all
    four. Does the network keep its advantage, and does the forest close the gap?

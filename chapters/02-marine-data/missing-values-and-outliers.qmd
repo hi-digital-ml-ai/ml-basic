@@ -1,6 +1,6 @@
 ---
 title: "Missing values, outliers and imbalance"
-description: "What to do about the damage once you have found it — and why the right answer is a scientific judgement rather than a default."
+description: "What to do about the damage once you have found it, and why the right answer is a scientific judgement rather than a default."
 order: 4
 categories: [data-preparation, class-imbalance, marine-data]
 ---
@@ -15,7 +15,7 @@ source(here::here("R/data.R"))
 raw <- load_coastal_survey_raw()
 ```
 
-## Why this matters
+## Defaults that go wrong
 
 Every fix in this page has a default, and every default is occasionally a disaster.
 Dropping incomplete rows is the R default and it can quietly delete a season. Replacing
@@ -37,7 +37,7 @@ missing, or why the number is strange.
 The distinction matters because only one of them is harmless.
 
 **Missing completely at random.** The chance of a value being absent has nothing to do
-with anything — a technician dropped a tube. Rare in practice. Dropping these rows costs
+with anything; a technician dropped a tube. Rare in practice. Dropping these rows costs
 you precision and nothing else.
 
 **Missing at random** (a badly named category). The chance depends on things you *did*
@@ -53,7 +53,7 @@ instrument.
 
 Our chlorophyll gap is the middle case: 19% missing in winter, 1% in autumn, with
 season recorded. But ask *why* the winter values are absent. If it is cloud cover
-blocking an ocean-colour sensor, then cloudy days are missing — and cloud affects
+blocking an ocean-colour sensor, then cloudy days are missing, and cloud affects
 light, which affects chlorophyll. Framed that way, the same gap is closer to the third
 kind.
 
@@ -87,7 +87,7 @@ real effect.
 
 ### Class imbalance
 
-When one class is rare — the 5% rare species — two things follow. Accuracy becomes
+When one class is rare, as with the 5% rare species, two things follow. Accuracy becomes
 meaningless, as [section 1 showed](../01-introduction/types-of-learning.qmd). And the
 fitting procedure itself is pulled towards the common class, because getting the
 common class right is where the easy gains are.
@@ -99,8 +99,8 @@ as recipe steps, and all come with the same condition:
 ::: {.callout-important}
 Resampling for imbalance is applied to the **training data only**, never to the data you
 evaluate on. Balancing your test set means measuring performance on a population that
-does not exist. In `recipes` this is handled for you — `themis` steps are skipped when
-the recipe is applied to new data — but only if you use them inside a recipe rather than
+does not exist. In `recipes` this is handled for you, since `themis` steps are skipped when
+the recipe is applied to new data, but only if you use them inside a recipe rather than
 balancing the table by hand beforehand.
 :::
 
@@ -150,8 +150,8 @@ pd.DataFrame({
 
 :::
 
-Salinity's mean moves from 2.24 to 33.9. Nothing was fixed in the data — the `-999`s
-are still missing values — but they are now *honestly* missing, and every summary
+Salinity's mean moves from 2.24 to 33.9. Nothing was fixed in the data, and the `-999`s
+are still missing values, but they are now *honestly* missing, and every summary
 downstream stops lying.
 
 ### Categories
@@ -213,7 +213,7 @@ clean |> filter(depth_m > 250) |> select(station_id, depth_m) |> arrange(desc(de
 
 Ten stations, all suspiciously close to ten times a plausible shelf depth. Dividing by
 ten puts each one back into the range where its temperature makes sense, which is
-evidence rather than convenience — a station recorded at 1581 m with 6 °C water is
+evidence rather than convenience: a station recorded at 1581 m with 6 °C water is
 impossible on this shelf, while the same station at 158 m is ordinary.
 
 ::: {.panel-tabset group="language"}
@@ -242,7 +242,7 @@ clean["depth_m"] = clean["depth_m"].where(
 Two of the twelve decimal errors are still in there, at 125 m and 166 m, and no
 inspection will find them. That is the normal state of a cleaned dataset.
 
-### What complete-case deletion would cost
+### The cost of complete-case deletion
 
 The default in most modelling functions is to silently drop any row with a missing
 value. Here is the bill.
@@ -299,15 +299,15 @@ pd.DataFrame({
 
 :::
 
-About 10% of rows overall — and a fifth of winter. If your question involves
+About 10% of rows overall, and a fifth of winter. If your question involves
 winter conditions, the default has just removed a fifth of your evidence about them,
 without a warning.
 
-## What the results mean
+## Imputation as the alternative
 
 The alternative is imputation: predict the missing chlorophyll values from the
-variables you do have. `recipes` offers several steps —
-`step_impute_median()`, `step_impute_knn()`, `step_impute_bag()` — and the
+variables you do have. `recipes` offers several steps:
+`step_impute_median()`, `step_impute_knn()` and `step_impute_bag()`. The
 [next page](scaling-and-encoding.qmd) puts them into a recipe properly.
 
 Two conditions on imputation, both routinely broken:
@@ -318,14 +318,14 @@ easy to do by accident, and it is [the last page of this section](information-le
 
 **An imputed value is not an observation.** It is a prediction with uncertainty, and
 treating it as data understates how little you know. Adding a `was_missing` indicator
-column costs one feature and lets the model — and you — see where the gaps were.
+column costs one feature and lets the model, and you, see where the gaps were.
 
 For this dataset, the defensible chain is: sentinels to `NA`; categories standardised;
 impossible depths corrected with a stated justification; chlorophyll imputed inside the
 resampling with a missingness indicator; the vessel offset either corrected or absorbed
 by including `vessel` as a feature. Not one of those steps is a default.
 
-## Where this breaks down
+## Limits of these repairs
 
 **Imputation cannot recover information that was never there.** With 19% of winter
 chlorophyll missing, winter estimates will be weaker than summer ones whatever you do.

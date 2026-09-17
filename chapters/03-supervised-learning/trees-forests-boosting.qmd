@@ -1,6 +1,6 @@
 ---
 title: "Trees, forests and boosting"
-description: "The workhorses of applied machine learning — how they work, and why the simplest of them wins on this survey."
+description: "The workhorses of applied machine learning: how they work, and why the simplest of them wins on this survey."
 order: 4
 categories: [supervised, trees-ensembles, generalisation]
 ---
@@ -17,14 +17,14 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Reputation against results
 
 Tree-based methods dominate applied machine learning on tabular data, and for good
 reasons: they need no scaling, handle mixed variable types, find interactions without
 being told, and cope with non-linearity by construction. In marine work they are the
 default choice for habitat models and species distribution models.
 
-They also invite a specific mistake — assuming that the more elaborate member of the
+They also invite a specific mistake: assuming that the more elaborate member of the
 family is the better one. This page fits all three on the same survey and the ranking
 is the reverse of the reputation.
 
@@ -65,7 +65,7 @@ similar to benefit from averaging.
 ### Boosting
 
 Boosting builds trees in sequence, each one fitting what the previous ones got wrong.
-Trees are small — often only a few splits — and each contributes a fraction of its
+Trees are small, often only a few splits, and each contributes a fraction of its
 prediction, set by the **learning rate**.
 
 This is the most powerful of the three on most benchmarks and the least forgiving. A
@@ -147,7 +147,7 @@ rpart.plot(extract_fit_engine(tree_fit),
 ```
 
 Read the left branch, which holds three-quarters of the stations. Below 6.4 °C the model
-expects 1.4 individuals. At or above 11 °C it expects 2.1. In between — 6.4 to 11 °C — it
+expects 1.4 individuals. At or above 11 °C it expects 2.1. In between, from 6.4 to 11 °C, it
 expects 4.2. The tree has carved out a temperature band, and the simulation's true
 optimum of 9 °C sits inside it.
 
@@ -158,7 +158,7 @@ relationship costs.
 
 Which explains the surprise at the root. The strongest effects in the simulation are the
 depth and temperature optima, yet the first split is on **chlorophyll**, and depth does
-not appear anywhere in three levels. Chlorophyll's effect is monotonic — more is better —
+not appear anywhere in three levels. Chlorophyll's effect is monotonic, since more is better,
 so one threshold captures a good share of it, while depth needs two splits before it
 pays anything at all. A greedy algorithm that takes the best single split at each step is
 systematically biased towards monotonic predictors.
@@ -241,19 +241,19 @@ pd.DataFrame([
 :::
 
 The ordering deserves a moment. **Both single trees beat both ensembles.** The two trees
-come in at 4.76 and 4.81 — close enough to be indistinguishable on 200 test stations —
+come in at 4.76 and 4.81, close enough to be indistinguishable on 200 test stations;
 the random forest is behind them at 4.84, and the 500-tree boosted model is worst by a
 wide margin.
 
 Now read the training column alongside it. Boosting fits its training data to an RMSE of
 0.58, roughly seven times better than the trees manage, and predicts new stations worst
-of all. That pair of numbers — 0.58 against 5.49 — is the whole story.
+of all. That pair of numbers, 0.58 against 5.49, is the whole story.
 
 ### Watching it happen
 
 ```{r}
 #| label: fig-capacity
-#| fig-cap: "Error against model capacity, on training data and on held-out data. Both methods fit the training data better and better as they grow. Both predict new stations worse after a point — boosting after about 50 trees, the tree after depth 3. The gap that opens between the two lines is overfitting, made visible."
+#| fig-cap: "Error against model capacity, on training data and on held-out data. Both methods fit the training data better and better as they grow. Both predict new stations worse after a point: boosting after about 50 trees, the tree after depth 3. The gap that opens between the two lines is overfitting, made visible."
 #| fig-alt: "Two panels, each with two lines. Left, boosting: training RMSE falls steadily from about 4 to near zero as trees increase from 5 to 800, while test RMSE dips slightly to about 5.1 at 50 trees then rises to 5.5. Right, tree depth: training RMSE falls from 4.3 to 3.4 as depth increases from 1 to 8, while test RMSE falls to 4.8 at depth 3 then rises to 5.0."
 #| fig-width: 8.5
 #| fig-height: 4.2
@@ -293,7 +293,7 @@ p_boost + p_depth + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
 
-## What the results mean
+## Two lessons from the ordering
 
 Two lessons, and the second is the transferable one.
 
@@ -304,8 +304,8 @@ at roughly 50 trees.
 
 **Boosting's defaults are not safe defaults.** A random forest with too many trees costs
 computing time. Boosting with too many trees costs accuracy, and the damage is invisible
-without held-out data. Boosting must be tuned —
-[section 5](../05-generalisation/index.qmd) covers how — and an untuned boosted model is
+without held-out data. Boosting must be tuned, and
+[section 5](../05-generalisation/index.qmd) covers how. An untuned boosted model is
 not evidence about boosting.
 
 It is worth saying plainly that this ordering is a fact about *this dataset*, not a
@@ -314,10 +314,10 @@ The general claim is narrower and more useful: **the amount of flexibility you c
 afford is set by how much data and how much signal you have**, and neither is under your
 control.
 
-## Where this breaks down
+## Limits of tree-based models
 
 **Trees cannot extrapolate. At all.** A tree's prediction is the mean of training
-stations in a leaf, so beyond the range of the training data the prediction is flat —
+stations in a leaf, so beyond the range of the training data the prediction is flat:
 constant, forever. A forest of trees is still flat. For predicting into warmer water
 than you have sampled, this is not conservatism; it is a model asserting no change with
 complete confidence. [Section 6](../06-assumptions-limitations/index.qmd) returns to
@@ -342,7 +342,7 @@ implicitly; nothing reports "depth and temperature interact". You have to go loo
 - A tree is a sequence of yes/no splits, and it is the only non-linear model here you
   can print and read.
 - A tree needs two splits to express an optimum, so it favours monotonic predictors. Here
-  depth — a real driver — never appears, while chlorophyll takes the root.
+  depth, a real driver, never appears, while chlorophyll takes the root.
 - A random forest averages many deliberately varied trees; the random subset of
   variables at each split is what makes averaging pay.
 - Boosting fits trees in sequence to the previous trees' errors. It is the strongest and

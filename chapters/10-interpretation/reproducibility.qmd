@@ -1,6 +1,6 @@
 ---
 title: "Reproducibility and transparent reporting"
-description: "Which random choice actually moves your result — measured — and the small set of habits that make an analysis someone else can re-run."
+description: "Which random choice actually moves your result, measured, and the small set of habits that make an analysis someone else can re-run."
 order: 4
 categories: [reproducibility, interpretation]
 ---
@@ -14,7 +14,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Beyond the principled argument
 
 An analysis that cannot be re-run is not a method, it is an anecdote. That is the principled
 argument and everyone agrees with it, which is why it changes nobody's behaviour.
@@ -30,9 +30,9 @@ answer is not the one the `set.seed()` habit implies.
 
 ## Two experiments
 
-The same analysis — split the survey 75/25, fit a random forest, report the test RMSE and the
-three most important predictors — run sixteen times. First varying only the forest's internal
-randomness, then varying only the split.
+The same analysis, splitting the survey 75/25, fitting a random forest and reporting the
+test RMSE and the three most important predictors, run sixteen times. First varying only
+the forest's internal randomness, then varying only the split.
 
 ::: {.panel-tabset group="language"}
 
@@ -147,7 +147,7 @@ both = pd.concat([
 :::
 
 The forest's own randomness is close to irrelevant: across eight seeds the RMSE moves by
-**0.016**. Which rows landed in the test set moves it by **1.50** — nearly a hundred times
+**0.016**. Which rows landed in the test set moves it by **1.50**, nearly a hundred times
 as much, and more than twice the entire spread between the best and worst model in
 [the previous page's comparison](black-box-or-not.qmd).
 
@@ -171,7 +171,7 @@ And the importance ranking is unstable under both. Eight runs that differ only i
 forest's seed produced **three** different top-three orderings; eight runs that differ only
 in the split produced **six**.
 
-## What follows from that
+## The consequences
 
 **Seeding is necessary and nowhere near sufficient.** `set.seed()` makes your run repeatable
 by you. It does nothing about the fact that a different quarter of your stations would have
@@ -222,7 +222,7 @@ map_dbl(c(1, 2, 4), \(threads) {
 ```python
 # n_jobs is scikit-learn's num.threads. Each tree is grown from its own seeded
 # stream, so splitting the work across cores changes the timing and not the
-# forest — but it is worth checking rather than assuming.
+# forest, but it is worth checking rather than assuming.
 def out_of_bag_mse(n_jobs):
     forest = RandomForestRegressor(n_estimators=300, random_state=7,
                                    oob_score=True, n_jobs=n_jobs).fit(
@@ -266,15 +266,15 @@ Enough to let a competent reader reproduce your result, or say precisely why the
 | **Data** | Source, date of extraction, how many rows, how many dropped and why |
 | **Cleaning** | Every filter and transformation, as code, not prose |
 | **Split** | The resampling scheme, why it suits the dependence structure (§6, §7) |
-| **Model** | Family, engine, package version, every hyperparameter — including the ones you left at default |
+| **Model** | Family, engine, package version, every hyperparameter, including the ones you left at default |
 | **Tuning** | The grid searched, and whether the search sat inside the resampling |
 | **Metric** | Which one, why it matches the objective (§7), and the no-skill baseline |
 | **Uncertainty** | Spread across folds, not a single number |
 | **Seeds** | Stated, and the code arranged so they are actually used |
 | **Environment** | Lockfile or `sessionInfo()` |
-| **Negative results** | What you tried that did not work — the most commonly omitted item and often the most useful |
+| **Negative results** | What you tried that did not work: the most commonly omitted item and often the most useful |
 
-## Where this breaks down
+## Limits of reproducibility
 
 **Reproducible is not correct.** Everything on this page makes your number repeatable. Nothing
 on it makes the number right. The depth effect in
@@ -289,7 +289,7 @@ then give a different answer with no error. That is what the lockfile is for, an
 **Computational reproducibility is the easy half.** Re-running the same code on the same data
 is a solved problem. Getting the same *conclusion* from a new survey is the one that matters,
 and it depends on the sampling design, the transferability of the model (§6) and the size of
-the effect — none of which a lockfile addresses.
+the effect, none of which a lockfile addresses.
 
 ::: {.callout-tip}
 ## Key points

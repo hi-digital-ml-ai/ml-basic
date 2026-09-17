@@ -1,6 +1,6 @@
 ---
 title: "Distributional assumptions"
-description: "What your model believes about the spread of the data — and what it costs when that belief is wrong by a factor of four."
+description: "What your model believes about the spread of the data, and what it costs when that belief is wrong by a factor of four."
 order: 3
 categories: [assumptions]
 ---
@@ -17,7 +17,7 @@ source(here::here("R/data.R"))
 set.seed(603)
 ```
 
-## Why this matters
+## A technical detail that is a scientific claim
 
 Choosing `family = poisson` looks like a technical detail. It is a scientific claim: that at any
 station with expected count $\mu$, the variance of what you actually catch is also $\mu$. For a
@@ -26,7 +26,7 @@ standard deviation of 2.
 
 Catch data almost never behaves that way. Animals aggregate, so the spread is far wider than the
 mean implies. When it is, the model still fits, still reports coefficients, and still prints
-standard errors — which are too small by a factor this page measures.
+standard errors, which are too small by a factor this page measures.
 
 [Section 4](../04-how-algorithms-learn/maximum-likelihood.qmd) established that the distribution
 *is* the loss function. This page is what happens when you get it wrong.
@@ -41,7 +41,7 @@ relationship is the assumption; everything else follows from it.
 | Family | Variance at mean μ | Suits | Fails when |
 | --- | --- | --- | --- |
 | Normal | $\sigma^2$, the same everywhere | Lengths, temperatures, log-ratios | Spread grows with the mean; response bounded |
-| Poisson | $\mu$ | Counts of independent, unclustered events | Animals aggregate — nearly always |
+| Poisson | $\mu$ | Counts of independent, unclustered events | Animals aggregate, nearly always |
 | Negative binomial | $\mu + \mu^2/\theta$ | Overdispersed counts | Excess zeros beyond even this |
 | Binomial | $\mu(1-\mu)$ | Presence/absence, proportions | Trials not independent |
 | Gamma | $\mu^2 / k$ | Positive continuous: biomass, concentration | Exact zeros present |
@@ -52,12 +52,13 @@ $\theta$ falls the variance grows quadratically with the mean, which is what agg
 like.
 
 ::: {.callout-note}
-Machine-learning models mostly make no distributional assumption — a random forest states no
-probability model for the response. That is a genuine freedom, and it is why they produce no
-standard errors, no AIC and no confidence intervals. The assumption has not disappeared, though:
-it has moved into the [loss function](../04-how-algorithms-learn/loss-functions.qmd). Fitting a
-forest under squared error is assuming constant variance just as surely as `lm()` does; it simply
-never says so.
+Machine-learning models mostly make no distributional assumption; a random forest states
+no probability model for the response. That is a genuine freedom, and it is why they
+produce no standard errors, no AIC and no confidence intervals. The assumption has not
+disappeared, though: it has moved into the [loss
+function](../04-how-algorithms-learn/loss-functions.qmd). Fitting a forest under squared
+error is assuming constant variance just as surely as `lm()` does; it simply never says
+so.
 :::
 
 ## Worked example
@@ -78,7 +79,7 @@ poisson_fit  <- glm(model_formula, data = d, family = poisson)
 nb_fit       <- MASS::glm.nb(model_formula, data = d)
 ```
 
-### Is the Poisson assumption tenable?
+### Testing the Poisson assumption
 
 ```{r}
 #| label: dispersion
@@ -92,12 +93,12 @@ c(`deviance / df`      = poisson_fit$deviance / poisson_fit$df.residual,
 Both dispersion statistics should be near 1 if the Poisson assumption holds. They are 3.5 and
 3.7. The variance in these counts is nearly four times what Poisson allows.
 
-The negative binomial's $\theta$ comes back as **1.43 ± 0.115** against the simulated truth of
-**1.5** — a good recovery, and a direct check on a claim made in
-[section 4](../04-how-algorithms-learn/maximum-likelihood.qmd). There, a reduced model with only
-chlorophyll and a depth quadratic estimated $\theta = 1.06$, and the page argued that part of the
-apparent overdispersion was really missing mean structure. Adding temperature and substrate moved
-the estimate from 1.06 to 1.43. The argument holds.
+The negative binomial's $\theta$ comes back as **1.43 ± 0.115** against the simulated
+truth of **1.5**, a good recovery and a direct check on a claim made in [section
+4](../04-how-algorithms-learn/maximum-likelihood.qmd). There, a reduced model with only
+chlorophyll and a depth quadratic estimated $\theta = 1.06$, and the page argued that part
+of the apparent overdispersion was really missing mean structure. Adding temperature and
+substrate moved the estimate from 1.06 to 1.43. The argument holds.
 
 ```{r}
 #| label: fig-mean-variance
@@ -128,7 +129,7 @@ ggplot(binned, aes(mean_count, variance)) +
        subtitle = "Points: twelve bins of the coastal survey, by fitted value")
 ```
 
-### Does the model generate data that looks like the survey?
+### Simulating from the fitted model
 
 The most direct test of a distributional assumption is to simulate from the fitted model and
 compare what comes out to what you actually caught. Two features are easy to check and hard to
@@ -196,7 +197,7 @@ p2 <- ggplot(sims, aes(largest, fill = model)) +
 p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
-### What it costs the conclusions
+### The cost to the conclusions
 
 ```{r}
 #| label: se-comparison
@@ -214,12 +215,13 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
-## What the results mean
+## A process that could not have produced the data
 
-**The Poisson model cannot have generated this survey.** It expects 68 empty stations, with a 95%
-range of 55 to 82. The survey has **159**. Its largest simulated catch falls between 16 and 24;
-the survey caught **40**. These are not marginal discrepancies to weigh against a *p*-value —
-they are a demonstration that the assumed process could not have produced the data.
+**The Poisson model cannot have generated this survey.** It expects 68 empty stations,
+with a 95% range of 55 to 82. The survey has **159**. Its largest simulated catch falls
+between 16 and 24; the survey caught **40**. These are not marginal discrepancies to weigh
+against a *p*-value; they are a demonstration that the assumed process could not have
+produced the data.
 
 The negative binomial passes both checks: 137–175 empty stations against 159 observed, and a
 largest catch of 27–65 against 40.
@@ -238,9 +240,9 @@ unconvincing:
 | Mud substrate | 0.0003 | 0.129 |
 | Sand substrate | 0.0026 | 0.068 |
 
-Under the wrong distribution, "depth matters (*p* = 0.0001)" is a sentence you could write in
-good faith. It is wrong. The point estimates barely moved — the coefficients are similar in both
-models — so a reader comparing effect sizes would see nothing amiss.
+Under the wrong distribution, "depth matters (*p* = 0.0001)" is a sentence you could write
+in good faith. It is wrong. The point estimates barely moved, since the coefficients are
+similar in both models, so a reader comparing effect sizes would see nothing amiss.
 
 **And the Normal model predicts impossible catches.**
 
@@ -253,41 +255,44 @@ c(`negative predictions from lm()` = sum(fitted(gaussian_fit) < 0),
   round(1)
 ```
 
-`lm()` on these counts gives negative predictions at **29 of 741 stations**, because the Normal distribution it assumes runs to −∞ and
-the loss built from it cannot object. This is the same failure
-[section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd) opened with, now with
-a name attached to it.
+`lm()` on these counts gives negative predictions at **29 of 741 stations**, because the
+Normal distribution it assumes runs to −∞ and the loss built from it cannot object. This
+is the same failure [section
+3](../03-supervised-learning/linear-and-polynomial-regression.qmd) opened with, now with a
+name attached to it.
 
 ::: {.callout-warning}
-Do not compare a Gaussian AIC with a Poisson or negative-binomial AIC. The Gaussian likelihood is
-a probability *density* and the count likelihoods are probability *masses*; the numbers are on
-different scales and the comparison is meaningless even though R will happily print it. Poisson
-against negative binomial is a fair comparison — here 4411 against 3475 — because both are
-likelihoods for the same counts.
+Do not compare a Gaussian AIC with a Poisson or negative-binomial AIC. The Gaussian
+likelihood is a probability *density* and the count likelihoods are probability *masses*;
+the numbers are on different scales and the comparison is meaningless even though R will
+happily print it. Poisson against negative binomial is a fair comparison, here 4411
+against 3475, because both are likelihoods for the same counts.
 :::
 
-## Where this breaks down
+## Limits of a dispersion statistic
 
-**Overdispersion is not the only way counts misbehave.** Zero inflation is a separate problem: two
-processes, one deciding whether the species is present at all and one deciding how many. A
-negative binomial absorbs *some* excess zeros through its variance, and passed the check here, but
-where a species is genuinely absent from half the shelf a hurdle or zero-inflated model is the
-right structure, and its two parts answer different ecological questions.
+**Overdispersion is not the only way counts misbehave.** Zero inflation is a separate
+problem: two processes, one deciding whether the species is present at all and one
+deciding how many. A negative binomial absorbs *some* excess zeros through its variance,
+and passed the check here, but where a species is genuinely absent from half the shelf a
+hurdle or zero-inflated model is the right structure, and its two parts answer different
+ecological questions.
 
-**A dispersion statistic does not tell you what is wrong.** Overdispersion has many causes —
-aggregation, a missing covariate, unmodelled spatial structure, mis-specified nonlinearity — and
-the same ratio of 3.7 arises from all of them. This page's own numbers show it: the estimate of
-$\theta$ moved from 1.06 to 1.43 purely by improving the mean model. Fix the mean structure first,
-then decide what dispersion remains.
+**A dispersion statistic does not tell you what is wrong.** Overdispersion has many
+causes: aggregation, a missing covariate, unmodelled spatial structure, mis-specified
+nonlinearity, and the same ratio of 3.7 arises from all of them. This page's own numbers
+show it: the estimate of $\theta$ moved from 1.06 to 1.43 purely by improving the mean
+model. Fix the mean structure first, then decide what dispersion remains.
 
-**Quasi-Poisson is not a distribution.** `family = quasipoisson` scales the standard errors by the
-dispersion without specifying a probability model. It is a reasonable quick correction and it
-gives you no likelihood, so no AIC, no simulation, and none of the predictive checks on this page.
+**Quasi-Poisson is not a distribution.** `family = quasipoisson` scales the standard
+errors by the dispersion without specifying a probability model. It is a reasonable quick
+correction and it gives you no likelihood, so no AIC, no simulation, and none of the
+predictive checks on this page.
 
-**None of this applies to tree-based models, and that is not a reprieve.** A random forest has no
-distributional assumption to violate, so no diagnostic here will fire. It will still predict the
-conditional mean under squared error, still be pulled about by the largest catches, and still give
-you nothing to use for an interval.
+**None of this applies to tree-based models, and that is not a reprieve.** A random forest
+has no distributional assumption to violate, so no diagnostic here will fire. It will
+still predict the conditional mean under squared error, still be pulled about by the
+largest catches, and still give you nothing to use for an interval.
 
 ::: {.callout-tip}
 ## Key points
@@ -296,8 +301,8 @@ you nothing to use for an interval.
   that variance equals the mean; on this survey the ratio is **3.7**.
 - The most convincing check is **simulating from the fitted model**. Poisson produced 55–82 empty
   stations against 159 observed and never a catch near 40; the negative binomial contained both.
-- Overdispersion shrinks standard errors by roughly $\sqrt{\text{dispersion}}$ — here **1.90×**
-  observed against 1.93 predicted — and that moved three terms from *p* < 0.01 to *p* > 0.05.
+- Overdispersion shrinks standard errors by roughly $\sqrt{\text{dispersion}}$, here **1.90×**
+  observed against 1.93 predicted, and that moved three terms from *p* < 0.01 to *p* > 0.05.
 - Point estimates barely change, so nothing in the coefficient table reveals the problem.
 - Machine-learning models make no distributional assumption and therefore give no distributional
   diagnostics. The assumption has moved into the loss, not disappeared.
@@ -309,5 +314,5 @@ you nothing to use for an interval.
 1. Fit `family = quasipoisson` and compare its standard errors to the negative binomial's. They
    should be close. Then try to compute an AIC and explain why you cannot.
 2. Run the predictive check on the *proportion of stations catching exactly one individual*.
-   Negative binomial passed the two checks used here — does it pass that one, and what would it
+   Negative binomial passed the two checks used here: does it pass that one, and what would it
    mean for this species if it did not?

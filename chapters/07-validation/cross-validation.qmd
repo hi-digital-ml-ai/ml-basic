@@ -15,7 +15,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Beyond a single held-out set
 
 [Section 5](../05-generalisation/index.qmd) established that training error is not
 performance, and that you must measure on data the model has not seen. It then cheerfully
@@ -23,7 +23,7 @@ broke its own rule on every page, choosing complexity by looking at the test set
 so each time.
 
 This page fixes that. The problem with holding out a test set and looking at it is not
-philosophical fussiness — it is that a single held-out set is a *noisy* measurement, and
+philosophical fussiness; it is that a single held-out set is a *noisy* measurement, and
 looking at it repeatedly converts that noise into a systematically flattering answer.
 Cross-validation reduces the noise. Nesting the cross-validation removes the flattery.
 
@@ -40,7 +40,7 @@ never saw it. The $k$ scores are then combined into one number.
 
 You get two things a single split cannot give. The estimate uses *all* the data for scoring
 rather than a quarter of it, so it is far less noisy. And the spread of the $k$ fold-scores
-tells you how uncertain that estimate is — a standard error for your performance number,
+tells you how uncertain that estimate is: a standard error for your performance number,
 which a single split simply does not have.
 
 ## Worked example
@@ -97,7 +97,7 @@ len(d)
 
 :::
 
-### How much does a single split actually tell you?
+### The reliability of a single split
 
 The honest way to ask is to do it many times. We take forty different 75/25 splits of the same
 720 stations, fit the same random forest to each, and look at the spread of the answers. Then
@@ -173,7 +173,7 @@ estimates = pd.DataFrame(single + crossval)
 :::
 
 Nothing about the model changed between those eighty fits. The data did not change. Only the
-line drawn through it changed — and the answer moved by a factor of four.
+line drawn through it changed, and the answer moved by a factor of four.
 
 ```{r}
 #| label: fig-stability
@@ -197,7 +197,7 @@ A single split is not wrong. It is just imprecise, and the imprecision is large 
 reverse a comparison between two decent models. If you report R² = 0.34 from one lucky split
 and someone else reports 0.08 from one unlucky split, you have not disagreed about the ocean.
 
-### How many folds?
+### Choosing the number of folds
 
 More folds means each model trains on more of the data, so the estimate is less pessimistic;
 it also means more fits. The extreme is **leave-one-out** cross-validation, where $k = n$ and
@@ -272,10 +272,10 @@ fold_sweep = pd.DataFrame([
 
 :::
 
-Read the first two numeric columns. Two folds is pessimistic — each model trains on only half
+Read the first two numeric columns. Two folds is pessimistic: each model trains on only half
 the stations, and a Poisson model of counts genuinely does worse with 360 stations than with
 648. By ten folds the bias has gone and the estimate has also become four times more stable
-across repeats. Going to twenty folds buys almost nothing for twice the work — and
+across repeats. Going to twenty folds buys almost nothing for twice the work, and
 leave-one-out, at 720 fits, lands where five- and ten-fold already were:
 
 ::: {.panel-tabset group="language"}
@@ -316,8 +316,8 @@ you can see why it became one.
 
 `collect_metrics()` averages the RMSE of each fold. That is not the same as the RMSE of all
 the out-of-fold predictions pooled together, because the square root is taken before averaging
-instead of after. The gap grows with the number of folds — 0.005 at two folds, **0.119 at
-twenty** — for no reason connected to the model at all.
+instead of after. The gap grows with the number of folds, 0.005 at two folds against **0.119 at
+twenty**, for no reason connected to the model at all.
 
 So an RMSE reported from twenty-fold cross-validation is not comparable with one from
 five-fold, even for the same model on the same data. This is the same trap
@@ -325,7 +325,7 @@ five-fold, even for the same model on the same data. This is the same trap
 direction, and the [regression measures page](regression-metrics.qmd) takes it apart properly.
 :::
 
-### May I quote the winning score?
+### Quoting the winning score
 
 No, and this is the part that most often goes wrong in practice. Suppose we search for a good
 set of predictors. We add twenty columns of pure random noise to the data, draw 100 candidate
@@ -401,8 +401,8 @@ would appear in a paper.
 **Nested cross-validation** measures what that search is really worth. An outer set of folds
 is held back; inside each outer training set, the whole 100-candidate search is repeated from
 scratch on inner folds; the model that search picks is then scored on the outer fold, which
-the search never touched. To have something to compare against, we also score a fixed model —
-all eight real predictors, no search at all — on those same outer folds.
+the search never touched. To have something to compare against, we also score a fixed model,
+all eight real predictors and no search at all, on those same outer folds.
 
 ::: {.panel-tabset group="language"}
 
@@ -486,9 +486,9 @@ nested[["search reported", "search's model, honestly",
 
 :::
 
-## What the results mean
+## The price of the search
 
-The search reported 4.472. The model it chose actually achieves 4.851 — about 8% worse. And
+The search reported 4.472. The model it chose actually achieves 4.851, about 8% worse. And
 doing nothing at all, keeping every real predictor and searching for nothing, achieves 4.471
 on the same folds, beating the searched model in **all five**.
 
@@ -506,14 +506,14 @@ puts the two together at about 0.04 RMSE. The remaining **0.34 is selection**.
 So there are three numbers in any tuned analysis, and they are all different:
 
 1. The **score of the winner**, which tells you which candidate to use and nothing else.
-2. The **nested estimate**, which tells you how well the whole procedure — search included —
+2. The **nested estimate**, which tells you how well the whole procedure, search included,
    will do on new data.
 3. The **final model**, which you fit on all the data using the winner's settings, and which
    has no score of its own at all.
 
 Quoting (1) as if it were (2) is the single most common validation error in applied work.
 
-## Where this breaks down
+## Limits of random folds
 
 Everything on this page assumed that a random division of the rows produces folds that are
 independent of each other. For survey data that assumption is false, for exactly the reasons
@@ -542,6 +542,6 @@ area", and almost no marine study wants to know that. The
 ## Try it yourself
 
 1. Rerun the stability comparison with `prop = 0.5` instead of `0.75`. The single-split
-   estimates get worse in two distinct ways — find both.
+   estimates get worse in two distinct ways: find both.
 2. Add `noise_1` through `noise_20` to the *baseline* model in the nested comparison as well,
    so both arms carry the same junk. How much of the 0.38 gap survives?

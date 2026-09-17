@@ -17,7 +17,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Two properties of k-means you may not want
 
 k-means has two properties you may not want. It insists on round clusters of comparable
 size, and it insists on $k$ before it will tell you anything. Two other families relax
@@ -26,7 +26,7 @@ those, in different directions.
 **Hierarchical clustering** builds a whole tree of nested groupings in one pass, so you
 choose $k$ afterwards by deciding where to cut. **Mixture models** replace the hard label
 with a probability, so a station on a boundary is allowed to be 60% one thing and 40%
-another — which is a fairer description of most seabed.
+another, which is a fairer description of most seabed.
 
 Both bring new decisions with them, and this page is mostly about one of those decisions,
 because it is the one that quietly determines the answer.
@@ -148,19 +148,19 @@ compares partitions to each other.
 
 Take every pair of stations. Two partitions **agree** about a pair if both put the pair
 together or both keep the pair apart. The proportion of pairs they agree about is the
-**Rand index**. Two random partitions already agree about most pairs — with many
-clusters, nearly every pair is "apart" in both — so the **adjusted** Rand index subtracts
+**Rand index**. Two random partitions already agree about most pairs, since with many
+clusters nearly every pair is "apart" in both, so the **adjusted** Rand index subtracts
 the agreement expected by chance and rescales:
 
-- **1** — identical partitions (cluster *labels* do not matter, only the grouping)
-- **0** — no more agreement than two random partitions of the same sizes
-- below 0 — less agreement than chance
+- **1**: identical partitions (cluster *labels* do not matter, only the grouping)
+- **0**: no more agreement than two random partitions of the same sizes
+- below 0: less agreement than chance
 
 `mclust::adjustedRandIndex()` computes it. Here we use it against the true hard/soft
 substrate split, which we know only because the data is simulated; in real work you would
 use it to compare two methods, or one method across two resamples.
 
-## What the results mean
+## Reading the linkage comparison
 
 ```{r}
 #| label: fig-linkage
@@ -193,20 +193,20 @@ cluster at $k = 6$.
 
 **Complete and Ward both find the substrate split, at different $k$.** Ward gets it at
 $k = 2$ with an adjusted Rand index of **0.889**. Complete gets it at $k = 3$, scoring
-**0.843** — it spends its first split isolating a group of 66 unusual stations, and only
+**0.843**, because it spends its first split isolating a group of 66 unusual stations, and only
 its second cut is the ecological one.
 
 So: one dataset, one distance matrix, five defensible values of $k$, and answers ranging
 from 0.005 to 0.889. The linkage is not a detail.
 
 ::: {.callout-warning}
-`hclust()`'s default linkage is `"complete"`. At the $k$ most people try first — $k = 2$ —
+`hclust()`'s default linkage is `"complete"`. At the $k$ most people try first, $k = 2$,
 it scores 0.332 here, less than half of what Ward gets at the same $k$. Defaults are not
 recommendations.
 :::
 
 Ward's advantage on this data is not an accident. Ward merges the pair that adds least to
-the within-cluster sum of squares, which is the quantity k-means minimises — so Ward and
+the within-cluster sum of squares, which is the quantity k-means minimises, so Ward and
 k-means are looking for the same kind of cluster, and they agree here almost exactly
 (adjusted Rand index 0.935 between their $k = 2$ partitions). If you want the tree *and*
 k-means-like behaviour, Ward is the linkage to ask for.
@@ -296,8 +296,8 @@ pd.Series({
 
 :::
 
-Three components, model `VEV` — ellipsoids of equal volume with varying shape and
-orientation — and an adjusted Rand index against substrate of 0.426, far below Ward's
+Three components, model `VEV`, meaning ellipsoids of equal volume with varying shape and
+orientation, and an adjusted Rand index against substrate of 0.426, far below Ward's
 0.889. That is not a failure to find the substrate split; it is a decision to describe
 something else.
 
@@ -344,7 +344,7 @@ The consolation is that the model tells you which stations it is unsure about.
 
 ```{r}
 #| label: fig-uncertainty
-#| fig-cap: "Mixture-model uncertainty, one point per station, on the first two principal components. Stations the model cannot confidently assign are not scattered at random — they line the boundary between the two soft-bottom components, which is a depth gradient with no real edge in it."
+#| fig-cap: "Mixture-model uncertainty, one point per station, on the first two principal components. Stations the model cannot confidently assign are not scattered at random: they line the boundary between the two soft-bottom components, which is a depth gradient with no real edge in it."
 #| fig-alt: "Scatter plot of principal component 2 against principal component 1 for 800 stations, coloured by mixture component and sized by assignment uncertainty. Component 1 occupies the right-hand third of the plot, from PC1 about 1 to 6, as a loose cloud of its own whose points are nearly all small. Components 2 and 3 together fill the left and lower centre as one continuous cloud, component 2 above and component 3 below, with no gap between them. The large points marking uncertain assignments run in a diagonal band through the middle of that cloud where the two colours meet, and are almost absent from its outer edges and from component 1."
 #| fig-width: 6.5
 #| fig-height: 5
@@ -357,13 +357,13 @@ tibble(PC1 = scores[, 1], PC2 = scores[, 2],
   labs(subtitle = "Point size is how unsure the model is of the assignment")
 ```
 
-The median station has an uncertainty of 0.002 — the model is sure about almost
+The median station has an uncertainty of 0.002, so the model is sure about almost
 everything. But **69 stations have an uncertainty above 0.25**, and they are not spread
 evenly: they sit where components 2 and 3 meet, which is the middle of the depth
 gradient. That is the honest answer for a station halfway along a continuum, and a hard
 partition simply never reports it.
 
-## Where this breaks down
+## Limits of trees and mixtures
 
 **A dendrogram looks more authoritative than it is.** It is a picture of one linkage's
 merge order. Change the linkage and you get a different tree from the same data, as the
@@ -394,13 +394,13 @@ assemblages, and the two coincide only sometimes.
 - The **adjusted Rand index** compares two partitions pair by pair: 1 is identical, 0 is
   chance.
 - Mixture models return a probability per station. Here 69 stations were genuinely
-  ambiguous, all of them on the depth gradient — information a hard partition throws away.
+  ambiguous, all of them on the depth gradient, which is information a hard partition throws away.
 :::
 
 ## Try it yourself
 
 1. Cut the Ward tree at $k = 2$ and the complete-linkage tree at $k = 3$ and compare them
-   with `adjustedRandIndex()`. They score 0.889 and 0.843 against substrate — how similar
+   with `adjustedRandIndex()`. They score 0.889 and 0.843 against substrate: how similar
    are they to *each other*?
 2. Run `Mclust()` on the first two principal components instead of five. Does it still
    choose three components, and does the uncertainty band survive?

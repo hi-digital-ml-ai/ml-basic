@@ -1,6 +1,6 @@
 ---
 title: "Communicating uncertainty"
-description: "Three intervals that answer three different questions, one of which covers 29% of the observations it is routinely drawn around — and what happens to a coverage guarantee when the data stops being exchangeable."
+description: "Three intervals that answer three different questions, one of which covers 29% of the observations it is routinely drawn around, and what happens to a coverage guarantee when the data stops being exchangeable."
 order: 5
 categories: [uncertainty, interpretation]
 ---
@@ -16,11 +16,11 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## A number without an interval
 
 "Predicted abundance at this station is 4.6" is not a result. "Predicted abundance is 4.6,
 and a new grab there would plausibly return anything from 0 to 16" is a result, and it is a
-much less impressive-sounding one — which is the reason the first version gets published.
+much less impressive-sounding one, which is the reason the first version gets published.
 
 There is also a technical trap here that catches careful people. There are three different
 uncertainties in a fitted model, they differ in width by a factor of three or more, and the
@@ -36,7 +36,7 @@ one that is easiest to obtain is almost never the one being asked about.
 | --- | --- | --- |
 | How well do I know the **average** count under these conditions? | Confidence interval on the mean | narrow |
 | What would a **new grab** at this station return? | Prediction interval | wide |
-| How well do I know my **model's performance**? | Spread across resamples (§7) | — |
+| How well do I know my **model's performance**? | Spread across resamples (§7) | n/a |
 
 The first two are what this page is about. They are not versions of the same thing with
 different labels: the first describes uncertainty about a parameter and shrinks as you
@@ -217,7 +217,7 @@ pd.DataFrame([
 
 :::
 
-**The confidence band covers 29% of the observations.** It is not broken — it was never
+**The confidence band covers 29% of the observations.** It is not broken; it was never
 answering that question. It describes where the *average* count lies under those conditions,
 which is a quantity you cannot observe, and it averages 4.2 counts wide because 432 stations
 pin an average down quite well.
@@ -226,9 +226,9 @@ The prediction interval is three times wider and covers 99%. That is the interva
 who asks "what will we catch there?" is asking for. Note that it needs a **distribution**:
 we used the negative binomial the GAM fitted, with its dispersion $\theta$ = 1.65. Its
 coverage is above the nominal 95% because counts are integers and integer quantiles round
-outwards — conservative, which is the right direction to be wrong in.
+outwards, which is conservative and the right direction to be wrong in.
 
-## What if your model has no distribution?
+## When your model has no distribution
 
 A random forest has no likelihood and therefore no prediction interval. The usual improvised
 answer is "predict, then add $\pm 1.96 \times$ RMSE".
@@ -275,8 +275,8 @@ pd.DataFrame([
 
 :::
 
-The two differ because a random forest's in-sample RMSE is about half its honest one — 2.11
-against 4.17 — so the interval built from it is half as wide and covers **77%** rather than
+The two differ because a random forest's in-sample RMSE is about half its honest one, 2.11
+against 4.17, so the interval built from it is half as wide and covers **77%** rather than
 95%. This is the same in-sample/out-of-sample error §5 spent a page on, arriving as an
 interval that is silently too narrow.
 
@@ -288,8 +288,8 @@ every station with a small prediction.
 
 **Conformal prediction** does the same thing properly and for any model. Score the model on a
 calibration set the model never saw, take the 95th percentile of the absolute residuals, and
-use that as the half-width. Under one assumption — that calibration and test stations are
-**exchangeable**, drawn from the same process in no particular order — the resulting interval
+use that as the half-width. Under one assumption, that calibration and test stations are
+**exchangeable**, drawn from the same process in no particular order, the resulting interval
 has at least 95% coverage, whatever the model is and whether or not it is any good.
 
 ::: {.panel-tabset group="language"}
@@ -332,14 +332,14 @@ pd.DataFrame([coverage(lower, upper, "conformal split, 95%")]).assign(
 :::
 
 96.5% coverage from a model with no probability model at all, which is a genuinely useful
-thing to be able to do. Two caveats are visible in that one row. The width is **constant** —
-every station gets the same interval regardless of how well the model knows it. And the lower
-bound reaches −9.1, which is not a possible number of animals; you would truncate at zero, and
-truncation costs you a little of the guarantee.
+thing to be able to do. Two caveats are visible in that one row. The width is
+**constant**: every station gets the same interval regardless of how well the model knows
+it. And the lower bound reaches −9.1, which is not a possible number of animals; you would
+truncate at zero, and truncation costs you a little of the guarantee.
 
 To compare the three fairly they should come from one model, so for the figure we also
 calibrate a conformal interval on the GAM. It comes out at width 19.4 against the forest's
-19.5 — conformal width is a property of the residuals, not of the model family.
+19.5, because conformal width is a property of the residuals, not of the model family.
 
 ::: {.panel-tabset group="language"}
 
@@ -496,20 +496,20 @@ pd.DataFrame(
 
 :::
 
-In the first experiment the shift is harmless: the model is calibrated on stations shallower
-than 50 m and deeper than 120 m and asked about the 60–100 m band it never saw, and coverage
-holds at 97%. In the second it is not: coverage falls to **86%** on an interval labelled 95%, because
-the high-chlorophyll stations have more than twice the mean count and a constant-width
-interval cannot stretch to meet them.
+In the first experiment the shift is harmless: the model is calibrated on stations
+shallower than 50 m and deeper than 120 m and asked about the 60–100 m band it never saw,
+and coverage holds at 97%. In the second it is not: coverage falls to **86%** on an
+interval labelled 95%, because the high-chlorophyll stations have more than twice the mean
+count and a constant-width interval cannot stretch to meet them.
 
 The two experiments matter together. **The interval is exactly the same width in both cases.**
 Nothing in the output distinguishes the shift you got away with from the one you did not. A
 coverage guarantee is a statement about the population you calibrated on, and when you leave
-it you have no guarantee and no warning — §6's
+it you have no guarantee and no warning: §6's
 [extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) problem, arriving
 as a number that is quietly 9 points too optimistic.
 
-## What to write
+## The wording to use
 
 - Say **which** interval it is. "95% confidence interval for the mean predicted count",
   not "95% CI".
@@ -533,8 +533,8 @@ as a number that is quietly 9 points too optimistic.
   coverage at three times the width and never goes below zero.
 - **Never build an interval from the in-sample RMSE.** The forest's was 2.11 against an honest
   4.17, and the resulting 95% interval covered 77%.
-- **Conformal prediction** gives a valid interval for any model from a calibration set — 96.5%
-  here — at the price of constant width and negative lower bounds.
+- **Conformal prediction** gives a valid interval for any model from a calibration set, 96.5%
+  here, at the price of constant width and negative lower bounds.
 - **Its guarantee ends where exchangeability ends.** Calibrating on low-chlorophyll stations
   and predicting high-chlorophyll ones dropped coverage to 86%, with the interval width
   unchanged and nothing to warn you.

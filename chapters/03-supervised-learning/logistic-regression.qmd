@@ -1,6 +1,6 @@
 ---
 title: "Logistic regression"
-description: "Predicting presence and absence — why the model outputs probabilities rather than classes, and why the default threshold can make a working model do nothing."
+description: "Predicting presence and absence: why the model outputs probabilities rather than classes, and why the default threshold can make a working model do nothing."
 order: 3
 categories: [supervised, classification, class-imbalance]
 ---
@@ -16,14 +16,14 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Two mistakes that meet here
 
 Presence and absence is the commonest response in marine ecology, and logistic
 regression is the standard tool for it. It is also the setting where two mistakes are
 almost universal: reading the coefficients in the wrong direction, and mistaking the
 model for the decision rule.
 
-This page demonstrates both, on a species present at 5% of stations — which is what
+This page demonstrates both, on a species present at 5% of stations, which is what
 "rare" usually means in a real survey.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -144,7 +144,7 @@ preprocess = ColumnTransformer([
     ("substrate", OneHotEncoder(drop="first"), ["substrate"]),
 ])
 
-# C is the inverse penalty strength, and it defaults to 1.0 — scikit-learn
+# C is the inverse penalty strength, and it defaults to 1.0. scikit-learn
 # regularises unless you stop it, where glm() does not. C=inf turns it off,
 # so this is the same model as the R tab rather than a ridge fit.
 logistic_fit = Pipeline([
@@ -258,7 +258,7 @@ list, which matters if you plan to survey only the highest-ranked sites.
 
 ```{r}
 #| label: fig-threshold
-#| fig-cap: "Left: predicted probabilities, separated by what was actually there. Most absences sit very close to zero while the present stations sit in the middle of the range — which is the ranking ability the AUC measures — yet no station of either kind reaches the default 0.5 cut-off, so everything is classified absent. Right: the ROC curve, which ignores thresholds entirely."
+#| fig-cap: "Left: predicted probabilities, separated by what was actually there. Most absences sit very close to zero while the present stations sit in the middle of the range, which is the ranking ability the AUC measures, yet no station of either kind reaches the default 0.5 cut-off, so everything is classified absent. Right: the ROC curve, which ignores thresholds entirely."
 #| fig-alt: "Two panels. The left panel shows jittered predicted probabilities. Absent stations cluster tightly near zero with a thin tail reaching 0.28; present stations are fewer and spread between about 0.03 and 0.17. A dashed vertical line at 0.5 lies far to the right of every point. The right panel is a stepped ROC curve bowing above the diagonal, with an area of 0.79."
 #| fig-width: 8.5
 #| fig-height: 4
@@ -361,29 +361,29 @@ pd.DataFrame({
 
 :::
 
-Depth has an odds ratio of 0.97 — below 1, apparently meaning the species becomes *less*
+Depth has an odds ratio of 0.97, below 1, apparently meaning the species becomes *less*
 likely in deeper water. The simulation built in the opposite: deeper stations are more
 likely to hold it, with a true odds ratio of $e^{0.030} = 1.031$ per metre.
 
 The model is not wrong. The table is being read wrong.
 
 ::: {.callout-important}
-## Which class are your coefficients about?
+## The class your coefficients describe
 `rare_species` has levels `yes, no`, in that order. tidymodels treats the **first** level
 as the event, so `.pred_yes` is correctly the probability of presence. But the underlying
-`glm()` follows base R's convention and models the probability of the **last** level —
+`glm()` follows base R's convention and models the probability of the **last** level,
 "no".
 
 So the fitted coefficients describe the odds of *absence*. Depth's 0.971 means each
 metre multiplies the odds of absence by 0.971, which is the odds of presence multiplied
-by $1/0.971 = 1.030$ — the simulated truth, to three decimal places.
+by $1/0.971 = 1.030$, the simulated truth, to three decimal places.
 
 The predictions were right all along. Only the coefficient table pointed the other way,
 and nothing in the output says so. Always sanity-check the sign of one coefficient
 against a simple cross-tabulation before publishing a direction.
 
 scikit-learn takes the **opposite** convention: `classes_` is sorted, so it is
-`['no', 'yes']` here, and the coefficients describe the odds of the *second* class —
+`['no', 'yes']` here, and the coefficients describe the odds of the *second* class,
 presence. The identical table therefore means the opposite thing in the two tabs,
 which is exactly why the cross-tabulation below is worth the four lines it costs.
 :::
@@ -419,11 +419,11 @@ survey.groupby(depth_band, observed=True).agg(
 Prevalence rises with depth. Whatever the coefficient table appeared to say, the species
 is a deep-water one.
 
-## What the results mean
+## Three questions behind one number
 
 Three separable things got conflated in the phrase "the model is 95% accurate":
 
-1. **Does the model rank stations correctly?** ROC AUC 0.79 — yes, imperfectly.
+1. **Does the model rank stations correctly?** ROC AUC 0.79: yes, imperfectly.
 2. **Are the probabilities on a sensible scale?** They top out at 0.27 because presence
    really is rare. That is honest, not broken.
 3. **What do we do about it?** A threshold, chosen from the cost of a miss against the
@@ -432,7 +432,7 @@ Three separable things got conflated in the phrase "the model is 95% accurate":
 Accuracy silently combines all three and answers none of them. For rare events, report
 AUC or precision–recall, show the threshold you chose, and say why.
 
-## Where this breaks down
+## Limits of this model
 
 **Eleven positives is a thin test set.** Every figure here has wide uncertainty, and
 another split would move them. [Section 7](../07-validation/index.qmd) treats resampling
@@ -442,7 +442,7 @@ as the fix.
 rate has a large denominator. At 5% prevalence a precision–recall curve is more
 informative, and at 0.1% ROC AUC is close to useless.
 
-**Logistic regression is still linear** — in the log-odds. A species with a depth
+**Logistic regression is still linear**, in the log-odds. A species with a depth
 *optimum* rather than a preference needs curved terms, exactly as in
 [the previous page](linear-and-polynomial-regression.qmd).
 
@@ -467,7 +467,7 @@ recalibration. If you balance, the probabilities no longer estimate real prevale
 ## Try it yourself
 
 1. Add `themis::step_downsample(rare_species)` to the recipe and refit. Does the model
-   now predict presence at 0.5? Compare the ROC AUC before and after — has the model
+   now predict presence at 0.5? Compare the ROC AUC before and after: has the model
    improved, or has the scale moved?
 2. Use `probably::threshold_perf()` to compute sensitivity and specificity across all
    thresholds. Which one would you choose if a missed detection cost ten times a false

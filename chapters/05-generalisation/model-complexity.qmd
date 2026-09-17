@@ -16,14 +16,14 @@ source(here::here("R/data.R"))
 set.seed(503)
 ```
 
-## Why this matters
+## Defining flexibility
 
 [The previous page](underfitting-and-overfitting.qmd) drew a curve with "flexibility" on the
 horizontal axis and left the word undefined. It has to be defined, because the whole of model
 selection consists of moving along that axis, and you cannot move along an axis you cannot
 measure.
 
-The intuitive definition — count the parameters — works for the models marine scientists learn
+The intuitive definition, counting the parameters, works for the models marine scientists learn
 first and fails for almost everything else. A random forest with 500 trees has hundreds of
 thousands of thresholds and is *less* prone to overfitting than one tree with 400. A ridge
 regression has exactly as many coefficients as an unpenalised one and behaves as though it has
@@ -46,7 +46,7 @@ one where abundance is assigned by dice.
 That is the sense in which complexity is dangerous. A model that could fit anything tells you
 nothing when it fits your data, because fitting your data was never in doubt.
 
-The useful currency is **effective degrees of freedom** — roughly, how many independent
+The useful currency is **effective degrees of freedom**: roughly, how many independent
 quantities the model is actually estimating. For an ordinary linear model that is the number of
 coefficients. For everything else it is smaller than the raw count, sometimes far smaller, and
 it can be a fraction.
@@ -63,12 +63,12 @@ it can be a fraction.
 
 Two rows of that table are backwards from the naive reading, and both catch people out. In
 ridge and in k-NN, the knob you turn *up* is the one that makes the model simpler. And adding
-trees to a random forest does not add complexity at all — it averages more copies of the same
+trees to a random forest does not add complexity at all; it averages more copies of the same
 complexity, which is why a forest of 5,000 trees does not overfit more than one of 500.
 
 ### Effective degrees of freedom, measured
 
-Ridge regression makes this concrete. The coefficients are all still there — twelve of them —
+Ridge regression makes this concrete. The coefficients are all still there, twelve of them,
 but the penalty stops them moving freely, and the number of effectively free directions falls
 continuously as λ rises.
 
@@ -162,9 +162,9 @@ but a measure of how free they are.
 
 ## Worked example
 
-Here is the demonstration. We will take three genuine predictors and add columns of `rnorm()` —
-not weak predictors, not proxies, *pure random numbers generated after the fact and known to
-contain nothing at all* — and watch what the model reports about itself.
+Here is the demonstration. We will take three genuine predictors and add columns of `rnorm()`:
+not weak predictors, not proxies, but *pure random numbers generated after the fact and
+known to contain nothing at all*. Then watch what the model reports about itself.
 
 ::: {.panel-tabset group="language"}
 
@@ -246,7 +246,7 @@ pd.DataFrame([with_noise(k) for k in
 
 ```{r}
 #| label: fig-noise
-#| fig-cap: "Training R² and test RMSE against the number of pure-noise columns added to three real predictors, on 540 training stations. Training R² climbs from 0.137 to exactly 1.000. Test RMSE climbs from 4.39 to 185 — against a response whose largest observed value is 40."
+#| fig-cap: "Training R² and test RMSE against the number of pure-noise columns added to three real predictors, on 540 training stations. Training R² climbs from 0.137 to exactly 1.000. Test RMSE climbs from 4.39 to 185, against a response whose largest observed value is 40."
 #| fig-alt: "Two stacked panels sharing a horizontal axis of noise columns from zero to 539 on a square-root scale. The upper panel shows training R-squared rising from 0.14 at zero columns, slowly at first and then steeply, reaching exactly 1.0 at 539. The lower panel, on a logarithmic vertical axis, shows test RMSE almost flat near 4.4 up to about 25 columns, then rising through 5, 6 and 9.5, and jumping to 185 at 539 columns."
 #| fig-width: 7
 #| fig-height: 5
@@ -268,13 +268,13 @@ p2 <- ggplot(noise_results, aes(`noise columns`, `test RMSE`)) +
 p1 / p2
 ```
 
-## What the results mean
+## The cost of 539 noise columns
 
 With no noise columns the model explains 13.7% of the training variance and scores 4.39 on new
 stations. Adding 539 columns of `rnorm()` takes the training R² to **1.000** and the test RMSE
 to **185**.
 
-Sit with the first of those numbers. A perfect fit. Not 0.98 — 1.000, and a training RMSE of
+Sit with the first of those numbers. A perfect fit. Not 0.98 but 1.000, and a training RMSE of
 exactly zero. Any reader shown that model's summary, without being told where the columns came
 from, would conclude that abundance on this shelf is completely determined and the study is
 finished.
@@ -286,8 +286,8 @@ the model found something but because it ran out of data to be wrong about.
 
 Two more readings matter.
 
-**The damage starts long before the collapse.** At 25 noise columns — 29 parameters on 540
-stations, a ratio most people would call comfortable — the training R² has already risen from
+**The damage starts long before the collapse.** At 25 noise columns, 29 parameters on 540
+stations and a ratio most people would call comfortable, the training R² has already risen from
 0.137 to 0.177 and the test RMSE has begun to drift up from 4.39 to 4.50. Every junk column you
 add buys a little training fit and costs a little real performance, from the very first one.
 There is no threshold below which extra variables are free.
@@ -298,14 +298,14 @@ governs overfitting is the ratio, which is why sample size and complexity have t
 together and why a survey design question is also a modelling question.
 
 ::: {.callout-warning}
-R² never falls when you add a predictor. Not "rarely" — never, as a matter of algebra, however
+R² never falls when you add a predictor. Not "rarely" but never, as a matter of algebra, however
 irrelevant the predictor is. This makes R² unusable for comparing models with different numbers
 of terms, and it is why adjusted R², AIC and cross-validation exist. If you have ever added a
 variable, seen R² rise, and taken that as evidence the variable matters, this table is the
 counter-example: it happens with random numbers, every time.
 :::
 
-## Where this breaks down
+## Limits of counting parameters
 
 **Parameter counts do not compare across families.** The 540-parameter model above is a
 catastrophe. A random forest here has hundreds of thousands of thresholds and is fine. The
@@ -327,7 +327,7 @@ leakage.
 **Some complexity is required.** Nothing here argues for the simplest model available. The
 [previous page's](underfitting-and-overfitting.qmd) seven-leaf tree was underfitted, and a
 model too rigid to represent a thermal optimum will mislead you as reliably as one that fits
-noise — just more quietly, and with better-looking diagnostics.
+noise, just more quietly, and with better-looking diagnostics.
 
 ::: {.callout-tip}
 ## Key points
@@ -348,7 +348,7 @@ noise — just more quietly, and with better-looking diagnostics.
 ## Try it yourself
 
 1. Re-run the noise experiment with 200 noise columns but only 100 training stations. The ratio
-   is worse than any row in the table — what happens to the coefficient table, and what does
+   is worse than any row in the table: what happens to the coefficient table, and what does
    `lm()` do when it runs out of degrees of freedom entirely?
 2. Fit ridge regression at λ = 1000 to the 539-noise-column design matrix. Effective degrees of
    freedom says it should behave like a four-parameter model. Does its test RMSE agree, and what

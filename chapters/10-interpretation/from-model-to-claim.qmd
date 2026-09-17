@@ -1,6 +1,6 @@
 ---
 title: "From a model to a claim"
-description: "The whole course applied to one survey, ending in the two paragraphs you would actually write — plus the claims the data will not support, and the bias that cross-validation rewards."
+description: "The whole course applied to one survey, ending in the two paragraphs you would actually write, plus the claims the data will not support, and the bias that cross-validation rewards."
 order: 6
 categories: [interpretation, reproducibility]
 ---
@@ -15,10 +15,10 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## From numbers to sentences
 
 Everything up to here has produced numbers. A paper needs sentences, and the step between
-them is where most of the damage is done — not by people who do not understand their model,
+them is where most of the damage is done, not by people who do not understand their model,
 but by people who understand it and then describe it in the vocabulary a reviewer expects.
 
 This page takes the survey through the whole course, writes out the two paragraphs, and then
@@ -152,8 +152,8 @@ boosted tree on these folds.
 > longitude and latitude (basis dimension 30) was included to absorb spatial structure not
 > explained by the covariates. Predictive performance was assessed by ten-fold
 > cross-validation with out-of-fold predictions pooled before scoring, and the same folds
-> were used for every candidate model compared. Three alternatives — a random forest, a
-> gradient-boosted tree ensemble and a negative-binomial GLM with quadratic terms — were
+> were used for every candidate model compared. Three alternatives (a random forest, a
+> gradient-boosted tree ensemble and a negative-binomial GLM with quadratic terms) were
 > fitted for comparison and are reported in the supplement. Analysis code, the package
 > lockfile and the cleaning script are archived at [DOI]; all random seeds are set in the
 > code.
@@ -329,11 +329,11 @@ pd.DataFrame([compare(modelling, "as recorded"),
 
 The estimated rock effect more than doubles, from −0.48 to −1.16. On the count scale that is
 the difference between "rock holds about 38% fewer animals than gravel" and "rock holds about
-69% fewer" — and the second sentence is the one that would be written up, with a $p$ value of
+69% fewer", and the second sentence is the one that would be written up, with a $p$ value of
 well under 0.001 behind it.
 
 Now look at the validation columns. The biased model **scores better on both**:
-cross-validated RMSE 4.008 against 4.079, R² 0.297 against 0.284. Not a warning anywhere —
+cross-validated RMSE 4.008 against 4.079, R² 0.297 against 0.284. Not a warning anywhere, but
 a modest improvement.
 
 That is not a fluke, it is structural. Cross-validation asks whether the model predicts the
@@ -343,7 +343,7 @@ interpretation method in this course that detects it.
 
 ::: {.callout-important}
 **The only defences against observation bias are outside the model.** Knowing your gear's
-catchability by substrate. Comparing against an independent method — video, acoustics, a
+catchability by substrate. Comparing against an independent method: video, acoustics, a
 different net. Reporting the effort and the gear alongside the result so a reader can apply
 their own correction. A model that reproduces biased survey data reproduces the bias, with
 excellent validation statistics, and says nothing at all about it.
@@ -371,13 +371,13 @@ to add to it, all of which this page has answered for the survey:
 - **Observation bias is invisible to validation.** Halving the recorded catch on rock more
   than doubled the estimated rock effect and *improved* the cross-validated RMSE and R².
 - The defences against that are gear calibration, an independent method, and transparent
-  reporting of effort — not a better model.
+  reporting of effort, not a better model.
 :::
 
 ## Try it yourself
 
-1. Bias the data the other way — suppose the gear over-counts in high chlorophyll because of
-   fouling — and check whether cross-validation notices. Then check whether the
+1. Bias the data the other way, supposing the gear over-counts in high chlorophyll because of
+   fouling, and check whether cross-validation notices. Then check whether the
    chlorophyll smooth changes sign.
 2. Write the Results paragraph for the random forest instead. Which of the five sentences can
    you still write, and what do you have to replace them with?

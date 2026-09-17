@@ -17,7 +17,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The menu behind the menu
 
 [The loss page](loss-functions.qmd) presented squared error, absolute error and Poisson
 deviance as a menu, with advice about when each is appropriate. That is how the choice is
@@ -28,8 +28,8 @@ principle is the one your statistics training already gave you. State what you t
 generated the data, and the loss falls out.
 
 For a marine scientist this reframing is worth more than the algorithm. It converts "which
-loss should I use?" — a question about software — into "what kind of quantity is my
-response, and what does its variability look like?" — a question about your sampling, which
+loss should I use?", a question about software, into "what kind of quantity is my
+response, and what does its variability look like?", a question about your sampling, which
 you are qualified to answer.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -49,8 +49,8 @@ against $\mu$ and you have the likelihood for that one station.
 
 ```{r}
 #| label: fig-one-station
-#| fig-cap: "Left: the Poisson probability of counting exactly 3 individuals, as a function of the expected count μ. It peaks at μ = 3. Right: the same curve for three stations that caught 3, 0 and 11, and their product — the joint likelihood. The product peaks at 4.67, the mean of the three counts, and is far narrower than any single curve."
-#| fig-alt: "Two panels. The left panel shows a single humped curve rising from zero at mu equals zero to a peak of about 0.22 at mu equals 3, then falling slowly toward zero by mu equals 15. The right panel shows three thin humped curves peaking at different places — one near zero, one near 3, one near 11 — together with a much taller narrow curve, rescaled, peaking near 4.7 and dropping to near zero by mu equals 9. The joint curve is narrower than every individual curve."
+#| fig-cap: "Left: the Poisson probability of counting exactly 3 individuals, as a function of the expected count μ. It peaks at μ = 3. Right: the same curve for three stations that caught 3, 0 and 11, and their product, the joint likelihood. The product peaks at 4.67, the mean of the three counts, and is far narrower than any single curve."
+#| fig-alt: "Two panels. The left panel shows a single humped curve rising from zero at mu equals zero to a peak of about 0.22 at mu equals 3, then falling slowly toward zero by mu equals 15. The right panel shows three thin humped curves peaking at different places, one near zero, one near 3 and one near 11, together with a much taller narrow curve, rescaled, peaking near 4.7 and dropping to near zero by mu equals 9. The joint curve is narrower than every individual curve."
 #| fig-width: 7.5
 #| fig-height: 3.6
 mu <- seq(0.05, 15, length.out = 400)
@@ -82,13 +82,13 @@ With one station almost any $\mu$ between 1 and 8 is defensible. With three, the
 range has already tightened sharply, because a value of $\mu$ has to explain *all* the
 counts at once. That narrowing is what more data buys you, and it is visible on the plot.
 
-### Why we take logs, and why it becomes a loss
+### Taking logs, and the step to a loss
 
 Multiplying 749 probabilities together produces a number so small that a computer stores it
 as zero. So we take logarithms, which turns the product into a sum and changes nothing
 about where the maximum is.
 
-Maximising the sum of log-probabilities is the same as *minimising* its negative — and the
+Maximising the sum of log-probabilities is the same as *minimising* its negative, and the
 negative log-likelihood is a loss function. That is the whole connection:
 
 $$\underbrace{\text{choose } \theta \text{ to maximise } \sum_i \log p(y_i \mid \theta)}_{\text{maximum likelihood}} \;\;\equiv\;\; \underbrace{\text{choose } \theta \text{ to minimise } \sum_i -\log p(y_i \mid \theta)}_{\text{minimising a loss}}$$
@@ -105,11 +105,11 @@ Change the distribution $p$ and you change the loss. That is where the menu come
 | Bernoulli (yes/no) | Log loss / cross-entropy | Logistic regression |
 
 Read the first row again: **least squares assumes normally distributed errors of constant
-variance whether or not you ever said so.** Anyone who has ever fitted `lm()` to counts has
-made that assumption silently. It is why
-[section 3's linear model predicted negative fish](../03-supervised-learning/linear-and-polynomial-regression.qmd) —
-not because linear regression is careless, but because the Normal distribution it assumes
-runs from −∞ to +∞ and a loss built from it has no way to object.
+variance whether or not you ever said so.** Anyone who has ever fitted `lm()` to counts
+has made that assumption silently. It is why [section 3's linear model predicted negative
+fish](../03-supervised-learning/linear-and-polynomial-regression.qmd), not because linear
+regression is careless, but because the Normal distribution it assumes runs from −∞ to +∞
+and a loss built from it has no way to object.
 
 ## Worked example
 
@@ -156,7 +156,7 @@ squares came back. The two are the same procedure.
 
 ### The same machinery with a count distribution
 
-Now change one word — `dnorm` to `dpois` — and add the log link that keeps the mean
+Now change one word, `dnorm` to `dpois`, and add the log link that keeps the mean
 positive.
 
 ```{r}
@@ -186,8 +186,8 @@ Agreement to five decimal places, and the log-likelihoods match too: −2492.032
 this, with a faster search.
 
 ::: {.callout-note}
-The `optim()` call above needs standardised predictors to succeed. Fed raw depth in metres
-— so that the squared term reaches 60,000 — the search starting from all zeros goes nowhere
+The `optim()` call above needs standardised predictors to succeed. Fed raw depth in metres,
+so that the squared term reaches 60,000, the search starting from all zeros goes nowhere
 and returns the starting values without complaint. That is
 [the previous page's point](gradient-descent.qmd) arriving unannounced: `glm()` survives raw
 depth because IRLS uses curvature, and a generic gradient search does not.
@@ -214,7 +214,7 @@ tibble(
 
 Identical again. Every standard error, confidence interval and *p*-value you have read off a
 model summary is a statement about how curved the log-likelihood is at its top. It is not an
-extra layer of statistics bolted onto the fit — it is a by-product of the fit.
+extra layer of statistics bolted onto the fit; it is a by-product of the fit.
 
 ### Estimating a parameter that is not a coefficient
 
@@ -270,10 +270,10 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
-## What the results mean
+## Reading the dispersion estimate
 
 `glm.nb()` returns $\theta = 1.058$, and the profile confirms it: the curve peaks there.
-The simulation that generated this data used $\theta = 1.5$, so the estimate is low — the
+The simulation that generated this data used $\theta = 1.5$, so the estimate is low. The
 mean model here has only chlorophyll and a depth quadratic, so variation the true model
 explains through temperature, substrate and the spatial field is left over as apparent
 overdispersion. A dispersion estimate is not a property of the species; it is a property of
@@ -283,8 +283,8 @@ The improvement in fit is not marginal. Adding one parameter moves the log-likel
 −2492 to −1828 and the AIC from 4992 to 3667. Under the Poisson assumption the data are
 absurdly improbable, and the model was reporting standard errors on that basis.
 
-Notice, too, what the profile's shape says. Two log-likelihood units below the peak — the
-conventional 95% cut-off — spans θ from 0.92 to 1.22, so the data pin the dispersion down
+Notice, too, what the profile's shape says. Two log-likelihood units below the peak, the
+conventional 95% cut-off, spans θ from 0.92 to 1.22, so the data pin the dispersion down
 to roughly ±15%. Outside the plotted window the likelihood collapses: θ = 0.4 and θ = 3
 both score about −1921, more than ninety units below the peak. The curve is also visibly
 asymmetric, falling faster on the low side than the high, which is why a dispersion
@@ -297,11 +297,11 @@ and a model of `log(abundance + 1)` cannot, because the second is a likelihood f
 different quantity. Comparing their AICs produces a number, and the number is meaningless.
 :::
 
-## Where this breaks down
+## Limits of maximum likelihood
 
 **The assumption is doing real work.** Maximum likelihood is only as good as the
 distribution you named. Fit a Poisson model to overdispersed counts and it still converges,
-still reports coefficients, and still prints standard errors — which will be roughly half
+still reports coefficients, and still prints standard errors, which will be roughly half
 what they should be, because the model believes the data are far more informative than they
 are. Nothing in the output says so. The diagnostic is the deviance ratio, and you have to
 ask for it.
@@ -317,7 +317,7 @@ inferential machinery for freedom of shape.
 dataset most probable, which is not the same as the parameters that predict the next survey
 best. With many parameters and few stations, the two diverge sharply. The standard repair is
 to stop maximising the likelihood alone and start maximising it against a preference for
-modest parameters — which is [MAP estimation](map-and-priors.qmd), on the next page.
+modest parameters, which is [MAP estimation](map-and-priors.qmd), on the next page.
 
 ::: {.callout-tip}
 ## Key points
@@ -326,7 +326,7 @@ modest parameters — which is [MAP estimation](map-and-priors.qmd), on the next
   Maximum likelihood picks the parameters that make what you observed most plausible.
 - Minimising a negative log-likelihood *is* minimising a loss. The loss menu is not a menu:
   each entry is one distributional assumption.
-- Least squares is Gaussian maximum likelihood — verified here to four decimals — which is
+- Least squares is Gaussian maximum likelihood, verified here to four decimals, which is
   why fitting `lm()` to counts silently assumes a distribution running to −∞.
 - Standard errors are the curvature of the log-likelihood at its peak, reproduced here from
   the Hessian to five decimals. They are a by-product of fitting, not an extra step.

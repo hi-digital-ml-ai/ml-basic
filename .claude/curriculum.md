@@ -1,6 +1,6 @@
 # Curriculum
 
-The ten course sections and their subtopics. **Tentative** — content, ordering and
+The ten course sections and their subtopics. **Tentative**: content, ordering and
 page splits can change; update this file when they do, and keep
 `_quarto.yml` and `.claude/site-structure.md` in step.
 
@@ -85,7 +85,7 @@ so the axis is defined before it is decomposed).
 
 Every page before the last deliberately chooses its complexity by looking at the test set,
 and says so each time; `hyperparameter-selection.qmd` is where that is done properly. Keep
-that framing if these pages are edited — it is what makes §7 feel necessary rather than
+that framing if these pages are edited; it is what makes §7 feel necessary rather than
 pedantic.
 
 `regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
@@ -97,7 +97,7 @@ and §5 refers back. The same applies in reverse if §4 is edited.
 `bias-variance.qmd` needs the true expected count per station, which observed counts cannot
 supply. `R/make-example-data.R` now also writes `data/coastal-survey-truth.csv`
 (`station_id`, `true_mean`), loaded by `load_coastal_survey_truth()`. The addition does not
-change `coastal-survey.csv` — same seed, same bytes, verified.
+change `coastal-survey.csv`: same seed, same bytes, verified.
 
 Rules for using it are in `data/README.md`: join on `station_id`, never pass it to a model,
 never quote a score against it without saying no real study could compute one.
@@ -121,7 +121,7 @@ never quote a score against it without saying no real study could compute one.
   `spatial-and-temporal-dependence.qmd`, which is where the demonstration lives, with the
   remedy pointed forward to §7.
 - "Limitations of predictions outside the observed data range" is folded into
-  `sampling-and-extrapolation.qmd` — uneven coverage and extrapolation are the same problem
+  `sampling-and-extrapolation.qmd`, because uneven coverage and extrapolation are the same problem
   at two severities and read badly when separated.
 
 ### Two threads that must be kept if these pages are edited
@@ -165,7 +165,7 @@ Both were adopted to fix problems §6 ran into, and editing either page must kee
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
 each row exactly once, so pooling gives one metric over identical rows for every scheme. This is
 the proper answer to §6's "RMSE is not comparable across resampling schemes" thread, and
-`spatial-and-temporal-cv.qmd` depends on it — without pooling, its five-scheme table would not
+`spatial-and-temporal-cv.qmd` depends on it; without pooling, its five-scheme table would not
 be a comparison.
 
 **Use the same resamples object for every model compared.** `uncertainty-and-stability.qmd`
@@ -181,13 +181,13 @@ identical folds it is 0.33 wide.
   rather than ten small ones), and the page says so.
 - **The score is a function of fold separation.** `spatial-and-temporal-cv.qmd` measures the
   median distance from each held-out station to its nearest training station and plots R²
-  against it. Blocked CV is not "more correct" — it is a harder question, chosen deliberately.
+  against it. Blocked CV is not "more correct"; it is a harder question, chosen deliberately.
   Leave-one-year-out sits off the trend because it separates in time, and `survey_year` has no
   effect in the generator, so the diagnostic correctly reports nothing there.
 - **Measures disagree, informatively.** `regression-metrics.qmd` and `choosing-a-metric.qmd` are
   a pair: the first shows MAE and RMSE picking different winners because the log-transformed
   model under-predicts the survey total by 31%, the second shows that same model *winning* the
-  fifty-station shortlist. Keep both, and keep the mean-only row — it scores a perfect 1.000 on
+  fifty-station shortlist. Keep both, and keep the mean-only row: it scores a perfect 1.000 on
   the total and has no skill, which is the argument against aggregate-only validation.
 
 ### Aimed at §10
@@ -209,7 +209,7 @@ pages, because the method, the choice of *k* and the choice of algorithm are thr
 decisions and a single page could only gesture at two of them. "Pattern detection in marine
 datasets" and "interpretation and limitations" became one page, `interpreting-patterns.qmd`,
 because the honest way to teach pattern detection is to detect a pattern and then interrogate
-it — separating them would have produced one credulous page and one abstract one.
+it; separating them would have produced one credulous page and one abstract one.
 
 ### A second dataset
 
@@ -222,7 +222,7 @@ Two things are built into it and every page depends on the contrast:
 - **Depth is a continuum.** Taxon depth optima are spread evenly from 20 m to 160 m, so
   composition turns over smoothly and there are no depth-defined assemblages.
 - **Substrate is a genuine split.** Six taxa are effectively hard-bottom only, eight
-  soft-bottom only. The one real grouping of stations is hard versus soft — two groups.
+  soft-bottom only. The one real grouping of stations is hard versus soft: two groups.
 
 Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They load at
 zero on both principal components, which is how `principal-component-analysis.qmd` shows PCA
@@ -234,8 +234,8 @@ ignoring noise columns unprompted.
 every variable keeps its own distribution, all co-occurrence is destroyed. Almost no
 unsupervised statistic can be read on an absolute scale, and this is what supplies the scale.
 It is used for cluster-count selection, for parallel analysis, and for UMAP. `clusGap()`'s
-default uniform-bounding-box reference chose six clusters against the permutation null's two —
-keep that example, it is the argument for choosing your own null.
+default uniform-bounding-box reference chose six clusters against the permutation null's two.
+Keep that example, it is the argument for choosing your own null.
 
 **Validate against a variable the method never saw, and mind its type.** Agreement with a
 *categorical* external variable is evidence of groups; agreement with a *binned continuous* one
@@ -250,7 +250,7 @@ is evidence only of a gradient. This asymmetry is the whole of `interpreting-pat
   community data was built with a continuum in it.
 - **Bimodal stability.** The whole-survey bootstrap at *k* = 2 returns 53 replicates recovering
   the substrate split (ARI > 0.9) and 7 recovering a depth split (ARI < 0.15), with nothing in
-  between; the mean of 0.881 describes neither. Keep the histogram — it is the argument for
+  between; the mean of 0.881 describes neither. Keep the histogram: it is the argument for
   reporting distributions rather than averages, and it echoes §7's stability page.
 - **Defaults decide the answer.** Depth is 99.4% of the raw environmental table's variance;
   `hclust()`'s default complete linkage scores 0.332 at *k* = 2 where Ward scores 0.889; the
@@ -270,13 +270,13 @@ a single run, reported without its distribution, is how a plausible result becom
 - Forward propagation and backpropagation
 - Loss functions and gradient descent
 - Strengths, limitations, and data requirements
-- When neural networks are — and are not — appropriate
+- When neural networks are, and are not, appropriate
 
 **Written as six pages, reframing one subtopic and adding one.** "Loss functions and
 gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the four
 decisions (learning rate, input scale, when to stop, which seed) that §4 did not have to
 face because its loss surfaces were convex. The added page is `autoencoders.qmd`, which
-§8's `interpreting-patterns.qmd` explicitly promised — it is also the only unsupervised
+§8's `interpreting-patterns.qmd` explicitly promised; it is also the only unsupervised
 network, and the easiest network to check, because a linear one has a closed-form answer.
 
 ### The engine decision
@@ -286,7 +286,7 @@ network, and the easiest network to check, because a linear one has a closed-for
 hand-written forward/backward pass whose gradients are checked against finite differences
 teaches backpropagation far better than a framework call, and it costs no system
 dependency. If §9 is ever extended to convolutional or recurrent architectures, that
-decision has to be revisited — see `.claude/workflow.md`.
+decision has to be revisited; see `.claude/workflow.md`.
 
 One consequence must be kept if these pages are edited: `nnet` optimises with **BFGS, not
 gradient descent**, and parsnip maps `epochs` to `maxit` (quasi-Newton iterations). Both
@@ -298,19 +298,19 @@ later edit imply that `mlp(engine = "nnet")` takes a learning rate.
 - **The network was short of signal, not of rows.** `how-much-data.qmd` computes the
   mean-only baseline (4.402) and an oracle that knows every true expected count (3.701), so
   the whole learnable window is 0.70 RMSE. A default eight-unit network never enters it at
-  any training-set size — and on the *noise-free* target the same network beats linear
+  any training-set size, and on the *noise-free* target the same network beats linear
   regression by 24%. It had learned the response surface; negative-binomial noise buried the
   advantage. This is the section's headline and it is why the `coastal-survey-truth.csv`
   diagnostic is worth the page space.
 - **A hidden unit is a rotated coordinate.** `when-to-use-one.qmd` builds a water-mass band
-  in T–S space — the one place this section steps outside `data/coastal-survey.csv`, and it
+  in T–S space, the one place this section steps outside `data/coastal-survey.csv`, and it
   says so in a callout. A four-unit network (17 weights) reaches AUC 0.998 where a 500-tree
   forest reaches 0.926 and logistic regression is capped at 0.72 at every sample size. That
-  single property — combinations of inputs, not inputs — is the section's answer to "when
+  single property, combinations of inputs rather than inputs, is the section's answer to "when
   is a network the right tool", and it is what generalises to images and audio.
 - **A linear autoencoder is PCA, exactly.** Same reconstruction error to four decimals,
   canonical correlation 1.000. The nonlinear version reconstructs slightly *worse* and gains
-  0.016 in depth R² — the mild arch §8 measured and declined to overstate. Every seed finds
+  0.016 in depth R²: the mild arch §8 measured and declined to overstate. Every seed finds
   the same plane and a different basis in it, which is §8's interpretation lesson with PCA's
   guardrails (canonical rotation, variance ordering, determinism) removed.
 
@@ -332,7 +332,7 @@ Three handovers. Network weights are not reportable quantities, so §10's import
 partial-effect tools are the *only* route to an effect. Ten identical runs varied by 0.046
 in validation MSE, which is §10's reproducibility case made in numbers. And
 `when-to-use-one.qmd` ends on a network that ranks almost perfectly (AUC 0.998) while never
-predicting a probability outside 0.27–0.73 — a good score and an uncalibrated model, which
+predicting a probability outside 0.27–0.73, a good score and an uncalibrated model, which
 is §10's "what can you honestly claim" in miniature.
 
 ## 10. Interpretation and responsible application
@@ -349,7 +349,7 @@ is §10's "what can you honestly claim" in miniature.
 are different objects with different failure modes and one page could only do the ranking.
 "Practical marine-science examples and exercises" became `from-model-to-claim.qmd`, which
 takes the survey through the whole course and ends in the two paragraphs you would actually
-write — the exercises are then attached to something concrete rather than free-floating.
+write, so the exercises are then attached to something concrete rather than free-floating.
 
 ### The section's organising move
 
@@ -383,7 +383,7 @@ possible because the data is simulated, and every page that uses it says so in a
 **Every importance table needs a null column and a repeat.** Three `rnorm()` columns give the
 scale (impurity importance ranks them sixth to eighth of sixteen, above every substrate term).
 Eight splits give the stability: chlorophyll runs from rank 1 to rank 11, while salinity and
-`survey_year` — the two true nulls — clear the noise ceiling zero times out of eight. The
+`survey_year`, the two true nulls, clear the noise ceiling zero times out of eight. The
 reportable quantity is the *count of splits above the ceiling*, not the ranking. This is §8's
 structure-free null and §7's baseline arriving in a third form.
 
@@ -414,14 +414,14 @@ Repeat these deliberately rather than treating them as one section's property:
 - **Extrapolation limits** (§6) frame the responsible-use discussion (§10).
 - **Comparing against a structure-free null** (§8) is the same move as §7's baseline models:
   neither a silhouette width nor an R² means anything until you know what no-skill looks like.
-- **Groups versus gradients** (§8) is why §6's spatial dependence matters — a smooth field has
+- **Groups versus gradients** (§8) is why §6's spatial dependence matters: a smooth field has
   no edges, and every method in the course will invent one if asked.
 - **The baseline and the ceiling** (§9) generalise §7's baseline models and §8's
   structure-free null: before fitting anything, find out what no skill scores and what
   perfect skill would score. If they are close, flexibility has nothing to buy.
 - **Axis-aligned splitting** is the limitation trees and forests share (§3, §9) and the one
   thing a single hidden unit fixes. It is also why the tree in §9 extrapolates "high
-  salinity means core" sideways into empty space — §6's extrapolation thread again.
+  salinity means core" sideways into empty space, which is §6's extrapolation thread again.
 - **Identifiability** (§10) is the limit on everything §6 to §10 do. A confounded design
   cannot be rescued by a better model, a better plot or a bigger sample; the honest output is
   the sentence naming the confounding.

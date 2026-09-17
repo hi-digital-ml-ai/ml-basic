@@ -1,6 +1,6 @@
 ---
 title: "MAP estimation and priors"
-description: "Adding what you knew before the survey to what the survey says — and discovering that this is exactly what regularisation does."
+description: "Adding what you knew before the survey to what the survey says, and discovering that this is exactly what regularisation does."
 order: 5
 categories: [optimisation, generalisation]
 ---
@@ -16,7 +16,7 @@ source(here::here("R/data.R"))
 set.seed(2026)
 ```
 
-## Why this matters
+## The blind spot in maximum likelihood
 
 [Maximum likelihood](maximum-likelihood.qmd) has one blind spot, and it is serious. It
 considers only the data in front of it. If forty stations happen to suggest that abundance
@@ -24,13 +24,13 @@ rises by 8.6 individuals per standard deviation of temperature and falls by 6.2 
 standard deviation, maximum likelihood will report those numbers, because they are the ones
 that make those forty stations most probable.
 
-You know that is wrong. Not from the data — from everything else you know about the species.
+You know that is wrong. Not from the data, but from everything else you know about the species.
 Effects that large do not occur; a pair of coefficients that huge and opposite is two
 collinear terms fighting, not biology.
 
 **Maximum a posteriori** estimation is the machinery for saying so. And the reason it appears
 in a machine-learning course, rather than only a Bayesian statistics course, is that it turns
-out to be the same calculation as ridge regression — a technique
+out to be the same calculation as ridge regression, a technique
 [section 5](../05-generalisation/regularisation.qmd) will present with no mention of priors at
 all.
 
@@ -54,7 +54,7 @@ confident. Strong data overwhelm a vague prior; weak data get pulled towards it.
 
 ```{r}
 #| label: fig-prior-likelihood
-#| fig-cap: "Prior, likelihood and posterior for the temperature coefficient, from the forty-station fit below. The likelihood (grey) peaks at 8.59 but is very wide — the standard error is 5.95, so the data barely distinguish 8.59 from zero. As the prior tightens from left to right, the posterior peak is dragged towards zero: 3.56, then 0.31, then 0.06."
+#| fig-cap: "Prior, likelihood and posterior for the temperature coefficient, from the forty-station fit below. The likelihood (grey) peaks at 8.59 but is very wide: the standard error is 5.95, so the data barely distinguish 8.59 from zero. As the prior tightens from left to right, the posterior peak is dragged towards zero: 3.56, then 0.31, then 0.06."
 #| fig-alt: "Three side-by-side panels, each showing three curves against a coefficient axis from minus 5 to 15. In every panel a broad flat grey curve peaks at 8.59, representing the likelihood. A prior curve centred on zero narrows from panel to panel, and a posterior curve sits between the two. In the left panel, with the widest prior, the posterior peaks near 3.6. In the middle panel it peaks just above zero. In the right panel, with the narrowest prior, the posterior is almost indistinguishable from the prior and peaks at 0.06."
 #| fig-width: 8
 #| fig-height: 3.4
@@ -93,8 +93,8 @@ ggplot(curves, aes(b, density, colour = curve)) +
 ```
 
 The middle panel is the honest description of what a modest prior does to a badly determined
-coefficient: it removes almost all of it. The data never really supported 8.59 — the standard
-error says so — and the prior is simply refusing to pretend otherwise.
+coefficient: it removes almost all of it. The data never really supported 8.59, as the standard
+error says, and the prior is simply refusing to pretend otherwise.
 
 ::: {.callout-note}
 This figure treats the temperature coefficient one at a time, holding the others fixed. The
@@ -133,7 +133,7 @@ a coefficient of 0.9.
 
 ## Worked example
 
-We will take forty stations — a realistic size for a pilot survey — twelve predictors, and
+We will take forty stations, a realistic size for a pilot survey, twelve predictors, and
 compare the unpenalised fit with the MAP fit.
 
 ```{r}
@@ -191,11 +191,11 @@ The MAP column and the ridge column agree to eight decimal places. They are not 
 procedures; they are the same arithmetic reached from two directions.
 
 Look at the MLE column while you are here. Temperature gets +8.59 and its square −6.20; depth
-gets +1.04 and its square −1.78. Those pairs are not estimates of anything — they are two
+gets +1.04 and its square −1.78. Those pairs are not estimates of anything: they are two
 nearly collinear terms taking large opposite values that partly cancel. MAP reports +0.33 and
 −0.16 for the same pair.
 
-### Does it predict better?
+### The effect on prediction
 
 ```{r}
 #| label: lambda-curve
@@ -219,7 +219,7 @@ curve |>
 
 ```{r}
 #| label: fig-lambda
-#| fig-cap: "Training and test error against the prior strength λ, for the forty-station fit. Training error rises steadily as the prior tightens — the fit to the forty stations can only get worse. Test error falls to a minimum near λ = 15 and then rises again. The horizontal line is the error from predicting the overall mean at every station."
+#| fig-cap: "Training and test error against the prior strength λ, for the forty-station fit. Training error rises steadily as the prior tightens, because the fit to the forty stations can only get worse. Test error falls to a minimum near λ = 15 and then rises again. The horizontal line is the error from predicting the overall mean at every station."
 #| fig-alt: "Two curves against lambda from 0.01 to 500 on a logarithmic horizontal axis, with root mean squared error from 3.2 to 5 on the vertical axis. The training curve starts at 3.32 and rises smoothly to about 4.2 at the right-hand edge. The test curve starts at 4.75, dips to a minimum of 4.50 near lambda 15, then rises back above 4.7. A dashed horizontal line at 4.85 marks the error of predicting the mean, which sits above both curves everywhere."
 #| fig-width: 7
 #| fig-height: 4.3
@@ -232,19 +232,19 @@ curve |>
              colour = ml_palette[["grey"]]) +
   scale_x_log10() +
   labs(
-    x = "λ — prior strength (log scale)", y = "RMSE (individuals)", colour = NULL,
+    x = "λ, prior strength (log scale)", y = "RMSE (individuals)", colour = NULL,
     title = "A prior is not a cost, it is an investment",
     subtitle = "Dashed line: predicting the mean everywhere"
   )
 ```
 
-## What the results mean
+## The return on a prior
 
-The unpenalised fit — the one that makes these forty stations most probable — achieves a test
+The unpenalised fit, the one that makes these forty stations most probable, achieves a test
 RMSE of 4.745. Predicting the overall mean at every station achieves 4.850. Maximum likelihood
 on forty stations and twelve predictors bought about 2% over a model with no predictors at all.
 
-With a prior of the right strength, the same data and the same twelve predictors give 4.495 —
+With a prior of the right strength, the same data and the same twelve predictors give 4.495,
 more than three times the improvement, from adding a term that contains no data whatsoever.
 
 The shape of the two curves is the whole lesson of the next section, arriving early:
@@ -259,21 +259,21 @@ The shape of the two curves is the whole lesson of the next section, arriving ea
   [hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) needs held-out
   data, and why λ is a hyperparameter rather than a parameter.
 
-Notice also what shrinkage does *not* do. Salinity — which has no effect at all in this
-simulation — gets 0.88 from maximum likelihood and still 0.54 from MAP. A Normal prior pulls
+Notice also what shrinkage does *not* do. Salinity, which has no effect at all in this
+simulation, gets 0.88 from maximum likelihood and still 0.54 from MAP. A Normal prior pulls
 coefficients towards zero but never to zero, so ridge cannot tell you a variable is irrelevant.
 That is the Laplace prior's job, and lasso's, in
 [section 5](../05-generalisation/regularisation.qmd).
 
 ::: {.callout-warning}
 Ridge and lasso penalise coefficients on the scale they are measured on, so a predictor in
-millimetres is penalised a thousand times more lightly than the same predictor in metres. The
-prior reading makes this obvious — "coefficients are around ±1" is meaningless without knowing
-what a unit is — and it is why every penalised fit must standardise its predictors first. The
-example above scales `X` before doing anything else.
+millimetres is penalised a thousand times more lightly than the same predictor in metres.
+The prior reading makes this obvious, since "coefficients are around ±1" is meaningless
+without knowing what a unit is, and it is why every penalised fit must standardise its
+predictors first. The example above scales `X` before doing anything else.
 :::
 
-## Where this breaks down
+## Limits of MAP
 
 **A prior can be wrong, and then it hurts.** Everything above assumed effects are centred on
 zero and modest. If your species really does have a threshold response with a huge
@@ -283,7 +283,7 @@ it is not there. Priors are assumptions; they belong in the methods section with
 **MAP is a point, not a posterior.** It reports the single most probable parameter value and
 discards the shape of the distribution around it. A genuinely Bayesian analysis keeps the whole
 posterior, which is what lets it quote intervals honestly. MAP is the cheap corner of Bayesian
-inference — you get the shrinkage without the uncertainty — and you should not describe a
+inference, giving the shrinkage without the uncertainty, and you should not describe a
 ridge fit as a Bayesian analysis.
 
 **Choosing λ from the data is not a prior.** Selecting λ by cross-validation, which is what
@@ -296,8 +296,8 @@ resulting intervals are optimistic for the same reason any twice-used dataset is
 
 - **MAP** maximises the likelihood plus a prior: what the data say, plus what you knew about
   the size of plausible effects.
-- A Normal prior on the coefficients **is** ridge regression, with $\lambda = \sigma^2/\tau^2$
-  — verified here to eight decimal places. A Laplace prior is lasso.
+- A Normal prior on the coefficients **is** ridge regression, with $\lambda = \sigma^2/\tau^2$,
+  verified here to eight decimal places. A Laplace prior is lasso.
 - Maximum likelihood is therefore not assumption-free; it is MAP with a prior that finds any
   coefficient equally plausible.
 - On forty stations and twelve predictors, unpenalised fitting beat predicting the mean by 2%;
@@ -310,9 +310,9 @@ resulting intervals are optimistic for the same reason any twice-used dataset is
 ## Try it yourself
 
 1. Change `sigma` from 4.5 to 9 and refit, leaving `tau` alone. Predict first what should
-   happen to the coefficients, then check — and explain the direction in terms of the two
+   happen to the coefficients, then check, and explain the direction in terms of the two
    things λ is a ratio of.
 2. Replace the Normal prior in `neg_log_posterior()` with a Laplace one
    (`-sum(abs(b)) / scale` plus a constant) and refit. Do any coefficients reach exactly zero?
-   `optim()` will struggle at the kink — what does that tell you about why lasso needs a
+   `optim()` will struggle at the kink: what does that tell you about why lasso needs a
    different algorithm?

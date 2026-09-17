@@ -1,6 +1,6 @@
 ---
 title: "9 · Introduction to neural networks"
-description: "How neural networks work, built from scratch and checked against arithmetic — what they need to work well, and the common marine problems where they are the wrong tool."
+description: "How neural networks work, built from scratch and checked against arithmetic, what they need to work well, and the common marine problems where they are the wrong tool."
 categories: [neural-networks, optimisation]
 listing:
   id: pages
@@ -20,8 +20,8 @@ weighted sums with a bend between them, trained by the same gradient descent int
 forty lines of base R, checks its gradients against finite differences, and only then uses a
 package.
 
-They shine on data whose structure a person cannot summarise into features — imagery,
-acoustics, waveforms — and marine science has plenty of that. For a table of environmental
+They shine on data whose structure a person cannot summarise into features, such as imagery,
+acoustics and waveforms, and marine science has plenty of that. For a table of environmental
 covariates with a few hundred rows, they usually do not. This section shows both, and the
 reason for the difference turns out to be a single property of the problem.
 
@@ -30,21 +30,21 @@ reason for the difference turns out to be a single property of the problem.
 ::: {#pages}
 :::
 
-## What this section found
+## Findings from this section
 
 - A single neuron with an identity activation **is** linear regression: our network and
   `lm()` agreed to **eight decimal places**. With a logistic activation it is logistic
   regression, to four.
-- **Two hidden units — seven weights — recovered a humped temperature response**, placing
+- **Two hidden units, seven weights, recovered a humped temperature response**, placing
   its peak at 8.7 °C against a true optimum of 9.0. One unit could not; five added nothing.
   The best straight line through that hump *rises*, reporting the wrong sign.
 - Backpropagated gradients matched finite differences to about **eleven decimal places**.
   Large initial weights saturated the hidden units and shrank the first-layer gradient
-  **twelvefold** — the vanishing gradient problem in one table.
+  **twelvefold**, which is the vanishing gradient problem in one table.
 - The usable range of learning rates spans about **twentyfold**. At 2, the loss reached
   2 × 10^12^ by step twelve and overflowed to `NaN` by step 147.
 - **Unscaled inputs cost more than everything else combined.** The same network on metres
-  and degrees scored 0.763 where standardised it scored 0.570 — and a straight line scored
+  and degrees scored 0.763 where standardised it scored 0.570, and a straight line scored
   0.680. It lost to a linear model without producing a single warning.
 - A 40-unit network's validation error bottomed at **step 1,937 of 8,000** and was 4% worse
   by the end. Ten identical runs differing only in seed varied by **0.046** in validation
@@ -64,7 +64,7 @@ reason for the difference turns out to be a single property of the problem.
 ::: {.callout-important}
 The network was not short of rows. It was short of **signal**. Given the same predictors and
 the noise-free expected count as its target, the eight-unit network beat linear regression
-by **24%** — it had learned the true response surface, and learned it well, on a few hundred
+by **24%**: it had learned the true response surface, and learned it well, on a few hundred
 stations. Then negative-binomial sampling noise was put back on top and that advantage
 vanished and reversed. "Neural networks need a lot of data" is the wrong summary. They need
 a lot of data *relative to the noise*, and on a noisy count survey that is a much higher bar
@@ -73,7 +73,7 @@ than the row count suggests.
 
 ::: {.callout-note}
 **What makes a network win is a property of the problem, not of the data volume.** A hidden
-unit computes a weighted combination of the inputs before it bends — it is a rotated
+unit computes a weighted combination of the inputs before it bends, so it is a rotated
 coordinate. So networks win when what matters is a *combination* of your variables that you
 cannot name in advance: a diagonal band in T–S space, an edge in an image, a formant in a
 call. If you can name the combination, add it as a column and use a simpler model. If your
