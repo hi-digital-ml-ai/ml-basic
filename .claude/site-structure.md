@@ -2,7 +2,7 @@
 
 ## Two axes: sections navigate, categories cross-cut
 
-The syllabus is a *course*, so the ten sections are the primary navigation — an
+The syllabus is a *course*, so the ten sections are the primary navigation: an
 ordered sidebar, read front to back. Methods are the *secondary* axis: a reader who
 wants "everything about random forests" should get chapter pages and participant
 contributions together, which sections alone cannot give.
@@ -70,7 +70,7 @@ _freeze/                           committed render cache
 
 - Folders and files: `kebab-case`; chapter folders prefixed `NN-`.
 - Never rename a published page without adding a redirect in `_quarto.yml`
-  (`aliases:` in the page front matter) — links get shared.
+  (`aliases:` in the page front matter); links get shared.
 
 ## Page front matter
 
@@ -93,7 +93,7 @@ index, not as a restatement of the title.
 
 Each `chapters/NN-slug/index.qmd` is a dashboard: title, a short framing, then a
 card grid of its pages, then the section's findings. The cards come *before* the
-findings — the findings run to ten dense bullets and would bury the navigation.
+findings, because the findings run to ten dense bullets and would bury the navigation.
 
 ```yaml
 listing:
@@ -125,7 +125,7 @@ descriptions mid-sentence (the longest is 210 characters).
 
 ## Code tabsets
 
-Sections 2, 3, 5, 7, 8 and 10 — the pages that teach the modelling pipeline —
+Sections 2, 3, 5, 7, 8 and 10, the pages that teach the modelling pipeline,
 show each step as an R and a Python tab:
 
 ````markdown
@@ -157,14 +157,14 @@ each chunk in two and printing the output below the tabset: it leaves every
 executing chunk exactly as it was, so `_freeze/` and the numbers on the page are
 unaffected by the tabs.
 
-**What gets a tab.** Modelling steps do. Figure chunks stay R-only — the site's
+**What gets a tab.** Modelling steps do. Figure chunks stay R-only, because the site's
 figures are all ggplot2, which is the point of `R/theme.R`. Steps with no honest
 Python counterpart also stay R-only: `summary(gam)$s.table` has no equivalent,
 and inventing one would teach something false.
 
 The Python is not decoration. `python/check-snippets.py` extracts every
-```` ```python ```` block, concatenates each page's blocks in order — they are
-cumulative, exactly as the R chunks are — and runs the result. It reports a
+```` ```python ```` block, concatenates each page's blocks in order, since they are
+cumulative exactly as the R chunks are, and runs the result. It reports a
 page that only warns as well as one that fails, because a convergence warning
 means the snippet is subtly wrong. Data comes from `python/mlbasic_data.py`,
 which mirrors `R/data.R` step for step; the cleaned survey was checked against
@@ -194,7 +194,7 @@ format:
       gutter-width: 1.6rem
 ```
 
-`page-layout: full` on its own does **not** widen the body — it still honours the
+`page-layout: full` on its own does **not** widen the body; it still honours the
 grid's `body-width`, which defaults to 800px. Both are needed.
 
 The width is for figures, tables and code, not for prose. `styles.scss` keeps
@@ -214,7 +214,7 @@ it runs the whole column.
 **Do not set `toc-depth: 2`.** In Quarto 1.9.38 it emits the table of contents as
 `<ul class="collapse">` and nothing ever adds `show`, so the TOC renders as a
 heading with no entries. `toc-expand` does not fix it. `toc-depth: 3` works, and
-is shallow in practice — pages average 7 `##` and 2 `###` headings, and Quarto
+is shallow in practice, since pages average 7 `##` and 2 `###` headings, and Quarto
 reveals the `###` entries contextually as you scroll.
 
 ## Sidebar
@@ -222,7 +222,7 @@ reveals the `###` entries contextually as you scroll.
 `_quarto.yml` lists the ten sections at the top level of `contents:`, each
 expandable to its pages, with `style: docked` and `collapse-level: 1`. All ten
 section titles stay visible; Quarto expands the one containing the current page.
-Keep section labels short enough for one line in a 300px rail — "10 · Interpretation",
+Keep section labels short enough for one line in a 300px rail: "10 · Interpretation",
 not "10 · Interpretation & responsible use".
 
 `More` sits at the bottom with the course index and `contributed/`. The sidebar is

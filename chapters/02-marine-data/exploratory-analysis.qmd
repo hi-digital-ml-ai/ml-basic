@@ -1,6 +1,6 @@
 ---
 title: "Looking before modelling"
-description: "Exploratory analysis as damage assessment — the plots that find sentinel values, impossible depths and missingness that is not random."
+description: "Exploratory analysis as damage assessment, with the plots that find sentinel values, impossible depths and missingness that is not random."
 order: 3
 categories: [eda, data-preparation]
 ---
@@ -14,7 +14,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## More than a polite preamble
 
 Exploratory analysis has a reputation as the polite preamble to the real work. Treat it
 that way and it will cost you a paper.
@@ -34,14 +34,14 @@ The purpose of this pass is not to find results. It is to find out what is wrong
 
 A workable order, roughly cheapest first:
 
-1. **Shape and types** — how many rows, how many columns, what did the reader decide
+1. **Shape and types**: how many rows, how many columns, what did the reader decide
    each column was?
-2. **Missingness** — how much, in which columns, and *is it patterned*?
-3. **One variable at a time** — range, distribution, impossible values, spikes.
-4. **Categories** — every level, with counts. Not a sample: every level.
-5. **Two variables at a time** — relationships, and correlations you did not expect.
-6. **The response** — its distribution, and the balance of classes if it is categorical.
-7. **By group** — does anything differ by vessel, observer, year, gear?
+2. **Missingness**: how much, in which columns, and *is it patterned*?
+3. **One variable at a time**: range, distribution, impossible values, spikes.
+4. **Categories**: every level, with counts. Not a sample: every level.
+5. **Two variables at a time**: relationships, and correlations you did not expect.
+6. **The response**: its distribution, and the balance of classes if it is categorical.
+7. **By group**: does anything differ by vessel, observer, year, gear?
 
 Step 7 is the one most often skipped, and the one that catches instrument drift.
 
@@ -113,14 +113,14 @@ because it is a number, nothing complained. Temperature has it too.
 
 **Depth reaches 1581 m** on a shelf survey whose stations were meant to be under 200 m.
 
-**Chlorophyll has a minimum but the row count differs** — it contains real `NA`s, which
+**Chlorophyll has a minimum but the row count differs**: it contains real `NA`s, which
 is the honest way to record a missing value.
 
 ### Seeing the sentinel
 
 ```{r}
 #| label: fig-damage
-#| fig-cap: "Left: all salinity values. The real ocean is the sliver at the right; everything at −999 is a missing value wearing a number's clothes. Right: chlorophyll is missing far more often in winter — missingness with a pattern, which is the kind that biases results."
+#| fig-cap: "Left: all salinity values. The real ocean is the sliver at the right; everything at −999 is a missing value wearing a number's clothes. Right: chlorophyll is missing far more often in winter: missingness with a pattern, which is the kind that biases results."
 #| fig-alt: "Two panels. The left panel is a histogram of salinity with a tall bar at minus 999 and a narrow cluster of real values near 34, separated by a wide empty gap. The right panel is a bar chart of the percentage of missing chlorophyll by season: about 1 percent in autumn, 2 in spring, 4 in summer and 19 in winter."
 #| fig-width: 8.5
 #| fig-height: 4
@@ -172,7 +172,7 @@ Four substrate types, twelve spellings. A model will treat `Sand`, `SAND`, `sand
 
 ::: {.callout-note collapse="true"}
 ## The file actually holds fourteen
-Two of the original spellings had trailing spaces — `"mud "` and `"gravel "`. `readr`
+Two of the original spellings had trailing spaces: `"mud "` and `"gravel "`. `readr`
 trims whitespace by default, so they were silently repaired before you saw them. That
 is convenient here and alarming in general: a different tool, or `trim_ws = FALSE`,
 gives you fourteen categories instead of twelve. Know what your reader is fixing for
@@ -242,16 +242,16 @@ difference. Two vessels sampling the same shelf should not disagree like that. T
 an instrument calibration offset, and it would have been invisible in every plot that
 pooled the fleet.
 
-## What the results mean
+## Six findings, six decisions
 
 Ten minutes of looking produced six findings, each of which is a *decision* rather than
 a repair:
 
 | Finding | The decision it forces |
 | --- | --- |
-| `-999` in salinity and temperature | Convert to `NA` — then decide what to do about missing values |
+| `-999` in salinity and temperature | Convert to `NA`, then decide what to do about missing values |
 | Depths up to 1581 m | Are these errors or real? Correct, drop, or flag |
-| Twelve spellings of four substrates | Standardise — and check no genuine distinction is being merged away |
+| Twelve spellings of four substrates | Standardise, and check no genuine distinction is being merged away |
 | Chlorophyll missing 19% in winter | Dropping those rows would delete most of winter |
 | Rare species at 5% | Accuracy is the wrong metric before you have even started |
 | One vessel reads 0.42 PSU high | Correct it, model it, or drop salinity entirely |
@@ -263,8 +263,8 @@ assistant.
 ::: {.callout-warning}
 ## Exploring can itself leak
 We have just looked at every row, and we will later hold some of them back as a test
-set. Strictly, anything you learn here — that salinity needs fixing, that winter is
-sparse — is information from the test set influencing your modelling choices.
+set. Strictly, anything you learn here, such as that salinity needs fixing or that winter is
+sparse, is information from the test set influencing your modelling choices.
 
 This is unavoidable and mostly benign; you cannot clean data you are not allowed to
 look at. Keep it benign by restricting this pass to *data quality* and keeping decisions
@@ -272,14 +272,14 @@ about the response, and any choice made by comparing model performance, on the t
 data alone. [The leakage page](information-leakage.qmd) draws the line more carefully.
 :::
 
-## Where this breaks down
+## Limits of looking
 
 **Summary statistics hide what plots reveal.** A mean salinity of 33.9 after removing
 sentinels looks fine, and conceals that one vessel's values are systematically high.
 Plot by group.
 
 **Some errors are undetectable.** Of the twelve depths recorded ten times too deep, ten
-are obvious. Two — 125 m and 166 m — sit comfortably inside the plausible range and no
+are obvious. Two of them, 125 m and 166 m, sit comfortably inside the plausible range and no
 amount of looking will find them. Cleaning reduces error; it does not eliminate it.
 
 **Automated profiling is a starting point, not an audit.** `skimr::skim()` and

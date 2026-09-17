@@ -1,8 +1,8 @@
 # Contributed pages
 
 Pages that course participants produce from their own data. The participants are
-**researchers, not students** — domain experts in fisheries, oceanography, ecology,
-genomics — who are new to ML but not to science. Treat a contribution as a colleague's
+**researchers, not students**: domain experts in fisheries, oceanography, ecology and
+genomics who are new to ML but not to science. Treat a contribution as a colleague's
 short paper, not as homework to be marked.
 
 ## Purpose
@@ -11,8 +11,8 @@ These pages are the payoff of the course: they show the same tidymodels patterns
 applied to real, messy, domain-specific data. They are also the part readers arrive
 at from outside, so they carry the site's credibility.
 
-Contributed pages are **R-only**. The site's build executes R and nothing else —
-the Python tabs in sections 2, 3, 5, 7, 8 and 10 are displayed, never run — so a
+Contributed pages are **R-only**. The site's build executes R and nothing else,
+and the Python tabs in sections 2, 3, 5, 7, 8 and 10 are displayed, never run, so a
 page whose results come from Python has no way to produce them here. If a
 contributor works in Python, that is a conversation to have before the page is
 written, not a tab to bolt on afterwards.
@@ -60,13 +60,13 @@ Before publishing anything, confirm with the author:
 Preserve the author's voice and their scientific judgement. Edit for:
 
 - broken or non-reproducing code, missing seeds, missing `renv` dependencies;
-- **methodological traps the course itself warns about** — leakage, random CV on
+- **methodological traps the course itself warns about**: leakage, random CV on
   spatially autocorrelated data, accuracy reported on an imbalanced problem,
   extrapolation beyond the sampled range. Raise these with the author rather than
   silently rewriting the analysis; if they stand by it, publish with a note.
 - consistency of headings, figure captions, alt text and categories.
 
-Do not impose the chapter page skeleton on a contribution — its shape follows the
+Do not impose the chapter page skeleton on a contribution; its shape follows the
 author's analysis. Do keep the "Key points" callout and figure alt text.
 
 ## Review flow

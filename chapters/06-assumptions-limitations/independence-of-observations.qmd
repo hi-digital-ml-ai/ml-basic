@@ -17,10 +17,10 @@ source(here::here("R/data.R"))
 set.seed(601)
 ```
 
-## Why this matters
+## The assumption behind every standard error
 
 Nearly every method in this course assumes that one row tells you nothing about the next. That
-assumption is what turns *n* rows into *n* pieces of evidence — it is the reason standard errors
+assumption is what turns *n* rows into *n* pieces of evidence: it is the reason standard errors
 shrink with $\sqrt{n}$, the reason cross-validation works, and the reason a *p*-value means
 anything.
 
@@ -43,7 +43,7 @@ Treating repeated measurements of the same unit as independent replicates is cal
 far more certain than they are.
 
 The mechanism is simple. Two visits to the same site share everything the site has that your
-covariates do not measure — a rock ledge, a persistent eddy, a patch of the population. When the
+covariates do not measure: a rock ledge, a persistent eddy, a patch of the population. When the
 model is wrong at that site, it tends to be wrong in the same direction on both visits. Those
 two errors are not two independent pieces of evidence about the model; they are closer to one.
 
@@ -94,7 +94,7 @@ c(rows = nrow(d),
 
 ```{r}
 #| label: fig-sites
-#| fig-cap: "Left: how many visits each of the 158 sites received — most have three to five, one has thirteen. Right: abundance at the twenty most-visited sites, ordered by site mean. Some sites are consistently empty and some consistently productive, which is what makes repeat visits worth less than independent stations."
+#| fig-cap: "Left: how many visits each of the 158 sites received: most have three to five, one has thirteen. Right: abundance at the twenty most-visited sites, ordered by site mean. Some sites are consistently empty and some consistently productive, which is what makes repeat visits worth less than independent stations."
 #| fig-alt: "Two panels. The left is a bar chart of visits per site, with counts from one to thirteen on the horizontal axis; the tallest bars are at four and five visits, with a long thin tail out to thirteen. The right panel is a strip plot of abundance for twenty sites arranged on the vertical axis in order of their mean, each site shown as a row of points. The lowest rows have all their points at or near zero; the highest rows have points scattered between two and twenty-five. The spread within a row is wide, but the rows clearly differ from one another."
 #| fig-width: 8
 #| fig-height: 4
@@ -142,15 +142,16 @@ c(ICC = icc,
   round(3)
 ```
 
-### What it costs you
+### The cost in precision
 
 The damage is to precision, so we compare a model's standard errors two ways: the ordinary ones,
 which assume 720 independent visits, and **cluster-robust** ones, which assume only that
 different *sites* are independent.
 
-To make the stakes concrete we also add `site_noise` — a random number drawn once per site and
-attached to every visit to it. It has nothing to do with abundance, by construction. It is the
-kind of variable a site-level covariate would be: bottom type, management zone, distance to port.
+To make the stakes concrete we also add `site_noise`, a random number drawn once per site
+and attached to every visit to it. It has nothing to do with abundance, by construction.
+It is the kind of variable a site-level covariate would be: bottom type, management zone,
+distance to port.
 
 ```{r}
 #| label: cluster-robust
@@ -192,7 +193,7 @@ tibble(
 
 ```{r}
 #| label: fig-se
-#| fig-cap: "Naive and cluster-robust standard errors for the same four coefficients, each expressed as a multiple of its naive value. Chlorophyll's honest standard error is 2.77 times the naive one. Depth and temperature move the other way, which is not a mistake — see the text."
+#| fig-cap: "Naive and cluster-robust standard errors for the same four coefficients, each expressed as a multiple of its naive value. Chlorophyll's honest standard error is 2.77 times the naive one. Depth and temperature move the other way, which is not a mistake; see the text."
 #| fig-alt: "A horizontal dot plot with four terms on the vertical axis and standard error inflation factor on the horizontal axis from 0.8 to 3. A dotted vertical reference line marks 1. Chlorophyll sits far to the right at 2.77. Site noise sits at 1.29. Depth and temperature sit just left of the line at 0.93 and 0.87."
 #| fig-width: 7
 #| fig-height: 3.2
@@ -207,7 +208,7 @@ tibble(term = rownames(naive)[-1],
   theme(panel.grid.major.y = element_blank())
 ```
 
-### And what it costs a predictive model
+### And the cost to a predictive model
 
 ```{r}
 #| label: grouped-cv
@@ -234,28 +235,29 @@ bind_rows(
   mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
-## What the results mean
+## Rows against observations
 
 **You have fewer observations than rows.** 720 visits to 158 sites, with an ICC of 0.088, give a
 design effect of 1.31 and an effective sample size of **549**. A quarter of the dataset is
-redundant — not worthless, but not new information either. Any calculation that used 720 where it
+redundant: not worthless, but not new information either. Any calculation that used 720 where it
 should have used 549 is overconfident by about 15% in its standard errors.
 
-**The precision cost is concentrated, not uniform.** Chlorophyll's honest standard error is
-**2.77 times** the naive one, moving its *p*-value from effectively zero to 0.002 — still a solid
-result, but a different claim. Meanwhile the fabricated `site_noise` variable, which cannot matter,
-goes from *p* = 0.090 to *p* = 0.187: the naive analysis was on the road to calling a random number
-marginally significant.
+**The precision cost is concentrated, not uniform.** Chlorophyll's honest standard error
+is **2.77 times** the naive one, moving its *p*-value from effectively zero to 0.002,
+which is still a solid result, but a different claim. Meanwhile the fabricated
+`site_noise` variable, which cannot matter, goes from *p* = 0.090 to *p* = 0.187: the
+naive analysis was on the road to calling a random number marginally significant.
 
 Depth and temperature go the other way, their standard errors *shrinking* by 7% and 13%. This is
 real, not a numerical artefact. Clustering inflates a coefficient's standard error when that
 predictor's errors line up within a site, and can shrink it when they do not. The lesson is that
-you cannot guess which coefficients are affected or by how much — you have to compute it.
+you cannot guess which coefficients are affected or by how much; you have to compute it.
 
-**The predictive cost is much smaller than the inferential one.** Random 10-fold cross-validation
-gives RMSE 4.46; grouping the folds by site gives 4.55. That gap is real but modest, and it is
-smaller than it would be if sites were tightly packed, because these 158 sites are spread across
-the whole shelf so a held-out site still has training stations nearby.
+**The predictive cost is much smaller than the inferential one.** Random 10-fold
+cross-validation gives RMSE 4.46; grouping the folds by site gives 4.55. That gap is real
+but modest, and it is smaller than it would be if sites were tightly packed, because these
+158 sites are spread across the whole shelf so a held-out site still has training stations
+nearby.
 
 That last clause is important, and it is a warning rather than a reassurance.
 [Grouping by site](../07-validation/index.qmd) fixes repeat visits; it does **not** fix the fact
@@ -264,28 +266,31 @@ bigger effect, and it is
 [two pages away](spatial-and-temporal-dependence.qmd).
 
 ::: {.callout-important}
-The phrase "we had 720 samples" is the single most common overstatement in survey-based analysis.
-Report both numbers: how many observations and how many independent units. If a reviewer cannot
-tell from your methods section whether your 720 rows came from 720 places or 158, the methods
-section is incomplete.
+The phrase "we had 720 samples" is the single most common overstatement in survey-based
+analysis. Report both numbers: how many observations and how many independent units. If a
+reviewer cannot tell from your methods section whether your 720 rows came from 720 places
+or 158, the methods section is incomplete.
 :::
 
-## Where this breaks down
+## Limits of cluster-robust errors
 
-**Cluster-robust standard errors need enough clusters.** The rule of thumb is around 40; with 158
-sites we are comfortable. With eight transects or five vessels, cluster-robust standard errors are
-themselves unreliable and a mixed model or a permutation test is the better route.
+**Cluster-robust standard errors need enough clusters.** The rule of thumb is around 40;
+with 158 sites we are comfortable. With eight transects or five vessels, cluster-robust
+standard errors are themselves unreliable and a mixed model or a permutation test is the
+better route.
 
-**They fix the standard errors, not the estimates.** If sites differ systematically in ways
-correlated with your predictors — the deep sites are also the muddy ones, and were visited more
-often — the coefficient itself is affected, and a robust standard error around a biased estimate
-is a precise answer to the wrong question. A mixed model with a site random effect, or including
-site-level means as covariates, addresses that; this page does not.
+**They fix the standard errors, not the estimates.** If sites differ systematically in
+ways correlated with your predictors, if the deep sites are also the muddy ones and were
+visited more often, the coefficient itself is affected, and a robust standard error around
+a biased estimate is a precise answer to the wrong question. A mixed model with a site
+random effect, or including site-level means as covariates, addresses that; this page does
+not.
 
-**Grouping is only as good as the grouping variable.** `site_id` was recoverable here because the
-raw export carried it. Real datasets frequently lose it — the grab identifier is dropped in a
-summary table, the haul is aggregated away — and once it is gone the dependence is invisible and
-uncorrectable. Keep the identifier of the unit you sampled, at every stage of processing.
+**Grouping is only as good as the grouping variable.** `site_id` was recoverable here
+because the raw export carried it. Real datasets frequently lose it, when the grab
+identifier is dropped in a summary table or the haul is aggregated away, and once it is
+gone the dependence is invisible and uncorrectable. Keep the identifier of the unit you
+sampled, at every stage of processing.
 
 **Independence is not the only assumption.** A model can have perfectly independent observations
 and still be wrong about linearity, about the distribution, or about the range it is being asked
@@ -303,7 +308,7 @@ to predict over. Those are the next three pages.
   *p* = 0.19.
 - It is not uniform: two of the four coefficients had *smaller* cluster-robust standard errors.
   Compute it rather than assuming a direction.
-- Grouped cross-validation cost only 0.09 RMSE here — because the sites are spread out. It fixes
+- Grouped cross-validation cost only 0.09 RMSE here, because the sites are spread out. It fixes
   repeat visits, not spatial proximity.
 
 :::
@@ -311,7 +316,7 @@ to predict over. Those are the next three pages.
 ## Try it yourself
 
 1. Compute the ICC on `present` instead of `log1p(abundance)`. Is a site's tendency to hold the
-   species at all more or less consistent than how many it holds — and which is the more useful
+   species at all more or less consistent than how many it holds, and which is the more useful
    thing to know about a monitoring site?
 2. Restrict the data to sites with at least five visits and recompute the design effect. It will
    rise. Explain why that does *not* mean you should visit fewer sites more often.

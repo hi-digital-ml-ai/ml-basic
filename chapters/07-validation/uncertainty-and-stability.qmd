@@ -1,6 +1,6 @@
 ---
 title: "Uncertainty and stability"
-description: "A performance number without an interval is not a result — and the interval you need for comparing two models is not the one you need for reporting either."
+description: "A performance number without an interval is not a result, and the interval you need for comparing two models is not the one you need for reporting either."
 order: 5
 categories: [validation, uncertainty]
 ---
@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Numbers reported without an interval
 
 No marine scientist would report a mean abundance of 4.2 individuals per station without a
 standard error. The same people will report "RMSE 4.2" or "R² 0.24" as though those were
@@ -49,7 +49,7 @@ means anything at all.
 
 ## Worked example
 
-Two models of the same counts — the Poisson GLM and a random forest — compared on the same
+Two models of the same counts, the Poisson GLM and a random forest, compared on the same
 folds throughout.
 
 ::: {.panel-tabset group="language"}
@@ -138,7 +138,7 @@ per_fold[["glm", "forest"]].agg(["mean", "std"]).round(3)
 
 :::
 
-### How far is the algorithm's own noise?
+### The algorithm's own noise
 
 Before comparing anything, measure the floor. We refit the same forest to the same folds ten
 times, changing nothing but the seed.
@@ -184,10 +184,10 @@ pd.Series({"mean": seed_runs.mean(), "sd": seed_runs.std(ddof=1),
 Pure algorithmic noise moves the pooled RMSE by less than 0.03. Anything larger than that is at
 least potentially real; anything smaller is the random number generator.
 
-### What is the interval on the headline number?
+### The interval on the headline number
 
 The fold-to-fold standard deviation divided by $\sqrt{10}$ is the obvious standard error, and
-it is not the right one — the ten training sets overlap heavily, so the fold scores are not
+it is not the right one: the ten training sets overlap heavily, so the fold scores are not
 independent and that formula is optimistic. A bootstrap over the *stations*, applied to the
 pooled out-of-fold predictions, answers the question people actually mean: how much would this
 number move if we had surveyed a different 720 stations?
@@ -251,13 +251,13 @@ pd.DataFrame({
 :::
 
 The honest report is **RMSE 4.14 (95% CI 3.70 to 4.58)** and **R² 0.26 (0.18 to 0.33)**. That
-interval is 0.88 of an RMSE unit wide — thirty times the algorithm's own noise. Any claim that
+interval is 0.88 of an RMSE unit wide, thirty times the algorithm's own noise. Any claim that
 rests on a difference of 0.1 between two published models is not supported by data of this size.
 
 ### But comparing the two models is a much sharper question
 
 Here is the trap. The forest's mean fold RMSE and the GLM's mean fold RMSE both carry that
-large uncertainty — so it looks as though we cannot tell them apart. We can, because their
+large uncertainty, so it looks as though we cannot tell them apart. We can, because their
 errors move together.
 
 ::: {.panel-tabset group="language"}
@@ -309,7 +309,7 @@ comparison.round(3)
 
 ```{r}
 #| label: fig-paired
-#| fig-cap: "Left: RMSE of each model on each of the ten folds, joined fold by fold. The two columns overlap almost completely — what separates the points is which fold they came from, not which model. Right: the same numbers as one within-fold difference per fold. Eight of the ten are positive, and the 95% interval (shaded) sits almost entirely above zero once the fold effect is removed."
+#| fig-cap: "Left: RMSE of each model on each of the ten folds, joined fold by fold. The two columns overlap almost completely: what separates the points is which fold they came from, not which model. Right: the same numbers as one within-fold difference per fold. Eight of the ten are positive, and the 95% interval (shaded) sits almost entirely above zero once the fold effect is removed."
 #| fig-alt: "Two panels side by side. The left panel has the two model names on the horizontal axis and RMSE from about 3 to 5.8 on the vertical; ten thin grey lines connect each model's fold score to the other's, spread over the whole vertical range with heavy overlap between the two columns, most sloping gently upwards from the GLM to the forest. The right panel lists the ten folds down its side and plots one point per fold against a horizontal axis of forest RMSE minus GLM RMSE, from about minus 0.2 to 0.7. A vertical line marks zero and a pale shaded band spans the confidence interval from just below zero to 0.33. Eight of the ten points fall to the right of zero, one of them far out at 0.65 for fold 6; fold 1 sits essentially on zero and fold 5 clearly to its left at minus 0.15. A vertical line and a diamond above the plot mark the mean at 0.162."
 #| fig-width: 7.6
 #| fig-height: 4.2
@@ -341,7 +341,7 @@ left + right + plot_layout(widths = c(1, 1.4))
 ```
 
 Treating the fold scores as two independent samples gives a confidence interval 1.54 wide,
-straddling zero: no conclusion. Pairing them gives an interval 0.33 wide — **nearly five times
+straddling zero: no conclusion. Pairing them gives an interval 0.33 wide, **nearly five times
 sharper on identical numbers**, and narrower even than the 0.88-wide bootstrap interval on
 either model alone. Most of what makes a fold score high or low is the fold, and in the paired
 difference the fold cancels.
@@ -351,7 +351,7 @@ This is why the same folds must be used for every model you intend to compare, a
 
 ### Ten folds was still not enough
 
-The paired interval above runs from −0.002 to 0.327 — it just touches zero. Repeating the
+The paired interval above runs from −0.002 to 0.327, so it just touches zero. Repeating the
 cross-validation five times settles it.
 
 ::: {.panel-tabset group="language"}
@@ -437,14 +437,14 @@ Across fifty folds the forest is worse by 0.152 (95% CI 0.105 to 0.198), and it 
 them. Note the last table: the five individual ten-fold runs put the difference anywhere
 between 0.099 and 0.200. A single ten-fold comparison would have reported any of those.
 
-### Which predictors survive resampling?
+### The predictors that survive resampling
 
 The same question applies to anything else a model tells you. We refit the forest on 25
 bootstrap resamples and record where each predictor ranks on permutation importance.
 
 ```{r}
 #| label: fig-importance
-#| fig-cap: "Permutation-importance rank of each predictor across 25 bootstrap resamples, with the point at the median rank and the bar spanning best to worst. Temperature is top-ranked in most resamples. Depth and longitude trade places constantly — they are nearly the same variable in this survey, since depth increases offshore — so neither has a stable rank despite depth being a genuine driver. Salinity, season and substrate never reach the top three."
+#| fig-cap: "Permutation-importance rank of each predictor across 25 bootstrap resamples, with the point at the median rank and the bar spanning best to worst. Temperature is top-ranked in most resamples. Depth and longitude trade places constantly, since they are nearly the same variable in this survey as depth increases offshore, so neither has a stable rank despite depth being a genuine driver. Salinity, season and substrate never reach the top three."
 #| fig-alt: "A horizontal chart with eight predictor names down the left and importance rank from 1 to 8 across the bottom, rank 1 at the left. Each predictor has a thin grey horizontal bar spanning its best and worst rank across 25 resamples, with a dot at its median coloured on a dark-to-bright scale by how often it reached the top three. Temperature sits at rank 1 with a bar reaching to 4; chlorophyll at 2 with a bar from 1 to 5; depth and longitude both have medians at 3 with bars spanning 1 or 2 to 5, overlapping each other almost entirely; latitude sits at 5; and salinity, season and substrate sit at 6, 7 and 8 with short bars that never reach the left-hand end."
 #| fig-width: 7
 #| fig-height: 4.2
@@ -481,7 +481,7 @@ summary_ranks |> mutate(in_top_three = scales::percent(in_top_three, accuracy = 
 ```
 
 Temperature is in the top three in 88% of resamples and chlorophyll in 72%. Depth manages only
-52% — not because depth does not matter (the simulation gives it a strong quadratic effect) but
+52%, not because depth does not matter (the simulation gives it a strong quadratic effect) but
 because in this survey depth is almost a function of longitude, and the forest can use either.
 Splitting credit between two collinear predictors is not a defect in the method; it is what
 "importance" means when two variables carry the same information.
@@ -489,7 +489,7 @@ Splitting credit between two collinear predictors is not a defect in the method;
 Salinity, season and substrate never reach the top three. Salinity genuinely has no effect in
 the simulation, so that is the right answer for the right reason.
 
-## Where this breaks down
+## Limits of these intervals
 
 The paired *t*-test above is convenient and mildly wrong. Cross-validation folds share training
 data, so the fold differences are positively correlated, the variance is underestimated, and
@@ -499,8 +499,8 @@ the intervals here as optimistic rather than conservative.
 
 The bootstrap interval has its own version of the problem. Resampling stations independently
 assumes stations are independent, which
-[section 6 showed they are not](../06-assumptions-limitations/independence-of-observations.qmd)
-— 720 visits were worth about 549 independent observations. Bootstrap the *sites*, not the
+[section 6 showed they are not](../06-assumptions-limitations/independence-of-observations.qmd):
+720 visits were worth about 549 independent observations. Bootstrap the *sites*, not the
 rows, and the interval widens accordingly.
 
 ::: {.callout-tip}

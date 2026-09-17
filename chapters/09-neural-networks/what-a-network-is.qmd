@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Mystique in both directions
 
 Neural networks arrive with more mystique than any other method in this course, and the
 mystique gets in the way twice. It makes people reach for one when a linear model would
@@ -24,9 +24,9 @@ do, and it makes people who could easily understand the mechanics assume they ca
 
 The mechanics are unremarkable. A neuron is a weighted sum of its inputs passed through
 one fixed function. A layer is several neurons reading the same inputs. A network is a
-couple of layers stacked. Everything that makes deep learning hard in practice —
-training, tuning, the compute — sits on top of that, and none of it changes what the
-object is.
+couple of layers stacked. Everything that makes deep learning hard in practice, the
+training and the tuning and the compute, sits on top of that, and none of it changes what
+the object is.
 
 This page builds one up from a regression you have already fitted.
 
@@ -69,15 +69,15 @@ tibble(term = names(coef(linear)),
        `one neuron` = round(as.numeric(coef(one_neuron)), 4))
 ```
 
-`size = 0, skip = TRUE` asks `nnet` for a network with no hidden layer — inputs wired
-straight to the output — and `linout = TRUE` makes the output activation the identity. The
+`size = 0, skip = TRUE` asks `nnet` for a network with no hidden layer, inputs wired
+straight to the output, and `linout = TRUE` makes the output activation the identity. The
 two fits agree to eight decimal places. Swap `linout` for `entropy = TRUE` and the same
 call reproduces `glm(family = binomial)` to four.
 
 So a neuron on its own buys you nothing. The interesting question is what a *layer* of
 them buys.
 
-## What a hidden layer adds
+## The addition a hidden layer makes
 
 A **hidden layer** is a set of neurons that read the inputs and whose outputs are read by
 the next layer rather than by you. They are hidden in the sense that nothing outside the
@@ -121,7 +121,7 @@ tibble(z = rep(grid_z, 4),
 
 The logistic and tanh curves are S-shaped: flat, then rising, then flat again. ReLU
 (*rectified linear unit*) is flat below zero and a straight line above it. All three are
-just bends — none of them is doing anything clever on its own.
+just bends, and none of them is doing anything clever on its own.
 
 ## Worked example: two bends make a hump
 
@@ -155,10 +155,10 @@ sweep
 ```
 
 Nothing happens until the second hidden unit, and then everything happens at once. Zero
-units is a straight line, RMSE 0.877 — and note in @fig-hump that the best straight line
+units is a straight line, RMSE 0.877, and note in @fig-hump that the best straight line
 through a hump *rises*, because the cold tail of this survey is lower than the warm one.
 A linear fit here does not just miss the optimum, it reports the wrong sign. One unit is a
-single S-curve — still monotone, still unable to come back down — and it improves the fit
+single S-curve, still monotone and still unable to come back down, and it improves the fit
 by 0.016. Two units drop the RMSE to 0.776, and units three, five and ten add essentially
 nothing after that.
 
@@ -201,10 +201,10 @@ ggplot(curves, aes(temperature_c, y)) +
   labs(x = "temperature (°C)", y = "mean log1p(abundance)", colour = "hidden units")
 ```
 
-## What the results mean
+## Reading the fitted hump
 
 Two hidden units, seven weights, and the curve lands its peak at 8.7 °C against a true
-optimum of 9.0 °C — recovered from the data with no one telling the model that the
+optimum of 9.0 °C, recovered from the data with no one telling the model that the
 relationship was humped.
 
 That is the real selling point of a network, and it is worth being precise about it. A
@@ -222,11 +222,11 @@ network computes
 $$\hat y = v^{\top} g(W^{\top} x + b) + c$$
 
 where $g$ is applied elementwise. If $g$ is the identity this is
-$\hat y = (Wv)^{\top} x + (v^{\top}b + c)$ — a linear model with coefficients $Wv$, no
+$\hat y = (Wv)^{\top} x + (v^{\top}b + c)$, a linear model with coefficients $Wv$, no
 matter how large $H$ is.
 :::
 
-## How many parameters is that?
+## Counting the parameters
 
 Every arrow in @fig-schematic is a number to be estimated, and the count grows faster than
 people expect. For $p$ inputs, one hidden layer of $H$ units and one output:
@@ -241,11 +241,11 @@ tibble(`hidden units` = c(1, 2, 4, 8, 16, 32)) |>
 ```
 
 The survey has 12 predictor columns once `substrate` and `season` are dummy-coded. At 16
-hidden units that is 225 weights for 720 stations — three rows per parameter. A linear
+hidden units that is 225 weights for 720 stations, or three rows per parameter. A linear
 model on the same columns fits 13. There is no rule that says three rows per parameter is
 too few, but you should know the number before you fit, not after the result looks odd.
 
-## Where this breaks down
+## Limits of a network
 
 **The weights do not mean anything individually.** In a linear model, the coefficient on
 depth is the effect of depth. In a network, depth's contribution is spread across $H$
@@ -261,7 +261,7 @@ not less.
 
 **It is a model of the inputs you gave it.** A network reads a table of numbers. It has no
 idea that two of your columns are longitude and latitude, or that your rows are a time
-series. The architectures that exploit that structure — convolutional, recurrent — are
+series. The architectures that exploit that structure, convolutional and recurrent, are
 about *wiring*, not about neurons, and they are outside this course.
 
 ::: {.callout-tip}
@@ -273,7 +273,7 @@ about *wiring*, not about neurons, and they are outside this course.
   reported and have no units.
 - **The activation function is the whole trick.** With a linear activation, any number of
   layers collapses to one linear model.
-- Two hidden units — seven weights — were enough to recover a humped temperature response
+- Two hidden units, seven weights, were enough to recover a humped temperature response
   with its peak at 8.7 °C against a true 9.0 °C. One was not enough, and five added
   nothing.
 - Count your parameters before you fit. Sixteen hidden units on this survey is 225 weights

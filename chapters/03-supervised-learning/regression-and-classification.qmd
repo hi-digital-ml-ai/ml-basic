@@ -1,6 +1,6 @@
 ---
 title: "Regression or classification?"
-description: "The first fork in the road — and the marine responses that fit neither box cleanly."
+description: "The first fork in the road, and the marine responses that fit neither box cleanly."
 order: 1
 categories: [supervised, regression, classification]
 ---
@@ -17,14 +17,14 @@ set.seed(123)
 survey <- load_coastal_survey_clean()
 ```
 
-## Why this matters
+## The fork that fixes everything else
 
 Everything downstream follows from one question: **what kind of thing is your
 response?** It fixes the model family, what the algorithm is trying to minimise, which
 performance measures mean anything, and what the output can be used for.
 
 It is also a question people answer too quickly. "Abundance is a number, so it is
-regression" is right in outline and wrong in the details that matter — the details that
+regression" is right in outline and wrong in the details that matter, the details that
 made [section 1's polynomial model](../01-introduction/prediction-and-explanation.qmd)
 predict negative fish.
 
@@ -35,12 +35,12 @@ predict negative fish.
 ## The idea
 
 **Regression** predicts a quantity: abundance, biomass, temperature, percentage cover.
-Output is a number, and being close counts for something — predicting 11 when the truth
+Output is a number, and being close counts for something: predicting 11 when the truth
 is 12 is nearly right.
 
 **Classification** predicts a category: present or absent, species A or B, habitat class.
 Output is a class, or better a probability for each class, and being close does not
-count — you are either right or wrong, though a probability of 0.48 for the wrong answer
+count: you are either right or wrong, though a probability of 0.48 for the wrong answer
 is a different kind of wrong from 0.02.
 
 That is the textbook division. Marine responses are frequently awkward:
@@ -61,7 +61,7 @@ constant variance. Almost nothing in that table satisfies that.
 
 ## Worked example
 
-Our survey measured one thing — how many individuals were caught at each station — and
+Our survey measured one thing, how many individuals were caught at each station, and
 it supports both framings.
 
 ::: {.panel-tabset group="language"}
@@ -102,7 +102,7 @@ pd.DataFrame({
 
 Two features of that summary decide almost everything that follows.
 
-**The variance is far larger than the mean** — about 23 against 3.9. For a Poisson
+**The variance is far larger than the mean**, about 23 against 3.9. For a Poisson
 process they would be equal. This is *overdispersion*, and it is the normal condition of
 ecological count data: individuals cluster, so counts vary more than chance alone
 predicts.
@@ -112,7 +112,7 @@ positive numbers will never reproduce that spike at zero.
 
 ```{r}
 #| label: fig-two-framings
-#| fig-cap: "One measurement, two questions. Left: the count, with a large spike at zero and a long right tail. Right: the same data reduced to presence and absence — simpler, and most of the information has been thrown away."
+#| fig-cap: "One measurement, two questions. Left: the count, with a large spike at zero and a long right tail. Right: the same data reduced to presence and absence: simpler, and most of the information has been thrown away."
 #| fig-alt: "Two panels. The left panel is a histogram of abundance with a tall bar at zero, a peak at one to three individuals and a long tail extending past thirty. The right panel is a two-bar chart of absent versus present, with present about three times taller than absent."
 #| fig-width: 8.5
 #| fig-height: 3.8
@@ -133,7 +133,7 @@ p_binary <- survey |>
 p_count + p_binary
 ```
 
-### What dichotomising costs
+### The cost of dichotomising
 
 Turning the count into presence/absence is a real choice, and it is not free.
 
@@ -178,13 +178,13 @@ choosing a cut-off, and modelling the category. "High" versus "low" chlorophyll 
 in the same box while separating 0.99 from 1.01.
 
 ::: {.callout-warning}
-Dichotomise only when the *decision* is genuinely binary — a threshold in regulation,
+Dichotomise only when the *decision* is genuinely binary: a threshold in regulation,
 a survey protocol that records occurrence. Never dichotomise to make a modelling problem
 easier. It is the one preprocessing step that reliably destroys information you cannot
 get back.
 :::
 
-## What the results mean
+## Three things that travel together
 
 The response type determines three things, and they travel together:
 
@@ -194,7 +194,7 @@ The response type determines three things, and they travel together:
 | **Minimises** | Squared error, or a likelihood suited to the response | Log-loss, or a related likelihood |
 | **Measured by** | RMSE, MAE, $R^2$ | Accuracy, ROC AUC, precision, recall |
 
-In tidymodels the change is often one argument — `set_mode("classification")` — which
+In tidymodels the change is often one argument, `set_mode("classification")`, which
 makes it easy to switch and easy to forget that you have changed the scientific question
 as well as the code.
 
@@ -204,12 +204,12 @@ assumes none of that, which is precisely why it produced negative predictions in
 [section 1](../01-introduction/prediction-and-explanation.qmd). The
 [next page](linear-and-polynomial-regression.qmd) fixes it.
 
-## Where this breaks down
+## Limits of the two boxes
 
 **Counts are not really "just regression".** They need a model that knows the response
 is a non-negative integer with mean-dependent variance. Fitting a Gaussian model to
 counts is common, works acceptably when counts are large, and fails visibly when they
-are small — as here.
+are small, as here.
 
 **Many zeros may mean two processes.** A zero can mean "the species does not live here"
 or "it lives here and we missed it". Hurdle and zero-inflated models separate those,

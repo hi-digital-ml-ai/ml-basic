@@ -1,6 +1,6 @@
 ---
 title: "Avoiding information leakage"
-description: "The mistake that makes a model look good and then fail in the field — four kinds, each demonstrated on the same survey."
+description: "The mistake that makes a model look good and then fail in the field, in four kinds, each demonstrated on the same survey."
 order: 7
 categories: [data-preparation, validation]
 ---
@@ -15,7 +15,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## A failure that leaves no trace
 
 **Leakage** is information about the data you are testing on reaching the model before
 you test. It inflates every performance figure you report, and it leaves no trace in the
@@ -34,22 +34,22 @@ usual leak is a single line of code in the wrong order.
 
 Four kinds, from the most obvious to the most subtle.
 
-**Target leakage** — a feature that could only be known after the response. Catch weight
+**Target leakage**: a feature that could only be known after the response. Catch weight
 when predicting catch. A "confirmed by laboratory" flag when predicting species
 identity. These give spectacular scores and are worthless, because at prediction time
 the feature does not exist.
 
-**Group leakage** — the same underlying unit in both training and test data. Repeat
+**Group leakage**: the same underlying unit in both training and test data. Repeat
 visits to a monitoring site, duplicate rows, several images of one individual. The model
 is tested on something it has effectively already seen.
 
-**Preprocessing leakage** — any quantity estimated from the whole dataset before
+**Preprocessing leakage**: any quantity estimated from the whole dataset before
 splitting. A mean used for centring, a median used for imputation, a set of category
 levels, a target encoding. Small when the quantity is a mean over hundreds of rows;
-severe when the preprocessing is powerful — target encoding, imputation that uses the
+severe when the preprocessing is powerful: target encoding, imputation that uses the
 response, or anything fitted on a small dataset.
 
-**Selection leakage** — choosing what goes into the model by looking at all the data.
+**Selection leakage**: choosing what goes into the model by looking at all the data.
 Picking the twenty variables most correlated with the response, then splitting. The
 selection has already used the test set.
 
@@ -180,7 +180,7 @@ pd.DataFrame([
 $R^2$ goes from 0.25 to 0.87. If you saw that in a colleague's results you would be
 impressed.
 
-It is nonsense. Catch weight is the weight of the animals that were counted — the two
+It is nonsense. Catch weight is the weight of the animals that were counted; the two
 are the same measurement in different units, correlated at 0.99. The model has learned
 to divide by the average individual mass. Deployed on a new station, where the whole
 point is that nobody has counted anything yet, there is no catch weight to supply and
@@ -190,7 +190,7 @@ the model cannot run at all.
 Target leakage is rarely this blatant in real data. It arrives as a variable added by
 someone who knew the answer: a length-frequency summary derived from the same haul, a
 survey note recorded after the catch was sorted, a habitat class assigned by looking at
-what was caught. The test is not statistical — ask, **would this value exist, at this
+what was caught. The test is not statistical. Ask, **would this value exist, at this
 moment, for a station I have not yet sampled?**
 :::
 
@@ -240,7 +240,7 @@ Comparing RMSE across different test sets is not a valid comparison, and this is
 common way to reach a confident wrong conclusion.
 
 The quantity that *is* roughly comparable is $R^2$, because each is measured against its
-own test set's variance. It falls from **0.25 to 0.13** — the model explains half as
+own test set's variance. It falls from **0.25 to 0.13**: the model explains half as
 much when it has to predict a site it has never visited.
 
 That halving is the size of the group leak. It is also the difference between the
@@ -320,7 +320,7 @@ pd.DataFrame([
 :::
 
 Every one of those 200 variables is `rnorm()`. The true relationship with abundance is
-exactly zero, so the correct test $R^2$ is zero — which is what the honest procedure
+exactly zero, so the correct test $R^2$ is zero, which is what the honest procedure
 reports, near enough.
 
 Choosing the ten "best" variables while looking at all the rows produces an apparent
@@ -345,14 +345,14 @@ recipe(honest, data = training(split)) |>
   step_impute_median(all_numeric_predictors())
 ```
 
-With 800 rows and a median, the damage from the first version is small — probably
+With 800 rows and a median, the damage from the first version is small, probably
 smaller than the noise in your test score. It is worth doing correctly anyway, because
 the identical mistake with target encoding, or with imputation that uses the response,
 or on a dataset of forty casts, is not small at all. And the correct version costs
 nothing: put the step in the recipe and the workflow handles the rest, including inside
 cross-validation.
 
-## What the results mean
+## The question to ask of every line
 
 | Leak | What it did here | How to avoid it |
 | --- | --- | --- |
@@ -367,7 +367,7 @@ The practical discipline is a single question, asked of every line that touches 
 
 If yes, it belongs inside the resampling or after the split.
 
-## Where this breaks down
+## Limits of these defences
 
 **Some leakage cannot be removed, only reported.** You explored the whole dataset in
 order to clean it, and that knowledge shaped your modelling. The honest response is to
@@ -383,7 +383,7 @@ still be wrong for every reason in
 [section 6](../06-assumptions-limitations/index.qmd).
 
 **Leakage is usually invisible in review.** No plot shows it and no diagnostic flags it.
-It is found by reading the code in order, and by asking where each column came from —
+It is found by reading the code in order, and by asking where each column came from,
 which is an argument for writing the methods section as though someone will.
 
 ::: {.callout-tip}

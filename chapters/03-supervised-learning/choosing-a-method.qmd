@@ -1,6 +1,6 @@
 ---
 title: "Choosing a method"
-description: "Ten models on one survey, scored fairly — and a way of deciding that does not depend on which algorithm is fashionable."
+description: "Ten models on one survey, scored fairly, and a way of deciding that does not depend on which algorithm is fashionable."
 order: 5
 categories: [supervised, regression, trees-ensembles]
 ---
@@ -16,9 +16,9 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Deciding without reputation
 
-"Which method should I use?" is usually answered by reputation — boosting wins
+"Which method should I use?" is usually answered by reputation: boosting wins
 competitions, so try boosting. This page answers it by running every method in this
 section on the same survey, with the same features, and reporting the result.
 
@@ -49,7 +49,7 @@ hundred noisy rows will not support a large boosted model, as
 [the previous page](trees-forests-boosting.qmd) demonstrated.
 
 **4. Do you need to predict outside the sampled range?**
-If so, trees and forests are disqualified — their predictions are flat beyond the
+If so, trees and forests are disqualified, because their predictions are flat beyond the
 training data. A parametric model at least extrapolates according to a stated shape.
 
 **5. Do you know something about the shape?**
@@ -241,7 +241,7 @@ ggplot(plot_data, aes(rmse, model, colour = family)) +
        title = "Ten models, one survey")
 ```
 
-## What the results mean
+## Reading the table
 
 **The best model is a generalised linear model with two quadratic terms.** It beats the
 random forest and both boosted models. It is also the only one in the top group that
@@ -252,7 +252,7 @@ overdispersed, so a log link and a count likelihood; species have optima, so qua
 terms. Neither is a clever algorithm. Both are statements about the biology.
 
 **Parametric and tree-based methods are interleaved**, not separated into a good half
-and a bad half. The spread *within* the tree family — 4.76 to 5.41 — is three times the
+and a bad half. The spread *within* the tree family, 4.76 to 5.41, is three times the
 gap between the best parametric model and the best tree. Gentle boosting beats default
 boosting by 0.46, which is larger than the difference between most neighbouring pairs in
 the table. How you configure a method matters more than which family it belongs to.
@@ -262,7 +262,7 @@ choice here; untuned boosting is. That distinction is the subject of
 [section 5](../05-generalisation/index.qmd).
 
 Two warnings about this table. It is **one test set of 200 stations**, so differences of
-0.05 in RMSE are well inside the noise — the honest reading is that the top five are
+0.05 in RMSE are well inside the noise. The honest reading is that the top five are
 hard to separate and the bottom two are genuinely worse.
 [Section 7](../07-validation/index.qmd) replaces this with resampling, which gives an
 interval rather than a point. And it is one dataset: with 50,000 rows and a strong
@@ -276,7 +276,7 @@ signal the ordering would very likely reverse.
 | Presence/absence, and you want to explain | Logistic regression, and check which class your coefficients describe |
 | Prediction, tabular data, thousands of rows | Random forest first for a baseline, then tuned boosting |
 | Prediction, a few hundred rows | A parametric model, or a deliberately shallow tree |
-| You must extrapolate beyond the sampled range | A parametric model — and state the assumption loudly |
+| You must extrapolate beyond the sampled range | A parametric model, and state the assumption loudly |
 | A manager or regulator must accept it | A single shallow tree, or a GLM |
 | You genuinely do not know | Fit a linear or count model *and* a random forest. If the forest wins by a lot there is structure you have not specified; if it does not, prefer the interpretable one |
 
@@ -284,7 +284,7 @@ That last row is the most practical habit in this section. The gap between a sim
 model and a flexible one is diagnostic: it measures how much structure your specified
 model is missing.
 
-## Where this breaks down
+## Limits of this comparison
 
 **One split gives one number.** Everything here rests on a single 200-station test set.
 Re-run with a different seed and the ordering of the middle of the table will move.
@@ -295,8 +295,8 @@ Resample before believing a ranking.
 sits at a site the model has already trained on. Grouped by site, all ten scores would
 fall, and not necessarily by the same amount.
 
-**Tuned models are being compared with untuned ones.** That is deliberate — defaults are
-what people actually run — but it is not a fair fight between methods. Tuning all ten
+**Tuned models are being compared with untuned ones.** That is deliberate, since defaults are
+what people actually run, but it is not a fair fight between methods. Tuning all ten
 properly is [section 5](../05-generalisation/index.qmd).
 
 **Accuracy is not the only criterion, and often not the main one.** Interpretability,
@@ -307,7 +307,7 @@ advantage that no RMSE column shows.
 ::: {.callout-tip}
 ## Key points
 - Choose by the question, the response type, the amount of signal, and whether you must
-  extrapolate — not by which algorithm has the best reputation.
+  extrapolate, not by which algorithm has the best reputation.
 - On this survey the best model is a Poisson GLM with quadratic terms. It beat the
   forest and both boosted models, and it cannot predict impossible values.
 - Differences within a model family exceeded differences between families. How you

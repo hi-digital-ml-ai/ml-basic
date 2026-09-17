@@ -16,11 +16,11 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## A debt from two earlier pages
 
 Two earlier pages left a debt. [Section 1](../01-introduction/prediction-and-explanation.qmd)
 built a polynomial model that recovered the species' thermal optimum to within half a
-degree — and predicted *negative* abundance at both ends of the temperature range. The
+degree, and predicted *negative* abundance at both ends of the temperature range. The
 page said so and pointed here.
 
 This page pays that debt, and the fix turns out to improve prediction as well as
@@ -50,7 +50,7 @@ Add squared terms and the line bends:
 
 $$\hat{y} = \beta_0 + \beta_1 x + \beta_2 x^2$$
 
-This is still *linear regression* — linear in the coefficients, which is what the name
+This is still *linear regression*, linear in the coefficients, which is what the name
 refers to. A quadratic gives one optimum, which is exactly the shape of a thermal or
 depth preference, so it is a natural fit for habitat modelling.
 
@@ -69,7 +69,7 @@ $$\log(\hat{\mu}) = \beta_0 + \beta_1 x_1 + \dots \qquad\text{so}\qquad \hat{\mu
 
 Two consequences, both free. The exponential cannot be negative, so impossible
 predictions become impossible to make. And because effects are additive on the log
-scale, they are *multiplicative* on the count scale — a coefficient of 0.35 means
+scale, they are *multiplicative* on the count scale: a coefficient of 0.35 means
 each unit multiplies the expected count by $e^{0.35} \approx 1.42$, a 42% increase.
 Ecologically that is usually more sensible than "adds 0.35 individuals" regardless of
 whether the station holds two fish or two hundred.
@@ -214,7 +214,7 @@ pd.DataFrame([
 There is the debt, paid and then some.
 
 The polynomial model makes **six negative predictions** on 200 test stations, the lowest
-being about $-2.1$ individuals. The Poisson model makes none — it cannot — and its lowest
+being about $-2.1$ individuals. The Poisson model makes none, because it cannot, and its lowest
 prediction is a sensible 0.16. It is also the best of the three on RMSE and $R^2$.
 
 The linear model, meanwhile, manages two negative predictions of its own without any
@@ -272,7 +272,7 @@ one; the simulation built in 0.55, so that one is recovered well. Salinity, whic
 real effect, is correctly indistinguishable from a multiplier of 1.
 
 Mud is more interesting. The fitted multiplier is 1.13, while the simulation built in
-1.49. The direction is right and the size is understated — and the reason is worth
+1.49. The direction is right and the size is understated, and the reason is worth
 noting, because it is not a failure. Muddy stations tend to be deeper, depth is also in
 the model, and the two share credit for the same variation. A coefficient in a
 multiple regression is an effect *holding the other predictors fixed*, which is not the
@@ -313,7 +313,7 @@ pd.DataFrame({
 :::
 
 A ratio of almost 4, not 1. The counts vary far more than Poisson allows, which is the normal
-state of ecological data: individuals aggregate. The consequence is specific — the
+state of ecological data: individuals aggregate. The consequence is specific: the
 *predictions* are fine, but the standard errors are too small, so confidence intervals
 are too narrow and p-values too small. A model like this will tell you an effect is
 significant when it is not.
@@ -373,16 +373,16 @@ pd.DataFrame({
 
 The estimated $\theta$ of 1.07 sits below the 1.5 built into the simulation. It is the
 right order of magnitude and correctly identifies strong clustering, but it is not a
-precise recovery — dispersion parameters are hard to pin down from 600 noisy counts, and
+precise recovery: dispersion parameters are hard to pin down from 600 noisy counts, and
 this model uses straight-line terms where the truth is curved. AIC nevertheless falls by
 over 900, which is emphatic. On real data you would report the negative binomial.
 
 ::: {.callout-note collapse="true"}
-## Why this one left tidymodels
+## Leaving tidymodels for this one
 `MASS::glm.nb()` estimates $\theta$ by maximum likelihood as part of fitting, and
 parsnip has no negative binomial engine for `poisson_reg()`. This is a normal situation:
 tidymodels covers a wide range of models and not every one. Reaching for the specialist
-package is the right answer — just be aware that you lose the workflow's protection
+package is the right answer; just be aware that you lose the workflow's protection
 against [leakage](../02-marine-data/information-leakage.qmd), which is why the
 imputation had to be done by hand above, and why doing so is a little more dangerous
 than it looks.
@@ -426,10 +426,10 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
        title = "Three models, one relationship")
 ```
 
-## What the results mean
+## The work the link function does
 
-The exponential link is doing the work. It converts an additive model — which can
-produce any number — into a multiplicative one, which cannot go below zero. Nothing was
+The exponential link is doing the work. It converts an additive model, which can
+produce any number, into a multiplicative one, which cannot go below zero. Nothing was
 constrained or clipped; the shape of the model makes the impossible unreachable.
 
 The gain in accuracy comes from the same place. Poisson regression weights observations
@@ -440,18 +440,18 @@ equally surprising, which for counts is simply wrong.
 The general principle is the most transferable thing in this section:
 
 > **Match the model to what the response actually is.** Non-negative, discrete,
-> bounded, proportional — each has a family built for it, and the built-for-it version
+> bounded, proportional: each has a family built for it, and the built-for-it version
 > is usually both more plausible and more accurate.
 
-## Where this breaks down
+## Limits of these count models
 
 **Poisson assumes equidispersion and yours will not have it.** Always compute the
 deviance ratio. If it is well above 1, your p-values are too small; move to the negative
 binomial and say that you did.
 
 **A quarter of our stations caught nothing.** Negative binomial handles more zeros than
-Poisson, but if zeros arise from a separate process — the species is absent, versus
-present and missed — a hurdle or zero-inflated model represents the biology better.
+Poisson, but if zeros arise from a separate process, with the species absent rather than
+present and missed, a hurdle or zero-inflated model represents the biology better.
 
 **Polynomials extrapolate catastrophically.** Even the Poisson version bends sharply
 outside the sampled range. Splines are safer; refusing to predict outside the data is
@@ -468,7 +468,7 @@ margin.
 - Fitting counts with ordinary regression produces negative predictions. Here: six on
   200 test stations.
 - Poisson regression models the log of the expected count, so predictions cannot be
-  negative — and it was also the most accurate model of the three.
+  negative, and it was also the most accurate model of the three.
 - Poisson coefficients are multiplicative once exponentiated: mud holds about 1.4 times
   as many as sand.
 - Check the deviance-to-df ratio. At almost 4 it is badly overdispersed, the predictions

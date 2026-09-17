@@ -18,7 +18,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## $k$ is an input, not a finding
 
 $k$ is an input. The previous page put `num_clusters = 2` into the specification and the
 algorithm obeyed, as it would have obeyed 3, or 9. Nothing in k-means objects to a bad
@@ -118,20 +118,20 @@ observed.round(3)
 :::
 
 Two measures. `sse_ratio` is the within-cluster sum of squares as a fraction of the
-total — the quantity k-means minimises, scaled so that $k = 1$ would be 1.0.
+total, the quantity k-means minimises, scaled so that $k = 1$ would be 1.0.
 `silhouette_avg` is the average **silhouette width**, which for each station compares how
 far it sits from its own cluster's members to how far it sits from the nearest other
 cluster's members. It runs from $-1$ (in the wrong cluster) through 0 (on the boundary)
 to $+1$ (unambiguously placed).
 
-## The elbow, and why there isn't one
+## The elbow, and its absence here
 
 The oldest recipe is to plot the within-cluster sum of squares against $k$ and look for
 the bend where adding clusters stops helping.
 
 Our numbers fall 0.878, 0.779, 0.736, 0.707, 0.690, 0.676, 0.661. That is a smooth
 decay. There is no bend. The elbow method has no answer here, and on real data it very
-often does not, because the sum of squares *must* fall with every extra cluster —
+often does not, because the sum of squares *must* fall with every extra cluster;
 the question is only how fast.
 
 The silhouette does better: it peaks at $k = 2$, at 0.179. But now look up what 0.179
@@ -145,8 +145,8 @@ correct side of it.
 
 ::: {.callout-important}
 Absolute thresholds for silhouette width are worthless in high dimensions. With 24
-columns, 54% of them zero, every station is fairly far from everything — including its
-own cluster's centre — so the ratio the silhouette computes is compressed towards zero
+columns, 54% of them zero, every station is fairly far from everything, including its
+own cluster's centre, so the ratio the silhouette computes is compressed towards zero
 whatever the structure. 0.179 is not a weak result. It is a number that has to be
 compared with something before it means anything at all.
 :::
@@ -155,7 +155,7 @@ compared with something before it means anything at all.
 
 The something to compare against is the same dataset with its structure removed. Shuffle
 each taxon's counts independently across stations. Every taxon keeps its own abundance
-distribution, its own zeros, its own skew — and all co-occurrence between taxa is
+distribution, its own zeros, its own skew, and all co-occurrence between taxa is
 destroyed, so by construction there are no station groups left to find.
 
 ::: {.panel-tabset group="language"}
@@ -211,16 +211,16 @@ panel <- function(column, label) {
 ```
 
 Read the right-hand panel. The shuffled data stays between 0.037 and 0.055 for every $k$,
-drifting slightly upward — that is what "no structure" looks like when you measure it
+drifting slightly upward, and that is what "no structure" looks like when you measure it
 with this statistic in this many dimensions. Against that floor, 0.179 is nearly five
 times the no-structure value, and the gap between the lines is twice as wide at $k = 2$
 as at any other $k$. By $k = 3$ the observed line has fallen to 0.126, more than a third
 of the way back to the floor.
 
 The observed line is not monotone: $k = 4$ comes back up to 0.136, above $k = 3$. Small
-non-monotonicities like this are normal and are not evidence for four clusters — the
-$k = 4$ partition simply cuts each of the two substrate groups in two along depth — the
-four median depths are 48, 60, 110 and 125 m — and halving a gradient can tidy up the
+non-monotonicities like this are normal and are not evidence for four clusters. The
+$k = 4$ partition simply cuts each of the two substrate groups in two along depth, at
+median depths of 48, 60, 110 and 125 m, and halving a gradient can tidy up the
 silhouette a little without discovering anything. The gap against the
 null is what matters, and at $k = 4$ it is 0.091 against 0.142.
 
@@ -308,9 +308,9 @@ reference is much more spread out than the observed data at *every* $k$, the gap
 positive everywhere, and it keeps growing as $k$ rises.
 
 The remedy is the same one the shuffled data used: choose a reference that resembles your
-data in every respect except the structure you are testing for. `clusGap()` will take one
-— set `spaceH0 = "original"` to draw the reference inside the data's own principal-
-component box instead of the raw bounding box — but a permutation of your own columns is
+data in every respect except the structure you are testing for. `clusGap()` will take one:
+set `spaceH0 = "original"` to draw the reference inside the data's own principal-
+component box instead of the raw bounding box. But a permutation of your own columns is
 usually easier to defend to a reviewer, because you can say exactly what it preserves.
 
 ::: {.callout-warning}
@@ -322,8 +322,8 @@ The number that comes out is only as good as that comparison.
 ## A criterion from a different family
 
 k-means has no likelihood, so there is no AIC or BIC for it. A **Gaussian mixture model**
-does have one — it is a genuine probability model, covered properly on
-[the next page](beyond-k-means.qmd) — and `mclust` will select the number of components
+does have one, since it is a genuine probability model, covered properly on
+[the next page](beyond-k-means.qmd), and `mclust` will select the number of components
 by BIC.
 
 ::: {.callout-warning}
@@ -375,7 +375,7 @@ It chooses three.
 
 So: the elbow abstains, the silhouette against a permutation null says two, the gap
 statistic with its default reference says six, and BIC says three. The truth built into
-this dataset is **two** — hard bottom and soft bottom.
+this dataset is **two**: hard bottom and soft bottom.
 
 BIC's three is not really a wrong answer to its own question. BIC asks how many Gaussian
 components it takes to describe the *density* of the data, and a community with two
@@ -384,14 +384,14 @@ described by two Gaussians. It needs a third to cover the tail of the gradient. 
 number of components a density needs and the number of groups an ecosystem has are
 different quantities, and only one of them was what you asked.
 
-## Where this breaks down
+## Limits of every criterion here
 
 **No criterion tests whether any clusters exist.** Every method here compares $k=2$ with
 $k=3$ and so on. A comparison with $k=1$ is available from the gap statistic alone, and
 only if its reference is a fair one.
 
 **$k$ is often not a scientific quantity.** If composition varies continuously with
-depth, as it does here, there is no true number of depth classes — only a number of
+depth, as it does here, there is no true number of depth classes, only a number of
 classes that is useful for a particular purpose. Habitat mapping for spatial planning may
 need five because five is what a management plan can act on. That is a legitimate reason
 to pick five and an illegitimate reason to claim five exist.

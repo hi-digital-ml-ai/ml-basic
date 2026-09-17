@@ -16,16 +16,16 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The search itself
 
 [The previous page](loss-functions.qmd) left the model with a scorecard and no way to
-improve its score. This page is about the search itself — and about one fact that divides
+improve its score. This page is about the search itself, and about one fact that divides
 the methods in this course cleanly in two.
 
 For a handful of models, the best parameters can be *calculated*. There is a formula; you
-put the data in and the answer comes out, exactly, in one step. For everything else — every
-model in section 3 except ordinary linear regression — there is no formula, and the
-parameters have to be found by looking.
+put the data in and the answer comes out, exactly, in one step. For everything else,
+meaning every model in section 3 except ordinary linear regression, there is no formula,
+and the parameters have to be found by looking.
 
 That distinction explains why `lm()` never fails to converge and `glm()` sometimes does,
 why random forests give slightly different answers on each run, and why neural networks
@@ -54,12 +54,12 @@ Picture the objective from the previous page as a surface. Each axis is one para
 the height is how bad that combination of parameters is. Fitting means walking downhill
 until you reach the bottom.
 
-For a linear model with squared-error loss, that surface is a bowl — one lowest point, no
+For a linear model with squared-error loss, that surface is a bowl: one lowest point, no
 ridges, no false floors. For most other models it is rougher.
 
 ```{r}
 #| label: fig-surface
-#| fig-cap: "The mean-squared-error surface for a two-parameter model — intercept and chlorophyll slope — over the coastal survey. Darker is better. It is a long, tilted bowl with a single lowest point, marked by the cross. Any downhill walk from anywhere reaches it."
+#| fig-cap: "The mean-squared-error surface for a two-parameter model, intercept and chlorophyll slope, over the coastal survey. Darker is better. It is a long, tilted bowl with a single lowest point, marked by the cross. Any downhill walk from anywhere reaches it."
 #| fig-alt: "A filled contour plot with intercept on the horizontal axis from minus two to six and chlorophyll slope on the vertical axis from minus one to three. Colour shades from bright yellow at the edges through green to dark blue in a narrow elongated basin running diagonally from upper left to lower right. A white cross marks the single minimum at intercept 2.36, slope 1.15."
 #| fig-width: 6.5
 #| fig-height: 4.6
@@ -121,7 +121,7 @@ round(drop(beta_hat), 4)
 round(coef(lm(abundance ~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3)), 4)
 ```
 
-Identical — to about fourteen decimal places. `lm()` is doing exactly this calculation
+Identical, to about fourteen decimal places. `lm()` is doing exactly this calculation
 (by a numerically safer route than inverting $X^\top X$, but the same one mathematically).
 No iteration, no starting value, no convergence, no seed. Run it a thousand times and get
 the same answer a thousand times.
@@ -137,7 +137,7 @@ $$X^\top X \hat\beta = X^\top y \qquad\Longrightarrow\qquad \hat\beta = (X^\top 
 
 This works because squaring makes the objective a quadratic in $\beta$, and a quadratic
 has one turning point that you can solve for. Change the loss to absolute error and the
-objective stops being a quadratic — the derivative is no longer linear in $\beta$ — and the
+objective stops being a quadratic, since the derivative is no longer linear in $\beta$, and the
 formula vanishes. That is why the absolute-error fit on the previous page needed `optim()`.
 :::
 
@@ -146,7 +146,7 @@ formula vanishes. That is why the absolute-error fit on the previous page needed
 Logistic regression is the same shape of model with a different link, and it has no closed
 form. Its objective has to be approached step by step. The standard method is
 **iteratively reweighted least squares**: at each step, approximate the awkward objective
-by a weighted least-squares problem — which *does* have a formula — solve that, and repeat.
+by a weighted least-squares problem, which *does* have a formula, solve that, and repeat.
 
 ```{r}
 #| label: irls
@@ -190,7 +190,7 @@ while this hand-coded version describes presence. This is the same reversal that
 kind is a level-ordering problem until proven otherwise.
 :::
 
-### Why not just try every combination?
+### The cost of trying every combination
 
 An obvious alternative to any of this is to lay down a grid of candidate values and
 evaluate them all. It works, briefly.
@@ -203,16 +203,17 @@ tibble(
 )
 ```
 
-Two parameters is ten thousand evaluations — trivial, and essentially what the contour
-figure above did, on a 120 × 120 grid. Four parameters is a hundred million. Ten is $10^{20}$, which at a
-billion evaluations a second takes longer than the Holocene. The modest linear model fitted
-above already has four parameters; a random forest has tens of thousands of thresholds.
+Two parameters is ten thousand evaluations, trivial, and essentially what the contour
+figure above did, on a 120 × 120 grid. Four parameters is a hundred million. Ten is
+$10^{20}$, which at a billion evaluations a second takes longer than the Holocene. The
+modest linear model fitted above already has four parameters; a random forest has tens of
+thousands of thresholds.
 
 This is why fitting is a *directed* search. You cannot afford to look everywhere, so you
-have to work out which way is downhill and go that way — which is
+have to work out which way is downhill and go that way, which is
 [the next page](gradient-descent.qmd).
 
-## What the results mean
+## The division through the course
 
 The division runs right through the course:
 
@@ -221,7 +222,7 @@ The division runs right through the course:
 | Linear regression (squared loss) | Formula | Exact, instant, reproducible |
 | Ridge regression | Formula | Same, with a penalty term added |
 | Logistic / Poisson regression | Iterative (IRLS) | Can fail to converge; usually does not |
-| Regularised regression (lasso) | Iterative | No formula — the penalty is not differentiable at zero |
+| Regularised regression (lasso) | Iterative | No formula: the penalty is not differentiable at zero |
 | Decision tree | Greedy search | Not a numerical optimum at all; see below |
 | Random forest, boosting | Greedy, with randomness | Different answers per run without a seed |
 | Neural network | Gradient descent | Learning rate, epochs, and no guarantee of the best answer |
@@ -230,7 +231,7 @@ Trees are the odd case, and worth stating plainly: a decision tree is not solvin
 optimisation problem in any global sense. It takes the best single split available at each
 node and never reconsiders. That is why
 [section 3's tree](../03-supervised-learning/trees-forests-boosting.qmd) split on
-chlorophyll and ignored depth entirely — the greedy step could not see that two depth
+chlorophyll and ignored depth entirely: the greedy step could not see that two depth
 splits together would have paid, because it only ever evaluates one.
 
 The practical reading: a model with a formula has no fitting diagnostics because it cannot
@@ -238,7 +239,7 @@ have any. Everything below the first two rows of that table can go wrong during 
 quietly, and [reading a fit](reading-a-fit.qmd) at the end of this section is about
 noticing when it has.
 
-## Where this breaks down
+## Limits of both routes
 
 **The formula can fail even where it exists.** $(X^\top X)^{-1}$ requires that $X^\top X$ be
 invertible. If two predictors are perfectly correlated, or you have more predictors than
@@ -249,7 +250,7 @@ so coefficients swing wildly on small changes to the data while the fit looks fi
 **Convergence is not correctness.** An iterative algorithm that reports success has found a
 point where it can no longer improve. For logistic and Poisson regression that point is the
 global best, because their objectives are concave. For neural networks and k-means it need
-not be — those algorithms converge happily to somewhere merely good, and
+not be, and those algorithms converge happily to somewhere merely good, and
 [section 8](../08-unsupervised-learning/index.qmd) shows k-means doing it.
 
 **A flat valley is a warning, not a nuisance.** The elongated bowl in the figure above means
@@ -262,7 +263,7 @@ narrow.
 
 - **Parameters** are learned from data; **hyperparameters** are set before fitting and
   control how learning happens.
-- Linear regression under squared loss has a formula — exact, one step, no seed and no
+- Linear regression under squared loss has a formula: exact, one step, no seed and no
   convergence to check. Almost nothing else does.
 - Logistic and Poisson regression iterate, here reaching a stable answer in four steps
   from a standing start.
@@ -276,7 +277,7 @@ narrow.
 ## Try it yourself
 
 1. Add `salinity_psu` to the closed-form fit and confirm the formula still matches `lm()`.
-   Salinity has no true effect in this dataset — what coefficient does it get, and is it
+   Salinity has no true effect in this dataset, so what coefficient does it get, and is it
    distinguishable from zero?
 2. Create a perfectly collinear predictor (`depth_m * 2`) and give it to `lm()`. What does
    the coefficient table say, and at what point would you have noticed if you had not been

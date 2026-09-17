@@ -1,6 +1,6 @@
 ---
 title: "Spatial and temporal cross-validation"
-description: "Blocking folds in space or time so the score answers the question you actually asked — and how far apart the folds need to be."
+description: "Blocking folds in space or time so the score answers the question you actually asked, and how far apart the folds need to be."
 order: 2
 categories: [validation, spatial-temporal]
 ---
@@ -17,14 +17,14 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Drawing the fold boundaries elsewhere
 
 [Section 6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd) showed that
 survey residuals carry spatial structure the covariates never absorb, and that ordinary
 cross-validation therefore flatters a model. It deferred the fix to here.
 
 The fix is not a better algorithm. It is drawing the fold boundaries somewhere else. And the
-right place to draw them is not a matter of statistical purity — it depends entirely on what
+right place to draw them is not a matter of statistical purity; it depends entirely on what
 you are going to do with the model.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -115,7 +115,7 @@ pd.Series({"stations": len(d), "sites": d["site_id"].nunique(),
 
 Every scheme below holds out each of the `r nrow(d)` stations exactly once. That lets us pool
 all the out-of-fold predictions and compute a single metric over the *same* 720 rows for every
-scheme — which is the only way to make the numbers comparable, for the reason set out on the
+scheme, which is the only way to make the numbers comparable, for the reason set out on the
 [previous page](cross-validation.qmd).
 
 ::: {.panel-tabset group="language"}
@@ -259,17 +259,17 @@ comparison.round(3)
 
 :::
 
-## What the results mean
+## An axis of distance
 
 Read the last column first. The schemes are not arranged along an axis of statistical virtue;
 they are arranged along an axis of **distance**. Random folds leave the nearest training
 station about four kilometres away and the model scores R² 0.200. Push that separation out to
 twenty-five kilometres with 1.2° blocks and the same model, on the same stations, scores
-**0.114** — a 43% drop bought entirely by moving the fold boundaries.
+**0.114**, a 43% drop bought entirely by moving the fold boundaries.
 
 ```{r}
 #| label: fig-distance
-#| fig-cap: "Pooled R² against the median distance from each held-out station to the nearest station its model was allowed to train on. Each point is one resampling scheme applied to the identical random forest and the identical 720 stations; the dashed line is a least-squares fit through the seven spatial schemes. Performance falls as the folds are pushed apart, though not smoothly — the 0.50° blocks sit well above the trend. Leave-one-year-out (open point) sits off it altogether, because it separates the folds in time rather than in space."
+#| fig-cap: "Pooled R² against the median distance from each held-out station to the nearest station its model was allowed to train on. Each point is one resampling scheme applied to the identical random forest and the identical 720 stations; the dashed line is a least-squares fit through the seven spatial schemes. Performance falls as the folds are pushed apart, though not smoothly: the 0.50° blocks sit well above the trend. Leave-one-year-out (open point) sits off it altogether, because it separates the folds in time rather than in space."
 #| fig-alt: "A scatter plot with median distance to the nearest training station in kilometres on the horizontal axis, running from about 4 to 25, and pooled R-squared on the vertical axis from 0.11 to 0.23. Seven filled blue points are labelled with scheme names and a dashed grey line slopes down from left to right through them. Random 10-fold sits at the far left at 0.20, above the line; the 0.15 and 0.30 degree blocks and the site-grouped scheme cluster between 7 and 10 kilometres around 0.16 to 0.17; the 0.50 degree blocks sit at 14 kilometres and 0.174, noticeably above the line; the 0.80 degree blocks at 19 kilometres and 0.147; and the 1.20 degree blocks at 25 kilometres and 0.114, the lowest point on the plot. A single open orange point, leave-one-year-out, sits at the far left at 0.224, above everything else."
 #| fig-width: 7
 #| fig-height: 4.6
@@ -293,12 +293,12 @@ comparison |>
 ```
 
 The relationship is not tidy. The 0.50° blocks score 0.174 where the trend expects about 0.15,
-and with a spread of 0.014 across repeats that gap is not pure noise — block boundaries fall
+and with a spread of 0.014 across repeats that gap is not pure noise: block boundaries fall
 where they fall, and some divisions of this shelf happen to leave each fold better covered
 than others. Expect the ordering to be clear and the individual numbers to wobble.
 
 That is the honest description of what blocked cross-validation does. It does not remove bias
-and reveal the model's "true" skill — there is no single true skill. It moves the measurement
+and reveal the model's "true" skill; there is no single true skill. It moves the measurement
 to a harder prediction task, and you should choose the task deliberately.
 
 ::: {.callout-important}
@@ -307,7 +307,7 @@ to a harder prediction task, and you should choose the task deliberately.
 Section 6 estimated the spatial range of this survey's residual structure from a variogram.
 Blocks should be **at least that range across**, otherwise a block's neighbours still carry
 the structure it was supposed to hide. Blocks much larger than the range cost you training
-data for nothing — and at 1.20° there are so few blocks left that `spatial_block_cv()` quietly
+data for nothing, and at 1.20° there are so few blocks left that `spatial_block_cv()` quietly
 reduces `v` from 10 to 6.
 
 Choose the block size from the variogram, not from the score. Choosing it because it gives a
@@ -319,7 +319,7 @@ number you like is the spatial version of choosing a threshold to get *p* < 0.05
 Grouping by site fixes a different problem: the same site appears in the data several times,
 so a random fold can put visit three in the training set and visit five in the held-out set.
 `group_vfold_cv()` keeps all visits to a site together. That moves the nearest training station
-from 4.0 to 8.5 kilometres and costs a sixth of the R², from 0.200 to 0.170 — but sites are
+from 4.0 to 8.5 kilometres and costs a sixth of the R², from 0.200 to 0.170, but sites are
 scattered, so the *region* is still well covered. Notice that 0.15° blocks separate the folds
 by *less* than site grouping does, at 6.7 km: a small block is not automatically a stricter
 test than grouping.
@@ -332,8 +332,8 @@ them that way.
 ### Validating in time
 
 Splitting by year holds out whole years. Because stations are scattered over the same shelf
-every year, that barely changes the *spatial* separation — 4.2 km, essentially the same as
-random folds — which is why leave-one-year-out sits off the trend in the figure.
+every year, that barely changes the *spatial* separation, 4.2 km and essentially the same as
+random folds, which is why leave-one-year-out sits off the trend in the figure.
 
 The scheme that matches forecasting is an expanding window: train on everything before year
 $y$, predict year $y$, and move forward.
@@ -419,14 +419,14 @@ forecast_check[["trained on earlier years",
 
 The comparison is matched on training-set size, so the only difference is *when* the training
 data came from. Predicting forwards is no harder than predicting sideways. That is a real
-finding about this dataset and not a failure of the method — the simulation deliberately gives
+finding about this dataset and not a failure of the method: the simulation deliberately gives
 `survey_year` no effect, and the diagnostic correctly reports that there is nothing there.
 
 A validation scheme that shows no penalty is evidence, not a wasted afternoon. Run it before
-you assume your model transfers to next year, because with real survey data — shifting
-distributions, changing gear, a marine heatwave — it usually will not.
+you assume your model transfers to next year, because with real survey data, with shifting
+distributions, changing gear and marine heatwaves, it usually will not.
 
-## Where this breaks down
+## Limits of the distance column
 
 The distance column on this page is a median. A held-out station in the middle of a dense
 cluster and one on the edge of the survey are not being asked the same question, and pooling
@@ -447,7 +447,7 @@ a fair reflection of interpolation skill inside the blocks.
   section claims.
 - Every scheme here held out all 720 stations exactly once, so the pooled metrics are directly
   comparable. Without that, they would not be.
-- Performance falls with the distance between held-out and training stations — R² 0.200 at
+- Performance falls with the distance between held-out and training stations: R² 0.200 at
   four kilometres down to 0.114 at twenty-five. There is no single "true" score.
 - Set block size from the variogram range, before you look at the score.
 - Grouping handles repeated measurements; blocking handles proximity. They are different, and

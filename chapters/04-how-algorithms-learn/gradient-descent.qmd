@@ -1,6 +1,6 @@
 ---
 title: "Gradient descent"
-description: "The walk downhill that fits almost every modern model — and the two settings that decide whether it arrives."
+description: "The walk downhill that fits almost every modern model, and the two settings that decide whether it arrives."
 order: 3
 categories: [optimisation]
 ---
@@ -16,7 +16,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## From impossible search to a walk
 
 [The previous page](parameter-estimation.qmd) ended with an impossibility: four parameters
 on a modest grid is a hundred million evaluations, ten parameters is $10^{20}$, and a
@@ -34,7 +34,7 @@ reason. The real reason is on this page, and it is a factor of about ninety.
 
 ## The idea
 
-### Which way is downhill
+### The direction of downhill
 
 The **gradient** is the slope of the objective with respect to each parameter at once. For
 each parameter it answers one question: if I nudge this number up a little, does the
@@ -48,7 +48,7 @@ Each step is
 $$\theta_{\text{new}} = \theta_{\text{old}} - \eta \, \nabla J(\theta_{\text{old}})$$
 
 where $\theta$ is the parameter vector, $\nabla J$ is the gradient of the objective, and
-$\eta$ — the **learning rate** — is how far you move. The minus sign is the whole idea: the
+$\eta$, the **learning rate**, is how far you move. The minus sign is the whole idea: the
 gradient points uphill, so subtract it.
 
 The metaphor everyone uses is fog. You are on a hillside and cannot see the valley floor,
@@ -56,7 +56,7 @@ but you can feel the slope under your feet. You step downhill, feel again, step 
 
 The metaphor also carries the two failure modes. Step too timidly and you are still on the
 hillside at nightfall. Stride too boldly and you cross the valley entirely and end up higher
-on the opposite slope — and if each stride is longer than the last, you leave the valley
+on the opposite slope, and if each stride is longer than the last, you leave the valley
 altogether.
 
 ### Writing it out
@@ -93,7 +93,7 @@ gradient_descent <- function(X, y, learning_rate, iterations) {
 }
 ```
 
-The exact answer is available here by formula, which is the point — we can check the walk
+The exact answer is available here by formula, which is the point: we can check the walk
 against the destination.
 
 ```{r}
@@ -153,7 +153,7 @@ tibble(`learning rate` = c(0.02, 0.3, 0.72)) |>
 ```
 
 The best attainable MSE is 20.059. A learning rate of 0.3 gets there in six steps and sits
-on the exact answer. A rate of 0.02 is still short after forty — it needs 106. A rate of
+on the exact answer. A rate of 0.02 is still short after forty: it needs 106. A rate of
 0.72 spends forty steps bouncing off the walls of the valley and is still further from the
 answer than the slow walk was; it eventually converges, after 161 steps.
 
@@ -168,7 +168,7 @@ largest_stable_rate <- 2 / max(eigen(2 / n * t(X) %*% X)$values)
 round(largest_stable_rate, 4)
 ```
 
-Above 0.7282, gradient descent on this objective does not converge slowly — it diverges.
+Above 0.7282, gradient descent on this objective does not converge slowly; it diverges.
 Each step lands further from the minimum than the last, and the parameters grow without
 limit.
 
@@ -182,14 +182,14 @@ map_dfr(c(0.72, 0.80), \(lr) {
   mutate(across(where(is.numeric), \(x) signif(x, 5)))
 ```
 
-At 0.80 — a 10% larger step than the stable limit — sixty iterations put the chlorophyll
+At 0.80, a 10% larger step than the stable limit, sixty iterations put the chlorophyll
 slope at about −51,700 and the MSE at 7.3 billion. Nothing subtle happens on the way: it
 is orderly for a few steps and then gone.
 
 This is what "the loss became NaN" means when a neural network fails in its first minute
 of training, and lowering the learning rate really is the first thing to try.
 
-### Why scaling matters, with a number attached
+### Scaling, with a number attached
 
 The stable limit depends on the *shape* of the objective, and the shape depends on the
 units of your predictors. Depth here is measured in metres with a standard deviation of
@@ -223,22 +223,22 @@ tibble(
 ```
 
 Standardising takes the condition number from 766 to 2.2. Run each version at 90% of its
-own largest stable rate — giving both the best shot available to them — and count the steps
+own largest stable rate, giving both the best shot available to them, and count the steps
 to the same accuracy: **17 for the standardised predictors, 1,500 for the unstandardised
 ones.** Same data, same model, same answer at the end, eighty-eight times the work.
 
-## What the results mean
+## Scaling as an algorithmic matter
 
 Scaling is not a cosmetic step you perform because a tutorial said to. For any model fitted
 by gradient descent it is the difference between a fit that converges and one that crawls or
-explodes, and the size of the difference is set by the ratio of your predictors' units —
+explodes, and the size of the difference is set by the ratio of your predictors' units,
 which is a fact about your instruments, not about your science.
 
 That is also why the advice is *conditional*, exactly as
 [section 2](../02-marine-data/scaling-and-encoding.qmd) said. Scaling matters enormously for
 gradient descent, ridge and lasso, neural networks, PCA and k-means. It does nothing at all
-for `lm()` or `glm()` — they use a formula or a Newton step, which is invariant to how you
-measured depth — and nothing for trees, which only ever compare values within one variable.
+for `lm()` or `glm()`, which use a formula or a Newton step, invariant to how you
+measured depth, and nothing for trees, which only ever compare values within one variable.
 The rule tracks the algorithm, not the data.
 
 ::: {.callout-note collapse="true"}
@@ -250,9 +250,9 @@ largest eigenvalue. The number of steps needed grows with the condition number
 $\kappa = \lambda_{\max}/\lambda_{\min}$, because the step size is capped by the *steepest*
 direction while progress along the flattest direction is what you are waiting for.
 
-Standardising does not change the model or its predictions — the fitted values are identical
-either way — it changes only $\kappa$, and so only the effort. This is the precise sense in
-which scaling is about the algorithm and not the science.
+Standardising does not change the model or its predictions, and the fitted values are
+identical either way. It changes only $\kappa$, and so only the effort. This is the
+precise sense in which scaling is about the algorithm and not the science.
 :::
 
 ### Variants you will meet
@@ -274,10 +274,10 @@ into. That matters for the non-bowl-shaped objectives of
 [section 9](../09-neural-networks/index.qmd), and not at all here, where the objective has
 exactly one minimum.
 
-## Where this breaks down
+## Limits of the walk
 
 **On a bowl, any downhill walk arrives.** Linear and logistic regression have convex
-objectives — one minimum, no false floors — so gradient descent cannot get stuck, only be
+objectives, one minimum and no false floors, so gradient descent cannot get stuck, only be
 slow. Neural networks do not, and k-means does not. For those, where you start determines
 where you finish, which is why they take a seed and why running them twice is a diagnostic
 rather than a waste.
@@ -288,7 +288,7 @@ different outcomes and packages do not always distinguish loudly between them. A
 quietly hit `maxit` is not a fit.
 
 **A flat region and a minimum look identical from inside.** The gradient is near zero in
-both. On a long flat valley floor — the elongated bowl above, taken further — the algorithm
+both. On a long flat valley floor, the elongated bowl above taken further, the algorithm
 will report itself finished while several parameter combinations remain effectively tied.
 The reported coefficients are then one arbitrary point in a set, quoted to four decimals.
 
@@ -298,12 +298,12 @@ The reported coefficients are then one arbitrary point in a set, quoted to four 
 - Gradient descent computes which way is downhill and steps that way, repeatedly. That is
   the entire algorithm behind most modern model fitting.
 - The **learning rate** is the step size, and it has a hard upper limit. Below it, larger is
-  faster; above it, the fit diverges — here 0.72 worked and 0.80 reached an MSE of 7.3
+  faster; above it, the fit diverges: here 0.72 worked and 0.80 reached an MSE of 7.3
   billion in sixty steps.
 - The limit is set by the *shape* of the objective, which is set by the units of your
   predictors. Standardising cut the condition number from 766 to 2.2 and the work from
   1,500 steps to 17.
-- This is the real reason to scale predictors — and the reason `lm()`, `glm()` and trees do
+- This is the real reason to scale predictors, and the reason `lm()`, `glm()` and trees do
   not need it.
 - Stochastic and mini-batch variants trade an exact direction for cheap steps, and their
   noise helps on objectives that are not bowls.

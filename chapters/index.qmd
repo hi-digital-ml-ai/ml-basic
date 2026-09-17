@@ -14,5 +14,5 @@ toc: false
 ---
 
 The ten sections in order. Use the topic filters to pull together pages on one
-method — they gather course sections and
+method: they gather course sections and
 [participant contributions](../contributed/index.qmd) under the same tags.

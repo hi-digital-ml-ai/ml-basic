@@ -7,7 +7,7 @@ scikit-learn translation of each tidymodels step, so a reader who works in Pytho
 can follow the course without mentally porting every example.
 
 ```
-mlbasic_data.py      loaders mirroring R/data.R — same files, same cleaning
+mlbasic_data.py      loaders mirroring R/data.R, same files and cleaning
 check-snippets.py    runs every Python snippet in the site
 requirements.txt     what the snippets need (not needed to build the site)
 ```
@@ -22,8 +22,8 @@ python -m venv .venv && .venv/bin/pip install -r python/requirements.txt
 ```
 
 The checker pulls the ```` ```python ```` blocks out of each page in order, joins
-them into one program — the snippets on a page are cumulative, exactly as the R
-chunks are — and executes it. A page that throws is a failure; a page that only
+them into one program, since the snippets on a page are cumulative exactly as the R
+chunks are, and executes it. A page that throws is a failure; a page that only
 warns prints the warning, because a convergence warning means the snippet is
 teaching something slightly wrong.
 
@@ -35,7 +35,7 @@ They differ from the R output, and the note on each page says so. R and Python
 draw their random splits from different generators, so `random_state=123` is not
 `set.seed(123)` and the fold boundaries are not in the same places. Conclusions
 match; third decimal places do not. Nothing here is presented as the result on
-the page — the R tab produced those.
+the page; the R tab produced those.
 
 ## Keeping the two halves honest
 

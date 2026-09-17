@@ -10,7 +10,7 @@ categories: [case-study]   # plus method tags from .claude/site-structure.md
 <!--
 Template for a contributed page. Delete these comments as you go.
 Filename: 2026-<author-slug>-<topic>.qmd  (e.g. 2026-nakamura-otolith-ageing.qmd)
-The shape below is a suggestion — follow your analysis, not the template.
+The shape below is a suggestion; follow your analysis, not the template.
 -->
 
 ## The question
@@ -59,7 +59,7 @@ Which method, and why that one for this question.
 #| fig-alt: "Describe the figure for a reader who cannot see it."
 ```
 
-## What this does and does not show
+## Scope and limits
 
 The honest section. What you would not claim from this. Where the model would fail.
 Whether the validation scheme suits the dependence structure in your data.

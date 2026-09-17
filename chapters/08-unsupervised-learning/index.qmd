@@ -1,6 +1,6 @@
 ---
 title: "8 · Unsupervised learning"
-description: "Finding structure when you have no labels — clustering, PCA, dimensionality reduction — and how to tell a real group from a cut through a gradient."
+description: "Finding structure when you have no labels, through clustering, PCA and dimensionality reduction, and how to tell a real group from a cut through a gradient."
 categories: [unsupervised, interpretation]
 listing:
   id: pages
@@ -30,10 +30,10 @@ back was real.
 ::: {#pages}
 :::
 
-## What this section found
+## Findings from this section
 
 - Clustering 24 taxon counts recovered the **hard-bottom / soft-bottom** split of the
-  seabed with **15 stations out of 800** on the wrong side — from counts alone, having
+  seabed with **15 stations out of 800** on the wrong side, from counts alone, having
   never seen a substrate column.
 - Depth is **99.4%** of the variance of the raw environmental table. Clustering those
   columns without standardising is clustering depth, and nothing else.
@@ -46,27 +46,27 @@ back was real.
 - One distance matrix and four linkage rules gave agreement with the true split ranging
   from **0.005** (single linkage) to **0.889** (Ward). `hclust()`'s default scored 0.332 at
   $k=2$.
-- Both real gradients in the data lie at about **45°** to the principal axes — 139° and
-  41° — because they carry almost the same variance and PCA has no way to choose between
+- Both real gradients in the data lie at about **45°** to the principal axes, 139° and
+  41°, because they carry almost the same variance and PCA has no way to choose between
   rotations.
 - Rules for how many components to keep said **16**, **7** and **3**. Cross-validated
   prediction said **two**: two components predicted station depth to 21.2 m, and all 24
   did no better.
-- Bootstrap stability was **bimodal** — 53 replicates found the substrate split, 7 found a
-  depth split, nothing landed in between — and its mean of 0.881 described neither.
+- Bootstrap stability was **bimodal**, with 53 replicates finding the substrate split and 7 a
+  depth split and nothing in between, and its mean of 0.881 described neither.
 
 ::: {.callout-important}
 The most stable result in the section is the one that corresponds to nothing. Splitting
 the soft-bottom stations by depth reproduces at an adjusted Rand index of 0.890 and never
-drops below 0.71 — and the data contains no soft-sediment assemblages, only a continuous
+drops below 0.71, and the data contains no soft-sediment assemblages, only a continuous
 turnover that k-means cut in the same place every time. **Stability is necessary and not
 sufficient.** A stable algorithm cuts a stable gradient in a stable place.
 :::
 
 ::: {.callout-note}
-Two habits run through every page here. **Put your data through a structure-free null** —
+Two habits run through every page here. **Put your data through a structure-free null**:
 shuffle each column independently, keeping every variable's own distribution and
-destroying co-occurrence — and run the identical pipeline on it, because almost no
+destroying co-occurrence, then run the identical pipeline on it, because almost no
 unsupervised statistic can be read on an absolute scale. And **check the result against a
 variable the method never saw**; agreement with a *categorical* one is evidence of groups,
 while agreement with a *binned continuous* one is only ever evidence of a gradient.

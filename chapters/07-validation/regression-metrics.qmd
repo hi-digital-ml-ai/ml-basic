@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## A measure states which mistakes you mind
 
 A performance measure is a statement about which mistakes you mind. RMSE says a single station
 predicted ten out is worse than a hundred stations predicted one out. MAE says they are the
@@ -39,7 +39,7 @@ $i$:
 | --- | --- | --- |
 | **RMSE** | root of the mean squared error | large misses, quadratically |
 | **MAE** | mean absolute error | every unit of error equally |
-| **R²** (`rsq`) | squared correlation of $y$ and $\hat y$ | *pattern* only — blind to bias |
+| **R²** (`rsq`) | squared correlation of $y$ and $\hat y$ | *pattern* only, blind to bias |
 | **R²** (`rsq_trad`) | $1 - \text{SSE}/\text{SST}$ | pattern and bias, relative to the response's own spread |
 | **MAPE** | mean absolute *percentage* error | errors relative to the observed value |
 
@@ -199,10 +199,10 @@ scores.round(3)
 
 :::
 
-## What the results mean
+## Two measures, two winners
 
 **RMSE and MAE pick different winners.** The negative binomial has the lowest RMSE at 4.215.
-The log-transformed linear model has the lowest MAE at 2.783 — and it is *fourth* of five on
+The log-transformed linear model has the lowest MAE at 2.783, and it is *fourth* of five on
 RMSE. That is not noise; it is the two measures doing their jobs.
 
 The log model was fitted to minimise error on the log scale, where the crowded low counts
@@ -219,8 +219,8 @@ The log model's `rsq` is 0.224, close to the best in the table. Its `rsq_trad` i
 gap is the bias: squared correlation is unchanged if you multiply every prediction by 0.69,
 because correlation does not care about scale or offset.
 
-If you report `rsq()` — which is what `metric_set(rsq)` and `collect_metrics()` give you by
-default — you can publish a model that under-counts the stock by a third and still show a
+If you report `rsq()`, which is what `metric_set(rsq)` and `collect_metrics()` give you by
+default, you can publish a model that under-counts the stock by a third and still show a
 respectable R². Report `rsq_trad()` as well, or report the ratio of totals directly.
 :::
 
@@ -273,15 +273,16 @@ concentration
 
 :::
 
-Seven stations out of 720 — the worst 1% — account for about a quarter of the squared error
+Seven stations out of 720, the worst 1%, account for about a quarter of the squared error
 the RMSE is built from. The worst 5% account for half of it. Under absolute error the same 5%
 account for a fifth.
 
-So when you compare two models by RMSE on aggregating species, you are largely comparing how
-they handle a handful of big hauls. That may be exactly right — a model for fishery management
-had better get the dense patches right — but it should be a decision, not an accident.
+So when you compare two models by RMSE on aggregating species, you are largely comparing
+how they handle a handful of big hauls. That may be exactly right, since a model for
+fishery management had better get the dense patches right, but it should be a decision,
+not an accident.
 
-### What MAPE would have you do
+### The model MAPE would prefer
 
 MAPE divides each error by the observed value, which has two consequences on count data.
 
@@ -312,7 +313,7 @@ pd.Series({
 :::
 
 The first consequence is that it does not exist. Dividing by an observed count of zero is
-undefined, and 157 of these 720 stations caught nothing — so MAPE can only be computed after
+undefined, and 157 of these 720 stations caught nothing, so MAPE can only be computed after
 silently discarding the fifth of the survey that is most informative about where the species
 is not.
 
@@ -322,8 +323,8 @@ them all by a constant.
 
 ```{r}
 #| label: fig-scaling
-#| fig-cap: "What happens to three measures when every prediction from the negative binomial model is multiplied by a constant. Each panel is scaled to its own best value. RMSE bottoms out at 0.98, essentially where the model already is. MAE bottoms out at 0.74. MAPE, computed on the 563 non-zero stations, bottoms out at 0.47 — it would have you halve every prediction you believe in."
-#| fig-alt: "Three curves on a shared horizontal axis labelled multiply every prediction by, running from 0.3 to 1.6, each in its own panel stacked vertically and each scaled so its lowest value is 1. The top panel, RMSE, is a symmetric U with a dot at its base at 0.98. The middle panel, MAE, is a shallower U with its dot at 0.74. The bottom panel, MAPE, is almost flat from 0.3 to 0.6 with its dot at 0.47, then climbs steeply and without turning to 2.6 times its best value by the right-hand edge — an asymmetric curve, punishing over-prediction far more than under-prediction."
+#| fig-cap: "What happens to three measures when every prediction from the negative binomial model is multiplied by a constant. Each panel is scaled to its own best value. RMSE bottoms out at 0.98, essentially where the model already is. MAE bottoms out at 0.74. MAPE, computed on the 563 non-zero stations, bottoms out at 0.47, so it would have you halve every prediction you believe in."
+#| fig-alt: "Three curves on a shared horizontal axis labelled multiply every prediction by, running from 0.3 to 1.6, each in its own panel stacked vertically and each scaled so its lowest value is 1. The top panel, RMSE, is a symmetric U with a dot at its base at 0.98. The middle panel, MAE, is a shallower U with its dot at 0.74. The bottom panel, MAPE, is almost flat from 0.3 to 0.6 with its dot at 0.47, then climbs steeply and without turning to 2.6 times its best value by the right-hand edge: an asymmetric curve, punishing over-prediction far more than under-prediction."
 #| fig-width: 7
 #| fig-height: 5
 non_zero <- filter(nb, obs > 0)
@@ -355,13 +356,13 @@ ggplot(curves, aes(scale, relative)) +
 ```
 
 MAPE prefers a model that predicts 47% of what the negative binomial believes. MAE prefers
-74%. RMSE is minimised at 0.98 — essentially where the model already is. Notice the shape as
+74%. RMSE is minimised at 0.98, essentially where the model already is. Notice the shape as
 well as the minimum: MAPE is nearly flat to the left of its best point and climbs steeply to
 the right, which is the asymmetry made visible. A measure that systematically rewards
 under-prediction has no place in abundance work, and this is why.
 
 ::: {.callout-important}
-## The fold-to-fold spread, and why you may not compare across schemes
+## The fold-to-fold spread, and comparing across schemes
 
 Section 6 ran into this three times. Here it is directly: the *same* negative binomial model,
 scored fold by fold on the same ten folds.
@@ -406,20 +407,20 @@ pd.Series({
 :::
 
 One model, one dataset: RMSE between 3.51 and 5.92, and `rsq_trad` between **−0.42 and
-+0.46** — from worse than predicting the fold's own mean to explaining nearly half its
++0.46**, from worse than predicting the fold's own mean to explaining nearly half its
 variance. The last number explains it. Fold RMSE correlates 0.78 with how spread out that
 fold's counts happen to be.
 
 So an RMSE is a property of the model *and* of the rows it was scored on. Compare RMSEs only
-when both models saw exactly the same rows — which is why every comparison in this section
+when both models saw exactly the same rows, which is why every comparison in this section
 pools the out-of-fold predictions first.
 :::
 
-## Where this breaks down
+## Limits of a single-number prediction
 
 Every measure here treats a prediction as a single number. Count models produce a whole
 predicted distribution, and collapsing it to its mean throws away the part a survey often cares
-about most — the chance of finding nothing at all. The *proper scoring rules* that grade a
+about most: the chance of finding nothing at all. The *proper scoring rules* that grade a
 whole predicted distribution (log score, CRPS, Poisson deviance) are the right tool there, and
 `yardstick::poisson_log_loss()` is the easiest entry point.
 

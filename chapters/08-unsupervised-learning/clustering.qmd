@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Grouping stations with no labels
 
 You have 800 grab samples and counts of two dozen taxa, and somebody asks which habitat
 types the survey covers. Nobody has classified the stations. There is no column to
@@ -24,7 +24,7 @@ predict. The question is whether the stations fall into recognisable kinds at al
 
 That is clustering: partitioning rows into groups so that rows in a group resemble each
 other more than they resemble rows elsewhere. It is the most used and the most
-over-read family of methods in this course, and the reason is simple — it always
+over-read family of methods in this course, and the reason is simple: it always
 returns an answer.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -35,9 +35,9 @@ returns an answer.
 ## About the community data on this page
 §8 uses a second simulated file, `data/coastal-community.csv`: the same 800 stations
 with counts of 24 benthic taxa. Two things were deliberately built into it. Depth acts
-as a **continuum** — each taxon has a depth optimum and the optima are spread evenly
+as a **continuum**: each taxon has a depth optimum and the optima are spread evenly
 from 20 m to 160 m, so composition turns over smoothly and there are no depth-defined
-assemblages. Substrate acts as a **genuine split** — six taxa live essentially only on
+assemblages. Substrate acts as a **genuine split**: six taxa live essentially only on
 rock and gravel, eight essentially only on sand and mud. So there is exactly one real
 grouping of stations, hard bottom against soft bottom, and we can check any method
 against it. See `data/README.md`.
@@ -55,7 +55,7 @@ and neither is obvious from the name.
 
 First, "nearest" means Euclidean distance in whatever units your columns happen to be
 in. Second, minimising squared distance to a centre favours clusters that are round and
-about the same size — so k-means will impose that shape whether or not the data has it.
+about the same size, so k-means will impose that shape whether or not the data has it.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
@@ -64,7 +64,7 @@ For rows $x_i$, a partition $C_1,\dots,C_k$ and centres $\mu_j$, k-means minimis
 $$W = \sum_{j=1}^{k} \sum_{i \in C_j} \lVert x_i - \mu_j \rVert^2$$
 
 where $\lVert \cdot \rVert$ is ordinary Euclidean distance. $W$ falls monotonically as
-$k$ rises — at $k = n$ it is zero — so $W$ alone can never tell you what $k$ should be.
+$k$ rises, reaching zero at $k = n$, so $W$ alone can never tell you what $k$ should be.
 That is the subject of [the next page](choosing-the-number-of-clusters.qmd).
 :::
 
@@ -175,7 +175,7 @@ pd.concat([cluster_means(raw_clusters, "measured units"),
 :::
 
 The two sets of clusters are different objects. In measured units the three groups are
-three depth bands — 46 m, 93 m and 139 m — and their chlorophyll and salinity means are
+three depth bands, 46 m, 93 m and 139 m, and their chlorophyll and salinity means are
 almost incidental. Standardised, one group separates on chlorophyll instead: 5.4
 mg m^-3^ against 1.3 in a group at almost the same depth. Those are spring blooms in
 shallow water, and the unscaled run could not see them.
@@ -198,18 +198,18 @@ plot_clusters <- function(cl, subtitle) {
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
-The adjusted Rand index between the two partitions — a similarity measure for
-groupings, [defined on the next page but one](beyond-k-means.qmd) — is 0.33. Neither is
+The adjusted Rand index between the two partitions, a similarity measure for
+groupings [defined on the next page but one](beyond-k-means.qmd), is 0.33. Neither is
 wrong. But "standardise, unless you have a reason not to" is the sane default, because
 otherwise the answer is decided by whoever picked the units.
 
 ::: {.callout-warning}
 Standardising is a choice too. It says every variable deserves equal weight, which is
 defensible for a set of environmental sensors and indefensible if three of your columns
-are near-duplicates of each other — they will then jointly outvote everything else.
+are near-duplicates of each other, since they will then jointly outvote everything else.
 :::
 
-## Worked example: do the stations fall into habitat types?
+## Worked example: habitat types from counts alone
 
 Now the community matrix. Counts are skewed and full of zeros, so we take `log1p` first
 and then standardise each taxon, and we do both inside a recipe so the steps travel with
@@ -281,7 +281,7 @@ best, which matters because k-means can settle into a poor local optimum.
 We picked `num_clusters = 2` here to keep this page about what clustering *is*. Where
 that 2 came from is the whole of the next page.
 
-## What the results mean
+## Against the structure that is really there
 
 The point of a simulated dataset is that we can ask the question no real study can
 answer: did it find the structure that is actually there?
@@ -348,18 +348,18 @@ stations |>
 :::
 
 Now look at depth, which is the *strongest* gradient in this dataset and the strongest
-driver of composition. The two clusters differ in median depth by 30 m — but each of
+driver of composition. The two clusters differ in median depth by 30 m, but each of
 them spans most of the shelf, roughly 27–132 m against 42–148 m. That 30 m is inherited,
 not found: rock sits shallow on this shelf (median 50 m) and mud sits deep (median
 105 m), so a substrate split comes with a depth tilt attached.
 
-What k-means did not do is cut the depth gradient itself. It had every opportunity —
-depth explains more compositional variation than substrate does — and it went for the
+What k-means did not do is cut the depth gradient itself. It had every opportunity, since
+depth explains more compositional variation than substrate does, and it went for the
 substrate boundary instead, because a gradient has no gap in it to split on. Ask for
 three clusters and it will cut the gradient anyway, at a depth of its own choosing. Hold
 on to that; it is the subject of the [last page](interpreting-patterns.qmd).
 
-## Where this breaks down
+## Limits of k-means
 
 **It always returns clusters.** Give k-means uniform noise and ask for four groups and
 you get four tidy, convincing, meaningless groups. There is no null hypothesis in the
@@ -383,7 +383,7 @@ ggplot(noise, aes(x, y, colour = cluster)) +
 **It assumes round, comparable clusters.** The within-cluster sum of squares is
 minimised by compact balls of similar size. An elongated assemblage along a front, or a
 small rare-habitat group of twenty stations beside a large common one, are both
-mis-served — the [hierarchical and model-based methods](beyond-k-means.qmd) exist partly
+mis-served, and the [hierarchical and model-based methods](beyond-k-means.qmd) exist partly
 for this reason.
 
 **Every row gets a label.** A station that belongs to nothing in particular is still
@@ -391,8 +391,8 @@ assigned, with the same confidence as a station at the centre of a group.
 
 **The distance is Euclidean.** For community counts that is a real assumption: it treats
 a joint absence of a taxon as evidence of similarity between two stations, which
-ecologists have argued about for fifty years. Community ecology has its own distances —
-Bray–Curtis and the Hellinger transformation among them — and if that is your field,
+ecologists have argued about for fifty years. Community ecology has its own distances,
+Bray–Curtis and the Hellinger transformation among them, and if that is your field,
 prefer them.
 
 ::: {.callout-tip}
@@ -405,7 +405,7 @@ prefer them.
 - Put the transformation and the standardisation in a **recipe**, so they travel with
   the model and are applied the same way every time.
 - On the community matrix, $k = 2$ recovered the hard/soft substrate split with 15
-  stations misplaced out of 800 — from counts alone, with no substrate column.
+  stations misplaced out of 800, from counts alone, with no substrate column.
 - It found nothing about depth, because depth is a **gradient**, and a gradient has no
   gap to split on.
 - Clustering never reports "no structure". Uniform noise yields tidy clusters, so

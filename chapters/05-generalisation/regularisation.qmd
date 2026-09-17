@@ -1,6 +1,6 @@
 ---
 title: "Regularisation"
-description: "Deliberately fitting your data worse, and why it works — plus an honest look at what lasso's variable selection is and is not."
+description: "Deliberately fitting your data worse, and why it works, plus an honest look at what lasso's variable selection is and is not."
 order: 5
 categories: [generalisation, tuning]
 ---
@@ -17,7 +17,7 @@ source(here::here("R/data.R"))
 set.seed(505)
 ```
 
-## Why this matters
+## Accepting a worse fit on purpose
 
 [The bias–variance page](bias-variance.qmd) ended with an implication that sounds perverse:
 if variance is costing you more than bias, you should accept a model that fits your data
@@ -54,14 +54,14 @@ The two penalties in common use differ in one respect that turns out to matter e
 [Section 4 derived all of this from priors](../04-how-algorithms-learn/map-and-priors.qmd):
 ridge is a Normal prior on the coefficients, lasso a Laplace one, and λ is the ratio of how
 noisy you think the data are to how large you think the effects are. Nothing on this page is a
-new idea — it is the same objective, given its applied name.
+new idea; it is the same objective, given its applied name.
 
 ::: {.callout-important}
 Both penalties add up coefficients measured in whatever units the predictors came in. A depth
 coefficient in metres and the same effect in millimetres differ by a factor of a thousand, and
 so do their penalties. **Predictors must be standardised before a penalised fit**, always. In
 tidymodels that is `step_normalize(all_numeric_predictors())`, and `glmnet` does it internally
-by default — which is convenient and also why its coefficients are not on the scale you fed it.
+by default, which is convenient and also why its coefficients are not on the scale you fed it.
 :::
 
 ## Worked example
@@ -69,8 +69,8 @@ by default — which is convenient and also why its coefficients are not on the 
 To show regularisation doing real work we need a situation where unpenalised fitting struggles:
 many predictors, not much data. This is the normal condition of a pilot survey.
 
-Fourteen genuine terms — including quadratics for depth, temperature and chlorophyll, and the
-two variables the simulation gives **no** effect at all, salinity and `survey_year` — plus
+Fourteen genuine terms, including quadratics for depth, temperature and chlorophyll and the
+two variables the simulation gives **no** effect at all, salinity and `survey_year`, plus
 thirty columns of pure noise, against 120 training stations.
 
 ::: {.panel-tabset group="language"}
@@ -232,7 +232,7 @@ pd.DataFrame([
 
 :::
 
-Least squares, given 44 predictors and 120 stations, scores 7.41 — considerably **worse than
+Least squares, given 44 predictors and 120 stations, scores 7.41, considerably **worse than
 predicting the training mean**, at 4.80. The penalised fits all land near 4.65, which is a
 third better than least squares and a real improvement on knowing nothing.
 
@@ -240,7 +240,7 @@ That is the case for regularisation, and it is not marginal.
 
 ```{r}
 #| label: fig-paths
-#| fig-cap: "Lasso coefficient paths. Every coefficient is zero at the far left, where the penalty is heaviest, and the model fills up as the penalty relaxes to the right. Genuine terms are coloured, the thirty noise columns grey. Mud substrate enters first and chlorophyll shortly after — but several noise columns have already left zero by then, and at the right-hand end four real terms have run away to ±7 while the rest of the model sits between −2 and +4."
+#| fig-cap: "Lasso coefficient paths. Every coefficient is zero at the far left, where the penalty is heaviest, and the model fills up as the penalty relaxes to the right. Genuine terms are coloured, the thirty noise columns grey. Mud substrate enters first and chlorophyll shortly after, but several noise columns have already left zero by then, and at the right-hand end four real terms have run away to ±7 while the rest of the model sits between −2 and +4."
 #| fig-alt: "A plot of standardised coefficient from minus 8 to 7 against log lambda, running from zero on the left to about minus 7 on the right. All 44 lines begin at zero at the left edge. A vermilion line for mud substrate leaves zero first, rises to about 1.3 and settles near 0.8. A blue line for chlorophyll leaves zero around log lambda minus 1.7 and climbs steadily to about 3.7. An orange line for the depth quadratic first goes negative to about minus 1.5, then reverses and ends at about plus 1.5. Four pale blue lines diverge sharply at the right-hand end, two reaching about plus 6 and plus 7 and two about minus 6 and minus 7. Thirty grey noise lines stay in a band between about minus 1 and plus 1, but several of them leave zero earlier than some of the coloured real terms."
 #| fig-width: 7.5
 #| fig-height: 4.8
@@ -264,23 +264,23 @@ ggplot(paths, aes(log(lambda), coefficient, group = term)) +
   geom_line(data = filter(paths, term %in% label_terms),
             aes(colour = term), linewidth = 1) +
   scale_x_reverse() +
-  labs(x = "log λ  —  penalty relaxes to the right", y = "Standardised coefficient",
+  labs(x = "log λ: penalty relaxes to the right", y = "Standardised coefficient",
        colour = NULL,
        title = "What lasso lets into the model, and in what order",
        subtitle = "Grey: thirty pure-noise columns. Pale blue: other real terms.")
 ```
 
-Two things in that figure are worth naming. The four pale-blue lines that run away to ±7 at the
-right-hand end are the collinear pairs — depth with depth², temperature with temperature² — taking
-large opposite values that partly cancel, exactly as the unpenalised fit did in
-[section 4](../04-how-algorithms-learn/map-and-priors.qmd). The penalty is the only thing holding
-them in check, and you can watch it let go.
+Two things in that figure are worth naming. The four pale-blue lines that run away to ±7
+at the right-hand end are the collinear pairs, depth with depth² and temperature with
+temperature², taking large opposite values that partly cancel, exactly as the unpenalised
+fit did in [section 4](../04-how-algorithms-learn/map-and-priors.qmd). The penalty is the
+only thing holding them in check, and you can watch it let go.
 
 The second is the ordering. Several grey noise columns leave zero before some of the real terms
 do. The order in which lasso admits variables is not a ranking of importance, and reading it as
 one is the mistake the next experiment is designed to expose.
 
-### How stable is the selection?
+### The stability of the selection
 
 Lasso returned twelve terms. Four were real and eight were noise. That single result could be
 bad luck, so we repeat it: draw 100 different training sets of 120 stations, choose λ by
@@ -338,7 +338,7 @@ frequency.sort_values("selected_in", ascending=False).head(12).round(2)
 
 ```{r}
 #| label: fig-stability
-#| fig-cap: "How often each term survives lasso selection, across 100 resampled training sets of 120 stations. Chlorophyll — a genuinely strong driver — survives 58% of the time. The most persistent pure-noise column survives 31% of the time, more often than several real terms. The two variables with no true effect, salinity and survey year, sit at 14% and 11%."
+#| fig-cap: "How often each term survives lasso selection, across 100 resampled training sets of 120 stations. Chlorophyll, a genuinely strong driver, survives 58% of the time. The most persistent pure-noise column survives 31% of the time, more often than several real terms. The two variables with no true effect, salinity and survey year, sit at 14% and 11%."
 #| fig-alt: "A dot plot with selection frequency from zero to 0.6 on the horizontal axis and forty-four terms on the vertical axis, ordered by frequency. Real terms are drawn as orange dots and noise columns as grey. Chlorophyll leads at 0.58, clearly ahead. Below it the orange and grey dots are thoroughly interleaved from about 0.36 down to 0.05, with no clean separation between the two groups. Salinity and survey year appear low in the ordering at 0.14 and 0.11."
 #| fig-width: 7
 #| fig-height: 6.5
@@ -379,15 +379,15 @@ frequency |>
 
 :::
 
-## What the results mean
+## Prediction against interpretation
 
 **Regularisation is an excellent prediction tool.** Least squares 7.41; ridge 4.64. That is the
 headline and it holds up: with more predictors than the data can support, shrinking them is
 worth a great deal.
 
 **Lasso's variable selection is not a reliable scientific claim.** Across 100 resamples, real
-terms survived 24.7% of the time on average and pure noise columns 17.9%. Chlorophyll — a
-genuine, strong, monotonic driver — was kept in only 58 of 100 fits. The most persistent noise
+terms survived 24.7% of the time on average and pure noise columns 17.9%. Chlorophyll, a
+genuine, strong, monotonic driver, was kept in only 58 of 100 fits. The most persistent noise
 column, which is `rnorm()` output and cannot matter, was kept in 31, ahead of several real
 predictors.
 
@@ -397,28 +397,28 @@ you a substantially different list on a different 120 stations. The correct repo
 selection frequency, not a list.
 
 **It did get the true nulls roughly right, though.** Salinity and `survey_year` have *no* effect
-by construction, and they sit at 14% and 11% — at the low end. So the method is picking up
+by construction, and they sit at 14% and 11%, at the low end. So the method is picking up
 something real; it simply does not have the resolution, at this sample size, to separate a weak
 real effect from a lucky noise column. That is a statement about how much information 120
 stations carry, not a defect in lasso.
 
 **Ridge and lasso predicted about equally well.** 4.637 against 4.684, a difference well inside
-the noise of one split. Lasso's sparsity bought interpretability, not accuracy — and the
+the noise of one split. Lasso's sparsity bought interpretability, not accuracy, and the
 interpretability turns out to be partly illusory.
 
 ::: {.callout-warning}
-The comparison table chose λ by looking at the test set, which is cheating, and deliberately so
-— it isolates the effect of the penalty from the effect of choosing it. Every figure in that
-table is therefore optimistic. Choosing λ honestly is
-[the next page](hyperparameter-selection.qmd), and the stability experiment above does it
-correctly, with `cv.glmnet()` inside each resample.
+The comparison table chose λ by looking at the test set, which is cheating, and
+deliberately so, because it isolates the effect of the penalty from the effect of choosing
+it. Every figure in that table is therefore optimistic. Choosing λ honestly is [the next
+page](hyperparameter-selection.qmd), and the stability experiment above does it correctly,
+with `cv.glmnet()` inside each resample.
 :::
 
 ### The tidymodels version
 
 `glmnet` is used directly above so the paths are visible. In practice regularisation goes
 through the standard workflow, where `step_normalize()` is applied inside resampling rather
-than to the whole dataset — which is the
+than to the whole dataset, which is the
 [leakage-safe](../02-marine-data/information-leakage.qmd) way round.
 
 ::: {.panel-tabset group="language"}
@@ -489,30 +489,31 @@ pd.DataFrame({
 :::
 
 `penalty` is λ and `mixture` is the ridge–lasso dial. Both are hyperparameters, both are set by
-hand here, and both should be tuned — which is exactly what the next page does with these two.
+hand here, and both should be tuned, which is exactly what the next page does with these two.
 
-## Where this breaks down
+## Limits of penalised regression
 
 **Correlated predictors defeat lasso's selection.** When two predictors carry the same
-information — depth and temperature here, which are strongly related by construction — lasso
-picks one essentially arbitrarily and zeroes the other. Its absence from the model is then not
-evidence of irrelevance, exactly as
-[a variable's absence from a tree was not](../03-supervised-learning/trees-forests-boosting.qmd).
-Ridge handles correlated groups more gracefully by splitting the effect between them, and
-elastic net exists largely to get some of both behaviours.
+information, such as depth and temperature here, which are strongly related by
+construction, lasso picks one essentially arbitrarily and zeroes the other. Its absence
+from the model is then not evidence of irrelevance, exactly as [a variable's absence from
+a tree was not](../03-supervised-learning/trees-forests-boosting.qmd). Ridge handles
+correlated groups more gracefully by splitting the effect between them, and elastic net
+exists largely to get some of both behaviours.
 
 **Shrinkage biases every coefficient towards zero, including the true ones.** A penalised
 coefficient is not an estimate of an effect size; it is an estimate deliberately pulled towards
 zero to trade bias for variance. Do not report penalised coefficients as effect sizes, and do
 not compute confidence intervals from them without a method built for the purpose.
 
-**λ chosen from the data is not a prior.** [Section 4](../04-how-algorithms-learn/map-and-priors.qmd)
-made this point and it is worth repeating here: tuning λ by cross-validation is standard,
-effective, and no longer a statement of prior belief. The resulting intervals are optimistic.
+**λ chosen from the data is not a prior.** [Section
+4](../04-how-algorithms-learn/map-and-priors.qmd) made this point and it is worth
+repeating here: tuning λ by cross-validation is standard, effective, and no longer a
+statement of prior belief. The resulting intervals are optimistic.
 
 **None of this fixes a bad model class.** Penalised linear regression is still linear. If the
 response is hump-shaped in depth and you have not included a quadratic, no value of λ will find
-it — regularisation controls how freely the model uses what you gave it, not what you gave it.
+it: regularisation controls how freely the model uses what you gave it, not what you gave it.
 
 ::: {.callout-tip}
 ## Key points
@@ -521,8 +522,8 @@ it — regularisation controls how freely the model uses what you gave it, not w
   steadier model. Ridge penalises squares, lasso absolute values, elastic net both.
 - **Standardise first.** The penalty is charged in the predictors' units, so unscaled predictors
   are penalised arbitrarily.
-- On 44 predictors and 120 stations, least squares scored 7.41 — worse than predicting the mean
-  at 4.80 — and ridge scored 4.64.
+- On 44 predictors and 120 stations, least squares scored 7.41, worse than predicting the mean
+  at 4.80, and ridge scored 4.64.
 - **Lasso's selected set is unstable.** Over 100 resamples, real terms survived 24.7% of the
   time and pure noise columns 17.9%; the best noise column beat several real predictors. Report
   a selection frequency, not a list.
@@ -537,5 +538,5 @@ it — regularisation controls how freely the model uses what you gave it, not w
    much separation opens up between the real terms and the noise columns, and does chlorophyll
    reach a frequency you would be willing to publish?
 2. Set `mixture = 0.5` in the stability experiment. Elastic net is supposed to be steadier than
-   lasso when predictors are correlated — does the selection frequency of the real terms
+   lasso when predictors are correlated: does the selection frequency of the real terms
    actually rise?

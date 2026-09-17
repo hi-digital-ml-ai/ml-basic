@@ -17,16 +17,16 @@ source(here::here("R/data.R"))
 set.seed(502)
 ```
 
-## Why this matters
+## The shape of the test-error curve
 
 [The previous page](training-versus-new-data.qmd) showed that training error falls as a model
 becomes more flexible, and keeps falling, right down to zero. Test error does something else,
 and the shape it makes is the single most important picture in this course.
 
-It falls, reaches a minimum, and rises. To the left of that minimum the model is too rigid to
-represent what is there — **underfitting**. To the right it is representing things that are not
-there — **overfitting**. Everything in the rest of this section is machinery for finding the
-bottom of that curve without cheating.
+It falls, reaches a minimum, and rises. To the left of that minimum the model is too rigid
+to represent what is there, which is **underfitting**. To the right it is representing
+things that are not there, which is **overfitting**. Everything in the rest of this
+section is machinery for finding the bottom of that curve without cheating.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -81,11 +81,11 @@ step_plot("Underfitted", maxdepth = 1) +
 ```
 
 Depth's true effect in this simulation peaks near 80 m, but the *marginal* relationship over
-the sampled range is a decline, because temperature and chlorophyll — both of which fall with
-depth — carry much of the effect. A one-predictor tree can only show what is marginally there.
+the sampled range is a decline, because temperature and chlorophyll, both of which fall with
+depth, carry much of the effect. A one-predictor tree can only show what is marginally there.
 
 The right-hand panel is the one to sit with. It is not a *worse* description of these 480
-stations than the middle panel — it is a strictly better one, and its training error is zero.
+stations than the middle panel; it is a strictly better one, and its training error is zero.
 Every spike in it is a real station that really caught that many individuals. It is also
 useless, because the next survey's stations will be at different depths and will catch
 different numbers, and none of those spikes will be where they need to be.
@@ -222,18 +222,18 @@ sweep |>
        subtitle = "Dashed: predicting the training mean. Dotted: best test error, at 16 leaves.")
 ```
 
-## What the results mean
+## Reading the two ends
 
 The best tree on this survey has **16 leaves** and a test RMSE of 4.26. Around it:
 
 **The left end is underfitting, and it is mild.** At 7 leaves, training error is 4.390 and test
-error 4.391 — indistinguishable. That equality is the signature: a model this coarse has
+error 4.391, indistinguishable. That equality is the signature: a model this coarse has
 no capacity to chase noise, so it has no optimism, and what it reports about itself is honest.
 It is also only 0.13 worse than the best tree, which is worth remembering before assuming that
 simple models cost you much.
 
 **The right end is overfitting, and it is severe.** At one station per leaf, training error is
-exactly zero and test error is 5.71 — worse than the 4.67 you get from predicting the training
+exactly zero and test error is 5.71, worse than the 4.67 you get from predicting the training
 mean everywhere and using no predictors at all. Between 16 leaves and 377, the model acquired
 361 additional distinctions and got worse at every one.
 
@@ -254,7 +254,7 @@ by either alone.
 | Poor | Better than training | Something is wrong | Usually a split or preprocessing bug |
 
 The last row happens more often than people admit. It normally means the test set is easier
-than the training set — often because a filter was applied to one and not the other.
+than the training set, often because a filter was applied to one and not the other.
 :::
 
 ### Overfitting is not caused by flexible models
@@ -262,7 +262,7 @@ than the training set — often because a filter was applied to one and not the 
 It is caused by flexibility *relative to how much data you have and how noisy it is*. All three
 terms matter, and only one of them is under your control at analysis time.
 
-This survey has 720 usable stations and a heavily overdispersed response — the negative
+This survey has 720 usable stations and a heavily overdispersed response: the negative
 binomial dispersion from
 [section 4](../04-how-algorithms-learn/maximum-likelihood.qmd) means the variance grows much
 faster than the mean. A 377-leaf tree on 540 training stations is hopeless here. The same tree
@@ -271,15 +271,15 @@ on 50,000 stations of a cleanly measured response might be entirely reasonable.
 Which is why "a random forest overfits" and "deep learning needs a lot of data" are the same
 statement, and why neither is a property of the algorithm.
 
-## Where this breaks down
+## Limits of the U-shape
 
-**The curve is not always U-shaped.** For some models — random forests in particular — test
+**The curve is not always U-shaped.** For some models, random forests in particular, test
 error falls and then flattens rather than rising, because averaging many overfitted trees
 cancels much of the overfitting. Adding trees to a forest does not overfit; adding depth to a
 single tree does. Treat "more flexible is eventually worse" as a strong default, not a law.
 
 **The minimum is shallower than it looks.** Between 7 and 27 leaves the test error moves by
-0.17, which is close to the noise of a single split — the
+0.17, which is close to the noise of a single split, and the
 [previous page](training-versus-new-data.qmd) put run-to-run variation at a comparable scale.
 Reading "16 leaves is optimal" off this curve is over-reading it; what the curve supports is
 "somewhere in the teens, and definitely not hundreds".
@@ -302,7 +302,7 @@ is further left.
   the right. Finding the bottom without cheating is what the rest of this section is for.
 - **Underfitting** shows as poor training *and* test error, roughly equal. Here, 4.39 and 4.39
   at seven leaves.
-- **Overfitting** shows as a large gap. Here, 0.000 and 5.71 at one station per leaf — worse
+- **Overfitting** shows as a large gap. Here, 0.000 and 5.71 at one station per leaf, worse
   than using no predictors at all.
 - Training error gives no warning as you cross from one to the other. It falls smoothly through
   the whole range.

@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Two components because two fit on a page
 
 [The previous page](principal-component-analysis.qmd) used two components because two is
 what fits on a page. That is a reason to plot two, not a reason to *keep* two.
@@ -135,7 +135,7 @@ Sixteen, seven, or three. They disagree because they are asking different questi
 
 **The 80% rule** asks how much of the total spread you want to carry with you. In sparse
 count data most of the spread is sampling noise, so the rule ends up demanding almost
-every component — sixteen of twenty-four here, which reduces nothing.
+every component, sixteen of twenty-four here, which reduces nothing.
 
 **Kaiser's rule** keeps components that explain more than one standardised variable's
 worth of variance. It is a reasonable idea and it is known to over-keep, which it does
@@ -145,12 +145,12 @@ here.
 [an earlier page](choosing-the-number-of-clusters.qmd): shuffle each column
 independently, so every taxon keeps its distribution but co-occurrence is destroyed, and
 keep only the components that beat what that shuffling produces. It says three. The truth
-built into the data is two gradients, and PC3's excess over the null is slight —
-0.062 against a threshold of 0.053 — so three is one component of wishful thinking, which
+built into the data is two gradients, and PC3's excess over the null is slight,
+0.062 against a threshold of 0.053, so three is one component of wishful thinking, which
 is a much smaller error than thirteen.
 
 ::: {.callout-note collapse="true"}
-## Why the shuffled eigenvalues are not all equal to 1
+## The shuffled eigenvalues are not all equal to 1
 If shuffling destroys all correlation, you might expect every shuffled eigenvalue to come
 out at 1. They do not: the largest averages 1.32 and the smallest 0.72, because
 with 800 rows the sample correlation matrix is never exactly the identity, and PCA
@@ -164,7 +164,7 @@ too many.
 Better than any rule of thumb: if the components are going to be used for something,
 measure how many that something needs.
 
-Community composition is used as an environmental indicator all the time — the taxa
+Community composition is used as an environmental indicator all the time, since the taxa
 present tell you about the habitat. So let us reverse the usual direction and predict
 **depth from composition**, choosing the number of components by cross-validation.
 
@@ -269,7 +269,7 @@ built from.
 ::: {.callout-important}
 `step_pca()` is inside the recipe, so the rotation is computed on each fold's analysis set
 and applied to its assessment set. Running `prcomp()` on the whole table first and then
-cross-validating the scores would let every fold's training data see the held-out rows —
+cross-validating the scores would let every fold's training data see the held-out rows,
 the leakage §2 warned about and §7 spent a section on. PCA leaks less than a supervised
 preprocessing step would, because it never looks at the response, but the recipe costs you
 nothing and removes the question.
@@ -347,18 +347,18 @@ umap_panel <- function(coords, subtitle, shapes) {
 The left panel is a better picture than the PCA ordination was. The hard-bottom stations
 are pulled out into a distinct arm instead of merely leaning away, and the depth gradient
 runs smoothly along both the arm and the main mass. The two are still joined by a bridge
-of stations rather than fully separated — which is honest, since some stations genuinely
-sit between them — but if the aim is to *show* someone the structure, UMAP wins here.
+of stations rather than fully separated, which is honest since some stations genuinely
+sit between them, but if the aim is to *show* someone the structure, UMAP wins here.
 
 The right panel is why you must not stop there. It is data with nothing in it, and it
-still produces a shape — an outline with lumps in it and a couple of interior gaps. There
+still produces a shape: an outline with lumps in it and a couple of interior gaps. There
 are no islands in it and nobody would call it three clusters, but it is not the
 featureless disc people expect a null to look like, and on a smaller dataset or with a
 smaller `n_neighbors` it separates into pieces readily. The colouring is what gives it
 away: no gradient, no grouping, nothing.
 
 ::: {.callout-warning}
-## What a UMAP plot is not evidence for
+## The things a UMAP plot is not evidence for
 
 - **Distance between groups.** Two islands twice as far apart as another pair are not
   twice as different. The algorithm optimises neighbourhoods and the space between groups
@@ -372,15 +372,15 @@ What it *is* evidence for: which stations are each other's nearest neighbours in
 original high-dimensional space. Everything else on the page is decoration.
 :::
 
-The settings matter, and you should report them. Here the embedding is fairly robust —
+The settings matter, and you should report them. Here the embedding is fairly robust, since
 the correlation between the second UMAP dimension and depth is 0.81, 0.84 and 0.84 at
-`n_neighbors` of 5, 15 and 50 — but robustness is something to check rather than assume,
+`n_neighbors` of 5, 15 and 50, but robustness is something to check rather than assume,
 and it is not general.
 
 For the tidymodels route, `embed::step_umap()` puts the same thing in a recipe, with the
 same protection that `step_pca()` gave above.
 
-## Where this breaks down
+## Limits of reduced components
 
 **Reduced components are harder to explain than the columns they replace.** A manager can
 act on "mud below 100 m"; nobody can act on "PC2 above 1.4". If the result must be
@@ -400,7 +400,7 @@ prediction needed both components and got most of the way with the *pair*, not w
 
 - The common rules disagree badly: 80% of variance kept **16** components, Kaiser kept
   **7**, parallel analysis kept **3**. Two is the truth.
-- **Parallel analysis** — compare each eigenvalue against column-shuffled data — is the
+- **Parallel analysis**, comparing each eigenvalue against column-shuffled data, is the
   one to reach for, and it is the same null trick that fixed cluster-count selection.
 - Better still, let the downstream task choose. Predicting depth from composition needed
   two components (RMSE 21.2 m); the other twenty-two added nothing out of sample.

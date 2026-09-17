@@ -15,7 +15,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The one honest measurement
 
 [Section 1](../01-introduction/what-is-machine-learning.qmd) showed a random forest
 fitting its training data twice as well as a linear model and predicting new data
@@ -23,7 +23,7 @@ barely better. Nothing in the model's own output revealed that. Only data the mo
 never seen did.
 
 That is the entire function of a held-back set: it is the only honest measurement you
-have. Everything in this page is about protecting it — and in marine data, protecting it
+have. Everything in this page is about protecting it, and in marine data, protecting it
 takes more than a random split.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -34,21 +34,21 @@ takes more than a random split.
 
 ### Three roles, not three files
 
-- **Training data** — the model learns its parameters from this. Coefficients, split
+- **Training data**: the model learns its parameters from this. Coefficients, split
   points, weights.
-- **Validation data** — used to *choose*: which model, which hyperparameters, which
+- **Validation data**: used to *choose*: which model, which hyperparameters, which
   features. Choosing is a form of learning, so these choices must not be made on the
   test set.
-- **Test data** — used once, at the end, to report how well the chosen model does. Look
+- **Test data**: used once, at the end, to report how well the chosen model does. Look
   at it twice and it stops being a test set.
 
 The middle role is the one people skip, and skipping it is how results get oversold. If
 you try eight models and report the best one's test score, that score is the maximum of
-eight noisy numbers, which is biased upward — and the more things you try, the worse it
+eight noisy numbers, which is biased upward, and the more things you try, the worse it
 gets. The test set answers *how good is this model*, never *which model is best*.
 
 ::: {.callout-note collapse="true"}
-## Where cross-validation fits
+## The place of cross-validation
 A separate validation set is wasteful when data is scarce, which in marine science is
 always. Cross-validation replaces it: split the training data into folds, and let each
 fold take a turn as the validation set. The test set is untouched and still used once.
@@ -57,10 +57,10 @@ cross-validation is a smarter way to do validation, not a replacement for holdin
 a test set.
 :::
 
-### How much to hold back
+### The size of the test set
 
 Common splits are 70/30, 75/25 and 80/20. There is no principle behind the specific
-numbers — it is a trade-off between training the model well and measuring it precisely.
+numbers: it is a trade-off between training the model well and measuring it precisely.
 With a few hundred rows, a 25% test set is small enough that its score is noisy; with
 hundreds of thousands, 5% is plenty.
 
@@ -79,7 +79,7 @@ visits to a site, spatial proximity, and time.
 
 If station A and station B are two visits to the same site, and A lands in training
 while B lands in test, the model has effectively seen B. Its test score measures how
-well it memorised a site, not how well it generalises to a new one — and the score will
+well it memorised a site, not how well it generalises to a new one, and the score will
 be high.
 
 ## Worked example
@@ -201,7 +201,7 @@ not do that. It did not happen.
 ::: {.callout-warning}
 ## `strata` can be ignored without telling you
 `rsample` pools strata that are smaller than the `pool` argument, which defaults to
-`0.1`. Our rare class is 5.1% of the data — below the threshold — so it was pooled
+`0.1`. Our rare class is 5.1% of the data, below the threshold, so it was pooled
 away and the split fell back to unstratified. Silently: no error, and on this version
 no warning either.
 
@@ -245,7 +245,7 @@ pd.DataFrame({
 :::
 
 Now it holds: 5.0% against 5.5%, either side of the 5.1% in the full data. Note that
-lowering `pool` produces a warning of its own, and the warning is fair — stratifying on
+lowering `pool` produces a warning of its own, and the warning is fair: stratifying on
 41 positive cases is statistically thin. But thin and honest beats absent and silent.
 
 The general lesson is bigger than one argument: **check that a safeguard did what you
@@ -322,10 +322,10 @@ pd.DataFrame({
 :::
 
 Under the random split, *every single one* of the 200 test stations sits at a site the
-model has already trained on. Not most — all of them. Whatever that test set is measuring, it is not performance at
-a new location — which is what a habitat map is for.
+model has already trained on. Not most, all of them. Whatever that test set is measuring,
+it is not performance at a new location, which is what a habitat map is for.
 
-## What the results mean
+## Two splits, two questions
 
 Two splits of the same data, two different questions:
 
@@ -344,7 +344,7 @@ generalise across.** New sites, split by site. Next year, split by year. A new s
 vessel, split by vessel. If you will only ever predict more stations within the same
 programme, a random split is honest.
 
-## Where this breaks down
+## Limits of a single split
 
 **The test set is a single draw.** With 200 test rows, its score carries real
 uncertainty, and two different seeds give two different answers. Report it as an
@@ -373,7 +373,7 @@ about what makes your data unbalanced.
 - Split along the dimension you intend to generalise across: new sites, new years, new
   vessels.
 - Here, a random split puts most test stations at sites the model has already trained
-  on — so it answers a much easier question than the one being asked.
+  on, so it answers a much easier question than the one being asked.
 :::
 
 ## Try it yourself
@@ -381,5 +381,5 @@ about what makes your data unbalanced.
 1. Run the random split with three different seeds and record the proportion of the
    rare species in each test set. How much does it move?
 2. Fit the same model under `initial_split()` and under `group_initial_split()`, and
-   compare test RMSE. The difference is what a random split was hiding — and it is the
+   compare test RMSE. The difference is what a random split was hiding, and it is the
    subject of [section 7](../07-validation/index.qmd).

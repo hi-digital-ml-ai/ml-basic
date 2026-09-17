@@ -1,6 +1,6 @@
 ---
 title: "What one row is"
-description: "Observations, features, responses and labels — and the question marine data makes genuinely hard: how many independent observations do you actually have?"
+description: "Observations, features, responses and labels, plus the question marine data makes genuinely hard: how many independent observations do you actually have?"
 order: 1
 categories: [data-preparation, marine-data]
 ---
@@ -13,12 +13,12 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## The rectangle and what it hides
 
 Machine learning wants a rectangle: rows of observations, columns of variables, one
 column singled out as the thing to predict. Getting your data into that shape looks
 clerical. It is not. The choice of what a row represents fixes what the model can
-learn, what "independent" means, and — as we will see — how much data you actually
+learn, what "independent" means, and, as we will see, how much data you actually
 have, which is usually less than the row count suggests.
 
 This is also where marine data stops resembling the textbook. A trawl, a CTD cast, a
@@ -45,7 +45,7 @@ the map.
 | **Label** | class, annotation, ground truth | The response when it is a category, usually assigned by a person |
 
 Two notes on the traps in that table. "Sample" means a single observation in machine
-learning and the whole collection of them in field science — be careful which you mean
+learning and the whole collection of them in field science, so be careful which you mean
 in a mixed-discipline meeting. And "ground truth" is a confident phrase for something
 that is usually one specialist's opinion; [section 7](../07-validation/index.qmd)
 returns to the fact that your labels have an error rate too.
@@ -59,11 +59,11 @@ The vocabulary is easy. This is not:
 Consider a survey that visits 160 monitoring sites, several times each, over six years.
 A row could reasonably be:
 
-- **one trawl** — what the database stores;
-- **one site-year** — if you average the trawls, because repeat trawls at a site on the
+- **one trawl**: what the database stores;
+- **one site-year**: if you average the trawls, because repeat trawls at a site on the
   same day are not independent;
-- **one site** — if the site's character, not the visit, is what varies;
-- **one fish** — if you are modelling individual growth rather than abundance.
+- **one site**: if the site's character, not the visit, is what varies;
+- **one fish**: if you are modelling individual growth rather than abundance.
 
 There is no universally right answer. There is an answer that matches your scientific
 question, and the cost of getting it wrong is that your model, and every confidence
@@ -182,12 +182,12 @@ raw |>
 
 Most sites appear four to six times; one appears fifteen times.
 
-## What the results mean
+## Counting the independent rows
 
 Fit a model on this table and it will treat all 815 rows as independent evidence. They
 are not, in three separate ways.
 
-**Fifteen rows are exact duplicates** — the same station entered twice. They add no
+**Fifteen rows are exact duplicates**: the same station entered twice. They add no
 information at all, but they add weight: a duplicated station counts double in the
 fitting, and, worse, can land in the training set *and* the test set at once, where it
 guarantees a perfect prediction it did not earn. That is leakage, and it has
@@ -205,7 +205,7 @@ this seriously.
 
 The practical consequence is that **your effective sample size is nearer 160 than 815**,
 and every performance figure computed as though it were 815 will be optimistic. Not by
-a rounding error — typically by a lot.
+a rounding error, but typically by a lot.
 
 Note what this does *not* mean. You should not throw away rows. The extra visits carry
 real information about within-site variation. What you must do is stop the *resampling*
@@ -213,7 +213,7 @@ scheme from splitting a site across training and test data, which
 [section 7](../07-validation/index.qmd) handles with grouped resampling. The fix lives
 in how you validate, not in how much data you keep.
 
-## Where this breaks down
+## Limits of the rectangle
 
 **Rectangles lose structure.** Flattening a depth profile into one row per cast throws
 away the shape of the profile; keeping one row per depth bin multiplies
@@ -230,13 +230,13 @@ a model of gear variability. You cannot answer it by looking at the data alone.
 
 ::: {.callout-tip}
 ## Key points
-- Observation, feature, response, label — learn the synonyms, because the literature
+- Observation, feature, response, label: learn the synonyms, because the literature
   will use all of them.
 - Deciding what one row represents is a scientific decision, not a data-entry one.
 - The row count is not the sample size. Here: 815 rows, 800 unique, 160 sites.
 - Repeat visits, duplicate rows and spatial proximity all make rows share information.
   A model handed the raw table assumes none of that.
-- The fix is in the resampling scheme, not in deleting data — keep the rows, and keep
+- The fix is in the resampling scheme, not in deleting data: keep the rows, and keep
   a site's rows together.
 :::
 

@@ -10,8 +10,8 @@ listing:
 toc: false
 ---
 
-These pages were written by course participants — researchers in fisheries,
-oceanography, ecology and related fields — using data from their own work. They are
+These pages were written by course participants, researchers in fisheries,
+oceanography, ecology and related fields, using data from their own work. They are
 not tidy teaching examples. They show the methods from the course meeting real data,
 with the compromises that involves.
 

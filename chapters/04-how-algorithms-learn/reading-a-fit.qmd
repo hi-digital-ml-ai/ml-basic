@@ -1,6 +1,6 @@
 ---
 title: "Reading a fit"
-description: "How to tell whether the optimisation actually worked — the warnings that matter, the ones that do not, and the signatures of silent failure."
+description: "How to tell whether the optimisation actually worked: the warnings that matter, the ones that do not, and the signatures of silent failure."
 order: 6
 categories: [optimisation, reproducibility]
 ---
@@ -17,7 +17,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## Failure leaves signatures
 
 Everything so far in this section has described fitting as a search. A search can fail, and
 the useful thing about failure is that it leaves signatures. This page is about recognising
@@ -26,7 +26,7 @@ them.
 The reason to care is that a failed fit does not usually look like a failed fit. It returns
 coefficients. It prints a summary. It makes predictions. Section 3 contained one model that
 produced a perfectly respectable ROC AUC while predicting presence at zero stations, and the
-optimisation there was working exactly as instructed — which is precisely why you cannot rely
+optimisation there was working exactly as instructed, which is precisely why you cannot rely
 on output looking reasonable.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -79,7 +79,7 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
-The truncated fit reports a chlorophyll coefficient of −0.312 against the correct −0.344 —
+The truncated fit reports a chlorophyll coefficient of −0.312 against the correct −0.344:
 9% out, and entirely plausible-looking on its own. The only thing distinguishing them is
 `$converged`, which is a field you have to ask for.
 
@@ -91,7 +91,7 @@ to it.
 ### Failure 2: the search finished nowhere
 
 This one produces the most memorable output in applied statistics. `catch_weight_kg` is the
-leaked column from [section 2](../02-marine-data/information-leakage.qmd) — it is computed
+leaked column from [section 2](../02-marine-data/information-leakage.qmd), computed
 from `abundance`, so it separates present from absent almost perfectly.
 
 ```{r}
@@ -112,7 +112,7 @@ plainly: the model has found a predictor that classifies the response essentiall
 and reports it as the least significant variable you have ever seen.
 
 Both numbers are correct and neither is meaningful. When one predictor separates the classes,
-the likelihood has no maximum — pushing the coefficient further from zero always makes the
+the likelihood has no maximum: pushing the coefficient further from zero always makes the
 data slightly more probable, forever. The algorithm walks off in that direction until it hits
 its iteration cap at 25, and the standard error, being the curvature of a surface that is
 flattening out towards infinity, goes to infinity with it.
@@ -120,7 +120,7 @@ flattening out towards infinity, goes to infinity with it.
 ::: {.callout-warning}
 **A gigantic coefficient with a gigantic standard error is not weak evidence. It is a
 separation warning.** The clue is the ratio: an estimate of 158 with an error of 13,515 is
-not an estimate at all. If you see this, look for a predictor that encodes the answer — which
+not an estimate at all. If you see this, look for a predictor that encodes the answer, which
 in real work usually means [leakage](../02-marine-data/information-leakage.qmd), as it does
 here. R does print `fitted probabilities numerically 0 or 1 occurred`, and it is one of the
 few warnings that always means something.
@@ -146,7 +146,7 @@ unseeded <- map_dbl(1:5, \(i) {
 round(unseeded, 4)
 ```
 
-Five runs, five answers, spanning 0.037 RMSE. That is small — and it is the point. Section 3's
+Five runs, five answers, spanning 0.037 RMSE. That is small, and it is the point. Section 3's
 [ten-model comparison](../03-supervised-learning/choosing-a-method.qmd) separated several
 models by less than that, which is exactly why that page refused to treat small gaps in the
 table as a ranking. **Run-to-run noise is a measurement you can make, and it sets the
@@ -172,7 +172,7 @@ tibble(
 
 Twenty runs of the same algorithm on the same data found ten different answers, the worst 5%
 worse than the best. Every one of them converged. This is the difference between the convex
-objectives of [regression](parameter-estimation.qmd) — one minimum, always found — and
+objectives of [regression](parameter-estimation.qmd), with one minimum always found, and
 objectives that are merely bumpy, and it is why
 [section 8](../08-unsupervised-learning/index.qmd) insists on `nstart`.
 
@@ -202,14 +202,14 @@ p2 <- tibble(value = single_starts) |>
 p1 / p2
 ```
 
-## What the results mean
+## Three failures, three responses
 
 The three failures need three different responses.
 
 | Signature | What happened | What to do |
 | --- | --- | --- |
 | `converged = FALSE`, or a `maxit` warning | Ran out of iterations | Raise the cap; if it still fails, the model is wrong for the data |
-| Huge coefficient, huge standard error, *p* ≈ 1 | Separation — no maximum exists | Find the predictor that encodes the answer; suspect leakage |
+| Huge coefficient, huge standard error, *p* ≈ 1 | Separation: no maximum exists | Find the predictor that encodes the answer; suspect leakage |
 | Different answer each run | Stochastic algorithm, possibly multiple minima | Set a seed for reproducibility; measure the spread to know your resolution |
 | `NaN` loss, or coefficients exploding | Learning rate above the stable limit | Lower it; [scale the predictors](gradient-descent.qmd) |
 | Coefficients change wildly on small data changes | Flat valley, near-collinearity | Check correlations; consider [a prior](map-and-priors.qmd) |
@@ -225,24 +225,24 @@ different properties and only one of them is about your science.
 **Warnings are not all equal.** `fitted probabilities numerically 0 or 1 occurred` always
 means something. So does `algorithm did not converge`. By contrast, the rank-deficiency and
 `NA` coefficients that `lm()` produces from collinear predictors arrive with no warning at
-all — R simply drops a term and prints `NA` in the table, and nothing tells you it happened.
+all: R simply drops a term and prints `NA` in the table, and nothing tells you it happened.
 The loud messages are not a reliable guide to the dangerous failures.
 
 ### A checklist
 
 After fitting any model in this course, before reading a single coefficient:
 
-1. Did it converge? Not "did it print output" — check the flag.
+1. Did it converge? Not "did it print output": check the flag.
 2. Are any coefficients absurd in size, or are any `NA`?
 3. Is any standard error orders of magnitude larger than its estimate?
 4. If the algorithm is stochastic, what does it do on a second run without a seed?
-5. Are the predictions in a possible range — no negative counts, no probabilities outside
+5. Are the predictions in a possible range, with no negative counts, no probabilities outside
    (0, 1), nothing outside what the species can do?
 
 Item 5 catches more real mistakes than the other four combined, and it needs no statistics at
 all.
 
-## Where this breaks down
+## Limits of these checks
 
 **A converged fit can still be the wrong model.** Everything on this page is about whether the
 optimisation did what it was asked. It cannot tell you whether you asked for the right thing.
@@ -264,7 +264,7 @@ No checklist would have caught it. Only checking that the result was what you as
 - Check the **convergence flag**, not the plausibility of the coefficients. A fit stopped
   after two iterations here was 9% out and looked entirely normal.
 - A huge coefficient with a huge standard error and *p* ≈ 1 means **separation**, not weak
-  evidence — here, a coefficient of −158 with an error of 13,515 from a leaked predictor.
+  evidence: here, a coefficient of −158 with an error of 13,515 from a leaked predictor.
 - Stochastic algorithms give a different answer per run: the forest varied by 0.037 RMSE,
   k-means found ten distinct solutions out of twenty runs.
 - **Seeding gives reproducibility, not stability.** Remove the seed on purpose to measure how
@@ -277,7 +277,7 @@ No checklist would have caught it. Only checking that the result was what you as
 
 1. Fit `glm(present ~ abundance, family = binomial)` on this data. `present` is defined as
    `abundance > 0`, so the separation is exact. Compare the coefficient and standard error to
-   the `catch_weight_kg` version — which is worse, and why does that ordering make sense?
+   the `catch_weight_kg` version: which is worse, and why does that ordering make sense?
 2. Run the k-means block with `centers = 2` instead of 5. Does the number of distinct solutions
    go up or down, and what does that suggest about the relationship between model complexity
    and the number of places an algorithm can get stuck?

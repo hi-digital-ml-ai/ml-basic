@@ -1,6 +1,6 @@
 ---
 title: "The main types of learning"
-description: "Supervised, unsupervised, and where neural networks actually fit — one dataset asked three different questions."
+description: "Supervised, unsupervised, and where neural networks actually fit, with one dataset asked three different questions."
 order: 3
 categories: [foundations, supervised, unsupervised]
 ---
@@ -16,7 +16,7 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Why this matters
+## The first question to ask of a dataset
 
 The division into supervised and unsupervised learning sounds like taxonomy, the sort
 of thing to memorise and forget. It is not. It is the first question anyone should ask
@@ -32,8 +32,9 @@ territory and your central problem is knowing whether what you found is real.
 ## The idea
 
 **Supervised learning** learns from examples where the answer is known. Each row has
-predictors and an outcome — a labelled image, a station with a recorded catch — and the
-model learns the mapping from one to the other. It splits by the kind of outcome:
+predictors and an outcome, such as a labelled image or a station with a recorded
+catch, and the model learns the mapping from one to the other. It splits by the kind
+of outcome:
 *regression* for a quantity, *classification* for a category.
 
 **Unsupervised learning** has no outcome column. You hand the algorithm a table of
@@ -46,8 +47,8 @@ own outline, and it is worth being straight about a wrinkle there.
 
 ::: {.callout-important}
 ## A correction worth making early
-Neural networks are not a third *type of learning*. They are a family of *models* — one
-choice among many for the "model" slot — and they are used for supervised learning,
+Neural networks are not a third *type of learning*. They are a family of *models*, one
+choice among many for the "model" slot, and they are used for supervised learning,
 unsupervised learning, and other things besides.
 
 The real contrast is: supervised versus unsupervised describes **what your data lets you
@@ -58,7 +59,7 @@ Grouping them as three parallel types is common, and it quietly suggests that re
 for a neural network is a different kind of science. It is not.
 :::
 
-There is a genuine third paradigm — **reinforcement learning**, where an agent learns
+There is a genuine third paradigm, **reinforcement learning**, where an agent learns
 from the consequences of its actions. It is central to robotics and appears in marine
 science mainly in autonomous vehicle path planning. It is out of scope here.
 
@@ -77,13 +78,13 @@ test   <- testing(split)
 ### Supervised, regression: *how many?*
 
 The outcome is a count, so this is regression. This is the model from
-[the first page](what-is-machine-learning.qmd), so we will not repeat it — the outcome
+[the first page](what-is-machine-learning.qmd), so we will not repeat it. The outcome
 was that predicting abundance from environment is hard, and neither method did well.
 
 ### Supervised, classification: *is it here at all?*
 
 The outcome is now a category: present or absent. Same predictors, same forest, one
-changed line — `set_mode("classification")`.
+changed line: `set_mode("classification")`.
 
 ```{r}
 #| label: fit-classification
@@ -104,7 +105,7 @@ Seventy-nine per cent accurate. That sounds respectable. Hold that thought.
 
 ### Unsupervised: *what kinds of station are there?*
 
-Now we remove the outcome entirely. No abundance, no presence — only the water
+Now we remove the outcome entirely. No abundance, no presence, only the water
 properties. The algorithm is asked to sort 800 stations into three groups, with no
 notion of what makes a group good.
 
@@ -172,7 +173,7 @@ p_space + p_abund + plot_layout(widths = c(1.25, 1))
 
 One caution about that left panel: the clusters were formed in four dimensions, and
 any two-dimensional view of them is a shadow. Plot temperature instead of chlorophyll
-and the productive cluster looks scattered rather than distinct — not because the
+and the productive cluster looks scattered rather than distinct, not because the
 clustering is poor, but because the variable separating it is not on the axes. Judging
 clusters from a convenient 2-D plot is a reliable way to fool yourself, and
 [section 8](../08-unsupervised-learning/index.qmd) deals with it properly.
@@ -182,7 +183,7 @@ groupings that turn out to matter ecologically. It is also unsupervised learning
 most seductive, and [section 8](../08-unsupervised-learning/index.qmd) explains why: run
 it with `num_clusters = 6` and you get six equally confident habitats.
 
-## What the results mean
+## Putting the accuracy in context
 
 Return to that 79 per cent accuracy, and compare it with the laziest possible model:
 always answer "present".
@@ -206,8 +207,8 @@ predictions |> conf_mat(truth = present, estimate = .pred_class)
 ```
 
 It almost never predicts absence. Of the genuinely absent stations it catches a
-handful and misses most. If you are mapping where the species *is not* — the usual
-reason for modelling absence — this model is close to useless, and its headline
+handful and misses most. If you are mapping where the species *is not*, which is the usual
+reason for modelling absence, this model is close to useless, and its headline
 accuracy conceals that completely.
 
 This is the imbalance trap from [the previous page](applications-in-marine-science.qmd),
@@ -217,16 +218,16 @@ check your accuracy against the always-guess-the-common-class baseline.**
 [Section 7](../07-validation/index.qmd) covers the measures that do not have this
 weakness.
 
-Curiously, a small neural network does somewhat better here on the same data — not
+Curiously, a small neural network does somewhat better here on the same data, not
 because networks are more powerful in any general sense, but because this particular
 one, penalised and normalised, happened to suit the problem. That is the lesson of
 [section 9](../09-neural-networks/index.qmd) in advance: the network is another model,
 not another category of insight.
 
-## Where this breaks down
+## Limits of the three-way division
 
 **"Unsupervised" does not mean "assumption-free".** Choosing k-means, choosing three
-clusters, choosing which variables to include and how to scale them — every one of
+clusters, choosing which variables to include and how to scale them. Every one of
 those is a modelling decision that shapes the answer.
 
 **Labels are often less solid than they look.** Two specialists annotating the same
@@ -235,14 +236,14 @@ reliable than its labels, and its ceiling is the agreement rate between annotato
 
 **The boundary is blurry in practice.** Semi-supervised learning uses a few labels and
 much unlabelled data; self-supervised learning manufactures labels from the data's own
-structure — the gap-filling task on the previous page is exactly this. The clean
+structure; the gap-filling task on the previous page is exactly this. The clean
 division is a teaching device, not a law.
 
 ::: {.callout-tip}
 ## Key points
 - Supervised or unsupervised is decided by your data, not your preference: do you have
   labelled examples or not?
-- Supervised splits by outcome type — regression for a quantity, classification for a
+- Supervised splits by outcome type: regression for a quantity, classification for a
   category. In tidymodels that is one argument, `set_mode()`.
 - Neural networks are a *model*, not a type of learning. Choosing one is a choice of
   machine, not a different kind of science.

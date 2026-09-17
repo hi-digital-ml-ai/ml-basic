@@ -16,7 +16,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## Why this matters
+## Deciding what goes in the paper
 
 You have run the analysis. There are two clusters, or three, and the ordination looks
 like something. Now somebody has to decide what goes in the paper.
@@ -85,7 +85,7 @@ reference = KMeans(n_clusters=2, n_init=50, max_iter=100,
 
 :::
 
-## Question one: does it replicate?
+## Question one: replication
 
 Resample the stations, cluster the resample, and ask whether you get the same partition
 back. The mechanics are the bootstrap from [§7](../07-validation/uncertainty-and-stability.qmd):
@@ -217,15 +217,15 @@ contains two competing two-cluster answers of similar quality.
 
 ::: {.callout-important}
 Report the distribution, not its average. A bimodal stability result is not a noisy
-version of one answer — it is two answers, and knowing that is far more useful than a
+version of one answer; it is two answers, and knowing that is far more useful than a
 mean. Had we reported 0.881 and moved on, we would have described the data as having one
 stable two-cluster structure, which is false.
 :::
 
-## Question two: is it a group, or a cut through a gradient?
+## Question two: a group, or a cut through a gradient
 
 Now the harder one, because stability does not answer it. Take only the soft-bottom
-stations — one substrate, no boundary left to find — and cluster them into two.
+stations, one substrate with no boundary left to find, and cluster them into two.
 
 ::: {.panel-tabset group="language"}
 
@@ -288,18 +288,18 @@ pd.Series({
 
 This partition is **more** stable than the substrate one: mean agreement 0.890 and never
 below 0.71, against a bimodal 0.881 that reached 0.095 at its worst. It splits the soft
-bottom into a shallow group at a median of 60 m and a deep group at a median of 124 m. It would pass any stability check
-you cared to apply, and a paper describing "two distinct soft-sediment assemblages" would
-look well supported.
+bottom into a shallow group at a median of 60 m and a deep group at a median of 124 m. It
+would pass any stability check you cared to apply, and a paper describing "two distinct
+soft-sediment assemblages" would look well supported.
 
 It corresponds to nothing. We know, because we wrote the generator: every taxon was given
 a depth optimum, and the optima were **spread evenly** from 20 m to 160 m. There are no
 soft-sediment assemblages in this data. There is one continuous turnover, and k-means cut
-it in half, in the same place every time — which is why the cut is stable.
+it in half, in the same place every time, which is why the cut is stable.
 
 ```{r}
 #| label: fig-continuum
-#| fig-cap: "Eight soft-substrate taxa across the depth range, each smoothed over the soft-bottom stations. The peaks slide steadily along the axis and neighbouring curves overlap heavily; there is no depth at which one set of taxa hands over to another. The dashed line is the midpoint between the two clusters' median depths — the cut the partition amounts to."
+#| fig-cap: "Eight soft-substrate taxa across the depth range, each smoothed over the soft-bottom stations. The peaks slide steadily along the axis and neighbouring curves overlap heavily; there is no depth at which one set of taxa hands over to another. The dashed line is the midpoint between the two clusters' median depths: the cut the partition amounts to."
 #| fig-alt: "Line chart of smoothed mean count against depth from 0 to 180 metres, one line per taxon for eight soft-substrate taxa, coloured by true depth optimum from dark for shallow to yellow for deep. The peaks are staggered across the whole range, the darkest peaking near 20 metres and the palest near 155 metres, with each curve rising and falling over roughly 100 metres so that neighbouring curves overlap heavily and several taxa are abundant at every depth. No gap or step appears anywhere along the axis. A dashed vertical line near 92 metres marks the midpoint between the two clusters."
 #| fig-width: 7.5
 #| fig-height: 4.6
@@ -308,7 +308,7 @@ soft_taxa <- load_coastal_community_taxa() |>
   arrange(depth_optimum_m)
 
 # The two clusters overlap in depth, so there is no sharp edge to draw. This is the
-# midpoint between their median depths — the cut the partition amounts to.
+# midpoint between their median depths: the cut the partition amounts to.
 boundary <- mean(tapply(stations$depth_m[soft], soft_reference, median))
 
 community |>
@@ -331,7 +331,7 @@ This is the single most important picture in the section. A gradient and a set o
 look identical once you have turned them into cluster labels, and no amount of resampling
 will tell them apart, because a stable algorithm cuts a stable gradient in a stable place.
 
-## Question three: does it correspond to anything you did not use?
+## Question three: correspondence with something external
 
 The only thing that separated the two cases was information from outside the clustering.
 
@@ -372,23 +372,23 @@ pd.DataFrame({
 
 The whole-survey clustering matches substrate at 0.920 and depth tertiles at 0.020: it has
 found a categorical variable it was never shown. The soft-only clustering matches substrate
-at 0.000, which it must, since every station in it has the same substrate — and matches
+at 0.000, which it must, since every station in it has the same substrate, and matches
 depth tertiles at 0.40, which is what cutting a continuous variable into classes and then
 comparing against arbitrary classes of the same variable always gives.
 
 That is the asymmetry to hold on to. Agreement with a **categorical** external variable is
 evidence of groups. Agreement with a **continuous** one, binned for the comparison, is
-evidence only of a gradient — and a gradient is a finding too, just not the one the word
+evidence only of a gradient, and a gradient is a finding too, just not the one the word
 "cluster" implies.
 
 ::: {.callout-warning}
 Whatever you validate against must be information the clustering did not have. Cluster a
-community matrix and check against substrate, salinity, season, a seabed map — anything
+community matrix and check against substrate, salinity, season or a seabed map: anything
 measured separately. Clustering the environment *and* the community together and then
 noting that the clusters differ environmentally proves nothing at all.
 :::
 
-## What you can write down
+## The defensible claims
 
 From everything on this page, the defensible claims about this survey are:
 
@@ -404,13 +404,13 @@ From everything on this page, the defensible claims about this survey are:
 And the claims that are not available:
 
 - Any count of "assemblages" on this shelf beyond the two substrate groups.
-- Any statement that a principal component *is* the depth gradient — it is at
+- Any statement that a principal component *is* the depth gradient, which is at
   [about 45° to both axes](principal-component-analysis.qmd).
 - Any interpretation of distance or cluster size in
   [the UMAP picture](dimensionality-reduction.qmd).
 
 ::: {.callout-note}
-## What unsupervised methods are actually for
+## The real use of unsupervised methods
 Nothing here says the analysis was a waste. Clustering found a real boundary from counts
 alone, the ordination separated a boundary from a gradient at a glance, and two components
 predicted station depth to 21 m. Unsupervised methods are excellent at generating
@@ -420,10 +420,10 @@ decide what to measure next, and reach for
 [§7's machinery](../07-validation/index.qmd) when something needs testing.
 :::
 
-## Where this leaves the course
+## The rest of the course
 
 [§9](../09-neural-networks/index.qmd) takes up representation learning, where an
-autoencoder does what PCA does without the linearity — and inherits every interpretation
+autoencoder does what PCA does without the linearity, and inherits every interpretation
 problem on this page along with it.
 
 [§10](../10-interpretation/index.qmd) takes up the rest. The bimodal bootstrap here is a
@@ -435,8 +435,8 @@ its distribution, is the most common way that a plausible result becomes a wrong
 
 - Ask three questions of any unsupervised result: does it **replicate**, is it a **group
   or a cut**, and does it match something **external**.
-- Report the whole stability distribution. Ours was bimodal — 53 replicates found the
-  substrate split, 7 found a depth split — and its mean of 0.881 described neither.
+- Report the whole stability distribution. Ours was bimodal, with 53 replicates finding the
+  substrate split and 7 a depth split, and its mean of 0.881 described neither.
 - **Stability is necessary, not sufficient.** The soft-bottom depth split was the most
   stable result on the page and corresponds to nothing: a stable algorithm cuts a stable
   gradient in a stable place.
