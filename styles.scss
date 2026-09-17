@@ -86,6 +86,9 @@ figcaption {
     line-height: 1.35;
     padding-top: 0.28rem;
     padding-bottom: 0.28rem;
+    // Gutter for the current-page accent bar below. Applied to every item,
+    // not just the active one, so the label does not shift as you navigate.
+    padding-left: 0.6rem;
   }
 
   // Section headings (the ten course sections) carry more weight than the
