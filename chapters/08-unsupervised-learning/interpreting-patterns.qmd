@@ -28,6 +28,12 @@ from [the clustering page](clustering.qmd).
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -48,6 +54,37 @@ set.seed(11)
 reference <- kmeans(composition, centers = 2, nstart = 50, iter.max = 100)$cluster
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
+
+from mlbasic_data import load_coastal_community, load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+community = load_coastal_community()
+
+composition = Pipeline([
+    ("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
+    ("normalise", StandardScaler()),
+]).fit_transform(community.filter(like="tax"))
+
+stations = community.merge(survey[["station_id", "depth_m", "substrate"]],
+                           on="station_id")
+stations["bottom"] = np.where(stations["substrate"].isin(["rock", "gravel"]),
+                              "hard", "soft")
+
+reference = KMeans(n_clusters=2, n_init=50, max_iter=100,
+                   random_state=11).fit_predict(composition)
+```
+
+:::
+
 ## Question one: does it replicate?
 
 Resample the stations, cluster the resample, and ask whether you get the same partition
@@ -55,6 +92,10 @@ back. The mechanics are the bootstrap from [§7](../07-validation/uncertainty-an
 draw 800 stations with replacement, cluster them, then assign *all* the original stations
 to whichever bootstrap centre is nearest and compare that against the reference partition
 with the adjusted Rand index.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: bootstrap
@@ -77,6 +118,35 @@ summarise(replicates, mean = mean(agreement), median = median(agreement),
           min = min(agreement)) |>
   mutate(across(everything(), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+def assign_to_nearest(centres, points):
+    distances = ((points[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
+    return distances.argmin(axis=1)
+
+rng = np.random.default_rng(12)
+
+def one_replicate(replicate):
+    drawn = rng.integers(len(composition), size=len(composition))
+    centres = KMeans(n_clusters=2, n_init=25, max_iter=100,
+                     random_state=replicate).fit(composition[drawn]).cluster_centers_
+    relabelled = assign_to_nearest(centres, composition)
+    return {
+        "replicate": replicate,
+        "agreement": adjusted_rand_score(relabelled, reference),
+        "matches_substrate": adjusted_rand_score(relabelled, stations["bottom"]),
+        "depth_correlation": abs(np.corrcoef(relabelled,
+                                             stations["depth_m"])[0, 1]),
+    }
+
+replicates = pd.DataFrame([one_replicate(r) for r in range(1, 61)])
+
+replicates["agreement"].agg(["mean", "median", "min"]).round(3)
+```
+
+:::
 
 A mean agreement of 0.881 with the full-data partition sounds like a stable result with a
 bit of noise on it. The median is 0.986 and the minimum is 0.095, which should already
@@ -107,6 +177,10 @@ average over those two outcomes is a number that never occurred.
 
 What are the nine?
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: two-answers
 replicates |>
@@ -116,6 +190,24 @@ replicates |>
             `|correlation with depth|` = round(mean(depth_correlation), 3),
             .by = outcome)
 ```
+
+## Python
+
+```python
+outcome = np.where(replicates["agreement"] > 0.5,
+                   "same as full data", "something else")
+
+(replicates.assign(outcome=outcome)
+    .groupby("outcome")
+    .apply(lambda g: pd.Series({
+        "replicates": len(g),
+        "agreement with substrate": round(g["matches_substrate"].mean(), 3),
+        "|correlation with depth|": round(g["depth_correlation"].mean(), 3),
+    }), include_groups=False)
+    .reset_index())
+```
+
+:::
 
 They are the depth split. The 53 majority replicates recover the hard/soft substrate
 boundary, agreeing with it at 0.909 and barely correlated with depth; the 7 minority
@@ -134,6 +226,10 @@ stable two-cluster structure, which is false.
 
 Now the harder one, because stability does not answer it. Take only the soft-bottom
 stations — one substrate, no boundary left to find — and cluster them into two.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: soft-only
@@ -156,6 +252,39 @@ c(mean = mean(soft_agreement), min = min(soft_agreement),
   `median depth of cluster 2` = median(stations$depth_m[soft][soft_reference == 2])) |>
   round(2)
 ```
+
+## Python
+
+```python
+soft = (stations["bottom"] == "soft").to_numpy()
+soft_composition = composition[soft]
+soft_depth = stations.loc[soft, "depth_m"].to_numpy()
+
+soft_reference = KMeans(n_clusters=2, n_init=50, max_iter=100,
+                        random_state=13).fit_predict(soft_composition)
+
+picker = np.random.default_rng(14)
+soft_agreement = np.array([
+    adjusted_rand_score(
+        assign_to_nearest(
+            KMeans(n_clusters=2, n_init=25, max_iter=100, random_state=r)
+            .fit(soft_composition[picker.integers(len(soft_composition),
+                                                  size=len(soft_composition))])
+            .cluster_centers_,
+            soft_composition),
+        soft_reference)
+    for r in range(1, 61)
+])
+
+pd.Series({
+    "mean": soft_agreement.mean(),
+    "min": soft_agreement.min(),
+    "median depth of cluster 1": np.median(soft_depth[soft_reference == 0]),
+    "median depth of cluster 2": np.median(soft_depth[soft_reference == 1]),
+}).round(2)
+```
+
+:::
 
 This partition is **more** stable than the substrate one: mean agreement 0.890 and never
 below 0.71, against a bimodal 0.881 that reached 0.095 at its worst. It splits the soft
@@ -206,6 +335,10 @@ will tell them apart, because a stable algorithm cuts a stable gradient in a sta
 
 The only thing that separated the two cases was information from outside the clustering.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: external
 depth_band <- cut(stations$depth_m, breaks = quantile(stations$depth_m, c(0, 1/3, 2/3, 1)),
@@ -218,6 +351,24 @@ tibble(`clustering of` = c("all stations, k = 2", "soft stations only, k = 2"),
                               adjustedRandIndex(soft_reference, depth_band[soft]))) |>
   mutate(across(where(is.double), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+depth_band = pd.qcut(stations["depth_m"], q=3)
+
+pd.DataFrame({
+    "clustering of": ["all stations, k = 2", "soft stations only, k = 2"],
+    "vs substrate": [adjusted_rand_score(reference, stations["bottom"]),
+                     adjusted_rand_score(soft_reference,
+                                         stations.loc[soft, "bottom"])],
+    "vs depth tertile": [adjusted_rand_score(reference, depth_band),
+                         adjusted_rand_score(soft_reference,
+                                             depth_band[soft])],
+}).round(3)
+```
+
+:::
 
 The whole-survey clustering matches substrate at 0.920 and depth tertiles at 0.020: it has
 found a categorical variable it was never shown. The soft-only clustering matches substrate

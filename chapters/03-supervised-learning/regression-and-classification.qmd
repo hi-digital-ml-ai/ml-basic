@@ -30,6 +30,8 @@ predict negative fish.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 **Regression** predicts a quantity: abundance, biomass, temperature, percentage cover.
@@ -62,6 +64,10 @@ constant variance. Almost nothing in that table satisfies that.
 Our survey measured one thing — how many individuals were caught at each station — and
 it supports both framings.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: two-framings
 survey |>
@@ -73,6 +79,26 @@ survey |>
     zero_pct   = round(100 * mean(abundance == 0), 1)
   )
 ```
+
+## Python
+
+```python
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+pd.DataFrame({
+    "stations": [len(survey)],
+    "mean_count": [round(survey["abundance"].mean(), 2)],
+    "variance": [round(survey["abundance"].var(), 2)],
+    "zeros": [int((survey["abundance"] == 0).sum())],
+    "zero_pct": [round(100 * (survey["abundance"] == 0).mean(), 1)],
+})
+```
+
+:::
 
 Two features of that summary decide almost everything that follows.
 
@@ -111,6 +137,10 @@ p_count + p_binary
 
 Turning the count into presence/absence is a real choice, and it is not free.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: dichotomising
 survey |>
@@ -122,6 +152,21 @@ survey |>
     `median catch`    = median(abundance)
   )
 ```
+
+## Python
+
+```python
+caught = survey.loc[survey["abundance"] > 0, "abundance"]
+
+pd.DataFrame({
+    'stations recorded as "present"': [len(caught)],
+    "smallest catch": [caught.min()],
+    "largest catch": [caught.max()],
+    "median catch": [caught.median()],
+})
+```
+
+:::
 
 A station with one individual and a station with forty are both simply "present". If
 your question is where the species *occurs*, that is a legitimate simplification. If it

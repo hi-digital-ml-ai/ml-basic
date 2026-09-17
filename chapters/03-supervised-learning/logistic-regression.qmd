@@ -28,6 +28,8 @@ This page demonstrates both, on a species present at 5% of stations — which is
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 We want a probability, which must lie between 0 and 1. A linear model would happily
@@ -51,6 +53,10 @@ consequences, not a part of the model.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -67,8 +73,44 @@ tibble(
 )
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
+              "salinity_psu", "substrate"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    survey[predictors],
+    survey["rare_species"],
+    train_size=0.75,
+    stratify=survey["rare_species"],   # the equivalent of strata =
+    random_state=123,
+)
+
+pd.DataFrame({
+    "training_stations": [len(X_train)],
+    "test_stations": [len(X_test)],
+    "present_in_test": [(y_test == "yes").sum()],
+    "test_prevalence": [round((y_test == "yes").mean(), 3)],
+})
+```
+
+:::
+
 Eleven positive stations in the test set. That is realistic and it is thin, and every
 performance figure below inherits that thinness.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fit
@@ -84,7 +126,44 @@ logistic_fit <- workflow() |>
 predictions <- augment(logistic_fit, test)
 ```
 
+## Python
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+
+# A ColumnTransformer is the recipe: it says what happens to which columns.
+# glm() dummy-codes factors for you; scikit-learn needs to be told.
+preprocess = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("substrate", OneHotEncoder(drop="first"), ["substrate"]),
+])
+
+# C is the inverse penalty strength, and it defaults to 1.0 — scikit-learn
+# regularises unless you stop it, where glm() does not. C=inf turns it off,
+# so this is the same model as the R tab rather than a ridge fit.
+logistic_fit = Pipeline([
+    ("preprocess", preprocess),
+    ("model", LogisticRegression(C=np.inf, max_iter=1000)),
+]).fit(X_train, y_train)
+
+yes = list(logistic_fit.classes_).index("yes")
+pred_yes = logistic_fit.predict_proba(X_test)[:, yes]
+pred_class = logistic_fit.predict(X_test)
+```
+
+:::
+
 ### The model appears to be useless
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: accuracy
@@ -96,17 +175,51 @@ bind_rows(
 )
 ```
 
+## Python
+
+```python
+pd.DataFrame({
+    "measure": ["Accuracy", 'Always answer "absent"'],
+    "value": [round((pred_class == y_test).mean(), 4),
+              round((y_test == "no").mean(), 4)],
+})
+```
+
+:::
+
 Identical to four decimal places. Now look at what it is doing:
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: confusion
 predictions |> conf_mat(truth = rare_species, estimate = .pred_class)
 ```
 
+## Python
+
+```python
+from sklearn.metrics import confusion_matrix
+
+pd.DataFrame(
+    confusion_matrix(y_test, pred_class, labels=["yes", "no"]),
+    index=["Truth: yes", "Truth: no"],
+    columns=["Predicted: yes", "Predicted: no"],
+)
+```
+
+:::
+
 **It never once predicts presence.** Not for a single station. Its accuracy equals the
 do-nothing baseline because it *is* the do-nothing baseline.
 
 ### The model is not useless
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: auc
@@ -117,6 +230,20 @@ bind_rows(
          value = round(max(predictions$.pred_yes), 3))
 )
 ```
+
+## Python
+
+```python
+from sklearn.metrics import roc_auc_score
+
+pd.DataFrame({
+    "measure": ["ROC AUC", "Highest probability it assigned to any station"],
+    "value": [round(roc_auc_score(y_test == "yes", pred_yes), 3),
+              round(pred_yes.max(), 3)],
+})
+```
+
+:::
 
 An ROC AUC of 0.79 says that if you pick one station where the species is present and
 one where it is absent, the model gives the present one a higher probability about 79%
@@ -160,6 +287,10 @@ p_probs + p_roc
 
 ### Choosing a threshold is your job, not the model's
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: thresholds
 thresholds <- map(c(0.5, 0.2, 0.15, 0.10, 0.05), \(cut) {
@@ -177,6 +308,25 @@ thresholds <- map(c(0.5, 0.2, 0.15, 0.10, 0.05), \(cut) {
 thresholds
 ```
 
+## Python
+
+```python
+def threshold_row(cut):
+    flagged = pred_yes >= cut
+    caught = int((flagged & (y_test == "yes")).sum())
+    return {
+        "threshold": cut,
+        "stations_flagged": int(flagged.sum()),
+        "caught": caught,
+        "missed": int((y_test == "yes").sum()) - caught,
+        "false_alarms": int(flagged.sum()) - caught,
+    }
+
+pd.DataFrame([threshold_row(cut) for cut in [0.5, 0.2, 0.15, 0.10, 0.05]])
+```
+
+:::
+
 There is no best row in that table. There is a row that matches your consequences.
 
 If flagging a station means sending a vessel to survey it, false alarms are expensive
@@ -187,12 +337,29 @@ changes.
 
 ### The coefficient trap
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: odds-ratios
 tidy(logistic_fit, exponentiate = TRUE) |>
   select(term, odds_ratio = estimate, p.value) |>
   mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+# scikit-learn reports no standard errors and no p-values; if you need them,
+# fit the same model with statsmodels instead.
+pd.DataFrame({
+    "term": logistic_fit[:-1].get_feature_names_out(),
+    "odds_ratio": np.exp(logistic_fit[-1].coef_[0]).round(3),
+})
+```
+
+:::
 
 Depth has an odds ratio of 0.97 — below 1, apparently meaning the species becomes *less*
 likely in deeper water. The simulation built in the opposite: deeper stations are more
@@ -214,7 +381,16 @@ by $1/0.971 = 1.030$ — the simulated truth, to three decimal places.
 The predictions were right all along. Only the coefficient table pointed the other way,
 and nothing in the output says so. Always sanity-check the sign of one coefficient
 against a simple cross-tabulation before publishing a direction.
+
+scikit-learn takes the **opposite** convention: `classes_` is sorted, so it is
+`['no', 'yes']` here, and the coefficients describe the odds of the *second* class —
+presence. The identical table therefore means the opposite thing in the two tabs,
+which is exactly why the cross-tabulation below is worth the four lines it costs.
 :::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: sanity-check
@@ -225,6 +401,20 @@ survey |>
             present = sum(rare_species == "yes"),
             prevalence = round(mean(rare_species == "yes"), 3))
 ```
+
+## Python
+
+```python
+depth_band = pd.cut(survey["depth_m"], bins=[0, 50, 100, 150, 200])
+
+survey.groupby(depth_band, observed=True).agg(
+    stations=("rare_species", "size"),
+    present=("rare_species", lambda s: (s == "yes").sum()),
+    prevalence=("rare_species", lambda s: round((s == "yes").mean(), 3)),
+)
+```
+
+:::
 
 Prevalence rises with depth. Whatever the coefficient table appeared to say, the species
 is a deep-water one.

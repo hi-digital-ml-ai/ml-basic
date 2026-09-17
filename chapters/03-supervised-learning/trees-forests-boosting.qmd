@@ -30,6 +30,8 @@ is the reverse of the reputation.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 ### A single decision tree
@@ -73,6 +75,10 @@ data.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -89,6 +95,37 @@ base_recipe <- recipe(predictors, data = train) |>
 
 dummied_recipe <- base_recipe |> step_dummy(all_nominal_predictors())
 ```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+
+train, test = train_test_split(survey, train_size=0.75, random_state=123)
+
+# scikit-learn's trees need numbers, so unlike rpart there is no "plain" recipe
+# here: the encoder is not optional.
+base_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
+])
+```
+
+:::
 
 ### A tree you can read
 
@@ -139,6 +176,10 @@ and another survey would give a different number.
 
 ### All three, side by side
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: compare-three
 evaluate <- function(model, recipe, label) {
@@ -163,6 +204,41 @@ bind_rows(
            dummied_recipe, "Boosting (500 trees)")
 )
 ```
+
+## Python
+
+```python
+from sklearn.ensemble import (GradientBoostingRegressor, RandomForestRegressor)
+from sklearn.metrics import root_mean_squared_error
+from sklearn.tree import DecisionTreeRegressor
+
+def evaluate(model, label):
+    fitted = Pipeline([("recipe", base_recipe), ("model", model)]).fit(
+        train[predictors], train["abundance"])
+    on_train = fitted.predict(train[predictors])
+    on_test = fitted.predict(test[predictors])
+    return {
+        "model": label,
+        "train_rmse": round(root_mean_squared_error(train["abundance"], on_train), 2),
+        "test_rmse": round(root_mean_squared_error(test["abundance"], on_test), 2),
+        "test_rsq": round(np.corrcoef(on_test, test["abundance"])[0, 1] ** 2, 3),
+    }
+
+pd.DataFrame([
+    evaluate(DecisionTreeRegressor(max_depth=3, min_samples_split=5, random_state=9),
+             "Tree (depth 3)"),
+    evaluate(DecisionTreeRegressor(random_state=9), "Tree (defaults)"),
+    evaluate(RandomForestRegressor(n_estimators=500, random_state=9),
+             "Random forest (500)"),
+    # xgboost has its own scikit-learn API; this is the equivalent without the
+    # extra dependency.
+    evaluate(GradientBoostingRegressor(n_estimators=500, learning_rate=0.1,
+                                       max_depth=4, random_state=9),
+             "Boosting (500 trees)"),
+])
+```
+
+:::
 
 The ordering deserves a moment. **Both single trees beat both ensembles.** The two trees
 come in at 4.76 and 4.81 — close enough to be indistinguishable on 200 test stations —

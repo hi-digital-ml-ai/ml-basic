@@ -23,6 +23,10 @@ renv/staging/
 renv/python/
 renv/sandbox/
 
+# Python (the snippet checker imports python/mlbasic_data.py)
+__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db

@@ -29,6 +29,8 @@ most introductions stop at.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 ### Continuous
@@ -116,12 +118,30 @@ p_line + p_circle
 Dates arrive as text, in whatever format the software wrote. This survey used two
 vessels with two conventions:
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: dates
 raw |>
   distinct(vessel, sample_date) |>
   slice_head(n = 2, by = vessel)
 ```
+
+## Python
+
+```python
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_raw
+
+raw = load_coastal_survey_raw()
+
+raw[["vessel", "sample_date"]].drop_duplicates().groupby("vessel").head(2)
+```
+
+:::
 
 ::: {.callout-warning}
 `05/10/2022` is the fifth of October in most of the world and the tenth of May in the
@@ -131,6 +151,10 @@ a marine dataset, so the damage is large and entirely silent.
 
 Find out which convention the file uses before parsing; do not let a default decide.
 :::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: parse-dates
@@ -143,6 +167,22 @@ dated <- raw |>
 
 sum(is.na(dated$sample_date))
 ```
+
+## Python
+
+```python
+# One vessel logged ISO dates, the other day-first. Parse each format on its
+# own and take whichever succeeded, rather than letting pandas guess per row.
+iso = pd.to_datetime(raw["sample_date"], format="%Y-%m-%d", errors="coerce")
+dayfirst = pd.to_datetime(raw["sample_date"], format="%d/%m/%Y", errors="coerce")
+
+dated = raw.assign(sample_date=iso.fillna(dayfirst))
+dated["day_of_year"] = dated["sample_date"].dt.dayofyear
+
+int(dated["sample_date"].isna().sum())
+```
+
+:::
 
 Once parsed, time can enter a model in two quite different ways, and confusing them
 causes trouble later:
@@ -195,6 +235,10 @@ to anything.
 
 Our own survey mixes five of these types in seventeen columns:
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: type-audit
 tibble(
@@ -212,6 +256,34 @@ tibble(
   )) |>
   print(n = Inf)
 ```
+
+## Python
+
+```python
+categorical = ["station_id", "site_id", "vessel", "season",
+               "substrate", "present", "rare_species"]
+
+def really(column):
+    if column in categorical:
+        return "categorical"
+    if column == "sample_date":
+        return "temporal (as text)"
+    if column == "survey_year":
+        return "temporal, not a quantity"
+    if column in ("longitude", "latitude"):
+        return "spatial structure"
+    if column in ("abundance", "catch_weight_kg"):
+        return "response"
+    return "continuous"
+
+pd.DataFrame({
+    "column": raw.columns,
+    "stored_as": [raw[c].dtype.name for c in raw.columns],
+    "really": [really(c) for c in raw.columns],
+})
+```
+
+:::
 
 Two mismatches matter. `survey_year` is stored as an integer and is not a quantity.
 `season` is stored as text and is *circular*, not merely categorical — treating it as

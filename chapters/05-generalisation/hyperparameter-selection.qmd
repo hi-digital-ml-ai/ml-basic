@@ -30,6 +30,8 @@ that choice moves if you had sampled different stations.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 A **hyperparameter** is a setting fixed before fitting, which the fitting cannot choose because
@@ -61,6 +63,10 @@ which is why it is set aside in
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -82,8 +88,43 @@ c(folds = nrow(folds),
   scored_on = nrow(assessment(folds$splits[[1]])))
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GridSearchCV, KFold, train_test_split
+from sklearn.tree import DecisionTreeRegressor
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season"]
+d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+
+train, test = train_test_split(d, train_size=0.75, random_state=506)
+
+features = [c for c in d.columns if c != "abundance"]
+X_train, y_train = train[features], train["abundance"]
+X_test, y_test = test[features], test["abundance"]
+
+folds = KFold(n_splits=10, shuffle=True, random_state=506)
+
+first_train, first_test = next(folds.split(X_train))
+pd.Series({"folds": folds.get_n_splits(),
+           "fitted_on": len(first_train), "scored_on": len(first_test)})
+```
+
+:::
+
 A tree with two hyperparameters to choose: how deep it may grow, and how many stations a node
 needs before it may split. `tune()` marks each as a value to be filled in later.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: tune
@@ -114,6 +155,35 @@ collect_metrics(tuned) |>
   mutate(across(c(mean, std_err), \(x) round(x, 4)))
 ```
 
+## Python
+
+```python
+grid = {"max_depth": [2, 3, 4, 6, 8, 12],
+        "min_samples_split": [2, 5, 10, 20, 40, 80]}
+
+# cost_complexity = 0 is ccp_alpha = 0: no pruning, so the two knobs above are
+# the only thing holding the tree back.
+tuned = GridSearchCV(
+    DecisionTreeRegressor(ccp_alpha=0.0, random_state=506),
+    param_grid=grid,
+    scoring="neg_root_mean_squared_error",
+    cv=folds,
+).fit(X_train, y_train)
+
+# GridSearchCV reports the standard deviation across folds; the standard error
+# tidymodels prints is that divided by the root of the number of folds.
+metrics = pd.DataFrame({
+    "tree_depth": tuned.cv_results_["param_max_depth"],
+    "min_n": tuned.cv_results_["param_min_samples_split"],
+    "mean": -tuned.cv_results_["mean_test_score"],
+    "std_err": tuned.cv_results_["std_test_score"] / np.sqrt(folds.get_n_splits()),
+})
+
+metrics.sort_values("mean").head(6).round(4)
+```
+
+:::
+
 Thirty-six candidate settings, each scored on ten folds — 360 model fits, which is why tuning is
 the expensive step.
 
@@ -142,6 +212,10 @@ ggplot(surface, aes(factor(min_n), factor(tree_depth), fill = mean)) +
 
 How many of the thirty-six settings are genuinely distinguishable from the winner?
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: one-se
 one_se <- select_by_one_std_err(tuned, metric = "rmse", tree_depth, desc(min_n))
@@ -153,12 +227,46 @@ c(`settings within one SE of the best` =
   `grid points` = nrow(grid))
 ```
 
+## Python
+
+```python
+best_row = metrics.loc[metrics["mean"].idxmin()]
+within = metrics["mean"] <= best_row["mean"] + best_row["std_err"]
+
+pd.Series({"settings within one SE of the best": int(within.sum()),
+           "grid points": len(metrics)})
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: one-se-choice
 one_se |> select(tree_depth, min_n)
 ```
 
+## Python
+
+```python
+# scikit-learn has no select_by_one_std_err(): the rule is a sort over the
+# settings that tie, simplest first — shallow trees, then large nodes.
+one_se = (metrics[within]
+    .sort_values(["tree_depth", "min_n"], ascending=[True, False])
+    .iloc[0])
+
+one_se[["tree_depth", "min_n"]]
+```
+
+:::
+
 ### Finalising, and spending the test set once
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: finalise
@@ -171,6 +279,30 @@ collect_metrics(final_fit) |>
   mutate(.estimate = round(.estimate, 4))
 ```
 
+## Python
+
+```python
+from sklearn.metrics import (mean_absolute_error, r2_score,
+                             root_mean_squared_error)
+
+# last_fit(): refit at the chosen setting on all the training data, then score
+# once on the test set that tuning never saw. GridSearchCV has already done the
+# refitting, at its own best setting.
+final_fit = tuned.best_estimator_
+predicted = final_fit.predict(X_test)
+
+pd.DataFrame({
+    ".metric": ["rmse", "rsq", "mae"],
+    ".estimate": [
+        root_mean_squared_error(y_test, predicted),
+        r2_score(y_test, predicted),
+        mean_absolute_error(y_test, predicted),
+    ],
+}).round(4)
+```
+
+:::
+
 `last_fit()` is the only function in this section that touches the test set. It refits the chosen
 workflow on the whole training set and scores it on the test set, once. Everything before it used
 cross-validation.
@@ -180,6 +312,10 @@ cross-validation.
 The CV surface picks depth 3 and `min_n` 10. To see whether that is a finding, we repeat the
 selection with a single validation split — the simpler procedure — forty times, each time with a
 different random split of the same training data.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: instability
@@ -207,12 +343,66 @@ c(`distinct winning settings` = nrow(distinct(winners, tree_depth, min_n)),
   `grid points` = nrow(grid))
 ```
 
+## Python
+
+```python
+from sklearn.model_selection import ParameterGrid
+
+settings = list(ParameterGrid(grid))
+rng = np.random.default_rng(61)
+
+def winner_of_one_split():
+    rows = rng.choice(len(train), round(0.75 * len(train)), replace=False)
+    held = np.setdiff1d(np.arange(len(train)), rows)
+    inner, validation = train.iloc[rows], train.iloc[held]
+
+    errors = [
+        root_mean_squared_error(
+            validation["abundance"],
+            DecisionTreeRegressor(ccp_alpha=0.0, random_state=506, **setting)
+            .fit(inner[features], inner["abundance"])
+            .predict(validation[features]))
+        for setting in settings
+    ]
+    k = int(np.argmin(errors))
+    return {"tree_depth": settings[k]["max_depth"],
+            "min_n": settings[k]["min_samples_split"],
+            "winning_rmse": errors[k]}
+
+winners = pd.DataFrame([winner_of_one_split() for _ in range(40)])
+
+pd.Series({
+    "distinct winning settings": len(winners[["tree_depth", "min_n"]].drop_duplicates()),
+    "grid points": len(settings),
+})
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: instability-detail
 winners |>
   count(tree_depth, min_n, sort = TRUE) |>
   slice_head(n = 6)
 ```
+
+## Python
+
+```python
+(winners.value_counts(["tree_depth", "min_n"])
+    .reset_index(name="n")
+    .head(6))
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: instability-spread
@@ -221,6 +411,18 @@ c(lowest_claimed = min(winners$winning_rmse),
   sd = sd(winners$winning_rmse)) |>
   round(3)
 ```
+
+## Python
+
+```python
+pd.Series({
+    "lowest_claimed": winners["winning_rmse"].min(),
+    "highest_claimed": winners["winning_rmse"].max(),
+    "sd": winners["winning_rmse"].std(),
+}).round(3)
+```
+
+:::
 
 ```{r}
 #| label: fig-instability
@@ -295,6 +497,10 @@ where you cannot afford one.
 A regular grid costs the product of its axes. Two hyperparameters at six values each is 36
 settings; four at six values is 1,296, times ten folds. Two standard escapes:
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: grids
 #| eval: false
@@ -311,6 +517,35 @@ grid_space_filling(
   size = 40
 )
 ```
+
+## Python
+
+```python
+from scipy.stats import qmc
+from sklearn.model_selection import ParameterGrid
+
+# Regular grid: every combination. Fine for one or two hyperparameters.
+pd.DataFrame(ParameterGrid({"tree_depth": [1, 4, 8, 11, 15],
+                            "min_n": [2, 11, 21, 30, 40]})).head()
+
+# Space-filling: spreads points to cover the space evenly. Much better once
+# you have three or more hyperparameters, at the same computational budget.
+# scikit-learn has no grid_space_filling(); scipy's qmc module is the tool.
+design = qmc.scale(
+    qmc.LatinHypercube(d=4, rng=np.random.default_rng(1)).random(40),
+    l_bounds=[200, -3, 2, -10],      # trees, log10 learning rate,
+    u_bounds=[1500, -0.5, 10, 1.5],  # tree depth, log10 loss reduction
+)
+
+pd.DataFrame({
+    "trees": design[:, 0].round(),
+    "learn_rate": (10 ** design[:, 1]).round(5),
+    "tree_depth": design[:, 2].round(),
+    "loss_reduction": (10 ** design[:, 3]).round(5),
+}).head()
+```
+
+:::
 
 Space-filling designs win for a reason worth knowing: hyperparameters differ enormously in how
 much they matter, and a regular grid wastes most of its evaluations re-testing the ones that do

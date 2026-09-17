@@ -31,6 +31,8 @@ slightly different, opposite.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 Any model with enough flexibility can reproduce your data exactly. A tree grown until every
@@ -53,6 +55,10 @@ Five models, one split, one set of predictors. Nothing here is tuned — that is
 [a later page](hyperparameter-selection.qmd) — and the default settings are exactly what makes
 the point.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -71,6 +77,41 @@ rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
 
 c(training_stations = nrow(train), test_stations = nrow(test))
 ```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import (GradientBoostingRegressor, RandomForestRegressor)
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season"]
+d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+
+train, test = train_test_split(d, train_size=0.75, random_state=501)
+
+X_train, y_train = train.drop(columns="abundance"), train["abundance"]
+X_test, y_test = test.drop(columns="abundance"), test["abundance"]
+
+rmse_of = root_mean_squared_error
+
+pd.Series({"training_stations": len(train), "test_stations": len(test)})
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: five-models
@@ -107,6 +148,39 @@ results <- tibble(
 
 results |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+models = {
+    "Linear regression": LinearRegression(),
+    "Tree, depth 3": DecisionTreeRegressor(max_depth=3, ccp_alpha=0.0,
+                                           random_state=1),
+    "Tree, grown out": DecisionTreeRegressor(min_samples_split=2,
+                                             min_samples_leaf=1,
+                                             ccp_alpha=0.0, random_state=1),
+    # oob_score gives the free honest estimate used a few lines below.
+    "Random forest": RandomForestRegressor(n_estimators=500, oob_score=True,
+                                           random_state=1),
+    "Boosted trees": GradientBoostingRegressor(n_estimators=500, max_depth=6,
+                                               learning_rate=0.1,
+                                               random_state=1),
+}
+
+fitted = {name: model.fit(X_train, y_train) for name, model in models.items()}
+
+results = pd.DataFrame([
+    {"model": name,
+     "training": rmse_of(y_train, model.predict(X_train)),
+     "test": rmse_of(y_test, model.predict(X_test))}
+    for name, model in fitted.items()
+])
+results["optimism"] = results["test"] - results["training"]
+
+results.round(3)
+```
+
+:::
 
 ```{r}
 #| label: fig-crossing
@@ -155,6 +229,10 @@ Two of the five models are beaten by that baseline.
 
 **A useful free estimate.** The random forest has a third number available:
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: oob
 c(training = rmse_of(train$abundance, predict(forest, train)$predictions),
@@ -162,6 +240,21 @@ c(training = rmse_of(train$abundance, predict(forest, train)$predictions),
   test = rmse_of(test$abundance, predict(forest, test)$predictions)) |>
   round(3)
 ```
+
+## Python
+
+```python
+forest = fitted["Random forest"]
+
+pd.Series({
+    "training": rmse_of(y_train, forest.predict(X_train)),
+    # the out-of-bag predictions, from the trees that never saw each row
+    "out_of_bag": rmse_of(y_train, forest.oob_prediction_),
+    "test": rmse_of(y_test, forest.predict(X_test)),
+}).round(3)
+```
+
+:::
 
 Each tree in a forest is fitted to a bootstrap sample, so about a third of the stations are
 unseen by any given tree. Scoring each station using only the trees that did not see it gives
@@ -174,6 +267,10 @@ ignored a better number the model already computed.
 
 Whether training error misleads you a little or catastrophically depends on how much data you
 have relative to how flexible the model is.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: optimism-curve
@@ -211,6 +308,60 @@ curve |>
   mutate(across(where(is.numeric), \(x) round(x, 2))) |>
   select(n, everything())
 ```
+
+## Python
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
+
+numeric = ["abundance", "depth_m", "temperature_c",
+           "chlorophyll_mg_m3", "salinity_psu"]
+num = survey[numeric].dropna()
+
+num_train, num_test = train_test_split(num, train_size=0.75, random_state=5011)
+Xn_train, yn_train = num_train.drop(columns="abundance"), num_train["abundance"]
+Xn_test, yn_test = num_test.drop(columns="abundance"), num_test["abundance"]
+
+def curves(degree):
+    return PolynomialFeatures(degree=degree, include_bias=False)
+
+# poly() per variable, not PolynomialFeatures over all four at once: that
+# would add every interaction and this is meant to be a ten-parameter model.
+def flexible():
+    return Pipeline([
+        ("curves", ColumnTransformer([
+            ("depth", curves(3), ["depth_m"]),
+            ("temperature", curves(3), ["temperature_c"]),
+            ("chlorophyll", curves(2), ["chlorophyll_mg_m3"]),
+            ("salinity", "passthrough", ["salinity_psu"]),
+        ])),
+        ("model", LinearRegression()),
+    ])
+
+rng = np.random.default_rng(5011)
+
+def optimism_at(n, replicates=40):
+    rows = []
+    for _ in range(replicates):
+        take = rng.choice(len(num_train), n, replace=False)
+        Xs, ys = Xn_train.iloc[take], yn_train.iloc[take]
+        curved = flexible().fit(Xs, ys)
+        forest = RandomForestRegressor(n_estimators=300, random_state=1).fit(Xs, ys)
+        rows.append({
+            "10-parameter model, training": rmse_of(ys, curved.predict(Xs)),
+            "10-parameter model, test": rmse_of(yn_test, curved.predict(Xn_test)),
+            "Random forest, training": rmse_of(ys, forest.predict(Xs)),
+            "Random forest, test": rmse_of(yn_test, forest.predict(Xn_test)),
+        })
+    return {"n": n, **pd.DataFrame(rows).mean().to_dict()}
+
+pd.DataFrame([optimism_at(n)
+              for n in [15, 25, 50, 100, 200, 400, len(num_train)]]).round(2)
+```
+
+:::
 
 ```{r}
 #| label: fig-optimism

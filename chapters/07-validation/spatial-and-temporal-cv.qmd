@@ -29,6 +29,8 @@ you are going to do with the model.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 Every resampling scheme is a question in disguise. When you hold out a fold and score the
@@ -52,6 +54,10 @@ station.** We compute it alongside the scores below.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -73,10 +79,48 @@ d_sf <- st_as_sf(d, coords = c("longitude", "latitude"), crs = 4326, remove = FA
 c(stations = nrow(d), sites = n_distinct(d$site_id), years = n_distinct(d$survey_year))
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, KFold
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["site_id", "survey_year", "abundance", "depth_m", "temperature_c",
+           "chlorophyll_mg_m3", "salinity_psu", "substrate", "season",
+           "longitude", "latitude"]
+d = survey[columns].dropna().reset_index(drop=True)
+
+# update_role(site_id, survey_year, new_role = "id"): kept in the frame for
+# grouping, kept out of the predictors.
+features = pd.get_dummies(
+    d.drop(columns=["abundance", "site_id", "survey_year"]), drop_first=True)
+
+def forest_on(rows, held):
+    model = RandomForestRegressor(n_estimators=300, random_state=1).fit(
+        features.iloc[rows], d["abundance"].iloc[rows])
+    return model.predict(features.iloc[held])
+
+pd.Series({"stations": len(d), "sites": d["site_id"].nunique(),
+           "years": d["survey_year"].nunique()})
+```
+
+:::
+
 Every scheme below holds out each of the `r nrow(d)` stations exactly once. That lets us pool
 all the out-of-fold predictions and compute a single metric over the *same* 720 rows for every
 scheme — which is the only way to make the numbers comparable, for the reason set out on the
 [previous page](cross-validation.qmd).
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: assess-helper
@@ -100,8 +144,39 @@ assess_scheme <- function(splits) {
 }
 ```
 
+## Python
+
+```python
+def separation_km(held, rows):
+    """Distance from each held-out station to the nearest training station."""
+    dlat = np.subtract.outer(d["latitude"].to_numpy()[held],
+                             d["latitude"].to_numpy()[rows]) * 111.0
+    dlon = np.subtract.outer(d["longitude"].to_numpy()[held],
+                             d["longitude"].to_numpy()[rows]) * 111.0 * np.cos(
+                                 np.radians(42))
+    return np.sqrt(dlat ** 2 + dlon ** 2).min(axis=1)
+
+def assess_scheme(splits):
+    observed, predicted, nearest = [], [], []
+    for rows, held in splits:
+        observed.append(d["abundance"].to_numpy()[held])
+        predicted.append(forest_on(rows, held))
+        nearest.append(separation_km(held, rows))
+    observed = np.concatenate(observed)
+    predicted = np.concatenate(predicted)
+    return {"rsq": np.corrcoef(observed, predicted)[0, 1] ** 2,
+            "rmse": root_mean_squared_error(observed, predicted),
+            "nearest_km": float(np.median(np.concatenate(nearest)))}
+```
+
+:::
+
 `separation_km` converts degrees to kilometres at 42° N and returns, for every held-out
 station, the distance to the closest station the model was allowed to train on.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: schemes
@@ -135,6 +210,54 @@ comparison <- bind_rows(
 
 comparison |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+def repeat_scheme(make_splits, times=3):
+    runs = pd.DataFrame([assess_scheme(make_splits(3000 + k))
+                         for k in range(1, times + 1)])
+    return {"R2": runs["rsq"].mean(), "R2_sd": runs["rsq"].std(ddof=1),
+            "RMSE": runs["rmse"].mean(), "nearest_km": runs["nearest_km"].mean()}
+
+def spatial_block_cv(cellsize, seed, v=10):
+    """spatialsample's block CV, by hand: tile the map, then deal whole tiles
+    out to the folds rather than individual stations."""
+    block = (np.floor(d["longitude"] / cellsize).astype(int).astype(str) + "_"
+             + np.floor(d["latitude"] / cellsize).astype(int).astype(str))
+    blocks = block.unique()
+    fold_of = dict(zip(
+        blocks,
+        np.random.default_rng(seed).permutation(len(blocks)) % v))
+    assigned = block.map(fold_of).to_numpy()
+    return [(np.flatnonzero(assigned != f), np.flatnonzero(assigned == f))
+            for f in range(v) if (assigned == f).any()]
+
+def random_folds(seed, v=10):
+    return list(KFold(n_splits=v, shuffle=True, random_state=seed).split(d))
+
+def site_folds(seed, v=10):
+    # GroupKFold takes no seed: the grouping is what decides the folds.
+    return list(GroupKFold(n_splits=v).split(d, groups=d["site_id"]))
+
+comparison = pd.DataFrame([
+    {"scheme": "random 10-fold", **repeat_scheme(random_folds)},
+    {"scheme": "grouped by site", **repeat_scheme(site_folds)},
+    *({"scheme": f"spatial blocks, {size:.2f}°",
+       **repeat_scheme(lambda seed, size=size: spatial_block_cv(size, seed))}
+      for size in (0.15, 0.30, 0.50, 0.80, 1.20)),
+    {"scheme": "leave-one-year-out",
+     **{k: v for k, v in assess_scheme(
+         GroupKFold(n_splits=d["survey_year"].nunique()).split(
+             d, groups=d["survey_year"])).items()},
+     },
+])
+comparison = comparison.rename(columns={"rsq": "R2", "rmse": "RMSE"})
+
+comparison.round(3)
+```
+
+:::
 
 ## What the results mean
 
@@ -215,6 +338,10 @@ random folds — which is why leave-one-year-out sits off the trend in the figur
 The scheme that matches forecasting is an expanding window: train on everything before year
 $y$, predict year $y$, and move forward.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: forecast
 forecast_check <- map_dfr(2020:2023, \(y) {
@@ -238,12 +365,57 @@ forecast_check <- map_dfr(2020:2023, \(y) {
 forecast_check |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
+## Python
+
+```python
+def forecast_year(y):
+    future = np.flatnonzero(d["survey_year"] == y)
+    past = np.flatnonzero(d["survey_year"] < y)
+    others = np.flatnonzero(d["survey_year"] != y)
+    observed = d["abundance"].to_numpy()[future]
+
+    rng = np.random.default_rng(5000 + y)
+    shuffled = [
+        np.corrcoef(observed,
+                    forest_on(rng.choice(others, len(past), replace=False),
+                              future))[0, 1] ** 2
+        for _ in range(4)
+    ]
+
+    return {
+        "test_year": y,
+        "train_n": len(past),
+        "trained on earlier years":
+            np.corrcoef(observed, forest_on(past, future))[0, 1] ** 2,
+        "trained on random years, same size": float(np.mean(shuffled)),
+    }
+
+forecast_check = pd.DataFrame([forecast_year(y) for y in range(2020, 2024)])
+
+forecast_check.round(3)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: forecast-summary
 forecast_check |>
   summarise(across(c(`trained on earlier years`, `trained on random years, same size`), mean)) |>
   round(3)
 ```
+
+## Python
+
+```python
+forecast_check[["trained on earlier years",
+                "trained on random years, same size"]].mean().round(3)
+```
+
+:::
 
 The comparison is matched on training-set size, so the only difference is *when* the training
 data came from. Predicting forwards is no harder than predicting sideways. That is a real

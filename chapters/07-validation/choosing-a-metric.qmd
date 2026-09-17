@@ -29,6 +29,8 @@ doing it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 Write the sentence from the discussion section first, then choose the measure that would be
@@ -50,6 +52,10 @@ the fifth.
 
 Same five models as the [regression measures page](regression-metrics.qmd), same folds, same
 pooled out-of-fold predictions.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
@@ -85,8 +91,73 @@ out_of_fold <- imap_dfr(fitters, \(f, name) {
 })
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import KFold
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "longitude", "latitude"]
+d = survey[columns].dropna().reset_index(drop=True)
+
+# patsy has no poly(), so the squared terms are written out. C() is factor().
+formula_env = ("abundance ~ depth_m + I(depth_m**2)"
+               " + temperature_c + I(temperature_c**2)"
+               " + np.log1p(chlorophyll_mg_m3) + salinity_psu"
+               " + C(substrate) + C(season) + longitude + latitude")
+
+forest_columns = pd.get_dummies(d.drop(columns="abundance"), drop_first=True)
+
+def forest_predict(tr, te):
+    model = RandomForestRegressor(n_estimators=500, random_state=1).fit(
+        forest_columns.loc[tr.index], tr["abundance"])
+    return model.predict(forest_columns.loc[te.index])
+
+fitters = {
+    "mean only": lambda tr, te: np.repeat(tr["abundance"].mean(), len(te)),
+    "Poisson GLM": lambda tr, te: smf.glm(
+        formula_env, tr, family=sm.families.Poisson()).fit().predict(te),
+    # negativebinomial() estimates the dispersion with the coefficients, as
+    # MASS::glm.nb() does; statsmodels' GLM family wants it fixed in advance.
+    "negative binomial": lambda tr, te: smf.negativebinomial(
+        formula_env, tr).fit(method="bfgs", maxiter=2000, disp=0).predict(te),
+    "log-transformed lm": lambda tr, te: np.expm1(
+        smf.ols(formula_env.replace("abundance ~", "np.log1p(abundance) ~"), tr)
+        .fit().predict(te)),
+    "random forest": forest_predict,
+}
+
+import statsmodels.api as sm
+
+folds = KFold(n_splits=10, shuffle=True, random_state=61)
+
+out_of_fold = pd.concat([
+    pd.DataFrame({"model": name, "fold": i,
+                  "obs": d.iloc[held]["abundance"].to_numpy(),
+                  "pred": np.asarray(fit(d.iloc[rows], d.iloc[held]))})
+    for name, fit in fitters.items()
+    for i, (rows, held) in enumerate(folds.split(d), start=1)
+], ignore_index=True)
+
+len(out_of_fold)
+```
+
+:::
+
 The third objective needs a definition. Suppose the ship can revisit fifty stations. We send it
 to the fifty the model ranks highest, and count how many individuals are actually there.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: objectives
@@ -105,12 +176,55 @@ objectives <- out_of_fold |>
 objectives |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
+## Python
+
+```python
+from sklearn.metrics import root_mean_squared_error
+
+budget = 50
+observed = out_of_fold.loc[out_of_fold["model"] == "mean only", "obs"].to_numpy()
+perfect = np.sort(observed)[::-1][:budget].sum()
+
+def objective(group):
+    shortlist = group.sort_values("pred", ascending=False).head(budget)
+    return pd.Series({
+        "mapping: RMSE": root_mean_squared_error(group["obs"], group["pred"]),
+        "stock total: pred / obs": group["pred"].sum() / group["obs"].sum(),
+        "targeting: caught in 50": shortlist["obs"].sum(),
+    })
+
+objectives = out_of_fold.groupby("model", sort=False).apply(
+    objective, include_groups=False).reset_index()
+objectives["share of a perfect shortlist"] = (
+    objectives["targeting: caught in 50"] / perfect)
+
+objectives.round(3)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: benchmarks
 c(`individuals in the whole survey`   = sum(observed),
   `a perfect shortlist of 50 finds`   = perfect,
   `50 stations chosen at random find` = budget * mean(observed)) |> round(0)
 ```
+
+## Python
+
+```python
+pd.Series({
+    "individuals in the whole survey": observed.sum(),
+    "a perfect shortlist of 50 finds": perfect,
+    "50 stations chosen at random find": budget * observed.mean(),
+}).round(0)
+```
+
+:::
 
 ## What the results mean
 
@@ -158,6 +272,10 @@ station flagged where nothing is there — costs ship time. A **missed station**
 the record. Let their relative cost be $k$ dives per missed station, and compute the expected
 cost per station across all thresholds.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: costs
 presence <- survey |>
@@ -200,6 +318,57 @@ cost_table <- cost_curves |>
 
 cost_table |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+presence_columns = ["present", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+                    "salinity_psu", "substrate", "season",
+                    "longitude", "latitude"]
+presence = pd.get_dummies(survey[presence_columns].dropna(),
+                          columns=["substrate", "season"], drop_first=True)
+
+X = presence.drop(columns="present")
+truth = presence["present"].astype(str).to_numpy()
+
+model = Pipeline([("normalise", StandardScaler()),
+                  ("model", LogisticRegression(C=np.inf, max_iter=2000))])
+probabilities = cross_val_predict(
+    model, X, truth,
+    cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=71),
+    method="predict_proba")[:, list(np.unique(truth)).index("yes")]
+
+def expected_cost(threshold, k):
+    flagged = probabilities >= threshold
+    missed = np.sum(~flagged & (truth == "yes"))
+    wasted = np.sum(flagged & (truth == "no"))
+    return (missed + k * wasted) / len(truth)
+
+cut_offs = np.arange(0.01, 0.99 + 1e-9, 0.005)
+
+def cheapest(k):
+    costs = np.array([expected_cost(cut, k) for cut in cut_offs])
+    best = int(np.argmin(costs))
+    return {
+        "a wasted dive costs": k,
+        "cheapest threshold": cut_offs[best],
+        "theory: k/(1+k)": k / (1 + k),
+        "cost there": costs[best],
+        "cost at 0.5": expected_cost(0.5, k),
+        "saved by not using 0.5": 1 - costs[best] / expected_cost(0.5, k),
+    }
+
+cost_table = pd.DataFrame([cheapest(k) for k in (1, 3, 10, 30)])
+
+cost_table.round(3)
+```
+
+:::
 
 ```{r}
 #| label: fig-cost

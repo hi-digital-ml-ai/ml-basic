@@ -30,6 +30,8 @@ bottom of that curve without cheating.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 A model has to commit to a class of shapes before it sees the data. A straight line can only
@@ -93,6 +95,10 @@ different numbers, and none of those spikes will be where they need to be.
 The picture above varies one knob on one predictor. Now the real thing: the full set of
 predictors, a single tree, and its flexibility swept from very rigid to completely free.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 set.seed(502)
@@ -110,8 +116,43 @@ baseline <- rmse_of(test$abundance, mean(train$abundance))
 round(baseline, 3)
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season"]
+
+# get_dummies() is the closest thing to model.matrix(): scikit-learn's trees
+# take numbers only, so the factors are encoded once, here.
+d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+
+train, test = train_test_split(d, train_size=0.75, random_state=502)
+
+X_train, y_train = train.drop(columns="abundance"), train["abundance"]
+X_test, y_test = test.drop(columns="abundance"), test["abundance"]
+
+baseline = root_mean_squared_error(y_test, np.repeat(y_train.mean(), len(y_test)))
+round(baseline, 3)
+```
+
+:::
+
 `minbucket` is the smallest number of stations allowed in a leaf. Large values force a coarse
 tree; `minbucket = 1` allows a leaf per station.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: sweep
@@ -128,6 +169,27 @@ sweep <- map_dfr(c(60, 40, 25, 15, 10, 7, 5, 3, 2, 1), \(mb) {
 
 sweep |> mutate(across(c(training, test), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+def grow(min_bucket):
+    tree = DecisionTreeRegressor(
+        min_samples_leaf=min_bucket, min_samples_split=2,
+        ccp_alpha=0.0, random_state=502,
+    ).fit(X_train, y_train)
+    return {
+        "minbucket": min_bucket,
+        "leaves": tree.get_n_leaves(),
+        "training": round(
+            root_mean_squared_error(y_train, tree.predict(X_train)), 3),
+        "test": round(root_mean_squared_error(y_test, tree.predict(X_test)), 3),
+    }
+
+pd.DataFrame([grow(mb) for mb in [60, 40, 25, 15, 10, 7, 5, 3, 2, 1]])
+```
+
+:::
 
 ```{r}
 #| label: fig-u-curve

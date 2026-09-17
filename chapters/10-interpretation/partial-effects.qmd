@@ -29,12 +29,18 @@ you. This page demonstrates both halves on a survey where we know the answer.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 A **partial dependence plot** (PDP) answers: if every station in the survey had been at 40 m
 depth, what would the model have predicted on average? Then repeat for 45 m, 50 m, and so on,
 and join the dots. Every other column stays as it was recorded, so the curve is the model's
 prediction with one variable swept and the rest left alone.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: pdp-function
@@ -47,6 +53,26 @@ partial_dependence <- function(model, data, variable, grid) {
 }
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+
+def partial_dependence(model, data, variable, grid):
+    """Sweep one column across a grid, holding every other column as it is,
+    and average the predictions. scikit-learn ships this as
+    sklearn.inspection.partial_dependence; it is four lines, so here it is."""
+    values = []
+    for value in grid:
+        swept = data.copy()
+        swept[variable] = value
+        values.append(model.predict(swept).mean())
+    return np.array(values)
+```
+
+:::
+
 Four lines. That really is the whole method, and writing it out makes its one assumption
 visible: it builds rows that combine a *chosen* value of one variable with the *observed*
 values of all the others, whether or not such a station could exist.
@@ -58,6 +84,10 @@ would recover. The generator's expected count depends on depth and temperature t
 quadratics, on chlorophyll, on substrate, and on a smooth spatial field. `true_mean` gives us
 the first four directly; the spatial field we can recover by subtraction, because everything
 else in the expression is known.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: recover-truth
@@ -102,6 +132,59 @@ forest <- workflow() |>
 nrow(modelling)
 ```
 
+## Python
+
+```python
+from sklearn.ensemble import RandomForestRegressor
+
+from mlbasic_data import load_coastal_survey_clean, load_coastal_survey_truth
+
+survey = load_coastal_survey_clean()
+
+columns = ["station_id", "abundance", "depth_m", "temperature_c",
+           "chlorophyll_mg_m3", "salinity_psu", "substrate", "season",
+           "longitude", "latitude"]
+substrate_effects = {"sand": 0.0, "mud": 0.40, "gravel": 0.20, "rock": -0.60}
+
+known_truth = (survey[columns].dropna()
+    .merge(load_coastal_survey_truth(), on="station_id")
+    .reset_index(drop=True))
+known_truth["substrate_effect"] = known_truth["substrate"].astype(str).map(
+    substrate_effects)
+
+def environment_term(frame, effect):
+    return (1.5
+            - 0.55 * ((frame["depth_m"] - 80) / 60) ** 2
+            - 0.60 * ((frame["temperature_c"] - 9) / 3) ** 2
+            + 0.35 * np.log1p(frame["chlorophyll_mg_m3"])
+            + effect)
+
+known_truth["spatial_term"] = (
+    np.log(known_truth["true_mean"])
+    - environment_term(known_truth, known_truth["substrate_effect"]))
+
+def true_partial_dependence(variable, grid):
+    values = []
+    for value in grid:
+        swept = known_truth.copy()
+        swept[variable] = value
+        effect = swept["substrate"].astype(str).map(substrate_effects)
+        values.append(np.exp(environment_term(swept, effect)
+                             + swept["spatial_term"]).mean())
+    return np.array(values)
+
+modelling = known_truth.drop(columns=["station_id", "true_mean",
+                                      "substrate_effect", "spatial_term"])
+encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+
+forest = RandomForestRegressor(n_estimators=800, random_state=1).fit(
+    encoded, modelling["abundance"])
+
+len(modelling)
+```
+
+:::
+
 ::: {.callout-warning}
 `true_mean` and everything derived from it are available here **only because the data is
 simulated**. No real survey has them. They are used on this page as a target to check the
@@ -109,6 +192,10 @@ interpretation against, never as a predictor.
 :::
 
 ## Temperature: recovered
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: temperature-pdp
@@ -125,6 +212,24 @@ temperature_curves |>
   mutate(across(-temperature_c, \(x) round(x, 2)))
 ```
 
+## Python
+
+```python
+temperature_grid = np.arange(3, 16.25, 0.25)
+
+temperature_curves = pd.DataFrame({
+    "temperature_c": temperature_grid,
+    "truth": true_partial_dependence("temperature_c", temperature_grid),
+    "forest": partial_dependence(forest, encoded, "temperature_c",
+                                 temperature_grid),
+})
+
+temperature_curves[
+    temperature_curves["temperature_c"].isin([3, 6, 9, 12, 15])].round(2)
+```
+
+:::
+
 The forest puts the optimum at 7.75 °C against a true 9 °C, and it gets the shape right — up,
 over, down. What it does not get is the amplitude. The truth falls to 0.51 at 3 °C; the
 forest only falls to 3.18. Tree ensembles average many predictions, each bounded by the
@@ -133,6 +238,10 @@ If you read an optimum off a forest's PDP you will usually be close. If you read
 of the effect off it, you will understate it, often by a lot.
 
 ## Depth: not recovered
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: depth-pdp
@@ -149,6 +258,22 @@ depth_curves |>
   mutate(across(-depth_m, \(x) round(x, 2)))
 ```
 
+## Python
+
+```python
+depth_grid = np.arange(10, 185, 5)
+
+depth_curves = pd.DataFrame({
+    "depth_m": depth_grid,
+    "truth": true_partial_dependence("depth_m", depth_grid),
+    "forest": partial_dependence(forest, encoded, "depth_m", depth_grid),
+})
+
+depth_curves[depth_curves["depth_m"].isin([10, 40, 80, 120, 160])].round(2)
+```
+
+:::
+
 The true depth effect is a hump with its peak at 80 m: 2.47 at 10 m, rising to 5.22 at 80,
 falling to 1.96 at 160. The forest's partial dependence declines monotonically from 5.04 to
 3.77 and peaks at the shallowest depth on the grid.
@@ -161,6 +286,10 @@ This is not a small error in the optimum. It is the wrong shape, and a paper rep
 The obvious next move is to blame the black box and fit something interpretable. So let us
 fit the model that is *exactly* right: a negative-binomial GLM with quadratics in depth and
 temperature — the generator's own functional form.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: glm
@@ -185,8 +314,39 @@ depth_curves |>
   mutate(across(-depth_m, \(x) round(x, 2)))
 ```
 
+## Python
+
+```python
+import statsmodels.formula.api as smf
+
+correct_form = smf.negativebinomial(
+    "abundance ~ depth_m + I(depth_m**2)"
+    " + temperature_c + I(temperature_c**2)"
+    " + np.log1p(chlorophyll_mg_m3) + C(substrate) + C(season) + salinity_psu",
+    modelling,
+).fit(method="bfgs", maxiter=2000, disp=0)
+
+def glm_partial(variable, grid):
+    values = []
+    for value in grid:
+        swept = modelling.copy()
+        swept[variable] = value
+        values.append(correct_form.predict(swept).mean())
+    return np.array(values)
+
+depth_curves["glm"] = glm_partial("depth_m", depth_grid)
+
+depth_curves[depth_curves["depth_m"].isin([10, 40, 80, 120, 160])].round(2)
+```
+
+:::
+
 The GLM is worse. Its depth curve falls from 8.19 to 1.80, monotonically, and peaks at the
 shallow end like the forest's. Looking at its coefficients shows why.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: coefficients
@@ -199,6 +359,24 @@ tibble(term = c("depth, linear", "depth, quadratic",
   mutate(`p value` = round(2 * pnorm(-abs(estimate / `std. error`)), 4),
          across(c(estimate, `std. error`, `true value`), \(x) signif(x, 3)))
 ```
+
+## Python
+
+```python
+terms = ["depth_m", "I(depth_m ** 2)", "temperature_c", "I(temperature_c ** 2)"]
+
+pd.DataFrame({
+    "term": ["depth, linear", "depth, quadratic",
+             "temperature, linear", "temperature, quadratic"],
+    "estimate": correct_form.params[terms].to_numpy(),
+    "std. error": correct_form.bse[terms].to_numpy(),
+    "true value": [2 * 0.55 * 80 / 3600, -0.55 / 3600,
+                   2 * 0.60 * 9 / 9, -0.60 / 9],
+    "p value": correct_form.pvalues[terms].round(4).to_numpy(),
+})
+```
+
+:::
 
 **Temperature is recovered almost exactly**: its quadratic coefficient comes back at −0.0674
 against a true −0.0667, its linear term at 1.08 against 1.20, both with enormous $z$
@@ -312,6 +490,10 @@ variable across its whole range for every station, ALE looks at small windows of
 variable and asks how the prediction changes for stations *already in that window* — so it
 never asks the model about a 20 m station at 2 °C.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: ale
 explainer <- explain_tidymodels(forest, data = select(modelling, -abundance),
@@ -325,6 +507,41 @@ as_tibble(accumulated$agr_profiles) |>
   transmute(depth_m = round(`_x_`), `accumulated local effect` = round(`_yhat_`, 2)) |>
   slice(which(row_number() %in% round(seq(1, n(), length.out = 6))))
 ```
+
+## Python
+
+```python
+def accumulated_local_effects(model, data, variable, bins=20):
+    """ALE by hand: inside each narrow band of the variable, move every row to
+    the band's two edges and average the difference. Unlike a partial
+    dependence curve this never asks the model about combinations the data
+    does not contain."""
+    edges = np.unique(np.quantile(data[variable], np.linspace(0, 1, bins + 1)))
+    band = np.clip(np.searchsorted(edges, data[variable], side="left") - 1,
+                   0, len(edges) - 2)
+
+    differences = np.zeros(len(edges) - 1)
+    for b in range(len(edges) - 1):
+        rows = data[band == b]
+        if rows.empty:
+            continue
+        lower, upper = rows.copy(), rows.copy()
+        lower[variable], upper[variable] = edges[b], edges[b + 1]
+        differences[b] = (model.predict(upper) - model.predict(lower)).mean()
+
+    accumulated = np.concatenate([[0.0], np.cumsum(differences)])
+    weights = np.bincount(band, minlength=len(edges) - 1)
+    centre = np.average((accumulated[:-1] + accumulated[1:]) / 2,
+                        weights=weights)
+    return pd.DataFrame({variable: edges,
+                         "accumulated local effect": accumulated - centre})
+
+accumulated = accumulated_local_effects(forest, encoded, "depth_m")
+
+accumulated.iloc[np.linspace(0, len(accumulated) - 1, 6).round().astype(int)].round(2)
+```
+
+:::
 
 ALE gives the same broad decline — 4.63 at the shallowest stations to 3.29 at the deepest,
 with a barely perceptible flat stretch around 100 m and no hump anywhere. That is the right

@@ -123,6 +123,62 @@ descriptions mid-sentence (the longest is 210 characters).
 `chapters/index.qmd` and `contributed/index.qmd` use `type: table` with
 `categories: true`, so the topic filter is the point of those pages.
 
+## Code tabsets
+
+Sections 2, 3, 5, 7, 8 and 10 — the pages that teach the modelling pipeline —
+show each step as an R and a Python tab:
+
+````markdown
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fit
+...
+```
+
+## Python
+
+```python
+...
+```
+
+:::
+````
+
+`group="language"` ties every tabset on the page together, so one click switches
+all of them. Quarto keeps tabset headings out of the table of contents, so the
+`##` levels here do not disturb `toc-depth: 3`.
+
+**The R chunk is the only one that executes.** Its table therefore renders under
+the R tab and not the Python one. That was the deliberate choice over splitting
+each chunk in two and printing the output below the tabset: it leaves every
+executing chunk exactly as it was, so `_freeze/` and the numbers on the page are
+unaffected by the tabs.
+
+**What gets a tab.** Modelling steps do. Figure chunks stay R-only — the site's
+figures are all ggplot2, which is the point of `R/theme.R`. Steps with no honest
+Python counterpart also stay R-only: `summary(gam)$s.table` has no equivalent,
+and inventing one would teach something false.
+
+The Python is not decoration. `python/check-snippets.py` extracts every
+```` ```python ```` block, concatenates each page's blocks in order — they are
+cumulative, exactly as the R chunks are — and runs the result. It reports a
+page that only warns as well as one that fails, because a convergence warning
+means the snippet is subtly wrong. Data comes from `python/mlbasic_data.py`,
+which mirrors `R/data.R` step for step; the cleaned survey was checked against
+the R loader (800 rows, identical NA counts, identical substrate levels).
+
+Each converted page carries `{{< include ../../_snippets/python-tabs.qmd >}}`
+under the data note, saying that the numbers shown came from R and that Python's
+own random streams put the splits elsewhere.
+
+Dependencies are in `python/requirements.txt`: pandas and scikit-learn
+throughout, `statsmodels` where scikit-learn reports no standard errors (GLM
+inference, negative binomial), `scipy` for the optimiser and quasi-random
+designs, `umap-learn` in section 8. None of them is needed to build the site.
+
 ## Page layout
 
 The site is full-width: a docked sidebar on the left, wide body, margin TOC.

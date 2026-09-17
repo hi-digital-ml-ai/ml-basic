@@ -11,6 +11,12 @@ These pages are the payoff of the course: they show the same tidymodels patterns
 applied to real, messy, domain-specific data. They are also the part readers arrive
 at from outside, so they carry the site's credibility.
 
+Contributed pages are **R-only**. The site's build executes R and nothing else —
+the Python tabs in sections 2, 3, 5, 7, 8 and 10 are displayed, never run — so a
+page whose results come from Python has no way to produce them here. If a
+contributor works in Python, that is a conversation to have before the page is
+written, not a tab to bolt on afterwards.
+
 ## Where they live
 
 ```

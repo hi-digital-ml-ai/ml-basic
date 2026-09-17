@@ -21,6 +21,7 @@ chapters/NN-slug/    one folder per course section (10 sections)
 contributed/         participant pages (one .qmd per contribution)
 data/                small example datasets committed to the repo
 R/                   shared helpers: ggplot theme, data loaders, tidymodels utils
+python/              the scikit-learn half of the code tabsets (never rendered)
 _freeze/             committed render cache — CI renders without R
 .claude/             detail docs (see below)
 ```
@@ -33,6 +34,7 @@ quarto render                  # full build into _site/
 quarto render chapters/03-supervised-learning/logistic-regression.qmd
 Rscript -e 'renv::restore()'   # sync R packages
 Rscript -e 'renv::snapshot()'  # after adding a package
+python python/check-snippets.py  # run every Python tab in the site
 ```
 
 ## Conventions
@@ -42,6 +44,10 @@ Rscript -e 'renv::snapshot()'  # after adding a package
 - **British spelling** to match the syllabus: modelling, generalisation, centre.
 - **tidymodels is the default toolkit** (`recipes` → `parsnip` → `workflows` →
   `rsample`/`tune` → `yardstick`). Show base-R or other packages only to contrast.
+- **Modelling steps carry a Python tab.** In sections 2, 3, 5, 7, 8 and 10 each
+  modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. The
+  R tab is the one Quarto runs; the Python is displayed only, and is kept honest
+  by `python/check-snippets.py`. See `.claude/authoring-guide.md`.
 - **Every page** carries YAML `title`, `description`, `categories`, and ends with a
   *Key points* callout. Categories come from the controlled list in
   `.claude/site-structure.md` — do not invent new ones ad hoc.

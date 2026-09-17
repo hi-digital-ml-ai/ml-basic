@@ -28,6 +28,8 @@ information, and this page reads it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs.qmd >}}
+
 ## The idea
 
 For a continuous or count response, with $y_i$ observed and $\hat y_i$ predicted at station
@@ -50,6 +52,10 @@ predictions from anything else they are not, and the gap between them is worth r
 
 Five models of the same counts, each scored on pooled out-of-fold predictions from the same
 ten folds so the comparison is exact.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
@@ -87,8 +93,73 @@ out_of_fold <- imap_dfr(fitters, \(f, name) {
 nrow(out_of_fold)
 ```
 
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import KFold
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "longitude", "latitude"]
+d = survey[columns].dropna().reset_index(drop=True)
+
+# patsy has no poly(), so the squared terms are written out. C() is factor().
+formula_env = ("abundance ~ depth_m + I(depth_m**2)"
+               " + temperature_c + I(temperature_c**2)"
+               " + np.log1p(chlorophyll_mg_m3) + salinity_psu"
+               " + C(substrate) + C(season) + longitude + latitude")
+
+forest_columns = pd.get_dummies(d.drop(columns="abundance"), drop_first=True)
+
+def forest_predict(tr, te):
+    model = RandomForestRegressor(n_estimators=500, random_state=1).fit(
+        forest_columns.loc[tr.index], tr["abundance"])
+    return model.predict(forest_columns.loc[te.index])
+
+fitters = {
+    "mean only": lambda tr, te: np.repeat(tr["abundance"].mean(), len(te)),
+    "Poisson GLM": lambda tr, te: smf.glm(
+        formula_env, tr, family=sm.families.Poisson()).fit().predict(te),
+    # negativebinomial() estimates the dispersion with the coefficients, as
+    # MASS::glm.nb() does; statsmodels' GLM family wants it fixed in advance.
+    "negative binomial": lambda tr, te: smf.negativebinomial(
+        formula_env, tr).fit(method="bfgs", maxiter=2000, disp=0).predict(te),
+    "log-transformed lm": lambda tr, te: np.expm1(
+        smf.ols(formula_env.replace("abundance ~", "np.log1p(abundance) ~"), tr)
+        .fit().predict(te)),
+    "random forest": forest_predict,
+}
+
+import statsmodels.api as sm
+
+folds = KFold(n_splits=10, shuffle=True, random_state=61)
+
+out_of_fold = pd.concat([
+    pd.DataFrame({"model": name, "fold": i,
+                  "obs": d.iloc[held]["abundance"].to_numpy(),
+                  "pred": np.asarray(fit(d.iloc[rows], d.iloc[held]))})
+    for name, fit in fitters.items()
+    for i, (rows, held) in enumerate(folds.split(d), start=1)
+], ignore_index=True)
+
+len(out_of_fold)
+```
+
+:::
+
 The `log-transformed lm` is the common shortcut for skewed counts: fit an ordinary linear model
 to `log1p(abundance)`, then undo the transformation with `expm1()`. Keep an eye on it.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: metrics
@@ -102,6 +173,31 @@ scores <- out_of_fold |>
 
 scores |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
+
+## Python
+
+```python
+from sklearn.metrics import (mean_absolute_error, r2_score,
+                             root_mean_squared_error)
+
+def score(group):
+    return pd.Series({
+        "RMSE": root_mean_squared_error(group["obs"], group["pred"]),
+        "MAE": mean_absolute_error(group["obs"], group["pred"]),
+        # yardstick's rsq is the squared correlation; rsq_trad is r2_score.
+        "rsq": np.corrcoef(group["obs"], group["pred"])[0, 1] ** 2,
+        "rsq_trad": r2_score(group["obs"], group["pred"]),
+        "total predicted / total observed":
+            group["pred"].sum() / group["obs"].sum(),
+    })
+
+scores = out_of_fold.groupby("model", sort=False).apply(
+    score, include_groups=False).reset_index()
+
+scores.round(3)
+```
+
+:::
 
 ## What the results mean
 
@@ -130,6 +226,10 @@ respectable R². Report `rsq_trad()` as well, or report the ratio of totals dire
 
 ### RMSE is mostly a measurement of a few stations
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: concentration
 worst_share <- function(data, error, fractions = c(0.01, 0.02, 0.05, 0.10, 0.25)) {
@@ -148,6 +248,31 @@ left_join(
   mutate(across(where(is.double), \(x) scales::percent(x, accuracy = 0.1)))
 ```
 
+## Python
+
+```python
+def worst_share(data, error, fractions=(0.01, 0.02, 0.05, 0.10, 0.25)):
+    e = np.sort(error(data["obs"], data["pred"]))[::-1]
+    return pd.DataFrame({
+        "worst stations": [f"{p:.0%}" for p in fractions],
+        "share": [e[:round(p * len(e))].sum() / e.sum() for p in fractions],
+    })
+
+nb = out_of_fold[out_of_fold["model"] == "negative binomial"]
+
+concentration = worst_share(nb, lambda o, p: (o - p) ** 2).rename(
+    columns={"share": "share of squared error"})
+concentration["share of absolute error"] = worst_share(
+    nb, lambda o, p: (o - p).abs())["share"]
+
+shares = concentration.columns[1:]
+concentration[shares] = concentration[shares].map("{:.1%}".format)
+
+concentration
+```
+
+:::
+
 Seven stations out of 720 — the worst 1% — account for about a quarter of the squared error
 the RMSE is built from. The worst 5% account for half of it. Under absolute error the same 5%
 account for a fifth.
@@ -160,12 +285,31 @@ had better get the dense patches right — but it should be a decision, not an a
 
 MAPE divides each error by the observed value, which has two consequences on count data.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: mape-zeros
 c(stations = nrow(nb),
   `stations with zero caught` = sum(nb$obs == 0),
   `MAPE on the rest (%)` = mape_vec(nb$obs[nb$obs > 0], nb$pred[nb$obs > 0]))  |> round(1)
 ```
+
+## Python
+
+```python
+caught = nb[nb["obs"] > 0]
+
+pd.Series({
+    "stations": len(nb),
+    "stations with zero caught": int((nb["obs"] == 0).sum()),
+    "MAPE on the rest (%)": 100 * np.mean(
+        np.abs((caught["obs"] - caught["pred"]) / caught["obs"])),
+}).round(1)
+```
+
+:::
 
 The first consequence is that it does not exist. Dividing by an observed count of zero is
 undefined, and 157 of these 720 stations caught nothing — so MAPE can only be computed after
@@ -222,6 +366,10 @@ under-prediction has no place in abundance work, and this is why.
 Section 6 ran into this three times. Here it is directly: the *same* negative binomial model,
 scored fold by fold on the same ten folds.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: per-fold
 by_fold <- nb |>
@@ -235,6 +383,27 @@ by_fold |>
             `correlation of fold sd with fold RMSE` = cor(`sd of counts in fold`, RMSE)) |>
   round(3)
 ```
+
+## Python
+
+```python
+by_fold = nb.groupby("fold").apply(lambda g: pd.Series({
+    "sd of counts in fold": g["obs"].std(),
+    "RMSE": root_mean_squared_error(g["obs"], g["pred"]),
+    "rsq_trad": r2_score(g["obs"], g["pred"]),
+}), include_groups=False)
+
+pd.Series({
+    "lowest_rmse": by_fold["RMSE"].min(),
+    "highest_rmse": by_fold["RMSE"].max(),
+    "lowest_rsq_trad": by_fold["rsq_trad"].min(),
+    "highest_rsq_trad": by_fold["rsq_trad"].max(),
+    "correlation of fold sd with fold RMSE":
+        by_fold["sd of counts in fold"].corr(by_fold["RMSE"]),
+}).round(3)
+```
+
+:::
 
 One model, one dataset: RMSE between 3.51 and 5.92, and `rsq_trad` between **−0.42 and
 +0.46** — from worse than predicting the fold's own mean to explaining nearly half its
