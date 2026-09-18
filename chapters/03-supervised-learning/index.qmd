@@ -42,3 +42,17 @@ general ranking, and the page says why it turned out that way.
 ::: {#pages}
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Build a model](https://www.tidymodels.org/start/models/), tidymodels. One model specification, several engines.
+- [Search parsnip models](https://www.tidymodels.org/find/parsnip/), tidymodels. Which methods have a `parsnip` interface and what each engine needs.
+- [Supervised learning](https://scikit-learn.org/stable/supervised_learning.html), scikit-learn user guide. The whole menu, with [linear models](https://scikit-learn.org/stable/modules/linear_model.html) and [ensembles](https://scikit-learn.org/stable/modules/ensemble.html) as the two that matter here.
+
+**Video**
+
+- [StatQuest: Logistic Regression](https://www.youtube.com/watch?v=yIYKR4sgzI8), StatQuest with Josh Starmer.
+- [StatQuest: Decision Trees](https://www.youtube.com/watch?v=7VeUPuFGJHk), StatQuest with Josh Starmer.
+- [StatQuest: Random Forests Part 1](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ), StatQuest with Josh Starmer. Bagging and out-of-bag error, which is where the forest's self-validation comes from.

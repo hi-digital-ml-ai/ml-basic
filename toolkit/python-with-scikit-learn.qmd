@@ -232,3 +232,15 @@ near each other are not independent, so every score on this page is flattered. S
    forest, and what did imputation cost you?
 3. Set `C=1e6` on the logistic model to switch the penalty off in all but name, and
    compare the coefficients with `tidy()` output from the R page.
+
+## Further resources
+
+**Documentation**
+
+- [Getting started](https://scikit-learn.org/stable/getting_started.html), scikit-learn. Fitting, transforming, pipelines and evaluation in one short page.
+- [Pipelines and composite estimators](https://scikit-learn.org/stable/modules/compose.html), scikit-learn user guide. `Pipeline`, `ColumnTransformer` and the naming rules that make `GridSearchCV` able to tune inside them.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Leakage, inconsistent preprocessing and the meaning of `random_state`, which is the third of the five differences above.
+
+**Video**
+
+- [Use ColumnTransformer to apply different preprocessing to different columns](https://www.youtube.com/watch?v=NGq8wnH5VSo), Data School. Short and exactly on the point of this page.

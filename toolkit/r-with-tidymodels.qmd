@@ -183,3 +183,16 @@ this course is about whether the number at the end means anything.
    is the change larger than the difference between the two models?
 3. Drop `strata = present` from the split and rerun. How much does the test-set presence
    rate move between seeds?
+
+## Further resources
+
+**Documentation**
+
+- [Get Started](https://www.tidymodels.org/start/), tidymodels. Five articles covering the same ground as this page, at more length.
+- [Tidy Modeling with R](https://www.tmwr.org/), Max Kuhn and Julia Silge. The book, free online. [Recipes](https://www.tmwr.org/recipes.html) and [resampling](https://www.tmwr.org/resampling.html) are the two chapters to read first.
+- [workflows](https://workflows.tidymodels.org/), tidymodels. What a workflow can hold besides a recipe and a model.
+
+**Video**
+
+- [Get started with tidymodels and classification of penguin data](https://www.youtube.com/watch?v=z57i2GVcdww), Julia Silge. The same shape as this page, worked live on a different dataset.
+- [posit::conf(2023) Workshop: Introduction to tidymodels](https://www.youtube.com/watch?v=NTtcTF2tFEA), Posit PBC. A full workshop recording, for readers who want the long version.

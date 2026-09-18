@@ -63,6 +63,32 @@ labels rather than claims.
 
 Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
 
+### Further resources
+
+Section index pages and the two `toolkit/` pages end with a `## Further resources`
+block, after everything else. Individual chapter pages do not: seventy link lists
+would repeat the same handful of sources and rot at seventy separate rates.
+
+The block is two labelled lists, **Documentation** then **Video**, each entry a link
+followed by the source and one clause saying why it earns its place. A link with no
+reason attached is a bookmark, not a resource.
+
+Rules for what goes in it:
+
+- **Check every URL before committing it.** A documentation page must return 200; a
+  video must resolve through `https://www.youtube.com/oembed?url=...&format=json`,
+  which also returns the real channel name. Search-result summaries misattribute
+  videos, so the channel a search claims is not evidence.
+- **Video comes from channels with a teaching record**: StatQuest, 3Blue1Brown,
+  Julia Silge, Posit PBC, PyData, Data School. English only.
+- **Documentation is upstream documentation**, tidymodels and scikit-learn, not blog
+  posts about them. `tmwr.org` and Molnar's *Interpretable Machine Learning* are the
+  exceptions, both being free books by the people who wrote the tools.
+- Prefer a page that covers what the section actually argues. The scikit-learn
+  leakage section belongs with §2, its grouped-data section with §6 and §7.
+- Nobody here has watched every linked video end to end. Treat the list as reviewed
+  for source and topic, not for content, and check it before publishing to `main`.
+
 ## Code
 
 - tidymodels idiom throughout: `initial_split()` → `recipe()` → `*_spec()` →

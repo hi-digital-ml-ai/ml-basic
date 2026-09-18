@@ -74,3 +74,17 @@ data passes every check. The defences are gear calibration, an independent metho
 transparent reporting of effort. None of them is a model.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Explaining models and predictions](https://www.tmwr.org/explain.html), Tidy Modeling with R. Local and global explanations through `DALEX`, in tidymodels idiom.
+- [DALEX](https://modeloriented.github.io/DALEX/), Przemyslaw Biecek and others. Model-agnostic explanation for R and Python both.
+- [Permutation importance](https://scikit-learn.org/stable/modules/permutation_importance.html) and [partial dependence and ICE](https://scikit-learn.org/stable/modules/partial_dependence.html), scikit-learn user guide. The permutation page is candid about what correlated predictors do to the ranking, which is this section's own finding.
+- [Interpretable Machine Learning](https://christophm.github.io/interpretable-ml-book/), Christoph Molnar. A free book, and the standard reference for every method named here.
+
+**Video**
+
+- [Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP](https://www.youtube.com/watch?v=C80SQe16Rao), Kevin Lemagnen at PyData.
+- [Feature engineering and interpretability for xgboost with board game ratings](https://www.youtube.com/watch?v=HTJ0nt3codo), Julia Silge. Importance and explanation computed on a real model rather than a toy one.

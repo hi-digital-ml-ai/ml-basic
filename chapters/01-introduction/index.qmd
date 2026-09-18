@@ -32,3 +32,15 @@ answer different questions.
 ::: {#pages}
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Get Started](https://www.tidymodels.org/start/), tidymodels. Five short articles that build one model from scratch, in the order this course uses.
+- [Getting started](https://scikit-learn.org/stable/getting_started.html), scikit-learn. The same ground in one page, for readers who work in Python.
+- [Choosing the right estimator](https://scikit-learn.org/stable/machine_learning_map.html), scikit-learn. A flowchart from the size and shape of your data to a method. Treat it as a starting point rather than an answer.
+
+**Video**
+
+- [A Gentle Introduction to Machine Learning](https://www.youtube.com/watch?v=Gv9_4yMHFhI), StatQuest with Josh Starmer. Training and testing, and why the distinction is the whole subject.

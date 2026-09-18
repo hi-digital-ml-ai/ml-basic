@@ -49,3 +49,14 @@ a scientific choice your software makes for you by default, and
 ::: {#pages}
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Stochastic gradient descent](https://scikit-learn.org/stable/modules/sgd.html), scikit-learn user guide. Includes the practical-tips section on why these methods need scaled inputs, which is the point this section makes with a factor of ninety.
+
+**Video**
+
+- [Gradient descent, how neural networks learn](https://www.youtube.com/watch?v=IHZwWFHWa-w), 3Blue1Brown. Deep Learning chapter 2. The best visual account of descending a loss surface, and it assumes no calculus you do not already have.
+- [Maximum Likelihood, clearly explained](https://www.youtube.com/watch?v=XepXtl9YKwc), StatQuest with Josh Starmer. Likelihood as a function of the parameter rather than of the data, which is the step most explanations skip.

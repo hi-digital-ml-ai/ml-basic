@@ -68,3 +68,17 @@ resamples object for every model you intend to compare**, so the fold cancels ou
 difference.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Evaluate your model with resampling](https://www.tidymodels.org/start/resampling/), tidymodels.
+- [rsample](https://rsample.tidymodels.org/) and [yardstick](https://yardstick.tidymodels.org/), tidymodels. Every resampling scheme, and every metric with its definition.
+- [Cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html) and [metrics and scoring](https://scikit-learn.org/stable/modules/model_evaluation.html), scikit-learn user guide. The cross-validation page's section on grouped data is the one to read alongside section 6.
+
+**Video**
+
+- [Machine Learning Fundamentals: Cross Validation](https://www.youtube.com/watch?v=fSytzGwwBVw), StatQuest with Josh Starmer.
+- [Machine Learning Fundamentals: The Confusion Matrix](https://www.youtube.com/watch?v=Kdsp6soqA7o), StatQuest with Josh Starmer.
+- [ROC and AUC, Clearly Explained](https://www.youtube.com/watch?v=4jRBRDbJemM), StatQuest with Josh Starmer. Builds the curve one threshold at a time, which is what makes the area mean something.
