@@ -40,3 +40,16 @@ the field. It reappears in every later section, especially
 ::: {#pages}
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Preprocess your data with recipes](https://www.tidymodels.org/start/recipes/), tidymodels. A recipe built one step at a time.
+- [recipes reference](https://recipes.tidymodels.org/), tidymodels. Every `step_*()` there is, which is the fastest way to find out whether the transformation you want already exists.
+- [Preprocessing data](https://scikit-learn.org/stable/modules/preprocessing.html) and [imputation](https://scikit-learn.org/stable/modules/impute.html), scikit-learn user guide.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. The leakage section is the best short statement of the problem this section ends on.
+
+**Video**
+
+- [Modeling hotel bookings in R using tidymodels and recipes](https://www.youtube.com/watch?v=dbXDkEEuvCU), Julia Silge. A recipe assembled from scratch with the reasoning spoken aloud, which is hard to get from documentation.

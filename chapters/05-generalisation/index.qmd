@@ -56,3 +56,16 @@ marine data, because a random split of repeat visits to 160 sites flatters every
 this section.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [Tune model parameters](https://www.tidymodels.org/start/tuning/), tidymodels. `tune()`, a grid, and resampling used honestly.
+- [Underfitting versus overfitting](https://scikit-learn.org/stable/auto_examples/model_selection/plot_underfitting_overfitting.html), scikit-learn. Three polynomial fits to the same points, which is this section's argument in one figure.
+- [Tuning the hyper-parameters of an estimator](https://scikit-learn.org/stable/modules/grid_search.html), scikit-learn user guide.
+
+**Video**
+
+- [Machine Learning Fundamentals: Bias and Variance](https://www.youtube.com/watch?v=EuBBz3bI-aA), StatQuest with Josh Starmer.
+- [Regularization Part 1: Ridge (L2) Regression](https://www.youtube.com/watch?v=Q81RR3yKn30) and [Part 2: Lasso (L1) Regression](https://www.youtube.com/watch?v=NGf0voTMlcs), StatQuest with Josh Starmer. Why one shrinks coefficients and the other sets them to zero.

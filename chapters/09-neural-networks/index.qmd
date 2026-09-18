@@ -81,3 +81,16 @@ predictors act more or less one at a time, a forest will beat the network and co
 afternoon instead of a week.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [`mlp()`](https://parsnip.tidymodels.org/reference/mlp.html), parsnip. The multilayer perceptron in the same specification idiom as every other model in the course.
+- [Neural network models (supervised)](https://scikit-learn.org/stable/modules/neural_networks_supervised.html), scikit-learn user guide. Includes the tips section on scaling and on how little data these need before they overfit.
+
+**Video**
+
+- [But what is a neural network?](https://www.youtube.com/watch?v=aircAruvnKk), 3Blue1Brown. Deep Learning chapter 1, and the clearest account anywhere of what the layers are doing.
+- [Backpropagation calculus](https://www.youtube.com/watch?v=tIeHLnjs5U8), 3Blue1Brown. Deep Learning chapter 4, for readers who want the derivative rather than the metaphor.
+- [The Essential Main Ideas of Neural Networks](https://www.youtube.com/watch?v=CqOfi41LfDw), StatQuest with Josh Starmer. A slower path to the same place.

@@ -63,3 +63,14 @@ distributions of the response. Use R², or the same test set for both. It is the
 most repeated methodological trap in the course.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, which is the concrete answer to most of this section.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Independence is assumed silently in almost every default, and this page says where.
+
+**Video**
+
+- [Spatial resampling to understand drought in Texas](https://www.youtube.com/watch?v=l-CfniOBDBc), Julia Silge. A random split and a spatial split on the same data, with the difference in the scores visible.

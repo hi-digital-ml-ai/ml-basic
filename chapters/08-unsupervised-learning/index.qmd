@@ -75,3 +75,17 @@ A gradient is a finding. "Composition turns over continuously with depth" is a m
 sentence than any cluster count, and on this data it is the true one.
 :::
 
+
+## Further resources
+
+**Documentation**
+
+- [tidyclust](https://tidyclust.tidymodels.org/), tidymodels. Clustering in the same specification and workflow idiom as the rest of the course.
+- [Clustering](https://scikit-learn.org/stable/modules/clustering.html), scikit-learn user guide. The comparison figure near the top, showing ten methods on the same six datasets, is worth more than the text.
+- [Decomposing signals in components](https://scikit-learn.org/stable/modules/decomposition.html), scikit-learn user guide. PCA and its relatives.
+
+**Video**
+
+- [StatQuest: Principal Component Analysis (PCA), Step-by-Step](https://www.youtube.com/watch?v=FgakZw6K1QQ), StatQuest with Josh Starmer.
+- [StatQuest: K-means clustering](https://www.youtube.com/watch?v=4b5d3muPQmA) and [StatQuest: Hierarchical Clustering](https://www.youtube.com/watch?v=7xHsRkOdVwo), StatQuest with Josh Starmer.
+- [UMAP Dimension Reduction, Main Ideas](https://www.youtube.com/watch?v=eN0wFzBA4Sc), StatQuest with Josh Starmer. Useful before trusting any UMAP picture, including the one on this site.
