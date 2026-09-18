@@ -37,6 +37,9 @@ footnotes here; they run through the whole course.
 ::: {.callout-tip}
 ## Start here
 New to this? Begin with [1 · Introduction](chapters/01-introduction/index.qmd).
+Want the code idiom before the concepts? The two toolkit pages are short:
+[R with tidymodels](toolkit/r-with-tidymodels.qmd) and
+[Python with scikit-learn](toolkit/python-with-scikit-learn.qmd).
 Looking for one specific method? The [course index](chapters/index.qmd) is
 filterable by topic.
 :::

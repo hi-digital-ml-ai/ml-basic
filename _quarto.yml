@@ -22,6 +22,12 @@ website:
     contents:
       - href: index.qmd
         text: Welcome
+      - section: "Toolkit"
+        contents:
+          - href: toolkit/r-with-tidymodels.qmd
+            text: "R with tidymodels"
+          - href: toolkit/python-with-scikit-learn.qmd
+            text: "Python with scikit-learn"
       - section: "1 · Introduction"
         href: chapters/01-introduction/index.qmd
         contents:

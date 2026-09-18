@@ -21,6 +21,10 @@ python -m venv .venv && .venv/bin/pip install -r python/requirements.txt
 .venv/bin/python python/check-snippets.py
 ```
 
+`toolkit/python-with-scikit-learn.qmd` is the orientation page those tabs assume: the
+whole pipeline once through, then the defaults that differ between the two libraries.
+It is checked like any other page.
+
 The checker pulls the ```` ```python ```` blocks out of each page in order, joins
 them into one program, since the snippets on a page are cumulative exactly as the R
 chunks are, and executes it. A page that throws is a failure; a page that only
