@@ -84,7 +84,8 @@ Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
 ### Python tabs
 
 Pages in sections 2, 3, 5, 7, 8 and 10 show each modelling step twice, R and
-scikit-learn, in a tabset. The R chunk is the one that runs, so its output
+scikit-learn, in a tabset. The two `toolkit/` pages are the exception: they are
+single-language orientation pages, one per library, and carry no tabsets. The R chunk is the one that runs, so its output
 appears under the R tab; the Python block is displayed only.
 
 ````markdown

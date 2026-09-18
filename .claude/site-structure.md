@@ -44,12 +44,17 @@ Controlled list. Add a new one only by editing this file, so tags do not fragmen
 | `interpretation` | Feature importance, explainability, black-box vs interpretable |
 | `reproducibility` | Transparent reporting, seeds, environments, data provenance |
 | `case-study` | Participant contributions using their own data |
+| `toolkit` | Orientation in a language or library rather than in a method |
 
 ## Files and naming
 
 ```
 _quarto.yml
 index.qmd                          landing page: what the course is, how to use it
+toolkit/
+  r-with-tidymodels.qmd            the pipeline shape, run once end to end
+  python-with-scikit-learn.qmd     the same shape in scikit-learn, and where the two differ
+  img/                             the two shape diagrams, shared by both pages
 chapters/
   index.qmd                        listing of all chapter pages, filterable by category
   01-introduction/
@@ -224,6 +229,12 @@ expandable to its pages, with `style: docked` and `collapse-level: 1`. All ten
 section titles stay visible; Quarto expands the one containing the current page.
 Keep section labels short enough for one line in a 300px rail: "10 · Interpretation",
 not "10 · Interpretation & responsible use".
+
+`Toolkit` sits above section 1, holding the two language orientation pages. It is
+outside the numbered sections on purpose: it teaches a library, not a concept, and the
+curriculum is ten sections. It carries no `index.qmd`, so the sidebar label is a group
+rather than a link, exactly as `More` is. Its pages therefore do not appear on
+`chapters/index.qmd`, whose listing is `*/index.qmd` under `chapters/`.
 
 `More` sits at the bottom with the course index and `contributed/`. The sidebar is
 the table of contents for the course; do not hide chapter pages from it.

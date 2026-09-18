@@ -7,6 +7,12 @@ page splits can change; update this file when they do, and keep
 Each section is one folder under `chapters/`. Each subtopic is normally one `.qmd`
 page; short subtopics may be merged into a sibling page rather than left thin.
 
+Two pages sit **outside** the ten sections, in `toolkit/`: a short orientation in R
+with tidymodels and the same one in Python with scikit-learn. They teach a library
+rather than a concept, so numbering them would have implied they are part of the
+argument the course makes. They exist so that the modelling pages can use the pipeline
+idiom without stopping to explain it, and so the Python tabs have somewhere to point.
+
 ---
 
 ## 1. Introduction to machine learning in marine science

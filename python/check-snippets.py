@@ -44,7 +44,9 @@ def check(page):
 
 def main(argv):
     pages = ([Path(a) for a in argv] if argv
-             else sorted((ROOT / "chapters").rglob("*.qmd")))
+             else sorted(page
+                         for folder in ("toolkit", "chapters")
+                         for page in (ROOT / folder).rglob("*.qmd")))
     checked = failed = 0
     for page in pages:
         result = check(page)
