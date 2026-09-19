@@ -213,6 +213,24 @@ Figures carry most of the teaching here, so they are worth real effort.
 - Figure dimensions set per chunk (`#| fig-width: 7`, `#| fig-height: 4.5`), not
   globally, so nothing is squashed.
 
+## Code readers can download
+
+Every page's code is pulled out into a runnable script on each build, and offered
+at the top of the page as `<page>.R`, `<page>.py` and a whole-course zip. Nothing
+is maintained by hand, so there is nothing extra to write. Two habits keep the
+scripts working:
+
+- **A page's chunks are one cumulative program, in the order they appear.** That is
+  already how the site renders, so the constraint is not new; it does mean not
+  relying on a variable defined on a different page.
+- **Libraries and `source()` calls go in the hidden `setup` chunk**, which is
+  extracted like any other. A chunk that quietly depends on a package loaded
+  nowhere on the page will render fine here and fail for a reader.
+
+Give every chunk a `#| label:`, which is a rule anyway: the label becomes the
+section heading in the downloaded script, so `#| label: fit-forest` is worth more
+than `#| label: chunk-6`. See `tools/README.md` for how the extraction works.
+
 ## Callouts
 
 | Callout | Use for |

@@ -11,6 +11,16 @@ quarto render chapters/05-generalisation/overfitting.qmd   # one page
 The site is developed entirely locally. `_site/` is build output and is **not**
 committed.
 
+`quarto render` runs `tools/extract-code.py` first, which pulls the R and Python out
+of every page into `downloads/` as runnable scripts plus `ml-basic-code.zip`, and
+`tools/code-downloads.lua` puts the download links on each page. `downloads/` is
+generated and git-ignored; see `tools/README.md`. To refresh it without a full
+build:
+
+```bash
+tools/extract-code.py
+```
+
 ## R environment
 
 `renv` pins package versions so every author renders the same results. The project
@@ -206,3 +216,8 @@ quarto render          # must complete with no errors
 
 Check: no broken internal links, every new page appears in the sidebar and its
 listing, every figure has a caption and alt text.
+
+A page's downloadable scripts come from the same render, so a new page needs no
+extra step. `WARN: Unable to resolve link target: downloads/...` means the
+pre-render step did not run or the filter and `tools/extract-code.py` disagree about
+which pages have code.

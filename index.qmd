@@ -44,6 +44,29 @@ Looking for one specific method? The [course index](chapters/index.qmd) is
 filterable by topic.
 :::
 
+## Running the code yourself
+
+Every page offers its own code at the top: an R script, and a scikit-learn script
+where the page has Python tabs. Both are generated from the page on each build, so
+what you download is the code that produced what you just read, not a copy of it
+that someone has to remember to update.
+
+[Download the whole course as a zip](downloads/ml-basic-code.zip) and you also
+get the datasets and the shared helpers the scripts load, so they run as they
+stand:
+
+```sh
+unzip ml-basic-code.zip
+cd ml-basic-code
+Rscript code/07-validation/cross-validation.R
+python code/07-validation/cross-validation.py
+```
+
+The survey data is simulated on purpose. Because the generating process is known,
+you can check whether a model recovers it; see `data/README.md` for what is built
+in. R and Python will not print identical numbers, because their random splits come
+from different generators. The conclusions match; the digits do not.
+
 ## The ten sections
 
 | | Section | What it answers |

@@ -72,8 +72,15 @@ data/                              small (<5 MB) example datasets, CSV or RDS
 R/
   theme.R                          shared ggplot theme + palette
   data.R                           loaders for data/
+tools/
+  extract-code.py                  pre-render: pages -> downloads/code/<section>/<page>.{R,py}
+  code-downloads.lua               filter: the "Code from this page" line
+downloads/                         generated, git-ignored: the scripts and the zip
 _freeze/                           committed render cache
 ```
+
+Nothing in `downloads/` is authored or committed. It is generated from the pages on
+every build and copied into the site through `resources:`; see `tools/README.md`.
 
 - Folders and files: `kebab-case`; chapter folders prefixed `NN-`.
 - Never rename a published page without adding a redirect in `_quarto.yml`

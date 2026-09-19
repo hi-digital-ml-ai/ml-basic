@@ -1,6 +1,10 @@
 # Quarto build output
 /_site/
 /.quarto/
+
+# Generated from the pages by tools/extract-code.py on every build, and copied
+# into the site as a resource. Never edit or commit it; edit the page.
+/downloads/
 *_files/
 *_cache/
 
