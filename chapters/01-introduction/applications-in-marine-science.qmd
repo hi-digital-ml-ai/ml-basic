@@ -1,5 +1,5 @@
 ---
-title: "Where it is already used"
+title: "Applications, grouped by task shape"
 description: "A tour of machine learning in marine science, organised by what the model is actually doing rather than by subdiscipline."
 order: 2
 categories: [foundations, marine-data]

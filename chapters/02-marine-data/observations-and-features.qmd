@@ -1,5 +1,5 @@
 ---
-title: "What one row is"
+title: "One row is a decision"
 description: "Observations, features, responses and labels, plus the question marine data makes genuinely hard: how many independent observations do you actually have?"
 order: 1
 categories: [data-preparation, marine-data]
@@ -13,7 +13,7 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## The rectangle and what it hides
+## The rectangle is not a clerical step
 
 Machine learning wants a rectangle: rows of observations, columns of variables, one
 column singled out as the thing to predict. Getting your data into that shape looks
