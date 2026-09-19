@@ -225,3 +225,40 @@ main .diagram {
   // The image takes the column; its caption is still prose and keeps a measure.
   figcaption { max-width: 48rem; }
 }
+
+// ---------------------------------------------------------------------------
+// "Code from this page" line
+//
+// Added to every page with code by tools/code-downloads.lua. It sits under the
+// title, above the first paragraph, so it has to stay quiet: this is a service
+// to a reader who already knows they want the code, not a call to action.
+// ---------------------------------------------------------------------------
+
+.code-downloads {
+  margin: 0 0 1.6rem;
+  font-size: 0.85rem;
+  color: #6b7680;
+
+  a {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.08rem 0.5rem;
+    border: 1px solid #dde4e9;
+    border-radius: 4px;
+    font-family: $font-family-monospace;
+    font-size: 0.95em;
+    text-decoration: none;
+    color: #1b6a87;
+
+    &:hover {
+      background-color: #f4f8fa;
+      border-color: #b9c4cb;
+    }
+
+    // The zip link is a description, not a filename.
+    &.bundle {
+      font-family: inherit;
+      font-size: 1em;
+    }
+  }
+}

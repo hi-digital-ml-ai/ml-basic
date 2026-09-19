@@ -24,6 +24,7 @@ contributed/         participant pages (one .qmd per contribution)
 data/                small example datasets committed to the repo
 R/                   shared helpers: ggplot theme, data loaders, tidymodels utils
 python/              the scikit-learn half of the code tabsets (never rendered)
+tools/               build scripts: code extraction and the download-links filter
 _freeze/             committed render cache; CI renders without R
 .claude/             detail docs (see below)
 ```
@@ -37,6 +38,7 @@ quarto render chapters/03-supervised-learning/logistic-regression.qmd
 Rscript -e 'renv::restore()'   # sync R packages
 Rscript -e 'renv::snapshot()'  # after adding a package
 python python/check-snippets.py  # run every Python tab in the site
+tools/extract-code.py --out /tmp/check  # the downloadable scripts, without building
 ```
 
 ## Conventions
@@ -76,3 +78,4 @@ gitflow: `main` (published site), `develop` (integration), `feature/*`, `release
 | `.claude/authoring-guide.md` | Writing, code, and figure style for chapter pages |
 | `.claude/contributed-pages.md` | How participant pages are added and reviewed |
 | `.claude/workflow.md` | Build, freeze, renv, gitflow, GitHub Pages deployment |
+| `tools/README.md` | How the downloadable code is generated from the pages |

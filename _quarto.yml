@@ -1,6 +1,13 @@
 project:
   type: website
   output-dir: _site
+  # Pulls the R and Python out of every page into runnable scripts and zips them,
+  # so the downloads cannot drift from the pages they came from. It runs *before*
+  # the pages so the links to it resolve. See tools/README.md.
+  pre-render:
+    - tools/extract-code.py
+  resources:
+    - downloads/
 
 website:
   title: "ML Basics for Marine Science"
@@ -201,6 +208,10 @@ format:
     code-link: true
     fig-align: center
     df-print: kable
+
+# Adds the "Code from this page" line to every page that has code.
+filters:
+  - tools/code-downloads.lua
 
 execute:
   freeze: auto
