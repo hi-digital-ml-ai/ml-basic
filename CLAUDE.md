@@ -14,6 +14,7 @@ Repo: <https://github.com/hi-digital-ml-ai/ml-basic> (private; publishes to GitH
 ```
 _quarto.yml          site config, sidebar, listing definitions
 index.qmd            landing page
+img/video/           YouTube thumbnails for the further-resources lists
 toolkit/             two short orientation pages: tidymodels, scikit-learn
 chapters/NN-slug/    one folder per course section (10 sections)
   index.qmd            section overview + listing of its pages

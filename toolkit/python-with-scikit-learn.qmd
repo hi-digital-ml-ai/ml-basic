@@ -243,4 +243,8 @@ near each other are not independent, so every score on this page is flattered. S
 
 **Video**
 
-- [Use ColumnTransformer to apply different preprocessing to different columns](https://www.youtube.com/watch?v=NGq8wnH5VSo), Data School. Short and exactly on the point of this page.
+::: {.video-list}
+- [![](../img/video/NGq8wnH5VSo.jpg){.video-thumb fig-alt="Use ColumnTransformer to apply different preprocessing to different columns, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=NGq8wnH5VSo)
+
+  [Use ColumnTransformer to apply different preprocessing to different columns](https://www.youtube.com/watch?v=NGq8wnH5VSo), Data School. Short and exactly on the point of this page.
+:::

@@ -58,5 +58,12 @@ a scientific choice your software makes for you by default, and
 
 **Video**
 
-- [Gradient descent, how neural networks learn](https://www.youtube.com/watch?v=IHZwWFHWa-w), 3Blue1Brown. Deep Learning chapter 2. The best visual account of descending a loss surface, and it assumes no calculus you do not already have.
-- [Maximum Likelihood, clearly explained](https://www.youtube.com/watch?v=XepXtl9YKwc), StatQuest with Josh Starmer. Likelihood as a function of the parameter rather than of the data, which is the step most explanations skip.
+::: {.video-list}
+- [![](../../img/video/IHZwWFHWa-w.jpg){.video-thumb fig-alt="Gradient descent, how neural networks learn, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=IHZwWFHWa-w)
+
+  [Gradient descent, how neural networks learn](https://www.youtube.com/watch?v=IHZwWFHWa-w), 3Blue1Brown. Deep Learning chapter 2. The best visual account of descending a loss surface, and it assumes no calculus you do not already have.
+
+- [![](../../img/video/XepXtl9YKwc.jpg){.video-thumb fig-alt="Maximum Likelihood, clearly explained, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=XepXtl9YKwc)
+
+  [Maximum Likelihood, clearly explained](https://www.youtube.com/watch?v=XepXtl9YKwc), StatQuest with Josh Starmer. Likelihood as a function of the parameter rather than of the data, which is the step most explanations skip.
+:::

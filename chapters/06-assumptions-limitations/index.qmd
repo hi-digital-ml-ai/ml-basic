@@ -73,4 +73,8 @@ most repeated methodological trap in the course.
 
 **Video**
 
-- [Spatial resampling to understand drought in Texas](https://www.youtube.com/watch?v=l-CfniOBDBc), Julia Silge. A random split and a spatial split on the same data, with the difference in the scores visible.
+::: {.video-list}
+- [![](../../img/video/l-CfniOBDBc.jpg){.video-thumb fig-alt="Spatial resampling to understand drought in Texas, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=l-CfniOBDBc)
+
+  [Spatial resampling to understand drought in Texas](https://www.youtube.com/watch?v=l-CfniOBDBc), Julia Silge. A random split and a spatial split on the same data, with the difference in the scores visible.
+:::

@@ -91,6 +91,16 @@ afternoon instead of a week.
 
 **Video**
 
-- [But what is a neural network?](https://www.youtube.com/watch?v=aircAruvnKk), 3Blue1Brown. Deep Learning chapter 1, and the clearest account anywhere of what the layers are doing.
-- [Backpropagation calculus](https://www.youtube.com/watch?v=tIeHLnjs5U8), 3Blue1Brown. Deep Learning chapter 4, for readers who want the derivative rather than the metaphor.
-- [The Essential Main Ideas of Neural Networks](https://www.youtube.com/watch?v=CqOfi41LfDw), StatQuest with Josh Starmer. A slower path to the same place.
+::: {.video-list}
+- [![](../../img/video/aircAruvnKk.jpg){.video-thumb fig-alt="But what is a neural network?, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=aircAruvnKk)
+
+  [But what is a neural network?](https://www.youtube.com/watch?v=aircAruvnKk), 3Blue1Brown. Deep Learning chapter 1, and the clearest account anywhere of what the layers are doing.
+
+- [![](../../img/video/tIeHLnjs5U8.jpg){.video-thumb fig-alt="Backpropagation calculus, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+
+  [Backpropagation calculus](https://www.youtube.com/watch?v=tIeHLnjs5U8), 3Blue1Brown. Deep Learning chapter 4, for readers who want the derivative rather than the metaphor.
+
+- [![](../../img/video/CqOfi41LfDw.jpg){.video-thumb fig-alt="The Essential Main Ideas of Neural Networks, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=CqOfi41LfDw)
+
+  [The Essential Main Ideas of Neural Networks](https://www.youtube.com/watch?v=CqOfi41LfDw), StatQuest with Josh Starmer. A slower path to the same place.
+:::
