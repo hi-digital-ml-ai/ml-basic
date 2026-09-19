@@ -195,6 +195,21 @@ Figures carry most of the teaching here, so they are worth real effort.
   never red/green for a two-class contrast.
 - Hand-drawn or diagrammatic figures (neural-network schematics, the train/test
   split) go in the section's `img/` folder as SVG.
+- A box-and-arrow diagram goes in `::: {.diagram}`, which lifts the 60rem figure cap
+  and lets it use the whole content column:
+
+  ````markdown
+  ::: {.diagram}
+  ![The caption.](img/ml-pipeline.svg){fig-alt="..."}
+  :::
+  ````
+
+  A plot stays legible as it shrinks because its axes shrink with it. A diagram is
+  text at a fixed size inside boxes, so it needs the room. The wrapper also works for
+  a diagram with no caption, which would otherwise sit at the 42rem prose measure
+  because a bare image is a paragraph. Give the SVG `width="100%"` and a `viewBox`, so
+  it scales, and check that every text line still sits inside its box after an edit:
+  the `y` of the last line plus a few pixels for descenders must clear the rectangle.
 - Figure dimensions set per chunk (`#| fig-width: 7`, `#| fig-height: 4.5`), not
   globally, so nothing is squashed.
 

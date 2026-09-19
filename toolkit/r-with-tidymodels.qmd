@@ -39,7 +39,9 @@ The part worth understanding before anything else is the middle. A recipe and a 
 specification are *descriptions*, not results. Neither touches the data until you call
 `fit()`, which is what makes them interchangeable.
 
+::: {.diagram}
 ![Nothing is computed until `fit()`. Up to that point the recipe and the model specification are descriptions, so swapping either one leaves the rest of the code untouched.](img/tidymodels-shape.svg){fig-alt="A recipe object, labelled recipes, and a logistic regression specification, labelled parsnip, both feed into a workflow object, labelled workflows, which then goes to fit on the training data and predict on the test data."}
+:::
 
 If you also read Python, the same stages carry these names:
 
