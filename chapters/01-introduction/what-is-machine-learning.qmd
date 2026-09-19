@@ -1,5 +1,5 @@
 ---
-title: "What machine learning is"
+title: "The same data, fitted two ways"
 description: "How machine learning differs from the statistical modelling you already do, demonstrated on the same data, with the same question."
 order: 1
 categories: [foundations]
