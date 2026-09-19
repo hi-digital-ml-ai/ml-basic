@@ -73,6 +73,38 @@ The block is two labelled lists, **Documentation** then **Video**, each entry a 
 followed by the source and one clause saying why it earns its place. A link with no
 reason attached is a bookmark, not a resource.
 
+The video list carries thumbnails. Wrap it in a `::: {.video-list}` div and give each
+entry a linked thumbnail of its own, on the line above the text:
+
+```markdown
+::: {.video-list}
+- [![](../../img/video/4jRBRDbJemM.jpg){.video-thumb fig-alt="ROC and AUC, Clearly Explained, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=4jRBRDbJemM)
+
+  [ROC and AUC, Clearly Explained](https://www.youtube.com/watch?v=4jRBRDbJemM), StatQuest with Josh Starmer. Builds the curve one threshold at a time.
+:::
+```
+
+The blank line inside the bullet is load-bearing: it makes the item two paragraphs,
+which is what `.video-list li` lays out side by side. One video per bullet, so every
+entry has one thumbnail; pair two related videos as two bullets, not one.
+
+Thumbnails live in `img/video/<video-id>.jpg`, one shared folder at the repo root
+rather than the per-section `img/` folders, which hold figures made for this site.
+Fetch each one once, at render-independent size, and commit it:
+
+```bash
+curl -o img/video/<video-id>.jpg https://i.ytimg.com/vi/<video-id>/mqdefault.jpg
+```
+
+Committing them rather than hotlinking `i.ytimg.com` keeps the build offline, keeps
+the images stable when a channel changes its artwork, and means a reader's browser
+never calls Google to read a page. A thumbnail that comes back at about 1 kB is the
+grey placeholder for a video that no longer exists, which is a second check on the
+link. The alt text is the video title followed by `, on YouTube`, because the
+thumbnail is a link and a link needs a name. It goes in `fig-alt`, not in the `![...]`
+brackets: an image alone in a paragraph with bracket alt text is an implicit figure to
+Quarto, which renders the alt text a second time as a visible caption.
+
 Rules for what goes in it:
 
 - **Check every URL before committing it.** A documentation page must return 200; a

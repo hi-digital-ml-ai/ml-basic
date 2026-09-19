@@ -86,6 +86,20 @@ sentence than any cluster count, and on this data it is the true one.
 
 **Video**
 
-- [StatQuest: Principal Component Analysis (PCA), Step-by-Step](https://www.youtube.com/watch?v=FgakZw6K1QQ), StatQuest with Josh Starmer.
-- [StatQuest: K-means clustering](https://www.youtube.com/watch?v=4b5d3muPQmA) and [StatQuest: Hierarchical Clustering](https://www.youtube.com/watch?v=7xHsRkOdVwo), StatQuest with Josh Starmer.
-- [UMAP Dimension Reduction, Main Ideas](https://www.youtube.com/watch?v=eN0wFzBA4Sc), StatQuest with Josh Starmer. Useful before trusting any UMAP picture, including the one on this site.
+::: {.video-list}
+- [![](../../img/video/FgakZw6K1QQ.jpg){.video-thumb fig-alt="StatQuest: Principal Component Analysis (PCA), Step-by-Step, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=FgakZw6K1QQ)
+
+  [StatQuest: Principal Component Analysis (PCA), Step-by-Step](https://www.youtube.com/watch?v=FgakZw6K1QQ), StatQuest with Josh Starmer.
+
+- [![](../../img/video/4b5d3muPQmA.jpg){.video-thumb fig-alt="StatQuest: K-means clustering, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=4b5d3muPQmA)
+
+  [StatQuest: K-means clustering](https://www.youtube.com/watch?v=4b5d3muPQmA), StatQuest with Josh Starmer. The algorithm step by step, and what the choice of k does.
+
+- [![](../../img/video/7xHsRkOdVwo.jpg){.video-thumb fig-alt="StatQuest: Hierarchical Clustering, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=7xHsRkOdVwo)
+
+  [StatQuest: Hierarchical Clustering](https://www.youtube.com/watch?v=7xHsRkOdVwo), StatQuest with Josh Starmer. The dendrogram, and what the height of a join means.
+
+- [![](../../img/video/eN0wFzBA4Sc.jpg){.video-thumb fig-alt="UMAP Dimension Reduction, Main Ideas, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=eN0wFzBA4Sc)
+
+  [UMAP Dimension Reduction, Main Ideas](https://www.youtube.com/watch?v=eN0wFzBA4Sc), StatQuest with Josh Starmer. Useful before trusting any UMAP picture, including the one on this site.
+:::

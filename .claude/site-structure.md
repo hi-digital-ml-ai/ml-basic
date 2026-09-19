@@ -51,6 +51,8 @@ Controlled list. Add a new one only by editing this file, so tags do not fragmen
 ```
 _quarto.yml
 index.qmd                          landing page: what the course is, how to use it
+img/video/                         YouTube thumbnails for the further-resources lists,
+                                   named <video-id>.jpg, fetched once and committed
 toolkit/
   r-with-tidymodels.qmd            the pipeline shape, run once end to end
   python-with-scikit-learn.qmd     the same shape in scikit-learn, and where the two differ

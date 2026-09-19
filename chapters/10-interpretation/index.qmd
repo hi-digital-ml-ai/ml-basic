@@ -86,5 +86,12 @@ transparent reporting of effort. None of them is a model.
 
 **Video**
 
-- [Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP](https://www.youtube.com/watch?v=C80SQe16Rao), Kevin Lemagnen at PyData.
-- [Feature engineering and interpretability for xgboost with board game ratings](https://www.youtube.com/watch?v=HTJ0nt3codo), Julia Silge. Importance and explanation computed on a real model rather than a toy one.
+::: {.video-list}
+- [![](../../img/video/C80SQe16Rao.jpg){.video-thumb fig-alt="Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=C80SQe16Rao)
+
+  [Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP](https://www.youtube.com/watch?v=C80SQe16Rao), Kevin Lemagnen at PyData.
+
+- [![](../../img/video/HTJ0nt3codo.jpg){.video-thumb fig-alt="Feature engineering and interpretability for xgboost with board game ratings, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=HTJ0nt3codo)
+
+  [Feature engineering and interpretability for xgboost with board game ratings](https://www.youtube.com/watch?v=HTJ0nt3codo), Julia Silge. Importance and explanation computed on a real model rather than a toy one.
+:::

@@ -67,5 +67,16 @@ this section.
 
 **Video**
 
-- [Machine Learning Fundamentals: Bias and Variance](https://www.youtube.com/watch?v=EuBBz3bI-aA), StatQuest with Josh Starmer.
-- [Regularization Part 1: Ridge (L2) Regression](https://www.youtube.com/watch?v=Q81RR3yKn30) and [Part 2: Lasso (L1) Regression](https://www.youtube.com/watch?v=NGf0voTMlcs), StatQuest with Josh Starmer. Why one shrinks coefficients and the other sets them to zero.
+::: {.video-list}
+- [![](../../img/video/EuBBz3bI-aA.jpg){.video-thumb fig-alt="Machine Learning Fundamentals: Bias and Variance, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=EuBBz3bI-aA)
+
+  [Machine Learning Fundamentals: Bias and Variance](https://www.youtube.com/watch?v=EuBBz3bI-aA), StatQuest with Josh Starmer.
+
+- [![](../../img/video/Q81RR3yKn30.jpg){.video-thumb fig-alt="Regularization Part 1: Ridge (L2) Regression, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=Q81RR3yKn30)
+
+  [Regularization Part 1: Ridge (L2) Regression](https://www.youtube.com/watch?v=Q81RR3yKn30), StatQuest with Josh Starmer. Why the penalty shrinks coefficients towards zero.
+
+- [![](../../img/video/NGf0voTMlcs.jpg){.video-thumb fig-alt="Regularization Part 2: Lasso (L1) Regression, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=NGf0voTMlcs)
+
+  [Regularization Part 2: Lasso (L1) Regression](https://www.youtube.com/watch?v=NGf0voTMlcs), StatQuest with Josh Starmer. Why this penalty can set a coefficient to zero exactly, which makes it a selection method.
+:::

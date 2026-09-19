@@ -154,3 +154,53 @@ figcaption {
 .quarto-category {
   font-size: 0.78rem;
 }
+
+// ---------------------------------------------------------------------------
+// Video lists in the further-resources blocks
+//
+// Each entry is a linked thumbnail beside the title, channel and note. The
+// thumbnail replaces the bullet, so the marker and its indent both go.
+// ---------------------------------------------------------------------------
+
+.video-list {
+  ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 50rem;        // the prose measure plus the thumbnail column
+    margin-bottom: 1.1rem;
+  }
+
+  li > p {
+    margin-bottom: 0;
+  }
+
+  li > p:first-child {
+    flex: 0 0 160px;         // fixed column, so every title starts in line
+  }
+
+  .video-thumb {
+    display: block;
+    width: 160px;
+    border: 1px solid #e3e8ec;
+    border-radius: 4px;
+  }
+}
+
+// Side by side stops working once the text column gets narrow.
+@media (max-width: 575.98px) {
+  .video-list li {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .video-list .video-thumb {
+    width: 100%;
+    max-width: 320px;
+  }
+}

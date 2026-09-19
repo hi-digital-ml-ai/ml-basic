@@ -43,4 +43,8 @@ answer different questions.
 
 **Video**
 
-- [A Gentle Introduction to Machine Learning](https://www.youtube.com/watch?v=Gv9_4yMHFhI), StatQuest with Josh Starmer. Training and testing, and why the distinction is the whole subject.
+::: {.video-list}
+- [![](../../img/video/Gv9_4yMHFhI.jpg){.video-thumb fig-alt="A Gentle Introduction to Machine Learning, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=Gv9_4yMHFhI)
+
+  [A Gentle Introduction to Machine Learning](https://www.youtube.com/watch?v=Gv9_4yMHFhI), StatQuest with Josh Starmer. Training and testing, and why the distinction is the whole subject.
+:::

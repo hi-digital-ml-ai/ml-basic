@@ -79,6 +79,16 @@ difference.
 
 **Video**
 
-- [Machine Learning Fundamentals: Cross Validation](https://www.youtube.com/watch?v=fSytzGwwBVw), StatQuest with Josh Starmer.
-- [Machine Learning Fundamentals: The Confusion Matrix](https://www.youtube.com/watch?v=Kdsp6soqA7o), StatQuest with Josh Starmer.
-- [ROC and AUC, Clearly Explained](https://www.youtube.com/watch?v=4jRBRDbJemM), StatQuest with Josh Starmer. Builds the curve one threshold at a time, which is what makes the area mean something.
+::: {.video-list}
+- [![](../../img/video/fSytzGwwBVw.jpg){.video-thumb fig-alt="Machine Learning Fundamentals: Cross Validation, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=fSytzGwwBVw)
+
+  [Machine Learning Fundamentals: Cross Validation](https://www.youtube.com/watch?v=fSytzGwwBVw), StatQuest with Josh Starmer.
+
+- [![](../../img/video/Kdsp6soqA7o.jpg){.video-thumb fig-alt="Machine Learning Fundamentals: The Confusion Matrix, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=Kdsp6soqA7o)
+
+  [Machine Learning Fundamentals: The Confusion Matrix](https://www.youtube.com/watch?v=Kdsp6soqA7o), StatQuest with Josh Starmer.
+
+- [![](../../img/video/4jRBRDbJemM.jpg){.video-thumb fig-alt="ROC and AUC, Clearly Explained, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=4jRBRDbJemM)
+
+  [ROC and AUC, Clearly Explained](https://www.youtube.com/watch?v=4jRBRDbJemM), StatQuest with Josh Starmer. Builds the curve one threshold at a time, which is what makes the area mean something.
+:::

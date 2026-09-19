@@ -194,5 +194,12 @@ this course is about whether the number at the end means anything.
 
 **Video**
 
-- [Get started with tidymodels and classification of penguin data](https://www.youtube.com/watch?v=z57i2GVcdww), Julia Silge. The same shape as this page, worked live on a different dataset.
-- [posit::conf(2023) Workshop: Introduction to tidymodels](https://www.youtube.com/watch?v=NTtcTF2tFEA), Posit PBC. A full workshop recording, for readers who want the long version.
+::: {.video-list}
+- [![](../img/video/z57i2GVcdww.jpg){.video-thumb fig-alt="Get started with tidymodels and classification of penguin data, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=z57i2GVcdww)
+
+  [Get started with tidymodels and classification of penguin data](https://www.youtube.com/watch?v=z57i2GVcdww), Julia Silge. The same shape as this page, worked live on a different dataset.
+
+- [![](../img/video/NTtcTF2tFEA.jpg){.video-thumb fig-alt="posit::conf(2023) Workshop: Introduction to tidymodels, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=NTtcTF2tFEA)
+
+  [posit::conf(2023) Workshop: Introduction to tidymodels](https://www.youtube.com/watch?v=NTtcTF2tFEA), Posit PBC. A full workshop recording, for readers who want the long version.
+:::

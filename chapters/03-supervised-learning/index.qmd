@@ -53,6 +53,16 @@ general ranking, and the page says why it turned out that way.
 
 **Video**
 
-- [StatQuest: Logistic Regression](https://www.youtube.com/watch?v=yIYKR4sgzI8), StatQuest with Josh Starmer.
-- [StatQuest: Decision Trees](https://www.youtube.com/watch?v=7VeUPuFGJHk), StatQuest with Josh Starmer.
-- [StatQuest: Random Forests Part 1](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ), StatQuest with Josh Starmer. Bagging and out-of-bag error, which is where the forest's self-validation comes from.
+::: {.video-list}
+- [![](../../img/video/yIYKR4sgzI8.jpg){.video-thumb fig-alt="StatQuest: Logistic Regression, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=yIYKR4sgzI8)
+
+  [StatQuest: Logistic Regression](https://www.youtube.com/watch?v=yIYKR4sgzI8), StatQuest with Josh Starmer.
+
+- [![](../../img/video/7VeUPuFGJHk.jpg){.video-thumb fig-alt="StatQuest: Decision Trees, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=7VeUPuFGJHk)
+
+  [StatQuest: Decision Trees](https://www.youtube.com/watch?v=7VeUPuFGJHk), StatQuest with Josh Starmer.
+
+- [![](../../img/video/J4Wdy0Wc_xQ.jpg){.video-thumb fig-alt="StatQuest: Random Forests Part 1, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ)
+
+  [StatQuest: Random Forests Part 1](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ), StatQuest with Josh Starmer. Bagging and out-of-bag error, which is where the forest's self-validation comes from.
+:::

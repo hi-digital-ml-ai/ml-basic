@@ -52,4 +52,8 @@ the field. It reappears in every later section, especially
 
 **Video**
 
-- [Modeling hotel bookings in R using tidymodels and recipes](https://www.youtube.com/watch?v=dbXDkEEuvCU), Julia Silge. A recipe assembled from scratch with the reasoning spoken aloud, which is hard to get from documentation.
+::: {.video-list}
+- [![](../../img/video/dbXDkEEuvCU.jpg){.video-thumb fig-alt="Modeling hotel bookings in R using tidymodels and recipes, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=dbXDkEEuvCU)
+
+  [Modeling hotel bookings in R using tidymodels and recipes](https://www.youtube.com/watch?v=dbXDkEEuvCU), Julia Silge. A recipe assembled from scratch with the reasoning spoken aloud, which is hard to get from documentation.
+:::
