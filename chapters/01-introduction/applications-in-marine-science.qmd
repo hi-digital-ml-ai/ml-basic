@@ -22,7 +22,9 @@ assumptions you are taking on.
 Nearly every supervised application in marine science follows one pipeline, and its
 economics are always the same.
 
+::: {.diagram}
 ![](img/ml-pipeline.svg){fig-alt="A four-stage pipeline. Stage 1, data you already have: imagery, echosounder returns, call recordings, CTD casts, tracks, satellite fields, all abundant. Stage 2, labels from experts: a specialist names the species, water mass or call; slow, costly, never complete, marked as the bottleneck. Stage 3, the model learns the mapping, finding whatever predicts the label, not necessarily what a specialist would use. Stage 4, applied at scale to unlabelled data and to next year's survey, valid only where the new data resembles the labelled data."}
+:::
 
 You have far more data than you have expert time. The model is a way of spending a
 specialist's judgement once and applying it a million times. That is the genuine and

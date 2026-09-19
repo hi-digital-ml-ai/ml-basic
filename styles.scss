@@ -204,3 +204,24 @@ figcaption {
     max-width: 320px;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Wide line diagrams
+//
+// The 60rem figure cap suits a plot, which stays legible as it shrinks because
+// its axes scale with it. A box-and-arrow diagram is mostly text at a fixed
+// size, so it wants the whole column. Wrap one in ::: {.diagram} to get it.
+// ---------------------------------------------------------------------------
+
+main .diagram {
+  figure, .quarto-figure { max-width: 100%; }
+
+  // A diagram with no caption is a bare image inside a paragraph, so it would
+  // otherwise take the 42rem prose measure.
+  p { max-width: none; }
+
+  img { width: 100%; }
+
+  // The image takes the column; its caption is still prose and keeps a measure.
+  figcaption { max-width: 48rem; }
+}

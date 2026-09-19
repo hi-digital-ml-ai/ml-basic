@@ -43,7 +43,9 @@ than by piping. A `Pipeline` is a list of named steps applied in order; a
 `ColumnTransformer` is one such step that routes different columns to different
 transformers, which is what a recipe does with `all_numeric_predictors()` and friends.
 
+::: {.diagram}
 ![The `Pipeline` is the workflow, spelled as nesting rather than as a chain. Calling `fit()` on the outer object fits every step inside it, in order, on the training rows alone, which is what keeps the test set out.](img/sklearn-shape.svg){fig-alt="A Pipeline object drawn as an outer box. Inside it, a ColumnTransformer box contains two transformer boxes: a median SimpleImputer applied to depth, temperature and chlorophyll, and a OneHotEncoder applied to substrate. An arrow leads from the ColumnTransformer to a LogisticRegression estimator box. Outside the Pipeline, arrows show fit called with the training data going in on the left and predict called with the test data coming out on the right."}
+:::
 
 The important property is the one the workflow has too. Calling `fit()` on the outer
 object fits every step inside it on the training rows, and `predict()` then applies

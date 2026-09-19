@@ -213,6 +213,7 @@ letting everything else use the column:
 | content column | 1116px |
 | paragraphs, list items | 714px |
 | figures | 1020px (capped at 60rem, centred with their caption) |
+| `.diagram` figures | 1116px (full column; SVG diagrams are text, not plots) |
 | tables, code blocks | 1116px (full column) |
 
 The `description` is emitted as a `div`, not a `p`, so it needs its own rule or
