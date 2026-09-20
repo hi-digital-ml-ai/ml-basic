@@ -192,6 +192,8 @@ website:
             text: All pages
           - href: contributed/index.qmd
             text: Contributed pages
+          - href: contributed/writing-a-contributed-page.qmd
+            text: "Writing a contributed page"
   page-footer:
     left: "Machine Learning Basics for Marine Science"
     right: "Built with [Quarto](https://quarto.org) and [tidymodels](https://www.tidymodels.org)"

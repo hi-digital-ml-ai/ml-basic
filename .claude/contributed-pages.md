@@ -22,9 +22,16 @@ written, not a tab to bolt on afterwards.
 ```
 contributed/
   index.qmd                       listing page
+  writing-a-contributed-page.qmd  the reader-facing version of this doc
+  _template.qmd                   starting point for a new contribution
   2026-<author-slug>-<topic>.qmd  e.g. 2026-nakamura-otolith-ageing.qmd
   img/                            figures, prefixed with the author slug
 ```
+
+`writing-a-contributed-page.qmd` says all of this to the contributor in the site's
+own voice, so the two move together: change a rule here and change it there. The
+index listing globs `20*.qmd`, which is what keeps the guide page off the cards, so
+a contribution whose filename lacks the year prefix will not appear.
 
 Front matter is mandatory and complete:
 

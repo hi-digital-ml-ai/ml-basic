@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 132" width="100%" role="img" aria-label="Five steps from a draft analysis to a published contributed page">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/>
+    </marker>
+    <style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; rx: 8; }
+      .num  { font: bold 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1b6a87; }
+      .head { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+  </defs>
+
+  <rect class="box" x="0"   y="20" width="162" height="92"/>
+  <rect class="box" x="194" y="20" width="162" height="92"/>
+  <rect class="box" x="388" y="20" width="162" height="92"/>
+  <rect class="box" x="582" y="20" width="162" height="92"/>
+  <rect class="box" x="776" y="20" width="162" height="92"/>
+
+  <text class="num"  x="81"  y="46" text-anchor="middle">1</text>
+  <text class="head" x="81"  y="72" text-anchor="middle">Draft</text>
+  <text class="head" x="81"  y="92" text-anchor="middle">the analysis</text>
+
+  <text class="num"  x="275" y="46" text-anchor="middle">2</text>
+  <text class="head" x="275" y="72" text-anchor="middle">Settle</text>
+  <text class="head" x="275" y="92" text-anchor="middle">the data question</text>
+
+  <text class="num"  x="469" y="46" text-anchor="middle">3</text>
+  <text class="head" x="469" y="72" text-anchor="middle">Branch</text>
+  <text class="head" x="469" y="92" text-anchor="middle">and render</text>
+
+  <text class="num"  x="663" y="46" text-anchor="middle">4</text>
+  <text class="head" x="663" y="72" text-anchor="middle">Review</text>
+  <text class="head" x="663" y="92" text-anchor="middle">with an editor</text>
+
+  <text class="num"  x="857" y="46" text-anchor="middle">5</text>
+  <text class="head" x="857" y="72" text-anchor="middle">Sign off</text>
+  <text class="head" x="857" y="92" text-anchor="middle">and publish</text>
+
+  <line x1="167" y1="66" x2="187" y2="66" stroke="#8a949c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="361" y1="66" x2="381" y2="66" stroke="#8a949c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="555" y1="66" x2="575" y2="66" stroke="#8a949c" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="749" y1="66" x2="769" y2="66" stroke="#8a949c" stroke-width="1.6" marker-end="url(#arrow)"/>
+</svg>
