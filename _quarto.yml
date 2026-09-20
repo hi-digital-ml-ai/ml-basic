@@ -11,7 +11,7 @@ project:
 
 website:
   title: "ML Basics for Marine Science"
-  description: "A plain-English introduction to machine learning for marine researchers, with worked tidymodels examples."
+  description: "An introduction to machine learning for marine researchers, with worked tidymodels examples."
   site-url: https://hi-digital-ml-ai.github.io/ml-basic/
   repo-url: https://github.com/hi-digital-ml-ai/ml-basic
   search: true
@@ -23,6 +23,11 @@ website:
         text: Course
       - href: contributed/index.qmd
         text: Contributed
+    right:
+      # The repo is private, so this link only opens for people with access.
+      - icon: github
+        href: https://github.com/hi-digital-ml-ai/ml-basic
+        aria-label: "Source on GitHub"
   sidebar:
     style: docked
     collapse-level: 1
