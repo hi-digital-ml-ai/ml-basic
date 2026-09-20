@@ -1,4 +1,4 @@
-# Generates data/coastal-survey-raw.csv — the "as collected" version of the survey
+# Generates data/coastal-survey-raw.csv, the "as collected" version of the survey
 # used throughout section 2.
 #
 # Run with: Rscript R/make-raw-data.R   (after R/make-example-data.R)
@@ -12,15 +12,15 @@
 #
 #  1. -999 sentinel values in salinity and temperature (the classic missing-data
 #     landmine: numeric, so nothing complains, and it destroys any mean)
-#  2. missing chlorophyll, MORE OFTEN IN WINTER AND AT HIGH LATITUDE — missingness
+#  2. missing chlorophyll, MORE OFTEN IN WINTER AND AT HIGH LATITUDE: missingness
 #     that is not random, which is the case that matters
 #  3. substrate typed inconsistently by different observers
 #  4. decimal-point errors in depth (a handful of stations ten times too deep)
 #  5. exact duplicate rows, from a double data entry
 #  6. sample_date as text in two different formats
 #  7. two vessels, one with a miscalibrated salinity sensor
-#  8. catch_weight_kg, computed from the catch — a target-leakage trap
-#  9. rare_species, present at about 6% of stations — class imbalance
+#  8. catch_weight_kg, computed from the catch: a target-leakage trap
+#  9. rare_species, present at about 6% of stations: class imbalance
 # 10. site_id: stations belong to 160 monitoring sites, so rows are NOT independent.
 #     This is the group-leakage trap, and it sets up grouped resampling in §7.
 

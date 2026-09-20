@@ -3,8 +3,8 @@
 
 The site's tables and figures come from R, so Quarto never executes the Python
 tabs. This script does instead: it pulls the ```python blocks out of each page,
-in order, joins them into one program — the snippets on a page are cumulative,
-exactly as the R chunks beside them are — and runs it.
+in order, joins them into one program (the snippets on a page are cumulative,
+exactly as the R chunks beside them are) and runs it.
 
     python/check-snippets.py                     # every page
     python/check-snippets.py chapters/07-*/*.qmd  # just these

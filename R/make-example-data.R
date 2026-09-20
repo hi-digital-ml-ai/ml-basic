@@ -1,4 +1,4 @@
-# Generates data/coastal-survey.csv — the simulated dataset used across the course.
+# Generates data/coastal-survey.csv, the simulated dataset used across the course.
 #
 # Run with: Rscript R/make-example-data.R
 #
@@ -12,7 +12,7 @@
 #   - abundance peaks at about 9 °C and falls away either side
 #   - chlorophyll has a positive, saturating effect
 #   - substrate matters: mud > gravel > sand > rock
-#   - salinity and survey_year have NO effect — they are there to be rejected
+#   - salinity and survey_year have NO effect: they are there to be rejected
 #   - a smooth spatial field adds structure that no covariate explains, so
 #     observations near each other are correlated (§6, §7)
 
@@ -87,7 +87,7 @@ survey <- data.frame(
 survey <- survey[order(survey$station_id), ]
 
 # The true expected count at each station, before negative-binomial sampling.
-# Not part of the survey — no real dataset has this column — but the pages on
+# Not part of the survey (no real dataset has this column), but the pages on
 # bias and variance need to compare estimates against something, and this is the
 # only reason the dataset is simulated in the first place.
 truth <- data.frame(

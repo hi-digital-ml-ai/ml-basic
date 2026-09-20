@@ -21,8 +21,8 @@ $sidebar-fg: #2b3a44 !default;
 // Full-width body: wide media, narrow prose.
 //
 // page-layout: full lets the content column use whatever the docked sidebar
-// and the margin TOC leave over. Paragraphs must not follow it out there — a
-// 1200px line of text is unreadable — so prose keeps its own measure while
+// and the margin TOC leave over. Paragraphs must not follow it out there (a
+// 1200px line of text is unreadable), so prose keeps its own measure while
 // figures, tables and code take the whole column.
 // ---------------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ main {
 
   figure, .quarto-figure { margin-inline: auto; }
 
-  // Tables and code use the full column — the wide summary tables in
+  // Tables and code use the full column: the wide summary tables in
   // sections 9 and 10 are the reason for the change.
   .cell-output-display > table,
   .cell-output-display > .table,

@@ -1,4 +1,4 @@
-# Generates data/coastal-community.csv and data/coastal-community-taxa.csv —
+# Generates data/coastal-community.csv and data/coastal-community-taxa.csv,
 # the multi-taxon community matrix used in §8 (unsupervised learning).
 #
 # Run with: Rscript R/make-community-data.R
@@ -16,7 +16,7 @@
 #     gravel, 8 essentially only on sand and mud, 7 are indifferent. So the one
 #     real grouping of stations is hard-bottom versus soft-bottom, and it is
 #     two groups, not three or five.
-#   - 3 taxa (tax22-tax24) respond to NOTHING — constant mean, no depth, no
+#   - 3 taxa (tax22-tax24) respond to NOTHING: constant mean, no depth, no
 #     substrate. They are there to be rejected, like salinity in the survey.
 #   - Counts are negative binomial, so the matrix is sparse and over-dispersed
 #     the way real benthic grabs are.
