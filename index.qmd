@@ -1,6 +1,6 @@
 ---
 title: "Machine Learning Basics for Marine Science"
-description: "A plain-English course for marine researchers who want to use machine learning well, and know when not to."
+description: "Machine learning for marine researchers who want to use it well, and know when not to."
 toc: false
 ---
 
@@ -24,9 +24,9 @@ every example is written to be readable even if you would have written it differ
 
 ## The shape of the course
 
-Ten sections, meant to be read in order. Each explains an idea in plain English
-first, then shows it working on marine data using
-[tidymodels](https://www.tidymodels.org), then says plainly where it breaks down.
+Ten sections, meant to be read in order. Each explains an idea first, then shows it
+working on marine data using [tidymodels](https://www.tidymodels.org), then says
+plainly where it breaks down.
 
 Marine data breaks several of the assumptions that machine learning quietly relies
 on. Observations near each other in space or time are not independent. Sampling
