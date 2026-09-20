@@ -28,8 +28,10 @@ model failed teaches more than a page that reports a good number.
 
 ## The shape of a page
 
-Copy `contributed/_template.qmd`, rename it, and delete the comments as you go. The
-skeleton it carries is a suggestion:
+Copy the template for the language your analysis is written in,
+`contributed/_template-r.qmd` or `contributed/_template-python.qmd`, rename it, and
+delete the comments as you go. The two carry the same skeleton, and it is a
+suggestion:
 
 | Section | Holds |
 | --- | --- |
@@ -102,28 +104,51 @@ repository. The figures below use an aggregated stand-in with the same structure
 
 ## Code the site can run
 
-Contributed pages are R only. The site's build executes R and nothing else, and the
-Python tabs in the course sections are displayed rather than run, so a page whose
-results come from Python has no way to produce them here. If your analysis lives in
-Python, raise it before you start writing rather than after.
+A contributed page runs in R or in Python, and the choice is yours. It is one
+language per page, though: the course sections show both side by side because they
+are teaching the same step twice, which is not what your page is doing.
+
+R is the site default and needs nothing declared. A Python page adds one line to its
+front matter:
+
+```yaml
+engine: jupyter
+```
+
+That line is what makes the code run. Without it the chunks are displayed and never
+executed, and the page reports no results. Python chunks are written ```` ```{python} ````
+with braces, the same shape as an R chunk; a plain ```` ```python ```` block is the
+display-only form the course sections use.
+
+Either way, render the page yourself and commit the `_freeze/` folder your render
+produces alongside it. The cached results are what let the site rebuild without an R
+or a Python environment, so a page whose freeze is missing forces every later build
+to re-run your analysis.
 
 Beyond that, the habits are the ones that make a page reproduce for a stranger:
 
-- `set.seed()` before anything random, in the same chunk as the thing it seeds.
-- One hidden `setup` chunk holding every `library()` call and
-  `source(here::here("R/theme.R"))`. A chunk that depends on a package loaded
-  nowhere on the page renders here and fails for the reader who downloads the
-  script.
-- Paths through `here::here()`, never relative or absolute.
-- Packages through `renv`, never `install.packages()` in a page.
+- Seed before anything random. In R, `set.seed()` in the same chunk as the thing it
+  seeds. In Python, `np.random.default_rng(SEED)` for your own sampling, and
+  `random_state=SEED` on every scikit-learn estimator and splitter, which do not read
+  numpy's global state.
+- One hidden `setup` chunk holding every import or `library()` call, and the shared
+  style: `source(here::here("R/theme.R"))` in R, `import mlbasic_theme` in Python. A
+  chunk that depends on something loaded nowhere on the page renders here and fails
+  for the reader who downloads the script.
+- Paths resolved from the project root, never relative or absolute: `here::here()` in
+  R, and in Python the three-line root lookup the template's setup chunk carries.
+- Packages through `renv` in R, never `install.packages()` in a page. A Python page
+  that needs something beyond `python/requirements.txt` should say so in the pull
+  request, so the requirement is recorded rather than assumed.
 - Fits under about 30 seconds. If one is genuinely slow, run it in a script under
-  `R/`, cache the result into `data/`, and have the page read the cache.
+  `R/` or `python/`, cache the result into `data/`, and have the page read the cache.
 
 At least one figure, and every figure carries `fig-cap` and `fig-alt`. The caption
 says what the figure is; the alt text describes what it shows, for a reader who
 cannot see it, so the two are not copies of each other. Use colour that survives
 greyscale and colour-blind vision: viridis or Okabe–Ito, never red against green for
-a two-class contrast.
+a two-class contrast. Both shared styles set that up for you, `R/theme.R` for ggplot2
+and `python/mlbasic_theme.py` for matplotlib, so the site looks like one site.
 
 ## From a draft to a published page
 
@@ -160,10 +185,12 @@ a two-class contrast.
   question, the data, the method, and an honest account of the limits.
 - Settle what the data permits before anything is committed. A stand-in dataset is
   always allowed, provided the page says that is what it is.
-- Start from `contributed/_template.qmd`, keep the data availability note and the
-  *Key points* callout, and let your analysis set the rest of the shape.
-- Pages are R only, seeded, and built from `here::here()` paths, so that a reader
-  who downloads the script gets your numbers back.
+- Start from `contributed/_template-r.qmd` or `contributed/_template-python.qmd`,
+  keep the data availability note and the *Key points* callout, and let your analysis
+  set the rest of the shape.
+- One language per page, seeded, with paths resolved from the project root, so that a
+  reader who downloads the script gets your numbers back. A Python page needs
+  `engine: jupyter` in its front matter.
 - Editing fixes reproducibility and flags known traps; it does not overrule your
   judgement, and you sign the page off before it is published.
 :::

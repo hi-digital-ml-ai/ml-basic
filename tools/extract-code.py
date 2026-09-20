@@ -16,7 +16,9 @@ copied into the site by the `resources:` key in _quarto.yml.
 It produces, under the output directory:
 
     code/<section>/<page>.R     every {r} chunk of that page, in order
-    code/<section>/<page>.py    every ```python block of that page, in order
+    code/<section>/<page>.py    every Python block of that page, in order: the
+                                displayed ```python tabs of a course page, or the
+                                executed ```{python} chunks of a jupyter page
     ml-basic-code.zip           the above plus R/, python/, data/ and a README
 
 Run from the repo root, or anywhere: paths are resolved from this file.
@@ -41,6 +43,10 @@ PAGE_DIRS = ["chapters", "toolkit", "contributed"]
 FENCE = re.compile(r"^(`{3,})(.*)$")
 R_INFO = re.compile(r"^\{r[\s,}]")
 PY_INFO = re.compile(r"^python\s*$")
+# A contributed page written in Python sets engine: jupyter and executes {python}
+# chunks; the course pages display plain ```python tabs instead. Both are Python
+# to a reader downloading the script, so both are extracted.
+PY_EXEC_INFO = re.compile(r"^\{python[\s,}]")
 OPTION = re.compile(r"^#\|\s*(\S+):\s*(.*)$")
 TITLE = re.compile(r'^title:\s*"?(.*?)"?\s*$', re.M)
 
@@ -54,6 +60,7 @@ def blocks(text):
     """
     open_fence = None
     kind = None
+    executable = False
     body = []
     label = None
 
@@ -63,7 +70,14 @@ def blocks(text):
             if m:
                 open_fence = len(m.group(1))
                 info = m.group(2).strip()
-                kind = "r" if R_INFO.match(info) else "py" if PY_INFO.match(info) else None
+                if R_INFO.match(info):
+                    kind, executable = "r", True
+                elif PY_EXEC_INFO.match(info):
+                    kind, executable = "py", True
+                elif PY_INFO.match(info):
+                    kind, executable = "py", False
+                else:
+                    kind, executable = None, False
                 body, label = [], None
             continue
 
@@ -71,15 +85,15 @@ def blocks(text):
         if m and len(m.group(1)) >= open_fence and not m.group(2).strip():
             if kind:
                 yield kind, label, "\n".join(body).strip("\n")
-            open_fence, kind = None, None
+            open_fence, kind, executable = None, None, False
             continue
 
-        if kind == "r":
+        if executable:
             opt = OPTION.match(line)
             if opt:
                 if opt.group(1) == "label":
                     label = opt.group(2).strip()
-                continue          # every other #| is a Quarto directive, not R
+                continue          # every other #| is a Quarto directive, not code
         if kind:
             body.append(line)
 
@@ -144,17 +158,24 @@ def py_script(title, rel, chunks):
     return "\n".join(parts).rstrip() + "\n"
 
 
-# Two things would silently lose code from a download, so say so loudly instead.
-# A {python} chunk would execute and is not what python/check-snippets.py reads;
-# a code fence inside an included snippet is invisible to the page-by-page scan.
+# Things that would silently lose code from a download, or produce a page whose
+# chunks never run, so say so loudly instead of extracting something misleading.
 EXEC_PY = re.compile(r"^`{3,}\{python[\s,}]", re.M)
+EXEC_R = re.compile(r"^`{3,}\{r[\s,}]", re.M)
+JUPYTER = re.compile(r"^engine:\s*jupyter\s*$", re.M)
 INCLUDE = re.compile(r"\{\{<\s*include\s+(\S+?)\s*>\}\}")
 
 
 def warn_unhandled(text, rel):
-    if EXEC_PY.search(text):
-        print(f"extract-code: {rel}: {{python}} chunk is not extracted; the Python "
-              f"tabs are plain ```python blocks", file=sys.stderr)
+    front = text.split("---")[1] if text.startswith("---") else ""
+    jupyter = bool(JUPYTER.search(front))
+    if EXEC_PY.search(text) and not jupyter:
+        print(f"extract-code: {rel}: a {{python}} chunk needs `engine: jupyter` in "
+              f"the front matter, or it will not run; a displayed Python tab is a "
+              f"plain ```python block", file=sys.stderr)
+    if jupyter and EXEC_R.search(text):
+        print(f"extract-code: {rel}: `engine: jupyter` is set, so the {{r}} chunks "
+              f"on this page will not run; one page is one language", file=sys.stderr)
     for inc in INCLUDE.findall(text):
         target = (ROOT / rel).parent / inc
         if target.exists() and re.search(r"^`{3,}[{a-zA-Z]", target.read_text(), re.M):

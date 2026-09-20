@@ -1,0 +1,120 @@
+---
+title: "A short, specific title naming the question"
+description: "One sentence for the listing card: the method and the data, e.g. 'A gradient boosting model applied to 1,240 otolith images from coastal surveys'."
+author: "Name, Institution"
+date: 2026-01-01
+categories: [case-study]   # plus method tags from .claude/site-structure.md
+engine: jupyter
+# image: img/<slug>-thumbnail.png
+---
+
+<!--
+Template for a contributed page whose analysis is in Python. Delete these comments
+as you go. The R counterpart is contributed/_template-r.qmd; pick the one your
+analysis is written in, and do not mix the two on one page.
+
+Filename: 2026-<author-slug>-<topic>.qmd  (e.g. 2026-nakamura-otolith-ageing.qmd)
+The shape below is a suggestion; follow your analysis, not the template.
+
+The `engine: jupyter` line is what makes the chunks below run. It is needed on
+every Python page, because knitr is the site default. Chunks are ```{python},
+with braces: a plain ```python block is displayed and never executed, which is
+how the course sections show their Python, and is not what this page wants.
+
+Render locally and commit the _freeze/ folder your render produces alongside the
+page. That is what lets the site rebuild without a Python environment, exactly as
+it already rebuilds without R.
+-->
+
+## The question
+
+What you wanted to find out, and why it matters in your field. Two or three
+paragraphs. Assume the reader is a marine scientist from a different speciality.
+
+## The data
+
+Where it came from, the period it covers, how many observations, what one row is.
+State the licence and how to cite it.
+
+::: {.callout-note}
+## Data availability
+Say plainly whether the data is in this repository, available on request, or
+embargoed. If the figures below use a synthetic or aggregated stand-in, say so here.
+:::
+
+```{python}
+#| label: setup
+#| include: false
+import sys
+from pathlib import Path
+
+# The Python equivalent of here::here(): find the repo root by its _quarto.yml,
+# then put python/ on the import path so the shared helpers resolve from any
+# working directory. The downloadable script gets the same line written in for it
+# by tools/extract-code.py, where there is no _quarto.yml, hence the None case.
+root = next((p for p in [Path.cwd(), *Path.cwd().parents] if (p / "_quarto.yml").exists()), None)
+if root is not None:
+    sys.path.insert(0, str(root / "python"))
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from mlbasic_theme import ML_PALETTE, palette   # site colours, mirrors R/theme.R
+# from mlbasic_data import load_coastal_survey  # if you use a course dataset
+
+# Seed everything random. numpy's generator covers your own sampling; scikit-learn
+# does not read it, so every estimator and splitter also takes random_state=SEED.
+SEED = 123
+rng = np.random.default_rng(SEED)
+```
+
+## Preparing the data
+
+What you cleaned, dropped, or transformed, and why. Note anything a reader would
+need to know to reproduce it.
+
+## The model
+
+Which method, and why that one for this question.
+
+```{python}
+#| label: fit
+# Every step that learns from the data goes inside the Pipeline, so that
+# cross_validate refits it on each training fold and nothing leaks from the
+# held-out fold into the preprocessing.
+#
+# from sklearn.pipeline import Pipeline
+# from sklearn.compose import ColumnTransformer
+# from sklearn.model_selection import cross_validate
+```
+
+## Results
+
+```{python}
+#| label: fig-results
+#| fig-cap: "What the figure shows."
+#| fig-alt: "Describe the figure for a reader who cannot see it."
+fig, ax = plt.subplots()
+
+# Plot here. The house style is already applied by importing mlbasic_theme, so
+# the default colour cycle is Okabe-Ito and images default to viridis. Label
+# directly on the plot where you can, rather than relying on a legend.
+
+ax.set_xlabel("")
+ax.set_ylabel("")
+plt.show()
+```
+
+Read the numbers out in prose. A figure and a metric that the text never mentions
+tell a reader nothing.
+
+## Scope and limits
+
+The honest section. What you would not claim from this. Where the model would fail.
+Whether the validation scheme suits the dependence structure in your data.
+
+::: {.callout-tip}
+## Key points
+- Three to five bullets a reader should leave with.
+:::
