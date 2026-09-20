@@ -2,7 +2,8 @@
 title: "Contributed pages"
 description: "Analyses built by course participants from their own marine data."
 listing:
-  contents: "*.qmd"
+  # Participant pages only: the year prefix keeps the guide page off the cards.
+  contents: "20*.qmd"
   type: grid
   sort: "date desc"
   categories: true
@@ -20,7 +21,7 @@ underlying data is embargoed or licensed, the page says so and uses a stand-in
 dataset for the figures.
 
 ::: {.callout-note}
-Contributing a page? See `.claude/contributed-pages.md` in the repository for the
-front matter, data-permission checks and review flow. Start from
-`contributed/_template.qmd`.
+Adding one of your own? [Writing a contributed page](writing-a-contributed-page.qmd)
+covers the front matter, the data-permission checks and the route from a draft
+analysis to a published page. Start from `contributed/_template.qmd`.
 :::
