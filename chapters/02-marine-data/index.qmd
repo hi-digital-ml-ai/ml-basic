@@ -1,0 +1,59 @@
+---
+title: "2 · Understanding and preparing marine datasets"
+description: "Getting real marine data into a state a model can use, and the preparation mistakes that quietly invalidate results."
+categories: [data-preparation, marine-data, eda]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+Marine data arrives in shapes that machine-learning textbooks rarely picture. Depth
+profiles, not rows. Tracks with gaps where the tag stopped reporting. Surveys where
+the sampling followed the ship and the weather. Species counts where the interesting
+species appears in two per cent of hauls.
+
+Preparation is where most of the work happens, and where most of the damage is done.
+The damage is usually invisible: a model that scores beautifully because information
+leaked from the test set into the training set, and which then fails in the field.
+
+This section works on `coastal-survey-raw.csv`, the same survey used in
+[section 1](../01-introduction/index.qmd), but as it came off the ship. It contains
+sentinel values, twelve spellings of four substrate types, depths ten times too deep,
+duplicate rows, missingness concentrated in winter, a miscalibrated salinity sensor,
+and a column computed from the response. All of it is deliberate, and all of it is
+ordinary.
+
+::: {.callout-warning}
+Leakage is the single most common reason a marine ML result cannot be reproduced in
+the field. It reappears in every later section, especially
+[7 · Validation](../07-validation/index.qmd).
+:::
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [Preprocess your data with recipes](https://www.tidymodels.org/start/recipes/), tidymodels. A recipe built one step at a time.
+- [recipes reference](https://recipes.tidymodels.org/), tidymodels. Every `step_*()` there is, which is the fastest way to find out whether the transformation you want already exists.
+- [Preprocessing data](https://scikit-learn.org/stable/modules/preprocessing.html) and [imputation](https://scikit-learn.org/stable/modules/impute.html), scikit-learn user guide.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. The leakage section is the best short statement of the problem this section ends on.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/dbXDkEEuvCU.jpg){.video-thumb fig-alt="Modeling hotel bookings in R using tidymodels and recipes, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=dbXDkEEuvCU)
+
+  [Modeling hotel bookings in R using tidymodels and recipes](https://www.youtube.com/watch?v=dbXDkEEuvCU), Julia Silge. A recipe assembled from scratch with the reasoning spoken aloud, which is hard to get from documentation.
+:::

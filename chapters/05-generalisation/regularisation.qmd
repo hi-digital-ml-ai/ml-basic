@@ -1,0 +1,542 @@
+---
+title: "Regularisation"
+description: "Deliberately fitting your data worse, and why it works, plus an honest look at what lasso's variable selection is and is not."
+order: 5
+categories: [generalisation, tuning]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(glmnet)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(505)
+```
+
+## Accepting a worse fit on purpose
+
+[The bias–variance page](bias-variance.qmd) ended with an implication that sounds perverse:
+if variance is costing you more than bias, you should accept a model that fits your data
+*worse* in exchange for one that is steadier. Regularisation is how that is done, and it is
+the most broadly useful technique in this section.
+
+It is also the technique most often applied without understanding what it claims. Lasso in
+particular is widely used to "select variables", and this page measures how reliable that
+selection actually is on a realistic marine dataset. The answer is sobering, and it does not
+mean you should stop using lasso.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+Ordinary least squares minimises the error on your data and nothing else. Regularisation adds
+a second term to the objective that charges a price for large coefficients:
+
+$$\underbrace{\sum_i (y_i - \hat y_i)^2}_{\text{fit the data}} \;+\; \underbrace{\lambda P(\beta)}_{\text{keep the coefficients small}}$$
+
+The two penalties in common use differ in one respect that turns out to matter enormously:
+
+- **Ridge** (L2) charges $\sum \beta_j^2$. Squaring means a coefficient of 4 costs sixteen
+  times one of 1, so ridge is aggressive about large coefficients and almost indifferent to
+  small ones. It shrinks everything towards zero and reaches zero only in the limit.
+- **Lasso** (L1) charges $\sum |\beta_j|$. The cost per unit is constant all the way down, so
+  the last step to zero is worth taking. Lasso sets coefficients *exactly* to zero and
+  therefore drops variables.
+- **Elastic net** charges a mixture of the two, controlled by `mixture` in tidymodels:
+  1 is pure lasso, 0 is pure ridge.
+
+[Section 4 derived all of this from priors](../04-how-algorithms-learn/map-and-priors.qmd):
+ridge is a Normal prior on the coefficients, lasso a Laplace one, and λ is the ratio of how
+noisy you think the data are to how large you think the effects are. Nothing on this page is a
+new idea; it is the same objective, given its applied name.
+
+::: {.callout-important}
+Both penalties add up coefficients measured in whatever units the predictors came in. A depth
+coefficient in metres and the same effect in millimetres differ by a factor of a thousand, and
+so do their penalties. **Predictors must be standardised before a penalised fit**, always. In
+tidymodels that is `step_normalize(all_numeric_predictors())`, and `glmnet` does it internally
+by default, which is convenient and also why its coefficients are not on the scale you fed it.
+:::
+
+## Worked example
+
+To show regularisation doing real work we need a situation where unpenalised fitting struggles:
+many predictors, not much data. This is the normal condition of a pilot survey.
+
+Fourteen genuine terms, including quadratics for depth, temperature and chlorophyll and the
+two variables the simulation gives **no** effect at all, salinity and `survey_year`, plus
+thirty columns of pure noise, against 120 training stations.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season, survey_year) |>
+  drop_na()
+
+real_terms <- model.matrix(
+  ~ depth_m + I(depth_m^2) + temperature_c + I(temperature_c^2) +
+    chlorophyll_mg_m3 + I(chlorophyll_mg_m3^2) + salinity_psu +
+    survey_year + substrate + season,
+  data = d
+)[, -1]
+
+set.seed(9)
+noise <- matrix(rnorm(nrow(d) * 30), nrow(d))
+colnames(noise) <- paste0("noise", 1:30)
+
+X <- scale(cbind(real_terms, noise))
+y <- d$abundance
+is_real <- seq_len(ncol(X)) <= ncol(real_terms)
+
+set.seed(505)
+train_rows <- sample(nrow(d), 120)
+X_train <- X[train_rows, ];  y_train <- y[train_rows]
+X_test  <- X[-train_rows, ]; y_test  <- y[-train_rows]
+
+c(predictors = ncol(X), real = sum(is_real), noise = sum(!is_real),
+  training = length(y_train), test = length(y_test))
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "survey_year"]
+d = survey[columns].dropna().reset_index(drop=True)
+
+real_terms = pd.get_dummies(
+    d.assign(depth_sq=d["depth_m"] ** 2,
+             temperature_sq=d["temperature_c"] ** 2,
+             chlorophyll_sq=d["chlorophyll_mg_m3"] ** 2)
+     .drop(columns="abundance"),
+    drop_first=True,
+).astype(float)
+
+rng = np.random.default_rng(9)
+noise = pd.DataFrame(rng.standard_normal((len(d), 30)),
+                     columns=[f"noise{i + 1}" for i in range(30)])
+
+X = pd.DataFrame(StandardScaler().fit_transform(pd.concat([real_terms, noise], axis=1)),
+                 columns=list(real_terms.columns) + list(noise.columns))
+y = d["abundance"]
+is_real = np.array([not c.startswith("noise") for c in X.columns])
+
+rows = np.random.default_rng(505).choice(len(d), 120, replace=False)
+held = np.setdiff1d(np.arange(len(d)), rows)
+
+X_train, y_train = X.iloc[rows], y.iloc[rows]
+X_test, y_test = X.iloc[held], y.iloc[held]
+
+pd.Series({"predictors": X.shape[1], "real": int(is_real.sum()),
+           "noise": int((~is_real).sum()),
+           "training": len(y_train), "test": len(y_test)})
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: compare
+rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+
+best_glmnet <- function(alpha) {
+  fit  <- glmnet(X_train, y_train, alpha = alpha)
+  errs <- apply(predict(fit, X_test), 2, \(p) rmse_of(y_test, p))
+  k    <- which.min(errs)
+  coefs <- coef(fit)[-1, k]
+  tibble(
+    `test RMSE`     = errs[k],
+    lambda          = fit$lambda[k],
+    `terms kept`    = sum(coefs != 0),
+    `real kept`     = sum(coefs != 0 &  is_real),
+    `noise kept`    = sum(coefs != 0 & !is_real)
+  )
+}
+
+ols <- lm(y_train ~ X_train)
+
+bind_rows(
+  tibble(method = "Predict the mean", `test RMSE` = rmse_of(y_test, mean(y_train)),
+         lambda = NA, `terms kept` = 0, `real kept` = 0, `noise kept` = 0),
+  tibble(method = "Least squares", `test RMSE` = rmse_of(y_test, cbind(1, X_test) %*% coef(ols)),
+         lambda = 0, `terms kept` = 44, `real kept` = 14, `noise kept` = 30),
+  best_glmnet(0)   |> mutate(method = "Ridge"),
+  best_glmnet(0.5) |> mutate(method = "Elastic net (0.5)"),
+  best_glmnet(1)   |> mutate(method = "Lasso")
+) |>
+  select(method, everything()) |>
+  mutate(across(where(is.numeric), \(x) round(x, 4)))
+```
+
+## Python
+
+```python
+from sklearn.linear_model import ElasticNet, LinearRegression, enet_path
+from sklearn.metrics import root_mean_squared_error as rmse_of
+
+def best_penalised(l1_ratio):
+    """The glmnet idea: fit the whole path, then keep the best step on it."""
+    alphas, coefs, _ = enet_path(X_train, y_train, l1_ratio=l1_ratio)
+    errors = [rmse_of(y_test, X_test @ coefs[:, k] + y_train.mean())
+              for k in range(coefs.shape[1])]
+    k = int(np.argmin(errors))
+    kept = coefs[:, k] != 0
+    return {
+        "test RMSE": errors[k],
+        "lambda": alphas[k],
+        "terms kept": int(kept.sum()),
+        "real kept": int((kept & is_real).sum()),
+        "noise kept": int((kept & ~is_real).sum()),
+    }
+
+ols = LinearRegression().fit(X_train, y_train)
+
+pd.DataFrame([
+    {"method": "Predict the mean",
+     "test RMSE": rmse_of(y_test, np.repeat(y_train.mean(), len(y_test))),
+     "lambda": np.nan, "terms kept": 0, "real kept": 0, "noise kept": 0},
+    {"method": "Least squares", "test RMSE": rmse_of(y_test, ols.predict(X_test)),
+     "lambda": 0.0, "terms kept": X.shape[1], "real kept": int(is_real.sum()),
+     "noise kept": int((~is_real).sum())},
+    # l1_ratio is glmnet's alpha: 0 is ridge, 1 is lasso. scikit-learn will not
+    # fit a pure ridge path here, so ridge uses a small l1_ratio instead.
+    {"method": "Ridge", **best_penalised(0.01)},
+    {"method": "Elastic net (0.5)", **best_penalised(0.5)},
+    {"method": "Lasso", **best_penalised(1.0)},
+]).round(4)
+```
+
+:::
+
+Least squares, given 44 predictors and 120 stations, scores 7.41, considerably **worse than
+predicting the training mean**, at 4.80. The penalised fits all land near 4.65, which is a
+third better than least squares and a real improvement on knowing nothing.
+
+That is the case for regularisation, and it is not marginal.
+
+```{r}
+#| label: fig-paths
+#| fig-cap: "Lasso coefficient paths. Every coefficient is zero at the far left, where the penalty is heaviest, and the model fills up as the penalty relaxes to the right. Genuine terms are coloured, the thirty noise columns grey. Mud substrate enters first and chlorophyll shortly after, but several noise columns have already left zero by then, and at the right-hand end four real terms have run away to ±7 while the rest of the model sits between −2 and +4."
+#| fig-alt: "A plot of standardised coefficient from minus 8 to 7 against log lambda, running from zero on the left to about minus 7 on the right. All 44 lines begin at zero at the left edge. A vermilion line for mud substrate leaves zero first, rises to about 1.3 and settles near 0.8. A blue line for chlorophyll leaves zero around log lambda minus 1.7 and climbs steadily to about 3.7. An orange line for the depth quadratic first goes negative to about minus 1.5, then reverses and ends at about plus 1.5. Four pale blue lines diverge sharply at the right-hand end, two reaching about plus 6 and plus 7 and two about minus 6 and minus 7. Thirty grey noise lines stay in a band between about minus 1 and plus 1, but several of them leave zero earlier than some of the coloured real terms."
+#| fig-width: 7.5
+#| fig-height: 4.8
+lasso <- glmnet(X_train, y_train, alpha = 1)
+
+paths <- as.matrix(coef(lasso))[-1, ] |>
+  as_tibble(rownames = "term") |>
+  pivot_longer(-term, names_to = "step", values_to = "coefficient") |>
+  mutate(
+    lambda = rep(lasso$lambda, times = 1)[match(step, colnames(as.matrix(coef(lasso))[-1, ]))],
+    kind   = if_else(str_starts(term, "noise"), "noise column", "real term")
+  )
+
+label_terms <- c("chlorophyll_mg_m3", "I(depth_m^2)", "seasonsummer", "substratemud")
+
+ggplot(paths, aes(log(lambda), coefficient, group = term)) +
+  geom_line(data = filter(paths, kind == "noise column"),
+            colour = ml_palette[["grey"]], alpha = 0.45, linewidth = 0.4) +
+  geom_line(data = filter(paths, kind == "real term", !term %in% label_terms),
+            colour = ml_palette[["sky"]], alpha = 0.8, linewidth = 0.5) +
+  geom_line(data = filter(paths, term %in% label_terms),
+            aes(colour = term), linewidth = 1) +
+  scale_x_reverse() +
+  labs(x = "log λ: penalty relaxes to the right", y = "Standardised coefficient",
+       colour = NULL,
+       title = "What lasso lets into the model, and in what order",
+       subtitle = "Grey: thirty pure-noise columns. Pale blue: other real terms.")
+```
+
+Two things in that figure are worth naming. The four pale-blue lines that run away to ±7
+at the right-hand end are the collinear pairs, depth with depth² and temperature with
+temperature², taking large opposite values that partly cancel, exactly as the unpenalised
+fit did in [section 4](../04-how-algorithms-learn/map-and-priors.qmd). The penalty is the
+only thing holding them in check, and you can watch it let go.
+
+The second is the ordering. Several grey noise columns leave zero before some of the real terms
+do. The order in which lasso admits variables is not a ranking of importance, and reading it as
+one is the mistake the next experiment is designed to expose.
+
+### The stability of the selection
+
+Lasso returned twelve terms. Four were real and eight were noise. That single result could be
+bad luck, so we repeat it: draw 100 different training sets of 120 stations, choose λ by
+cross-validation each time, and count how often each term survives.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: stability
+set.seed(11)
+selected <- replicate(100, {
+  rows <- sample(nrow(d), 120)
+  cv   <- cv.glmnet(X[rows, ], y[rows], alpha = 1, nfolds = 5)
+  as.numeric(coef(cv, s = "lambda.min")[-1] != 0)
+})
+rownames(selected) <- colnames(X)
+
+frequency <- tibble(
+  term = rownames(selected),
+  kind = if_else(str_starts(term, "noise"), "noise column", "real term"),
+  selected_in = rowMeans(selected)
+)
+
+frequency |>
+  arrange(desc(selected_in)) |>
+  slice_head(n = 12) |>
+  mutate(selected_in = round(selected_in, 2))
+```
+
+## Python
+
+```python
+from sklearn.linear_model import LassoCV
+
+picker = np.random.default_rng(11)
+selected = np.zeros((X.shape[1], 100))
+
+for r in range(100):
+    take = picker.choice(len(d), 120, replace=False)
+    cv = LassoCV(cv=5).fit(X.iloc[take], y.iloc[take])
+    selected[:, r] = cv.coef_ != 0
+
+frequency = pd.DataFrame({
+    "term": X.columns,
+    "kind": np.where(is_real, "real term", "noise column"),
+    "selected_in": selected.mean(axis=1),
+})
+
+frequency.sort_values("selected_in", ascending=False).head(12).round(2)
+```
+
+:::
+
+```{r}
+#| label: fig-stability
+#| fig-cap: "How often each term survives lasso selection, across 100 resampled training sets of 120 stations. Chlorophyll, a genuinely strong driver, survives 58% of the time. The most persistent pure-noise column survives 31% of the time, more often than several real terms. The two variables with no true effect, salinity and survey year, sit at 14% and 11%."
+#| fig-alt: "A dot plot with selection frequency from zero to 0.6 on the horizontal axis and forty-four terms on the vertical axis, ordered by frequency. Real terms are drawn as orange dots and noise columns as grey. Chlorophyll leads at 0.58, clearly ahead. Below it the orange and grey dots are thoroughly interleaved from about 0.36 down to 0.05, with no clean separation between the two groups. Salinity and survey year appear low in the ordering at 0.14 and 0.11."
+#| fig-width: 7
+#| fig-height: 6.5
+frequency |>
+  mutate(term = fct_reorder(term, selected_in)) |>
+  ggplot(aes(selected_in, term, colour = kind)) +
+  geom_point(size = 2.4) +
+  scale_colour_manual(values = c(`real term` = ml_palette[["orange"]],
+                                 `noise column` = ml_palette[["grey"]])) +
+  labs(x = "Proportion of 100 resampled fits that kept the term", y = NULL,
+       colour = NULL,
+       title = "Lasso's selected set is not a stable finding") +
+  theme(axis.text.y = element_text(size = 7.5),
+        panel.grid.major.y = element_blank())
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: stability-summary
+frequency |>
+  group_by(kind) |>
+  summarise(`mean selection frequency` = round(mean(selected_in), 3),
+            n = n())
+```
+
+## Python
+
+```python
+(frequency.groupby("kind")
+    .agg(**{"mean selection frequency": ("selected_in", "mean"),
+            "n": ("selected_in", "size")})
+    .round(3)
+    .reset_index())
+```
+
+:::
+
+## Prediction against interpretation
+
+**Regularisation is an excellent prediction tool.** Least squares 7.41; ridge 4.64. That is the
+headline and it holds up: with more predictors than the data can support, shrinking them is
+worth a great deal.
+
+**Lasso's variable selection is not a reliable scientific claim.** Across 100 resamples, real
+terms survived 24.7% of the time on average and pure noise columns 17.9%. Chlorophyll, a
+genuine, strong, monotonic driver, was kept in only 58 of 100 fits. The most persistent noise
+column, which is `rnorm()` output and cannot matter, was kept in 31, ahead of several real
+predictors.
+
+If you fit lasso once, get a set of survivors, and write "the model selected chlorophyll,
+substrate and depth", you have written down one draw from a distribution that would have given
+you a substantially different list on a different 120 stations. The correct report is a
+selection frequency, not a list.
+
+**It did get the true nulls roughly right, though.** Salinity and `survey_year` have *no* effect
+by construction, and they sit at 14% and 11%, at the low end. So the method is picking up
+something real; it simply does not have the resolution, at this sample size, to separate a weak
+real effect from a lucky noise column. That is a statement about how much information 120
+stations carry, not a defect in lasso.
+
+**Ridge and lasso predicted about equally well.** 4.637 against 4.684, a difference well inside
+the noise of one split. Lasso's sparsity bought interpretability, not accuracy, and the
+interpretability turns out to be partly illusory.
+
+::: {.callout-warning}
+The comparison table chose λ by looking at the test set, which is cheating, and
+deliberately so, because it isolates the effect of the penalty from the effect of choosing
+it. Every figure in that table is therefore optimistic. Choosing λ honestly is [the next
+page](hyperparameter-selection.qmd), and the stability experiment above does it correctly,
+with `cv.glmnet()` inside each resample.
+:::
+
+### The tidymodels version
+
+`glmnet` is used directly above so the paths are visible. In practice regularisation goes
+through the standard workflow, where `step_normalize()` is applied inside resampling rather
+than to the whole dataset, which is the
+[leakage-safe](../02-marine-data/information-leakage.qmd) way round.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: tidymodels-version
+train_df <- d[train_rows, ]
+test_df  <- d[-train_rows, ]
+
+ridge_workflow <- workflow() |>
+  add_recipe(
+    recipe(abundance ~ ., data = train_df) |>
+      step_dummy(all_nominal_predictors()) |>
+      step_normalize(all_numeric_predictors())
+  ) |>
+  add_model(
+    linear_reg(penalty = 0.05, mixture = 0) |>   # mixture 0 = ridge, 1 = lasso
+      set_engine("glmnet")
+  ) |>
+  fit(train_df)
+
+predict(ridge_workflow, test_df) |>
+  bind_cols(test_df) |>
+  metrics(truth = abundance, estimate = .pred) |>
+  mutate(.estimate = round(.estimate, 4))
+```
+
+## Python
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+train_df, test_df = d.iloc[rows], d.iloc[held]
+features = [c for c in d.columns if c != "abundance"]
+categorical = ["substrate", "season"]
+numeric = [c for c in features if c not in categorical]
+
+ridge_pipeline = Pipeline([
+    ("recipe", ColumnTransformer([
+        ("numeric", "passthrough", numeric),
+        ("categorical", OneHotEncoder(drop="first", sparse_output=False),
+         categorical),
+    ])),
+    ("normalise", StandardScaler()),
+    # Ridge's alpha is a penalty weight, not glmnet's lambda on the same scale,
+    # so this is the same family of model rather than the identical fit.
+    ("model", Ridge(alpha=0.05)),
+]).fit(train_df[features], train_df["abundance"])
+
+predicted = ridge_pipeline.predict(test_df[features])
+
+pd.DataFrame({
+    ".metric": ["rmse", "rsq", "mae"],
+    ".estimate": [
+        rmse_of(test_df["abundance"], predicted),
+        r2_score(test_df["abundance"], predicted),
+        mean_absolute_error(test_df["abundance"], predicted),
+    ],
+}).round(4)
+```
+
+:::
+
+`penalty` is λ and `mixture` is the ridge–lasso dial. Both are hyperparameters, both are set by
+hand here, and both should be tuned, which is exactly what the next page does with these two.
+
+## Limits of penalised regression
+
+**Correlated predictors defeat lasso's selection.** When two predictors carry the same
+information, such as depth and temperature here, which are strongly related by
+construction, lasso picks one essentially arbitrarily and zeroes the other. Its absence
+from the model is then not evidence of irrelevance, exactly as [a variable's absence from
+a tree was not](../03-supervised-learning/trees-forests-boosting.qmd). Ridge handles
+correlated groups more gracefully by splitting the effect between them, and elastic net
+exists largely to get some of both behaviours.
+
+**Shrinkage biases every coefficient towards zero, including the true ones.** A penalised
+coefficient is not an estimate of an effect size; it is an estimate deliberately pulled towards
+zero to trade bias for variance. Do not report penalised coefficients as effect sizes, and do
+not compute confidence intervals from them without a method built for the purpose.
+
+**λ chosen from the data is not a prior.** [Section
+4](../04-how-algorithms-learn/map-and-priors.qmd) made this point and it is worth
+repeating here: tuning λ by cross-validation is standard, effective, and no longer a
+statement of prior belief. The resulting intervals are optimistic.
+
+**None of this fixes a bad model class.** Penalised linear regression is still linear. If the
+response is hump-shaped in depth and you have not included a quadratic, no value of λ will find
+it: regularisation controls how freely the model uses what you gave it, not what you gave it.
+
+::: {.callout-tip}
+## Key points
+
+- Regularisation adds a penalty on coefficient size, trading a worse fit to your data for a
+  steadier model. Ridge penalises squares, lasso absolute values, elastic net both.
+- **Standardise first.** The penalty is charged in the predictors' units, so unscaled predictors
+  are penalised arbitrarily.
+- On 44 predictors and 120 stations, least squares scored 7.41, worse than predicting the mean
+  at 4.80, and ridge scored 4.64.
+- **Lasso's selected set is unstable.** Over 100 resamples, real terms survived 24.7% of the
+  time and pure noise columns 17.9%; the best noise column beat several real predictors. Report
+  a selection frequency, not a list.
+- Ridge and lasso predicted equally well here. Sparsity bought interpretability, and some of
+  that interpretability was not real.
+
+:::
+
+## Try it yourself
+
+1. Raise the training set from 120 stations to 400 and re-run the stability experiment. How
+   much separation opens up between the real terms and the noise columns, and does chlorophyll
+   reach a frequency you would be willing to publish?
+2. Set `mixture = 0.5` in the stability experiment. Elastic net is supposed to be steadier than
+   lasso when predictors are correlated: does the selection frequency of the real terms
+   actually rise?

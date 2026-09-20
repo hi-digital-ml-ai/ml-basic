@@ -1,0 +1,50 @@
+---
+title: "1 · Introduction to machine learning in marine science"
+description: "What machine learning is, how it differs from statistical modelling, and when prediction is not the same as understanding."
+categories: [foundations]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+Most marine scientists already fit models. You have written a GLM, checked residuals,
+looked at a p-value, and drawn a conclusion about how temperature affects abundance.
+So the obvious question about machine learning is: what is different?
+
+The short answer is *what the model is for*. A statistical model is usually built to
+tell you something about the world: the size of an effect, or whether it is
+distinguishable from noise. A machine-learning model is usually built to make good
+predictions about cases it has not seen. Those two goals pull in different directions,
+and a model that excels at one can be useless at the other.
+
+This section sets up that distinction and the vocabulary the rest of the course uses.
+Every page works on the same simulated coastal survey, so you can see the same data
+answer different questions.
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [Get Started](https://www.tidymodels.org/start/), tidymodels. Five short articles that build one model from scratch, in the order this course uses.
+- [Getting started](https://scikit-learn.org/stable/getting_started.html), scikit-learn. The same ground in one page, for readers who work in Python.
+- [Choosing the right estimator](https://scikit-learn.org/stable/machine_learning_map.html), scikit-learn. A flowchart from the size and shape of your data to a method. Treat it as a starting point rather than an answer.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/Gv9_4yMHFhI.jpg){.video-thumb fig-alt="A Gentle Introduction to Machine Learning, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=Gv9_4yMHFhI)
+
+  [A Gentle Introduction to Machine Learning](https://www.youtube.com/watch?v=Gv9_4yMHFhI), StatQuest with Josh Starmer. Training and testing, and why the distinction is the whole subject.
+:::

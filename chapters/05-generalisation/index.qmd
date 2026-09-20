@@ -1,0 +1,82 @@
+---
+title: "5 · Generalisation and model complexity"
+description: "Why a model that fits the data perfectly is usually a bad model, and how complexity, bias and variance trade off."
+categories: [generalisation, tuning]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+Any sufficiently flexible model can reproduce your data exactly. It can pass through
+every point, explain every wobble, and report an almost perfect fit. It will also be
+worthless, because it has learned the noise in your particular survey along with the
+signal.
+
+This is overfitting, and it is the central problem of machine learning. Everything in
+this section, the bias–variance trade-off, regularisation and hyperparameter selection,
+is a response to it.
+
+The marine version of the problem is sharper than the textbook version. With
+autocorrelated data, a model can look like it is generalising when it is really just
+memorising the neighbourhood.
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+## Findings from this section
+
+Four results from these pages are worth knowing before you read them:
+
+- On the coastal survey, ranking five models by **training** error gave the exact reverse of
+  ranking them by test error. A tree fitted to a training RMSE of zero scored worse on new
+  stations than predicting the mean and using no predictors at all.
+- Adding **539 columns of pure random noise** to 540 training stations produced a training
+  R² of exactly 1.000, and a test RMSE of 185, against a response whose largest observed
+  value is 40.
+- Splitting the error properly shows that the **irreducible noise is more than double**
+  everything a model could control. Most of what looks like model error in marine count data
+  is not model error.
+- Lasso's selected variables are **not a stable finding**. Over 100 resampled fits, real
+  predictors survived 24.7% of the time and pure noise columns 17.9%.
+
+::: {.callout-note}
+This section deliberately cheats until its last page: every earlier page chooses its
+complexity by looking at the test set, and says so each time.
+[Hyperparameter selection](hyperparameter-selection.qmd) is where that is done honestly, and
+[section 7](../07-validation/index.qmd) is where the resampling itself is made appropriate to
+marine data, because a random split of repeat visits to 160 sites flatters every number in
+this section.
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [Tune model parameters](https://www.tidymodels.org/start/tuning/), tidymodels. `tune()`, a grid, and resampling used honestly.
+- [Underfitting versus overfitting](https://scikit-learn.org/stable/auto_examples/model_selection/plot_underfitting_overfitting.html), scikit-learn. Three polynomial fits to the same points, which is this section's argument in one figure.
+- [Tuning the hyper-parameters of an estimator](https://scikit-learn.org/stable/modules/grid_search.html), scikit-learn user guide.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/EuBBz3bI-aA.jpg){.video-thumb fig-alt="Machine Learning Fundamentals: Bias and Variance, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=EuBBz3bI-aA)
+
+  [Machine Learning Fundamentals: Bias and Variance](https://www.youtube.com/watch?v=EuBBz3bI-aA), StatQuest with Josh Starmer.
+
+- [![](../../img/video/Q81RR3yKn30.jpg){.video-thumb fig-alt="Regularization Part 1: Ridge (L2) Regression, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=Q81RR3yKn30)
+
+  [Regularization Part 1: Ridge (L2) Regression](https://www.youtube.com/watch?v=Q81RR3yKn30), StatQuest with Josh Starmer. Why the penalty shrinks coefficients towards zero.
+
+- [![](../../img/video/NGf0voTMlcs.jpg){.video-thumb fig-alt="Regularization Part 2: Lasso (L1) Regression, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=NGf0voTMlcs)
+
+  [Regularization Part 2: Lasso (L1) Regression](https://www.youtube.com/watch?v=NGf0voTMlcs), StatQuest with Josh Starmer. Why this penalty can set a coefficient to zero exactly, which makes it a selection method.
+:::

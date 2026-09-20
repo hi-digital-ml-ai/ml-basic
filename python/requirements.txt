@@ -1,0 +1,13 @@
+# For running the Python tabs and python/check-snippets.py.
+# The site itself renders with R only. Nothing here is needed to build it.
+pandas>=2.2
+scikit-learn>=1.5
+scipy>=1.11
+
+# Only where scikit-learn has no equivalent: GLM inference (standard errors,
+# p-values, deviance) and the negative binomial, in sections 3 and 6.
+statsmodels>=0.14
+
+# Section 8 only: UMAP, which began life as a Python library and has no
+# scikit-learn equivalent.
+umap-learn>=0.5

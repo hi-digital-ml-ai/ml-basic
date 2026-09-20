@@ -1,0 +1,284 @@
+---
+title: "Parameter estimation"
+description: "Some models can be solved with a formula, most cannot, and knowing which is which explains a surprising amount of package behaviour."
+order: 2
+categories: [optimisation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## The search itself
+
+[The previous page](loss-functions.qmd) left the model with a scorecard and no way to
+improve its score. This page is about the search itself, and about one fact that divides
+the methods in this course cleanly in two.
+
+For a handful of models, the best parameters can be *calculated*. There is a formula; you
+put the data in and the answer comes out, exactly, in one step. For everything else,
+meaning every model in section 3 except ordinary linear regression, there is no formula,
+and the parameters have to be found by looking.
+
+That distinction explains why `lm()` never fails to converge and `glm()` sometimes does,
+why random forests give slightly different answers on each run, and why neural networks
+need a learning rate and linear regression does not.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+### Parameters and hyperparameters
+
+A **parameter** is a number the fitting procedure chooses from the data: a regression
+slope, the threshold in a tree node, a weight in a neural network. You do not set these.
+
+A **hyperparameter** is a number you set *before* fitting, which controls how the fitting
+goes: the depth of a tree, the number of trees in a forest, the strength of a penalty.
+The algorithm cannot choose these for you, because their whole job is to constrain the
+choosing. Selecting them is a separate problem, handled by
+[section 5](../05-generalisation/hyperparameter-selection.qmd).
+
+When a package says a model "has 12 parameters", it means the first kind.
+
+### The objective is a landscape
+
+Picture the objective from the previous page as a surface. Each axis is one parameter;
+the height is how bad that combination of parameters is. Fitting means walking downhill
+until you reach the bottom.
+
+For a linear model with squared-error loss, that surface is a bowl: one lowest point, no
+ridges, no false floors. For most other models it is rougher.
+
+```{r}
+#| label: fig-surface
+#| fig-cap: "The mean-squared-error surface for a two-parameter model, intercept and chlorophyll slope, over the coastal survey. Darker is better. It is a long, tilted bowl with a single lowest point, marked by the cross. Any downhill walk from anywhere reaches it."
+#| fig-alt: "A filled contour plot with intercept on the horizontal axis from minus two to six and chlorophyll slope on the vertical axis from minus one to three. Colour shades from bright yellow at the edges through green to dark blue in a narrow elongated basin running diagonally from upper left to lower right. A white cross marks the single minimum at intercept 2.36, slope 1.15."
+#| fig-width: 6.5
+#| fig-height: 4.6
+survey <- load_coastal_survey_clean()
+d <- survey |> select(abundance, chlorophyll_mg_m3) |> drop_na()
+
+grid <- expand_grid(
+  intercept = seq(-2, 6, length.out = 120),
+  slope     = seq(-1, 3, length.out = 120)
+) |>
+  mutate(mse = map2_dbl(
+    intercept, slope,
+    \(a, b) mean((d$abundance - (a + b * d$chlorophyll_mg_m3))^2)
+  ))
+
+best <- coef(lm(abundance ~ chlorophyll_mg_m3, data = d))
+
+ggplot(grid, aes(intercept, slope, fill = mse)) +
+  geom_raster() +
+  geom_contour(aes(z = mse), colour = "white", alpha = 0.35, bins = 14) +
+  annotate("point", x = best[1], y = best[2], shape = 4, size = 4,
+           stroke = 1.2, colour = "white") +
+  scale_fill_viridis_c(option = "viridis", direction = -1, trans = "log10") +
+  labs(
+    x = "Intercept", y = "Chlorophyll slope", fill = "MSE (log scale)",
+    title = "A well-behaved objective is a bowl"
+  ) +
+  theme(legend.key.width = unit(2, "cm"))
+```
+
+Notice how *stretched* the bowl is. Moving along the diagonal valley barely changes the
+objective, so the data pins down some combinations of parameters far better than others.
+That elongation is what makes plain [gradient descent](gradient-descent.qmd) slow, and it
+is the reason the next page cares so much about scaling.
+
+## Worked example
+
+### When there is a formula
+
+For linear regression with squared-error loss, calculus gives the answer outright. Setting
+the derivative of the objective to zero produces the **normal equations**, and they can be
+solved directly.
+
+```{r}
+#| label: closed-form
+d3 <- survey |>
+  select(abundance, chlorophyll_mg_m3, depth_m, temperature_c) |>
+  drop_na()
+
+X <- model.matrix(~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3)
+y <- d3$abundance
+
+beta_hat <- solve(t(X) %*% X, t(X) %*% y)
+round(drop(beta_hat), 4)
+```
+
+```{r}
+#| label: compare-lm
+round(coef(lm(abundance ~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3)), 4)
+```
+
+Identical, to about fourteen decimal places. `lm()` is doing exactly this calculation
+(by a numerically safer route than inverting $X^\top X$, but the same one mathematically).
+No iteration, no starting value, no convergence, no seed. Run it a thousand times and get
+the same answer a thousand times.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+
+With $X$ the $n \times p$ matrix of predictors (including a column of ones for the
+intercept), $y$ the vector of responses, and $\beta$ the coefficients, the objective is
+$J(\beta) = \|y - X\beta\|^2$. Differentiating and setting the result to zero gives
+
+$$X^\top X \hat\beta = X^\top y \qquad\Longrightarrow\qquad \hat\beta = (X^\top X)^{-1} X^\top y$$
+
+This works because squaring makes the objective a quadratic in $\beta$, and a quadratic
+has one turning point that you can solve for. Change the loss to absolute error and the
+objective stops being a quadratic, since the derivative is no longer linear in $\beta$, and the
+formula vanishes. That is why the absolute-error fit on the previous page needed `optim()`.
+:::
+
+### When there is not
+
+Logistic regression is the same shape of model with a different link, and it has no closed
+form. Its objective has to be approached step by step. The standard method is
+**iteratively reweighted least squares**: at each step, approximate the awkward objective
+by a weighted least-squares problem, which *does* have a formula, solve that, and repeat.
+
+```{r}
+#| label: irls
+d3b <- survey |>
+  select(present, chlorophyll_mg_m3, depth_m, temperature_c) |>
+  drop_na()
+
+Xb <- model.matrix(~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3b)
+yb <- as.numeric(d3b$present == "yes")
+
+log_likelihood <- function(b) {
+  eta <- drop(Xb %*% b)
+  sum(yb * eta - log1p(exp(eta)))
+}
+
+b <- rep(0, ncol(Xb))
+trace <- map_dfr(1:6, function(k) {
+  eta <- drop(Xb %*% b)
+  p   <- plogis(eta)
+  w   <- pmax(p * (1 - p), 1e-10)
+  z   <- eta + (yb - p) / w
+  b  <<- drop(solve(t(Xb) %*% (Xb * w), t(Xb) %*% (w * z)))
+  tibble(iteration = k, log_likelihood = log_likelihood(b),
+         chlorophyll = b[2], depth = b[3], temperature = b[4])
+})
+
+trace |> mutate(across(where(is.numeric), \(x) round(x, 5)))
+```
+
+Starting from all-zero parameters the log-likelihood is −513.62. One step takes it to
+−378.26, the second to −373.26, and by the fourth the log-likelihood has stopped changing
+in the fourth decimal place. `glm()` reports `iter = 5` on this model, which is the same count.
+
+::: {.callout-warning}
+The chlorophyll coefficient here is **+0.348**, while `glm(present ~ ...)` reports
+**−0.348** on the same data. Nothing is wrong with either. `present` has levels `yes, no`,
+and base R models the probability of the *last* level, so `glm()` is describing absence
+while this hand-coded version describes presence. This is the same reversal that
+[section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) found in
+`tidy()` output, and it is worth recognising a second time: a sign flip of exactly this
+kind is a level-ordering problem until proven otherwise.
+:::
+
+### The cost of trying every combination
+
+An obvious alternative to any of this is to lay down a grid of candidate values and
+evaluate them all. It works, briefly.
+
+```{r}
+#| label: grid-cost
+tibble(
+  parameters = c(2, 4, 10, 25),
+  `grid points at 100 values each` = format(100^c(2, 4, 10, 25), digits = 3)
+)
+```
+
+Two parameters is ten thousand evaluations, trivial, and essentially what the contour
+figure above did, on a 120 × 120 grid. Four parameters is a hundred million. Ten is
+$10^{20}$, which at a billion evaluations a second takes longer than the Holocene. The
+modest linear model fitted above already has four parameters; a random forest has tens of
+thousands of thresholds.
+
+This is why fitting is a *directed* search. You cannot afford to look everywhere, so you
+have to work out which way is downhill and go that way, which is
+[the next page](gradient-descent.qmd).
+
+## The division through the course
+
+The division runs right through the course:
+
+| Model | Parameters found by | Consequence |
+| --- | --- | --- |
+| Linear regression (squared loss) | Formula | Exact, instant, reproducible |
+| Ridge regression | Formula | Same, with a penalty term added |
+| Logistic / Poisson regression | Iterative (IRLS) | Can fail to converge; usually does not |
+| Regularised regression (lasso) | Iterative | No formula: the penalty is not differentiable at zero |
+| Decision tree | Greedy search | Not a numerical optimum at all; see below |
+| Random forest, boosting | Greedy, with randomness | Different answers per run without a seed |
+| Neural network | Gradient descent | Learning rate, epochs, and no guarantee of the best answer |
+
+Trees are the odd case, and worth stating plainly: a decision tree is not solving an
+optimisation problem in any global sense. It takes the best single split available at each
+node and never reconsiders. That is why
+[section 3's tree](../03-supervised-learning/trees-forests-boosting.qmd) split on
+chlorophyll and ignored depth entirely: the greedy step could not see that two depth
+splits together would have paid, because it only ever evaluates one.
+
+The practical reading: a model with a formula has no fitting diagnostics because it cannot
+have any. Everything below the first two rows of that table can go wrong during fitting,
+quietly, and [reading a fit](reading-a-fit.qmd) at the end of this section is about
+noticing when it has.
+
+## Limits of both routes
+
+**The formula can fail even where it exists.** $(X^\top X)^{-1}$ requires that $X^\top X$ be
+invertible. If two predictors are perfectly correlated, or you have more predictors than
+stations, it is not, and `lm()` responds by silently dropping coefficients and reporting
+`NA` rather than erroring. Near-collinearity is worse: the inverse exists but is unstable,
+so coefficients swing wildly on small changes to the data while the fit looks fine.
+
+**Convergence is not correctness.** An iterative algorithm that reports success has found a
+point where it can no longer improve. For logistic and Poisson regression that point is the
+global best, because their objectives are concave. For neural networks and k-means it need
+not be, and those algorithms converge happily to somewhere merely good, and
+[section 8](../08-unsupervised-learning/index.qmd) shows k-means doing it.
+
+**A flat valley is a warning, not a nuisance.** The elongated bowl in the figure above means
+many parameter combinations fit almost equally well. The algorithm will return one of them
+and quote it to four decimals. That precision is real only in the direction the bowl is
+narrow.
+
+::: {.callout-tip}
+## Key points
+
+- **Parameters** are learned from data; **hyperparameters** are set before fitting and
+  control how learning happens.
+- Linear regression under squared loss has a formula: exact, one step, no seed and no
+  convergence to check. Almost nothing else does.
+- Logistic and Poisson regression iterate, here reaching a stable answer in four steps
+  from a standing start.
+- Exhaustive search is not an option: four parameters on a modest grid is $10^8$
+  evaluations, ten parameters is $10^{20}$.
+- A model fitted by search can fail in ways a model fitted by formula cannot. Know which
+  kind you have.
+
+:::
+
+## Try it yourself
+
+1. Add `salinity_psu` to the closed-form fit and confirm the formula still matches `lm()`.
+   Salinity has no true effect in this dataset, so what coefficient does it get, and is it
+   distinguishable from zero?
+2. Create a perfectly collinear predictor (`depth_m * 2`) and give it to `lm()`. What does
+   the coefficient table say, and at what point would you have noticed if you had not been
+   looking?

@@ -1,0 +1,281 @@
+---
+title: "Linearity and nonlinearity"
+description: "Straight lines, the shapes that are not straight, and a flexible model that recovers one optimum perfectly and the other not at all."
+order: 2
+categories: [assumptions]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(mgcv)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(602)
+```
+
+## Straight lines in a curved ocean
+
+Marine responses are rarely straight lines. Species have thermal optima. Productivity saturates.
+Oxygen has thresholds below which nothing survives. Depth relationships are humped, because the
+shelf edge is a boundary and not a gradient.
+
+A linear model asked to describe a hump does not fail loudly. It fits a line through the middle,
+reports a coefficient, and produces a *scientifically wrong* conclusion, that the response is
+best at one end, while its diagnostics look acceptable.
+
+The standard remedy is to add flexibility: a quadratic term, a spline, a tree. This page does
+that, and then checks the answer against the truth the simulation recorded. One of the two
+optima comes back almost exactly. The other does not, and the reason is worth more than the
+technique.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+### The actual assumption behind "linear"
+
+A linear model assumes the response is a weighted sum of the predictors, with the weights
+constant everywhere. Two consequences follow, and the second is the one people forget:
+
+1. The effect of one more metre of depth is the same at 20 m as at 180 m.
+2. The effect of depth does not depend on temperature.
+
+The first is the shape assumption. The second is the **absence of interactions**, which is
+also a linearity assumption and is violated even more often in ecology than the first.
+
+"Linear" also means *linear in the parameters*, not in the predictors. `abundance ~ depth +
+I(depth^2)` is still a linear model; so is a Poisson GLM, where the linear part sits on the log
+scale and becomes a curve when exponentiated back. The
+[link function](../04-how-algorithms-learn/maximum-likelihood.qmd) already buys you a particular
+kind of nonlinearity for free, which is why the count models in
+[section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd) beat the plain line.
+
+### Ways to bend
+
+| Approach | What it gives | Cost |
+| --- | --- | --- |
+| Log or square-root transform | Saturating or accelerating shapes | Changes what the model is of |
+| Polynomial terms | Smooth curves, few parameters | Wild at the edges; degree is arbitrary |
+| **Splines / GAM** (`mgcv`) | Smooth curves of learned wiggliness | Harder to summarise in one number |
+| Trees and forests | Any shape, plus interactions | Step functions; no smoothness |
+| Explicit interactions | Effects that depend on each other | Parameter count grows fast |
+
+A GAM is the natural middle ground for marine work: it keeps the interpretable structure
+of a regression, so you can still plot the effect of temperature, while letting each term
+take whatever smooth shape the data support.
+
+## Worked example
+
+Three Poisson models on the same data, differing only in how much bending they allow.
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, substrate, season) |>
+  drop_na()
+
+linear <- glm(
+  abundance ~ depth_m + temperature_c + log1p(chlorophyll_mg_m3) + substrate,
+  data = d, family = poisson
+)
+
+quadratic <- glm(
+  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
+    log1p(chlorophyll_mg_m3) + substrate,
+  data = d, family = poisson
+)
+
+smooth <- gam(
+  abundance ~ s(depth_m) + s(temperature_c) + log1p(chlorophyll_mg_m3) + substrate,
+  data = d, family = poisson
+)
+
+tibble(
+  model = c("Straight lines", "Quadratic terms", "GAM (penalised splines)"),
+  AIC   = c(AIC(linear), AIC(quadratic), AIC(smooth))
+) |>
+  mutate(AIC = round(AIC, 1))
+```
+
+Allowing the two environmental terms to curve is worth 383 AIC units; letting the curves find
+their own shape is worth another 50. There is no ambiguity about whether these relationships are
+straight.
+
+```{r}
+#| label: edf
+summary(smooth)$s.table |> round(3)
+```
+
+The **effective degrees of freedom** is the GAM's own statement about wiggliness: 1 would mean a
+straight line, and the penalty is free to choose that if the data support it. Depth gets 5.5 and
+temperature 8.1. Both are emphatically curves.
+
+### Against the truth
+
+Because the survey is simulated, we know what the fitted curves should look like. The generating
+script builds abundance on the log scale as
+
+$$-0.55\left(\frac{\text{depth} - 80}{60}\right)^2 \;-\; 0.60\left(\frac{\text{temperature} - 9}{3}\right)^2 \;+\; \dots$$
+
+so the true depth optimum is 80 m and the true temperature optimum is 9 °C.
+
+```{r}
+#| label: fig-shapes
+#| fig-cap: "Fitted GAM smooths (solid) against the true generating curves (dashed), each centred for comparison. Temperature is recovered almost exactly, peaking at 9.30 °C against a true 9 °C. Depth is not: the fitted curve declines from the shallowest stations, putting its maximum at 15 m where the truth puts it at 80."
+#| fig-alt: "Two panels. The left panel, depth, shows a dashed inverted parabola peaking at 80 metres and falling away on both sides, and a solid fitted curve that is highest at the shallow end near 15 metres, falls to a trough around 80 metres, rises to a small secondary bump near 110 metres, and then falls steeply. The two curves cross just under 50 metres and agree closely beyond about 150 metres, but at the shallow end they are opposite: where the truth is at its lowest the fit is at its highest. The right panel, temperature, shows a dashed inverted parabola peaking at 9 degrees and a solid fitted curve lying almost on top of it across the full range from 2 to 16 degrees, separating visibly only below about 4 degrees and above about 14."
+#| fig-width: 8
+#| fig-height: 4
+centre <- function(x) x - mean(x)
+
+depth_grid <- tibble(
+  depth_m = seq(min(d$depth_m), max(d$depth_m), length.out = 200),
+  temperature_c = median(d$temperature_c),
+  chlorophyll_mg_m3 = median(d$chlorophyll_mg_m3),
+  substrate = factor("sand", levels = levels(d$substrate))
+)
+
+temp_grid <- tibble(
+  temperature_c = seq(min(d$temperature_c), max(d$temperature_c), length.out = 200),
+  depth_m = median(d$depth_m),
+  chlorophyll_mg_m3 = median(d$chlorophyll_mg_m3),
+  substrate = factor("sand", levels = levels(d$substrate))
+)
+
+depth_curves <- depth_grid |>
+  mutate(
+    Fitted = centre(predict(smooth, depth_grid, type = "terms")[, "s(depth_m)"]),
+    Truth  = centre(-0.55 * ((depth_m - 80) / 60)^2)
+  )
+
+temp_curves <- temp_grid |>
+  mutate(
+    Fitted = centre(predict(smooth, temp_grid, type = "terms")[, "s(temperature_c)"]),
+    Truth  = centre(-0.60 * ((temperature_c - 9) / 3)^2)
+  )
+
+p1 <- depth_curves |>
+  pivot_longer(c(Fitted, Truth), names_to = "curve", values_to = "effect") |>
+  ggplot(aes(depth_m, effect, colour = curve, linetype = curve)) +
+  geom_line(linewidth = 1) +
+  scale_linetype_manual(values = c(Fitted = "solid", Truth = "dashed")) +
+  labs(x = "Depth (m)", y = "Partial effect (log scale)", colour = NULL, linetype = NULL,
+       title = "Depth: recovered badly")
+
+p2 <- temp_curves |>
+  pivot_longer(c(Fitted, Truth), names_to = "curve", values_to = "effect") |>
+  ggplot(aes(temperature_c, effect, colour = curve, linetype = curve)) +
+  geom_line(linewidth = 1) +
+  scale_linetype_manual(values = c(Fitted = "solid", Truth = "dashed")) +
+  labs(x = "Temperature (°C)", y = NULL, colour = NULL, linetype = NULL,
+       title = "Temperature: recovered well")
+
+p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+```{r}
+#| label: recovery
+tibble(
+  term = c("Depth", "Temperature"),
+  `true optimum`   = c(80, 9),
+  `fitted optimum` = c(
+    depth_curves$depth_m[which.max(depth_curves$Fitted)],
+    temp_curves$temperature_c[which.max(temp_curves$Fitted)]
+  ),
+  `correlation with true curve` = c(
+    cor(depth_curves$Fitted, depth_curves$Truth),
+    cor(temp_curves$Fitted, temp_curves$Truth)
+  )
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## One optimum found, one missed
+
+The GAM gave both terms the same freedom and used it on both: 5.5 effective degrees of freedom
+for depth, 8.1 for temperature. On temperature, it worked: the fitted optimum is 9.30 °C against
+a true 9 °C, and the fitted curve correlates 0.972 with the true one. That is a genuine recovery
+of a thermal optimum from noisy counts, and it is what these methods are for.
+
+On depth it failed completely. The fitted curve is *highest* at the shallow end, falls to a
+trough right where the true optimum sits, and recovers only slightly, placing its maximum at
+15 m where the truth puts it at 80 m. Beyond 150 m the two curves agree well; it is the shallow
+half, where most of the stations are, that is inverted. A manager reading the depth panel
+would conclude that this species does best in the shallowest water available. The truth is that
+the shallowest water is among the worst places for it.
+
+**Nothing about the method differed between the two panels.** The difference is in the data.
+
+- Temperature varies for reasons that have nothing to do with depth: season moves it by several
+  degrees, and within any 50 m depth band the standard deviation of temperature is about 2.4 °C.
+  That independent variation is what lets the model separate a temperature effect from everything
+  else.
+- Depth has no such independent driver. It is correlated with temperature (−0.46), it drives
+  chlorophyll, and it is correlated with position, and position carries a smooth spatial field
+  that the model does not include at all. Depth's fitted curve is therefore carrying pieces of
+  three other things.
+
+This is **confounding**, and it is not a nonlinearity problem. Flexibility lets a model express
+any shape; it does not tell the model which variable a shape belongs to. Handing a confounded
+predictor a spline gives you a flexible wrong answer instead of a rigid one, delivered with more
+confidence because the fit is better.
+
+::: {.callout-important}
+A better-fitting model is not a more correct model. The GAM has the best AIC of the three
+by a wide margin *and* the most wrong depth response. Fit statistics rank models by how
+well they reproduce the data; they say nothing about whether a particular curve within the
+model means what you want to read into it.
+:::
+
+## Limits of additive smoothing
+
+**Interactions are the nonlinearity people forget.** Everything above is *additive*: each
+term gets its own curve and the curves add up. If this species' thermal optimum shifts
+with depth, which is exactly what happens for many benthic species, no amount of smoothing
+on separate terms will find it. That needs `te(depth_m, temperature_c)` in a GAM, or a
+tree-based model, which gets interactions automatically.
+
+**Polynomials misbehave outside the data.** The quadratic fitted above puts its depth maximum at
+293 m, beyond the deepest station, at 195 m. Inside the sampled range it is a reasonable curve;
+extrapolated, it is nonsense.
+[Extrapolation](sampling-and-extrapolation.qmd) has its own page for this reason.
+
+**Trees find shapes but not smooth ones.** [Section 3's
+tree](../03-supervised-learning/trees-forests-boosting.qmd) would express a thermal
+optimum as two thresholds, and never produced one for depth at all. Step functions are a
+poor description of a physiological response even when they predict adequately.
+
+**The residual plot may not warn you.** The linear model's residuals, averaged in 30 m depth
+bands, range from −0.41 to +0.45 individuals against a mean count of 3.9. That is a visible
+pattern if you look for it deliberately, and easy to miss in a scatter of 741 overdispersed
+counts. Do not rely on noticing curvature by eye in count data; fit the flexible version and
+compare.
+
+::: {.callout-tip}
+## Key points
+
+- Linear models assume constant effects and no interactions. Both are usually false in marine
+  data, and the failure is quiet.
+- A GAM's **effective degrees of freedom** is the model's own report on wiggliness: 5.5 for depth
+  and 8.1 for temperature here, against 1.0 for a straight line.
+- Adding flexibility clearly improved fit: AIC 4794 → 4411 → 4361.
+- **It only recovered one of the two true optima.** Temperature came back at 9.30 °C against a
+  true 9 °C (r = 0.97); depth came back at 15 m against a true 80 m (r = 0.76).
+- The difference was confounding, not flexibility. A predictor entangled with others gets a
+  flexible wrong curve, fitted with more confidence than the rigid wrong one.
+
+:::
+
+## Try it yourself
+
+1. Add `s(longitude, latitude)` to the GAM so the spatial field has somewhere to live, and re-plot
+   the depth smooth. How much of depth's error was the model having nowhere else to put the
+   spatial structure?
+2. Replace the two separate smooths with `te(depth_m, temperature_c)` and plot the surface. Does
+   the interaction improve AIC, and does the depth response at fixed temperature look any more
+   like the truth?

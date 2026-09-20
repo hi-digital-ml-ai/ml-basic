@@ -1,0 +1,385 @@
+---
+title: "Training, validation and test data"
+description: "Why you hold data back, what each held-back piece is for, and why a random split is the wrong split for a marine survey."
+order: 6
+categories: [data-preparation, validation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## The one honest measurement
+
+[Section 1](../01-introduction/what-is-machine-learning.qmd) showed a random forest
+fitting its training data twice as well as a linear model and predicting new data
+barely better. Nothing in the model's own output revealed that. Only data the model had
+never seen did.
+
+That is the entire function of a held-back set: it is the only honest measurement you
+have. Everything in this page is about protecting it, and in marine data, protecting it
+takes more than a random split.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+### Three roles, not three files
+
+- **Training data**: the model learns its parameters from this. Coefficients, split
+  points, weights.
+- **Validation data**: used to *choose*: which model, which hyperparameters, which
+  features. Choosing is a form of learning, so these choices must not be made on the
+  test set.
+- **Test data**: used once, at the end, to report how well the chosen model does. Look
+  at it twice and it stops being a test set.
+
+The middle role is the one people skip, and skipping it is how results get oversold. If
+you try eight models and report the best one's test score, that score is the maximum of
+eight noisy numbers, which is biased upward, and the more things you try, the worse it
+gets. The test set answers *how good is this model*, never *which model is best*.
+
+::: {.callout-note collapse="true"}
+## The place of cross-validation
+A separate validation set is wasteful when data is scarce, which in marine science is
+always. Cross-validation replaces it: split the training data into folds, and let each
+fold take a turn as the validation set. The test set is untouched and still used once.
+[Section 7](../07-validation/index.qmd) covers this properly; for now, note that
+cross-validation is a smarter way to do validation, not a replacement for holding out
+a test set.
+:::
+
+### The size of the test set
+
+Common splits are 70/30, 75/25 and 80/20. There is no principle behind the specific
+numbers: it is a trade-off between training the model well and measuring it precisely.
+With a few hundred rows, a 25% test set is small enough that its score is noisy; with
+hundreds of thousands, 5% is plenty.
+
+What matters far more is *how* you split.
+
+### Stratify when a class is rare
+
+A random split of a 5% class can easily leave you with a test set containing barely any
+of it. `strata =` makes the split preserve the proportion in both halves.
+
+### The marine problem: random is not the same as independent
+
+A random split assumes rows are interchangeable. Marine data's rows are not, for the
+reasons in [the first page of this section](observations-and-features.qmd): repeat
+visits to a site, spatial proximity, and time.
+
+If station A and station B are two visits to the same site, and A lands in training
+while B lands in test, the model has effectively seen B. Its test score measures how
+well it memorised a site, not how well it generalises to a new one, and the score will
+be high.
+
+## Worked example
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_raw() |>
+  distinct() |>
+  mutate(
+    salinity_psu  = na_if(salinity_psu, -999),
+    temperature_c = na_if(temperature_c, -999),
+    depth_m       = if_else(depth_m > 250, depth_m / 10, depth_m),
+    substrate     = factor(str_to_lower(str_trim(substrate))),
+    substrate     = fct_collapse(substrate, sand = c("sand", "sandy"),
+                                 mud = c("mud", "muddy"), gravel = "gravel",
+                                 rock = c("rock", "rocky")),
+    rare_species  = factor(rare_species, levels = c("yes", "no"))
+  )
+
+nrow(survey)
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+# The same cleaning as the R tab, kept in python/mlbasic_data.py so it does not
+# have to be repeated on every page.
+survey = load_coastal_survey_clean()
+
+len(survey)
+```
+
+:::
+
+### A plain random split
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: random-split
+plain <- initial_split(survey, prop = 0.75)
+
+tibble(training = nrow(training(plain)), testing = nrow(testing(plain)))
+```
+
+## Python
+
+```python
+plain_train, plain_test = train_test_split(survey, train_size=0.75, random_state=123)
+
+pd.DataFrame({"training": [len(plain_train)], "testing": [len(plain_test)]})
+```
+
+:::
+
+### Stratifying on a rare class
+
+Our rare species is present at 5% of stations. Ask for a stratified split:
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: stratify
+set.seed(2026)
+
+unstratified <- initial_split(survey, prop = 0.75)
+stratified   <- initial_split(survey, prop = 0.75, strata = rare_species)
+
+bind_rows(
+  tibble(split = "Unstratified",
+         train_pct = 100 * mean(training(unstratified)$rare_species == "yes"),
+         test_pct  = 100 * mean(testing(unstratified)$rare_species == "yes")),
+  tibble(split = "Stratified (as asked)",
+         train_pct = 100 * mean(training(stratified)$rare_species == "yes"),
+         test_pct  = 100 * mean(testing(stratified)$rare_species == "yes"))
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Python
+
+```python
+unstrat_train, unstrat_test = train_test_split(
+    survey, train_size=0.75, random_state=2026)
+strat_train, strat_test = train_test_split(
+    survey, train_size=0.75, random_state=2026, stratify=survey["rare_species"])
+
+def prevalence(frame):
+    return round(100 * (frame["rare_species"] == "yes").mean(), 2)
+
+pd.DataFrame([
+    {"split": "Unstratified",
+     "train_pct": prevalence(unstrat_train), "test_pct": prevalence(unstrat_test)},
+    {"split": "Stratified (as asked)",
+     "train_pct": prevalence(strat_train), "test_pct": prevalence(strat_test)},
+])
+```
+
+:::
+
+Look at that carefully. The species is present at 5.1% of all stations, and the
+*stratified* split produced 6.0% in training against 2.5% in test. Stratification does
+not do that. It did not happen.
+
+::: {.callout-warning}
+## `strata` can be ignored without telling you
+`rsample` pools strata that are smaller than the `pool` argument, which defaults to
+`0.1`. Our rare class is 5.1% of the data, below the threshold, so it was pooled
+away and the split fell back to unstratified. Silently: no error, and on this version
+no warning either.
+
+This is the quietest failure in the whole section. You asked for the safety measure,
+the code ran, and you did not get it.
+
+scikit-learn has no pooling step, so `stratify=` splits the rare class directly and the
+Python tab holds the prevalence from the start. That is a difference in defaults, not a
+difference in principle: the lesson below applies to whichever you use.
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: stratify-properly
+#| warning: true
+set.seed(2026)
+
+properly <- initial_split(survey, prop = 0.75, strata = rare_species, pool = 0.01)
+
+tibble(
+  train_pct = round(100 * mean(training(properly)$rare_species == "yes"), 2),
+  test_pct  = round(100 * mean(testing(properly)$rare_species == "yes"), 2)
+)
+```
+
+## Python
+
+```python
+# scikit-learn's stratify has no pooling step to opt out of: it splits each
+# class directly, so the rare class is already divided as closely as the counts
+# allow. The R tab needs pool = 0.01 to get the same behaviour.
+pd.DataFrame({
+    "train_pct": [prevalence(strat_train)],
+    "test_pct": [prevalence(strat_test)],
+})
+```
+
+:::
+
+Now it holds: 5.0% against 5.5%, either side of the 5.1% in the full data. Note that
+lowering `pool` produces a warning of its own, and the warning is fair: stratifying on
+41 positive cases is statistically thin. But thin and honest beats absent and silent.
+
+The general lesson is bigger than one argument: **check that a safeguard did what you
+asked**, by looking at the result rather than at the code.
+
+### The split that respects sites
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: group-split
+grouped <- group_initial_split(survey, group = site_id, prop = 0.75)
+
+train_g <- training(grouped)
+test_g  <- testing(grouped)
+
+tibble(
+  training_rows  = nrow(train_g),
+  testing_rows   = nrow(test_g),
+  sites_in_both  = length(intersect(train_g$site_id, test_g$site_id))
+)
+```
+
+## Python
+
+```python
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+
+train_g, test_g = survey.iloc[train_rows], survey.iloc[test_rows]
+
+pd.DataFrame({
+    "training_rows": [len(train_g)],
+    "testing_rows": [len(test_g)],
+    "sites_in_both": [len(set(train_g["site_id"]) & set(test_g["site_id"]))],
+})
+```
+
+:::
+
+No site appears in both halves. Compare that with the random split:
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: shared-sites
+tibble(
+  `random split: sites in both halves` =
+    length(intersect(training(plain)$site_id, testing(plain)$site_id)),
+  `random split: test rows at a site the model has seen` =
+    sum(testing(plain)$site_id %in% training(plain)$site_id),
+  `as a percentage of the test set` =
+    round(100 * mean(testing(plain)$site_id %in% training(plain)$site_id), 1)
+)
+```
+
+## Python
+
+```python
+seen = plain_test["site_id"].isin(plain_train["site_id"])
+
+pd.DataFrame({
+    "random split: sites in both halves":
+        [len(set(plain_train["site_id"]) & set(plain_test["site_id"]))],
+    "random split: test rows at a site the model has seen": [int(seen.sum())],
+    "as a percentage of the test set": [round(100 * seen.mean(), 1)],
+})
+```
+
+:::
+
+Under the random split, *every single one* of the 200 test stations sits at a site the
+model has already trained on. Not most, all of them. Whatever that test set is measuring,
+it is not performance at a new location, which is what a habitat map is for.
+
+## Two splits, two questions
+
+Two splits of the same data, two different questions:
+
+| Split | Question it answers |
+| --- | --- |
+| Random | How well does the model predict *another station at a site I have surveyed*? |
+| Grouped by site | How well does the model predict *a site I have never surveyed*? |
+
+Both are legitimate. They are not interchangeable, and the second is usually what
+marine work claims and the first is usually what marine work measures. The gap between
+the two numbers is the size of that mistake, and
+[section 7](../07-validation/index.qmd) measures it directly.
+
+The rule that follows is short: **split along whatever dimension you intend to
+generalise across.** New sites, split by site. Next year, split by year. A new survey
+vessel, split by vessel. If you will only ever predict more stations within the same
+programme, a random split is honest.
+
+## Limits of a single split
+
+**The test set is a single draw.** With 200 test rows, its score carries real
+uncertainty, and two different seeds give two different answers. Report it as an
+estimate, not a measurement.
+
+**Splitting by group shrinks the effective size of both halves.** 160 sites split
+75/25 gives 120 training sites and 40 test sites, and 40 is not many. Honest and small
+beats optimistic and large, but the cost is real.
+
+**Hold-out sets erode with use.** Every time you check the test set and change
+something, a little of its independence is spent. The only defence is discipline:
+decide everything on the training data, then look once.
+
+**Stratifying on a continuous outcome is possible but blunt.** `strata =` bins the
+variable first, which is fine for a skewed response and not a substitute for thinking
+about what makes your data unbalanced.
+
+::: {.callout-tip}
+## Key points
+- Training fits, validation chooses, test reports. Using the test set to choose turns
+  it into a validation set and inflates your result.
+- Stratify when a class is rare, or your test set may contain too few of it to measure
+  anything.
+- A random split assumes rows are interchangeable. Repeat visits, spatial proximity and
+  time all break that assumption.
+- Split along the dimension you intend to generalise across: new sites, new years, new
+  vessels.
+- Here, a random split puts most test stations at sites the model has already trained
+  on, so it answers a much easier question than the one being asked.
+:::
+
+## Try it yourself
+
+1. Run the random split with three different seeds and record the proportion of the
+   rare species in each test set. How much does it move?
+2. Fit the same model under `initial_split()` and under `group_initial_split()`, and
+   compare test RMSE. The difference is what a random split was hiding, and it is the
+   subject of [section 7](../07-validation/index.qmd).

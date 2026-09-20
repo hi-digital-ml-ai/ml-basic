@@ -1,0 +1,14 @@
+::: {.callout-note collapse="true"}
+## About the Python tabs
+Most code blocks on this page have an **R** and a **Python** tab, and picking one
+switches the whole page. The R tab is what produced the tables and figures you see;
+the Python tab is the scikit-learn equivalent, shown for translation rather than
+executed by the site. Figures stay in R throughout, and a few steps with no
+scikit-learn counterpart have no Python tab, which is itself worth noticing.
+
+It is real code, not pseudocode: it runs against the same files through
+`python/mlbasic_data.py`, and `python/check-snippets.py` executes every snippet in
+the site to keep it honest. Expect the **numbers to differ slightly**: R and Python
+draw their random splits from different generators, so the split is not the same one.
+The conclusions are.
+:::

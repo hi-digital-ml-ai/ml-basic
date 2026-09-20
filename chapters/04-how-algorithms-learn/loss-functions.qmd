@@ -1,0 +1,302 @@
+---
+title: "Loss and objective functions"
+description: "The scorecard a model is trying to improve, and why choosing it is a scientific decision, not a technical default."
+order: 1
+categories: [optimisation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## The scorecard behind every fit
+
+Every model in [section 3](../03-supervised-learning/index.qmd) was fitted by something.
+That something was an algorithm searching for parameter values that made a number as
+small as possible. The number is the **loss**, and nobody told you what it was.
+
+This matters more than it sounds. A model fitted to minimise squared error is a model
+that has been instructed to care enormously about a handful of large catches and barely
+at all about the many small ones. That is a decision about your science. If you did not
+make it deliberately, it was made for you by a package default.
+
+This page is about what that number is, what the common choices imply, and how to tell
+which one your question needs.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+### A loss scores one prediction
+
+A **loss function** takes one observation, what you predicted and what actually happened,
+and returns a number saying how bad that was. Zero means perfect. Larger is worse.
+
+The station-level residual is the raw material: $r_i = y_i - \hat{y}_i$, where $y_i$ is
+the count you observed at station $i$ and $\hat{y}_i$ is what the model expected. The
+loss turns that residual into a penalty, and the three common choices disagree sharply
+about how to do it.
+
+- **Squared error**, $r^2$. Being 10 out is a hundred times worse than being 1 out.
+- **Absolute error**, $|r|$. Being 10 out is ten times worse than being 1 out.
+- **Huber**, squared for small residuals and absolute beyond a threshold $\delta$.
+  A deliberate compromise.
+
+```{r}
+#| label: fig-loss-shapes
+#| fig-cap: "Three loss functions, as a function of how wrong one prediction is. Squared error curves upward without limit; absolute error is a straight V; Huber follows the squared curve near zero and straightens out beyond ±2. The differences are invisible for small residuals and enormous for large ones."
+#| fig-alt: "Three curves on axes of residual from minus ten to ten against penalty from zero to about fifty. The squared-error curve is a steep parabola reaching fifty at a residual of seven. The absolute-error curve is a shallow V reaching only ten at the same point. The Huber curve sits on the parabola between minus two and two, then continues as two straight lines just above the V. All three meet at zero."
+#| fig-width: 7
+#| fig-height: 4
+huber <- function(r, delta = 2) {
+  ifelse(abs(r) <= delta, 0.5 * r^2, delta * (abs(r) - 0.5 * delta))
+}
+
+tibble(r = seq(-10, 10, length.out = 400)) |>
+  mutate(
+    `Squared error` = r^2,
+    `Absolute error` = abs(r),
+    `Huber (δ = 2)` = huber(r)
+  ) |>
+  pivot_longer(-r, names_to = "loss", values_to = "penalty") |>
+  ggplot(aes(r, penalty, colour = loss)) +
+  geom_line(linewidth = 1) +
+  coord_cartesian(ylim = c(0, 50)) +
+  labs(
+    x = "Residual: observed − predicted (individuals)",
+    y = "Penalty", colour = NULL,
+    title = "The same miss, priced three ways"
+  )
+```
+
+### An objective is what the algorithm actually minimises
+
+The loss is per observation. The algorithm needs one number for the whole dataset, so it
+averages: the **objective function** (also called the *cost*). For squared error that
+average is the mean squared error, and its square root is the RMSE that section 3 reported
+throughout.
+
+An objective can also carry terms that have nothing to do with the data. Add a penalty on
+the size of the coefficients and you get regularisation: the objective becomes "fit the
+data well *and* keep the parameters small". That is [section
+5](../05-generalisation/index.qmd)'s subject, and [MAP estimation](map-and-priors.qmd)
+later in this section explains where such a term comes from.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+
+For parameters $\theta$ and $n$ observations, the objective is
+
+$$J(\theta) = \frac{1}{n}\sum_{i=1}^{n} L\!\left(y_i, \hat{y}_i(\theta)\right) + \lambda P(\theta)$$
+
+where $L$ is the loss, $\hat{y}_i(\theta)$ is the model's prediction for station $i$ under
+those parameters, $P(\theta)$ is an optional penalty on the parameters themselves, and
+$\lambda$ sets how much that penalty counts. Fitting means finding the $\theta$ that makes
+$J$ smallest. With $\lambda = 0$ there is no penalty and the objective is the average loss.
+:::
+
+## Worked example
+
+We will fit the same one-predictor model, abundance against chlorophyll, three times,
+changing nothing except the loss. `optim()` does the searching; the function we hand it
+is the only difference between the three fits.
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, chlorophyll_mg_m3) |>
+  drop_na()
+
+X <- cbind(1, d$chlorophyll_mg_m3)
+y <- d$abundance
+
+fit_loss <- function(loss_fn) {
+  optim(c(0, 0), function(b) mean(loss_fn(y - X %*% b)),
+        method = "BFGS", control = list(reltol = 1e-14, maxit = 5000))$par
+}
+
+coefs <- tibble(
+  loss      = c("Squared error", "Absolute error", "Huber (δ = 2)"),
+  intercept = c(fit_loss(\(r) r^2)[1], fit_loss(abs)[1], fit_loss(huber)[1]),
+  slope     = c(fit_loss(\(r) r^2)[2], fit_loss(abs)[2], fit_loss(huber)[2])
+)
+coefs |> mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Three different answers from one dataset. The squared-error line starts at 2.36
+individuals and rises 1.15 per mg m⁻³ of chlorophyll; the absolute-error line starts less
+than half as high, at 1.13, and rises slightly more slowly.
+
+Note also that the squared-error row is exactly what `lm()` returns. Least squares is not
+a separate technique: it is this search, with $r^2$ as the loss, and a shortcut that
+skips the searching (which is [the next page](parameter-estimation.qmd)).
+
+```{r}
+#| label: fig-three-lines
+#| fig-cap: "The three fitted lines over the 749 stations with chlorophyll measured. The squared-error line is pulled upward and steeper by a small number of very large catches in the upper right; the absolute-error line tracks the bulk of the stations, most of which caught fewer than five individuals."
+#| fig-alt: "A scatter plot of abundance against chlorophyll for 749 stations. Most points lie below ten individuals and below six milligrams per cubic metre, forming a dense cloud near the origin, with a scatter of high catches up to forty extending to the right. Three fitted lines rise from left to right. The squared-error line sits highest, the Huber line in the middle, and the absolute-error line lowest, all three converging near the right-hand edge of the data."
+#| fig-width: 7
+#| fig-height: 4.6
+ggplot(d, aes(chlorophyll_mg_m3, abundance)) +
+  geom_point(alpha = 0.25, colour = ml_palette[["grey"]], size = 1.3) +
+  geom_abline(
+    data = coefs, aes(intercept = intercept, slope = slope, colour = loss),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Chlorophyll (mg m⁻³)", y = "Abundance (individuals)", colour = NULL,
+    title = "One dataset, three losses, three answers"
+  )
+```
+
+### The source of the difference
+
+Squared error is dominated by the worst stations. We can measure that directly.
+
+```{r}
+#| label: error-share
+residuals <- as.vector(y - X %*% fit_loss(\(r) r^2))
+worst <- order(residuals^2, decreasing = TRUE)[1:round(0.05 * length(y))]
+
+tibble(
+  measure = c("Squared error", "Absolute error"),
+  `share from worst 5% of stations` = c(
+    sum(residuals[worst]^2) / sum(residuals^2),
+    sum(abs(residuals[worst])) / sum(abs(residuals))
+  )
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+Thirty-seven stations, 5% of the data, supply **49.7%** of the total squared error and
+only 21.0% of the total absolute error. When a squared-error algorithm searches for better
+parameters, half of what it is trying to improve comes from those thirty-seven stations.
+The other 712 barely register.
+
+The consequence is leverage. Drop the single largest catch, 40 individuals, and refit:
+
+```{r}
+#| label: drop-one
+d_minus <- d |> slice(-which.max(abundance))
+X2 <- cbind(1, d_minus$chlorophyll_mg_m3)
+y2 <- d_minus$abundance
+
+fit_loss2 <- function(loss_fn) {
+  optim(c(0, 0), function(b) mean(loss_fn(y2 - X2 %*% b)),
+        method = "BFGS", control = list(reltol = 1e-14, maxit = 5000))$par
+}
+
+tibble(
+  loss = c("Squared error", "Absolute error"),
+  `slope, all 749` = c(coefs$slope[1], coefs$slope[2]),
+  `slope, minus one station` = c(fit_loss2(\(r) r^2)[2], fit_loss2(abs)[2])
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## The price of one station
+
+Removing **one station out of 749** moves the least-squares slope from 1.154 to 0.998, a
+13.5% change in the headline quantity, from deleting 0.13% of the data. The same deletion
+moves the absolute-error slope by 2.1%.
+
+That is the trade-off stated as plainly as it can be. Squared error is sensitive to
+extremes; absolute error is not. Neither property is a defect. Which one you want depends
+entirely on what the large catches are:
+
+- **A real aggregation you need to predict.** Fish shoal; the big hauls are the biologically
+  interesting ones, and a model that shrugs them off is useless for anything involving
+  biomass or quota. Squared error is right, and its sensitivity is the feature.
+- **Sampling noise, or a net that fished badly.** Then you have handed half of the
+  objective to your least trustworthy observations. Absolute error or Huber is right.
+
+The honest position is that you usually cannot tell from the data which of those you have,
+and the choice has to be argued from how the survey works. State the loss you used and why,
+in the methods section, next to the model.
+
+::: {.callout-warning}
+RMSE is not a neutral referee. If you fit three models by minimising squared error and
+then compare them by RMSE, you have asked a question that squared-error fitting is already
+optimised to answer. Comparing under a different loss than you fitted under is legitimate
+and sometimes revealing, but it will not flatter your models, and you should expect the
+ranking to move.
+:::
+
+### Losses for things that are not continuous
+
+Squared error assumes the response is a quantity that can sit anywhere on a line. Counts
+and classes are not, and each gets its own loss.
+
+| Response | Usual loss | What it penalises |
+| --- | --- | --- |
+| Continuous | Squared error (RMSE) | Large misses, disproportionately |
+| Continuous, outlier-prone | Absolute error (MAE) or Huber | Misses in proportion |
+| Counts | Poisson deviance | Being wrong by 5 when you expected 2, more than when you expected 200 |
+| Two classes | Log loss (cross-entropy) | Confident wrong answers, severely |
+| Two classes, unequal costs | Weighted log loss | Whichever error you declared expensive |
+
+Poisson deviance is why [section 3's count
+models](../03-supervised-learning/linear-and-polynomial-regression.qmd) behaved sensibly.
+It scales the penalty with the expected count, so missing by 5 individuals matters far
+more where you expected 2 than where you expected 200, which is how counting animals
+actually works. Every one of these losses comes out of the same principle, and [maximum
+likelihood](maximum-likelihood.qmd) later in this section is that principle.
+
+Log loss deserves a note of its own. It punishes confident mistakes very hard: predicting
+0.99 for a station that turns out to be empty costs roughly seven times what predicting
+0.5 costs. A model fitted under log loss is therefore a model trained to be honest about
+its uncertainty, which is not the same as being accurate.
+
+## Limits of a tractable loss
+
+**The loss you can optimise is rarely the loss you care about.** What you want may be
+"rank the top twenty candidate sites correctly" or "never miss a spawning aggregation".
+These are not smooth functions of the parameters, so no gradient-based algorithm can
+minimise them. In practice you fit under a tractable loss and *evaluate* under the one you
+care about, which is [section 7](../07-validation/index.qmd)'s subject, and the reason the
+two need not be the same function.
+
+**Minimising loss on your data is not the goal.** The objective is computed on the stations
+you have; the aim is stations you do not. Driving the training objective to zero is
+achievable and is usually a disaster. That is
+[section 5](../05-generalisation/index.qmd), and it is the reason objectives grow penalty
+terms.
+
+**Classification accuracy is not a loss.** It cannot be optimised directly, being a step
+function, flat almost everywhere with no gradient to follow, which is why classifiers are
+fitted under log loss and only then thresholded. Section 3's
+[logistic model](../03-supervised-learning/logistic-regression.qmd) had a respectable log
+loss and predicted presence zero times; the fitting was working exactly as specified.
+
+::: {.callout-tip}
+## Key points
+
+- A **loss** scores one prediction; an **objective** is the average loss over the dataset,
+  plus any penalty on the parameters. Fitting means making the objective small.
+- Squared error prices a miss of 10 at a hundred times a miss of 1. Here, 5% of stations
+  supplied half the total squared error, and deleting one station of 749 moved the slope 13.5%.
+- Absolute error and Huber are steadier; use them when the extremes are noise, and squared
+  error when the extremes are the science.
+- Counts and classes get their own losses, Poisson deviance and log loss, and they come from
+  the same principle, not from a list of special cases.
+- The loss is a scientific choice. Report it.
+
+:::
+
+## Try it yourself
+
+1. Refit the three losses with `depth_m` as the predictor instead of chlorophyll. Depth's
+   true effect is hump-shaped, so a straight line is wrong for all three. Does the
+   disagreement between the losses get larger or smaller, and why?
+2. Set Huber's `delta` to 0.5 and to 20 and refit. Confirm that the coefficients approach
+   the absolute-error fit at one extreme and the squared-error fit at the other, and find
+   roughly where the switch happens.

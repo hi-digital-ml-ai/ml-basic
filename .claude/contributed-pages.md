@@ -1,8 +1,8 @@
 # Contributed pages
 
 Pages that course participants produce from their own data. The participants are
-**researchers, not students** — domain experts in fisheries, oceanography, ecology,
-genomics — who are new to ML but not to science. Treat a contribution as a colleague's
+**researchers, not students**: domain experts in fisheries, oceanography, ecology and
+genomics who are new to ML but not to science. Treat a contribution as a colleague's
 short paper, not as homework to be marked.
 
 ## Purpose
@@ -11,14 +11,27 @@ These pages are the payoff of the course: they show the same tidymodels patterns
 applied to real, messy, domain-specific data. They are also the part readers arrive
 at from outside, so they carry the site's credibility.
 
+Contributed pages are **R-only**. The site's build executes R and nothing else,
+and the Python tabs in sections 2, 3, 5, 7, 8 and 10 are displayed, never run, so a
+page whose results come from Python has no way to produce them here. If a
+contributor works in Python, that is a conversation to have before the page is
+written, not a tab to bolt on afterwards.
+
 ## Where they live
 
 ```
 contributed/
   index.qmd                       listing page
+  writing-a-contributed-page.qmd  the reader-facing version of this doc
+  _template.qmd                   starting point for a new contribution
   2026-<author-slug>-<topic>.qmd  e.g. 2026-nakamura-otolith-ageing.qmd
   img/                            figures, prefixed with the author slug
 ```
+
+`writing-a-contributed-page.qmd` says all of this to the contributor in the site's
+own voice, so the two move together: change a rule here and change it there. The
+index listing globs `20*.qmd`, which is what keeps the guide page off the cards, so
+a contribution whose filename lacks the year prefix will not appear.
 
 Front matter is mandatory and complete:
 
@@ -54,13 +67,13 @@ Before publishing anything, confirm with the author:
 Preserve the author's voice and their scientific judgement. Edit for:
 
 - broken or non-reproducing code, missing seeds, missing `renv` dependencies;
-- **methodological traps the course itself warns about** — leakage, random CV on
+- **methodological traps the course itself warns about**: leakage, random CV on
   spatially autocorrelated data, accuracy reported on an imbalanced problem,
   extrapolation beyond the sampled range. Raise these with the author rather than
   silently rewriting the analysis; if they stand by it, publish with a note.
 - consistency of headings, figure captions, alt text and categories.
 
-Do not impose the chapter page skeleton on a contribution — its shape follows the
+Do not impose the chapter page skeleton on a contribution; its shape follows the
 author's analysis. Do keep the "Key points" callout and figure alt text.
 
 ## Review flow

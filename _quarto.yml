@@ -1,0 +1,234 @@
+project:
+  type: website
+  output-dir: _site
+  # Pulls the R and Python out of every page into runnable scripts and zips them,
+  # so the downloads cannot drift from the pages they came from. It runs *before*
+  # the pages so the links to it resolve. See tools/README.md.
+  pre-render:
+    - tools/extract-code.py
+  resources:
+    - downloads/
+
+website:
+  title: "ML Basics for Marine Science"
+  description: "An introduction to machine learning for marine researchers, with worked tidymodels examples."
+  site-url: https://hi-digital-ml-ai.github.io/ml-basic/
+  repo-url: https://github.com/hi-digital-ml-ai/ml-basic
+  search: true
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: chapters/index.qmd
+        text: Course
+      - href: contributed/index.qmd
+        text: Contributed
+    right:
+      # The repo is private, so this link only opens for people with access.
+      - icon: github
+        href: https://github.com/hi-digital-ml-ai/ml-basic
+        aria-label: "Source on GitHub"
+  sidebar:
+    style: docked
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: Welcome
+      - section: "Toolkit"
+        contents:
+          - href: toolkit/r-with-tidymodels.qmd
+            text: "R with tidymodels"
+          - href: toolkit/python-with-scikit-learn.qmd
+            text: "Python with scikit-learn"
+      - section: "1 · Introduction"
+        href: chapters/01-introduction/index.qmd
+        contents:
+          - href: chapters/01-introduction/what-is-machine-learning.qmd
+            text: "The same data, fitted two ways"
+          - href: chapters/01-introduction/applications-in-marine-science.qmd
+            text: "Applications, grouped by task shape"
+          - href: chapters/01-introduction/types-of-learning.qmd
+            text: "The main types of learning"
+          - href: chapters/01-introduction/prediction-and-explanation.qmd
+            text: "Prediction versus explanation"
+      - section: "2 · Marine datasets"
+        href: chapters/02-marine-data/index.qmd
+        contents:
+          - href: chapters/02-marine-data/observations-and-features.qmd
+            text: "One row is a decision"
+          - href: chapters/02-marine-data/marine-data-types.qmd
+            text: "Kinds of marine data"
+          - href: chapters/02-marine-data/exploratory-analysis.qmd
+            text: "Looking before modelling"
+          - href: chapters/02-marine-data/missing-values-and-outliers.qmd
+            text: "Missing values, outliers and imbalance"
+          - href: chapters/02-marine-data/scaling-and-encoding.qmd
+            text: "Scaling, transforming and encoding"
+          - href: chapters/02-marine-data/splitting-data.qmd
+            text: "Training, validation and test data"
+          - href: chapters/02-marine-data/information-leakage.qmd
+            text: "Avoiding information leakage"
+      - section: "3 · Supervised learning"
+        href: chapters/03-supervised-learning/index.qmd
+        contents:
+          - href: chapters/03-supervised-learning/regression-and-classification.qmd
+            text: "Regression or classification?"
+          - href: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+            text: "Linear, polynomial and count regression"
+          - href: chapters/03-supervised-learning/logistic-regression.qmd
+            text: "Logistic regression"
+          - href: chapters/03-supervised-learning/trees-forests-boosting.qmd
+            text: "Trees, forests and boosting"
+          - href: chapters/03-supervised-learning/choosing-a-method.qmd
+            text: "Choosing a method"
+      - section: "4 · How algorithms learn"
+        href: chapters/04-how-algorithms-learn/index.qmd
+        contents:
+          - href: chapters/04-how-algorithms-learn/loss-functions.qmd
+            text: "Loss and objective functions"
+          - href: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+            text: "Parameter estimation"
+          - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
+            text: "Gradient descent"
+          - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
+            text: "Maximum likelihood"
+          - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
+            text: "MAP estimation and priors"
+          - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
+            text: "Reading a fit"
+      - section: "5 · Generalisation"
+        href: chapters/05-generalisation/index.qmd
+        contents:
+          - href: chapters/05-generalisation/training-versus-new-data.qmd
+            text: "Training error vs the error that matters"
+          - href: chapters/05-generalisation/underfitting-and-overfitting.qmd
+            text: "Underfitting and overfitting"
+          - href: chapters/05-generalisation/model-complexity.qmd
+            text: "Model complexity"
+          - href: chapters/05-generalisation/bias-variance.qmd
+            text: "The bias–variance trade-off"
+          - href: chapters/05-generalisation/regularisation.qmd
+            text: "Regularisation"
+          - href: chapters/05-generalisation/hyperparameter-selection.qmd
+            text: "Hyperparameter selection"
+      - section: "6 · Assumptions & limitations"
+        href: chapters/06-assumptions-limitations/index.qmd
+        contents:
+          - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
+            text: "Independence of observations"
+          - href: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+            text: "Linearity and nonlinearity"
+          - href: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+            text: "Distributional assumptions"
+          - href: chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd
+            text: "Spatial and temporal dependence"
+          - href: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+            text: "Uneven sampling and extrapolation"
+          - href: chapters/06-assumptions-limitations/class-imbalance.qmd
+            text: "Class imbalance"
+      - section: "7 · Validation"
+        href: chapters/07-validation/index.qmd
+        contents:
+          - href: chapters/07-validation/cross-validation.qmd
+            text: "Cross-validation"
+          - href: chapters/07-validation/spatial-and-temporal-cv.qmd
+            text: "Spatial and temporal cross-validation"
+          - href: chapters/07-validation/regression-metrics.qmd
+            text: "Regression performance measures"
+          - href: chapters/07-validation/classification-metrics.qmd
+            text: "Classification measures and the confusion matrix"
+          - href: chapters/07-validation/uncertainty-and-stability.qmd
+            text: "Uncertainty and stability"
+          - href: chapters/07-validation/choosing-a-metric.qmd
+            text: "Choosing measures that match the objective"
+      - section: "8 · Unsupervised learning"
+        href: chapters/08-unsupervised-learning/index.qmd
+        contents:
+          - href: chapters/08-unsupervised-learning/clustering.qmd
+            text: "Clustering"
+          - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+            text: "Choosing the number of clusters"
+          - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
+            text: "Hierarchical and model-based clustering"
+          - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+            text: "Principal component analysis"
+          - href: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+            text: "Dimensionality reduction in practice"
+          - href: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+            text: "Interpreting patterns, and their limits"
+      - section: "9 · Neural networks"
+        href: chapters/09-neural-networks/index.qmd
+        contents:
+          - href: chapters/09-neural-networks/what-a-network-is.qmd
+            text: "Neurons, layers and activations"
+          - href: chapters/09-neural-networks/forward-and-backward.qmd
+            text: "Forward propagation and backpropagation"
+          - href: chapters/09-neural-networks/training-a-network.qmd
+            text: "Training a network"
+          - href: chapters/09-neural-networks/how-much-data.qmd
+            text: "How much data a network needs"
+          - href: chapters/09-neural-networks/autoencoders.qmd
+            text: "Autoencoders"
+          - href: chapters/09-neural-networks/when-to-use-one.qmd
+            text: "When a network is the right tool"
+      - section: "10 · Interpretation"
+        href: chapters/10-interpretation/index.qmd
+        contents:
+          - href: chapters/10-interpretation/feature-importance.qmd
+            text: "Feature importance"
+          - href: chapters/10-interpretation/partial-effects.qmd
+            text: "Partial effects"
+          - href: chapters/10-interpretation/black-box-or-not.qmd
+            text: "Black boxes and interpretable models"
+          - href: chapters/10-interpretation/reproducibility.qmd
+            text: "Reproducibility and reporting"
+          - href: chapters/10-interpretation/communicating-uncertainty.qmd
+            text: "Communicating uncertainty"
+          - href: chapters/10-interpretation/from-model-to-claim.qmd
+            text: "From a model to a claim"
+      - section: "More"
+        contents:
+          - href: chapters/index.qmd
+            text: All pages
+          - href: contributed/index.qmd
+            text: Contributed pages
+          - href: contributed/writing-a-contributed-page.qmd
+            text: "Writing a contributed page"
+  page-footer:
+    left: "Machine Learning Basics for Marine Science"
+    right: "Built with [Quarto](https://quarto.org) and [tidymodels](https://www.tidymodels.org)"
+
+format:
+  html:
+    theme: [cosmo, styles.scss]
+    page-layout: full
+    grid:
+      sidebar-width: 300px
+      body-width: 1250px
+      margin-width: 250px
+      gutter-width: 1.6rem
+    toc: true
+    toc-depth: 3          # 2 trips a Quarto 1.9.38 bug: the list renders
+    toc-title: "On this page"   # as <ul class="collapse"> and never unhides.
+    code-copy: true
+    code-overflow: wrap
+    code-link: true
+    fig-align: center
+    df-print: kable
+
+# Adds the "Code from this page" line to every page that has code.
+filters:
+  - tools/code-downloads.lua
+
+execute:
+  freeze: auto
+  warning: false
+  message: false
+
+knitr:
+  opts_chunk:
+    dev: png
+    dpi: 200
+    fig-width: 7
+    fig-height: 4.5
+    comment: "#>"

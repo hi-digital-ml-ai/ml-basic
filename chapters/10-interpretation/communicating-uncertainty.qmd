@@ -1,0 +1,549 @@
+---
+title: "Communicating uncertainty"
+description: "Three intervals that answer three different questions, one of which covers 29% of the observations it is routinely drawn around, and what happens to a coverage guarantee when the data stops being exchangeable."
+order: 5
+categories: [uncertainty, interpretation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(probably)
+library(mgcv)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## A number without an interval
+
+"Predicted abundance at this station is 4.6" is not a result. "Predicted abundance is 4.6,
+and a new grab there would plausibly return anything from 0 to 16" is a result, and it is a
+much less impressive-sounding one, which is the reason the first version gets published.
+
+There is also a technical trap here that catches careful people. There are three different
+uncertainties in a fitted model, they differ in width by a factor of three or more, and the
+one that is easiest to obtain is almost never the one being asked about.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## Three questions
+
+| Question | What it is | Typical width here |
+| --- | --- | --- |
+| How well do I know the **average** count under these conditions? | Confidence interval on the mean | narrow |
+| What would a **new grab** at this station return? | Prediction interval | wide |
+| How well do I know my **model's performance**? | Spread across resamples (§7) | n/a |
+
+The first two are what this page is about. They are not versions of the same thing with
+different labels: the first describes uncertainty about a parameter and shrinks as you
+collect more stations, while the second includes the sampling noise of an individual count
+and does not shrink at all.
+
+## The setup
+
+We split three ways: a fitting set, a **calibration** set used only to size intervals, and a
+test set used only to check whether the intervals do what they claim.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: setup-data
+survey <- load_coastal_survey_clean()
+
+modelling <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
+         substrate, season, longitude, latitude) |>
+  drop_na()
+
+set.seed(15)
+first_split <- initial_split(modelling, prop = 0.6)
+fitting <- training(first_split)
+
+set.seed(16)
+second_split <- initial_split(testing(first_split), prop = 0.5)
+calibration <- training(second_split)
+test        <- testing(second_split)
+
+set.seed(2)
+forest <- workflow() |>
+  add_recipe(recipe(abundance ~ ., data = fitting) |>
+               step_dummy(all_nominal_predictors())) |>
+  add_model(rand_forest(trees = 800) |>
+              set_engine("ranger", seed = 1) |> set_mode("regression")) |>
+  fit(fitting)
+
+c(fitting = nrow(fitting), calibration = nrow(calibration), test = nrow(test))
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "longitude", "latitude"]
+modelling = survey[columns].dropna().reset_index(drop=True)
+encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+
+# Three parts, not two: one to fit on, one to calibrate the intervals on, one
+# to judge them with.
+fitting_rows, rest = train_test_split(np.arange(len(modelling)),
+                                      train_size=0.6, random_state=15)
+calibration_rows, test_rows = train_test_split(rest, train_size=0.5,
+                                               random_state=16)
+
+fitting = modelling.iloc[fitting_rows]
+calibration = modelling.iloc[calibration_rows]
+test = modelling.iloc[test_rows]
+
+forest = RandomForestRegressor(n_estimators=800, random_state=1).fit(
+    encoded.iloc[fitting_rows], fitting["abundance"])
+
+pd.Series({"fitting": len(fitting), "calibration": len(calibration),
+           "test": len(test)})
+
+def spline(column, df, frame):
+    """Knots spanning the whole dataset, so that a fold holding an extreme
+    station can still be scored: patsy refuses to extrapolate."""
+    return (f"bs({column}, df={df}, lower_bound={frame[column].min()},"
+            f" upper_bound={frame[column].max()})")
+
+def spline_formula(frame):
+    # There is no mgcv in Python. A spline basis feeding the same negative
+    # binomial is the closest honest equivalent: the wiggliness comes from the
+    # number of knots rather than from a penalty the fit estimates.
+    return "abundance ~ " + " + ".join([
+        spline("depth_m", 8, frame), spline("temperature_c", 8, frame),
+        spline("chlorophyll_mg_m3", 8, frame),
+        spline("longitude", 5, frame), spline("latitude", 5, frame),
+        "C(substrate)", "C(season)", "salinity_psu",
+    ])
+```
+
+:::
+
+A 95% interval should contain the observed count at 95% of test stations. That is the only
+check that matters, and it is one line of code, and it is almost never run.
+
+## The interval most people publish
+
+A GAM gives you a confidence band for free, and it is the obvious thing to plot.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: gam-intervals
+gam_fit <- gam(abundance ~ s(depth_m, k = 8) + s(temperature_c, k = 8) +
+                 s(chlorophyll_mg_m3, k = 8) + s(longitude, latitude, k = 30) +
+                 substrate + season + salinity_psu,
+               family = nb(), data = fitting)
+
+link <- predict(gam_fit, test, type = "link", se.fit = TRUE)
+mean_lower <- exp(link$fit - 1.96 * link$se.fit)
+mean_upper <- exp(link$fit + 1.96 * link$se.fit)
+
+theta <- gam_fit$family$getTheta(TRUE)
+expected <- exp(link$fit)
+new_lower <- qnbinom(0.025, mu = expected, size = theta)
+new_upper <- qnbinom(0.975, mu = expected, size = theta)
+
+coverage <- function(lower, upper, label) {
+  tibble(interval = label,
+         `covers the observed count` = mean(test$abundance >= lower & test$abundance <= upper),
+         `mean width` = mean(upper - lower))
+}
+
+bind_rows(
+  coverage(mean_lower, mean_upper, "95% confidence interval on the mean"),
+  coverage(new_lower, new_upper, "95% prediction interval for a new count")
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+from scipy import stats
+
+formula = spline_formula(modelling)
+
+# Two steps, because statsmodels separates them: estimate the dispersion with
+# the discrete negative binomial, then refit as a GLM at that dispersion so
+# that standard errors on the link scale are available.
+dispersion = smf.negativebinomial(formula, fitting).fit(
+    method="bfgs", maxiter=2000, disp=0).params["alpha"]
+theta = 1 / dispersion
+
+gam_fit = smf.glm(formula, fitting,
+                  family=sm.families.NegativeBinomial(alpha=dispersion)).fit()
+
+link = gam_fit.get_prediction(test)
+mean_lower = np.exp(link.linpred.predicted - 1.96 * link.linpred.se)
+mean_upper = np.exp(link.linpred.predicted + 1.96 * link.linpred.se)
+
+expected = np.exp(link.linpred.predicted)
+new_lower = stats.nbinom.ppf(0.025, n=theta, p=theta / (theta + expected))
+new_upper = stats.nbinom.ppf(0.975, n=theta, p=theta / (theta + expected))
+
+def coverage(lower, upper, label):
+    observed = test["abundance"].to_numpy()
+    return {"interval": label,
+            "covers the observed count":
+                np.mean((observed >= lower) & (observed <= upper)),
+            "mean width": np.mean(upper - lower)}
+
+pd.DataFrame([
+    coverage(mean_lower, mean_upper, "95% confidence interval on the mean"),
+    coverage(new_lower, new_upper, "95% prediction interval for a new count"),
+]).round(3)
+```
+
+:::
+
+**The confidence band covers 29% of the observations.** It is not broken; it was never
+answering that question. It describes where the *average* count lies under those conditions,
+which is a quantity you cannot observe, and it averages 4.2 counts wide because 432 stations
+pin an average down quite well.
+
+The prediction interval is three times wider and covers 99%. That is the interval a reader
+who asks "what will we catch there?" is asking for. Note that it needs a **distribution**:
+we used the negative binomial the GAM fitted, with its dispersion $\theta$ = 1.65. Its
+coverage is above the nominal 95% because counts are integers and integer quantiles round
+outwards, which is conservative and the right direction to be wrong in.
+
+## When your model has no distribution
+
+A random forest has no likelihood and therefore no prediction interval. The usual improvised
+answer is "predict, then add $\pm 1.96 \times$ RMSE".
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: naive
+in_sample_rmse <- rmse_vec(fitting$abundance, predict(forest, fitting)$.pred)
+held_out_rmse  <- rmse_vec(calibration$abundance, predict(forest, calibration)$.pred)
+predicted      <- predict(forest, test)$.pred
+
+bind_rows(
+  coverage(predicted - 1.96 * in_sample_rmse, predicted + 1.96 * in_sample_rmse,
+           paste0("±1.96 × in-sample RMSE (", round(in_sample_rmse, 2), ")")),
+  coverage(predicted - 1.96 * held_out_rmse, predicted + 1.96 * held_out_rmse,
+           paste0("±1.96 × held-out RMSE (", round(held_out_rmse, 2), ")"))
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+from sklearn.metrics import root_mean_squared_error
+
+in_sample_rmse = root_mean_squared_error(
+    fitting["abundance"], forest.predict(encoded.iloc[fitting_rows]))
+held_out_rmse = root_mean_squared_error(
+    calibration["abundance"], forest.predict(encoded.iloc[calibration_rows]))
+predicted = forest.predict(encoded.iloc[test_rows])
+
+pd.DataFrame([
+    coverage(predicted - 1.96 * in_sample_rmse,
+             predicted + 1.96 * in_sample_rmse,
+             f"±1.96 × in-sample RMSE ({in_sample_rmse:.2f})"),
+    coverage(predicted - 1.96 * held_out_rmse,
+             predicted + 1.96 * held_out_rmse,
+             f"±1.96 × held-out RMSE ({held_out_rmse:.2f})"),
+]).round(3)
+```
+
+:::
+
+The two differ because a random forest's in-sample RMSE is about half its honest one, 2.11
+against 4.17, so the interval built from it is half as wide and covers **77%** rather than
+95%. This is the same in-sample/out-of-sample error §5 spent a page on, arriving as an
+interval that is silently too narrow.
+
+Built from the held-out RMSE the coverage is 94.4%, which is respectable. It is still a
+constant-width, symmetric interval on a skewed count, so its lower bound goes negative for
+every station with a small prediction.
+
+## Conformal prediction
+
+**Conformal prediction** does the same thing properly and for any model. Score the model on a
+calibration set the model never saw, take the 95th percentile of the absolute residuals, and
+use that as the half-width. Under one assumption, that calibration and test stations are
+**exchangeable**, drawn from the same process in no particular order, the resulting interval
+has at least 95% coverage, whatever the model is and whether or not it is any good.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: conformal
+conformal <- int_conformal_split(forest, cal_data = calibration)
+intervals <- predict(conformal, test, level = 0.95)
+
+bind_rows(
+  coverage(intervals$.pred_lower, intervals$.pred_upper, "conformal split, 95%")
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3))) |>
+  mutate(`lowest lower bound` = round(min(intervals$.pred_lower), 2))
+```
+
+## Python
+
+```python
+def conformal_width(residuals, level=0.95):
+    """Split conformal in one line of arithmetic: the interval is as wide as
+    the calibration set's own errors say it must be, with the small-sample
+    correction that makes the coverage guarantee exact."""
+    n = len(residuals)
+    quantile = min(np.ceil((n + 1) * level) / n, 1.0)
+    return float(np.quantile(np.abs(residuals), quantile))
+
+calibration_residuals = (calibration["abundance"].to_numpy()
+                         - forest.predict(encoded.iloc[calibration_rows]))
+width = conformal_width(calibration_residuals)
+
+lower, upper = predicted - width, predicted + width
+
+pd.DataFrame([coverage(lower, upper, "conformal split, 95%")]).assign(
+    **{"lowest lower bound": round(lower.min(), 2)}).round(3)
+```
+
+:::
+
+96.5% coverage from a model with no probability model at all, which is a genuinely useful
+thing to be able to do. Two caveats are visible in that one row. The width is
+**constant**: every station gets the same interval regardless of how well the model knows
+it. And the lower bound reaches −9.1, which is not a possible number of animals; you would
+truncate at zero, and truncation costs you a little of the guarantee.
+
+To compare the three fairly they should come from one model, so for the figure we also
+calibrate a conformal interval on the GAM. It comes out at width 19.4 against the forest's
+19.5, because conformal width is a property of the residuals, not of the model family.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: gam-conformal
+gam_workflow <- workflow() |>
+  add_variables(outcomes = abundance, predictors = everything()) |>
+  add_model(gen_additive_mod() |> set_engine("mgcv", family = nb()) |> set_mode("regression"),
+            formula = abundance ~ s(depth_m, k = 8) + s(temperature_c, k = 8) +
+              s(chlorophyll_mg_m3, k = 8) + s(longitude, latitude, k = 30) +
+              substrate + season + salinity_psu)
+
+gam_conformal <- int_conformal_split(fit(gam_workflow, fitting), cal_data = calibration)
+gam_bands <- predict(gam_conformal, test, level = 0.95)
+
+coverage(gam_bands$.pred_lower, gam_bands$.pred_upper, "conformal split on the GAM") |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+gam_calibration = (calibration["abundance"].to_numpy()
+                   - gam_fit.predict(calibration).to_numpy())
+gam_width = conformal_width(gam_calibration)
+gam_predicted = gam_fit.predict(test).to_numpy()
+
+pd.DataFrame([coverage(gam_predicted - gam_width, gam_predicted + gam_width,
+                       "conformal split on the GAM")]).round(3)
+```
+
+:::
+
+```{r}
+#| label: fig-intervals
+#| fig-cap: "The three 95% intervals, all from the GAM, against its own expected count for 144 test stations. The confidence band on the mean is the dark ribbon; the negative-binomial prediction interval is the pale one; the conformal interval is the pair of dashed lines. Both model-based intervals widen with the expected count, because a constant interval on the log scale is a proportional one on the count scale. The conformal interval does not, which is why it is far too wide at the left of the plot and too narrow at the right."
+#| fig-alt: "Expected count on the horizontal axis from 0 to about 16, observed counts on the vertical from 0 to about 37. A dark ribbon follows the diagonal, very narrow at the left where the expected count is near zero and widening to roughly 9 to 27 at the right. A pale band fans out around it, from roughly 0 to 6 at the left edge to roughly 0 to 48 at the right. Two dashed lines run parallel at a fixed separation of about 19, from minus 9.5 and plus 10 at the left to plus 6 and plus 25 at the right; the lower one is below zero for most of the range. Grey points, densest at low expected counts, lie almost all inside the pale band, with many falling outside the dark ribbon."
+#| fig-width: 7.5
+#| fig-height: 4.8
+tibble(expected = expected, observed = test$abundance,
+       mean_lower, mean_upper, new_lower, new_upper,
+       conformal_lower = gam_bands$.pred_lower, conformal_upper = gam_bands$.pred_upper) |>
+  arrange(expected) |>
+  ggplot(aes(expected)) +
+  geom_ribbon(aes(ymin = new_lower, ymax = new_upper, fill = "prediction interval (NB)"),
+              alpha = 0.3) +
+  geom_ribbon(aes(ymin = mean_lower, ymax = mean_upper, fill = "confidence interval (mean)"),
+              alpha = 0.75) +
+  geom_line(aes(y = conformal_lower, colour = "conformal, constant width"), linetype = "dashed") +
+  geom_line(aes(y = conformal_upper, colour = "conformal, constant width"), linetype = "dashed") +
+  geom_hline(yintercept = 0, colour = "#c9d1d7") +
+  geom_point(aes(y = observed), size = 1.3, alpha = 0.55, colour = "#3d4852") +
+  scale_fill_manual(values = c("prediction interval (NB)" = ml_palette[["sky"]],
+                               "confidence interval (mean)" = ml_palette[["blue"]])) +
+  scale_colour_manual(values = c("conformal, constant width" = ml_palette[["vermilion"]])) +
+  labs(x = "expected count from the GAM", y = "observed count", fill = NULL, colour = NULL)
+```
+
+## When the guarantee stops applying
+
+Exchangeability is an assumption about your data, not a property of the method, and marine
+work breaks it routinely: you model one survey and predict another year, another gear, another
+depth stratum. Here is what that costs, in two cases.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: shift
+shift_experiment <- function(label, inside, outside) {
+  in_range  <- filter(modelling, inside(modelling))
+  out_range <- filter(modelling, outside(modelling))
+
+  set.seed(15)
+  split <- initial_split(in_range, prop = 0.7)
+  set.seed(2)
+  fitted <- workflow() |>
+    add_recipe(recipe(abundance ~ ., data = training(split)) |>
+                 step_dummy(all_nominal_predictors())) |>
+    add_model(rand_forest(trees = 800) |>
+                set_engine("ranger", seed = 1) |> set_mode("regression")) |>
+    fit(training(split))
+
+  calibrator <- int_conformal_split(fitted, cal_data = testing(split))
+
+  map_dfr(list(`same conditions` = testing(split), `shifted` = out_range),
+          \(evaluation) {
+            bands <- predict(calibrator, evaluation, level = 0.95)
+            tibble(coverage = mean(evaluation$abundance >= bands$.pred_lower &
+                                     evaluation$abundance <= bands$.pred_upper),
+                   width = mean(bands$.pred_upper - bands$.pred_lower),
+                   `mean observed count` = mean(evaluation$abundance))
+          }, .id = "evaluated on") |>
+    mutate(experiment = label, .before = 1)
+}
+
+bind_rows(
+  shift_experiment("calibrate outside 50-120 m, predict inside",
+                   \(x) x$depth_m < 50 | x$depth_m > 120,
+                   \(x) x$depth_m >= 60 & x$depth_m <= 100),
+  shift_experiment("calibrate low chlorophyll, predict high",
+                   \(x) x$chlorophyll_mg_m3 < 2,
+                   \(x) x$chlorophyll_mg_m3 >= 3)
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+def shift_experiment(label, inside, outside):
+    in_range = modelling[inside(modelling)]
+    out_range = modelling[outside(modelling)]
+
+    rows, calibrate = train_test_split(np.arange(len(in_range)),
+                                       train_size=0.7, random_state=15)
+    in_encoded = pd.get_dummies(in_range.drop(columns="abundance"),
+                                drop_first=True).reindex(
+                                    columns=encoded.columns, fill_value=0)
+    out_encoded = pd.get_dummies(out_range.drop(columns="abundance"),
+                                 drop_first=True).reindex(
+                                     columns=encoded.columns, fill_value=0)
+
+    fitted = RandomForestRegressor(n_estimators=800, random_state=1).fit(
+        in_encoded.iloc[rows], in_range["abundance"].iloc[rows])
+    width = conformal_width(in_range["abundance"].iloc[calibrate].to_numpy()
+                            - fitted.predict(in_encoded.iloc[calibrate]))
+
+    def evaluate(name, frame, features):
+        predicted = fitted.predict(features)
+        observed = frame["abundance"].to_numpy()
+        return {"experiment": label, "evaluated on": name,
+                "coverage": np.mean((observed >= predicted - width)
+                                    & (observed <= predicted + width)),
+                "width": 2 * width,
+                "mean observed count": observed.mean()}
+
+    return [evaluate("same conditions", in_range.iloc[calibrate],
+                     in_encoded.iloc[calibrate]),
+            evaluate("shifted", out_range, out_encoded)]
+
+pd.DataFrame(
+    shift_experiment("calibrate outside 50-120 m, predict inside",
+                     lambda x: (x["depth_m"] < 50) | (x["depth_m"] > 120),
+                     lambda x: x["depth_m"].between(60, 100))
+    + shift_experiment("calibrate low chlorophyll, predict high",
+                       lambda x: x["chlorophyll_mg_m3"] < 2,
+                       lambda x: x["chlorophyll_mg_m3"] >= 3)
+).round(3)
+```
+
+:::
+
+In the first experiment the shift is harmless: the model is calibrated on stations
+shallower than 50 m and deeper than 120 m and asked about the 60–100 m band it never saw,
+and coverage holds at 97%. In the second it is not: coverage falls to **86%** on an
+interval labelled 95%, because the high-chlorophyll stations have more than twice the mean
+count and a constant-width interval cannot stretch to meet them.
+
+The two experiments matter together. **The interval is exactly the same width in both cases.**
+Nothing in the output distinguishes the shift you got away with from the one you did not. A
+coverage guarantee is a statement about the population you calibrated on, and when you leave
+it you have no guarantee and no warning: §6's
+[extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) problem, arriving
+as a number that is quietly 9 points too optimistic.
+
+## The wording to use
+
+- Say **which** interval it is. "95% confidence interval for the mean predicted count",
+  not "95% CI".
+- Report **measured coverage on held-out data**, not the nominal level. It is one line and
+  it is the only evidence the interval works.
+- Give the interval for a **new observation** whenever the reader's question is about a new
+  observation, which it usually is.
+- State the **range the model was calibrated on** and refuse to give intervals outside it, or
+  give them with an explicit warning that the guarantee does not apply.
+- Carry the **resampling spread** on every performance number, as §7 and
+  [the previous page](reproducibility.qmd) both argue.
+- Report what the model **cannot** distinguish. "Depth and temperature are confounded in this
+  survey" is a finding, and a more useful one than a partial effect that is not identified.
+
+::: {.callout-tip}
+## Key points
+
+- **A confidence band on the mean covered 29% of the observed counts.** It is the interval
+  models hand you for free and almost never the one being asked about.
+- A prediction interval needs a **distribution**. The GAM's negative binomial gave 99%
+  coverage at three times the width and never goes below zero.
+- **Never build an interval from the in-sample RMSE.** The forest's was 2.11 against an honest
+  4.17, and the resulting 95% interval covered 77%.
+- **Conformal prediction** gives a valid interval for any model from a calibration set, 96.5%
+  here, at the price of constant width and negative lower bounds.
+- **Its guarantee ends where exchangeability ends.** Calibrating on low-chlorophyll stations
+  and predicting high-chlorophyll ones dropped coverage to 86%, with the interval width
+  unchanged and nothing to warn you.
+:::
+
+## Try it yourself
+
+1. Replace `int_conformal_split()` with `int_conformal_quantile()`, which fits quantile models
+   and produces intervals that vary in width. Does the width now track how hard each station
+   is, and does the chlorophyll shift still break it?
+2. Truncate the conformal interval at zero and recompute coverage. How much of the 96.5% was
+   being carried by the impossible part of the interval?

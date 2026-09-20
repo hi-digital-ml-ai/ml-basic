@@ -1,0 +1,247 @@
+---
+title: "Regression or classification?"
+description: "The first fork in the road, and the marine responses that fit neither box cleanly."
+order: 1
+categories: [supervised, regression, classification]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+survey <- load_coastal_survey_clean()
+```
+
+## The fork that fixes everything else
+
+Everything downstream follows from one question: **what kind of thing is your
+response?** It fixes the model family, what the algorithm is trying to minimise, which
+performance measures mean anything, and what the output can be used for.
+
+It is also a question people answer too quickly. "Abundance is a number, so it is
+regression" is right in outline and wrong in the details that matter, the details that
+made [section 1's polynomial model](../01-introduction/prediction-and-explanation.qmd)
+predict negative fish.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+**Regression** predicts a quantity: abundance, biomass, temperature, percentage cover.
+Output is a number, and being close counts for something: predicting 11 when the truth
+is 12 is nearly right.
+
+**Classification** predicts a category: present or absent, species A or B, habitat class.
+Output is a class, or better a probability for each class, and being close does not
+count: you are either right or wrong, though a probability of 0.48 for the wrong answer
+is a different kind of wrong from 0.02.
+
+That is the textbook division. Marine responses are frequently awkward:
+
+| Your response | It is | The catch |
+| --- | --- | --- |
+| Catch in kilograms | Regression | Usually skewed; often needs a log |
+| Counts of individuals | Regression | Discrete, non-negative, variance grows with the mean |
+| Counts with many zeros | Regression | Zero-inflated or hurdle models |
+| Presence / absence | Classification | Usually imbalanced |
+| Percentage cover | Regression | Bounded at 0 and 100; beta regression |
+| Habitat class | Classification | Often ordinal, and treating it as nominal loses the order |
+| Species identity from an image | Classification | Many classes, very imbalanced |
+| Community composition | Neither, quite | Compositional; parts sum to one |
+
+Ordinary linear regression assumes the response is unbounded and continuous with
+constant variance. Almost nothing in that table satisfies that.
+
+## Worked example
+
+Our survey measured one thing, how many individuals were caught at each station, and
+it supports both framings.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: two-framings
+survey |>
+  summarise(
+    stations   = n(),
+    mean_count = round(mean(abundance), 2),
+    variance   = round(var(abundance), 2),
+    zeros      = sum(abundance == 0),
+    zero_pct   = round(100 * mean(abundance == 0), 1)
+  )
+```
+
+## Python
+
+```python
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+pd.DataFrame({
+    "stations": [len(survey)],
+    "mean_count": [round(survey["abundance"].mean(), 2)],
+    "variance": [round(survey["abundance"].var(), 2)],
+    "zeros": [int((survey["abundance"] == 0).sum())],
+    "zero_pct": [round(100 * (survey["abundance"] == 0).mean(), 1)],
+})
+```
+
+:::
+
+Two features of that summary decide almost everything that follows.
+
+**The variance is far larger than the mean**, about 23 against 3.9. For a Poisson
+process they would be equal. This is *overdispersion*, and it is the normal condition of
+ecological count data: individuals cluster, so counts vary more than chance alone
+predicts.
+
+**Nearly a quarter of stations caught nothing.** A model that can only produce smooth
+positive numbers will never reproduce that spike at zero.
+
+```{r}
+#| label: fig-two-framings
+#| fig-cap: "One measurement, two questions. Left: the count, with a large spike at zero and a long right tail. Right: the same data reduced to presence and absence: simpler, and most of the information has been thrown away."
+#| fig-alt: "Two panels. The left panel is a histogram of abundance with a tall bar at zero, a peak at one to three individuals and a long tail extending past thirty. The right panel is a two-bar chart of absent versus present, with present about three times taller than absent."
+#| fig-width: 8.5
+#| fig-height: 3.8
+p_count <- ggplot(survey, aes(abundance)) +
+  geom_histogram(binwidth = 1, fill = ml_palette[["blue"]]) +
+  labs(x = "Individuals caught", y = "Stations",
+       title = "As a count: regression")
+
+p_binary <- survey |>
+  mutate(status = if_else(abundance > 0, "present", "absent")) |>
+  count(status) |>
+  ggplot(aes(status, n)) +
+  geom_col(fill = ml_palette[["orange"]], width = 0.6) +
+  geom_text(aes(label = n), vjust = -0.4, size = 4) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
+  labs(x = NULL, y = "Stations", title = "As a category: classification")
+
+p_count + p_binary
+```
+
+### The cost of dichotomising
+
+Turning the count into presence/absence is a real choice, and it is not free.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: dichotomising
+survey |>
+  filter(abundance > 0) |>
+  summarise(
+    `stations recorded as "present"` = n(),
+    `smallest catch`  = min(abundance),
+    `largest catch`   = max(abundance),
+    `median catch`    = median(abundance)
+  )
+```
+
+## Python
+
+```python
+caught = survey.loc[survey["abundance"] > 0, "abundance"]
+
+pd.DataFrame({
+    'stations recorded as "present"': [len(caught)],
+    "smallest catch": [caught.min()],
+    "largest catch": [caught.max()],
+    "median catch": [caught.median()],
+})
+```
+
+:::
+
+A station with one individual and a station with forty are both simply "present". If
+your question is where the species *occurs*, that is a legitimate simplification. If it
+is about where the species is *abundant*, you have just deleted the answer.
+
+The reverse mistake is more common and more damaging: taking a genuine quantity,
+choosing a cut-off, and modelling the category. "High" versus "low" chlorophyll at
+1 mg m⁻³ throws away all the variation on both sides of the line, and puts 0.99 and 0.01
+in the same box while separating 0.99 from 1.01.
+
+::: {.callout-warning}
+Dichotomise only when the *decision* is genuinely binary: a threshold in regulation,
+a survey protocol that records occurrence. Never dichotomise to make a modelling problem
+easier. It is the one preprocessing step that reliably destroys information you cannot
+get back.
+:::
+
+## Three things that travel together
+
+The response type determines three things, and they travel together:
+
+| | Regression | Classification |
+| --- | --- | --- |
+| **Model** | `linear_reg()`, `poisson_reg()`, `rand_forest(mode = "regression")` | `logistic_reg()`, `rand_forest(mode = "classification")` |
+| **Minimises** | Squared error, or a likelihood suited to the response | Log-loss, or a related likelihood |
+| **Measured by** | RMSE, MAE, $R^2$ | Accuracy, ROC AUC, precision, recall |
+
+In tidymodels the change is often one argument, `set_mode("classification")`, which
+makes it easy to switch and easy to forget that you have changed the scientific question
+as well as the code.
+
+For our counts specifically, the summary above already rules things out. The response is
+discrete, non-negative, overdispersed and a quarter zeros. Ordinary linear regression
+assumes none of that, which is precisely why it produced negative predictions in
+[section 1](../01-introduction/prediction-and-explanation.qmd). The
+[next page](linear-and-polynomial-regression.qmd) fixes it.
+
+## Limits of the two boxes
+
+**Counts are not really "just regression".** They need a model that knows the response
+is a non-negative integer with mean-dependent variance. Fitting a Gaussian model to
+counts is common, works acceptably when counts are large, and fails visibly when they
+are small, as here.
+
+**Many zeros may mean two processes.** A zero can mean "the species does not live here"
+or "it lives here and we missed it". Hurdle and zero-inflated models separate those,
+and they correspond to a real biological distinction between habitat suitability and
+detection.
+
+**Ordinal responses lose information both ways.** Treated as nominal, the order is
+thrown away; treated as a number, equal spacing is invented. Ordinal models exist and
+are underused.
+
+**Multi-class is not just binary repeated.** With twenty species, class imbalance,
+confusable pairs and the choice between one-versus-rest and one-versus-one all arrive at
+once.
+
+::: {.callout-tip}
+## Key points
+- Identify what kind of response you have before choosing anything else. It fixes the
+  model, the loss function and the metrics.
+- Counts are regression, but not Gaussian regression: discrete, non-negative, and
+  overdispersed. Here the variance is roughly six times the mean.
+- Check the proportion of zeros early. A quarter of our stations caught nothing, and no
+  smooth positive model reproduces that.
+- Dichotomising a quantity destroys information permanently. Do it when the decision is
+  genuinely binary, never to simplify the modelling.
+- Switching mode in tidymodels is one argument, which makes it easy to change the
+  scientific question by accident.
+:::
+
+## Try it yourself
+
+1. Compute the mean and variance of `abundance` within each substrate type. Is
+   overdispersion uniform, or concentrated in particular habitats?
+2. Take `chlorophyll_mg_m3`, split it at its median into "high" and "low", and fit a
+   classification model. Compare what you can say from it with what a regression on the
+   raw value tells you. What was the cut-off worth?

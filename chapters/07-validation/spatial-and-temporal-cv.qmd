@@ -1,0 +1,462 @@
+---
+title: "Spatial and temporal cross-validation"
+description: "Blocking folds in space or time so the score answers the question you actually asked, and how far apart the folds need to be."
+order: 2
+categories: [validation, spatial-temporal]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(sf)
+library(spatialsample)
+library(ranger)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Drawing the fold boundaries elsewhere
+
+[Section 6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd) showed that
+survey residuals carry spatial structure the covariates never absorb, and that ordinary
+cross-validation therefore flatters a model. It deferred the fix to here.
+
+The fix is not a better algorithm. It is drawing the fold boundaries somewhere else. And the
+right place to draw them is not a matter of statistical purity; it depends entirely on what
+you are going to do with the model.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+Every resampling scheme is a question in disguise. When you hold out a fold and score the
+model on it, you are asking: *how well does this model predict data like this fold, given
+training data like the rest?* Change what makes a fold, and you change the question.
+
+- **Random folds** ask: how well does it predict an unsampled station *surrounded by* sampled
+  ones? Interpolation.
+- **Folds grouped by site** ask: how well does it predict a site never visited?
+- **Spatially blocked folds** ask: how well does it predict a *region* never surveyed?
+  Mapping to unsurveyed ground.
+- **Folds split by year** ask: how well does it predict a future season or year? Forecasting.
+
+None of these is the correct one. The correct one is whichever matches the sentence you plan
+to write in the discussion. If the paper says "we mapped predicted abundance across the whole
+shelf, including the unsurveyed northern basin", random folds have not measured that.
+
+There is one number that explains almost all of the difference between these schemes, and it
+is worth keeping in mind: **how far the nearest training station is from each held-out
+station.** We compute it alongside the scores below.
+
+## Worked example
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(site_id, survey_year, abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season, longitude, latitude) |>
+  drop_na()
+
+rec <- recipe(abundance ~ ., data = d) |>
+  update_role(site_id, survey_year, new_role = "id") |>
+  step_dummy(all_nominal_predictors())
+
+spec <- rand_forest(trees = 300) |> set_engine("ranger", seed = 1) |> set_mode("regression")
+wf   <- workflow() |> add_recipe(rec) |> add_model(spec)
+
+d_sf <- st_as_sf(d, coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
+
+c(stations = nrow(d), sites = n_distinct(d$site_id), years = n_distinct(d$survey_year))
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, KFold
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+columns = ["site_id", "survey_year", "abundance", "depth_m", "temperature_c",
+           "chlorophyll_mg_m3", "salinity_psu", "substrate", "season",
+           "longitude", "latitude"]
+d = survey[columns].dropna().reset_index(drop=True)
+
+# update_role(site_id, survey_year, new_role = "id"): kept in the frame for
+# grouping, kept out of the predictors.
+features = pd.get_dummies(
+    d.drop(columns=["abundance", "site_id", "survey_year"]), drop_first=True)
+
+def forest_on(rows, held):
+    model = RandomForestRegressor(n_estimators=300, random_state=1).fit(
+        features.iloc[rows], d["abundance"].iloc[rows])
+    return model.predict(features.iloc[held])
+
+pd.Series({"stations": len(d), "sites": d["site_id"].nunique(),
+           "years": d["survey_year"].nunique()})
+```
+
+:::
+
+Every scheme below holds out each of the `r nrow(d)` stations exactly once. That lets us pool
+all the out-of-fold predictions and compute a single metric over the *same* 720 rows for every
+scheme, which is the only way to make the numbers comparable, for the reason set out on the
+[previous page](cross-validation.qmd).
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: assess-helper
+separation_km <- function(held, train) {
+  dlat <- outer(held$latitude,  train$latitude,  "-") * 111.0
+  dlon <- outer(held$longitude, train$longitude, "-") * 111.0 * cos(42 * pi / 180)
+  apply(sqrt(dlat^2 + dlon^2), 1, min)
+}
+
+assess_scheme <- function(splits) {
+  pooled <- map_dfr(splits, \(s) {
+    train <- analysis(s)
+    held  <- assessment(s)
+    tibble(obs  = held$abundance,
+           pred = predict(fit(wf, train), held)$.pred,
+           nearest_km = separation_km(held, train))
+  })
+  tibble(rsq  = rsq_vec(pooled$obs, pooled$pred),
+         rmse = rmse_vec(pooled$obs, pooled$pred),
+         nearest_km = median(pooled$nearest_km))
+}
+```
+
+## Python
+
+```python
+def separation_km(held, rows):
+    """Distance from each held-out station to the nearest training station."""
+    dlat = np.subtract.outer(d["latitude"].to_numpy()[held],
+                             d["latitude"].to_numpy()[rows]) * 111.0
+    dlon = np.subtract.outer(d["longitude"].to_numpy()[held],
+                             d["longitude"].to_numpy()[rows]) * 111.0 * np.cos(
+                                 np.radians(42))
+    return np.sqrt(dlat ** 2 + dlon ** 2).min(axis=1)
+
+def assess_scheme(splits):
+    observed, predicted, nearest = [], [], []
+    for rows, held in splits:
+        observed.append(d["abundance"].to_numpy()[held])
+        predicted.append(forest_on(rows, held))
+        nearest.append(separation_km(held, rows))
+    observed = np.concatenate(observed)
+    predicted = np.concatenate(predicted)
+    return {"rsq": np.corrcoef(observed, predicted)[0, 1] ** 2,
+            "rmse": root_mean_squared_error(observed, predicted),
+            "nearest_km": float(np.median(np.concatenate(nearest)))}
+```
+
+:::
+
+`separation_km` converts degrees to kilometres at 42° N and returns, for every held-out
+station, the distance to the closest station the model was allowed to train on.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: schemes
+repeat_scheme <- function(make_splits, times = 3) {
+  runs <- map_dfr(seq_len(times), \(k) {
+    set.seed(3000 + k)
+    assess_scheme(make_splits())
+  })
+  summarise(runs, R2 = mean(rsq), R2_sd = sd(rsq),
+            RMSE = mean(rmse), nearest_km = mean(nearest_km))
+}
+
+block_scheme <- function(cellsize) {
+  repeat_scheme(\() spatial_block_cv(d_sf, v = 10, method = "random",
+                                     cellsize = cellsize)$splits)
+}
+
+comparison <- bind_rows(
+  repeat_scheme(\() vfold_cv(d, v = 10)$splits)                       |> mutate(scheme = "random 10-fold"),
+  repeat_scheme(\() group_vfold_cv(d, group = site_id, v = 10)$splits) |> mutate(scheme = "grouped by site"),
+  block_scheme(0.15) |> mutate(scheme = "spatial blocks, 0.15°"),
+  block_scheme(0.30) |> mutate(scheme = "spatial blocks, 0.30°"),
+  block_scheme(0.50) |> mutate(scheme = "spatial blocks, 0.50°"),
+  block_scheme(0.80) |> mutate(scheme = "spatial blocks, 0.80°"),
+  block_scheme(1.20) |> mutate(scheme = "spatial blocks, 1.20°"),
+  assess_scheme(group_vfold_cv(d, group = survey_year, v = 6)$splits) |>
+    summarise(R2 = rsq, R2_sd = NA_real_, RMSE = rmse, nearest_km = nearest_km) |>
+    mutate(scheme = "leave-one-year-out")
+) |>
+  relocate(scheme)
+
+comparison |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+def repeat_scheme(make_splits, times=3):
+    runs = pd.DataFrame([assess_scheme(make_splits(3000 + k))
+                         for k in range(1, times + 1)])
+    return {"R2": runs["rsq"].mean(), "R2_sd": runs["rsq"].std(ddof=1),
+            "RMSE": runs["rmse"].mean(), "nearest_km": runs["nearest_km"].mean()}
+
+def spatial_block_cv(cellsize, seed, v=10):
+    """spatialsample's block CV, by hand: tile the map, then deal whole tiles
+    out to the folds rather than individual stations."""
+    block = (np.floor(d["longitude"] / cellsize).astype(int).astype(str) + "_"
+             + np.floor(d["latitude"] / cellsize).astype(int).astype(str))
+    blocks = block.unique()
+    fold_of = dict(zip(
+        blocks,
+        np.random.default_rng(seed).permutation(len(blocks)) % v))
+    assigned = block.map(fold_of).to_numpy()
+    return [(np.flatnonzero(assigned != f), np.flatnonzero(assigned == f))
+            for f in range(v) if (assigned == f).any()]
+
+def random_folds(seed, v=10):
+    return list(KFold(n_splits=v, shuffle=True, random_state=seed).split(d))
+
+def site_folds(seed, v=10):
+    # GroupKFold takes no seed: the grouping is what decides the folds.
+    return list(GroupKFold(n_splits=v).split(d, groups=d["site_id"]))
+
+comparison = pd.DataFrame([
+    {"scheme": "random 10-fold", **repeat_scheme(random_folds)},
+    {"scheme": "grouped by site", **repeat_scheme(site_folds)},
+    *({"scheme": f"spatial blocks, {size:.2f}°",
+       **repeat_scheme(lambda seed, size=size: spatial_block_cv(size, seed))}
+      for size in (0.15, 0.30, 0.50, 0.80, 1.20)),
+    {"scheme": "leave-one-year-out",
+     **{k: v for k, v in assess_scheme(
+         GroupKFold(n_splits=d["survey_year"].nunique()).split(
+             d, groups=d["survey_year"])).items()},
+     },
+])
+comparison = comparison.rename(columns={"rsq": "R2", "rmse": "RMSE"})
+
+comparison.round(3)
+```
+
+:::
+
+## An axis of distance
+
+Read the last column first. The schemes are not arranged along an axis of statistical virtue;
+they are arranged along an axis of **distance**. Random folds leave the nearest training
+station about four kilometres away and the model scores R² 0.200. Push that separation out to
+twenty-five kilometres with 1.2° blocks and the same model, on the same stations, scores
+**0.114**, a 43% drop bought entirely by moving the fold boundaries.
+
+```{r}
+#| label: fig-distance
+#| fig-cap: "Pooled R² against the median distance from each held-out station to the nearest station its model was allowed to train on. Each point is one resampling scheme applied to the identical random forest and the identical 720 stations; the dashed line is a least-squares fit through the seven spatial schemes. Performance falls as the folds are pushed apart, though not smoothly: the 0.50° blocks sit well above the trend. Leave-one-year-out (open point) sits off it altogether, because it separates the folds in time rather than in space."
+#| fig-alt: "A scatter plot with median distance to the nearest training station in kilometres on the horizontal axis, running from about 4 to 25, and pooled R-squared on the vertical axis from 0.11 to 0.23. Seven filled blue points are labelled with scheme names and a dashed grey line slopes down from left to right through them. Random 10-fold sits at the far left at 0.20, above the line; the 0.15 and 0.30 degree blocks and the site-grouped scheme cluster between 7 and 10 kilometres around 0.16 to 0.17; the 0.50 degree blocks sit at 14 kilometres and 0.174, noticeably above the line; the 0.80 degree blocks at 19 kilometres and 0.147; and the 1.20 degree blocks at 25 kilometres and 0.114, the lowest point on the plot. A single open orange point, leave-one-year-out, sits at the far left at 0.224, above everything else."
+#| fig-width: 7
+#| fig-height: 4.6
+comparison |>
+  mutate(temporal = scheme == "leave-one-year-out") |>
+  ggplot(aes(nearest_km, R2)) +
+  geom_smooth(data = \(x) filter(x, !temporal), method = "lm", se = FALSE,
+              colour = ml_palette[["grey"]], linewidth = 0.4, linetype = "dashed") +
+  geom_point(aes(shape = temporal, colour = temporal), size = 3.2, stroke = 1.1) +
+  ggrepel::geom_text_repel(aes(label = scheme), size = 3.1, seed = 4,
+                           box.padding = 0.5, min.segment.length = 0.2) +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 1)) +
+  scale_colour_manual(values = c(`FALSE` = ml_palette[["blue"]],
+                                 `TRUE`  = ml_palette[["vermilion"]])) +
+  scale_x_continuous(breaks = seq(5, 25, 5),
+                     expand = expansion(mult = c(0.06, 0.12))) +
+  labs(x = "median distance to nearest training station (km)",
+       y = expression("pooled"~R^2),
+       title = "The score is a function of how far apart you cut the folds") +
+  theme(legend.position = "none")
+```
+
+The relationship is not tidy. The 0.50° blocks score 0.174 where the trend expects about 0.15,
+and with a spread of 0.014 across repeats that gap is not pure noise: block boundaries fall
+where they fall, and some divisions of this shelf happen to leave each fold better covered
+than others. Expect the ordering to be clear and the individual numbers to wobble.
+
+That is the honest description of what blocked cross-validation does. It does not remove bias
+and reveal the model's "true" skill; there is no single true skill. It moves the measurement
+to a harder prediction task, and you should choose the task deliberately.
+
+::: {.callout-important}
+## Choosing the block size
+
+Section 6 estimated the spatial range of this survey's residual structure from a variogram.
+Blocks should be **at least that range across**, otherwise a block's neighbours still carry
+the structure it was supposed to hide. Blocks much larger than the range cost you training
+data for nothing, and at 1.20° there are so few blocks left that `spatial_block_cv()` quietly
+reduces `v` from 10 to 6.
+
+Choose the block size from the variogram, not from the score. Choosing it because it gives a
+number you like is the spatial version of choosing a threshold to get *p* < 0.05.
+:::
+
+### Grouping is not the same as blocking
+
+Grouping by site fixes a different problem: the same site appears in the data several times,
+so a random fold can put visit three in the training set and visit five in the held-out set.
+`group_vfold_cv()` keeps all visits to a site together. That moves the nearest training station
+from 4.0 to 8.5 kilometres and costs a sixth of the R², from 0.200 to 0.170, but sites are
+scattered, so the *region* is still well covered. Notice that 0.15° blocks separate the folds
+by *less* than site grouping does, at 6.7 km: a small block is not automatically a stricter
+test than grouping.
+
+Use grouping when the repetition is the problem (repeat visits, several samples per trawl,
+several individuals per animal). Use blocking when proximity is the problem. Most marine
+datasets need both, and `spatialsample` blocks will not respect your groups unless you build
+them that way.
+
+### Validating in time
+
+Splitting by year holds out whole years. Because stations are scattered over the same shelf
+every year, that barely changes the *spatial* separation, 4.2 km and essentially the same as
+random folds, which is why leave-one-year-out sits off the trend in the figure.
+
+The scheme that matches forecasting is an expanding window: train on everything before year
+$y$, predict year $y$, and move forward.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: forecast
+forecast_check <- map_dfr(2020:2023, \(y) {
+  future <- filter(d, survey_year == y)
+  past   <- filter(d, survey_year <  y)
+  others <- filter(d, survey_year != y)
+
+  forwards <- predict(fit(wf, past), future)$.pred
+
+  set.seed(5000 + y)
+  shuffled <- map_dbl(1:4, \(k) {
+    matched <- slice_sample(others, n = nrow(past))
+    rsq_vec(future$abundance, predict(fit(wf, matched), future)$.pred)
+  })
+
+  tibble(test_year = y, train_n = nrow(past),
+         `trained on earlier years` = rsq_vec(future$abundance, forwards),
+         `trained on random years, same size` = mean(shuffled))
+})
+
+forecast_check |> mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+def forecast_year(y):
+    future = np.flatnonzero(d["survey_year"] == y)
+    past = np.flatnonzero(d["survey_year"] < y)
+    others = np.flatnonzero(d["survey_year"] != y)
+    observed = d["abundance"].to_numpy()[future]
+
+    rng = np.random.default_rng(5000 + y)
+    shuffled = [
+        np.corrcoef(observed,
+                    forest_on(rng.choice(others, len(past), replace=False),
+                              future))[0, 1] ** 2
+        for _ in range(4)
+    ]
+
+    return {
+        "test_year": y,
+        "train_n": len(past),
+        "trained on earlier years":
+            np.corrcoef(observed, forest_on(past, future))[0, 1] ** 2,
+        "trained on random years, same size": float(np.mean(shuffled)),
+    }
+
+forecast_check = pd.DataFrame([forecast_year(y) for y in range(2020, 2024)])
+
+forecast_check.round(3)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: forecast-summary
+forecast_check |>
+  summarise(across(c(`trained on earlier years`, `trained on random years, same size`), mean)) |>
+  round(3)
+```
+
+## Python
+
+```python
+forecast_check[["trained on earlier years",
+                "trained on random years, same size"]].mean().round(3)
+```
+
+:::
+
+The comparison is matched on training-set size, so the only difference is *when* the training
+data came from. Predicting forwards is no harder than predicting sideways. That is a real
+finding about this dataset and not a failure of the method: the simulation deliberately gives
+`survey_year` no effect, and the diagnostic correctly reports that there is nothing there.
+
+A validation scheme that shows no penalty is evidence, not a wasted afternoon. Run it before
+you assume your model transfers to next year, because with real survey data, with shifting
+distributions, changing gear and marine heatwaves, it usually will not.
+
+## Limits of the distance column
+
+The distance column on this page is a median. A held-out station in the middle of a dense
+cluster and one on the edge of the survey are not being asked the same question, and pooling
+them hides that. If your intended use is one specific unsurveyed area, the honest test is to
+hold out the region most like it, not ten blocks at random.
+
+Blocked cross-validation also shrinks the training set in a way random folds do not: a block
+removes a contiguous chunk of environmental space, not a random sample of it. Some of the
+penalty you measure is the model being asked to extrapolate, which is
+[section 6's problem](../06-assumptions-limitations/sampling-and-extrapolation.qmd) rather than
+a fair reflection of interpolation skill inside the blocks.
+
+::: {.callout-tip}
+## Key points
+
+- A resampling scheme is a question. Random folds ask about interpolation, blocks ask about
+  mapping to new ground, year splits ask about forecasting. Pick the one your discussion
+  section claims.
+- Every scheme here held out all 720 stations exactly once, so the pooled metrics are directly
+  comparable. Without that, they would not be.
+- Performance falls with the distance between held-out and training stations: R² 0.200 at
+  four kilometres down to 0.114 at twenty-five. There is no single "true" score.
+- Set block size from the variogram range, before you look at the score.
+- Grouping handles repeated measurements; blocking handles proximity. They are different, and
+  most survey data needs both.
+:::
+
+## Try it yourself
+
+1. Add `nearest_km` to the pooled predictions and plot squared error against it. Does the
+   model get worse smoothly with distance, or is there a threshold?
+2. Build folds that are both grouped by site *and* spatially blocked. `spatial_clustering_cv()`
+   on site centroids is one route. Does it cost more than either alone?

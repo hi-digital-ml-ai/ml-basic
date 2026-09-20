@@ -1,0 +1,18 @@
+---
+title: "Course index"
+description: "Every page in the course, filterable by topic."
+listing:
+  contents: "*/index.qmd"
+  type: table
+  sort: false
+  categories: true
+  fields: [title, description, categories]
+  field-display-names:
+    title: "Section"
+    description: "Covers"
+toc: false
+---
+
+The ten sections in order. Use the topic filters to pull together pages on one
+method: they gather course sections and
+[participant contributions](../contributed/index.qmd) under the same tags.

@@ -1,0 +1,383 @@
+---
+title: "From a model to a claim"
+description: "The whole course applied to one survey, ending in the two paragraphs you would actually write, plus the claims the data will not support, and the bias that cross-validation rewards."
+order: 6
+categories: [interpretation, reproducibility]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(mgcv)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## From numbers to sentences
+
+Everything up to here has produced numbers. A paper needs sentences, and the step between
+them is where most of the damage is done, not by people who do not understand their model,
+but by people who understand it and then describe it in the vocabulary a reviewer expects.
+
+This page takes the survey through the whole course, writes out the two paragraphs, and then
+does the more useful thing: lists the claims we cannot make, and demonstrates the one kind of
+error that no amount of validation will catch.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The analysis, in one place
+
+Each step points at where it was argued for.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: pipeline
+survey <- load_coastal_survey_clean()          # §2: raw -> clean, every decision as code
+
+modelling <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
+         substrate, season, longitude, latitude) |>
+  drop_na()
+
+model_formula <- abundance ~ s(depth_m, k = 8) + s(temperature_c, k = 8) +
+  s(chlorophyll_mg_m3, k = 8) + s(longitude, latitude, k = 30) +
+  substrate + season + salinity_psu
+
+set.seed(9)
+folds <- vfold_cv(modelling, v = 10)           # §7: same folds for every model compared
+
+pooled <- map_dfr(folds$splits, \(split) {
+  fitted <- gam(model_formula, family = nb(), data = analysis(split))
+  held   <- assessment(split)
+  tibble(truth = held$abundance,
+         prediction = as.numeric(predict(fitted, held, type = "response")))
+})                                             # §7: pool out-of-fold predictions
+
+final <- gam(model_formula, family = nb(), data = modelling)
+
+tibble(`cross-validated RMSE` = rmse_vec(pooled$truth, pooled$prediction),
+       `cross-validated R²`   = rsq_vec(pooled$truth, pooled$prediction),
+       `mean-only baseline RMSE` = rmse_vec(modelling$abundance,
+                                            rep(mean(modelling$abundance), nrow(modelling)))) |>
+  mutate(across(everything(), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import KFold
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()      # §2: raw -> clean, every decision as code
+
+columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+           "salinity_psu", "substrate", "season", "longitude", "latitude"]
+modelling = survey[columns].dropna().reset_index(drop=True)
+
+def spline(column, df, frame):
+    """Knots spanning the whole dataset, so that a fold holding an extreme
+    station can still be scored: patsy refuses to extrapolate."""
+    return (f"bs({column}, df={df}, lower_bound={frame[column].min()},"
+            f" upper_bound={frame[column].max()})")
+
+def spline_formula(frame):
+    # There is no mgcv in Python. A spline basis feeding the same negative
+    # binomial is the closest honest equivalent: the wiggliness comes from the
+    # number of knots rather than from a penalty the fit estimates.
+    return "abundance ~ " + " + ".join([
+        spline("depth_m", 8, frame), spline("temperature_c", 8, frame),
+        spline("chlorophyll_mg_m3", 8, frame),
+        spline("longitude", 5, frame), spline("latitude", 5, frame),
+        "C(substrate)", "C(season)", "salinity_psu",
+    ])
+
+model_formula = spline_formula(modelling)
+
+def negative_binomial(formula, data):
+    dispersion = smf.negativebinomial(formula, data).fit(
+        method="bfgs", maxiter=2000, disp=0).params["alpha"]
+    return smf.glm(formula, data,
+                   family=sm.families.NegativeBinomial(alpha=dispersion)).fit()
+
+folds = KFold(n_splits=10, shuffle=True, random_state=9)   # §7: same folds throughout
+
+pooled = pd.concat([                                       # §7: pool out-of-fold
+    pd.DataFrame({"truth": modelling["abundance"].to_numpy()[held],
+                  "prediction": negative_binomial(
+                      model_formula, modelling.iloc[rows]).predict(
+                          modelling.iloc[held]).to_numpy()})
+    for rows, held in folds.split(modelling)
+], ignore_index=True)
+
+final = negative_binomial(model_formula, modelling)
+
+pd.DataFrame({
+    "cross-validated RMSE": [root_mean_squared_error(pooled["truth"],
+                                                     pooled["prediction"])],
+    "cross-validated R²": [np.corrcoef(pooled["truth"],
+                                       pooled["prediction"])[0, 1] ** 2],
+    "mean-only baseline RMSE": [root_mean_squared_error(
+        modelling["abundance"],
+        np.repeat(modelling["abundance"].mean(), len(modelling)))],
+}).round(3)
+```
+
+:::
+
+The `s(longitude, latitude)` term is there because §6 found spatial structure that no
+covariate explains; the negative binomial because §6 found the counts over-dispersed; the
+smooth terms because §3 and §10 found the responses humped; and the model family because
+[the comparison on page 3](black-box-or-not.qmd) put it ahead of a random forest and a
+boosted tree on these folds.
+
+## The Methods paragraph
+
+> Abundance was modelled as a function of depth, bottom temperature, chlorophyll
+> concentration, salinity, substrate type and season using a generalised additive model with
+> a negative-binomial response (`mgcv` 1.9.4, R 4.6.1). Depth, temperature and chlorophyll
+> entered as thin-plate smooths with a basis dimension of 8, and an isotropic smooth of
+> longitude and latitude (basis dimension 30) was included to absorb spatial structure not
+> explained by the covariates. Predictive performance was assessed by ten-fold
+> cross-validation with out-of-fold predictions pooled before scoring, and the same folds
+> were used for every candidate model compared. Three alternatives (a random forest, a
+> gradient-boosted tree ensemble and a negative-binomial GLM with quadratic terms) were
+> fitted for comparison and are reported in the supplement. Analysis code, the package
+> lockfile and the cleaning script are archived at [DOI]; all random seeds are set in the
+> code.
+
+Every clause there is either a decision the course argued for or a number a reader can check.
+Note what it does *not* contain: no claim that the model was "validated", no accuracy figure
+without a baseline, and no silence about the models that lost.
+
+## The Results paragraph
+
+```{r}
+#| label: results-numbers
+summary(final)$s.table |>
+  as_tibble(rownames = "smooth term") |>
+  mutate(across(where(is.numeric), \(x) signif(x, 3)))
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: results-parametric
+summary(final)$p.table |>
+  as_tibble(rownames = "term") |>
+  filter(str_detect(term, "substrate|salinity")) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+terms = [t for t in final.params.index
+         if "C(substrate)" in t or "salinity" in t]
+
+pd.DataFrame({
+    "term": terms,
+    "Estimate": final.params[terms].to_numpy(),
+    "Std. Error": final.bse[terms].to_numpy(),
+    "z value": final.tvalues[terms].to_numpy(),
+    "p-value": final.pvalues[terms].to_numpy(),
+}).round(3)
+```
+
+:::
+
+> The model explained substantially more variation than a no-skill baseline
+> (cross-validated RMSE 4.08 against 4.82 for predicting the survey mean; cross-validated
+> R² 0.28). Bottom temperature was the strongest predictor, with a clearly non-linear effect
+> (4.6 effective degrees of freedom, $\chi^2$ = 116, $p < 0.001$) peaking at approximately
+> 8 °C. Chlorophyll concentration had a positive effect that the model resolved as linear on
+> the log scale (1.0 e.d.f., $p = 0.011$). Substrate type was associated with abundance,
+> which was lower on rock than on gravel (−0.48 ± 0.18 on the log scale, $p = 0.007$) and on
+> sand (−0.24 ± 0.11, $p = 0.029$); mud did not differ detectably from gravel. The spatial
+> smooth was retained with 10.7 effective degrees of freedom ($p = 0.002$), indicating
+> structure the measured covariates do not account for. Salinity showed no detectable effect
+> (0.06 ± 0.12, $p = 0.60$). Depth showed a weak unimodal tendency peaking near 50 m that was
+> not statistically distinguishable from no effect ($p = 0.061$); we do not interpret it
+> further, for the reason given below.
+
+Four things that paragraph does deliberately. It gives the baseline next to the score. It
+reports the *shape* of the temperature effect, not only its significance. It reports salinity's
+null result rather than omitting it. And it declines to interpret depth.
+
+## The claims we cannot make
+
+This is the section most papers do not have, and it is the one this course has spent ten
+sections earning.
+
+**We cannot claim a depth optimum.** The true optimum is at 80 m. The GAM's smooth peaks at
+52 m, the random forest's partial dependence declines monotonically, and a GLM given the
+generator's exact functional form estimates the depth quadratic at a fourteenth of its true
+value. [Depth and temperature are confounded by the sampling design](partial-effects.qmd):
+there are almost no cold shallow stations and almost no warm deep ones. No model can separate
+them, and the honest sentence is *"the survey does not separate the effects of depth and
+temperature"*.
+
+**We cannot claim chlorophyll is or is not important.** The GAM finds it significant at
+$p = 0.011$; permutation importance puts it inside the noise band on one split and first on
+another, [swinging from rank 1 to rank 11 across eight splits](feature-importance.qmd),
+because depth and season between them reconstruct most of it.
+
+**We cannot claim anything causal.** The model is a description of how abundance co-varies
+with what happened to be measured, on the stations that happened to be visited. That the
+temperature effect nearly matches the generator here is a fact about a world we wrote.
+
+**We cannot claim it will transfer.** The
+[conformal coverage on page 5](communicating-uncertainty.qmd) dropped from 96% to 86% when the
+model was calibrated on low-chlorophyll stations and asked about high-chlorophyll ones, with
+no change in the interval width to warn us. Outside the sampled envelope there is no
+guarantee, and §6 says the same about the model itself.
+
+**We cannot report the uncertainty the software prints.** Seven models were compared before
+this one was chosen, so the intervals above are conditional on a selection step they do not
+account for ([§7](../07-validation/cross-validation.qmd)).
+
+## The error validation cannot catch
+
+Every safeguard in this course compares a model against the data. If the data itself is
+biased, all of them pass.
+
+Dredges and grabs catch poorly on hard substrate; this is a well-known gear effect, not a
+hypothetical one. Suppose our gear recovered only half the animals present on rock. The
+recorded counts on rock would be halved, everything else unchanged.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: observation-bias
+set.seed(77)
+biased <- modelling |>
+  mutate(abundance = if_else(substrate == "rock", rbinom(n(), abundance, 0.5), abundance))
+
+compare <- function(data, label) {
+  set.seed(9)
+  out_of_fold <- map_dfr(vfold_cv(data, v = 10)$splits, \(split) {
+    fitted <- gam(model_formula, family = nb(), data = analysis(split))
+    held   <- assessment(split)
+    tibble(truth = held$abundance,
+           prediction = as.numeric(predict(fitted, held, type = "response")))
+  })
+  full <- gam(model_formula, family = nb(), data = data)
+  tibble(dataset = label,
+         `CV RMSE` = rmse_vec(out_of_fold$truth, out_of_fold$prediction),
+         `CV R²`   = rsq_vec(out_of_fold$truth, out_of_fold$prediction),
+         `rock effect` = coef(full)[["substraterock"]],
+         `std. error`  = sqrt(diag(vcov(full)))[["substraterock"]])
+}
+
+bind_rows(compare(modelling, "as recorded"),
+          compare(biased, "gear halves the catch on rock")) |>
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+## Python
+
+```python
+rng = np.random.default_rng(77)
+
+biased = modelling.copy()
+on_rock = biased["substrate"] == "rock"
+biased.loc[on_rock, "abundance"] = rng.binomial(
+    biased.loc[on_rock, "abundance"].to_numpy(), 0.5)
+
+def compare(data, label):
+    out_of_fold = pd.concat([
+        pd.DataFrame({"truth": data["abundance"].to_numpy()[held],
+                      "prediction": negative_binomial(
+                          model_formula, data.iloc[rows]).predict(
+                              data.iloc[held]).to_numpy()})
+        for rows, held in KFold(n_splits=10, shuffle=True,
+                                random_state=9).split(data)
+    ], ignore_index=True)
+    full = negative_binomial(model_formula, data)
+    rock = [t for t in full.params.index if "rock" in t][0]
+    return {
+        "dataset": label,
+        "CV RMSE": root_mean_squared_error(out_of_fold["truth"],
+                                           out_of_fold["prediction"]),
+        "CV R²": np.corrcoef(out_of_fold["truth"],
+                             out_of_fold["prediction"])[0, 1] ** 2,
+        "rock effect": full.params[rock],
+        "std. error": full.bse[rock],
+    }
+
+pd.DataFrame([compare(modelling, "as recorded"),
+              compare(biased, "gear halves the catch on rock")]).round(3)
+```
+
+:::
+
+The estimated rock effect more than doubles, from −0.48 to −1.16. On the count scale that is
+the difference between "rock holds about 38% fewer animals than gravel" and "rock holds about
+69% fewer", and the second sentence is the one that would be written up, with a $p$ value of
+well under 0.001 behind it.
+
+Now look at the validation columns. The biased model **scores better on both**:
+cross-validated RMSE 4.008 against 4.079, R² 0.297 against 0.284. Not a warning anywhere, but
+a modest improvement.
+
+That is not a fluke, it is structural. Cross-validation asks whether the model predicts the
+data, and the biased model predicts the biased data very well. The held-out fold carries the
+same bias as the training folds. There is no resampling scheme, no metric and no
+interpretation method in this course that detects it.
+
+::: {.callout-important}
+**The only defences against observation bias are outside the model.** Knowing your gear's
+catchability by substrate. Comparing against an independent method: video, acoustics, a
+different net. Reporting the effort and the gear alongside the result so a reader can apply
+their own correction. A model that reproduces biased survey data reproduces the bias, with
+excellent validation statistics, and says nothing at all about it.
+:::
+
+## Before you submit
+
+The reporting checklist is on [the reproducibility page](reproducibility.qmd). Three questions
+to add to it, all of which this page has answered for the survey:
+
+1. **What is my baseline?** A score without one is not a result.
+2. **Which of my claims is not identified by my design?** Write that sentence down before a
+   reviewer writes it for you.
+3. **How would my data be biased if my method were imperfect, and would I be able to tell?**
+
+::: {.callout-tip}
+## Key points
+
+- Write the **baseline next to the score**, the **shape** of an effect rather than only its
+  significance, and the **null results** rather than omitting them.
+- List the claims the design does not support. On this survey that is the depth optimum,
+  chlorophyll's importance, anything causal, and transfer beyond the sampled envelope.
+- Uncertainty after a model search is wider than the software prints, because the search is
+  not in the interval.
+- **Observation bias is invisible to validation.** Halving the recorded catch on rock more
+  than doubled the estimated rock effect and *improved* the cross-validated RMSE and R².
+- The defences against that are gear calibration, an independent method, and transparent
+  reporting of effort, not a better model.
+:::
+
+## Try it yourself
+
+1. Bias the data the other way, supposing the gear over-counts in high chlorophyll because of
+   fouling, and check whether cross-validation notices. Then check whether the
+   chlorophyll smooth changes sign.
+2. Write the Results paragraph for the random forest instead. Which of the five sentences can
+   you still write, and what do you have to replace them with?

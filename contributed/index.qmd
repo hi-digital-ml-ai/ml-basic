@@ -1,0 +1,27 @@
+---
+title: "Contributed pages"
+description: "Analyses built by course participants from their own marine data."
+listing:
+  # Participant pages only: the year prefix keeps the guide page off the cards.
+  contents: "20*.qmd"
+  type: grid
+  sort: "date desc"
+  categories: true
+  fields: [title, description, author, date, categories]
+toc: false
+---
+
+These pages were written by course participants, researchers in fisheries,
+oceanography, ecology and related fields, using data from their own work. They are
+not tidy teaching examples. They show the methods from the course meeting real data,
+with the compromises that involves.
+
+Each page states where its data came from and whether it can be shared. Where the
+underlying data is embargoed or licensed, the page says so and uses a stand-in
+dataset for the figures.
+
+::: {.callout-note}
+Adding one of your own? [Writing a contributed page](writing-a-contributed-page.qmd)
+covers the front matter, the data-permission checks and the route from a draft
+analysis to a published page. Start from `contributed/_template.qmd`.
+:::

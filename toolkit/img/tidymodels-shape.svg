@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 244" width="100%" role="img" aria-label="How a recipe and a model specification combine into a workflow, which is then fitted and used to predict">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/>
+    </marker>
+    <style>
+      .box   { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; rx: 8; }
+      .plain { fill: #ffffff; stroke: #b9c4cb; stroke-width: 1.4; rx: 8; }
+      .fn    { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1b6a87; }
+      .head  { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body  { font: 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .note  { font: italic 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .pkg   { font: 11px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #8a949c; letter-spacing: 0.04em; }
+      .link  { stroke: #8a949c; stroke-width: 1.8; fill: none; }
+    </style>
+  </defs>
+
+  <rect class="box" x="10" y="20" width="250" height="84"/>
+  <text class="pkg"  x="26" y="42">recipes</text>
+  <text class="fn"   x="26" y="64">recipe() |&gt; step_*()</text>
+  <text class="body" x="26" y="88">What happens to each column.</text>
+
+  <rect class="box" x="10" y="150" width="250" height="84"/>
+  <text class="pkg"  x="26" y="172">parsnip</text>
+  <text class="fn"   x="26" y="194">logistic_reg()</text>
+  <text class="body" x="26" y="218">Which model, and which engine.</text>
+
+  <rect class="box" x="360" y="85" width="200" height="84"/>
+  <text class="pkg"  x="376" y="107">workflows</text>
+  <text class="fn"   x="376" y="129">workflow()</text>
+  <text class="body" x="376" y="153">One object holding both.</text>
+
+  <rect class="plain" x="640" y="85" width="130" height="84"/>
+  <text class="fn"   x="656" y="119">fit(train)</text>
+  <text class="body" x="656" y="143">Estimates it.</text>
+
+  <rect class="plain" x="800" y="85" width="130" height="84"/>
+  <text class="fn"   x="816" y="119">predict(test)</text>
+  <text class="body" x="816" y="143">Uses it.</text>
+
+  <path class="link" d="M 260 62 C 310 62 310 110 356 118" marker-end="url(#arrow)"/>
+  <path class="link" d="M 260 192 C 310 192 310 142 356 134" marker-end="url(#arrow)"/>
+  <line class="link" x1="560" y1="127" x2="636" y2="127" marker-end="url(#arrow)"/>
+  <line class="link" x1="770" y1="127" x2="796" y2="127" marker-end="url(#arrow)"/>
+
+</svg>

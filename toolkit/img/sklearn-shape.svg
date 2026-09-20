@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 244" width="100%" role="img" aria-label="A scikit-learn Pipeline drawn as nested objects: a ColumnTransformer holding one transformer per group of columns, followed by the estimator, with fit and predict called on the outside">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/>
+    </marker>
+    <style>
+      .outer { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.8; rx: 10; }
+      .mid   { fill: #ffffff; stroke: #1b6a87; stroke-width: 1.4; rx: 8; }
+      .inner { fill: #f6f8fa; stroke: #b9c4cb; stroke-width: 1.2; rx: 6; }
+      .fn    { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1b6a87; }
+      .head  { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body  { font: 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .cols  { font: 12px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #8a949c; }
+      .link  { stroke: #8a949c; stroke-width: 1.8; fill: none; }
+    </style>
+  </defs>
+
+  <rect class="outer" x="220" y="14" width="640" height="216"/>
+  <text class="fn" x="240" y="40">Pipeline</text>
+
+  <rect class="mid" x="242" y="54" width="360" height="156"/>
+  <text class="fn" x="258" y="80">ColumnTransformer</text>
+
+  <rect class="inner" x="260" y="96" width="324" height="46"/>
+  <text class="body" x="274" y="116">SimpleImputer(strategy="median")</text>
+  <text class="cols" x="274" y="134">depth_m, temperature_c, chlorophyll_mg_m3</text>
+
+  <rect class="inner" x="260" y="152" width="324" height="46"/>
+  <text class="body" x="274" y="172">OneHotEncoder(drop="first")</text>
+  <text class="cols" x="274" y="190">substrate</text>
+
+  <rect class="mid" x="646" y="98" width="196" height="68"/>
+  <text class="fn"   x="662" y="126">LogisticRegression</text>
+  <text class="body" x="662" y="148">The estimator.</text>
+
+  <line class="link" x1="602" y1="132" x2="642" y2="132" marker-end="url(#arrow2)"/>
+
+  <text class="fn"   x="10" y="127">pipe.fit(X_train, y_train)</text>
+  <line class="link" x1="202" y1="122" x2="216" y2="122" marker-end="url(#arrow2)"/>
+
+  <text class="fn"   x="880" y="127">pipe.predict(X_test)</text>
+  <line class="link" x1="862" y1="122" x2="876" y2="122" marker-end="url(#arrow2)"/>
+
+</svg>

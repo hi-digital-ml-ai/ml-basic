@@ -1,0 +1,69 @@
+---
+title: "4 · How machine-learning algorithms learn"
+description: "What is actually happening when a model 'fits': loss functions, gradient descent, and the link back to maximum likelihood."
+categories: [optimisation]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+"Fitting a model" sounds like a single act. It is really a search. The algorithm has a
+way of scoring how wrong it currently is, and a rule for changing its parameters to be
+slightly less wrong, and it repeats until further changes stop helping.
+
+Understanding that loop is worth an hour of your time, because it explains a great
+deal that otherwise looks arbitrary: why models need scaled inputs, why fits
+sometimes fail to converge, why two runs give different answers, and what a
+regularisation penalty is actually penalising.
+
+It also connects to ground you may already stand on. Least-squares regression and
+maximum likelihood are not a separate world from machine learning: they are the same
+machinery with a different scorecard.
+
+This section settles three debts. Section 2 asked you to [scale your
+predictors](../02-marine-data/scaling-and-encoding.qmd) without giving the real reason;
+[gradient descent](gradient-descent.qmd) supplies it, and it is worth a factor of about
+ninety in computing. [Section
+3](../03-supervised-learning/linear-and-polynomial-regression.qmd) showed a linear model
+predicting negative fish; [maximum likelihood](maximum-likelihood.qmd) explains that this
+was a distributional assumption made silently, not a flaw in the method. And the
+regularisation that [section 5](../05-generalisation/regularisation.qmd) is about to
+introduce as a technique turns out, on the [MAP page](map-and-priors.qmd), to be a
+statement of prior belief with the Bayesian label removed.
+
+::: {.callout-note}
+There is more arithmetic here than elsewhere in the course, and it is all optional depth.
+If you read only two pages, read [loss functions](loss-functions.qmd), because the loss is
+a scientific choice your software makes for you by default, and
+[reading a fit](reading-a-fit.qmd), which is the practical one.
+:::
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [Stochastic gradient descent](https://scikit-learn.org/stable/modules/sgd.html), scikit-learn user guide. Includes the practical-tips section on why these methods need scaled inputs, which is the point this section makes with a factor of ninety.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/IHZwWFHWa-w.jpg){.video-thumb fig-alt="Gradient descent, how neural networks learn, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=IHZwWFHWa-w)
+
+  [Gradient descent, how neural networks learn](https://www.youtube.com/watch?v=IHZwWFHWa-w), 3Blue1Brown. Deep Learning chapter 2. The best visual account of descending a loss surface, and it assumes no calculus you do not already have.
+
+- [![](../../img/video/XepXtl9YKwc.jpg){.video-thumb fig-alt="Maximum Likelihood, clearly explained, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=XepXtl9YKwc)
+
+  [Maximum Likelihood, clearly explained](https://www.youtube.com/watch?v=XepXtl9YKwc), StatQuest with Josh Starmer. Likelihood as a function of the parameter rather than of the data, which is the step most explanations skip.
+:::

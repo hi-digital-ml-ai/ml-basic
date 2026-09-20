@@ -1,0 +1,106 @@
+---
+title: "9 · Introduction to neural networks"
+description: "How neural networks work, built from scratch and checked against arithmetic, what they need to work well, and the common marine problems where they are the wrong tool."
+categories: [neural-networks, optimisation]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+Neural networks attract attention out of proportion to how often they are the right choice.
+The mechanics are less mysterious than the reputation suggests: a network is a stack of
+weighted sums with a bend between them, trained by the same gradient descent introduced in
+[4 · How algorithms learn](../04-how-algorithms-learn/index.qmd). This section builds one in
+forty lines of base R, checks its gradients against finite differences, and only then uses a
+package.
+
+They shine on data whose structure a person cannot summarise into features, such as imagery,
+acoustics and waveforms, and marine science has plenty of that. For a table of environmental
+covariates with a few hundred rows, they usually do not. This section shows both, and the
+reason for the difference turns out to be a single property of the problem.
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+## Findings from this section
+
+- A single neuron with an identity activation **is** linear regression: our network and
+  `lm()` agreed to **eight decimal places**. With a logistic activation it is logistic
+  regression, to four.
+- **Two hidden units, seven weights, recovered a humped temperature response**, placing
+  its peak at 8.7 °C against a true optimum of 9.0. One unit could not; five added nothing.
+  The best straight line through that hump *rises*, reporting the wrong sign.
+- Backpropagated gradients matched finite differences to about **eleven decimal places**.
+  Large initial weights saturated the hidden units and shrank the first-layer gradient
+  **twelvefold**, which is the vanishing gradient problem in one table.
+- The usable range of learning rates spans about **twentyfold**. At 2, the loss reached
+  2 × 10^12^ by step twelve and overflowed to `NaN` by step 147.
+- **Unscaled inputs cost more than everything else combined.** The same network on metres
+  and degrees scored 0.763 where standardised it scored 0.570, and a straight line scored
+  0.680. It lost to a linear model without producing a single warning.
+- A 40-unit network's validation error bottomed at **step 1,937 of 8,000** and was 4% worse
+  by the end. Ten identical runs differing only in seed varied by **0.046** in validation
+  MSE.
+- On the survey, the mean-only baseline scores 4.402 and an oracle that knows every true
+  expected count scores 3.701, so **everything any method can learn is a 0.70 window**. A
+  default eight-unit network never entered it at any training-set size, and
+  cross-validation tuned the network down to **one hidden unit** with the heaviest penalty
+  on the grid.
+- **A linear autoencoder is PCA**, exactly: same reconstruction error to four decimals, a
+  canonical correlation of 1.000 with the principal components. Every random seed found the
+  same plane and a different pair of axes in it.
+- **Seventeen weights beat a 500-tree random forest**, AUC 0.998 against 0.926, on a
+  water-mass band in temperature–salinity space. Logistic regression could not exceed 0.72
+  there at any sample size.
+
+::: {.callout-important}
+The network was not short of rows. It was short of **signal**. Given the same predictors and
+the noise-free expected count as its target, the eight-unit network beat linear regression
+by **24%**: it had learned the true response surface, and learned it well, on a few hundred
+stations. Then negative-binomial sampling noise was put back on top and that advantage
+vanished and reversed. "Neural networks need a lot of data" is the wrong summary. They need
+a lot of data *relative to the noise*, and on a noisy count survey that is a much higher bar
+than the row count suggests.
+:::
+
+::: {.callout-note}
+**What makes a network win is a property of the problem, not of the data volume.** A hidden
+unit computes a weighted combination of the inputs before it bends, so it is a rotated
+coordinate. So networks win when what matters is a *combination* of your variables that you
+cannot name in advance: a diagonal band in T–S space, an edge in an image, a formant in a
+call. If you can name the combination, add it as a column and use a simpler model. If your
+predictors act more or less one at a time, a forest will beat the network and cost you an
+afternoon instead of a week.
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [`mlp()`](https://parsnip.tidymodels.org/reference/mlp.html), parsnip. The multilayer perceptron in the same specification idiom as every other model in the course.
+- [Neural network models (supervised)](https://scikit-learn.org/stable/modules/neural_networks_supervised.html), scikit-learn user guide. Includes the tips section on scaling and on how little data these need before they overfit.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/aircAruvnKk.jpg){.video-thumb fig-alt="But what is a neural network?, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=aircAruvnKk)
+
+  [But what is a neural network?](https://www.youtube.com/watch?v=aircAruvnKk), 3Blue1Brown. Deep Learning chapter 1, and the clearest account anywhere of what the layers are doing.
+
+- [![](../../img/video/tIeHLnjs5U8.jpg){.video-thumb fig-alt="Backpropagation calculus, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+
+  [Backpropagation calculus](https://www.youtube.com/watch?v=tIeHLnjs5U8), 3Blue1Brown. Deep Learning chapter 4, for readers who want the derivative rather than the metaphor.
+
+- [![](../../img/video/CqOfi41LfDw.jpg){.video-thumb fig-alt="The Essential Main Ideas of Neural Networks, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=CqOfi41LfDw)
+
+  [The Essential Main Ideas of Neural Networks](https://www.youtube.com/watch?v=CqOfi41LfDw), StatQuest with Josh Starmer. A slower path to the same place.
+:::

@@ -1,0 +1,346 @@
+---
+title: "Maximum likelihood"
+description: "Where losses actually come from: state how the data were generated, and the loss follows."
+order: 4
+categories: [optimisation]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(MASS, include.only = c("glm.nb", "negative.binomial"))
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## The menu behind the menu
+
+[The loss page](loss-functions.qmd) presented squared error, absolute error and Poisson
+deviance as a menu, with advice about when each is appropriate. That is how the choice is
+usually taught, and it is unsatisfying: it makes the loss look like a matter of taste.
+
+It is not. Almost every loss in that table is a consequence of one principle, and the
+principle is the one your statistics training already gave you. State what you think
+generated the data, and the loss falls out.
+
+For a marine scientist this reframing is worth more than the algorithm. It converts "which
+loss should I use?", a question about software, into "what kind of quantity is my
+response, and what does its variability look like?", a question about your sampling, which
+you are qualified to answer.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The idea
+
+### Likelihood is probability read backwards
+
+Probability asks: given a model, how likely is this data? **Likelihood** asks the same
+question with the roles reversed: given this data, which model settings make it most
+plausible?
+
+Take one station where you counted 3 individuals. If the true expected count there were
+$\mu = 3$, a count of 3 is quite probable. If $\mu = 0.2$, a count of 3 would be a
+surprise. If $\mu = 30$, it would be a different kind of surprise. Plot that probability
+against $\mu$ and you have the likelihood for that one station.
+
+```{r}
+#| label: fig-one-station
+#| fig-cap: "Left: the Poisson probability of counting exactly 3 individuals, as a function of the expected count μ. It peaks at μ = 3. Right: the same curve for three stations that caught 3, 0 and 11, and their product, the joint likelihood. The product peaks at 4.67, the mean of the three counts, and is far narrower than any single curve."
+#| fig-alt: "Two panels. The left panel shows a single humped curve rising from zero at mu equals zero to a peak of about 0.22 at mu equals 3, then falling slowly toward zero by mu equals 15. The right panel shows three thin humped curves peaking at different places, one near zero, one near 3 and one near 11, together with a much taller narrow curve, rescaled, peaking near 4.7 and dropping to near zero by mu equals 9. The joint curve is narrower than every individual curve."
+#| fig-width: 7.5
+#| fig-height: 3.6
+mu <- seq(0.05, 15, length.out = 400)
+
+p1 <- tibble(mu, likelihood = dpois(3, mu)) |>
+  ggplot(aes(mu, likelihood)) +
+  geom_line(linewidth = 1, colour = ml_palette[["blue"]]) +
+  labs(x = "Expected count μ", y = "P(count = 3)",
+       title = "One station, counted 3")
+
+counts <- c(3, 0, 11)
+joint <- tibble(mu, L = dpois(counts[1], mu) * dpois(counts[2], mu) * dpois(counts[3], mu))
+
+p2 <- map_dfr(counts, \(k) tibble(mu, L = dpois(k, mu), curve = paste("counted", k))) |>
+  ggplot(aes(mu, L)) +
+  geom_line(aes(group = curve), colour = ml_palette[["grey"]], linewidth = 0.5) +
+  geom_line(data = joint |> mutate(L = L / max(L) * 0.3),
+            colour = ml_palette[["vermilion"]], linewidth = 1.1) +
+  geom_vline(xintercept = mean(counts), linetype = "dashed",
+             colour = ml_palette[["vermilion"]]) +
+  labs(x = "Expected count μ", y = "Likelihood",
+       title = "Three stations, and their product",
+       subtitle = "Joint curve rescaled to fit; dashed line at the mean count")
+
+p1 + p2
+```
+
+With one station almost any $\mu$ between 1 and 8 is defensible. With three, the plausible
+range has already tightened sharply, because a value of $\mu$ has to explain *all* the
+counts at once. That narrowing is what more data buys you, and it is visible on the plot.
+
+### Taking logs, and the step to a loss
+
+Multiplying 749 probabilities together produces a number so small that a computer stores it
+as zero. So we take logarithms, which turns the product into a sum and changes nothing
+about where the maximum is.
+
+Maximising the sum of log-probabilities is the same as *minimising* its negative, and the
+negative log-likelihood is a loss function. That is the whole connection:
+
+$$\underbrace{\text{choose } \theta \text{ to maximise } \sum_i \log p(y_i \mid \theta)}_{\text{maximum likelihood}} \;\;\equiv\;\; \underbrace{\text{choose } \theta \text{ to minimise } \sum_i -\log p(y_i \mid \theta)}_{\text{minimising a loss}}$$
+
+Change the distribution $p$ and you change the loss. That is where the menu comes from.
+
+| If you assume the response is… | The negative log-likelihood is… | Known as |
+| --- | --- | --- |
+| Normal, constant variance | Squared error | Least squares |
+| Normal, variance ∝ something | Weighted squared error | Weighted least squares |
+| Laplace (double exponential) | Absolute error | Least absolute deviations |
+| Poisson | Poisson deviance | Poisson regression |
+| Negative binomial | NB deviance | Overdispersed count regression |
+| Bernoulli (yes/no) | Log loss / cross-entropy | Logistic regression |
+
+Read the first row again: **least squares assumes normally distributed errors of constant
+variance whether or not you ever said so.** Anyone who has ever fitted `lm()` to counts
+has made that assumption silently. It is why [section 3's linear model predicted negative
+fish](../03-supervised-learning/linear-and-polynomial-regression.qmd), not because linear
+regression is careless, but because the Normal distribution it assumes runs from −∞ to +∞
+and a loss built from it has no way to object.
+
+## Worked example
+
+### Least squares is Gaussian maximum likelihood
+
+Let us check that the first row of the table is literally true, not merely analogous.
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+d <- survey |>
+  select(abundance, chlorophyll_mg_m3, depth_m) |>
+  drop_na() |>
+  mutate(
+    chl_z   = as.numeric(scale(chlorophyll_mg_m3)),
+    depth_z = as.numeric(scale(depth_m))
+  )
+
+y <- d$abundance
+X <- model.matrix(~ chl_z, data = d)
+
+# Negative log-likelihood under a Normal model. sigma is a parameter too, and is
+# carried on the log scale so the search cannot propose a negative one.
+neg_log_lik_normal <- function(par) {
+  -sum(dnorm(y, mean = X %*% par[1:2], sd = exp(par[3]), log = TRUE))
+}
+
+mle <- optim(c(0, 0, 1), neg_log_lik_normal, method = "BFGS",
+             control = list(reltol = 1e-14, maxit = 5000))
+
+tibble(
+  method      = c("Maximum likelihood", "Least squares (lm)"),
+  intercept   = c(mle$par[1], coef(lm(abundance ~ chl_z, data = d))[1]),
+  chl_slope   = c(mle$par[2], coef(lm(abundance ~ chl_z, data = d))[2]),
+  sigma       = c(exp(mle$par[3]), sqrt(mean(residuals(lm(abundance ~ chl_z, data = d))^2)))
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 4)))
+```
+
+Identical. Nowhere in the likelihood code did we write a squared residual; we asked for the
+parameters that make the observed counts most probable under a Normal model, and least
+squares came back. The two are the same procedure.
+
+### The same machinery with a count distribution
+
+Now change one word, `dnorm` to `dpois`, and add the log link that keeps the mean
+positive.
+
+```{r}
+#| label: poisson-mle
+Xp <- model.matrix(~ chl_z + depth_z + I(depth_z^2), data = d)
+
+neg_log_lik_poisson <- function(b) {
+  -sum(dpois(y, lambda = exp(drop(Xp %*% b)), log = TRUE))
+}
+
+pois_mle <- optim(rep(0, ncol(Xp)), neg_log_lik_poisson, method = "BFGS",
+                  control = list(reltol = 1e-14, maxit = 5000))
+
+pois_glm <- glm(abundance ~ chl_z + depth_z + I(depth_z^2),
+                data = d, family = poisson)
+
+tibble(
+  term       = colnames(Xp),
+  `by optim` = pois_mle$par,
+  `by glm`   = coef(pois_glm)
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 5)))
+```
+
+Agreement to five decimal places, and the log-likelihoods match too: −2492.032 from both.
+`glm(family = poisson)` is not a different technique from what we just wrote by hand; it is
+this, with a faster search.
+
+::: {.callout-note}
+The `optim()` call above needs standardised predictors to succeed. Fed raw depth in metres,
+so that the squared term reaches 60,000, the search starting from all zeros goes nowhere
+and returns the starting values without complaint. That is
+[the previous page's point](gradient-descent.qmd) arriving unannounced: `glm()` survives raw
+depth because IRLS uses curvature, and a generic gradient search does not.
+:::
+
+### Curvature is uncertainty
+
+Here is the part that is genuinely useful and rarely stated plainly. The **shape** of the
+log-likelihood around its peak tells you how well determined the parameters are. A sharp
+peak means the data would look quite different if the parameter moved; a flat peak means
+the data cannot really tell. Standard errors *are* that curvature.
+
+```{r}
+#| label: curvature
+hessian <- optimHess(pois_mle$par, neg_log_lik_poisson)
+
+tibble(
+  term                 = colnames(Xp),
+  `SE from curvature`  = sqrt(diag(solve(hessian))),
+  `SE reported by glm` = summary(pois_glm)$coefficients[, 2]
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 5)))
+```
+
+Identical again. Every standard error, confidence interval and *p*-value you have read off a
+model summary is a statement about how curved the log-likelihood is at its top. It is not an
+extra layer of statistics bolted onto the fit; it is a by-product of the fit.
+
+### Estimating a parameter that is not a coefficient
+
+[Section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd) found this
+survey overdispersed: the Poisson deviance-to-degrees-of-freedom ratio here is 4.2 where
+1 is assumed. The negative binomial adds a dispersion parameter $\theta$ to absorb the
+excess, and $\theta$ is estimated by likelihood exactly like everything else.
+
+```{r}
+#| label: fig-theta
+#| fig-cap: "Profile log-likelihood for the negative-binomial dispersion parameter θ, with the mean model refitted at each value. The peak is at 1.06. The dashed line is two log-likelihood units below it, the conventional cut-off for a 95% interval, and it crosses the curve at 0.92 and 1.22."
+#| fig-alt: "A smooth humped curve on axes of theta from 0.7 to 1.8 against profile log-likelihood from about minus 1855 to minus 1828. The curve rises from minus 1845 at theta 0.7 to a rounded maximum of minus 1828.4 at theta 1.06, then falls away more gradually to minus 1854 at theta 1.8. A vertical dotted line marks the maximum. A horizontal dashed line just below the peak crosses the rising limb at about 0.92 and the falling limb at about 1.22, and the interval between those crossings is shaded."
+#| fig-width: 7
+#| fig-height: 4
+theta_grid <- seq(0.7, 1.8, length.out = 120)
+
+profile <- tibble(
+  theta = theta_grid,
+  log_likelihood = map_dbl(theta_grid, \(t) {
+    as.numeric(logLik(glm(abundance ~ chl_z + depth_z + I(depth_z^2),
+                          data = d, family = MASS::negative.binomial(t))))
+  })
+)
+
+nb_fit <- MASS::glm.nb(abundance ~ chl_z + depth_z + I(depth_z^2), data = d)
+cutoff <- max(profile$log_likelihood) - 1.92
+
+ggplot(profile, aes(theta, log_likelihood)) +
+  geom_ribbon(
+    data = filter(profile, log_likelihood >= cutoff),
+    aes(ymin = cutoff, ymax = log_likelihood),
+    fill = ml_palette[["sky"]], alpha = 0.3
+  ) +
+  geom_line(linewidth = 1, colour = ml_palette[["blue"]]) +
+  geom_vline(xintercept = nb_fit$theta, linetype = "dotted") +
+  geom_hline(yintercept = cutoff, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  labs(
+    x = "Dispersion parameter θ", y = "Profile log-likelihood",
+    title = "Finding θ by likelihood",
+    subtitle = "Dotted line: the value glm.nb() returns. Shaded: within two log-likelihood units of the peak."
+  )
+```
+
+```{r}
+#| label: nb-compare
+tibble(
+  model = c("Poisson", "Negative binomial"),
+  `log-likelihood` = c(as.numeric(logLik(pois_glm)), as.numeric(logLik(nb_fit))),
+  AIC = c(AIC(pois_glm), AIC(nb_fit)),
+  theta = c(NA, nb_fit$theta)
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Reading the dispersion estimate
+
+`glm.nb()` returns $\theta = 1.058$, and the profile confirms it: the curve peaks there.
+The simulation that generated this data used $\theta = 1.5$, so the estimate is low. The
+mean model here has only chlorophyll and a depth quadratic, so variation the true model
+explains through temperature, substrate and the spatial field is left over as apparent
+overdispersion. A dispersion estimate is not a property of the species; it is a property of
+the species *given the model you fitted*.
+
+The improvement in fit is not marginal. Adding one parameter moves the log-likelihood from
+−2492 to −1828 and the AIC from 4992 to 3667. Under the Poisson assumption the data are
+absurdly improbable, and the model was reporting standard errors on that basis.
+
+Notice, too, what the profile's shape says. Two log-likelihood units below the peak, the
+conventional 95% cut-off, spans θ from 0.92 to 1.22, so the data pin the dispersion down
+to roughly ±15%. Outside the plotted window the likelihood collapses: θ = 0.4 and θ = 3
+both score about −1921, more than ninety units below the peak. The curve is also visibly
+asymmetric, falling faster on the low side than the high, which is why a dispersion
+parameter deserves an interval rather than three decimal places.
+
+::: {.callout-warning}
+Likelihoods are comparable only between models fitted to **exactly the same response**. A
+Poisson and a negative binomial on the same counts can be compared; a model of `abundance`
+and a model of `log(abundance + 1)` cannot, because the second is a likelihood for a
+different quantity. Comparing their AICs produces a number, and the number is meaningless.
+:::
+
+## Limits of maximum likelihood
+
+**The assumption is doing real work.** Maximum likelihood is only as good as the
+distribution you named. Fit a Poisson model to overdispersed counts and it still converges,
+still reports coefficients, and still prints standard errors, which will be roughly half
+what they should be, because the model believes the data are far more informative than they
+are. Nothing in the output says so. The diagnostic is the deviance ratio, and you have to
+ask for it.
+
+**Most machine-learning models have no likelihood.** Random forests, boosted trees and
+k-nearest-neighbours do not state a probability model for the response, so there is no
+likelihood to maximise, no AIC, and no standard errors from curvature. This is a real cost
+of the flexible methods and is worth weighing in
+[section 3's choice of method](../03-supervised-learning/choosing-a-method.qmd): you trade
+inferential machinery for freedom of shape.
+
+**Maximum likelihood overfits, by design.** It finds the parameters that make *your*
+dataset most probable, which is not the same as the parameters that predict the next survey
+best. With many parameters and few stations, the two diverge sharply. The standard repair is
+to stop maximising the likelihood alone and start maximising it against a preference for
+modest parameters, which is [MAP estimation](map-and-priors.qmd), on the next page.
+
+::: {.callout-tip}
+## Key points
+
+- **Likelihood** is the probability of your data under a candidate set of parameters.
+  Maximum likelihood picks the parameters that make what you observed most plausible.
+- Minimising a negative log-likelihood *is* minimising a loss. The loss menu is not a menu:
+  each entry is one distributional assumption.
+- Least squares is Gaussian maximum likelihood, verified here to four decimals, which is
+  why fitting `lm()` to counts silently assumes a distribution running to −∞.
+- Standard errors are the curvature of the log-likelihood at its peak, reproduced here from
+  the Hessian to five decimals. They are a by-product of fitting, not an extra step.
+- The Poisson fit was hopeless on these counts: adding one dispersion parameter improved the
+  log-likelihood by 664 units.
+
+:::
+
+## Try it yourself
+
+1. Refit the Gaussian likelihood with `dnorm` replaced by a Laplace density
+   (`dexp(abs(y - mu), rate = 1/b)` up to a constant). Confirm that the coefficients match
+   the absolute-error fit from [the loss page](loss-functions.qmd), and that the two losses
+   were never separate ideas.
+2. Add `temperature_c` and a temperature quadratic to the negative-binomial model and refit.
+   Does $\theta$ move towards the simulated value of 1.5? What does the direction of the move
+   tell you about where the leftover variability was coming from?

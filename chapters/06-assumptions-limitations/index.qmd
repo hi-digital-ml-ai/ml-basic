@@ -1,0 +1,80 @@
+---
+title: "6 · Model assumptions and limitations"
+description: "What your model quietly assumes about the ocean, and what happens when the ocean disagrees."
+categories: [assumptions, spatial-temporal, class-imbalance]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+Machine-learning methods are often described as assumption-free. They are not. They
+make fewer assumptions about the *shape* of relationships than a linear model does,
+which is a real advantage. But they make strong assumptions about how the data were
+collected, and marine data violates most of them.
+
+Two stations ten metres apart are not independent observations. A time series sampled
+monthly for three years tells you little about a decadal cycle. Survey effort follows
+ports, weather windows and funding. Predicting into unsampled depth or an unprecedented
+temperature is extrapolation, whatever the model's confidence output says.
+
+This is the section that determines whether the rest of the course helps you or
+misleads you.
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+## Findings from this section
+
+- 720 survey visits turned out to be worth **549** independent observations. One
+  coefficient's honest standard error was **2.77 times** the naive one, and a fabricated
+  site-level variable went from *p* = 0.09 to *p* = 0.19.
+- A flexible model recovered the true temperature optimum almost exactly, 9.30 °C against
+  a true 9, and put the depth optimum at **15 m where the truth is 80 m**. Same method,
+  same data, same flexibility. The difference was confounding.
+- A Poisson model of these counts expects 68 empty stations where **159** were observed,
+  and its standard errors are too small by a factor of **1.9**, which moves three terms
+  from *p* < 0.01 to *p* > 0.05.
+- A random forest using **only longitude and latitude** scored R² 0.075 under random
+  cross-validation and **0.011** under spatially blocked folds.
+- Asked to predict below 100 m having trained above it, a random forest over-predicted by
+  **73%**, against models biased by 2–8% in range.
+- Downsampling, upsampling and SMOTE **moved along** the sensitivity–specificity curve
+  rather than lifting it; upsampling matched simply setting the threshold to the
+  prevalence.
+
+::: {.callout-important}
+If observations are spatially or temporally dependent, ordinary cross-validation will
+overstate performance, sometimes dramatically. The fix is in
+[7 · Validation](../07-validation/index.qmd).
+:::
+
+::: {.callout-note}
+Three of these pages compare models across *different* test sets, and each one notes that
+**RMSE is not comparable between resampling schemes**, because different folds hold different
+distributions of the response. Use R², or the same test set for both. It is the single
+most repeated methodological trap in the course.
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, which is the concrete answer to most of this section.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Independence is assumed silently in almost every default, and this page says where.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/l-CfniOBDBc.jpg){.video-thumb fig-alt="Spatial resampling to understand drought in Texas, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=l-CfniOBDBc)
+
+  [Spatial resampling to understand drought in Texas](https://www.youtube.com/watch?v=l-CfniOBDBc), Julia Silge. A random split and a spatial split on the same data, with the difference in the scores visible.
+:::

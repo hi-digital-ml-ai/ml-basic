@@ -1,0 +1,343 @@
+---
+title: "Training a network"
+description: "The four decisions that decide whether a network trains at all: the learning rate, the scale of the inputs, when to stop, and which random seed you happened to use."
+order: 3
+categories: [neural-networks, optimisation, tuning]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+```
+
+## Four decisions about the search
+
+The previous page produced a gradient. Turning a gradient into a fitted model needs four
+more decisions, and unlike the choice of model family, they are decisions about the
+*search*, not about the science. That makes them easy to skip over, and they are the
+difference between a network that works and one that silently does not.
+
+Everything here is a specific case of something §4 and §5 already established. The
+learning rate is [gradient descent's step
+size](../04-how-algorithms-learn/gradient-descent.qmd). Stopping early is
+[regularisation](../05-generalisation/regularisation.qmd). What is new is how much more
+sharply each of them bites when the loss surface is not convex.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+## The setup
+
+The same three-input, four-unit network as the previous page, with 200 stations held out
+so we can watch performance on data the network is not being fitted to.
+
+```{r}
+#| label: setup-data
+survey <- load_coastal_survey_clean()
+
+model_data <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3) |>
+  drop_na()
+
+X <- cbind(depth = as.numeric(scale(model_data$depth_m)),
+           temp  = as.numeric(scale(model_data$temperature_c)),
+           chl   = as.numeric(scale(log1p(model_data$chlorophyll_mg_m3))))
+y <- log1p(model_data$abundance)
+
+set.seed(20)
+holdout <- sample(nrow(X), 200)
+X_train <- X[-holdout, ]; y_train <- y[-holdout]
+X_valid <- X[holdout, ];  y_valid <- y[holdout]
+
+start <- function(seed, units) {
+  set.seed(seed)
+  list(W1 = matrix(rnorm(ncol(X_train) * units, 0, 0.5), ncol(X_train), units),
+       b1 = rep(0, units), w2 = rnorm(units, 0, 0.5), b2 = mean(y_train))
+}
+
+forward <- function(par, X) {
+  A1 <- tanh(sweep(X %*% par$W1, 2, par$b1, "+"))
+  list(A1 = A1, prediction = as.numeric(A1 %*% par$w2 + par$b2))
+}
+mse <- function(par, X, y) mean((y - forward(par, X)$prediction)^2)
+backward <- function(par, X, y) {
+  f <- forward(par, X)
+  d_prediction <- -2 * (y - f$prediction) / nrow(X)
+  d_Z1 <- outer(d_prediction, par$w2) * (1 - f$A1^2)
+  list(W1 = t(X) %*% d_Z1, b1 = colSums(d_Z1),
+       w2 = as.numeric(t(f$A1) %*% d_prediction), b2 = sum(d_prediction))
+}
+
+run <- function(par, learning_rate, steps, X_fit = X_train, y_fit = y_train) {
+  training <- validation <- numeric(steps)
+  for (s in seq_len(steps)) {
+    g <- backward(par, X_fit, y_fit)
+    for (nm in names(par)) par[[nm]] <- par[[nm]] - learning_rate * g[[nm]]
+    training[s]   <- mse(par, X_fit, y_fit)
+    validation[s] <- mse(par, X_valid, y_valid)
+  }
+  list(par = par, training = training, validation = validation)
+}
+
+c(training = nrow(X_train), validation = nrow(X_valid))
+```
+
+A straight line on these three predictors scores a training MSE of 0.680. Keep that number:
+it is the bar every run below has to clear.
+
+## Decision 1: the learning rate
+
+The learning rate multiplies the gradient to give the step. Too small and you never arrive;
+too large and you overshoot the valley and climb the other side.
+
+```{r}
+#| label: learning-rates
+rates <- c(0.01, 0.05, 0.2, 0.5, 2)
+
+sweeps <- map_dfr(rates, \(lr) {
+  r <- run(start(3, 4), lr, steps = 1500)
+  tibble(learning_rate = lr, step = seq_along(r$training), mse = r$training)
+})
+
+sweeps |>
+  summarise(`final MSE` = round(last(mse), 4),
+            `best MSE reached` = round(suppressWarnings(min(mse)), 4),
+            `stayed finite` = all(is.finite(mse)),
+            .by = learning_rate)
+```
+
+Five runs from identical starting weights, differing only in the multiplier.
+
+At 0.01 the steps are so small that after 1,500 of them the network has barely beaten the
+straight line. At 0.05 and 0.2 it descends cleanly, and 0.2 gets furthest. At 0.5 something
+new happens: the run reaches 0.5842 and then ends at 0.5956, because it is bouncing around the
+valley floor rather than settling into it, so its *final* answer is worse than its own
+best. At 2 the run destroys itself: the loss is 3.1 by step three, 2.2 × 10^12^ by step twelve
+and has overflowed to `NaN` by step 147. The weights grew, which made the gradients grow,
+which made the weights grow faster. Nothing warned; the column of `NaN` is the only
+symptom.
+
+```{r}
+#| label: fig-rates
+#| fig-cap: "Training loss under five learning rates from identical starting weights. The vertical scale is clipped at 0.9; the rate-2 run leaves that range on its second step and never returns, so it is present in the legend and absent from the panel. The dashed line is a linear model on the same predictors."
+#| fig-alt: "Four visible curves of mean squared error against training step on a log-scaled horizontal axis. The rate 0.01 curve declines slowly and ends just below 0.68 at step 1500. The rate 0.05 curve declines a little faster and ends near 0.595. The rate 0.2 curve falls to about 0.57, the lowest of all. The rate 0.5 curve drops earliest, reaching 0.59 by about step 120, but then throws three tall narrow spikes near steps 300, 400 and 500, the first going off the top of the panel, before settling in a jagged band around 0.60. A fifth series, rate 2, appears in the legend but nowhere in the panel. A dashed horizontal line marks the linear model at 0.68."
+#| fig-width: 7.5
+#| fig-height: 4.4
+linear_mse <- mean(resid(lm(y_train ~ X_train))^2)
+
+sweeps |>
+  mutate(learning_rate = factor(learning_rate)) |>
+  ggplot(aes(step, mse, colour = learning_rate)) +
+  geom_hline(yintercept = linear_mse, linetype = "dashed", colour = "#9aa5ad") +
+  geom_line(linewidth = 0.8) +
+  scale_x_log10() +
+  coord_cartesian(ylim = c(0.5, 0.9)) +
+  annotate("text", x = 1000, y = linear_mse, label = "linear model", vjust = -0.6,
+           size = 3.2, colour = "#77818a") +
+  labs(x = "gradient-descent step (log scale)", y = "training mean squared error",
+       colour = "learning rate")
+```
+
+There is no principled way to pick the rate in advance, and the usable range here spans a
+factor of about twenty. Tune it like any other hyperparameter, on a log scale, and look at
+the curve rather than only the final number: a jagged curve is telling you the rate is too
+high even when the final score looks acceptable.
+
+## Decision 2: the scale of the inputs
+
+§2 recommended standardising and [§4 justified
+it](../04-how-algorithms-learn/gradient-descent.qmd). Networks make the consequence
+starker than anything else in this course, because a single learning rate has to serve
+every weight at once.
+
+```{r}
+#| label: scaling
+X_measured <- cbind(depth = model_data$depth_m,
+                    temp  = model_data$temperature_c,
+                    chl   = log1p(model_data$chlorophyll_mg_m3))[-holdout, ]
+
+standardised <- run(start(3, 4), 0.2, steps = 3000)
+
+set.seed(3)
+par_measured <- list(W1 = matrix(rnorm(12, 0, 0.5), 3, 4), b1 = rep(0, 4),
+                     w2 = rnorm(4, 0, 0.5), b2 = mean(y_train))
+measured <- run(par_measured, 0.2, steps = 3000, X_fit = X_measured, y_fit = y_train)
+
+tibble(inputs = c("standardised", "measured units", "linear model, for reference"),
+       `training MSE after 3000 steps` =
+         round(c(last(standardised$training), last(measured$training), linear_mse), 4))
+```
+
+Same network, same learning rate, same number of steps, same starting weights. In metres,
+degrees and log-chlorophyll the network scores 0.763, **worse than a straight line**.
+
+The reason is in the gradient. Depth ranges over roughly 150 units and log-chlorophyll over
+about 4, so the derivative with respect to depth's weight is tens of times larger than the
+derivative with respect to chlorophyll's. One learning rate cannot be right for both: it is
+either too large for depth, which oscillates, or too small for chlorophyll, which never
+moves. Standardising makes them comparable, and then a single rate works for all of them.
+
+::: {.callout-important}
+An unscaled network does not error, warn, or look broken. It trains, reports a loss, and
+produces predictions. It is just quietly worse than the linear model you did not fit. Put
+`step_normalize()` in the recipe.
+:::
+
+## Decision 3: when to stop
+
+"Epochs", meaning how many times the optimiser sees the data, is a hyperparameter, not a
+setting. Here is a deliberately oversized network, 40 hidden units on 541 stations, run
+far past the point of usefulness.
+
+```{r}
+#| label: fig-early-stopping
+#| fig-cap: "A 40-unit network trained for 8,000 steps. Training error falls throughout. Validation error bottoms out at step 1,937 and then climbs: everything after that point is the network memorising 541 stations."
+#| fig-alt: "Two curves against training step on a log-scaled horizontal axis. Both start high, validation at about 1.09 and training at about 1.00, and fall together, crossing near step 100 at about 0.61. From there to step 2000 the validation curve runs fractionally below the training curve. The training curve then continues falling to about 0.54 at step 8000, while the validation curve flattens, reaches its minimum of about 0.564 at step 1,937 where a vertical dashed line is drawn, and turns upward to about 0.589 by step 8000, leaving a widening gap."
+#| fig-width: 7.5
+#| fig-height: 4.4
+big <- run(start(5, 40), 0.05, steps = 8000)
+best_step <- which.min(big$validation)
+
+tibble(step = seq_along(big$training),
+       training = big$training, validation = big$validation) |>
+  pivot_longer(-step, names_to = "set", values_to = "mse") |>
+  ggplot(aes(step, mse, colour = set)) +
+  geom_vline(xintercept = best_step, linetype = "dashed", colour = "#9aa5ad") +
+  geom_line(linewidth = 0.8) +
+  scale_x_log10() +
+  annotate("text", x = best_step, y = 0.95, label = paste0("best validation: step ", best_step, "  "),
+           hjust = 1, size = 3.2, colour = "#77818a") +
+  labs(x = "gradient-descent step (log scale)", y = "mean squared error", colour = NULL)
+```
+
+```{r}
+#| label: early-stopping-numbers
+tibble(point = c("step 1", paste("step", best_step, "(best validation)"), "step 8000"),
+       training   = round(big$training[c(1, best_step, 8000)], 4),
+       validation = round(big$validation[c(1, best_step, 8000)], 4))
+```
+
+Training error falls from 1.001 to 0.540 and never stops falling. Validation error reaches
+0.564 at step 1,937 and is 0.589 by step 8,000, four per cent worse for four times the
+compute. This is **early stopping**: hold out a slice, watch it, and keep the weights from
+the step where it was best.
+
+It is worth seeing what early stopping actually is. Weights start small, and small weights
+make a nearly linear network; training grows them. Stopping early is therefore a cap on how
+large the weights get, which is exactly what an L2 penalty does directly. They are two
+routes to the same restraint, and `parsnip`'s `mlp()` exposes both, `epochs` and
+`penalty`.
+
+::: {.callout-note collapse="true"}
+## Batches, and the usual unit of an epoch
+Every run on this page computes the gradient from all 541 stations at once, in *full-batch*
+descent. Real training uses **mini-batches**: split the rows into groups of, say, 32,
+take one step per group, and call one pass over all groups an **epoch**. Each step then
+uses a noisy estimate of the gradient, which costs accuracy per step and buys two things:
+you can train on data that does not fit in memory, and the noise itself helps the run
+escape shallow local minima. On 541 rows neither benefit applies, which is why this page
+does not bother. On 541,000 rows there is no alternative.
+:::
+
+## Decision 4: the seed you happened to use
+
+The loss surface is not convex. Different starting weights reach different minima, and
+there is no way to know which one you got.
+
+```{r}
+#| label: seeds
+seed_runs <- map_dfr(1:10, \(s) {
+  r <- run(start(s, 8), 0.2, steps = 3000)
+  tibble(seed = s, training = last(r$training), validation = last(r$validation))
+})
+
+seed_runs |>
+  summarise(across(c(training, validation),
+                   list(best = min, worst = max, spread = \(x) max(x) - min(x)))) |>
+  mutate(across(everything(), \(x) round(x, 4)))
+```
+
+Ten runs on identical data with an identical recipe. Training MSE spans 0.018 and
+validation MSE spans 0.046, so the best seed looks eight per cent better than the worst on
+held-out data, and the difference is entirely the random number generator.
+
+That has a direct consequence for how you report results. A single network's score is a
+draw from this distribution, not a property of the method, and §7's
+[uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) page applies in
+full: fit it several times and report the spread. If a comparison between a network and
+another model is smaller than 0.046 on this data, the comparison has not been made.
+
+## The tidymodels version
+
+None of the four decisions disappear in `parsnip`; they become arguments.
+
+```{r}
+#| label: tidymodels-mlp
+network <- mlp(hidden_units = 8, penalty = 0.01, epochs = 500) |>
+  set_engine("nnet") |>
+  set_mode("regression")
+
+recipe_nn <- recipe(abundance ~ depth_m + temperature_c + chlorophyll_mg_m3,
+                    data = model_data) |>
+  step_log(chlorophyll_mg_m3, offset = 1) |>
+  step_normalize(all_numeric_predictors())
+
+set.seed(6)
+fitted <- workflow() |> add_recipe(recipe_nn) |> add_model(network) |>
+  fit(data = model_data[-holdout, ])
+
+augment(fitted, model_data[holdout, ]) |>
+  metrics(truth = abundance, estimate = .pred) |>
+  filter(.metric %in% c("rmse", "rsq"))
+```
+
+`hidden_units` and `penalty` are the two worth tuning; both take `tune()` and go through
+`tune_grid()` exactly as in §5. `step_normalize()` is not optional, for the reason measured
+above.
+
+::: {.callout-warning}
+`epochs` means different things to different engines. The `nnet` engine optimises with BFGS
+rather than gradient descent, and passes `epochs` through as `maxit`, the number of
+quasi-Newton iterations. It is still "how long to search", so tuning it still works, but
+there is no learning rate to set and the early-stopping curve above is not literally what
+`nnet` is doing. A `torch`- or `keras`-backed engine would take a learning rate, and then
+everything on this page applies directly.
+:::
+
+## Limits of this tuning
+
+**Four coupled decisions is a large search.** The best learning rate depends on the network
+size, which depends on the penalty, which interacts with the number of epochs. That is a
+four-dimensional tuning problem for a model that, on this dataset,
+[does not beat a straight line](how-much-data.qmd), and the tuning itself must sit inside
+the resampling or you have leaked, exactly as §7 warned.
+
+**None of it rescues a small dataset.** Every symptom on this page, needing early
+stopping and sensitivity to the seed, is worse when there are few rows per weight, and
+nothing in the training procedure fixes that.
+
+::: {.callout-tip}
+## Key points
+
+- **The learning rate spans a usable window of about twenty-fold.** Below it the run
+  crawls; above it the run oscillates; well above it the loss becomes `NaN` within ten
+  steps.
+- **Standardise, always.** The same network on measured units scored 0.763 against 0.570
+  standardised, and 0.680 for a straight line. Unscaled, it lost to a linear model without
+  producing a single warning.
+- **Epochs are a hyperparameter.** A 40-unit network's validation error bottomed at step
+  1,937 of 8,000 and was 4% worse by the end. Early stopping is regularisation.
+- **Report the spread across seeds.** Ten identical runs varied by 0.046 in validation MSE.
+  A single run's score is a draw, not a property of the method.
+:::
+
+## Try it yourself
+
+1. Re-run the learning-rate sweep with 16 hidden units instead of 4. Does the rate that
+   worked best for the small network still work, or does the larger one diverge sooner?
+2. Add `penalty = 0.1` to the `mlp()` specification and compare the held-out RMSE. Does the
+   penalty substitute for the early stopping the 8,000-step run needed?

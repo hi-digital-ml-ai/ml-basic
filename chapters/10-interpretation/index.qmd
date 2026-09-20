@@ -1,0 +1,97 @@
+---
+title: "10 · Interpretation and responsible application"
+description: "Working out what a model has learned, what it cannot learn from your data, and what you can honestly claim from it in a paper."
+categories: [interpretation, reproducibility, uncertainty]
+listing:
+  id: pages
+  contents: "*.qmd"
+  type: grid
+  grid-columns: 3
+  max-description-length: 320
+  sort: "order"
+  fields: [title, description, categories]
+toc: false
+---
+
+A model that predicts well has not thereby explained anything. It has found patterns that are
+useful for prediction, which may be causal, may be proxies, and may be artefacts of how the
+data were collected. A habitat model can achieve excellent accuracy by learning where the
+survey vessels went.
+
+This final section is about the step between having a model and making a scientific claim:
+which features actually drive the predictions, whether an interpretable model would serve you
+better than an accurate black box, how to report the work so that someone else could repeat
+it, and how to be straight about uncertainty.
+
+Because the survey is simulated, every claim on these pages can be checked against what was
+actually put into the data. Several of them fail that check, and those are the useful ones.
+
+## Pages in this section
+
+::: {#pages}
+:::
+
+## Findings from this section
+
+- Three columns of `rnorm()` noise ranked **sixth, seventh and eighth of sixteen** on the
+  default impurity importance, above salinity, above `survey_year`, and above every
+  substrate term, on every split we tried. Substrate has a real effect; the noise does not.
+- Across eight splits of the same data, chlorophyll's permutation-importance rank ran from
+  **first to eleventh**. The only two predictors that never beat a noise column were salinity
+  and `survey_year`, which are exactly the two with no effect in the generator.
+- The true depth response peaks at 80 m. A random forest's partial dependence declines
+  monotonically; so does a negative-binomial GLM given the generator's **exact** functional
+  form, which estimates the depth quadratic at a fourteenth of its true value with
+  $p = 0.63$. Accumulated local effects give the same answer.
+- Individual-station curves for temperature have humps between 1.35 and 5.98 counts tall,
+  peaking anywhere from 6 °C to 11.75 °C. **The average of them is shorter than any one of
+  them.**
+- On identical folds the **GAM beat the random forest and the boosted trees**, RMSE 4.08
+  against 4.28 and 4.74, closing 83% of the gap between a no-skill baseline and an oracle.
+  It also recovered the substrate ordering and salinity's null effect, which the importance
+  measures got wrong.
+- Changing the random forest's seed moved the test RMSE by **0.016**. Changing which rows
+  were held out moved it by **1.50**.
+- A 95% confidence band on the mean covered **29%** of the observed counts. An interval built
+  from a forest's in-sample RMSE covered 77%. Conformal prediction covered 96.5%, at
+  constant width, with a lower bound of −9.1 animals.
+
+::: {.callout-important}
+**No interpretation method recovers an effect the data does not identify.** Depth and
+temperature are confounded by this survey's design, with almost no cold shallow stations
+and almost no warm deep ones, and every method here reports the same wrong depth response as
+a result. The GAM is the only one that also reports that it does not know: its interval covers
+the true curve at 197 of 200 grid points and excludes zero only below 155 m. A
+partial-dependence plot has no mechanism for saying "the data cannot answer this".
+:::
+
+::: {.callout-warning}
+**And one error defeats every safeguard in this course.** If the gear recovers only half the
+animals on rock, the recorded counts on rock are halved, the estimated rock effect more than
+doubles, from "38% fewer than gravel" to "69% fewer", and the biased model's cross-validated
+RMSE and R² both *improve*. Resampling compares a model against the data, so a bias in the
+data passes every check. The defences are gear calibration, an independent method and
+transparent reporting of effort. None of them is a model.
+:::
+
+
+## Further resources
+
+**Documentation**
+
+- [Explaining models and predictions](https://www.tmwr.org/explain.html), Tidy Modeling with R. Local and global explanations through `DALEX`, in tidymodels idiom.
+- [DALEX](https://modeloriented.github.io/DALEX/), Przemyslaw Biecek and others. Model-agnostic explanation for R and Python both.
+- [Permutation importance](https://scikit-learn.org/stable/modules/permutation_importance.html) and [partial dependence and ICE](https://scikit-learn.org/stable/modules/partial_dependence.html), scikit-learn user guide. The permutation page is candid about what correlated predictors do to the ranking, which is this section's own finding.
+- [Interpretable Machine Learning](https://christophm.github.io/interpretable-ml-book/), Christoph Molnar. A free book, and the standard reference for every method named here.
+
+**Video**
+
+::: {.video-list}
+- [![](../../img/video/C80SQe16Rao.jpg){.video-thumb fig-alt="Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=C80SQe16Rao)
+
+  [Open the Black Box: an Introduction to Model Interpretability with LIME and SHAP](https://www.youtube.com/watch?v=C80SQe16Rao), Kevin Lemagnen at PyData.
+
+- [![](../../img/video/HTJ0nt3codo.jpg){.video-thumb fig-alt="Feature engineering and interpretability for xgboost with board game ratings, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=HTJ0nt3codo)
+
+  [Feature engineering and interpretability for xgboost with board game ratings](https://www.youtube.com/watch?v=HTJ0nt3codo), Julia Silge. Importance and explanation computed on a real model rather than a toy one.
+:::

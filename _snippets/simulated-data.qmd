@@ -1,0 +1,8 @@
+::: {.callout-note collapse="true"}
+## About the data on this page
+The coastal survey used here is **simulated**, not a real survey. That is
+deliberate: because we wrote the generating process (`R/make-example-data.R`), we
+know the true relationships and can show whether a model recovers them. No real
+survey is being misrepresented, and the figures are not results about any real
+species. See `data/README.md` for what is built into it.
+:::

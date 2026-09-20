@@ -1,8 +1,18 @@
 # Quarto build output
 /_site/
 /.quarto/
+
+# Generated from the pages by tools/extract-code.py on every build, and copied
+# into the site as a resource. Never edit or commit it; edit the page.
+/downloads/
 *_files/
 *_cache/
+
+# Stray output from rendering a single .qmd outside the project context.
+# Real site output goes to _site/ only; these are never wanted in the repo.
+/site_libs/
+chapters/**/*.html
+chapters/**/index-listing.json
 
 # R
 .Rproj.user/
@@ -17,6 +27,12 @@ renv/staging/
 renv/python/
 renv/sandbox/
 
+# Python (the snippet checker imports python/mlbasic_data.py)
+__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db
+
+**/*.quarto_ipynb
