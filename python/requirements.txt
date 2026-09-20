@@ -1,5 +1,5 @@
 # For running the Python tabs and python/check-snippets.py.
-# The site itself renders with R only — nothing here is needed to build it.
+# The site itself renders with R only. Nothing here is needed to build it.
 pandas>=2.2
 scikit-learn>=1.5
 scipy>=1.11

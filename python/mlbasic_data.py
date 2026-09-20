@@ -47,7 +47,7 @@ def load_coastal_survey():
 def load_coastal_survey_raw():
     """The same survey as it came off the ship: 815 rows, with the damage intact.
 
-    Read deliberately without cleaning — sentinel values, inconsistent labels and
+    Read deliberately without cleaning: sentinel values, inconsistent labels and
     text dates all arrive as they are, because section 2 is about finding them.
     """
     return pd.read_csv(DATA_DIR / "coastal-survey-raw.csv")
@@ -59,7 +59,7 @@ def load_coastal_survey_clean():
     Applies exactly the decisions argued for in section 2: drop duplicate rows,
     turn -999 sentinels into missing, correct the ten detectable decimal-point
     errors in depth, and collapse the twelve substrate spellings into four.
-    Chlorophyll keeps its gaps — imputation belongs inside the resampling.
+    Chlorophyll keeps its gaps: imputation belongs inside the resampling.
     """
     survey = load_coastal_survey_raw().drop_duplicates()
 
