@@ -8,9 +8,15 @@ categories: [case-study]   # plus method tags from .claude/site-structure.md
 ---
 
 <!--
-Template for a contributed page. Delete these comments as you go.
+Template for a contributed page whose analysis is in R. Delete these comments as
+you go. The Python counterpart is contributed/_template-python.qmd; pick the one
+your analysis is written in, and do not mix the two on one page.
+
 Filename: 2026-<author-slug>-<topic>.qmd  (e.g. 2026-nakamura-otolith-ageing.qmd)
 The shape below is a suggestion; follow your analysis, not the template.
+
+R pages need no engine: line. knitr is the site default, and _freeze/ caches the
+results, so commit the _freeze/ folder your render produces alongside the page.
 -->
 
 ## The question

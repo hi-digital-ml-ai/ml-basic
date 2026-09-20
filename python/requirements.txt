@@ -1,5 +1,6 @@
 # For running the Python tabs and python/check-snippets.py.
-# The site itself renders with R only. Nothing here is needed to build it.
+# The course pages themselves render with R only. Nothing below is needed to build
+# them; see the jupyter and matplotlib note at the foot of this file.
 pandas>=2.2
 scikit-learn>=1.5
 scipy>=1.11
@@ -11,3 +12,13 @@ statsmodels>=0.14
 # Section 8 only: UMAP, which began life as a Python library and has no
 # scikit-learn equivalent.
 umap-learn>=0.5
+
+# A contributed page written in Python (engine: jupyter) executes on render, which
+# the course pages never do, so it needs these two as well. Install them only if you
+# are writing or re-rendering such a page:
+#
+#   conda install jupyter matplotlib
+#
+# jupyter provides the kernel Quarto runs the chunks through; matplotlib draws the
+# figures, styled by python/mlbasic_theme.py. Neither is needed to build the site
+# from a committed _freeze/.
