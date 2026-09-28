@@ -150,3 +150,166 @@ class TitleScene(Scene):
         self.play(FadeIn(head, shift=0.3 * UP), run_time=0.5)
         self.play(GrowFromCenter(rule), FadeIn(tagline), run_time=0.6)
         self.wait(max(length - self.time, 0.1))
+
+
+# Scenes every video shares ------------------------------------------------------------
+#
+# The opening promises three things and each is kept by a key-point scene, then all
+# three are recapped. The wording lives once, in the video's scenes.py, as
+#
+#     PROMISES = [...]   # scene 1: what the viewer will learn
+#     ANSWERS = [...]    # the key-point scenes: the answer, "\n" between lines
+#     RECAP = [...]      # the recap: one short line each
+#
+# and these classes read it from there.
+
+def video_constant(scene, name):
+    """A constant from the scenes.py that defined this scene, such as PROMISES."""
+    return getattr(sys.modules[type(scene).__module__], name)
+
+
+def badge(n, radius=0.33):
+    return VGroup(Circle(radius, color=BLUE, fill_opacity=1, stroke_width=0),
+                  label(str(n), int(radius * 97), BACKGROUND, weight=BOLD))
+
+
+def tick(size=0.55):
+    box = RoundedRectangle(width=size, height=size, corner_radius=0.08, stroke_color=GREEN,
+                           stroke_width=4)
+    mark = VMobject(color=GREEN, stroke_width=8).set_points_as_corners(
+        [[-0.16, 0.0, 0], [-0.04, -0.14, 0], [0.2, 0.16, 0]]).scale(size / 0.55).move_to(box)
+    return box, mark
+
+
+class LearnScene(VideoScene):
+    """Scene 1: "In this video", then the three promises as the narration names them.
+
+    `times` are the fractions of the narration at which each promise is spoken.
+    """
+
+    times = (0.2, 0.45, 0.68)
+
+    def construct(self):
+        head = title("In this video", 56).to_edge(UP, buff=1.0)
+        rows = VGroup()
+        for i, text in enumerate(video_constant(self, "PROMISES"), 1):
+            rows.add(VGroup(badge(i), label(text, 40)).arrange(RIGHT, buff=0.45))
+        rows.arrange(DOWN, buff=0.7, aligned_edge=LEFT).next_to(head, DOWN, 0.9)
+        if rows.width > 12.4:
+            rows.scale_to_fit_width(12.4)
+        rows.set_x(0)
+
+        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.08))
+        for row, at in zip(rows, self.times):
+            self.wait(max(self.share(at) - self.time, 0.01))
+            self.play(FadeIn(row[0], scale=0.6), FadeIn(row[1], shift=0.3 * RIGHT),
+                      run_time=self.share(0.08))
+        self.finish()
+
+
+class KeyPointScene(VideoScene):
+    """One promise from the opening, kept: its badge and question, then the answer."""
+
+    point = None
+
+    def construct(self):
+        tag = label(f"Key point {self.point} of 3", 34, BLUE, weight=BOLD).to_edge(UP, buff=1.1)
+        promise = VGroup(badge(self.point),
+                         label(video_constant(self, "PROMISES")[self.point - 1], 38, SUBDUED)
+                         ).arrange(RIGHT, buff=0.4).next_to(tag, DOWN, 0.7)
+        answer_text = video_constant(self, "ANSWERS")[self.point - 1]
+        lines = [label(t, 50, INK, weight=BOLD) for t in answer_text.split("\n")]
+        answer = VGroup(*lines).arrange(DOWN, buff=0.25).next_to(promise, DOWN, 0.9)
+        box, mark = tick(0.8)
+        box.next_to(answer, LEFT, 0.5)
+        mark.move_to(box)
+        group = VGroup(answer, box, mark)
+        if group.width > 12.4:           # keep the tick clear of the frame's edge
+            group.scale_to_fit_width(12.4)
+        group.set_x(0)
+
+        # "Key point one."
+        self.play(FadeIn(tag, shift=0.2 * DOWN), FadeIn(promise), run_time=self.share(0.12))
+        # The answer, as the narration says it.
+        self.play(LaggedStart(*[FadeIn(l, shift=0.2 * UP) for l in lines], lag_ratio=0.5),
+                  FadeIn(box), run_time=self.share(0.4))
+        self.play(Create(mark), run_time=self.share(0.1))
+        self.finish()
+
+
+def recap_rows(recap):
+    head = title("The three key points", 56).to_edge(UP, buff=0.9)
+    rows = VGroup()
+    for i, text in enumerate(recap, 1):
+        box, mark = tick()
+        rows.add(VGroup(badge(i, 0.28), box, mark, label(text, 38)))
+        rows[-1][1].next_to(rows[-1][0], RIGHT, 0.3)
+        rows[-1][2].move_to(rows[-1][1])
+        rows[-1][3].next_to(rows[-1][1], RIGHT, 0.35)
+    rows.arrange(DOWN, buff=0.75, aligned_edge=LEFT)
+    if rows.width > 12.4:
+        rows.scale_to_fit_width(12.4)
+    rows.next_to(head, DOWN, 0.9)
+    return head, rows
+
+
+class RecapScene(VideoScene):
+    """The recap: point 1 shows all three and ticks the first; 2 and 3 tick the next."""
+
+    point = None
+
+    def construct(self):
+        index = self.point - 1
+        head, rows = recap_rows(video_constant(self, "RECAP"))
+        if index == 0:
+            self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
+            self.play(*[FadeIn(VGroup(r[0], r[1], r[3])) for r in rows], run_time=self.share(0.12))
+        else:
+            self.add(head, *[VGroup(r[0], r[1], r[3]) for r in rows], *[r[2] for r in rows[:index]])
+        row = rows[index]
+        self.play(Indicate(row[3], color=INK, scale_factor=1.06), run_time=self.share(0.3))
+        self.play(Create(row[2]), run_time=self.share(0.12))
+        self.finish()
+
+
+class QuizScene(VideoScene):
+    """The question, then a bar that empties through the pause, so viewers know to think.
+
+    `question` is its lines; the last is set in bold.
+    """
+
+    question = ()
+
+    def construct(self):
+        head = label("Quick quiz", 40, BLUE, weight=BOLD).to_edge(UP, buff=1.0)
+        lines = [label(t, 48) for t in self.question[:-1]]
+        lines.append(label(self.question[-1], 48, weight=BOLD))
+        question = VGroup(*lines).arrange(DOWN, buff=0.3).next_to(head, DOWN, 0.8)
+        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
+        self.play(LaggedStart(*[FadeIn(q) for q in question], lag_ratio=0.8), run_time=self.share(0.55))
+        self.finish()
+        track = Rectangle(width=8, height=0.3, stroke_color=GRID, stroke_width=2).to_edge(DOWN, buff=1.2)
+        left = ValueTracker(1.0)
+        bar = always_redraw(lambda: Rectangle(width=max(8 * left.get_value(), 0.001), height=0.3,
+                                              stroke_width=0, fill_color=BLUE, fill_opacity=1
+                                              ).align_to(track, LEFT).align_to(track, DOWN))
+        think = label("think about it", 28, SUBDUED).next_to(track, UP, 0.2)
+        self.play(FadeIn(track), FadeIn(bar), FadeIn(think), run_time=0.3)
+        self.play(left.animate.set_value(0), run_time=max(self.pause - 0.6, 0.5), rate_func=linear)
+
+
+class EndCardScene(VideoScene):
+    """The last scene: the site's address (never a page path, see SITE) and thanks."""
+
+    def construct(self):
+        pages = label("Pages and code", 36, SUBDUED, weight=BOLD)
+        address = label(SITE, 44, BLUE)
+        thanks = title("Thanks for watching", 64)
+        series = label(SERIES, 28, SUBDUED)
+        VGroup(pages, address, thanks, series).arrange(DOWN, buff=0.5)
+        thanks.shift(0.5 * DOWN)
+        series.shift(0.5 * DOWN)
+        self.play(FadeIn(pages), FadeIn(address, shift=0.2 * UP), run_time=self.share(0.2))
+        self.wait(self.share(0.35))
+        self.play(FadeIn(thanks, scale=0.9), FadeIn(series), run_time=self.share(0.2))
+        self.finish()

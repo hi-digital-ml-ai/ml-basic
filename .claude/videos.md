@@ -366,6 +366,28 @@ ridge shrinking the coefficients.
    Only after that, decide on the
    other nine sections.
 
+## Second video: §6 Assumptions (2026-09-29)
+
+Built the same way as the §5 pilot, on `feature/videos`, up to a rough cut on the draft
+voice: `_videos/06-assumptions-limitations/` (`script.md`, `exports.R`, `scenes.py`).
+
+- 55 scenes, 840 words, 6:59. Hook: a model that is 95% accurate and never once finds
+  the rare species, answered in "The puzzle, solved". The three key points: rows are
+  worth less than they seem (independence, spatial dependence; the trap is random
+  folds flattering position), a better fit can be more wrong (confounded depth curve,
+  Poisson spread), a model answers where it knows nothing (extrapolation, rare classes).
+- Every scene is Manim; `exports.R` writes 18 CSVs from the six pages (about 1 minute).
+  Every spoken number was checked against them.
+- The opening, key-point, recap, quiz and end-card scenes now live in
+  `_videos/mlbasic_video.py` (`LearnScene`, `KeyPointScene`, `RecapScene`, `QuizScene`,
+  `EndCardScene`); each video's `scenes.py` sets `PROMISES`, `ANSWERS` and `RECAP`.
+  §5 uses them too; its re-rendered frames matched the old ones.
+- Pango wraps long text on its own: keep a key-point answer line to about 30
+  characters and a heading to about 50.
+- Render with `manim -a` (one process). Rendering scenes in parallel processes
+  corrupts Manim's shared text cache.
+- Not yet narrated with Gemini: 55 requests, about $0.10.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
