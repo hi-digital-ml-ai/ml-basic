@@ -183,10 +183,28 @@ Commands assume Ubuntu or Debian; adapt package names on another distribution.
 
 6. **Kdenlive:** download the AppImage from kdenlive.org, `chmod +x`, run.
 
-7. **Optional.** Source Sans 3 from Google Fonts, so video titles match the site.
-   `mpv` for quick checks of audio and drafts.
+7. **Optional: Source Sans 3**, so video titles match the site. It is the current name of
+   Source Sans Pro (same design). Ubuntu 24.04 has no package for it, so install it for
+   the user from Adobe's releases (3.052R at the time of writing):
 
-8. **R, only if figures are re-exported on the laptop.** `renv::restore()` and the
+   ```bash
+   cd /tmp
+   gh release download --repo adobe-fonts/source-sans --pattern 'OTF-*.zip'
+   mkdir -p ~/.local/share/fonts/source-sans-3
+   unzip -j OTF-source-sans-*.zip '*.otf' -d ~/.local/share/fonts/source-sans-3
+   fc-cache -f
+   fc-match "Source Sans 3"    # should name a Source Sans 3 file
+   ```
+
+   Without `gh`, download "Source Sans 3" from fonts.google.com and unzip the files in
+   `static/` instead. Use the static OTFs rather than the variable font: Kdenlive and
+   Pango handle separate weights more reliably. In Manim, `Text("…", font="Source Sans 3")`;
+   Pango falls back to another font without warning if the name is wrong, so check the
+   first render. The website does not need this; it gets the font from `styles.scss`.
+
+8. **Optional: `mpv`** for quick checks of audio and drafts.
+
+9. **R, only if figures are re-exported on the laptop.** `renv::restore()` and the
    system libraries listed in `workflow.md`. No new R packages are needed (`ragg` is
    already in `renv.lock`).
 
@@ -208,6 +226,6 @@ ridge shrinking the coefficients.
 ### Still open
 
 - The narrator voice (name or Voice Design ID).
-- Whether to install Source Sans 3 or use Inter.
+- Source Sans 3 or Inter for titles (install steps are in the laptop setup).
 - Whether to add billing to the key (only if the free limits slow the work).
 - Whether `manim-voiceover` is still maintained.
