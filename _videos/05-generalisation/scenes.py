@@ -170,7 +170,6 @@ class Scene05(VideoScene):
         arrow = Arrow(source.get_right(), [1.3, 0, 0], color=INK, stroke_width=5, buff=0.2)
         known = label("true answer known", 32, GREEN, weight=BOLD).next_to(source, DOWN, 0.4)
 
-        self.add(schematic_note())
         # "A note first: this survey is simulated."
         self.play(FadeIn(source, scale=0.9), run_time=self.share(0.15))
         self.play(GrowArrow(arrow), run_time=self.share(0.1))
@@ -384,7 +383,6 @@ class Scene12(VideoScene):
 
     def construct(self):
         p = signal_and_noise()
-        self.add(schematic_note())
         self.play(Create(p["axes"]), FadeIn(p["names"]), run_time=self.share(0.1))
         self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in p["dots"]], lag_ratio=0.05),
                   run_time=self.share(0.25))
@@ -399,7 +397,7 @@ class Scene13(VideoScene):
 
     def construct(self):
         p = signal_and_noise()
-        self.add(schematic_note(), p["axes"], p["names"], p["dots"], p["trend"], p["signal_tag"])
+        self.add(p["axes"], p["names"], p["dots"], p["trend"], p["signal_tag"])
         self.play(LaggedStart(*[Create(r) for r in p["residuals"]], lag_ratio=0.05),
                   run_time=self.share(0.55))
         self.play(FadeIn(p["noise_tag"], shift=0.2 * UP), run_time=self.share(0.1))
@@ -411,7 +409,7 @@ class Scene14(VideoScene):
 
     def construct(self):
         p = signal_and_noise()
-        self.add(schematic_note(), p["axes"], p["names"], p["dots"], p["trend"],
+        self.add(p["axes"], p["names"], p["dots"], p["trend"],
                  p["residuals"], p["signal_tag"], p["noise_tag"])
 
         # A training-error gauge with no scale: only its fall to zero matters.
@@ -677,7 +675,6 @@ class Scene24(VideoScene):
 
     def construct(self):
         under, under_bars, under_name, *_ = diagnosis()
-        self.add(schematic_note())
         # "So read both errors together."
         self.play(FadeIn(under[3]), FadeIn(under[0]), FadeIn(under[2]),
                   GrowFromEdge(under_bars[0], DOWN), GrowFromEdge(under_bars[1], DOWN),
@@ -693,7 +690,7 @@ class Scene25(VideoScene):
 
     def construct(self):
         under, under_bars, under_name, over, over_bars, over_name = diagnosis()
-        self.add(schematic_note(), under, under_name)
+        self.add(under, under_name)
         x = over_bars[1].get_right()[0] + 0.25
         span = Line([x, over_bars[0].get_top()[1], 0], [x, over_bars[1].get_top()[1], 0])
         brace = Brace(span, RIGHT, color=INK)
@@ -741,7 +738,6 @@ class Scene26(VideoScene):
         rule = Line(LEFT, RIGHT, color=GRID).set_width(full.width + 0.4)
         rule.next_to(full[0][0], DOWN, 0.16).set_x(0)
 
-        self.add(schematic_note())
         self.wait(self.share(0.2))
         # "Take three real predictors, ..."
         self.play(FadeIn(start), run_time=self.share(0.12))
@@ -842,7 +838,6 @@ class Scene29(VideoScene):
         saw = VGroup(beam, flex, data, flex_name, data_name)
         tilt = 0.18
 
-        self.add(schematic_note())
         # "What matters is not the number of parameters."
         self.play(FadeIn(count), run_time=self.share(0.12))
         self.play(Create(strike), run_time=self.share(0.12))
@@ -881,7 +876,6 @@ class Scene30(VideoScene):
         board = target()
         surveys = VGroup(*[label(f"survey {i}", 26, SUBDUED) for i in range(1, 5)]
                          ).arrange(DOWN, buff=0.35).to_edge(LEFT, buff=1.2)
-        self.add(schematic_note())
         self.play(FadeIn(board, scale=0.9), run_time=self.share(0.12))
         # "Imagine repeating the survey many times, ..."
         self.play(LaggedStart(*[FadeIn(s, shift=0.2 * RIGHT) for s in surveys], lag_ratio=0.4),
@@ -906,7 +900,7 @@ class Scene31(VideoScene):
     def construct(self):
         board, shots, name = bias_board()
         centre = target()
-        self.add(schematic_note(), centre)
+        self.add(centre)
         self.play(ReplacementTransform(centre, board), FadeIn(name), run_time=self.share(0.12))
         self.play(LaggedStart(*[FadeIn(s, scale=2) for s in shots], lag_ratio=0.2),
                   run_time=self.share(0.3))
@@ -922,7 +916,7 @@ class Scene32(VideoScene):
 
     def construct(self):
         board, shots, name = bias_board()
-        self.add(schematic_note(), board, shots, name)
+        self.add(board, shots, name)
         right = target(RIGHT_BOARD)
         scatter = hits(RIGHT_BOARD, [0, 0], 0.72, 22, SKY)
         right_name = label("variance", 46, BLUE, weight=BOLD).next_to(right, UP, 0.35)
@@ -1063,7 +1057,6 @@ class Scene38(VideoScene):
                                          radius=0.16, color=INK))
         slider_name = label("penalty", 32, INK).next_to(slider, LEFT, 0.4)
 
-        self.add(schematic_note())
         self.play(FadeIn(baseline), FadeIn(coefficients), FadeIn(caption), run_time=self.share(0.12))
         self.play(FadeIn(slider), FadeIn(knob), FadeIn(slider_name), run_time=self.share(0.12))
         # "... so they shrink towards zero."
@@ -1215,7 +1208,6 @@ class Scene43(VideoScene):
 
     def construct(self):
         body, lid, name, box, marks, looks = peek_layout()
-        self.add(schematic_note())
         self.play(FadeIn(box), run_time=self.share(0.1))
         self.wait(self.share(0.1))
         self.play(FadeIn(looks), run_time=self.share(0.05))
@@ -1229,7 +1221,7 @@ class Scene44(VideoScene):
 
     def construct(self):
         body, lid, name, box, marks, looks = peek_layout()
-        self.add(schematic_note(), box, marks, looks)
+        self.add(box, marks, looks)
         again = label("training set, again", 30, VERMILION, weight=BOLD).move_to(body)
         # "Look, adjust, look again, ..."
         peek(self, lid, self.share(0.25))
@@ -1265,7 +1257,6 @@ class Scene45(VideoScene):
 
     def construct(self):
         folds, split, training, box, lid, legend, seal = cv_layout()
-        self.add(schematic_note())
         self.play(FadeIn(training), FadeIn(folds), FadeIn(box), FadeIn(seal),
                   run_time=self.share(0.15))
         # "Split the training data into ten folds."
@@ -1279,7 +1270,7 @@ class Scene46(VideoScene):
 
     def construct(self):
         folds, split, training, box, lid, legend, seal = cv_layout()
-        self.add(schematic_note(), training, split, box, seal)
+        self.add(training, split, box, seal)
         self.play(FadeIn(legend), run_time=self.share(0.06))
         # "Fit on nine, score on the tenth, and rotate."
         step = self.share(0.045)
@@ -1409,7 +1400,6 @@ class Scene49(VideoScene):
     def construct(self):
         heading, sites, legend, both = repeat_visits()
         grey = sites.copy().set_fill(GREY)
-        self.add(schematic_note())
         self.play(FadeIn(heading), run_time=self.share(0.1))
         self.play(LaggedStart(*[FadeIn(s) for s in grey], lag_ratio=0.01), run_time=self.share(0.5))
         self.finish()
@@ -1421,7 +1411,7 @@ class Scene50(VideoScene):
     def construct(self):
         heading, sites, legend, both = repeat_visits()
         grey = sites.copy().set_fill(GREY)
-        self.add(schematic_note(), heading, grey)
+        self.add(heading, grey)
         # "A random split puts the same site on both sides, ..."
         self.play(Transform(grey, sites), FadeIn(legend), run_time=self.share(0.2))
         self.play(*[Circumscribe(s, color=VERMILION, buff=0.04, stroke_width=3)

@@ -353,8 +353,11 @@ ridge shrinking the coefficients.
    - Captions: `captions.srt` is for uploading to YouTube (closed captions); preview
      with `mpv rough-cut.mp4 --sub-file=captions.srt`. Not burned into the picture,
      because they would cover axis labels.
-   - The "illustration" corner tag marks schematic scenes (made-up shapes), per the
-     no-invented-numbers rule. Only after that, decide on the
+   - No "illustration" corner tag (removed 2026-09-29). Every dataset in the course
+     is simulated and scene 5 says so; the tag only told drawn scenes from page
+     results, a difference viewers would not see. The no-invented-numbers rule is
+     kept by the pipeline: numbers reach the scenes only through the CSVs.
+   Only after that, decide on the
    other nine sections.
 
 ### Still open

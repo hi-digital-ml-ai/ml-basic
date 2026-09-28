@@ -23,9 +23,9 @@ Render from the video folder, where manim.cfg sends the output to visuals/scenes
     manim -ql scenes.py Scene05     # quick draft, 480p
     manim -qh scenes.py             # every scene, 1080p
 
-Real numbers come from visuals/data/*.csv, written by tools/figures-for-video.R from
-the pages themselves. Anything drawn without a CSV is schematic and must not look
-like a survey result.
+Every number comes from visuals/data/*.csv, written by tools/figures-for-video.R from
+the pages' own results (on the course's simulated survey). Anything drawn without a
+CSV is schematic: shapes only, no numbers that could be read as results.
 """
 
 import sys
@@ -118,11 +118,6 @@ class VideoScene(Scene):
             raise FileNotFoundError(
                 f"{path} is missing: run Rscript tools/figures-for-video.R {self.folder.name}")
         return pd.read_csv(path)
-
-
-def schematic_note():
-    """A small corner tag so a still from a schematic scene is never taken for data."""
-    return label("illustration", size=22, color=SUBDUED).to_corner(DR, buff=0.3)
 
 
 class TitleScene(Scene):

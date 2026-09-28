@@ -15,9 +15,9 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
 - A level-2 heading starts a scene. Everything after the directive lines is narration.
 - One idea per scene: one or two short sentences, at most one number.
 - Directive lines, directly under the scene heading:
-    visual: manim <SceneName>: <what>   an animation in scenes.py; "real data" means R
-                                        writes the numbers to a CSV, "schematic" means
-                                        made-up shapes that must not look like results
+    visual: manim <SceneName>: <what>   an animation in scenes.py; "page results" means
+                                        R writes the numbers the page computed to a CSV,
+                                        "schematic" means drawn shapes with no numbers
     visual: figure <page>.qmd#<label>   a chapter figure, re-exported by figures-for-video.R
     visual: card: <text>                a plain text card; "card: Heading | text" puts a
                                         small heading above the text
@@ -39,7 +39,7 @@ honestly.
 # The puzzle
 
 ## Scene 2
-visual: manim FiveModels: five bars grow, training error only (real data, training-versus-new-data.qmd)
+visual: manim FiveModels: five bars grow, training error only (page results, training-versus-new-data.qmd)
 
 Here are five models, fitted to the same coastal survey. The bars show their error on
 the stations they learned from.
@@ -64,7 +64,7 @@ the true answer.
 # Training error answers the wrong question
 
 ## Scene 6
-visual: manim RankReversal: the slope chart's axes, training errors on the left (real data)
+visual: manim RankReversal: the slope chart's axes, training errors on the left (page results)
 
 Now give the five models stations they have never seen.
 
@@ -118,7 +118,7 @@ training error cannot tell.
 # The U-shaped error curve
 
 ## Scene 16
-visual: manim ThreeFits: abundance against depth, a tree with one split (real data, underfitting-and-overfitting.qmd#fig-three-fits)
+visual: manim ThreeFits: abundance against depth, a tree with one split (page results, underfitting-and-overfitting.qmd#fig-three-fits)
 
 Here is a tree fitted to abundance and depth. With one split, it is too rigid. That is
 underfitting.
@@ -134,7 +134,7 @@ visual: manim ThreeFits: the tree grows to one station per leaf
 With one station per leaf, it chases every point. That is overfitting.
 
 ## Scene 19
-visual: manim UCurve: the training curve draws down to zero (real data, underfitting-and-overfitting.qmd#fig-u-curve)
+visual: manim UCurve: the training curve draws down to zero (page results, underfitting-and-overfitting.qmd#fig-u-curve)
 
 Now make a tree more and more flexible. Its training error falls, all the way to zero.
 
@@ -177,7 +177,7 @@ How flexible is too flexible? Take three real predictors, and add columns of pur
 random numbers.
 
 ## Scene 27
-visual: manim NoiseColumns: a training R² gauge steps up to 1.000 (real data, model-complexity.qmd#fig-noise)
+visual: manim NoiseColumns: a training R² gauge steps up to 1.000 (page results, model-complexity.qmd#fig-noise)
 
 With 539 noise columns on 540 stations, training R² is exactly one. A perfect fit.
 
@@ -211,7 +211,7 @@ visual: manim Targets: a second target, hits centred but widely scattered
 Variance is being right on average, but different every time. Deep trees are like this.
 
 ## Scene 33
-visual: manim Decomposition: bias² falls and levels off, variance rises (real data, bias-variance.qmd#fig-decomposition)
+visual: manim Decomposition: bias² falls and levels off, variance rises (page results, bias-variance.qmd#fig-decomposition)
 
 More flexibility trades one for the other. Bias falls, then stops. Variance keeps
 rising.
@@ -247,7 +247,7 @@ visual: manim RidgeShrink: coefficient bars shrink towards zero as a penalty sli
 Regularisation charges a model for large coefficients, so they shrink towards zero.
 
 ## Scene 39
-visual: manim RidgeBars: least squares and predict-the-mean bars (real data, regularisation.qmd)
+visual: manim RidgeBars: least squares and predict-the-mean bars (page results, regularisation.qmd)
 
 With 44 predictors on 120 stations, least squares did worse than guessing the mean.
 
@@ -257,7 +257,7 @@ visual: manim RidgeBars: the ridge bar grows, lowest of the three
 Ridge beat both.
 
 ## Scene 41
-visual: manim LassoStability: one dot per term, placed by how often lasso kept it (real data, regularisation.qmd#fig-stability)
+visual: manim LassoStability: one dot per term, placed by how often lasso kept it (page results, regularisation.qmd#fig-stability)
 
 Lasso can also drop predictors. But which ones it keeps is not stable.
 
@@ -290,7 +290,7 @@ visual: manim CrossValidation: the held-out fold rotates, then the test box open
 Fit on nine, score on the tenth, and rotate. Open the test set once, at the very end.
 
 ## Scene 47
-visual: manim Instability: forty validation splits drop their winners into the grid (real data, hyperparameter-selection.qmd#fig-instability)
+visual: manim Instability: forty validation splits drop their winners into the grid (page results, hyperparameter-selection.qmd#fig-instability)
 
 Even then, be modest. Forty validation splits chose sixteen different winners.
 
@@ -327,7 +327,7 @@ Quick quiz. You add a column of random numbers to a regression. Can its training
 down?
 
 ## Scene 53
-visual: manim QuizAnswer: "No", with the R² steps from the noise experiment rising (real data)
+visual: manim QuizAnswer: "No", with the R² steps from the noise experiment rising (page results)
 
 No. It never falls, not even for random numbers.
 
