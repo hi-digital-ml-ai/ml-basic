@@ -88,7 +88,8 @@ def main():
 
     total_requests = 0
     for folder in folders:
-        script, rows = audio_list(folder.resolve(), table)
+        folder = folder.resolve()
+        script, rows = audio_list(folder, table)
         out = folder / "audio" / "audio-list.csv"
         out.parent.mkdir(parents=True, exist_ok=True)
         with out.open("w", newline="", encoding="utf-8") as f:
@@ -117,7 +118,7 @@ def main():
             print(f"    scenes to narrate: {','.join(str(r['scene']) for r in needed)}")
         else:
             print("  → nothing to narrate")
-        print(f"  list: {out.relative_to(Path.cwd()) if out.resolve().is_relative_to(Path.cwd()) else out}")
+        print(f"  list: {out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out}")
 
     if len(folders) > 1:
         print(f"\nAll videos: {total_requests} request(s); the paid tier allows "

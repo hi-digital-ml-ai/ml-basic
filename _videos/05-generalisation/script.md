@@ -24,6 +24,8 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
     pause-after: <seconds>              silence added after the narration
 - gap in the front matter is the silence between scenes, in seconds.
 - Every number spoken comes from the section's pages.
+- No section numbers anywhere in the video, spoken or shown: they can change, so they
+  go only in the YouTube title and description. Refer to other sections by name.
 -->
 
 # In this video
@@ -308,7 +310,7 @@ One more catch. The stations come from 160 sites, visited again and again.
 visual: manim RepeatVisits: sites with visits on both sides of the split are circled
 
 A random split puts the same site on both sides, and flatters every number here.
-Section seven puts that right.
+The validation section puts that right.
 
 ## Scene 51
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
@@ -349,6 +351,6 @@ visual: manim KeyPoints: the third ticked
 Three: choose complexity with cross-validation, and open the test set once.
 
 ## Scene 57
-visual: manim EndCard: the section's web address and a thank-you
+visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.

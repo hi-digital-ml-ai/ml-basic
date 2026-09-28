@@ -43,6 +43,8 @@ from mlbasic_theme import ML_PALETTE  # noqa: E402  the site's Okabe-Ito palette
 from video_script import narration_audio, read_script  # noqa: E402
 
 SERIES = "Machine Learning Basics for Marine Science"
+SITE = "ml-basic.pages.dev"   # Cloudflare Pages. The end cards show only this: page
+                              # paths carry section numbers, which go in the description
 MUSIC = ROOT / "_videos" / "intro-music.wav"
 
 # The site's font. Pango silently substitutes another font if this name is wrong,
@@ -121,10 +123,11 @@ class VideoScene(Scene):
 
 
 class TitleScene(Scene):
-    """The opening every video shares: series name, section, title, over the jingle.
+    """The opening every video shares: series name and title, over the jingle.
 
     Each scenes.py has `class Title(TitleScene): pass`; the text comes from the
-    script's front matter and the length from _videos/intro-music.wav.
+    script's front matter and the length from _videos/intro-music.wav. No section
+    number: numbers can change, so they belong in the YouTube title and description.
     """
 
     def construct(self):
@@ -132,21 +135,18 @@ class TitleScene(Scene):
         meta = read_script(folder / "script.md").meta
         with wave.open(str(MUSIC)) as w:
             length = w.getnframes() / w.getframerate()
-        section = int(Path(meta["section"]).parent.name.split("-")[0])
         main, _, sub = meta["title"].partition(": ")
 
         rule = Line(3.2 * LEFT, 3.2 * RIGHT, color=BLUE, stroke_width=6)
         series = label(SERIES, 30, SUBDUED)
-        number = label(f"Section {section}", 34, BLUE, weight=BOLD)
         head = title(main, 80)
         tagline = label(sub, 42, SUBDUED) if sub else VGroup()
-        VGroup(series, number, head, rule, tagline).arrange(DOWN, buff=0.35)
+        VGroup(series, head, rule, tagline).arrange(DOWN, buff=0.35)
         rule.shift(0.1 * DOWN)
         tagline.shift(0.15 * DOWN)
 
         # Timed to the jingle: the text arrives with the arpeggio, the rule with the chord.
-        self.play(FadeIn(series, shift=0.2 * DOWN), FadeIn(number, shift=0.2 * DOWN),
-                  run_time=0.4)
+        self.play(FadeIn(series, shift=0.2 * DOWN), run_time=0.4)
         self.play(FadeIn(head, shift=0.3 * UP), run_time=0.5)
         self.play(GrowFromCenter(rule), FadeIn(tagline), run_time=0.6)
         self.wait(max(length - self.time, 0.1))

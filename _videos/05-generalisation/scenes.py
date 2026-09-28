@@ -1,4 +1,4 @@
-"""Manim scenes for the §5 video. One class per script scene: Scene08 is "## Scene 8".
+"""Manim scenes for the generalisation video. One class per script scene: Scene08 is "## Scene 8".
 
     cd _videos/05-generalisation
     manim -ql scenes.py Scene08                      # draft
@@ -1416,9 +1416,9 @@ class Scene50(VideoScene):
         self.play(Transform(grey, sites), FadeIn(legend), run_time=self.share(0.2))
         self.play(*[Circumscribe(s, color=VERMILION, buff=0.04, stroke_width=3)
                     for s in both[:24]], run_time=self.share(0.25))
-        # "Section seven puts that right."
-        seven = label("→ section 7", 34, GREEN, weight=BOLD).to_corner(DR, buff=0.9)
-        self.play(FadeIn(seven, shift=0.2 * LEFT), run_time=self.share(0.1))
+        # "The validation section puts that right."
+        later = label("→ model validation", 34, GREEN, weight=BOLD).to_corner(DR, buff=0.9)
+        self.play(FadeIn(later, shift=0.2 * LEFT), run_time=self.share(0.1))
         self.finish()
 
 
@@ -1561,9 +1561,8 @@ class Scene57(VideoScene):
     number = 57
 
     def construct(self):
-        section = Path(self.script.meta["section"]).parent.as_posix()
         pages = label("Pages and code", 36, SUBDUED, weight=BOLD)
-        address = label(f"hi-digital-ml-ai.github.io/ml-basic/{section}", 40, BLUE)
+        address = label(SITE, 44, BLUE)
         thanks = title("Thanks for watching", 64)
         series = label(SERIES, 28, SUBDUED)
         VGroup(pages, address, thanks, series).arrange(DOWN, buff=0.5)
