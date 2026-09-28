@@ -170,8 +170,8 @@ keyring is unlocked by a desktop login; over SSH use `pass` instead
 **Done on 2026-09-28** (Ubuntu 24.04): steps 1–3, 5, 6 and 8.
 Step 4 is replaced by the existing `claude` conda env, which already has manim 0.20.1,
 google-genai 2.25.0, pandas, scipy, scikit-learn, pydub, PyYAML and ffmpeg 9 (libx264,
-AAC). A test render with `Text` (Inter) and `MathTex` worked. Not done: Source Sans 3
-(step 7) and the renv library (step 9), whose library on this laptop is still empty.
+AAC). A test render with `Text` (Inter) and `MathTex` worked. Steps 7 (Source Sans 3) and 9 (renv, after the apt line in step 3 of the pilot) were
+done later the same day.
 
 The steps below are kept for setting up another machine. Commands assume Ubuntu or
 Debian; adapt package names on another distribution.
@@ -259,14 +259,31 @@ ridge shrinking the coefficients.
    2026-09-28 (script trimmed to 1,069 words): 7.5 minutes including pauses, 14,000
    audio tokens, about $0.13.
 3. Write the shared Manim style and the §5 scenes; `tools/figures-for-video.R`.
+   **Done 2026-09-28**, rendered and checked at draft quality (`manim -ql`):
+   - `_videos/mlbasic_video.py`: palette, Source Sans 3, and `VideoScene`, which reads
+     each scene's WAV so the animation lasts exactly as long as its narration.
+   - `_videos/05-generalisation/scenes.py`: 23 scenes. Schematic, tagged
+     "illustration": 8, 9, 15, 16, 20–22, 26, 29–31, 33. Real data: 1, 2, 5–7, 12–14,
+     17, 18, 27. `manim.cfg` sends them to `visuals/scenes/SceneNN.mp4`.
+   - `tools/figures-for-video.R`: knits every page the script names, figures forced
+     to 1920×1080 (8×4.5 in at 240 dpi), then runs the video's `exports.R` in the
+     page's environment to write `visuals/data/*.csv`. About 75 s for §5. Every number
+     the §5 script speaks matched the CSVs.
+   - Known issue: `fig-stability` (scene 28) is a tall figure on the page; at 16:9 its
+     44 term labels overlap. Replace with a Manim scene or crop in Kdenlive.
+   - Manim pitfalls: never use `self.duration` in a scene (Manim overwrites it on
+     every `play`); small `Text` loses its spaces, so `label()` sets text at 4× and
+     scales down.
+   - The laptop needed `sudo apt install cmake gdal-bin libabsl-dev libgdal-dev
+     libnode-dev libudunits2-dev libx11-dev` before `renv::restore()` would finish.
 4. Write `tools/rough-cut.py` (draft video, `captions.srt`, `chapters.txt`).
 5. Watch the rough cut, adjust, then polish in Kdenlive. Only after that, decide on the
    other nine sections.
 
 ### Still open
 
-- Source Sans 3 or Inter for titles (install steps are in the laptop setup; Inter is
-  already installed).
+- Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
+  laptop); `FONT` in `_videos/mlbasic_video.py` switches it.
 
 Settled on 2026-09-28: billing (200 NOK of prepaid credit in AI Studio, about $18–20;
 the paid tier hit no rate limits in the first runs), the voice and the style.
