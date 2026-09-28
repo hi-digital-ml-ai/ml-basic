@@ -388,6 +388,24 @@ voice: `_videos/06-assumptions-limitations/` (`script.md`, `exports.R`, `scenes.
   corrupts Manim's shared text cache.
 - Not yet narrated with Gemini: 55 requests, about $0.10.
 
+## Third video: §7 Validation (2026-09-29)
+
+Built like §6, to a rough cut on the draft voice: `_videos/07-validation/`.
+
+- 53 scenes, 7:35. Hook: two models, one with the lower RMSE (forest, 4.36 against
+  4.46), the other finding more animals at its top fifty stations (481 against 456),
+  answered in "The puzzle, solved": the measure follows the sentence you will write.
+  Key points: a single score is never enough (split spread, nested search, paired
+  intervals), the way you split is a question (distance axis), measures disagree
+  (RMSE/MAE, MAPE, confusion-matrix measures, cost-based threshold).
+- `exports.R` writes 19 CSVs from the six pages (the cross-validation page is slow:
+  allow about 5 minutes). Every spoken number was checked against them. The page
+  uses two search numbers: 4.485 is the first search's winner, 4.472 the average
+  the search reported inside the nested folds; the script keeps them apart.
+- A shared base for several scenes must be a mixin, not a `Scene` subclass, or
+  `manim -a` tries to render it (`ObjectiveRows` in `scenes.py`).
+- Not yet narrated with Gemini.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
