@@ -22,26 +22,47 @@ class Title(TitleScene):
     pass
 
 
-# In this video (scene 1) ------------------------------------------------------------
+# The three promises (scene 1) and the key points that keep them (15, 37, 51, 54–56) ------
+
+# What the opening promises, and the key point that answers each, in the words the
+# narration uses. The opening, the three key-point scenes and the recap all show them.
+PROMISES = ["Why a perfect fit is a warning sign",
+            "Where the U-shaped error curve comes from",
+            "How to choose complexity honestly"]
+ANSWERS = ["A perfect fit is a warning sign:\nthe model has memorised the noise",
+           "The U-shaped error curve comes from\nbias falling and variance rising",
+           "Choose complexity with cross-validation;\nopen the test set only once"]
+RECAP = ["A perfect fit is a warning sign",
+         "The U-shaped error curve comes from bias and variance",
+         "Choose complexity with cross-validation; open the test set once"]
+
+
+def badge(n, radius=0.33):
+    return VGroup(Circle(radius, color=BLUE, fill_opacity=1, stroke_width=0),
+                  label(str(n), int(radius * 97), BACKGROUND, weight=BOLD))
+
+
+def tick(size=0.55):
+    box = RoundedRectangle(width=size, height=size, corner_radius=0.08, stroke_color=GREEN,
+                           stroke_width=4)
+    mark = VMobject(color=GREEN, stroke_width=8).set_points_as_corners(
+        [[-0.16, 0.0, 0], [-0.04, -0.14, 0], [0.2, 0.16, 0]]).scale(size / 0.55).move_to(box)
+    return box, mark
+
 
 class Scene01(VideoScene):
     number = 1
 
     def construct(self):
         head = title("In this video", 56).to_edge(UP, buff=1.0)
-        points = ["Why a perfect fit is a warning sign",
-                  "Where the U-shaped error curve comes from",
-                  "How to choose complexity honestly"]
         rows = VGroup()
-        for i, text in enumerate(points, 1):
-            badge = VGroup(Circle(0.33, color=BLUE, fill_opacity=1, stroke_width=0),
-                           label(str(i), 32, BACKGROUND, weight=BOLD))
-            rows.add(VGroup(badge, label(text, 40)).arrange(RIGHT, buff=0.45))
+        for i, text in enumerate(PROMISES, 1):
+            rows.add(VGroup(badge(i), label(text, 40)).arrange(RIGHT, buff=0.45))
         rows.arrange(DOWN, buff=0.7, aligned_edge=LEFT).next_to(head, DOWN, 0.9)
 
         self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.08))
-        # "In this video: [1] ..., [2] ..., and [3] ..."
-        for row, at in zip(rows, (0.12, 0.42, 0.7)):
+        # "... three things. [1] ... [2] ... [3] ..."
+        for row, at in zip(rows, (0.2, 0.45, 0.68)):
             self.wait(max(self.share(at) - self.time, 0.01))
             self.play(FadeIn(row[0], scale=0.6), FadeIn(row[1], shift=0.3 * RIGHT),
                       run_time=self.share(0.08))
@@ -414,7 +435,7 @@ class Scene14(VideoScene):
         self.finish()
 
 
-# Three trees on one predictor (scenes 15–17, real data) ---------------------------------
+# Three trees on one predictor (scenes 16–18, real data) ---------------------------------
 
 def three_fits_axes(points):
     axes = Axes(x_range=[0, 200, 50], y_range=[0, 42, 10], x_length=10.5, y_length=5.2,
@@ -442,8 +463,8 @@ def fit_caption(fit, word):
     return label(text, 38, VERMILION if word else INK, weight=BOLD).to_corner(UR, buff=0.7)
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         axes, frame, dots = three_fits_axes(self.data("fit-points"))
@@ -459,8 +480,8 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         axes, frame, dots = three_fits_axes(self.data("fit-points"))
@@ -473,8 +494,8 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         axes, frame, dots = three_fits_axes(self.data("fit-points"))
@@ -490,7 +511,7 @@ class Scene17(VideoScene):
         self.finish()
 
 
-# The U-shaped curve (scenes 18–22, real data) --------------------------------------------
+# The U-shaped curve (scenes 19–23, real data) --------------------------------------------
 
 def u_curve_axes(curve):
     lo, hi = np.log10(5), np.log10(500)
@@ -525,8 +546,8 @@ def best_marker(axes, curve):
     return dotted, tag
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         axes, frame, training, test, names = u_curve_axes(self.data("u-curve"))
@@ -539,8 +560,8 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         curve = self.data("u-curve")
@@ -556,8 +577,8 @@ class Scene19(VideoScene):
         self.finish()
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         curve = self.data("u-curve")
@@ -568,7 +589,11 @@ class Scene20(VideoScene):
                   training[1].animate.set_opacity(0.25), names[0].animate.set_opacity(0.25),
                   run_time=self.share(0.15))
         glow = test[0].copy().set_stroke(ORANGE, width=16, opacity=0.5)
-        self.play(ShowPassingFlash(glow, time_width=0.5), run_time=self.share(0.4))
+        name = label("the U-shaped error curve", 40, ORANGE, weight=BOLD).move_to(
+            axes.c2p(np.log10(22), 2.2))
+        # "That is the U-shaped error curve, ..."
+        self.play(ShowPassingFlash(glow, time_width=0.5), FadeIn(name, shift=0.2 * UP),
+                  run_time=self.share(0.4))
         self.play(test[0].animate.set_stroke(width=10), run_time=self.share(0.15))
         self.finish()
 
@@ -580,8 +605,8 @@ def full_u(scene, curve):
     return axes, training, test
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         curve = self.data("u-curve")
@@ -608,8 +633,8 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         curve = self.data("u-curve")
@@ -622,7 +647,7 @@ class Scene22(VideoScene):
         self.finish()
 
 
-# Diagnosis (scenes 23–24, schematic) ---------------------------------------------------
+# Diagnosis (scenes 24–25, schematic) ---------------------------------------------------
 
 def bar_pair(heading, training, new):
     """Two unlabelled bars, training and new data; heights are relative, not results."""
@@ -647,8 +672,8 @@ def diagnosis():
     return under, under_bars, under_name, over, over_bars, over_name
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         under, under_bars, under_name, *_ = diagnosis()
@@ -663,8 +688,8 @@ class Scene23(VideoScene):
         self.finish()
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         under, under_bars, under_name, over, over_bars, over_name = diagnosis()
@@ -684,7 +709,7 @@ class Scene24(VideoScene):
         self.finish()
 
 
-# Noise columns (scene 25 schematic; 26–27 real data) --------------------------------------
+# Noise columns (scene 26 schematic; 27–28 real data) --------------------------------------
 
 def survey_table(noise_columns):
     """A small table: three real predictor columns, then columns of random digits."""
@@ -706,8 +731,8 @@ def survey_table(noise_columns):
     return columns.scale_to_fit_width(min(columns.width * 1.5, 12.5))
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         full = survey_table(5).move_to(ORIGIN)
@@ -727,8 +752,8 @@ class Scene25(VideoScene):
         self.finish()
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
         rows = self.data("noise-columns")
@@ -767,8 +792,8 @@ class Scene26(VideoScene):
         self.finish()
 
 
-class Scene27(VideoScene):
-    number = 27
+class Scene28(VideoScene):
+    number = 28
 
     def construct(self):
         rows = self.data("noise-columns")
@@ -797,10 +822,10 @@ class Scene27(VideoScene):
         self.finish()
 
 
-# Flexibility against data (scene 28, schematic) --------------------------------------------
+# Flexibility against data (scene 29, schematic) --------------------------------------------
 
-class Scene28(VideoScene):
-    number = 28
+class Scene29(VideoScene):
+    number = 29
 
     def construct(self):
         count = label("number of parameters", 44, SUBDUED).move_to(1.6 * UP)
@@ -832,7 +857,7 @@ class Scene28(VideoScene):
         self.finish()
 
 
-# Bias and variance targets (scenes 29–31, schematic) -----------------------------------------
+# Bias and variance targets (scenes 30–32, schematic) -----------------------------------------
 
 def target(centre=ORIGIN, radius=1.9):
     rings = VGroup(*[Circle(radius=radius * k / 4, color=GRID, stroke_width=3)
@@ -849,8 +874,8 @@ def hits(centre, offset, spread, seed, colour, n=14):
                     for a, b in points])
 
 
-class Scene29(VideoScene):
-    number = 29
+class Scene30(VideoScene):
+    number = 30
 
     def construct(self):
         board = target()
@@ -875,8 +900,8 @@ def bias_board():
     return board, shots, name
 
 
-class Scene30(VideoScene):
-    number = 30
+class Scene31(VideoScene):
+    number = 31
 
     def construct(self):
         board, shots, name = bias_board()
@@ -892,8 +917,8 @@ class Scene30(VideoScene):
         self.finish()
 
 
-class Scene31(VideoScene):
-    number = 31
+class Scene32(VideoScene):
+    number = 32
 
     def construct(self):
         board, shots, name = bias_board()
@@ -908,7 +933,7 @@ class Scene31(VideoScene):
         self.finish()
 
 
-# Bias², variance and the noise floor (scenes 32–35, real data) ----------------------------------
+# Bias², variance and the noise floor (scenes 33–36, real data) ----------------------------------
 
 def decomposition_axes(table):
     knobs = table["minbucket"].to_numpy()
@@ -941,8 +966,8 @@ def decomposition_axes(table):
     return VGroup(axes, xt, yt, xl, yl), lines, names, floor, floor_name
 
 
-class Scene32(VideoScene):
-    number = 32
+class Scene33(VideoScene):
+    number = 33
 
     def construct(self):
         frame, lines, names, *_ = decomposition_axes(self.data("decomposition"))
@@ -955,21 +980,23 @@ class Scene32(VideoScene):
         self.finish()
 
 
-class Scene33(VideoScene):
-    number = 33
+class Scene34(VideoScene):
+    number = 34
 
     def construct(self):
         frame, lines, names, *_ = decomposition_axes(self.data("decomposition"))
         self.add(frame, lines["bias2"], lines["variance"], names["bias2"], names["variance"])
         self.play(TransformFromCopy(VGroup(lines["bias2"], lines["variance"]), lines["total"]),
                   run_time=self.share(0.4))
-        self.play(FadeIn(names["total"]), run_time=self.share(0.15))
+        name = label("the U-shaped error curve", 36, ORANGE, weight=BOLD).next_to(
+            lines["total"], UP, 0.3).shift(1.2 * LEFT)
+        self.play(FadeIn(names["total"]), FadeIn(name, shift=0.2 * UP), run_time=self.share(0.15))
         self.play(lines["total"].animate.set_stroke(width=10), run_time=self.share(0.15))
         self.finish()
 
 
-class Scene34(VideoScene):
-    number = 34
+class Scene35(VideoScene):
+    number = 35
 
     def construct(self):
         frame, lines, names, floor, floor_name = decomposition_axes(self.data("decomposition"))
@@ -981,8 +1008,8 @@ class Scene34(VideoScene):
         self.finish()
 
 
-class Scene35(VideoScene):
-    number = 35
+class Scene36(VideoScene):
+    number = 36
 
     def construct(self):
         table = self.data("decomposition")
@@ -1007,10 +1034,10 @@ class Scene35(VideoScene):
         self.finish()
 
 
-# Ridge (scene 36 schematic; 37–38 real data) -------------------------------------------------
+# Ridge (scene 38 schematic; 39–40 real data) -------------------------------------------------
 
-class Scene36(VideoScene):
-    number = 36
+class Scene38(VideoScene):
+    number = 38
 
     def construct(self):
         start = np.array([1.9, -1.4, 1.1, 0.6, -2.1, 0.35, -0.8, 1.5])
@@ -1065,8 +1092,8 @@ def ridge_bars(rows):
     return VGroup(head, sub), base, bars
 
 
-class Scene37(VideoScene):
-    number = 37
+class Scene39(VideoScene):
+    number = 39
 
     def construct(self):
         head, base, bars = ridge_bars(self.data("ridge-bars"))
@@ -1079,8 +1106,8 @@ class Scene37(VideoScene):
         self.finish()
 
 
-class Scene38(VideoScene):
-    number = 38
+class Scene40(VideoScene):
+    number = 40
 
     def construct(self):
         head, base, bars = ridge_bars(self.data("ridge-bars"))
@@ -1091,7 +1118,7 @@ class Scene38(VideoScene):
         self.finish()
 
 
-# Lasso's unstable choices (scenes 39–40, real data) ------------------------------------------
+# Lasso's unstable choices (scenes 41–42, real data) ------------------------------------------
 
 def stability_dots(table):
     axis = NumberLine(x_range=[0, 0.6, 0.1], length=11, color=GRID, include_ticks=False)
@@ -1118,8 +1145,8 @@ def stability_dots(table):
     return VGroup(axis, ticks, name), mixed, split, axis
 
 
-class Scene39(VideoScene):
-    number = 39
+class Scene41(VideoScene):
+    number = 41
 
     def construct(self):
         frame, mixed, *_ = stability_dots(self.data("lasso-stability"))
@@ -1130,8 +1157,8 @@ class Scene39(VideoScene):
         self.finish()
 
 
-class Scene40(VideoScene):
-    number = 40
+class Scene42(VideoScene):
+    number = 42
 
     def construct(self):
         table = self.data("lasso-stability")
@@ -1154,7 +1181,7 @@ class Scene40(VideoScene):
         self.finish()
 
 
-# Peeking at the test set (scenes 41–42, schematic) ------------------------------------------
+# Peeking at the test set (scenes 43–44, schematic) ------------------------------------------
 
 def test_box():
     body = RoundedRectangle(width=3.6, height=2.3, corner_radius=0.15,
@@ -1183,8 +1210,8 @@ def peek_layout():
     return body, lid, name, box, marks, looks
 
 
-class Scene41(VideoScene):
-    number = 41
+class Scene43(VideoScene):
+    number = 43
 
     def construct(self):
         body, lid, name, box, marks, looks = peek_layout()
@@ -1197,8 +1224,8 @@ class Scene41(VideoScene):
         self.finish()
 
 
-class Scene42(VideoScene):
-    number = 42
+class Scene44(VideoScene):
+    number = 44
 
     def construct(self):
         body, lid, name, box, marks, looks = peek_layout()
@@ -1212,7 +1239,7 @@ class Scene42(VideoScene):
         self.finish()
 
 
-# Cross-validation (scenes 43–44, schematic) --------------------------------------------------
+# Cross-validation (scenes 45–46, schematic) --------------------------------------------------
 
 def cv_layout():
     folds = VGroup(*[Rectangle(width=0.95, height=0.8, stroke_color=BACKGROUND,
@@ -1233,8 +1260,8 @@ def cv_layout():
     return folds, split, training, box, lid, legend, seal
 
 
-class Scene43(VideoScene):
-    number = 43
+class Scene45(VideoScene):
+    number = 45
 
     def construct(self):
         folds, split, training, box, lid, legend, seal = cv_layout()
@@ -1247,8 +1274,8 @@ class Scene43(VideoScene):
         self.finish()
 
 
-class Scene44(VideoScene):
-    number = 44
+class Scene46(VideoScene):
+    number = 46
 
     def construct(self):
         folds, split, training, box, lid, legend, seal = cv_layout()
@@ -1269,7 +1296,7 @@ class Scene44(VideoScene):
         self.finish()
 
 
-# Forty validation splits, sixteen winners (scenes 45–46, real data) ----------------------------
+# Forty validation splits, sixteen winners (scenes 47–48, real data) ----------------------------
 
 DEPTHS = [2, 3, 4, 6, 8, 12]
 MIN_NS = [2, 5, 10, 20, 40, 80]
@@ -1305,8 +1332,8 @@ def winner_dots(winners, cell):
     return dots
 
 
-class Scene45(VideoScene):
-    number = 45
+class Scene47(VideoScene):
+    number = 47
 
     def construct(self):
         winners = self.data("winners")
@@ -1332,8 +1359,8 @@ class Scene45(VideoScene):
         self.finish()
 
 
-class Scene46(VideoScene):
-    number = 46
+class Scene48(VideoScene):
+    number = 48
 
     def construct(self):
         winners = self.data("winners")
@@ -1351,7 +1378,7 @@ class Scene46(VideoScene):
         self.finish()
 
 
-# Repeat visits (scenes 47–48, schematic apart from the 160 sites) ------------------------------
+# Repeat visits (scenes 49–50, schematic apart from the 160 sites) ------------------------------
 
 def repeat_visits():
     # 160 sites is from the page; how visits split between the sets is illustrative.
@@ -1376,8 +1403,8 @@ def repeat_visits():
     return heading, sites, legend, both
 
 
-class Scene47(VideoScene):
-    number = 47
+class Scene49(VideoScene):
+    number = 49
 
     def construct(self):
         heading, sites, legend, both = repeat_visits()
@@ -1388,8 +1415,8 @@ class Scene47(VideoScene):
         self.finish()
 
 
-class Scene48(VideoScene):
-    number = 48
+class Scene50(VideoScene):
+    number = 50
 
     def construct(self):
         heading, sites, legend, both = repeat_visits()
@@ -1405,10 +1432,10 @@ class Scene48(VideoScene):
         self.finish()
 
 
-# Quiz (scenes 49–50) ---------------------------------------------------------------------------
+# Quiz (scenes 52–53) ---------------------------------------------------------------------------
 
-class Scene49(VideoScene):
-    number = 49
+class Scene52(VideoScene):
+    number = 52
 
     def construct(self):
         head = label("Quick quiz", 40, BLUE, weight=BOLD).to_edge(UP, buff=1.0)
@@ -1430,8 +1457,8 @@ class Scene49(VideoScene):
         self.play(left.animate.set_value(0), run_time=max(self.pause - 0.6, 0.5), rate_func=linear)
 
 
-class Scene50(VideoScene):
-    number = 50
+class Scene53(VideoScene):
+    number = 53
 
     def construct(self):
         rows = self.data("noise-columns")
@@ -1453,67 +1480,95 @@ class Scene50(VideoScene):
         self.finish()
 
 
-# Key points (scenes 51–54) and the end card (scene 55) --------------------------------------------
-
-KEY_POINTS = [
-    "Training error measures memory, not prediction",
-    "Error on new data is U-shaped in flexibility",
-    "Much of the error is noise no model can remove",
-    "Choose settings with cross-validation; open the test set once",
-]
-
-
-def key_points():
-    head = title("Key points", 56).to_edge(UP, buff=0.8)
-    rows = VGroup()
-    for text in KEY_POINTS:
-        box = RoundedRectangle(width=0.55, height=0.55, corner_radius=0.08, stroke_color=GREEN,
-                               stroke_width=4)
-        tick = VMobject(color=GREEN, stroke_width=8).set_points_as_corners(
-            [[-0.16, 0.0, 0], [-0.04, -0.14, 0], [0.2, 0.16, 0]]).move_to(box)
-        rows.add(VGroup(box, tick, label(text, 38).next_to(box, RIGHT, 0.4)))
-    rows.arrange(DOWN, buff=0.6, aligned_edge=LEFT)
-    if rows.width > 12.4:
-        rows.scale_to_fit_width(12.4)
-    rows.next_to(head, DOWN, 0.8)
-    return head, rows
-
-
 class KeyPointScene(VideoScene):
-    """Scene 51 shows point 1; each later scene adds the next."""
+    """One promise from the opening, kept: its badge and question, then the answer."""
+
+    point = None
 
     def construct(self):
-        index = self.number - 51
-        head, rows = key_points()
-        self.add(*rows[:index])
-        if index == 0:
-            self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.12))
-        else:
-            self.add(head)
-        row = rows[index]
-        self.play(FadeIn(row[0]), FadeIn(row[2], shift=0.3 * RIGHT), run_time=self.share(0.2))
-        self.play(Create(row[1]), run_time=self.share(0.15))
+        tag = label(f"Key point {self.point} of 3", 34, BLUE, weight=BOLD).to_edge(UP, buff=1.1)
+        promise = VGroup(badge(self.point), label(PROMISES[self.point - 1], 38, SUBDUED)
+                         ).arrange(RIGHT, buff=0.4).next_to(tag, DOWN, 0.7)
+        lines = [label(t, 50, INK, weight=BOLD) for t in ANSWERS[self.point - 1].split("\n")]
+        answer = VGroup(*lines).arrange(DOWN, buff=0.25).next_to(promise, DOWN, 0.9)
+        box, mark = tick(0.8)
+        box.next_to(answer, LEFT, 0.5)
+        mark.move_to(box)
+        group = VGroup(answer, box, mark)
+        if group.width > 12.4:           # keep the tick clear of the frame's edge
+            group.scale_to_fit_width(12.4)
+        group.set_x(0)
+
+        # "Key point one."
+        self.play(FadeIn(tag, shift=0.2 * DOWN), FadeIn(promise), run_time=self.share(0.12))
+        # "A perfect fit is a warning sign: ..."
+        self.play(LaggedStart(*[FadeIn(l, shift=0.2 * UP) for l in lines], lag_ratio=0.5),
+                  FadeIn(box), run_time=self.share(0.4))
+        self.play(Create(mark), run_time=self.share(0.1))
         self.finish()
 
 
+class Scene15(KeyPointScene):
+    number, point = 15, 1
+
+
+class Scene37(KeyPointScene):
+    number, point = 37, 2
+
+
 class Scene51(KeyPointScene):
-    number = 51
+    number, point = 51, 3
 
 
-class Scene52(KeyPointScene):
-    number = 52
+# The recap (scenes 54–56) and the end card (scene 57) -------------------------------------
+
+def recap_rows():
+    head = title("The three key points", 56).to_edge(UP, buff=0.9)
+    rows = VGroup()
+    for i, text in enumerate(RECAP, 1):
+        box, mark = tick()
+        rows.add(VGroup(badge(i, 0.28), box, mark, label(text, 38)))
+        rows[-1][1].next_to(rows[-1][0], RIGHT, 0.3)
+        rows[-1][2].move_to(rows[-1][1])
+        rows[-1][3].next_to(rows[-1][1], RIGHT, 0.35)
+    rows.arrange(DOWN, buff=0.75, aligned_edge=LEFT)
+    if rows.width > 12.4:
+        rows.scale_to_fit_width(12.4)
+    rows.next_to(head, DOWN, 0.9)
+    return head, rows
 
 
-class Scene53(KeyPointScene):
-    number = 53
+class RecapScene(VideoScene):
+    """Scene 54 shows the three points and ticks the first; 55 and 56 tick the next."""
+
+    def construct(self):
+        index = self.number - 54
+        head, rows = recap_rows()
+        if index == 0:
+            self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
+            self.play(*[FadeIn(VGroup(r[0], r[1], r[3])) for r in rows], run_time=self.share(0.12))
+        else:
+            self.add(head, *[VGroup(r[0], r[1], r[3]) for r in rows], *[r[2] for r in rows[:index]])
+        row = rows[index]
+        self.play(Indicate(row[3], color=INK, scale_factor=1.06), run_time=self.share(0.3))
+        self.play(Create(row[2]), run_time=self.share(0.12))
+        self.finish()
 
 
-class Scene54(KeyPointScene):
+class Scene54(RecapScene):
     number = 54
 
 
-class Scene55(VideoScene):
+class Scene55(RecapScene):
     number = 55
+
+
+class Scene56(RecapScene):
+    number = 56
+
+
+class Scene57(VideoScene):
+    number = 57
 
     def construct(self):
         section = Path(self.script.meta["section"]).parent.as_posix()

@@ -6,7 +6,9 @@ Each video's scenes.py starts with
 
 and defines one class per script scene, named after it (Scene05 for "## Scene 5").
 The class declares its number, and VideoScene gives it the length of that scene's
-narration, read from audio/scene-NN.wav, so the animation is timed to the voice:
+narration, so the animation is timed to the voice. The narration is the Gemini take
+in audio/scene-NN.wav when its text is current, and otherwise the draft voice in
+audio/draft/ (tools/draft-narration.py), exactly as tools/rough-cut.py chooses:
 
     class Scene05(VideoScene):
         number = 5
@@ -38,7 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 from mlbasic_theme import ML_PALETTE  # noqa: E402  the site's Okabe-Ito palette
-from video_script import read_script  # noqa: E402
+from video_script import narration_audio, read_script  # noqa: E402
 
 SERIES = "Machine Learning Basics for Marine Science"
 MUSIC = ROOT / "_videos" / "intro-music.wav"
@@ -90,7 +92,11 @@ class VideoScene(Scene):
         folder = Path(sys.modules[type(self).__module__].__file__).resolve().parent
         self.folder = folder
         self.script = read_script(folder / "script.md")
-        wav = folder / "audio" / f"scene-{self.number:02d}.wav"
+        scene = self.script.scenes[self.number - 1]
+        wav, _ = narration_audio(folder, self.script, scene)
+        if wav is None:
+            raise FileNotFoundError(f"scene {self.number} has no narration: run "
+                                    f"tools/draft-narration.py or tools/narrate.py")
         with wave.open(str(wav)) as w:
             self.narration = w.getnframes() / w.getframerate()
         self.pause = self.script.scenes[self.number - 1].pause_after

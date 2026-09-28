@@ -23,6 +23,11 @@ from the scene's visual line:
                                         tools/figures-for-video.R
     visual: card: [Heading |] text     a text card drawn here
 
+Each scene's voice is its Gemini take (audio/scene-NN.wav) when the take's text is
+current, and otherwise the offline draft voice (audio/draft/, tools/draft-narration.py),
+so a video can be cut before any speech is bought. The summary says how many scenes
+are still on the draft voice.
+
 The sound is built as one WAV and added once, so there are no seams between scenes.
 Scene pictures are cached in visuals/segments/ and redrawn only when their source
 or length changes.
@@ -45,7 +50,7 @@ from scipy.io import wavfile
 from scipy.signal import resample_poly
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from video_script import caption_text, read_script  # noqa: E402
+from video_script import caption_text, narration_audio, pronunciations, read_script  # noqa: E402
 
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
 GAP = 1.0              # seconds between scenes, unless the script's front matter sets gap
@@ -116,7 +121,8 @@ def speech_samples(path):
     """A narration WAV as 48 kHz stereo floats."""
     with wave.open(str(path)) as w:
         if (w.getframerate(), w.getnchannels(), w.getsampwidth()) != (RATE, 1, 2):
-            sys.exit(f"{path}: expected 24 kHz mono 16-bit, as Gemini TTS writes")
+            sys.exit(f"{path}: expected 24 kHz mono 16-bit, as Gemini TTS and "
+                     f"tools/draft-narration.py write")
         mono = np.frombuffer(w.readframes(w.getnframes()), np.int16) / 32768
     mono = resample_poly(mono, MIX_RATE // RATE, 1)
     return np.stack([mono, mono], axis=1)
@@ -193,15 +199,18 @@ def main():
     gap = float(script.meta.get("gap", GAP))
     title = folder / "visuals" / "scenes" / "Title.mp4"
     missing = [] if title.exists() else ["visuals/scenes/Title.mp4 (manim ... scenes.py Title)"]
+    table = pronunciations()
+    plan, drafted = [], []
     for scene in script.scenes:
-        if not (folder / "audio" / f"{scene.stem}.wav").exists():
-            missing.append(f"audio/{scene.stem}.wav (tools/narrate.py)")
-    plan = []
-    for scene in script.scenes:
+        wav, is_draft = narration_audio(folder, script, scene, table)
+        if wav is None:
+            missing.append(f"audio/{scene.stem}.wav (tools/draft-narration.py or tools/narrate.py)")
+        if is_draft:
+            drafted.append(scene.number)
         kind, source = source_for(scene, folder)
         if not source.exists():
             missing.append(f"{source.relative_to(folder)}")
-        plan.append((scene, kind, source))
+        plan.append((scene, wav, kind, source))
     if missing:
         sys.exit("missing:\n  " + "\n  ".join(missing))
 
@@ -224,8 +233,8 @@ def main():
     sound.append(padded(music, frames / FPS))
     t = frames / FPS
 
-    for scene, kind, source in plan:
-        speech = speech_samples(folder / "audio" / f"{scene.stem}.wav")
+    for scene, wav, kind, source in plan:
+        speech = speech_samples(wav)
         spoken = len(speech) / MIX_RATE
         frames = math.ceil(round((spoken + scene.pause_after + gap) * FPS, 6))
         length = frames / FPS
@@ -260,6 +269,9 @@ def main():
     short = [name for (a, name), (b, _) in zip(chapters, chapters[1:] + [(t, "")]) if b - a < 10]
     print(f"\n{draft.relative_to(Path.cwd()) if draft.is_relative_to(Path.cwd()) else draft}: "
           f"{timestamp(t)} ({len(script.scenes)} scenes), with captions.srt and chapters.txt")
+    if drafted:
+        print(f"Draft voice in {len(drafted)} of {len(script.scenes)} scenes: "
+              f"{', '.join(map(str, drafted))}")
     if short:
         print(f"YouTube needs chapters of at least 10 s; too short: {', '.join(short)}")
     if shutil.which("mpv"):

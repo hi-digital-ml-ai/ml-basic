@@ -20,7 +20,6 @@ nowhere else.
 
 import argparse
 import base64
-import hashlib
 import json
 import os
 import re
@@ -30,14 +29,9 @@ import wave
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from video_script import read_script  # noqa: E402
-
-MODEL = "gemini-3.8-flash-tts"
-LANGUAGE = "en-GB"
-PRONUNCIATION = Path(__file__).resolve().parent.parent / "_videos" / "pronunciation.yml"
+from video_script import (LANGUAGE, MODEL, pronunciations, read_script,  # noqa: E402
+                          request_key, respell)
 
 # US dollars per million audio output tokens, for the running cost estimate.
 PRICE_2026, PRICE_2027 = 9.0, 18.0
@@ -47,17 +41,6 @@ MAX_ATTEMPTS = 6
 
 class DailyQuotaExhausted(Exception):
     pass
-
-
-def respell(text, table):
-    for word in sorted(table, key=len, reverse=True):
-        text = re.sub(rf"(?<!\w){re.escape(word)}(?!\w)", table[word], text)
-    return text
-
-
-def request_key(spoken, voice, style, language, model):
-    blob = json.dumps([spoken, voice, style, language, model], ensure_ascii=False)
-    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
 def parse_scenes(spec, count):
@@ -123,6 +106,14 @@ def synthesise(client, spoken, voice, style, language, model):
     return data, response.usage.total_output_tokens
 
 
+def keep_take(wav, audio_dir, scene):
+    """Move a take that is about to be replaced into audio/takes/."""
+    takes = audio_dir / "takes"
+    takes.mkdir(exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+    wav.rename(takes / f"{scene.stem}-{stamp}.wav")
+
+
 def wav_seconds(path):
     with wave.open(str(path)) as w:
         return w.getnframes() / w.getframerate()
@@ -143,7 +134,7 @@ def main():
     style = script.meta.get("style", "")
     language = script.meta.get("language", LANGUAGE)
     model = script.meta.get("model", MODEL)
-    table = yaml.safe_load(PRONUNCIATION.read_text(encoding="utf-8")) or {}
+    table = pronunciations()
 
     count = len(script.scenes)
     only = parse_scenes(args.scenes, count) if args.scenes else None
@@ -152,7 +143,17 @@ def main():
     audio_dir = args.video / "audio"
     audio_dir.mkdir(exist_ok=True)
 
-    todo = []
+    # Every take on disk, by what was sent for it, so a scene that was renumbered or
+    # moved reuses its approved take instead of asking for a new one. Read up front:
+    # the files are about to be moved around.
+    existing = {}
+    for sidecar in audio_dir.glob("scene-*.json"):
+        info = json.loads(sidecar.read_text())
+        wav = sidecar.with_suffix(".wav")
+        if wav.exists():
+            existing.setdefault(info["key"], (wav.read_bytes(), info))
+
+    todo, reused = [], []
     for scene in script.scenes:
         if only and scene.number not in only and scene.number not in retake:
             continue
@@ -163,9 +164,12 @@ def main():
                   and json.loads(sidecar.read_text())["key"] == key)
         if cached and scene.number not in retake:
             continue
+        if key in existing and scene.number not in retake:
+            reused.append((scene, key, wav, sidecar))
+            continue
         todo.append((scene, spoken, key, wav, sidecar))
 
-    print(f"{script.path}: {count} scenes, {len(todo)} to generate "
+    print(f"{script.path}: {count} scenes, {len(todo)} to generate, {len(reused)} reused "
           f"(voice {voice}, {language}, {model})")
 
     if args.dry_run:
@@ -173,14 +177,25 @@ def main():
             print(f"\n  scene {scene.number}:\n    {spoken}")
         return
 
+    for scene, key, wav, sidecar in reused:
+        data, info = existing[key]
+        if wav.exists():
+            keep_take(wav, audio_dir, scene)
+        wav.write_bytes(data)
+        sidecar.write_text(json.dumps(info, ensure_ascii=False, indent=1) + "\n")
+    if reused:
+        print(f"  reused {len(reused)} unchanged take(s), now scene "
+              f"{', '.join(str(s.number) for s, *_ in reused)}")
+
     if not todo:
         return
     api_key = os.environ.get("GEMINI_API_KEY") or sys.exit(
         "GEMINI_API_KEY is not set; see 'Storing the key' in .claude/videos.md")
 
     from google import genai
-    # A request that hangs (seen once, on 2026-09-28) times out after two minutes
-    # and is retried like any server error.
+    # When the daily request quota is used up, the Interactions API hangs instead of
+    # returning 429 (seen 2026-09-28); this timeout may not take effect, so wrap long
+    # runs in `timeout`. See the Paid tier note in .claude/videos.md.
     client = genai.Client(api_key=api_key, http_options={"timeout": 120_000})
 
     tokens = 0
@@ -194,10 +209,7 @@ def main():
             break
 
         if wav.exists():
-            takes = audio_dir / "takes"
-            takes.mkdir(exist_ok=True)
-            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-            wav.rename(takes / f"{scene.stem}-{stamp}.wav")
+            keep_take(wav, audio_dir, scene)
 
         wav.write_bytes(data)
         seconds = wav_seconds(wav)

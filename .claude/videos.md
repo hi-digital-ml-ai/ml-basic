@@ -41,7 +41,9 @@ output and the laptop has the better graphics card. The laptop is now set up (se
 _videos/05-generalisation/
   script.md      scenes: narration + what is on screen (drafted from the pages, edited by hand)
        │
-       ▼  tools/narrate.py          Gemini TTS, one audio file per scene
+       ▼  tools/draft-narration.py  free offline draft voice (Piper), no key or quota
+  audio/draft/scene-01.wav …
+       ▼  tools/narrate.py          Gemini TTS, one audio file per scene, when approved
   audio/scene-01.wav …
        │
        ▼  tools/figures-for-video.R  chapter figures re-exported at 1920×1080, larger text
@@ -55,7 +57,34 @@ _videos/05-generalisation/
   final video → YouTube → embedded on chapters/NN-slug/index.qmd
 ```
 
-All file and folder names above are planned, not yet created.
+### Drafts without the Google API
+
+A whole video can be scripted, animated, cut and reviewed before any speech is bought:
+
+```bash
+python tools/draft-narration.py _videos/NN-slug   # offline, free, seconds per scene
+cd _videos/NN-slug && manim -qh --frame_rate 30 scenes.py && cd ../..
+python tools/rough-cut.py _videos/NN-slug
+```
+
+`draft-narration.py` writes `audio/draft/scene-NN.wav` (24 kHz mono, like Gemini) for
+every scene that has no Gemini take of its current text. Manim and `rough-cut.py`
+choose each scene's audio the same way (`narration_audio()` in `tools/video_script.py`):
+a current Gemini take, else the draft, else an out-of-date take. `rough-cut.py` ends by
+listing the scenes still on the draft voice. When the script is settled, run
+`narrate.py` once, re-render the Manim scenes (the Gemini take is a little longer or
+shorter), and cut again.
+
+The voice is Piper's `en_GB-alan-medium` (`pip install piper-tts` in the `claude` env;
+the voice, about 60 MB, downloads itself into `~/.local/share/piper-voices/` on first
+use). It sounds synthetic but is paced within 3% of the Gemini takes, so timing and
+layout reviewed on a draft hold for the final voice. `--voice` picks another Piper voice.
+
+To plan the Gemini runs, `python tools/audio-list.py` lists every scene of every video
+with the source of its audio (`gemini`, `reuse`, `draft`, `gemini-stale` or `none`),
+writes it to `audio/audio-list.csv` in each video folder, and counts the requests a
+`narrate.py` run would use against the 100 a day. `narrate.py --scenes 3,5-7` then
+narrates just the chosen scenes.
 
 - `_videos/` starts with an underscore so Quarto never renders it (like `_freeze/`).
   Scripts and code are committed; `audio/`, `visuals/` and the video outputs will be
@@ -112,6 +141,13 @@ Then we give it next year's survey, and it falls apart.
 - **Pronunciation:** Google does not document a pronunciation dictionary. `narrate.py`
   applies a respelling list just before sending the text (e.g. `tidymodels → tidy
   models`, `RMSE → R M S E`, `ggplot → gee gee plot`). Captions keep the real spelling.
+- **Paid tier daily limit: 100 requests per day** for `gemini-3.8-flash-tts`
+  (`GenerateRequestsPerDayPerProjectPerModel`, found on 2026-09-28 after about 100
+  requests, retries included). **When it runs out, the Interactions API hangs instead
+  of returning 429**; the legacy `generateContent` endpoint returns the 429 at once,
+  with the time until reset. So a narration run that hangs means the day's quota is
+  gone: stop, and check with one `generateContent` call. Budget requests: a full video
+  is 55–60, so re-narrate only changed scenes (`narrate.py` does) and never loop retries.
 - **Limits:** up to 8,192 input tokens per request, far above one scene. The free tier
   allows **10 requests per day per model** (quota `GenerateRequestsPerDayPerProjectPerModel-FreeTier`,
   found on 2026-09-28), and failed retries count. It also hit a per-minute limit after
@@ -302,10 +338,23 @@ ridge shrinking the coefficients.
      with any 48 kHz track to change it). `rough-cut.py` puts it first.
    - `gap: 1.0` in the front matter (1 s between scenes, was 0.5); the soundtrack is now
      mixed at 48 kHz stereo.
-   - Result: 6:35. Gemini TTS hung on two requests that evening (the API answered
-     other calls): `narrate.py` now sets a timeout, though it did not seem to take
-     effect, so wrap runs in `timeout`. Scene 55 reuses the approved take of the
-     identical old closing line (its sidecar says so). Only after that, decide on the
+   - Result: 6:35. Scene 55 reuses the approved take of the identical old closing line
+     (its sidecar says so), because narration had started to hang; see the quota note
+     below for why.
+   **Second review, 2026-09-28:** name the "U-shaped error curve" explicitly, and make
+   the three points promised in the opening unmistakable. Done:
+   - Three "Key point one / two / three" scenes (15, 37, 51), each at the end of the
+     chapter that delivers it, showing the opening's numbered promise and its answer;
+     the recap (54–56) repeats exactly those three. The wording lives once, in
+     `PROMISES`, `ANSWERS` and `RECAP` in `scenes.py`. 57 scenes, 823 words.
+   - "U-shaped error curve" said and shown by name (scenes 21, 30, 34 and the points).
+   - `narrate.py` reuses any take whose request is unchanged, even when its scene
+     number moved, so inserting a scene costs only the new lines.
+   - Captions: `captions.srt` is for uploading to YouTube (closed captions); preview
+     with `mpv rough-cut.mp4 --sub-file=captions.srt`. Not burned into the picture,
+     because they would cover axis labels.
+   - The "illustration" corner tag marks schematic scenes (made-up shapes), per the
+     no-invented-numbers rule. Only after that, decide on the
    other nine sections.
 
 ### Still open
