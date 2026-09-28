@@ -11,8 +11,11 @@ Writes, into the video folder:
                     text sent for speech)
     chapters.txt    timestamps for the YouTube description, one per "# " heading
 
-Each scene lasts its narration, plus its pause-after, plus a short gap, rounded up
-to whole frames. What is on screen comes from the scene's visual line:
+Every video opens with the series title (visuals/scenes/Title.mp4, from the Title
+scene) over the jingle in _videos/intro-music.wav. Then each scene lasts its
+narration, plus its pause-after, plus the gap between scenes (`gap:` in the script's
+front matter, 1 s by default), rounded up to whole frames. What is on screen comes
+from the scene's visual line:
 
     visual: manim SceneName ...        visuals/scenes/SceneNN.mp4, rendered by manim; the
                                         last frame is held to the end of the scene
@@ -36,14 +39,19 @@ import textwrap
 import wave
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from scipy.io import wavfile
+from scipy.signal import resample_poly
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from video_script import caption_text, read_script  # noqa: E402
 
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
-GAP = 0.5              # seconds of silence between scenes
+GAP = 1.0              # seconds between scenes, unless the script's front matter sets gap
 RATE = 24000           # Gemini TTS: 24 kHz, mono, 16-bit
+MIX_RATE = 48000       # the soundtrack: 48 kHz stereo, so the jingle keeps its top end
+MUSIC = Path(__file__).resolve().parent.parent / "_videos" / "intro-music.wav"
 CAPTION_CHARS = 84     # at most two lines of 42 characters per caption
 CARD_TEXT_WIDTH = 1500  # pixels
 
@@ -104,11 +112,29 @@ def source_for(scene, folder):
     sys.exit(f"scene {scene.number}: cannot read its visual line: {visual!r}")
 
 
-def wav_frames(path):
+def speech_samples(path):
+    """A narration WAV as 48 kHz stereo floats."""
     with wave.open(str(path)) as w:
         if (w.getframerate(), w.getnchannels(), w.getsampwidth()) != (RATE, 1, 2):
             sys.exit(f"{path}: expected 24 kHz mono 16-bit, as Gemini TTS writes")
-        return w.readframes(w.getnframes())
+        mono = np.frombuffer(w.readframes(w.getnframes()), np.int16) / 32768
+    mono = resample_poly(mono, MIX_RATE // RATE, 1)
+    return np.stack([mono, mono], axis=1)
+
+
+def music_samples():
+    rate, music = wavfile.read(MUSIC)
+    if rate != MIX_RATE:
+        sys.exit(f"{MUSIC}: expected {MIX_RATE} Hz")
+    music = music / 32768 if music.dtype == np.int16 else music.astype(float)
+    return music if music.ndim == 2 else np.stack([music, music], axis=1)
+
+
+def padded(samples, length):
+    """Samples followed by silence, exactly `length` seconds in all."""
+    out = np.zeros((round(length * MIX_RATE), 2))
+    out[: min(len(samples), len(out))] = samples[: len(out)]
+    return out
 
 
 def render_segment(kind, source, frames, out):
@@ -164,7 +190,9 @@ def main():
     cache_file = segments / "cache.json"
     cache = json.loads(cache_file.read_text()) if cache_file.exists() else {}
 
-    missing = []
+    gap = float(script.meta.get("gap", GAP))
+    title = folder / "visuals" / "scenes" / "Title.mp4"
+    missing = [] if title.exists() else ["visuals/scenes/Title.mp4 (manim ... scenes.py Title)"]
     for scene in script.scenes:
         if not (folder / "audio" / f"{scene.stem}.wav").exists():
             missing.append(f"audio/{scene.stem}.wav (tools/narrate.py)")
@@ -177,44 +205,50 @@ def main():
     if missing:
         sys.exit("missing:\n  " + "\n  ".join(missing))
 
-    audio, captions, chapters = bytearray(), [], []
+    captions, chapters, entries, sound = [], [], [], []
     list_file = segments / "list.txt"
-    entries = []
-    t = 0.0
+
+    def add_segment(name, kind, source, frames):
+        out = segments / f"{name}.mp4"
+        stamp = [str(source), source.stat().st_mtime, frames]
+        if cache.get(name) != stamp or not out.exists():
+            print(f"  {name}: {kind} {source.name}, {frames / FPS:.2f} s", flush=True)
+            render_segment(kind, source, frames, out)
+            cache[name] = stamp
+        entries.append(f"file '{out.name}'")
+
+    # The series opening: the title over the jingle, then a beat of silence.
+    music = music_samples()
+    frames = math.ceil(round((len(music) / MIX_RATE + gap) * FPS, 6))
+    add_segment("title", "clip", title, frames)
+    sound.append(padded(music, frames / FPS))
+    t = frames / FPS
+
     for scene, kind, source in plan:
-        speech = wav_frames(folder / "audio" / f"{scene.stem}.wav")
-        spoken = len(speech) / 2 / RATE
-        frames = math.ceil(round((spoken + scene.pause_after + GAP) * FPS, 6))
+        speech = speech_samples(folder / "audio" / f"{scene.stem}.wav")
+        spoken = len(speech) / MIX_RATE
+        frames = math.ceil(round((spoken + scene.pause_after + gap) * FPS, 6))
         length = frames / FPS
 
-        audio += speech + b"\0\0" * (round(length * RATE) - len(speech) // 2)
+        sound.append(padded(speech, length))
         captions += caption_cues(caption_text(scene.narration), t, spoken)
         if not chapters or chapters[-1][1] != scene.chapter:
-            chapters.append((t, scene.chapter))
-
-        out = segments / f"{scene.stem}.mp4"
-        stamp = [str(source), source.stat().st_mtime, frames]
-        if cache.get(scene.stem) != stamp or not out.exists():
-            print(f"  scene {scene.number:2d}: {kind} {source.name}, {length:.2f} s", flush=True)
-            render_segment(kind, source, frames, out)
-            cache[scene.stem] = stamp
-        entries.append(f"file '{out.name}'")
+            # YouTube wants the first chapter at 0:00, so it takes in the title.
+            chapters.append((t if chapters else 0.0, scene.chapter))
+        add_segment(scene.stem, kind, source, frames)
         t += length
 
     cache_file.write_text(json.dumps(cache, indent=1))
     list_file.write_text("\n".join(entries) + "\n")
 
-    sound = segments / "narration.wav"
-    with wave.open(str(sound), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(RATE)
-        w.writeframes(bytes(audio))
+    soundtrack = segments / "soundtrack.wav"
+    mix = np.clip(np.concatenate(sound), -1, 1)
+    wavfile.write(soundtrack, MIX_RATE, (mix * 32767).astype(np.int16))
 
     draft = folder / "rough-cut.mp4"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(list_file),
-                    "-i", str(sound), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-                    "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+                    "-i", str(soundtrack), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+                    "-c:a", "aac", "-b:a", "192k",
                     "-movflags", "+faststart", "-shortest", str(draft)], check=True)
 
     (folder / "captions.srt").write_text("".join(

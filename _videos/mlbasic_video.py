@@ -36,7 +36,12 @@ from manim import *  # noqa: F401,F403  (re-exported for the scene files)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tools"))
 from mlbasic_theme import ML_PALETTE  # noqa: E402  the site's Okabe-Ito palette
+from video_script import read_script  # noqa: E402
+
+SERIES = "Machine Learning Basics for Marine Science"
+MUSIC = ROOT / "_videos" / "intro-music.wav"
 
 # The site's font. Pango silently substitutes another font if this name is wrong,
 # so check the first render; "Inter" is the fallback named in .claude/videos.md.
@@ -84,9 +89,11 @@ class VideoScene(Scene):
     def setup(self):
         folder = Path(sys.modules[type(self).__module__].__file__).resolve().parent
         self.folder = folder
+        self.script = read_script(folder / "script.md")
         wav = folder / "audio" / f"scene-{self.number:02d}.wav"
         with wave.open(str(wav)) as w:
             self.narration = w.getnframes() / w.getframerate()
+        self.pause = self.script.scenes[self.number - 1].pause_after
 
     def share(self, fraction):
         """A run time as a fraction of this scene's narration."""
@@ -110,3 +117,35 @@ class VideoScene(Scene):
 def schematic_note():
     """A small corner tag so a still from a schematic scene is never taken for data."""
     return label("illustration", size=22, color=SUBDUED).to_corner(DR, buff=0.3)
+
+
+class TitleScene(Scene):
+    """The opening every video shares: series name, section, title, over the jingle.
+
+    Each scenes.py has `class Title(TitleScene): pass`; the text comes from the
+    script's front matter and the length from _videos/intro-music.wav.
+    """
+
+    def construct(self):
+        folder = Path(sys.modules[type(self).__module__].__file__).resolve().parent
+        meta = read_script(folder / "script.md").meta
+        with wave.open(str(MUSIC)) as w:
+            length = w.getnframes() / w.getframerate()
+        section = int(Path(meta["section"]).parent.name.split("-")[0])
+        main, _, sub = meta["title"].partition(": ")
+
+        rule = Line(3.2 * LEFT, 3.2 * RIGHT, color=BLUE, stroke_width=6)
+        series = label(SERIES, 30, SUBDUED)
+        number = label(f"Section {section}", 34, BLUE, weight=BOLD)
+        head = title(main, 80)
+        tagline = label(sub, 42, SUBDUED) if sub else VGroup()
+        VGroup(series, number, head, rule, tagline).arrange(DOWN, buff=0.35)
+        rule.shift(0.1 * DOWN)
+        tagline.shift(0.15 * DOWN)
+
+        # Timed to the jingle: the text arrives with the arpeggio, the rule with the chord.
+        self.play(FadeIn(series, shift=0.2 * DOWN), FadeIn(number, shift=0.2 * DOWN),
+                  run_time=0.4)
+        self.play(FadeIn(head, shift=0.3 * UP), run_time=0.5)
+        self.play(GrowFromCenter(rule), FadeIn(tagline), run_time=0.6)
+        self.wait(max(length - self.time, 0.1))

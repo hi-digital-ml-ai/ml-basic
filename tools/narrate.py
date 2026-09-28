@@ -179,7 +179,9 @@ def main():
         "GEMINI_API_KEY is not set; see 'Storing the key' in .claude/videos.md")
 
     from google import genai
-    client = genai.Client(api_key=api_key)
+    # A request that hangs (seen once, on 2026-09-28) times out after two minutes
+    # and is retried like any server error.
+    client = genai.Client(api_key=api_key, http_options={"timeout": 120_000})
 
     tokens = 0
     for scene, spoken, key, wav, sidecar in todo:

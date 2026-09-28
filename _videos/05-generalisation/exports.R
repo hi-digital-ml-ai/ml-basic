@@ -7,7 +7,7 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scenes 1–2 and 5–7: the five models, training and test RMSE, and the
+  # Scenes 2–4 and 6–11: the five models, training and test RMSE, and the
   # predict-the-mean line.
   "training-versus-new-data.qmd" = function(env, dir) {
     table <- with(env, dplyr::mutate(results[c("model", "training", "test")],
@@ -15,14 +15,36 @@ exports <- list(
     write(table, dir, "five-models")
   },
 
-  # Scenes 12–14: the U-shaped curve, with its baseline and best leaf count.
+  # Scenes 18–22: the U-shaped curve, with its baseline and best leaf count.
   "underfitting-and-overfitting.qmd" = function(env, dir) {
     table <- with(env, dplyr::mutate(sweep[c("leaves", "training", "test")],
                                      baseline = baseline, best_leaves = best$leaves))
     write(table, dir, "u-curve")
+
+    # Scenes 15–17: the three one-predictor trees, taken from the page's own plots.
+    fits <- list(under = list(maxdepth = 1), right = list(minbucket = 45),
+                 over = list(minbucket = 1))
+    for (name in names(fits)) {
+      plot <- do.call(env$step_plot, c(list(name), fits[[name]]))
+      leaves <- as.integer(sub(" .*", "", plot$labels$subtitle))
+      write(dplyr::mutate(plot$layers[[2]]$data, leaves = leaves), dir, paste0("fit-", name))
+    }
+    write(env$one_d_train[c("depth_m", "abundance")], dir, "fit-points")
   },
 
-  # Scenes 17–18: columns of noise, training R² and test RMSE, and the largest
+  # Scenes 32–35: bias², variance and the irreducible noise, by minbucket.
+  "bias-variance.qmd" = function(env, dir) {
+    table <- with(env, dplyr::mutate(decomposition, irreducible = irreducible))
+    write(dplyr::rename(table, bias2 = `bias²`, total = `bias² + variance`), dir, "decomposition")
+  },
+
+  # Scenes 45–46: which grid cell each of the forty validation splits chose.
+  "hyperparameter-selection.qmd" = function(env, dir) {
+    write(with(env, winners[c("replicate", "tree_depth", "min_n", "winning_rmse")]),
+          dir, "winners")
+  },
+
+  # Scenes 26, 27 and 50: columns of noise, training R² and test RMSE, and the largest
   # observed catch, which the page's figure caption compares the RMSE with.
   "model-complexity.qmd" = function(env, dir) {
     table <- with(env, dplyr::transmute(noise_results,
@@ -34,7 +56,7 @@ exports <- list(
     write(table, dir, "noise-columns")
   },
 
-  # Scene 27: least squares, predicting the mean and ridge, with the page's own
+  # Scenes 37–38: least squares, predicting the mean and ridge, with the page's own
   # functions on the page's own split.
   "regularisation.qmd" = function(env, dir) {
     table <- with(env, tibble::tibble(
@@ -45,5 +67,8 @@ exports <- list(
       predictors = ncol(X),
       stations   = length(y_train)))
     write(table, dir, "ridge-bars")
+
+    # Scenes 39–40: how often lasso kept each term over 100 resampled fits.
+    write(with(env, frequency), dir, "lasso-stability")
   }
 )

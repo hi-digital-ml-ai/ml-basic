@@ -285,7 +285,27 @@ ridge shrinking the coefficients.
    no seams. Cards are drawn with Pillow in Source Sans 3; `card: Heading | text` adds
    a small heading. Render the Manim scenes at 1080p first:
    `cd _videos/05-generalisation && manim -qh --frame_rate 30 -a scenes.py` (3 minutes).
-5. Watch the rough cut, adjust, then polish in Kdenlive. Only after that, decide on the
+5. Watch the rough cut, adjust, then polish in Kdenlive.
+   **First review, 2026-09-28:** too much information per scene, too few animations,
+   too little time between scenes; every video should open with a title and a short
+   jingle, then say what the viewer will learn. Done the same day:
+   - Script rewritten to one idea per scene: 55 scenes, 754 words (was 40 and 1,069),
+     about 14 words each, at most one number. Chapter "In this video" first.
+   - Every figure and card replaced by a Manim scene (new real-data scenes: the three
+     trees, the bias–variance curves, lasso stability, forty validation splits; the quiz
+     has a countdown bar through its pause; the key points tick off one by one).
+     `exports.R` writes the extra CSVs. The chapter figures are still re-exported, but
+     the §5 video no longer uses them.
+   - Series opening: `TitleScene` in `_videos/mlbasic_video.py` (series, section number,
+     title from the front matter) over `_videos/intro-music.wav`, a 3.2 s jingle
+     synthesised by `tools/make-intro-music.py` (no licence to track; replace the WAV
+     with any 48 kHz track to change it). `rough-cut.py` puts it first.
+   - `gap: 1.0` in the front matter (1 s between scenes, was 0.5); the soundtrack is now
+     mixed at 48 kHz stereo.
+   - Result: 6:35. Gemini TTS hung on two requests that evening (the API answered
+     other calls): `narrate.py` now sets a timeout, though it did not seem to take
+     effect, so wrap runs in `timeout`. Scene 55 reuses the approved take of the
+     identical old closing line (its sidecar says so). Only after that, decide on the
    other nine sections.
 
 ### Still open
