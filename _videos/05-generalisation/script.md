@@ -15,7 +15,8 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
     visual: manim <SceneName>: <what>   an animation in scenes.py; "real data" means R
                                         writes the numbers to a CSV, "schematic" means
                                         made-up shapes that must not look like results
-    visual: card: <text>                a plain text card
+    visual: card: <text>                a plain text card; "card: Heading | text" puts a
+                                        small heading above the text
     pause-after: <seconds>              silence added after the narration
 - Every number spoken comes from the section's pages. The page is named in a
   comment where a number is not obvious from the visual.
@@ -246,14 +247,14 @@ puts that right.
 # Quiz
 
 ## Scene 34
-visual: card: Quiz. You add a column of random numbers to a regression. Can its training R² go down?
+visual: card: Quiz | You add a column of random numbers to a regression. Can its training R² go down?
 pause-after: 10
 
 Quick quiz. You add a column of random numbers to a regression. Can its training R² go
 down?
 
 ## Scene 35
-visual: card: No. R² never falls when a predictor is added.
+visual: card: Answer | No. R² never falls when a predictor is added.
 
 No. It rises every time, even with random numbers, so it cannot tell you whether a
 variable matters.
@@ -261,30 +262,30 @@ variable matters.
 # Key points
 
 ## Scene 36
-visual: card: Key points (bullet 1 of 4)
+visual: card: Key points | Training error measures memory, not how a model does on new data.
 
 To sum up. Training error tells you how well a model remembers its data, not how it
 will do on new data.
 
 ## Scene 37
-visual: card: Key points (bullet 2 of 4)
+visual: card: Key points | Error on new data is U-shaped in flexibility. The gap between the two errors tells underfitting from overfitting.
 
 Error on new data against flexibility is U-shaped. Too rigid underfits, too flexible
 overfits, and the gap between the two errors tells them apart.
 
 ## Scene 38
-visual: card: Key points (bullet 3 of 4)
+visual: card: Key points | Much of the error in marine counts is noise. Regularisation trades a little bias for a lot of stability.
 
 Much of the error in marine count data is noise no model can remove. Regularisation
 trades a little bias for a lot of stability.
 
 ## Scene 39
-visual: card: Key points (bullet 4 of 4)
+visual: card: Key points | Choose settings with cross-validation. Spend the test set once.
 
 Choose settings with cross-validation, and spend the test set once.
 
 ## Scene 40
-visual: card: end card with the section's web address
+visual: card: Pages and code | hi-digital-ml-ai.github.io/ml-basic/chapters/05-generalisation
 
 The pages for this section, with all the R and Python code, are linked below. Thanks
 for watching.

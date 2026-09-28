@@ -277,6 +277,14 @@ ridge shrinking the coefficients.
    - The laptop needed `sudo apt install cmake gdal-bin libabsl-dev libgdal-dev
      libnode-dev libudunits2-dev libx11-dev` before `renv::restore()` would finish.
 4. Write `tools/rough-cut.py` (draft video, `captions.srt`, `chapters.txt`).
+   **Done 2026-09-28.** `python tools/rough-cut.py _videos/05-generalisation` builds
+   `rough-cut.mp4` (§5: 7:49, 1080p30), `captions.srt` and `chapters.txt` in about two
+   minutes; unchanged scenes are cached in `visuals/segments/`. Each scene lasts its
+   narration + `pause-after` + 0.5 s. Manim clips hold their last frame; figures and
+   cards are stills. The sound is one WAV joined in Python and added once, so there are
+   no seams. Cards are drawn with Pillow in Source Sans 3; `card: Heading | text` adds
+   a small heading. Render the Manim scenes at 1080p first:
+   `cd _videos/05-generalisation && manim -qh --frame_rate 30 -a scenes.py` (3 minutes).
 5. Watch the rough cut, adjust, then polish in Kdenlive. Only after that, decide on the
    other nine sections.
 
