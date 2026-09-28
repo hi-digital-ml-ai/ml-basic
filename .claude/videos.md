@@ -1,12 +1,12 @@
 # Videos
 
 A short YouTube video for each of the ten course sections, narrated by an AI voice.
-**Status (2026-09-28): planning done, nothing built yet.** The next step is a pilot for
-§5 (Generalisation); see [Next step](#next-step-the-5-pilot).
+**Status (2026-09-28): planning done, laptop set up, voice chosen, nothing built yet.**
+The next step is a pilot for §5 (Generalisation); see [Next step](#next-step-the-5-pilot).
 
 The work moved from the desktop to a Linux laptop, because the desktop has no audio
-output and the laptop has the better graphics card. Everything below is written so a new
-session on the laptop can pick it up from here.
+output and the laptop has the better graphics card. The laptop is now set up (see
+[Laptop setup](#laptop-setup-linux)).
 
 ## Decisions so far
 
@@ -16,6 +16,8 @@ session on the laptop can pick it up from here.
 | Narration | One AI voice for the whole series. **No mascot, no two-voice dialogue.** |
 | Keeping it fun | Through structure, not characters: a puzzle as the hook, the section's real trap as the climax, a 10-second quiz, then the page's *Key points*. |
 | Text-to-speech | Gemini TTS, `gemini-3.8-flash-tts`, called with an API key from Google AI Studio. |
+| Voice | Prebuilt voice **`Sadaltager`** ("knowledgeable"), British English, at a natural, conversational pace, for all ten videos. Chosen on 2026-09-28 over `Charon` and `Kore`, and over a slower "teaching pace". |
+| Python env | The existing `claude` conda env (Python 3.11, manim 0.20.1, google-genai 2.25.0). No separate video env. |
 | Pipeline | Hybrid: scripted steps (script → narration → visuals → rough cut) and polishing by hand in a video editor. |
 | Animation | **Manim Community Edition** for every animated scene. Still ggplot figures, re-exported at video size, for real results. gganimate only if a scene truly needs a real fitted model to move. |
 | Editor | **Kdenlive** (official AppImage). Not DaVinci Resolve: the free Linux version cannot import or export H.264 or AAC. |
@@ -58,8 +60,9 @@ All file and folder names above are planned, not yet created.
 - `_videos/` starts with an underscore so Quarto never renders it (like `_freeze/`).
   Scripts and code are committed; `audio/`, `visuals/` and the video outputs will be
   git-ignored.
-- `_videos/requirements.txt` will record the video environment, kept separate from
-  `python/requirements.txt` so the site and `check-snippets.py` are unaffected.
+- The scripts run in the `claude` conda env. `_videos/requirements.txt` will list the
+  packages they use, kept separate from `python/requirements.txt` so the site and
+  `check-snippets.py` are unaffected.
 
 ### Script format
 
@@ -75,25 +78,45 @@ Then we give it next year's survey, and it falls apart.
 ### Narration
 
 - **Record the audio first, then animate to fit it.** Each Manim scene gets the exact
-  length of its audio. The `manim-voiceover` plugin does this; check it is still
-  maintained, otherwise read the WAV length ourselves.
+  length of its audio, read from the WAV header (Python's `wave` module). The
+  `manim-voiceover` plugin is not used: recording first makes it unnecessary.
 - **One request per scene**, cached by a hash of (text, voice, style, model). Only
   changed scenes are regenerated. This matters because TTS output varies slightly on
   every run, so approved scenes must not be regenerated.
-- **Voice:** not chosen yet. Choose or design it in AI Studio (a prebuilt voice, the
-  Extended Voice Library, or Voice Design with something like "warm, clear British
-  English narrator, unhurried"), then use that one voice ID for all ten videos.
-  Until then use the prebuilt voice `Kore`.
-- **Style:** a fixed `style` in `speech_metadata`, e.g. "calm and friendly, speaking at
-  a steady teaching pace". Inline tags such as `<short pause>` before a punchline.
+- **Voice:** `Sadaltager` for every video, with `language: en-GB`. Auditioned against
+  `Charon` and `Kore` on the same lines.
+- **Style:** **"friendly British English, speaking at a natural, conversational pace"**
+  for every video, set in each script's front matter and sent in `speech_metadata`.
+  Chosen on 2026-09-28 by ear over "calm and friendly British English, speaking at a
+  steady teaching pace", which sounded slower and more like a lecture. Inline tags such
+  as `<short pause>` before a punchline. **Never put the style instruction in the text
+  itself:** in the audition, a prefix such as "Read this as a calm, friendly narrator:
+  …" was spoken aloud, doubling each sample from about 13 s to 25 s.
+- **Pace:** with the chosen style, about 157 words per minute including pauses (§5
+  scenes 1–3); the steady style gave about 126. A 1,000-word script is therefore about
+  6.5 minutes of narration. Keep scripts to 1,000–1,100 words to stay under 8 minutes
+  once the rough cut adds gaps between scenes. The natural style roughly halves the
+  pauses, so a beat that needs room (after the hook question, before the quiz answer)
+  needs a `<short pause>` tag or `pause-after:`.
 - **API:** use the Interactions API. `generateContent` works (it was used for the
   test) but Google marks it as legacy, and the Interactions API is where custom voice IDs
-  are configured.
+  are configured. The request that works (google-genai 2.25.0), as used by
+  `tools/narrate.py`: `client.interactions.create(model=…, input=[{"type": "text",
+  "text": …, "annotations": [{"type": "speech_metadata", "style": …}]}],
+  response_modalities=["audio"], generation_config={"speech_config": [{"voice":
+  "Sadaltager", "language": "en-GB"}]}, response_format={"type": "audio", "mime_type":
+  "audio/wav"})`. Modalities must be lowercase. The WAV is base64 in
+  `response.output_audio.data`, and `response.usage.total_output_tokens` gives the cost.
+- **The style changes the pace.** The same 20 words took 7.4 s without a style and
+  9.4 s with the steady teaching-pace style: slower speech, not the style read aloud.
 - **Pronunciation:** Google does not document a pronunciation dictionary. `narrate.py`
   applies a respelling list just before sending the text (e.g. `tidymodels → tidy
   models`, `RMSE → R M S E`, `ggplot → gee gee plot`). Captions keep the real spelling.
-- **Limits:** up to 8,192 input tokens per request, far above one scene. Free-tier rate
-  limits are not published, so `narrate.py` must wait and retry on rate-limit errors.
+- **Limits:** up to 8,192 input tokens per request, far above one scene. The free tier
+  allows **10 requests per day per model** (quota `GenerateRequestsPerDayPerProjectPerModel-FreeTier`,
+  found on 2026-09-28), and failed retries count. It also hit a per-minute limit after
+  about four requests. `narrate.py` must wait and retry on 429 errors, honour the
+  `retryDelay` in the error, and stop (not keep retrying) when the daily quota is gone.
 
 ### Publishing checklist
 
@@ -116,11 +139,17 @@ Then we give it next year's survey, and it falls apart.
   tier.
 - **Free tier:** Google may use the text to improve its products, which is acceptable
   because the scripts will be published anyway.
-- **Paid tier, if the free limits get in the way:** audio output is $9 per million tokens
-  until 31 December 2026 and $18 from 1 January 2027. With three takes per scene, the
-  whole series of ten is about 360,000 output tokens, so roughly **$3–7 in total**.
+- **The free tier is too small for production.** At 10 requests a day, one video of
+  30–40 scenes plus retakes would take most of a week. Billing is needed before the
+  narration starts in earnest.
+- **Paid tier:** audio output is $9 per million tokens until 31 December 2026 and $18
+  from 1 January 2027. At about 32 audio tokens per second, one 8-minute take is about
+  15,000 tokens. With three takes per scene, the series of ten is about 460,000 tokens:
+  **about $4 at the 2026 price, $8 at the 2027 price** (five takes: $7 / $14). The §5
+  pilot alone is under $1. Input text tokens are negligible.
 - **Key safety:** in the Google Cloud console, restrict the key to the *Generative
-  Language API* and set a budget alert (e.g. $10). Rotate it if it may have leaked.
+  Language API* and set a budget alert ($10 covers the series at the 2026 price; $20 if
+  the work runs into 2027). Rotate it if it may have leaked.
 
 ### Storing the key
 
@@ -138,7 +167,14 @@ keyring is unlocked by a desktop login; over SSH use `pass` instead
 
 ## Laptop setup (Linux)
 
-Commands assume Ubuntu or Debian; adapt package names on another distribution.
+**Done on 2026-09-28** (Ubuntu 24.04): steps 1–3, 5, 6 and 8.
+Step 4 is replaced by the existing `claude` conda env, which already has manim 0.20.1,
+google-genai 2.25.0, pandas, scipy, scikit-learn, pydub, PyYAML and ffmpeg 9 (libx264,
+AAC). A test render with `Text` (Inter) and `MathTex` worked. Not done: Source Sans 3
+(step 7) and the renv library (step 9), whose library on this laptop is still empty.
+
+The steps below are kept for setting up another machine. Commands assume Ubuntu or
+Debian; adapt package names on another distribution.
 
 1. **Get the branch.**
 
@@ -218,6 +254,10 @@ ridge shrinking the coefficients.
    trap (choosing complexity by looking at the test set, which §5 does knowingly until
    `hyperparameter-selection.qmd`), a quiz and the *Key points*.
 2. Write `tools/narrate.py` (Interactions API, caching, retry, respelling list).
+   **Done 2026-09-28**, with `tools/video_script.py` (the script parser, shared with
+   `rough-cut.py`) and `_videos/pronunciation.yml`. All 40 §5 scenes narrated on
+   2026-09-28 (script trimmed to 1,069 words): 7.5 minutes including pauses, 14,000
+   audio tokens, about $0.13.
 3. Write the shared Manim style and the §5 scenes; `tools/figures-for-video.R`.
 4. Write `tools/rough-cut.py` (draft video, `captions.srt`, `chapters.txt`).
 5. Watch the rough cut, adjust, then polish in Kdenlive. Only after that, decide on the
@@ -225,7 +265,8 @@ ridge shrinking the coefficients.
 
 ### Still open
 
-- The narrator voice (name or Voice Design ID).
-- Source Sans 3 or Inter for titles (install steps are in the laptop setup).
-- Whether to add billing to the key (only if the free limits slow the work).
-- Whether `manim-voiceover` is still maintained.
+- Source Sans 3 or Inter for titles (install steps are in the laptop setup; Inter is
+  already installed).
+
+Settled on 2026-09-28: billing (200 NOK of prepaid credit in AI Studio, about $18–20;
+the paid tier hit no rate limits in the first runs), the voice and the style.

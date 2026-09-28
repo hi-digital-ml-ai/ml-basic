@@ -36,3 +36,10 @@ __pycache__/
 Thumbs.db
 
 **/*.quarto_ipynb
+
+# Video pipeline output (the scripts and code in _videos/ and tools/ are committed)
+_videos/*/audio/
+_videos/*/visuals/
+_videos/*/rough-cut.mp4
+_videos/*/captions.srt
+_videos/*/chapters.txt
