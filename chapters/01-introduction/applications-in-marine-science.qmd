@@ -1,7 +1,7 @@
 ---
 title: "Applications, grouped by task shape"
 description: "A tour of machine learning in marine science, organised by what the model is actually doing rather than by subdiscipline."
-order: 3
+order: 4
 categories: [foundations, marine-data]
 ---
 
@@ -130,8 +130,8 @@ own. It is valid only across the range of conditions it was trained on.
 | Explaining a driver | Possibly not machine learning at all | [§1](prediction-and-explanation.qmd), [§10](../10-interpretation/index.qmd) |
 
 That last row is deliberate. If your question is "does temperature drive abundance,
-and by how much", a machine-learning model is often the wrong instrument. The
-[next page](prediction-and-explanation.qmd) takes that seriously.
+and by how much", a machine-learning model is often the wrong instrument, as
+[the previous page](prediction-and-explanation.qmd) showed.
 
 ## Limits of this survey
 

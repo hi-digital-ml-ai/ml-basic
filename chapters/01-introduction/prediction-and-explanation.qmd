@@ -1,7 +1,7 @@
 ---
-title: "Prediction versus explanation"
-description: "Two different scientific goals that pull models in different directions, and why the best predictor is rarely the best explanation."
-order: 4
+title: "Prediction, inference and explanation"
+description: "One fitted model can serve three aims: predicting new cases, inferring a relationship with its uncertainty, and explaining cause. Each aim asks more of the model than the last and is harder to check."
+order: 3
 categories: [foundations, interpretation]
 ---
 
@@ -14,233 +14,154 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## The cost of an unstated goal
+## One fitted model, three aims
 
-Almost every disappointing machine-learning project in marine science begins with a
-goal that was never stated. Someone wants to know *why* a species is declining, builds
-a model that predicts well, and then discovers that it will not answer the question.
+[The previous page](what-is-machine-learning.qmd) set prediction against explanation.
+Between the two sits a third aim, inference:
 
-The two goals are genuinely different:
+- **Prediction** gives the count at a station not yet sampled. It is checked directly:
+  hold stations back, predict them, and measure the error.
+- **Inference** reasons from the sampled stations to the whole shelf. It gives the
+  size of a relationship, such as the difference in abundance between stations one
+  unit of salinity apart, together with its uncertainty as an interval or a p-value.
+  The interval is only as trustworthy as the model's assumptions.
+- **Explanation** claims a cause: warmer water, by itself, changes the count. The
+  data alone cannot settle that. It needs study design and knowledge of the system.
 
-- **Prediction**: given conditions I have not observed, what will the value be?
-- **Explanation**: how does this driver affect the outcome, and by how much?
+Uncertainty can be attached to a prediction or a cause as well. On this page,
+inference means estimating an association: two variables moving together, which on
+its own says nothing about one driving the other.
 
-A model can be superb at one and useless at the other. Worse, nothing in the output
-warns you: a model with an excellent test score looks equally impressive whichever
-question you brought.
+![Prediction, inference and explanation compared. Each aim asks more of the model and is harder to check.](img/prediction-inference-explanation.svg){fig-alt="At the top, one box reads 'A model fitted to the surveyed stations', with arrows to three columns. Prediction, in orange: a curve through scattered points with a new station marked on it; the question is the count at a station not yet sampled, the answer is a number for each new station, and it is checked by the error on stations held back from fitting. Inference, in blue: an estimate with an interval that does not reach zero; the question is the size of a relationship and how sure we can be, the answer is an estimate with an interval or p-value, and it is checked by the model's assumptions. Explanation, in green: depth points to both salinity and abundance, and a crossed-out dashed line joins salinity to abundance; the question is whether changing a driver changes the count, the answer is a claim about cause and effect, and it is checked by study design and subject knowledge, not data alone. A bar along the bottom runs from orange to green: from left to right, each aim asks more of the model and is harder to check."}
+
+A model can succeed at one aim and fail at the next, and its output gives no warning.
+The example below shows salinity doing exactly that.
+
+## Salinity predicts abundance and does nothing
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
-
-Think about what each goal permits.
-
-For **prediction**, any variable that carries information is fair game. Whether it
-causes the outcome is irrelevant. If bird sightings predict fish abundance, use bird
-sightings. Distance from port, survey vessel, day of year are all legitimate, provided
-they will be available when you deploy the model and mean the same thing then.
-
-For **explanation**, the variable must play the right causal role, and which *other*
-variables you include changes the answer. Add the wrong covariate and the effect you
-care about shifts, vanishes, or reverses. Explanation requires you to think about the
-system; prediction lets you avoid thinking about it.
-
-There is a second asymmetry, which is less often said out loud:
-
-::: {.callout-note}
-For prediction, you can check whether you succeeded: hold data back and measure.
-For explanation, you usually cannot. There is no held-out dataset that tells you
-whether your estimate of the temperature effect is the true one. You have arguments,
-assumptions and design, and that is all.
-:::
-
-This is why "the model predicts well, so the effects must be right" is not a valid
-inference. It is also why a model built for explanation should be judged on whether its
-structure matches the science, not on its test score.
-
-## Worked example
-
-Four models on the same data. Two are shaped by thinking about the species; two are
-shaped by letting the algorithm work.
+In this simulated survey salinity has no effect on the species. It rises with depth,
+though, and depth does matter: the species is most common around 80 m. Three models
+are fitted to the same training stations. Each bends the temperature line with a
+squared term, as the previous page suggested trying.
 
 ```{r}
-#| label: fit-four
+#| label: fit-three
 survey <- load_coastal_survey()
 split  <- initial_split(survey, prop = 0.75)
 train  <- training(split)
 test   <- testing(split)
 
-plain  <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-  salinity_psu + substrate
-
-# An ecologist's model: species have thermal and depth optima, so allow curves.
-curved <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
-  chlorophyll_mg_m3 + salinity_psu + substrate
-
-# A predictor's model: throw in position, which is not a cause of anything.
-located <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-  salinity_psu + substrate + longitude + latitude
-
-forest <- function(formula) {
-  rand_forest(trees = 500) |>
-    set_engine("ranger", seed = 123) |>
-    set_mode("regression") |>
-    fit(formula, data = train)
-}
-
-fits <- list(
-  "Linear model"                = linear_reg() |> fit(plain,  data = train),
-  "Linear model, with curves"   = linear_reg() |> fit(curved, data = train),
-  "Random forest"               = forest(plain),
-  "Random forest + coordinates" = forest(located)
+formulas <- list(
+  "Temperature"                    = abundance ~ temperature_c + I(temperature_c^2),
+  "Temperature + salinity"         = abundance ~ temperature_c + I(temperature_c^2) +
+    salinity_psu,
+  "Temperature + salinity + depth" = abundance ~ temperature_c + I(temperature_c^2) +
+    salinity_psu + depth_m + I(depth_m^2)
 )
+fits <- map(formulas, \(f) fit(linear_reg(), f, data = train))
+```
 
+**Prediction.** Adding salinity lowers the error on the test stations, and adding
+depth lowers it further:
+
+```{r}
+#| label: test-error
 imap(fits, \(fit, name) {
   augment(fit, test) |>
-    rmse(truth = abundance, estimate = .pred) |>
+    rmse(abundance, .pred) |>
     transmute(model = name, test_rmse = round(.estimate, 2))
 }) |>
   list_rbind()
 ```
 
-Read that ranking carefully, because it is not the one people expect.
+For prediction, salinity has earned its place. If depth had not been recorded, the
+second model would be the one to use.
 
-The **linear model with curved terms predicts better than the random forest**, and
-almost as well as the forest with coordinates added. The best-performing interpretable
-model here came not from a more powerful algorithm but from one piece of ecology:
-species have optima, so let the relationship bend.
-
-And what does that model say about temperature, the variable the plain linear model
-dismissed?
+**Inference.** The salinity slope in the second model is about −2.2 animals per unit
+of salinity, and its interval sits well away from zero (@fig-salinity). As inference
+this is correct: across the shelf, stations with saltier water really do hold fewer
+animals.
 
 ```{r}
-#| label: temperature-terms
-tidy(fits[["Linear model, with curves"]]) |>
-  filter(grepl("temperature", term)) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
-```
-
-The linear term is still not significant. The quadratic term is overwhelmingly so.
-The "no temperature effect" from [the second page](what-is-machine-learning.qmd) was
-never a fact about the species. It was a fact about a model that could only draw
-straight lines.
-
-```{r}
-#| label: fig-optimum
-#| fig-cap: "The temperature response recovered by the curved model, with other variables held at their median. The fitted optimum (dashed) sits at 8.6 °C; the value built into the simulation (solid) is 9 °C."
-#| fig-alt: "A curve of predicted abundance against temperature rising from about 3 degrees to a peak just below 9 degrees and falling away to 16 degrees. A dashed vertical line marks the fitted optimum at 8.6 degrees and a solid vertical line marks the true optimum at 9 degrees; the two nearly coincide."
+#| label: fig-salinity
+#| fig-cap: "The salinity slope, with its 95% interval, in the two models that include salinity. Without depth, salinity appears to matter. With depth, its slope shrinks to near zero, which is the true value built into the simulation."
+#| fig-alt: "Two horizontal interval bars on an axis of salinity slope. For the model without depth, the estimate is about minus 2.2 with an interval from about minus 3.3 to minus 1.2, clear of the dashed zero line. For the model with depth, the estimate is about minus 0.2 with an interval from about minus 1.6 to 1.2, spanning zero."
 #| fig-width: 7
-#| fig-height: 4.5
-grid <- tibble(
-  temperature_c     = seq(3, 16, by = 0.05),
-  depth_m           = median(train$depth_m),
-  chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3),
-  salinity_psu      = median(train$salinity_psu),
-  substrate         = factor("sand", levels = levels(train$substrate))
-)
+#| fig-height: 2.8
+slopes <- imap(fits[-1], \(fit, name) {
+  tidy(fit, conf.int = TRUE) |>
+    filter(term == "salinity_psu") |>
+    mutate(model = name)
+}) |>
+  list_rbind()
 
-grid$predicted <- predict(fits[["Linear model, with curves"]], new_data = grid)$.pred
-fitted_optimum <- grid$temperature_c[which.max(grid$predicted)]
-
-ggplot(grid, aes(temperature_c, predicted)) +
-  geom_vline(xintercept = 9, colour = ml_palette[["grey"]], linewidth = 0.8) +
-  geom_vline(xintercept = fitted_optimum, colour = ml_palette[["vermilion"]],
-             linetype = "dashed", linewidth = 0.8) +
-  geom_line(colour = ml_palette[["blue"]], linewidth = 1.2) +
-  annotate("text", x = 9.25, y = min(grid$predicted), hjust = 0,
-           label = "true optimum, 9 °C", colour = ml_palette[["grey"]], size = 3.6) +
-  annotate("text", x = 8.35, y = max(grid$predicted), hjust = 1,
-           label = paste0("fitted, ", round(fitted_optimum, 1), " °C"),
-           colour = ml_palette[["vermilion"]], size = 3.6) +
-  labs(x = "Temperature (°C)", y = "Predicted abundance",
-       title = "An interpretable model, recovering something true")
+ggplot(slopes, aes(estimate, model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.15,
+                 colour = ml_palette[["blue"]], linewidth = 1) +
+  geom_point(size = 3, colour = ml_palette[["blue"]]) +
+  labs(x = "Salinity slope (animals per unit of salinity)", y = NULL)
 ```
 
-Because this dataset is simulated, we can do what real data never allows: check the
-answer. The species really does peak at 9 °C, and the model says 8.6 °C. It recovered
-the ecology.
+**Explanation.** Read as a cause, the same slope is wrong. Freshening the water would
+not bring more animals, because salinity only travels with depth. Once depth enters
+the model, the salinity slope shrinks to about −0.2 and its interval spans zero.
 
-Notice also what the curve does at its ends: it predicts *negative* abundance below
-about 3 °C and above about 15 °C. Counts cannot be negative. We fitted a linear model
-to count data, and this is the price: the interpretation is sound near the centre of
-the data and nonsense at the edges.
-[Section 3](../03-supervised-learning/index.qmd) fixes this properly with a model built
-for counts. It is worth seeing the flaw first: a model can recover a real biological
-optimum and still make impossible predictions, and a plot of only the central range
-would have hidden it.
-
-## Reading the four models
-
-Now look at the model that predicted best: the forest with longitude and latitude
-added.
-
-Those two coordinates improved prediction. They are also, ecologically, nothing. No
-fish responds to longitude. What they do is act as a **proxy**: they let the model
-absorb spatial structure that the environmental variables fail to capture. The model
-has effectively learned *where the good patches were during this survey*.
-
-For prediction inside the surveyed area, in the surveyed period, that is legitimate and
-useful. As explanation it is empty, and if anyone extracts a variable-importance plot
-from it and reports that "position is the strongest driver of abundance", they have
-said nothing about the species at all.
-
-So we have three models and three different kinds of answer:
-
-| Model | Predicts | Explains | Honest use |
-| --- | --- | --- | --- |
-| Plain linear model | Worst | Misleadingly: reports no temperature effect | None here; the form is wrong |
-| Linear model with curves | Nearly best | Yes, recovers the 9 °C optimum | Either goal |
-| Random forest | Middling | No coefficients to read | Prediction, with care |
-| Forest + coordinates | Best | No, position is a proxy, not a cause | Prediction inside the surveyed area only |
-
-The best predictor is the worst explanation. The best explanation is nearly the best
-predictor. Neither of those is a general law, but both are common enough that
-assuming the opposite is a real risk.
+The data could separate the two here only because depth was measured. With an
+unmeasured driver, the second model would be the best available, its interval would
+still be narrow, and nothing in the output would say the cause lay elsewhere. The
+check came from knowing that salinity rises with depth on this shelf, not from the
+test error or the p-value.
 
 ## Limits of this separation
 
-**"Interpretable" is not the same as "correct".** The curved model gave a clean
-temperature optimum, and we verified it only because we wrote the simulation. With real
-data, an interpretable model can be confidently, legibly wrong, and its legibility makes
-it more persuasive, not less.
+**A good test score says nothing about cause.** The salinity model predicted better
+than the temperature model, and its salinity slope is still not a cause.
 
-**Proxies are not always obvious.** Longitude is easy to spot. Sampling date standing in
-for a survey-design change, or a sensor serial number standing in for calibration drift,
-is not, and both will improve your test score.
+**An interval depends on the model.** The salinity interval was narrow and correct as
+a statement about association. It was not a statement about what would happen if
+salinity changed, and a wrong model shape or correlated errors make even the interval
+unreliable. [Section 6](../06-assumptions-limitations/index.qmd) covers those
+assumptions. An interval can also be put on a causal effect; that is causal
+inference, and it needs the study design and system knowledge of explanation as well
+as the model's assumptions.
 
-**Explanation has prerequisites that no algorithm supplies.** Which covariates to
-include is a causal question, answered with subject knowledge, not by trying
-combinations and keeping the best score. [Section 10](../10-interpretation/index.qmd)
-returns to this with the tools for it.
+**A curve through counts can go below zero.** The third model places the temperature
+optimum, the top of its curve, at the first number below, close to the 9 °C built into
+the simulation. The same curve predicts a negative count at the number of stations
+given by the second:
 
-**A recovered effect can sit inside an impossible model.** The curved model found the
-thermal optimum and predicts negative abundance at both extremes. Getting one thing
-right is not a certificate for the rest, and the parts of a model you do not plot are
-the parts that embarrass you later.
+```{r}
+#| label: optimum
+b <- coef(extract_fit_engine(fits[["Temperature + salinity + depth"]]))
+-b[["temperature_c"]] / (2 * b[["I(temperature_c^2)"]])
 
-**Prediction has an expiry date.** A model that learned where the good patches were is
-valid while the patches stay put. Under a shifting climate, the proxy silently stops
-being a proxy, and the model gives no signal that anything has changed.
+sum(predict(fits[["Temperature + salinity + depth"]], survey)$.pred < 0)
+```
+
+A model can recover a real optimum and still make impossible predictions.
+[Section 3](../03-supervised-learning/index.qmd) fixes this with a model built for
+counts.
+
+**Choosing the variables is a question about the system.** Which variables belong in
+an explanatory model is decided with subject knowledge, not by keeping whichever set
+scores best. [Section 10](../10-interpretation/index.qmd) returns to this.
 
 ::: {.callout-tip}
 ## Key points
-- Decide which question you are asking *before* choosing a method. Prediction and
-  explanation pull in different directions.
-- For prediction, any informative variable is fair. For explanation, the variable has
-  to play the right causal role, and the other covariates change the answer.
-- You can verify prediction by holding data back. You cannot verify explanation the
-  same way, which is why a good test score is not evidence that your effects are real.
-- Subject knowledge often beats algorithmic flexibility: knowing that species have
-  thermal optima was worth more here than 500 trees.
-- A variable that improves prediction can be ecologically meaningless. Position is the
-  clearest case, and variable-importance plots will still rank it at the top.
+- Prediction gives values for new cases and is checked on held-back data.
+- Inference gives the size of a relationship with its uncertainty, and rests on the
+  model's assumptions. On its own it is a statement about association.
+- Explanation claims a cause, and rests on study design and knowledge of the system.
+- A variable can predict well and carry a confident interval while causing nothing.
+  Salinity, which travels with depth, is such a variable here.
+- Decide which aim you have before choosing a model.
 :::
 
 ## Try it yourself
 
-1. Fit the forest with coordinates but *without* depth and temperature. How much does
-   prediction suffer? What does that tell you about how much the coordinates were
-   standing in for?
-2. Take the curved model and drop `salinity_psu`. Do the other coefficients move? Now
-   imagine you had no way to know salinity was irrelevant, which is the normal
-   situation, and consider what that implies for reporting effect sizes.
+Drop `salinity_psu` from the third model. Does the test error change, and do the
+depth terms move? Then fit `abundance ~ salinity_psu` alone and compare its slope with
+the one in @fig-salinity.

@@ -194,10 +194,10 @@ causes trouble later:
 
 ### Spatial
 
-Longitude and latitude are coordinates, not drivers. As
-[section 1 showed](../01-introduction/prediction-and-explanation.qmd), including them
-often improves prediction, since they proxy for whatever the environmental variables
-missed, while explaining nothing.
+Longitude and latitude are coordinates, not drivers. Including them often improves
+prediction, since they proxy for whatever the environmental variables missed, while
+explaining nothing: the same pattern as salinity standing in for depth in
+[section 1](../01-introduction/prediction-and-explanation.qmd).
 
 Three practical points. Degrees of longitude are not a constant distance, so if you
 need real distances, project to metres before computing them. Like time, position is
