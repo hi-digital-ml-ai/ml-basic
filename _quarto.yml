@@ -63,7 +63,7 @@ website:
           - href: chapters/02-marine-data/marine-data-types.qmd
             text: "Kinds of marine data"
           - href: chapters/02-marine-data/exploratory-analysis.qmd
-            text: "Looking before modelling"
+            text: "Exploring the data first"
           - href: chapters/02-marine-data/missing-values-and-outliers.qmd
             text: "Missing values, outliers and imbalance"
           - href: chapters/02-marine-data/scaling-and-encoding.qmd
