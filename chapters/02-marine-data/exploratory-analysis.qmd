@@ -237,7 +237,7 @@ valid = raw.assign(
 
 :::
 
-The two vessels differ by 0.42 PSU in mean salinity, with no matching temperature
+The two vessels differ by 0.38 PSU in mean salinity, with no matching temperature
 difference. Two vessels sampling the same shelf should not disagree like that. This is
 an instrument calibration offset, and it would have been invisible in every plot that
 pooled the fleet.
@@ -254,7 +254,7 @@ a repair:
 | Twelve spellings of four substrates | Standardise, and check no genuine distinction is being merged away |
 | Chlorophyll missing 19% in winter | Dropping those rows would delete most of winter |
 | Rare species at 5% | Accuracy is the wrong metric before you have even started |
-| One vessel reads 0.42 PSU high | Correct it, model it, or drop salinity entirely |
+| One vessel reads 0.38 PSU high | Correct it, model it, or drop salinity entirely |
 
 None of these is answered by a tool. Each needs someone who knows how the data was
 collected, which is why exploratory analysis cannot be delegated to a package or an

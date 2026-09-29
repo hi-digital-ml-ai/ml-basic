@@ -213,8 +213,8 @@ clean |> filter(depth_m > 250) |> select(station_id, depth_m) |> arrange(desc(de
 
 Ten stations, all suspiciously close to ten times a plausible shelf depth. Dividing by
 ten puts each one back into the range where its temperature makes sense, which is
-evidence rather than convenience: a station recorded at 1581 m with 6 °C water is
-impossible on this shelf, while the same station at 158 m is ordinary.
+evidence rather than convenience: a station recorded at 1392 m with 6 °C water is
+impossible on this shelf, while the same station at 139 m is ordinary.
 
 ::: {.panel-tabset group="language"}
 
@@ -250,7 +250,7 @@ value. Here is the bill.
 ```{r}
 #| label: fig-deletion
 #| fig-cap: "Season composition of the survey before and after dropping every row with a missing value. Winter loses about a fifth of its stations, and the dataset quietly becomes less wintry than the survey that produced it."
-#| fig-alt: "Grouped bar chart comparing the number of stations per season before and after complete-case deletion. Autumn, spring and summer barely change, while winter drops visibly from just over 200 stations to around 165."
+#| fig-alt: "Grouped bar chart comparing the number of stations per season before and after complete-case deletion. Autumn, spring and summer barely change, while winter drops visibly from about 200 stations to about 160."
 #| fig-width: 7.5
 #| fig-height: 4
 comparison <- bind_rows(

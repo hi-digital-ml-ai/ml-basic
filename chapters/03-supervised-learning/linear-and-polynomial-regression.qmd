@@ -96,7 +96,8 @@ predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
   salinity_psu + substrate + season
 
 base_recipe <- recipe(predictors, data = train) |>
-  step_impute_median(all_numeric_predictors())
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand")
 
 curved_recipe <- base_recipe |>
   step_poly(depth_m, temperature_c, degree = 2)
@@ -124,7 +125,8 @@ predictors = numeric + categorical
 
 train, test = train_test_split(survey, train_size=0.75, random_state=123)
 
-dummies = OneHotEncoder(drop="first", sparse_output=False)
+# The dropped level of each column is its baseline: sand, and spring as in R.
+dummies = OneHotEncoder(drop=["sand", "spring"], sparse_output=False)
 
 # Unlike lm(), scikit-learn will not dummy-code a column for you, so every
 # recipe here ends with the encoder.
@@ -267,18 +269,18 @@ pd.DataFrame({
 
 :::
 
-Exponentiate to read them. A rocky station holds about 0.58 times the count of a sandy
-one; the simulation built in 0.55, so that one is recovered well. Salinity, which has no
-real effect, is correctly indistinguishable from a multiplier of 1.
+Exponentiate to read them. Each substrate is compared with sand, the baseline that
+`step_relevel()` set in the recipe. Without it, R compares every level with whichever
+comes first alphabetically, here gravel, and a table read against the wrong baseline is
+quietly wrong. A muddy station holds about 1.46 times the count of a sandy one; the
+simulation built in 1.49, so that one is recovered well. Salinity, which has no real
+effect, is correctly indistinguishable from a multiplier of 1.
 
-Mud is more interesting. The fitted multiplier is 1.13, while the simulation built in
-1.49. The direction is right and the size is understated, and the reason is worth
-noting, because it is not a failure. Muddy stations tend to be deeper, depth is also in
-the model, and the two share credit for the same variation. A coefficient in a
-multiple regression is an effect *holding the other predictors fixed*, which is not the
-same quantity as the effect you built in. This is the confounding problem from
-[section 1](../01-introduction/prediction-and-explanation.qmd), visible in a model where
-we happen to know the answer.
+Rock is more interesting. The fitted multiplier is 0.75, while the simulation built in
+0.55. The direction is right and the size is understated, and the reason is worth
+noting, because it is not a failure. Rock is the rarest substrate in the survey, so its
+coefficient rests on the fewest stations and carries the most noise. The table gives no
+hint of that, and the next check shows why: this model's standard errors are too small.
 
 ### Checking the Poisson assumption
 
@@ -469,7 +471,7 @@ margin.
   200 test stations.
 - Poisson regression models the log of the expected count, so predictions cannot be
   negative, and it was also the most accurate model of the three.
-- Poisson coefficients are multiplicative once exponentiated: mud holds about 1.4 times
+- Poisson coefficients are multiplicative once exponentiated: mud holds about 1.5 times
   as many as sand.
 - Check the deviance-to-df ratio. At almost 4 it is badly overdispersed, the predictions
   survive but the p-values do not, and the negative binomial is the fix.

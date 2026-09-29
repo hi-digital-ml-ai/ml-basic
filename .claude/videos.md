@@ -483,6 +483,140 @@ Built like §9, to a rough cut on the draft voice: `_videos/10-interpretation/`.
 - Every spoken number reproduced on the laptop.
 - Not yet narrated with Gemini.
 
+## Seventh video: §1 Introduction (2026-09-29)
+
+Built like §10, to a rough cut on the draft voice: `_videos/01-introduction/`. Sections
+1–4 were still without videos after §10; this starts them.
+
+- 47 scenes, 874 words, 7:28 on the draft voice. Hook: on 800 simulated stations a
+  linear model reports temperature at −0.074 per degree, p = 0.31, "no effect", but the
+  species was written to peak at 9 °C. Key points: machine learning is built to
+  predict, checked on held-back data (600 train, 200 held back; forest 2.09 against
+  linear 4.35 on training, 4.13 against 4.22 on test); the best predictor is not the
+  best explanation (linear with curves 4.01 and a fitted optimum of 8.6 °C, which
+  solves the puzzle; forest + coordinates 3.98, a proxy; the curve's negative ends);
+  and your data decide the question (presence forest 79% against always "present"
+  78%, 11 of 45 absences caught; k-means finds three habitats, the productive one
+  averaging 7.94 against 4.25 and 2.86; networks are a machine, not a type). The quiz:
+  unlabelled seabed photos are unsupervised, whatever the machine.
+- `exports.R` writes 11 CSVs from three pages; the applications page has no code and
+  appears as a schematic pipeline (scenes 39–40). The `fit-four` chunk prints its
+  scores without keeping them, so `exports.R` recomputes them from the page's own fits.
+  The figure's two temperature lines are refitted from `geom_smooth`'s own calls (lm,
+  and loess with span 0.6); the chart stops at 20, with a note for the 9 counts above.
+- Percentages are rounded half up (`whole_percent`): 0.785 is spoken as 79%, as on the
+  page, where Python's rounding could give 78%.
+- Every spoken number reproduced on the laptop. Not yet narrated with Gemini.
+
+## Eighth video: §2 Marine data (2026-09-29)
+
+Built like §1, to a rough cut on the draft voice: `_videos/02-marine-data/`.
+
+- 48 scenes, 8:11 on the draft voice. Hook: two random forests on the same survey, R² 0.87 and 0.13; which
+  would you trust? Solved at the leakage climax: 0.87 is target leakage (catch weight,
+  correlated 0.99 with the count; environment only scores 0.25), and 0.13 is the
+  honest one (sites kept together; RMSE falls 4.82 to 3.76 on a different test set,
+  so compare R²). Key points: the row count is not the sample size (815 rows, 800
+  unique, 160 sites; most sites visited four to six times, one fifteen); look before
+  you model (salinity −999 in 25 rows, mean 2.24 then 33.9; depth to 1581 m, ten
+  stations divided by ten, two more undetectable; twelve spellings of four substrates;
+  chlorophyll missing 19% in winter, 1% in autumn; dropping incomplete rows loses 80
+  rows and 20.1% of winter; the vessel offset; months on a circle; the rare species
+  at 5%, so "absent" scores 95%); and keep the test set untouched by every decision
+  (a random split puts all 200 test stations at trained sites, 120 of 160 sites on
+  both sides; `strata` silently pooled, 6.0% against 2.5%, fixed at 5.0% and 5.5%;
+  selection from 200 noise columns, 0.03 against 0.0003; a recipe inside a workflow).
+  Quiz: a habitat class assigned from the catch is target leakage.
+- `exports.R` writes 19 CSVs from five pages; the types and scaling pages give no
+  numbers (the months circle is schematic). The splitting and leakage pages print
+  their tables without keeping them, so `exports.R` reruns them from the pages' own
+  split objects and functions (the forest's seed is fixed): the values match.
+- Three page discrepancies found, none spoken in the video, all fixed in the pages on
+  2026-09-29: exploratory-analysis said the vessels differ by 0.42 PSU, where its own
+  table gives 34.13 − 33.75 = 0.38; missing-values-and-outliers said 1581 m came "with
+  6 °C water", where that station reads 3.11 °C (the 6 °C one is 1392 m, now named);
+  and its deletion figure's alt text said winter drops "from just over 200 to around
+  165", where the data give 199 to 159.
+- The shelf depth (200 m) and the two undetectable depth errors are stated in the
+  pages' prose, so `scenes.py` holds them as named constants, like §1's optimum.
+- Not yet narrated with Gemini.
+
+## Ninth video: §3 Supervised learning (2026-09-29)
+
+Built like §2, to a rough cut on the draft voice: `_videos/03-supervised-learning/`.
+
+- 50 scenes, 9:35 on the draft voice, the longest so far; the quiz and the multiplier
+  scene (15) are the easiest cuts if it should come down. Hook: ten models on one
+  survey, same predictors, same 200 test stations; boosting has the reputation, which
+  would you bet on? Solved in "Ten models ranked": Poisson + polynomial first (4.54),
+  default boosting last (5.41), four models predicting negative fish. Key points:
+  match the model to the response (mean 3.9, variance 22.78; 180 zeros, 22.5%; 620
+  present, 1 to 40; polynomial 6 negative predictions, lowest −2.06, linear 2; Poisson
+  none, lowest 0.16, best RMSE; deviance ratio 3.95; AIC 3764 to 2839); a probability
+  is not a decision (11 of 201 test stations; accuracy 0.9453 equals always "absent";
+  never predicts presence; AUC 0.79; highest 0.274; thresholds 0.15 and 0.05; depth's
+  odds ratio 0.971 describes absence, prevalence 0.7% to 19.4% by depth band); and
+  flexibility costs data (the depth-3 tree's band, 1.4, 4.2 and 2.1; test RMSE 4.81,
+  4.76, 4.84, 5.49, boosting's training 0.58; held-out error lowest at 50 trees;
+  trees flat beyond the data). Quiz: a forest asked to predict warmer water.
+- `exports.R` writes 15 CSVs from all five pages. Printed-but-not-kept tables (three
+  models, four models, the rare-species scores) are rerun with the pages' own
+  `evaluate()` and objects; all match the frozen outputs.
+- RMSE values are rounded half up (`fixed()`): the default tree's 4.755 shows as 4.76,
+  as the pages' prose says, where Python's `.2f` gives 4.75.
+- Page discrepancies, none used in the video, both fixed in the pages on 2026-09-29:
+  - linear-and-polynomial-regression: the substrate multipliers were relative to
+    **gravel** (the clean loader's `factor()` sorts levels alphabetically), but the
+    prose read them against sand. The recipe now has `step_relevel(substrate,
+    ref_level = "sand")` (Python: `drop=["sand", "spring"]`), and the prose reads mud
+    1.46 against a built-in 1.49 and rock 0.75 against 0.55. The old confounding
+    explanation did not hold (rock stays near 0.8 even with the true curved depth and
+    temperature terms), so the page now puts it down to rock being the rarest
+    substrate, with the too-small Poisson standard errors hiding it. Key point: mud
+    about 1.5 times sand. The fit and every prediction are unchanged.
+  - trees-forests-boosting: the tree's upper split is at 10.57 °C; the page said 11
+    (rpart.plot's two significant digits). It now says 10.6 and notes the plot's
+    rounding.
+- Not yet narrated with Gemini.
+
+## Tenth video: §4 How algorithms learn (2026-09-29)
+
+Built like §3, to a rough cut on the draft voice: `_videos/04-how-algorithms-learn/`.
+Every section now has a video.
+
+- 47 scenes, 9:29 on the draft voice. Hook: two fits of one model to the same 40
+  stations (12 predictors); temperature gets 8.59 in one, 0.33 in the other, which had
+  "one extra term, containing no data". Solved in "A penalty is a prior": on the other
+  680 stations the mean scores 4.850, maximum likelihood 4.745 (about 2% better), the
+  fit with the prior 4.495 (more than three times the improvement). Key points: the
+  loss is an assumption (three losses, intercepts 2.36 and 1.13; the worst 37 stations
+  of 749 supply 49.7% of the squared error, 21.0% of the absolute; dropping the largest
+  catch, 40, moves the slopes 13.5% and 2.1%; likelihood for counts 3, 0 and 11 peaks
+  at their mean; the loss menu as distributions; least squares is Normal maximum
+  likelihood to four places); fitting is a search, check that it arrived (the formula
+  against `lm()`; IRLS from −513.6 to −378.3, −373.3, flat by the fourth step; 10⁴,
+  10⁸, 10²⁰ grid points; learning rates 0.3, 0.02 and 0.72 need 6, 106 and 161 steps;
+  the limit 0.7282, 0.8 reaching an MSE of 7.3 billion; condition number 766 against
+  2.2, 1,500 steps against 17; `maxit = 2` 9% out; separation −158, SE 13,515, p 0.99,
+  cap 25; five forests spanning 0.037, k-means ten answers from twenty starts); and a
+  penalty is a prior (SE 5.95; +8.59 and −6.20 fighting; MAP equals ridge; a flat prior
+  finds 900 as plausible as 0.9; the λ curve). Quiz: ridge with depth in millimetres.
+- `exports.R` writes 18 CSVs from all six pages. The step counts (6, 106, 161, 17 and
+  1,500) are stated in gradient-descent's prose without code; "arrived" as an MSE within
+  0.002 of the minimum reproduces all five, so `exports.R` computes them that way. The
+  contours are `contourLines()` on the page's own grid.
+- Two rounding notes: the forest span is taken from the page's four-place values
+  (4.7568 − 4.7203 = 0.0365, so 0.037; unrounded it is 0.03646). The loss page's
+  2.1% is 2.06% unrounded, so it holds.
+- Pitfall met: `tibble()` evaluates columns in order, so a column named `worst` shadowed
+  the page's `worst` index in the next column. Name export columns so they cannot
+  collide with the page's objects.
+- Page discrepancy, not used in the video, fixed on 2026-09-29: parameter-estimation
+  said 10²⁰ evaluations "at a billion evaluations a second takes longer than the
+  Holocene". It takes 10¹¹ seconds, about 3,200 years, against the Holocene's 11,700;
+  the page now says "over 3,000 years".
+- Not yet narrated with Gemini.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the

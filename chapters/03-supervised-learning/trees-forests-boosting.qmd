@@ -147,9 +147,9 @@ rpart.plot(extract_fit_engine(tree_fit),
 ```
 
 Read the left branch, which holds three-quarters of the stations. Below 6.4 °C the model
-expects 1.4 individuals. At or above 11 °C it expects 2.1. In between, from 6.4 to 11 °C, it
-expects 4.2. The tree has carved out a temperature band, and the simulation's true
-optimum of 9 °C sits inside it.
+expects 1.4 individuals. At or above 10.6 °C (the plot rounds it to 11) it expects 2.1. In
+between, from 6.4 to 10.6 °C, it expects 4.2. The tree has carved out a temperature band,
+and the simulation's true optimum of 9 °C sits inside it.
 
 That is worth pausing on, because it shows how a tree represents an optimum. A single
 threshold cannot express "best in the middle"; it takes **two splits at the same level**,
