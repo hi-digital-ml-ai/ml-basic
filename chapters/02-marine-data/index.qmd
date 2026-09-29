@@ -1,6 +1,6 @@
 ---
-title: "2 · Understanding and preparing marine datasets"
-description: "Getting real marine data into a state a model can use, and the preparation mistakes that quietly invalidate results."
+title: "2 · Understanding and preparing marine data"
+description: "The survey the course works on, how to check and clean it, how to prepare it for a model, and how to test a model without fooling yourself."
 categories: [data-preparation, marine-data, eda]
 listing:
   id: pages
@@ -13,27 +13,21 @@ listing:
 toc: false
 ---
 
-Marine data arrives in shapes that machine-learning textbooks rarely picture. Depth
-profiles, not rows. Tracks with gaps where the tag stopped reporting. Surveys where
-the sampling followed the ship and the weather. Species counts where the interesting
-species appears in two per cent of hauls.
+A model learns only from the table it is given. If that table holds a salinity of
+−999, twelve spellings of four seabed types or the same site counted as five separate
+observations, the model learns from those too, and nothing in its output says so.
+Preparing the data is where most of the work of machine learning happens, and where
+most of the mistakes that invalidate results are made.
 
-Preparation is where most of the work happens, and where most of the damage is done.
-The damage is usually invisible: a model that scores beautifully because information
-leaked from the test set into the training set, and which then fails in the field.
+This section first introduces the simulated coastal survey that the rest of the course
+works on: what one station records, the kinds of variable it holds, and why its rows
+are fewer independent observations than they look. It then works through the raw file,
+as it came off the ship: exploring it to find the problems, fixing the missing values
+and outliers, preparing columns with a recipe, and splitting the data to test a model.
 
-This section works on `coastal-survey-raw.csv`, the same survey used in
-[section 1](../01-introduction/index.qmd), but as it came off the ship. It contains
-sentinel values, twelve spellings of four substrate types, depths ten times too deep,
-duplicate rows, missingness concentrated in winter, a miscalibrated salinity sensor,
-and a column computed from the response. All of it is deliberate, and all of it is
-ordinary.
-
-::: {.callout-warning}
-Leakage is the single most common reason a marine ML result cannot be reproduced in
-the field. It reappears in every later section, especially
-[7 · Validation](../07-validation/index.qmd).
-:::
+It ends on **information leakage**, the mistake that makes a model look good and then
+fail in the field. Every later section, and especially
+[7 · Validation](../07-validation/index.qmd), depends on getting it right.
 
 ## Pages in this section
 

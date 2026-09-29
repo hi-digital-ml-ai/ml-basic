@@ -187,7 +187,7 @@ about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template along
 | Section | Branch | Status |
 | --- | --- | --- |
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
-| 2 Marine data | | Next. Must introduce the survey formally: the section 1 video tells viewers "the next section of the course looks at marine data more closely" |
+| 2 Marine data | `feature/improve-marine-data` | Pages, diagrams and overview done (2026-09-30); video next |
 | 3–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
