@@ -128,8 +128,12 @@ bind_rows(
   select(model, test_rmse = .estimate)
 ```
 
-`test_rmse` is the typical size of a prediction error, in animals per station. Neither
-model is simply better. The tree found the shape but gives no single number for "the
+`test_rmse` is the root mean squared error on the test stations: square each
+prediction error, average them, and take the square root. It is in animals per
+station, so a value of 2 means predictions for new stations are usually off by about
+2 animals, in either direction. Lower is better.
+
+Neither model is simply better. The tree found the shape but gives no single number for "the
 effect of temperature". The linear model gives that number, but the number is wrong
 because the shape was wrong. A statistician would bend the line instead, which
 [the next page](prediction-and-explanation.qmd) does.
