@@ -44,8 +44,9 @@ FENCE = re.compile(r"^(`{3,})(.*)$")
 R_INFO = re.compile(r"^\{r[\s,}]")
 PY_INFO = re.compile(r"^python\s*$")
 # A contributed page written in Python sets engine: jupyter and executes {python}
-# chunks; the course pages display plain ```python tabs instead. Both are Python
-# to a reader downloading the script, so both are extracted.
+# chunks. The course pages run their Python tabs as {python} chunks through knitr
+# and reticulate, or (pages not yet converted) display plain ```python blocks.
+# All of it is Python to a reader downloading the script, so all is extracted.
 PY_EXEC_INFO = re.compile(r"^\{python[\s,}]")
 OPTION = re.compile(r"^#\|\s*(\S+):\s*(.*)$")
 TITLE = re.compile(r'^title:\s*"?(.*?)"?\s*$', re.M)
@@ -169,10 +170,11 @@ INCLUDE = re.compile(r"\{\{<\s*include\s+(\S+?)\s*>\}\}")
 def warn_unhandled(text, rel):
     front = text.split("---")[1] if text.startswith("---") else ""
     jupyter = bool(JUPYTER.search(front))
-    if EXEC_PY.search(text) and not jupyter:
+    # {python} chunks on a page with R run through knitr and reticulate; on a page
+    # with neither R nor `engine: jupyter` there is no engine to run them.
+    if EXEC_PY.search(text) and not jupyter and not EXEC_R.search(text):
         print(f"extract-code: {rel}: a {{python}} chunk needs `engine: jupyter` in "
-              f"the front matter, or it will not run; a displayed Python tab is a "
-              f"plain ```python block", file=sys.stderr)
+              f"the front matter, or an R chunk so knitr runs the page", file=sys.stderr)
     if jupyter and EXEC_R.search(text):
         print(f"extract-code: {rel}: `engine: jupyter` is set, so the {{r}} chunks "
               f"on this page will not run; one page is one language", file=sys.stderr)

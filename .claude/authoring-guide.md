@@ -153,8 +153,14 @@ Rules for what goes in it:
 
 Pages in sections 2, 3, 5, 7, 8 and 10 show each modelling step twice, R and
 scikit-learn, in a tabset. The two `toolkit/` pages are the exception: they are
-single-language orientation pages, one per library, and carry no tabsets. The R chunk is the one that runs, so its output
-appears under the R tab; the Python block is displayed only.
+single-language orientation pages, one per library, and carry no tabsets. Both tabs
+run: the R chunk directly, the Python as a `{python}` chunk that knitr hands to
+Python through `reticulate`, so each tab shows its own output. The two languages keep
+separate sessions for the whole page, so names do not clash.
+
+Pages not yet revised still display the Python as a plain ` ```python ` block that
+never runs. Convert them to `{python}` chunks as part of each section's revision (see
+`section-revision.md`).
 
 ````markdown
 ::: {.panel-tabset group="language"}
@@ -168,7 +174,7 @@ appears under the R tab; the Python block is displayed only.
 
 ## Python
 
-```python
+```{python}
 ...
 ```
 
@@ -188,8 +194,10 @@ appears under the R tab; the Python block is displayed only.
 - Where a default differs between the two, whether regularisation, event level or the
   need for scaled inputs, say so in a comment in the Python block. That
   difference is usually the most useful thing on the page.
-- Add `{{< include ../../_snippets/python-tabs.qmd >}}` under the data note, so
-  the reader knows the Python is not what produced the numbers.
+- Add `{{< include ../../_snippets/python-tabs-run.qmd >}}` under the data note, so
+  the reader knows how the tabs work. An unconverted page, whose Python only
+  displays, includes `python-tabs.qmd` instead.
+- Rendering needs the Python environment; see `workflow.md`, Python for the tabs.
 
 ## Figures
 

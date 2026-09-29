@@ -82,6 +82,12 @@ screenshots, so look at the rendered page yourself first.
   (`perl -0pi -e 's/::: \{\.callout-tip\}\n## Key points\n/## Key points\n\n::: {.key-points}\n/'`
   does it), and commit the changed `_freeze/` files, which store the page text.
 
+- **Run the Python tabs.** Change each ` ```python ` tab to ` ```{python} `, so its
+  output shows as the R's does, and include `python-tabs-run.qmd` in place of
+  `python-tabs.qmd`. Fix any tab that fails first (`python/check-snippets.py
+  <page>`); a failing `{python}` chunk fails the render. The survey page was the
+  first converted; setup is in `workflow.md`, Python for the tabs.
+
 ### Wording
 
 - **Titles and headings:** short and declarative, no commas, no "X, grouped by Y".

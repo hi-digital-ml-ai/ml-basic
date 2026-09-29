@@ -17,9 +17,9 @@ matter, which makes Quarto execute its ```` ```{python} ```` chunks through the
 jupyter engine, and uses `python/mlbasic_theme.py` for the house plotting style, as
 an R page uses `R/theme.R`.
 
-This is the one place on the site where Python executes. The Python tabs in sections
-2, 3, 5, 7, 8 and 10 are still displayed and never run, and a contributed page does
-not carry tabsets at all: it is one analysis in one language, not the same step shown
+A Python contributed page runs under Jupyter, one language per page. The course pages'
+Python tabs run through knitr and `reticulate` instead, beside the R. A contributed
+page does not carry tabsets at all: it is one analysis in one language, not the same step shown
 twice.
 
 Rendering a Python page locally needs `jupyter` and `matplotlib` on top of
