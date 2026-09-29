@@ -456,6 +456,33 @@ Built like §8, to a rough cut on the draft voice: `_videos/09-neural-networks/`
   re-render the page to settle which the page should say.
 - Not yet narrated with Gemini.
 
+## Sixth video: §10 Interpretation (2026-09-29)
+
+Built like §9, to a rough cut on the draft voice: `_videos/10-interpretation/`.
+
+- 44 scenes, 807 words, 7:01 on the draft voice. Hook: the true depth effect peaks
+  at 80 m, but a random forest's partial dependence falls from 5.04 to 3.77, and a
+  GLM given the generator's own formula falls from 8.19 to 1.80: why? Answered in
+  "The puzzle, solved": depth and temperature are confounded by the design (almost no
+  cold shallow or warm deep stations, correlation −0.45); the GLM's depth quadratic
+  comes back at about a fourteenth, p = 0.63; the GAM (best of seven on the same
+  folds, 4.08 against the forest's 4.28) is wrong too but its interval covers the
+  truth at 197 of 200 points. Key points: importance needs a null (three `rnorm()`
+  columns rank 6, 7 and 8 of 16 on impurity; permutation band; chlorophyll's rank 1
+  to 11 over eight splits; salinity and survey year beat the noise in 0 of 8; seed
+  0.016 against split 1.50), no method recovers an effect the data cannot separate,
+  and a model cannot see what its data lack (confidence band covers 29%, prediction
+  interval 99%, in-sample RMSE 77%, conformal 96.5%, 86% under the chlorophyll shift;
+  the rock gear bias takes the rock effect from 38% to 69% fewer and improves CV RMSE
+  from 4.079 to 4.008). The quiz: two copies of depth both score near zero.
+- `exports.R` writes 15 CSVs from six pages (about 6 minutes). Two tables are printed
+  by their pages without being kept, the shift experiment and the gear-bias
+  comparison, so `exports.R` repeats those calls with the pages' own functions and
+  seeds. The GAM's coverage (197 of 200) and peak (52 m) are computed in scenes.py
+  from the exported smooth, the way the page's figure draws it; they match the text.
+- Every spoken number reproduced on the laptop.
+- Not yet narrated with Gemini.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
