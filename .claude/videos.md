@@ -428,6 +428,34 @@ Built like §7, to a rough cut on the draft voice: `_videos/08-unsupervised-lear
   in `exports.R` from the page's own data, as the page's figure draws them.
 - Not yet narrated with Gemini.
 
+## Fifth video: §9 Neural networks (2026-09-29)
+
+Built like §8, to a rough cut on the draft voice: `_videos/09-neural-networks/`.
+
+- 50 scenes, 868 words, 7:32 on the draft voice. Hook: a default eight-unit network
+  trained on 480 stations scores a test error of 5.26, worse than predicting the
+  average (4.402); "networks need a lot of data", so is 480 too few? Answered in "The
+  puzzle, solved": everything learnable is a 0.70 window (baseline 4.402, oracle
+  3.701), cross-validation picks one hidden unit, and on the noise-free target the
+  same network beats linear regression by 24%: short of signal, not rows. Key points:
+  a network is weighted sums with a bend (one neuron = lm() to eight decimals, the
+  two-S-curve hump peaking at 8.7 °C against 9, 225 weights for 720 stations), it
+  can fail without a warning (gradient check, learning rates, 0.763 unscaled against
+  0.570 and 0.680, early stopping at step 1,937, seed spread), and it is the right
+  tool for signal to spare and a combination you cannot name (the T–S band: 0.715,
+  0.827, 0.926 against 0.998 with 17 weights; 0.994 on 100 stations). The autoencoder
+  page is left out, for length. The quiz: ten identity layers fit only a straight line.
+- `exports.R` writes 20 CSVs from five pages (about 3 minutes). The `sizes` chunk of
+  `when-to-use-one.qmd` prints its table without keeping it, so `exports.R` re-runs
+  it with the page's seeds (it reproduced 0.994, 1.000 and 0.996).
+- **The seed spread does not reproduce on the laptop.** `training-a-network.qmd`
+  says validation MSE spans 0.046 across ten seeds (its frozen output: best 0.5342);
+  the laptop's knit gives 0.055 (seed 9 reaches 0.5256), while every other number on
+  the page, training spread included, matches. Probably floating-point differences
+  between machines amplified by one run. The video says "about 0.05", true of both;
+  re-render the page to settle which the page should say.
+- Not yet narrated with Gemini.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
