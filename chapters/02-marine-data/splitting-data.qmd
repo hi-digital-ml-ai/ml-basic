@@ -1,7 +1,7 @@
 ---
 title: "Training, validation and test data"
 description: "Why you hold data back, what each held-back piece is for, and why a random split is the wrong split for a marine survey."
-order: 6
+order: 7
 categories: [data-preparation, validation]
 ---
 

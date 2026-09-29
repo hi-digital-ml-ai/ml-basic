@@ -1,7 +1,7 @@
 ---
 title: "Looking before modelling"
 description: "Exploratory analysis as damage assessment, with the plots that find sentinel values, impossible depths and missingness that is not random."
-order: 3
+order: 4
 categories: [eda, data-preparation]
 ---
 

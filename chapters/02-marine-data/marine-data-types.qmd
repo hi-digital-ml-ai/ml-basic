@@ -1,7 +1,7 @@
 ---
 title: "Kinds of marine data"
 description: "Continuous, categorical, circular, spatial, temporal and profile data, and what each one needs before a model can use it."
-order: 2
+order: 3
 categories: [data-preparation, marine-data]
 ---
 

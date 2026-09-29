@@ -1,7 +1,7 @@
 ---
 title: "Missing values, outliers and imbalance"
 description: "What to do about the damage once you have found it, and why the right answer is a scientific judgement rather than a default."
-order: 4
+order: 5
 categories: [data-preparation, class-imbalance, marine-data]
 ---
 

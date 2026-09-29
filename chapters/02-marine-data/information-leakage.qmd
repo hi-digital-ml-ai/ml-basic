@@ -1,7 +1,7 @@
 ---
 title: "Avoiding information leakage"
 description: "The mistake that makes a model look good and then fail in the field, in four kinds, each demonstrated on the same survey."
-order: 7
+order: 8
 categories: [data-preparation, validation]
 ---
 
