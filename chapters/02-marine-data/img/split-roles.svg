@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 440" width="100%" role="img" aria-label="Two panels. Three roles: training data, which the model learns from; validation data, used to choose between models; test data, used once to report the result. Two ways to split: four sites, A to D, each visited three times. In a random split one visit from every site goes to the test data, so every test station's site is also in training. In a split by site, all three visits to site D go to the test data, so the test site is new to the model.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Holding data back to test a model</text>
+<text class="lab" x="0" y="66" fill="#1b6a87">THREE ROLES</text>
+<rect class="box" x="0" y="80" width="420" height="82" rx="8"/><rect x="0" y="80" width="420" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="24" y="114">Training data</text>
+<text class="body" x="24" y="142">the model learns from it</text>
+<rect class="box" x="0" y="176" width="420" height="82" rx="8"/><rect x="0" y="176" width="420" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="24" y="210">Validation data</text>
+<text class="body" x="24" y="238">used to choose between models</text>
+<rect class="box" x="0" y="272" width="420" height="82" rx="8"/><rect x="0" y="272" width="420" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="24" y="306">Test data</text>
+<text class="body" x="24" y="334">used once, to report the result</text>
+<text class="lab" x="490" y="66" fill="#1b6a87">TWO WAYS TO SPLIT</text>
+<text class="head" x="490" y="106">Random</text>
+<rect x="490" y="120" width="28" height="28" rx="4" fill="#0072B2" fill-opacity="0.25" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="523" y="120" width="28" height="28" rx="4" fill="#0072B2" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="556" y="120" width="28" height="28" rx="4" fill="#0072B2" fill-opacity="0.25" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="604" y="120" width="28" height="28" rx="4" fill="#E69F00" fill-opacity="0.25" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="637" y="120" width="28" height="28" rx="4" fill="#E69F00" fill-opacity="0.25" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="670" y="120" width="28" height="28" rx="4" fill="#E69F00" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="718" y="120" width="28" height="28" rx="4" fill="#009E73" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="751" y="120" width="28" height="28" rx="4" fill="#009E73" fill-opacity="0.25" stroke="#009E73" stroke-width="1.2"/>
+<rect x="784" y="120" width="28" height="28" rx="4" fill="#009E73" fill-opacity="0.25" stroke="#009E73" stroke-width="1.2"/>
+<rect x="832" y="120" width="28" height="28" rx="4" fill="#CC79A7" fill-opacity="0.25" stroke="#CC79A7" stroke-width="1.2"/>
+<rect x="865" y="120" width="28" height="28" rx="4" fill="#CC79A7" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="898" y="120" width="28" height="28" rx="4" fill="#CC79A7" fill-opacity="0.25" stroke="#CC79A7" stroke-width="1.2"/>
+<text class="sm" x="537.0" y="170" text-anchor="middle">site A</text>
+<text class="sm" x="651.0" y="170" text-anchor="middle">site B</text>
+<text class="sm" x="765.0" y="170" text-anchor="middle">site C</text>
+<text class="sm" x="879.0" y="170" text-anchor="middle">site D</text>
+<text class="note" x="490" y="198">every test station’s site is also in training</text>
+<text class="head" x="490" y="250">By site</text>
+<rect x="490" y="264" width="28" height="28" rx="4" fill="#0072B2" fill-opacity="0.25" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="523" y="264" width="28" height="28" rx="4" fill="#0072B2" fill-opacity="0.25" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="556" y="264" width="28" height="28" rx="4" fill="#0072B2" fill-opacity="0.25" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="604" y="264" width="28" height="28" rx="4" fill="#E69F00" fill-opacity="0.25" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="637" y="264" width="28" height="28" rx="4" fill="#E69F00" fill-opacity="0.25" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="670" y="264" width="28" height="28" rx="4" fill="#E69F00" fill-opacity="0.25" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="718" y="264" width="28" height="28" rx="4" fill="#009E73" fill-opacity="0.25" stroke="#009E73" stroke-width="1.2"/>
+<rect x="751" y="264" width="28" height="28" rx="4" fill="#009E73" fill-opacity="0.25" stroke="#009E73" stroke-width="1.2"/>
+<rect x="784" y="264" width="28" height="28" rx="4" fill="#009E73" fill-opacity="0.25" stroke="#009E73" stroke-width="1.2"/>
+<rect x="832" y="264" width="28" height="28" rx="4" fill="#CC79A7" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="865" y="264" width="28" height="28" rx="4" fill="#CC79A7" stroke="#1f2933" stroke-width="2.5"/>
+<rect x="898" y="264" width="28" height="28" rx="4" fill="#CC79A7" stroke="#1f2933" stroke-width="2.5"/>
+<text class="sm" x="537.0" y="314" text-anchor="middle">site A</text>
+<text class="sm" x="651.0" y="314" text-anchor="middle">site B</text>
+<text class="sm" x="765.0" y="314" text-anchor="middle">site C</text>
+<text class="sm" x="879.0" y="314" text-anchor="middle">site D</text>
+<text class="note" x="490" y="342">the test site is new to the model</text>
+<rect x="490" y="369" width="18" height="18" rx="3" fill="#8a949c" fill-opacity="0.25" stroke="#8a949c"/><text class="sm" x="516" y="384">training</text>
+<rect x="610" y="369" width="18" height="18" rx="3" fill="#8a949c" stroke="#1f2933" stroke-width="2.5"/><text class="sm" x="636" y="384">test</text>
+<text class="sm" x="710" y="384">each square is one station</text>
+</svg>

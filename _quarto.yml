@@ -69,7 +69,7 @@ website:
           - href: chapters/02-marine-data/scaling-and-encoding.qmd
             text: "Scaling and encoding"
           - href: chapters/02-marine-data/splitting-data.qmd
-            text: "Training, validation and test data"
+            text: "Splitting the data"
           - href: chapters/02-marine-data/information-leakage.qmd
             text: "Avoiding information leakage"
       - section: "3 · Supervised learning"
