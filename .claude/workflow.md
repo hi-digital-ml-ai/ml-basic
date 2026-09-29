@@ -33,6 +33,11 @@ RETICULATE_PYTHON=/path/to/env/bin/python
 PYTHONPATH=/path/to/ml-basic/python
 ```
 
+`R/python-tabs.R` shows a chunk's final pandas DataFrame as a table, through
+`to_markdown()` (so `tabulate` must be installed). It wraps reticulate's internal
+`eng_python_autoprint()`, so after upgrading reticulate render a page with a Python
+table and check it still shows as a table.
+
 CI and anyone rendering only other pages need nothing: the Python output is stored in
 `_freeze/` like the R output, so commit the freeze with the page.
 

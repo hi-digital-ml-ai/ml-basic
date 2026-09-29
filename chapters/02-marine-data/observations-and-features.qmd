@@ -11,6 +11,7 @@ categories: [data-preparation, marine-data]
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 ```
 
 ## Every method learns from a table

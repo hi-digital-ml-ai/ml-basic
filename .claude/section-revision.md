@@ -83,8 +83,9 @@ screenshots, so look at the rendered page yourself first.
   does it), and commit the changed `_freeze/` files, which store the page text.
 
 - **Run the Python tabs.** Change each ` ```python ` tab to ` ```{python} `, so its
-  output shows as the R's does, and include `python-tabs-run.qmd` in place of
-  `python-tabs.qmd`. Fix any tab that fails first (`python/check-snippets.py
+  output shows as the R's does, add `source(here::here("R/python-tabs.R"))` to the
+  setup chunk so a DataFrame shows as a table, and include `python-tabs-run.qmd` in
+  place of `python-tabs.qmd`. Fix any tab that fails first (`python/check-snippets.py
   <page>`); a failing `{python}` chunk fails the render. The survey page was the
   first converted; setup is in `workflow.md`, Python for the tabs.
 

@@ -194,6 +194,9 @@ never runs. Convert them to `{python}` chunks as part of each section's revision
 - Where a default differs between the two, whether regularisation, event level or the
   need for scaled inputs, say so in a comment in the Python block. That
   difference is usually the most useful thing on the page.
+- Load `R/python-tabs.R` in the setup chunk (after `R/data.R`). It shows a Python
+  chunk's final DataFrame as a table, as `df-print: kable` shows a tibble, so end
+  the chunk with the DataFrame itself, not `print(df)`. Other output stays text.
 - Add `{{< include ../../_snippets/python-tabs-run.qmd >}}` under the data note, so
   the reader knows how the tabs work. An unconverted page, whose Python only
   displays, includes `python-tabs.qmd` instead.

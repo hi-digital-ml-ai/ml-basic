@@ -12,6 +12,7 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 
 survey <- load_coastal_survey()
 
