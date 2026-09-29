@@ -43,12 +43,12 @@ website:
       - section: "1 · Introduction"
         href: chapters/01-introduction/index.qmd
         contents:
+          - href: chapters/01-introduction/types-of-learning.qmd
+            text: "Types of models and learning"
           - href: chapters/01-introduction/what-is-machine-learning.qmd
             text: "The same data, fitted two ways"
           - href: chapters/01-introduction/applications-in-marine-science.qmd
             text: "Applications, grouped by task shape"
-          - href: chapters/01-introduction/types-of-learning.qmd
-            text: "The main types of learning"
           - href: chapters/01-introduction/prediction-and-explanation.qmd
             text: "Prediction versus explanation"
       - section: "2 · Marine datasets"

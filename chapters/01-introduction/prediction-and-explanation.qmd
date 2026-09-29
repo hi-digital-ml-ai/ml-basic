@@ -121,7 +121,7 @@ tidy(fits[["Linear model, with curves"]]) |>
 ```
 
 The linear term is still not significant. The quadratic term is overwhelmingly so.
-The "no temperature effect" from [the first page](what-is-machine-learning.qmd) was
+The "no temperature effect" from [the second page](what-is-machine-learning.qmd) was
 never a fact about the species. It was a fact about a model that could only draw
 straight lines.
 

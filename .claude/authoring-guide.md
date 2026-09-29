@@ -23,6 +23,16 @@ new.
 - Avoid ML folklore and unexplained rules of thumb ("use 80/20"). If a number is
   conventional rather than principled, say so.
 - British spelling: modelling, generalisation, centre, behaviour.
+- **Go easy on who, why, how and what.** A sentence that turns on one of them ("what
+  matters is", "why this happens", "how it works") usually says more when it names the
+  thing directly. They are not banned; they should not set the rhythm of a page.
+- **Introduce a method before using it.** A page that fits a random forest, k-means or a
+  network says in plain English how it works, or links to the page that does, the first
+  time it appears. Sections build up new concepts step by step, not only new ways to
+  select and evaluate models.
+- **Section 1 uses only familiar variables.** Before section 2 introduces the survey
+  properly, examples use temperature, salinity and depth as predictors, with abundance
+  or presence as the outcome.
 - **No em dashes (—) anywhere.** An em dash is always standing in for a comma, a
   colon, a semicolon, a full stop or a pair of brackets, and naming which one makes
   the sentence say what it means. A parenthetical pair becomes commas or brackets; an
