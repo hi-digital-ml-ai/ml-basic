@@ -1,6 +1,6 @@
 ---
 title: "Avoiding information leakage"
-description: "The mistake that makes a model look good and then fail in the field, in four kinds, each demonstrated on the same survey."
+description: "The mistake that makes a model look good and then fail in the field, in four kinds, each shown on the same survey."
 order: 8
 categories: [data-preparation, validation]
 ---
@@ -12,51 +12,37 @@ library(tidymodels)
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
 ## A failure that leaves no trace
 
-**Leakage** is information about the data you are testing on reaching the model before
-you test. It inflates every performance figure you report, and it leaves no trace in the
-output: a leaky model and an honest model look identical, except that the leaky one
-scores better.
-
-It is the reason published machine-learning results in marine science are, as a class,
-more optimistic than what the same methods achieve in operation. Nobody is cheating. The
-usual leak is a single line of code in the wrong order.
+**Leakage** is information from the test data reaching the model before it is tested.
+It makes every score look better than it is, and it leaves no trace: a leaky model's
+output looks just like an honest one's, only better. The usual cause is not cheating
+but one line of code in the wrong place. This page shows the four kinds, each on the
+survey, so you can recognise them in your own code.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Four kinds of leakage
 
-Four kinds, from the most obvious to the most subtle.
+::: {.diagram}
+![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the data meant for testing shapes the model before the test.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column known only after the outcome, such as catch weight when predicting a count; ask whether it would exist before sampling. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test data shape the model before it is tested."}
+:::
 
-**Target leakage**: a feature that could only be known after the response. Catch weight
-when predicting catch. A "confirmed by laboratory" flag when predicting species
-identity. These give spectacular scores and are worthless, because at prediction time
-the feature does not exist.
+The rule behind all four: the test data must be untouched by every decision, not just
+by the fitting.
 
-**Group leakage**: the same underlying unit in both training and test data. Repeat
-visits to a monitoring site, duplicate rows, several images of one individual. The model
-is tested on something it has effectively already seen.
+## A model to test
 
-**Preprocessing leakage**: any quantity estimated from the whole dataset before
-splitting. A mean used for centring, a median used for imputation, a set of category
-levels, a target encoding. Small when the quantity is a mean over hundreds of rows;
-severe when the preprocessing is powerful: target encoding, imputation that uses the
-response, or anything fitted on a small dataset.
-
-**Selection leakage**: choosing what goes into the model by looking at all the data.
-Picking the twenty variables most correlated with the response, then splitting. The
-selection has already used the test set.
-
-The common thread: the test set must be untouched by every decision, not just by the
-fitting step.
-
-## Worked example
+Each demonstration fits a linear regression of `abundance` and scores it on test data
+with two measures. The **RMSE** is roughly how far a prediction usually lands from the
+true count. **$R^2$** is the share of the variation in the test counts that the
+predictions follow, from 0 (none) to 1 (all of it).
 
 ::: {.panel-tabset group="language"}
 
@@ -64,36 +50,27 @@ fitting step.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_raw() |>
-  distinct() |>
-  mutate(
-    salinity_psu  = na_if(salinity_psu, -999),
-    temperature_c = na_if(temperature_c, -999),
-    depth_m       = if_else(depth_m > 250, depth_m / 10, depth_m),
-    substrate     = factor(str_to_lower(str_trim(substrate))),
-    substrate     = fct_collapse(substrate, sand = c("sand", "sandy"),
-                                 mud = c("mud", "muddy"), gravel = "gravel",
-                                 rock = c("rock", "rocky"))
-  )
+survey <- load_coastal_survey_clean()
 
 split <- initial_split(survey, prop = 0.75)
 train <- training(split)
 test  <- testing(split)
 
-fit_forest <- function(formula, train_data, test_data) {
+fit_and_test <- function(formula, train_data, test_data) {
   workflow() |>
     add_recipe(
       recipe(formula, data = train_data) |>
         step_impute_median(all_numeric_predictors()) |>
         step_dummy(all_nominal_predictors())
     ) |>
-    add_model(rand_forest(trees = 500) |> set_engine("ranger", seed = 9) |>
-                set_mode("regression")) |>
+    add_model(linear_reg()) |>
     fit(train_data) |>
     augment(test_data) |>
     metrics(truth = abundance, estimate = .pred) |>
     filter(.metric %in% c("rmse", "rsq")) |>
-    select(.metric, .estimate)
+    select(.metric, .estimate) |>
+    pivot_wider(names_from = .metric, values_from = .estimate) |>
+    mutate(across(everything(), \(x) round(x, 2)))
 }
 
 honest <- abundance ~ depth_m + temperature_c + salinity_psu +
@@ -102,12 +79,12 @@ honest <- abundance ~ depth_m + temperature_c + salinity_psu +
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 from sklearn.pipeline import Pipeline
@@ -122,7 +99,7 @@ honest = ["depth_m", "temperature_c", "salinity_psu",
 
 train, test = train_test_split(survey, train_size=0.75, random_state=123)
 
-def fit_forest(predictors, train_data, test_data):
+def fit_and_test(predictors, train_data, test_data):
     categorical = [c for c in predictors if c in ("substrate", "season")]
     numeric = [c for c in predictors if c not in categorical]
     model = Pipeline([
@@ -131,24 +108,24 @@ def fit_forest(predictors, train_data, test_data):
             ("categorical", OneHotEncoder(drop="first", sparse_output=False),
              categorical),
         ])),
-        ("model", RandomForestRegressor(n_estimators=500, random_state=9)),
+        ("model", LinearRegression()),
     ]).fit(train_data[predictors], train_data["abundance"])
 
     predicted = model.predict(test_data[predictors])
     truth = test_data["abundance"]
     return {
-        "rmse": round(root_mean_squared_error(truth, predicted), 3),
+        "rmse": round(root_mean_squared_error(truth, predicted), 2),
         # yardstick's rsq is the squared correlation, not 1 - SSE/SST.
-        "rsq": round(np.corrcoef(predicted, truth)[0, 1] ** 2, 3),
+        "rsq": round(np.corrcoef(predicted, truth)[0, 1] ** 2, 2),
     }
 ```
 
 :::
 
-### 1. Target leakage
+## Target leakage: a column from the future
 
-The survey recorded `catch_weight_kg` alongside the count. Adding it to the model is a
-single word in a formula.
+The survey recorded `catch_weight_kg` alongside the count. Adding it to the model takes
+one word:
 
 ::: {.panel-tabset group="language"}
 
@@ -156,48 +133,41 @@ single word in a formula.
 
 ```{r}
 #| label: target-leakage
-bind_rows(
-  fit_forest(honest, train, test) |> mutate(model = "Environment only"),
-  fit_forest(update(honest, ~ . + catch_weight_kg), train, test) |>
-    mutate(model = "Plus catch weight")
-) |>
-  pivot_wider(names_from = .metric, values_from = .estimate) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+target <- bind_rows(
+  `Environment only`  = fit_and_test(honest, train, test),
+  `Plus catch weight` = fit_and_test(update(honest, ~ . + catch_weight_kg), train, test),
+  .id = "model"
+)
+
+target
 ```
 
 ## Python
 
-```python
+```{python}
 pd.DataFrame([
-    {"model": "Environment only", **fit_forest(honest, train, test)},
+    {"model": "Environment only", **fit_and_test(honest, train, test)},
     {"model": "Plus catch weight",
-     **fit_forest(honest + ["catch_weight_kg"], train, test)},
+     **fit_and_test(honest + ["catch_weight_kg"], train, test)},
 ])
 ```
 
 :::
 
-$R^2$ goes from 0.25 to 0.87. If you saw that in a colleague's results you would be
-impressed.
+$R^2$ jumps from `r target$rsq[1]` to `r target$rsq[2]`, and the model is worthless. Catch weight is
+the weight of the animals that were counted, so it is the count in other units
+(correlation `r round(cor(survey$abundance, survey$catch_weight_kg), 2)`). At a new
+station, where nothing has been caught yet, there is no catch weight to give the model.
 
-It is nonsense. Catch weight is the weight of the animals that were counted; the two
-are the same measurement in different units, correlated at 0.99. The model has learned
-to divide by the average individual mass. Deployed on a new station, where the whole
-point is that nobody has counted anything yet, there is no catch weight to supply and
-the model cannot run at all.
+Real target leaks are rarely this obvious: a summary from the same haul, a note written
+after the catch was sorted, a habitat class assigned by looking at what was caught. The
+test is one question: **would this value exist, at this moment, for a station not yet
+sampled?**
 
-::: {.callout-warning}
-Target leakage is rarely this blatant in real data. It arrives as a variable added by
-someone who knew the answer: a length-frequency summary derived from the same haul, a
-survey note recorded after the catch was sorted, a habitat class assigned by looking at
-what was caught. The test is not statistical. Ask, **would this value exist, at this
-moment, for a station I have not yet sampled?**
-:::
+## Group leakage: the same site twice
 
-### 2. Group leakage
-
-The survey visits 160 sites repeatedly. Under a random split,
-[as we saw](splitting-data.qmd), every test station sits at a site already in training.
+A random split puts visits to the same site in both training and test (see
+[Splitting the data](splitting-data.qmd)). Keeping each site whole:
 
 ::: {.panel-tabset group="language"}
 
@@ -207,49 +177,45 @@ The survey visits 160 sites repeatedly. Under a random split,
 #| label: group-leakage
 grouped <- group_initial_split(survey, group = site_id, prop = 0.75)
 
-bind_rows(
-  fit_forest(honest, train, test) |> mutate(split = "Random"),
-  fit_forest(honest, training(grouped), testing(grouped)) |>
-    mutate(split = "Grouped by site")
-) |>
-  pivot_wider(names_from = .metric, values_from = .estimate) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+group <- bind_rows(
+  Random            = fit_and_test(honest, train, test),
+  `Grouped by site` = fit_and_test(honest, training(grouped), testing(grouped)),
+  .id = "split"
+)
+
+group
 ```
 
 ## Python
 
-```python
+```{python}
 grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
 group_train, group_test = next(grouper.split(survey, groups=survey["site_id"]))
 
 pd.DataFrame([
-    {"split": "Random", **fit_forest(honest, train, test)},
+    {"split": "Random", **fit_and_test(honest, train, test)},
     {"split": "Grouped by site",
-     **fit_forest(honest, survey.iloc[group_train], survey.iloc[group_test])},
+     **fit_and_test(honest, survey.iloc[group_train], survey.iloc[group_test])},
 ])
 ```
 
 :::
 
-Read this one carefully, because the obvious reading is wrong.
+The obvious reading is wrong. The RMSE *falls*, from `r group$rmse[1]` to
+`r group$rmse[2]`, but that is not the model improving: the two rows are scored on
+**different test sets**, and the grouped one happens to hold stations with less
+variable counts. RMSEs from different test sets cannot be compared.
 
-RMSE *falls* under the grouped split, from 4.82 to 3.76. That is not the model
-improving. The two rows are scored on **different test sets**, and the grouped one
-happens to contain less variable stations, so its errors are smaller in absolute terms.
-Comparing RMSE across different test sets is not a valid comparison, and this is a
-common way to reach a confident wrong conclusion.
+$R^2$ can be, roughly, because each is measured against its own test set's variation.
+It falls from `r group$rsq[1]` to `r group$rsq[2]`: predicting a site the model has
+never seen is much harder than predicting another visit to a familiar one. That gap is
+the size of the group leak.
 
-The quantity that *is* roughly comparable is $R^2$, because each is measured against its
-own test set's variance. It falls from **0.25 to 0.13**: the model explains half as
-much when it has to predict a site it has never visited.
+## Selection leakage: skill from noise
 
-That halving is the size of the group leak. It is also the difference between the
-question a random split answers and the question a habitat map is asked.
-
-### 3. Selection leakage
-
-The subtlest one, and the easiest to demonstrate: give the procedure nothing but noise,
-and watch leakage manufacture skill from it.
+Give the procedure nothing but noise: 200 columns of random numbers with no link to
+abundance at all. Then pick the ten columns most correlated with abundance, once using
+all the rows and once using only the training rows:
 
 ::: {.panel-tabset group="language"}
 
@@ -263,7 +229,7 @@ noise <- as_tibble(matrix(rnorm(nrow(survey) * 200), nrow(survey), 200,
                           dimnames = list(NULL, paste0("v", 1:200))))
 fake <- bind_cols(tibble(abundance = survey$abundance), noise)
 
-rows  <- sample(nrow(fake), 0.75 * nrow(fake))
+rows   <- sample(nrow(fake), 0.75 * nrow(fake))
 ftrain <- fake[rows, ]
 ftest  <- fake[-rows, ]
 
@@ -273,23 +239,22 @@ best_ten <- function(data) {
   names(sort(correlations, decreasing = TRUE))[1:10]
 }
 
-evaluate <- function(variables, label) {
+evaluate <- function(variables) {
   model <- lm(reformulate(variables, "abundance"), data = ftrain)
-  tibble(selection = label,
-         test_rsq = round(cor(predict(model, ftest), ftest$abundance)^2, 4))
+  round(cor(predict(model, ftest), ftest$abundance)^2, 3)
 }
 
-bind_rows(
-  evaluate(best_ten(fake),   "Chosen using all rows"),
-  evaluate(best_ten(ftrain), "Chosen using training rows only")
+selection <- tibble(
+  chosen_using = c("All rows", "Training rows only"),
+  test_rsq     = c(evaluate(best_ten(fake)), evaluate(best_ten(ftrain)))
 )
+
+selection
 ```
 
 ## Python
 
-```python
-from sklearn.linear_model import LinearRegression
-
+```{python}
 rng = np.random.default_rng(7)
 
 noise = pd.DataFrame(
@@ -304,105 +269,76 @@ def best_ten(data):
     correlations = data.drop(columns="abundance").corrwith(data["abundance"]).abs()
     return list(correlations.sort_values(ascending=False).index[:10])
 
-def evaluate(variables, label):
+def evaluate(variables):
     model = LinearRegression().fit(fake_train[variables], fake_train["abundance"])
     predicted = model.predict(fake_test[variables])
-    return {"selection": label,
-            "test_rsq": round(
-                np.corrcoef(predicted, fake_test["abundance"])[0, 1] ** 2, 4)}
+    return round(np.corrcoef(predicted, fake_test["abundance"])[0, 1] ** 2, 3)
 
-pd.DataFrame([
-    evaluate(best_ten(fake), "Chosen using all rows"),
-    evaluate(best_ten(fake_train), "Chosen using training rows only"),
-])
+pd.DataFrame({
+    "chosen_using": ["All rows", "Training rows only"],
+    "test_rsq": [evaluate(best_ten(fake)), evaluate(best_ten(fake_train))],
+})
 ```
 
 :::
 
-Every one of those 200 variables is `rnorm()`. The true relationship with abundance is
-exactly zero, so the correct test $R^2$ is zero, which is what the honest procedure
-reports, near enough.
+The true $R^2$ is zero, and choosing on the training rows reports close to that
+(`r sprintf("%.3f", selection$test_rsq[2])`). Choosing on all the rows reports
+`r sprintf("%.3f", selection$test_rsq[1])` from pure noise: small, but skill that does
+not exist. The effect grows with the number of
+candidate columns and shrinks with the number of rows, so a dataset with thousands of
+columns and a hundred samples can manufacture far more.
 
-Choosing the ten "best" variables while looking at all the rows produces an apparent
-$R^2$ of about 0.03 from pure noise. Small in absolute terms, and about a hundred times
-the truth. The effect grows with the number of candidate variables and shrinks with
-sample size, so a genomic dataset with thousands of columns and ninety samples can
-manufacture a great deal more than three per cent.
+## Preprocessing leakage: numbers from every row
 
-### 4. Preprocessing leakage
-
-The one you are already protected from, provided you use the tools as intended.
+Filling gaps with a median computed from every row lets the test rows shape the
+training data. The fix is the recipe from [Scaling and encoding](scaling-and-encoding.qmd):
 
 ```r
-# Leaks: the median comes from every row, test set included.
+# Leaks: the median comes from every row, test rows included.
 survey$chlorophyll_mg_m3[is.na(survey$chlorophyll_mg_m3)] <-
   median(survey$chlorophyll_mg_m3, na.rm = TRUE)
 split <- initial_split(survey)
 
-# Safe: the median is estimated from training data and applied to test data.
+# Safe: the median is estimated from the training rows, then applied to the test rows.
 split <- initial_split(survey)
 recipe(honest, data = training(split)) |>
   step_impute_median(all_numeric_predictors())
 ```
 
-With 800 rows and a median, the damage from the first version is small, probably
-smaller than the noise in your test score. It is worth doing correctly anyway, because
-the identical mistake with target encoding, or with imputation that uses the response,
-or on a dataset of forty casts, is not small at all. And the correct version costs
-nothing: put the step in the recipe and the workflow handles the rest, including inside
-cross-validation.
+With 800 rows and a median the harm is small. The same mistake with target encoding, or
+on a dataset of forty casts, is not; and the safe version costs nothing.
 
 ## The question to ask of every line
 
-| Leak | What it did here | How to avoid it |
-| --- | --- | --- |
-| Target | $R^2$ 0.25 → 0.87, from a feature that will not exist at prediction time | Ask whether each feature exists *before* the outcome is known |
-| Group | $R^2$ halved, 0.25 → 0.13, once sites were kept together | Split and resample by the unit you generalise across |
-| Selection | $R^2$ ≈ 0.03 from 200 pure-noise variables | Select features inside the resampling, never on the full data |
-| Preprocessing | Small here; severe with powerful steps or small data | Put every step in a `recipe()` inside a `workflow()` |
-
-The practical discipline is a single question, asked of every line that touches data:
+One question catches all four kinds:
 
 > **Does this line use any information from rows I intend to test on?**
 
-If yes, it belongs inside the resampling or after the split.
+If it does, it belongs after the split, or inside the recipe. Some leakage cannot be
+removed, only reported: the whole dataset was explored in order to clean it, and that
+shaped the choices that followed. And keeping sites whole does not stop two *nearby*
+sites sharing their water; [section 7](../07-validation/index.qmd) splits by area for
+that.
 
-## Limits of these defences
-
-**Some leakage cannot be removed, only reported.** You explored the whole dataset in
-order to clean it, and that knowledge shaped your modelling. The honest response is to
-say what you did, not to pretend the test set was sealed.
-
-**Grouping by site does not remove spatial leakage.** Two *different* sites five
-kilometres apart still share water mass and substrate. Grouping handles repeat visits;
-spatial autocorrelation between neighbouring sites needs spatial cross-validation, in
-[section 7](../07-validation/index.qmd).
-
-**A clean split does not make a model valid.** It makes its score honest. The model can
-still be wrong for every reason in
-[section 6](../06-assumptions-limitations/index.qmd).
-
-**Leakage is usually invisible in review.** No plot shows it and no diagnostic flags it.
-It is found by reading the code in order, and by asking where each column came from,
-which is an argument for writing the methods section as though someone will.
-
-::: {.callout-tip}
 ## Key points
-- Leakage is information from the test data reaching the model. It inflates every score
+
+::: {.key-points}
+- Leakage is information from the test data reaching the model; it inflates every score
   and leaves no trace.
-- Target leakage: ask whether a feature would exist for a station nobody has sampled
-  yet. Catch weight took $R^2$ from 0.25 to 0.87 and would be unusable in the field.
-- Group leakage: keep a site's rows together. Here it halved the honest $R^2$.
-- RMSE from two different test sets is not comparable. Two splits produce two different
-  test sets, so compare a relative measure such as $R^2$.
-- Selection leakage manufactured $R^2 \approx 0.03$ out of 200 columns of pure noise.
-- Put every preprocessing step inside a recipe and a workflow, and the common leaks
-  become structurally impossible.
+- Target leakage: ask whether a column would exist for a station not yet sampled. Catch
+  weight took $R^2$ from `r target$rsq[1]` to `r target$rsq[2]`.
+- Group leakage: keep a site's rows together. Here $R^2$ fell from `r group$rsq[1]` to
+  `r group$rsq[2]` once sites were kept whole.
+- RMSEs from different test sets cannot be compared; a relative measure such as $R^2$
+  roughly can.
+- Selection leakage made skill out of pure noise; preprocessing leakage is avoided by
+  putting every step in a recipe.
 :::
 
 ## Try it yourself
 
-1. Re-run the noise experiment with 1,000 variables instead of 200, and again with 100
+1. Re-run the noise experiment with 1,000 columns instead of 200, and again with 100
    rows instead of 800. How large can the manufactured $R^2$ get?
-2. List every column in your own data and write where each value came from and when it
-   became known. Any column whose answer involves the outcome is a target leak.
+2. List every column in your own data with where each value came from and when it
+   became known. Any column that depends on the outcome is a target leak.
