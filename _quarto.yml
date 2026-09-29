@@ -59,7 +59,7 @@ website:
           - href: chapters/02-marine-data/the-coastal-survey.qmd
             text: "The coastal survey"
           - href: chapters/02-marine-data/observations-and-features.qmd
-            text: "One row is a decision"
+            text: "Observations and features"
           - href: chapters/02-marine-data/marine-data-types.qmd
             text: "Kinds of marine data"
           - href: chapters/02-marine-data/exploratory-analysis.qmd
