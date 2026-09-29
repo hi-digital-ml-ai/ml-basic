@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 708" width="100%" role="img" aria-label="Prediction, inference and explanation compared. One fitted model can serve three aims. Prediction gives a number for a new station and is checked on held-back stations. Inference gives an estimate with an interval and rests on the model's assumptions. Explanation makes a claim about cause and rests on study design and subject knowledge. Each aim asks more of the model and is harder to check.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 708" width="100%" role="img" aria-label="Prediction, inference and explanation compared. One fitted model can serve three aims. Prediction gives a value for a new case and is checked on held-back cases. Inference gives an estimate with an interval and rests on the model's assumptions. Explanation makes a claim about cause and rests on study design and subject knowledge. Each aim asks more of the model and is harder to check.">
 <defs>
   <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#55606a"/></marker>
   <marker id="arrow-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#009E73"/></marker>
@@ -23,7 +23,7 @@
 
 <!-- The shared model feeding the three aims -->
 <rect class="node" x="270" y="46" width="400" height="42" rx="8"/>
-<text class="top" x="470" y="73" text-anchor="middle">A model fitted to the surveyed stations</text>
+<text class="top" x="470" y="73" text-anchor="middle">One model fitted to the data</text>
 <path class="link" d="M470,88 V102 M156,102 H784"/>
 <path class="link" d="M156,102 V122" marker-end="url(#arrow)"/>
 <path class="link" d="M470,102 V122" marker-end="url(#arrow)"/>
@@ -34,22 +34,22 @@
 <rect x="8" y="124" width="296" height="6" rx="3" fill="#E69F00"/>
 <text class="head" x="28" y="160">Prediction</text>
 <text class="lab" x="28" y="330">QUESTION</text>
-<text class="body" x="28" y="354">The count at a station</text>
-<text class="body" x="28" y="378">not yet sampled</text>
+<text class="body" x="28" y="354">The outcome for a case</text>
+<text class="body" x="28" y="378">the model has not seen</text>
 <line class="rule" x1="28" y1="396" x2="284" y2="396"/>
 <text class="lab" x="28" y="422">ANSWER</text>
-<text class="body" x="28" y="446">A number for each</text>
-<text class="body" x="28" y="470">new station</text>
+<text class="body" x="28" y="446">A value for each</text>
+<text class="body" x="28" y="470">new case</text>
 <line class="rule" x1="28" y1="488" x2="284" y2="488"/>
 <text class="lab" x="28" y="514">CHECKED BY</text>
-<text class="body" x="28" y="538">The error on stations</text>
+<text class="body" x="28" y="538">The error on cases</text>
 <text class="body" x="28" y="562">held back from fitting</text>
 <line class="axis" x1="36" y1="270" x2="276" y2="270"/>
 <g fill="#8a949c" fill-opacity="0.6"><circle cx="58" cy="253" r="3.5"/><circle cx="76" cy="232" r="3.5"/><circle cx="94" cy="241" r="3.5"/><circle cx="111" cy="205" r="3.5"/><circle cx="128" cy="220" r="3.5"/><circle cx="146" cy="188" r="3.5"/><circle cx="164" cy="210" r="3.5"/><circle cx="181" cy="198" r="3.5"/><circle cx="244" cy="246" r="3.5"/><circle cx="258" cy="234" r="3.5"/></g>
 <path d="M46,258 Q146,155 266,253" fill="none" stroke="#E69F00" stroke-width="2.6"/>
 <line x1="211" y1="270" x2="211" y2="226" stroke="#E69F00" stroke-width="1.4" stroke-dasharray="4 3"/>
 <circle cx="211" cy="218" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
-<text class="small" x="211" y="296" text-anchor="middle">a new station</text>
+<text class="small" x="211" y="296" text-anchor="middle">a new case</text>
 
 <!-- Inference -->
 <rect class="box" x="322" y="124" width="296" height="458" rx="8"/>
@@ -82,7 +82,7 @@
 <text class="head" x="656" y="160">Explanation</text>
 <text class="lab" x="656" y="330">QUESTION</text>
 <text class="body" x="656" y="354">Does changing a driver</text>
-<text class="body" x="656" y="378">change the count?</text>
+<text class="body" x="656" y="378">change the outcome?</text>
 <line class="rule" x1="656" y1="396" x2="912" y2="396"/>
 <text class="lab" x="656" y="422">ANSWER</text>
 <text class="body" x="656" y="446">A claim about cause</text>
@@ -95,11 +95,11 @@
 <text class="small" x="784" y="201" text-anchor="middle">Depth</text>
 <rect class="node" x="650" y="244" width="100" height="32" rx="6"/>
 <text class="small" x="700" y="265" text-anchor="middle">Salinity</text>
-<rect class="node" x="812" y="244" width="112" height="32" rx="6"/>
-<text class="small" x="868" y="265" text-anchor="middle">Abundance</text>
+<rect class="node" x="818" y="244" width="100" height="32" rx="6"/>
+<text class="small" x="868" y="265" text-anchor="middle">Outcome</text>
 <line x1="764" y1="212" x2="716" y2="241" stroke="#009E73" stroke-width="1.8" marker-end="url(#arrow-end)"/>
 <line x1="804" y1="212" x2="852" y2="241" stroke="#009E73" stroke-width="1.8" marker-end="url(#arrow-end)"/>
-<line x1="752" y1="260" x2="810" y2="260" stroke="#8a949c" stroke-width="1.5" stroke-dasharray="3 3"/>
+<line x1="752" y1="260" x2="816" y2="260" stroke="#8a949c" stroke-width="1.5" stroke-dasharray="3 3"/>
 <path d="M775,253 L787,267 M787,253 L775,267" stroke="#D55E00" stroke-width="2.2"/>
 <text class="small" x="784" y="296" text-anchor="middle">salinity travels with depth</text>
 

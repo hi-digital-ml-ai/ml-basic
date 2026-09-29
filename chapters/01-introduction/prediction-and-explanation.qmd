@@ -45,13 +45,13 @@ three different questions to the same stations:
 - **Explanation:** whether warmer water, by itself, would change the count.
 
 ::: {.diagram}
-![Prediction, inference and explanation compared. Each aim asks more of the model and is harder to check.](img/prediction-inference-explanation.svg){fig-alt="At the top, one box reads 'A model fitted to the surveyed stations', with arrows to three columns. Prediction, in orange: a curve through scattered points with a new station marked on it; the question is the count at a station not yet sampled, the answer is a number for each new station, and it is checked by the error on stations held back from fitting. Inference, in blue: an estimate with an interval that does not reach zero; the question is the size of a relationship and how sure we can be, the answer is an estimate with an interval or p-value, and it is checked by the model's assumptions. Explanation, in green: depth points to both salinity and abundance, and a crossed-out dashed line joins salinity to abundance; the question is whether changing a driver changes the count, the answer is a claim about cause and effect, and it is checked by study design and subject knowledge, not data alone. A bar along the bottom runs from orange to green: from left to right, each aim asks more of the model and is harder to check."}
+![Prediction, inference and explanation compared. Each aim asks more of the model and is harder to check.](img/prediction-inference-explanation.svg){fig-alt="At the top, one box reads 'One model fitted to the data', with arrows to three columns. Prediction, in orange: a curve through scattered points with a new case marked on it; the question is the outcome for a case the model has not seen, the answer is a value for each new case, and it is checked by the error on cases held back from fitting. Inference, in blue: an estimate with an interval that does not reach zero; the question is the size of a relationship and how sure we can be, the answer is an estimate with an interval or p-value, and it is checked by the model's assumptions. Explanation, in green: depth points to both salinity and the outcome, and a crossed-out dashed line joins salinity to the outcome; the question is whether changing a driver changes the outcome, the answer is a claim about cause and effect, and it is checked by study design and subject knowledge, not data alone. A bar along the bottom runs from orange to green: from left to right, each aim asks more of the model and is harder to check."}
 :::
 
 A model can succeed at one aim and fail at the next, and its output gives no warning.
 The example below shows salinity doing exactly that.
 
-## Salinity predicts abundance and does nothing
+## Three aims on the same stations
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -77,8 +77,10 @@ formulas <- list(
 fits <- map(formulas, \(f) fit(linear_reg(), f, data = train))
 ```
 
-**Prediction.** Adding salinity lowers the error on the test stations, and adding
-depth lowers it further:
+### Prediction: salinity lowers the test error
+
+Adding salinity lowers the error on the test stations, and adding depth lowers it
+further:
 
 ```{r}
 #| label: test-error
@@ -93,10 +95,11 @@ imap(fits, \(fit, name) {
 For prediction, salinity has earned its place. If depth had not been recorded, the
 second model would be the one to use.
 
-**Inference.** The salinity slope in the second model is about −2.2 animals per unit
-of salinity, and its interval sits well away from zero (@fig-salinity). As inference
-this is correct: across the shelf, stations with saltier water really do hold fewer
-animals.
+### Inference: saltier stations hold fewer animals
+
+The salinity slope in the second model is about −2.2 animals per unit of salinity, and
+its interval sits well away from zero (@fig-salinity). As inference this is correct:
+across the shelf, stations with saltier water really do hold fewer animals.
 
 ```{r}
 #| label: fig-salinity
@@ -119,11 +122,15 @@ ggplot(slopes, aes(estimate, model)) +
   labs(x = "Salinity slope (animals per unit of salinity)", y = NULL)
 ```
 
-**Explanation.** Read as a cause, the same slope is wrong. Freshening the water would
-not bring more animals, because salinity only travels with depth. Once depth enters
-the model, the salinity slope shrinks to about −0.2 and its interval spans zero.
+### Explanation: salinity only travels with depth
 
-The data could separate the two here only because depth was measured. With an
+Read as a cause, the same slope is wrong. Freshening the water would not bring more
+animals, because salinity only travels with depth. Once depth enters the model, the salinity slope shrinks to about −0.2 and its interval spans zero.
+
+### Salinity predicts abundance and does nothing
+
+The data could tell inference and explanation apart here only because depth was
+measured. With an
 unmeasured driver, the second model would be the best available, its interval would
 still be narrow, and nothing in the output would say the cause lay elsewhere. The
 check came from knowing that salinity rises with depth on this shelf, not from the
