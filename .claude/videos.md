@@ -406,6 +406,28 @@ Built like §6, to a rough cut on the draft voice: `_videos/07-validation/`.
   `manim -a` tries to render it (`ObjectiveRows` in `scenes.py`).
 - Not yet narrated with Gemini.
 
+## Fourth video: §8 Unsupervised learning (2026-09-29)
+
+Built like §7, to a rough cut on the draft voice: `_videos/08-unsupervised-learning/`.
+
+- 52 scenes, 8:21 on the draft voice (cut from 54 scenes and 8:58; a little over the 8-minute target). Hook: k-means splits the soft-bottom stations into a shallow
+  and a deep group (medians 60 and 124 m) that come back in every resample (mean
+  agreement 0.89, never below 0.71); answered in "The puzzle, solved": the taxa's
+  depth optima are evenly spread, so the split is a stable cut through a gradient at
+  about 92 m. Key points: every method finds something (units, noise, choosing k,
+  the shuffled-data null, linkage), a component is not a gradient (29.4%, the 139°
+  and 41° directions, 16/7/3 against two by cross-validation, the UMAP null), stable
+  is not the same as real (bimodal bootstrap 53/7, the continuum, external checks).
+- `exports.R` writes 19 CSVs from the six pages (under a minute). Every spoken number
+  was checked against them. `beyond-k-means.qmd` must knit first: the pages attach
+  `mclust` with `include.only`, and a later `library()` call cannot add
+  `adjustedRandIndex` to a package already attached. `tools/figures-for-video.R` now
+  knits with `error = FALSE`, so a failing chunk stops the export instead of leaving
+  an object silently missing.
+- The continuum curves (scene 39 on) are `geom_smooth()`'s loess, span 0.6, refitted
+  in `exports.R` from the page's own data, as the page's figure draws them.
+- Not yet narrated with Gemini.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
