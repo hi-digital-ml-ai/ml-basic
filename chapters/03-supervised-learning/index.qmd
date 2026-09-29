@@ -22,13 +22,10 @@ This is the family of methods most marine work needs. This section covers the
 workhorses, from linear regression through to boosted trees and, more importantly,
 how to pick one.
 
-Two earlier pages left debts here. [Section
-1](../01-introduction/prediction-and-explanation.qmd) built a model that recovered a
-species' thermal optimum and predicted negative fish; [section
-2](../02-marine-data/index.qmd) pointed here for a model that respects what a count is.
-Both are paid on the [linear, polynomial and count regression
-page](linear-and-polynomial-regression.qmd), and the fix turns out to predict better as
-well as more plausibly.
+[Section 2](../02-marine-data/index.qmd) pointed here for a model that respects what a
+count is. That debt is paid on the [linear, polynomial and count regression
+page](linear-and-polynomial-regression.qmd), where a model that cannot predict negative
+fish turns out to predict better as well as more plausibly.
 
 ::: {.callout-note}
 The closing page runs all ten models on the same survey with identical features. The

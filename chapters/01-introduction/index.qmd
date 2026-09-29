@@ -13,9 +13,9 @@ listing:
 toc: false
 ---
 
-Most marine scientists already fit models. You have written a GLM, checked residuals,
-looked at a p-value, and drawn a conclusion about how temperature affects abundance.
-So the obvious question about machine learning is: what is different?
+Most marine scientists already fit models. You have fitted a linear regression, checked
+residuals, looked at a p-value, and drawn a conclusion about how temperature affects
+abundance. So the obvious question about machine learning is: what is different?
 
 The short answer is *what the model is for*. A statistical model is usually built to
 tell you something about the world: the size of an effect, or whether it is

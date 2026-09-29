@@ -23,6 +23,16 @@ new.
 - Avoid ML folklore and unexplained rules of thumb ("use 80/20"). If a number is
   conventional rather than principled, say so.
 - British spelling: modelling, generalisation, centre, behaviour.
+- **Go easy on who, why, how and what.** A sentence that turns on one of them ("what
+  matters is", "why this happens", "how it works") usually says more when it names the
+  thing directly. They are not banned; they should not set the rhythm of a page.
+- **Introduce a method before using it.** A page that fits a random forest, k-means or a
+  network says in plain English how it works, or links to the page that does, the first
+  time it appears. Sections build up new concepts step by step, not only new ways to
+  select and evaluate models.
+- **Section 1 uses only familiar variables.** Before section 2 introduces the survey
+  properly, examples use temperature, salinity and depth as predictors, with abundance
+  or presence as the outcome.
 - **No em dashes (—) anywhere.** An em dash is always standing in for a comma, a
   colon, a semicolon, a full stop or a pair of brackets, and naming which one makes
   the sentence say what it means. A parenthetical pair becomes commas or brackets; an
@@ -47,7 +57,7 @@ categories: [...]
 ## Worked example              <- tidymodels on a dataset from data/
 ## <what the results say>      <- interpretation, and what would go wrong
 ## Limits of <this thing>      <- honest limitations; links to §6
-## Key points                  <- callout-tip, 3–5 bullets
+## Key points                  <- 3–5 bullets in a .key-points box
 ## Try it yourself             <- 1–2 small exercises (optional)
 ```
 
@@ -236,9 +246,15 @@ than `#| label: chunk-6`. See `tools/README.md` for how the extraction works.
 | Callout | Use for |
 | --- | --- |
 | `callout-note` | Optional depth, maths, side remarks |
-| `callout-tip` | "Key points" summary at the end of every page |
+| `callout-tip` | Practical tips (no longer the "Key points" summary, see below) |
 | `callout-warning` | Common mistakes, leakage traps, misuse of a metric |
 | `callout-important` | Things that invalidate results if ignored |
+
+The *Key points* summary is not a callout: inside one, its heading becomes the box's
+title, so the summary reads as part of the section above and drops out of the table of
+contents. It is a `## Key points` heading followed by the list in a `::: {.key-points}`
+box. Pages not yet revised still use the old `callout-tip` form; see
+`section-revision.md`.
 
 ## Cross-references
 

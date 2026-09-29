@@ -25,8 +25,7 @@ performance measures mean anything, and what the output can be used for.
 
 It is also a question people answer too quickly. "Abundance is a number, so it is
 regression" is right in outline and wrong in the details that matter, the details that
-made [section 1's polynomial model](../01-introduction/prediction-and-explanation.qmd)
-predict negative fish.
+let a polynomial model predict negative fish.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -200,9 +199,8 @@ as well as the code.
 
 For our counts specifically, the summary above already rules things out. The response is
 discrete, non-negative, overdispersed and a quarter zeros. Ordinary linear regression
-assumes none of that, which is precisely why it produced negative predictions in
-[section 1](../01-introduction/prediction-and-explanation.qmd). The
-[next page](linear-and-polynomial-regression.qmd) fixes it.
+assumes none of that, which is precisely why it can produce negative predictions. The
+[next page](linear-and-polynomial-regression.qmd) shows this and fixes it.
 
 ## Limits of the two boxes
 

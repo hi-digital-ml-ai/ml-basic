@@ -88,7 +88,7 @@ real effect.
 ### Class imbalance
 
 When one class is rare, as with the 5% rare species, two things follow. Accuracy becomes
-meaningless, as [section 1 showed](../01-introduction/types-of-learning.qmd). And the
+meaningless, as [section 7 shows](../07-validation/classification-metrics.qmd). And the
 fitting procedure itself is pulled towards the common class, because getting the
 common class right is where the easy gains are.
 

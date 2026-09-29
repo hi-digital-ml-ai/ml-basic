@@ -61,6 +61,16 @@ main {
   .cell-output-display { overflow-x: auto; }
 }
 
+// The Key points summary: a section of its own (a real heading, so it is in the
+// TOC), with the list in a light box so the page's summary stands out.
+.key-points {
+  max-width: 48rem;
+  padding: 0.8rem 1.2rem 0.3rem;
+  background: #f1f8f5;
+  border-left: 4px solid #009E73;
+  border-radius: 0.25rem;
+}
+
 h2 {
   margin-top: 2.2rem;
   padding-bottom: 0.3rem;

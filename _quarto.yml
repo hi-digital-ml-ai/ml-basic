@@ -43,14 +43,16 @@ website:
       - section: "1 · Introduction"
         href: chapters/01-introduction/index.qmd
         contents:
-          - href: chapters/01-introduction/what-is-machine-learning.qmd
-            text: "The same data, fitted two ways"
-          - href: chapters/01-introduction/applications-in-marine-science.qmd
-            text: "Applications, grouped by task shape"
           - href: chapters/01-introduction/types-of-learning.qmd
-            text: "The main types of learning"
+            text: "Types of learning"
+          - href: chapters/01-introduction/what-is-machine-learning.qmd
+            text: "Statistical modelling and machine learning"
           - href: chapters/01-introduction/prediction-and-explanation.qmd
-            text: "Prediction versus explanation"
+            text: "Prediction and explanation"
+          - href: chapters/01-introduction/applications-in-marine-science.qmd
+            text: "Applications in marine science"
+          - href: chapters/01-introduction/discriminative-and-generative-models.qmd
+            text: "Discriminative and generative models"
       - section: "2 · Marine datasets"
         href: chapters/02-marine-data/index.qmd
         contents:

@@ -16,15 +16,13 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## A debt from two earlier pages
+## Counts need a model that respects them
 
-Two earlier pages left a debt. [Section 1](../01-introduction/prediction-and-explanation.qmd)
-built a polynomial model that recovered the species' thermal optimum to within half a
-degree, and predicted *negative* abundance at both ends of the temperature range. The
-page said so and pointed here.
-
-This page pays that debt, and the fix turns out to improve prediction as well as
-plausibility. That is unusual and worth understanding: the model that respects what the
+[Section 2](../02-marine-data/index.qmd) pointed here for a model that respects what a
+count is. A straight line or a polynomial fitted to counts can recover a species'
+thermal optimum and still predict *negative* abundance, which is impossible. This page
+shows that happening and fixes it, and the fix turns out to improve prediction as well
+as plausibility. That is unusual and worth understanding: the model that respects what the
 data is wins on its own terms.
 
 {{< include ../../_snippets/simulated-data.qmd >}}

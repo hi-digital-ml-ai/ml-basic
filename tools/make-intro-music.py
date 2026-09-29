@@ -50,13 +50,33 @@ def pad(freqs, start, level=0.35):
     return out
 
 
+def pluck(freq, start, decay=0.12, level=1.0):
+    """A short plucked bass note: a bright attack that dies away quickly."""
+    return bell(freq, start, decay=decay, level=level)
+
+
+def shaker(start, level=0.08):
+    """A soft tick of filtered noise, for a light off-beat lift."""
+    rng = np.random.default_rng(int(start * 1000))
+    t = np.arange(int(0.06 * RATE)) / RATE
+    tick = np.diff(rng.normal(0, 1, t.size + 1)) * np.exp(-t / 0.012)
+    out = np.zeros(int(LENGTH * RATE))
+    out[int(start * RATE):int(start * RATE) + t.size] = level * tick
+    return out
+
+
 def main():
-    # G major: a rising arpeggio G4 B4 D5 G5, then the chord held underneath.
-    arpeggio = [(67, 0.00), (71, 0.16), (74, 0.32), (79, 0.48)]
-    melody = sum(bell(hz(n), s, level=0.9 if n == 79 else 0.7) for n, s in arpeggio)
-    music = pad([hz(n) for n in (55, 62, 67, 71)], 0.45)
-    music[:, 0] += melody * 0.9     # mallet a little left of centre
-    music[:, 1] += melody * 0.75
+    # G major, bouncy: a skipping run up to a bright final chord with a high sparkle.
+    # (note, start, decay, level); short notes skip, the last ones ring.
+    tune = [(67, 0.00, 0.25, 0.7), (71, 0.12, 0.25, 0.7), (74, 0.24, 0.25, 0.75),
+            (79, 0.42, 0.25, 0.8), (78, 0.54, 0.25, 0.7), (79, 0.66, 0.25, 0.75),
+            (83, 0.84, 0.9, 0.85), (86, 0.84, 0.9, 0.6), (91, 1.02, 0.7, 0.35)]
+    melody = sum(bell(hz(n), s, decay=d, level=v) for n, s, d, v in tune)
+    bass = sum(pluck(hz(n), s, level=0.9) for n, s in [(43, 0.00), (50, 0.24), (43, 0.42), (50, 0.66), (43, 0.84)])
+    ticks = sum(shaker(s) for s in (0.12, 0.30, 0.54, 0.72))
+    music = pad([hz(n) for n in (55, 62, 67, 71, 74)], 0.84, level=0.3)
+    music[:, 0] += melody * 0.9 + bass * 0.5 + ticks * 0.6     # mallet a little left of centre
+    music[:, 1] += melody * 0.75 + bass * 0.5 + ticks * 0.9
 
     # A short, gentle room: decaying noise as the impulse response.
     rng = np.random.default_rng(5)

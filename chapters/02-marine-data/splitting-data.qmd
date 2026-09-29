@@ -17,10 +17,10 @@ set.seed(123)
 
 ## The one honest measurement
 
-[Section 1](../01-introduction/what-is-machine-learning.qmd) showed a random forest
-fitting its training data twice as well as a linear model and predicting new data
-barely better. Nothing in the model's own output revealed that. Only data the model had
-never seen did.
+[Section 1](../01-introduction/what-is-machine-learning.qmd) compared a straight line
+with a decision tree on stations that neither model had seen during fitting. A model's
+own output cannot show how well it predicts new stations. Only data the model has
+never seen can.
 
 That is the entire function of a held-back set: it is the only honest measurement you
 have. Everything in this page is about protecting it, and in marine data, protecting it
