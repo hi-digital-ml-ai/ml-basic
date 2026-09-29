@@ -21,14 +21,16 @@ from a table of measurements, both fit a model with parameters, and both fit it 
 making some measure of error as small as possible. Linear regression belongs to both.
 
 The difference is mostly one of aim. A statistical model is usually fitted to
-**estimate an effect**, such as the change in abundance per degree of warming, and to
+**estimate an effect**, such as the change in growth per degree of warming, and to
 report it with an interval. A machine-learning model is usually fitted to **predict**
-well for stations it has not seen. That aim changes who chooses the shape of the
+well for new cases it has not seen. That aim changes who chooses the shape of the
 relationship and how the model is checked.
 
-![Statistical modelling and machine learning compared. Methods sit on a scale from shapes you write down to shapes the algorithm finds; the middle of the scale is used by both.](img/statistics-and-ml.svg){fig-alt="At the top, a scale coloured from blue to orange runs from 'you write it down' to 'the algorithm finds it', with methods marked along it: t-test, ANOVA, linear regression, GLM, GAM, decision tree, random forest and neural network. A shaded patch over linear regression, GLM and GAM reads 'used by both'. Below it, a dashed band lists what the two share: data with measurements, a model with parameters, and fitting by making the error small. At the bottom, two boxes. Statistical modelling: the aim is to explain by estimating an effect, the result is a few numbers with intervals, it is checked by its assumptions, and the risk is that a wrong shape gives a wrong effect. Machine learning: the aim is to predict stations not yet sampled, the result is a fitted model that turns new measurements into predictions, it is checked by the error on held-back data, and the risk is good predictions with no single effect."}
+::: {.diagram}
+![Statistical modelling and machine learning compared. Methods sit on a scale from shapes you write down to shapes the algorithm finds; the middle of the scale is used by both.](img/statistics-and-ml.svg){fig-alt="At the top, a scale coloured from blue to orange runs from 'you write it down' to 'the algorithm finds it', with methods marked along it: t-test, ANOVA, linear regression, GLM, GAM, decision tree, random forest and neural network. A shaded patch over linear regression, GLM and GAM reads 'used by both'. Below it, a dashed band lists what the two share: data with measurements, a model with parameters, and fitting by making the error small. At the bottom, two boxes. Statistical modelling: the aim is to explain by estimating an effect, the result is a few numbers with intervals, it is checked by its assumptions, and the risk is that a wrong shape gives a wrong effect. Machine learning: the aim is to predict new cases the model has not seen, the result is a fitted model that turns new measurements into predictions, it is checked by the error on held-back data, and the risk is good predictions with no single effect."}
+:::
 
-## A straight line misses a temperature optimum
+## Both approaches on the same stations
 
 [The previous page](types-of-learning.qmd) ended with a puzzle: the linear regression
 found a temperature slope close to zero, yet presence depended strongly on
@@ -48,6 +50,8 @@ train <- training(split)
 test  <- testing(split)
 ```
 
+### Statistical approach: a straight line
+
 The statistical approach writes down a straight line in each variable and reads the
 slopes:
 
@@ -63,6 +67,8 @@ tidy(linear, conf.int = TRUE) |>
 The temperature slope is again close to zero, and its interval spans zero. Read as
 usual, temperature has no detectable effect on abundance.
 
+### Machine-learning approach: a decision tree
+
 The machine-learning approach uses a **decision tree**. It splits the stations in two
 at the threshold that best separates high counts from low ones, such as "temperature
 below 6.4 °C", then splits each half again. Here it stops after three rounds of
@@ -76,6 +82,8 @@ full.
 tree <- decision_tree(mode = "regression", tree_depth = 3) |>
   fit(abundance ~ temperature_c + salinity_psu + depth_m, data = train)
 ```
+
+### A straight line misses a temperature optimum
 
 @fig-shapes shows what each model predicts across the range of temperature, with
 salinity and depth held at their typical values.

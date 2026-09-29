@@ -17,22 +17,36 @@ set.seed(123)
 ## One fitted model, three aims
 
 [The previous page](what-is-machine-learning.qmd) set prediction against explanation.
-Between the two sits a third aim, inference:
+Between the two sits a third aim, inference. All three can use the same fitted model;
+they differ in the question put to it.
 
-- **Prediction** gives the count at a station not yet sampled. It is checked directly:
-  hold stations back, predict them, and measure the error.
-- **Inference** reasons from the sampled stations to the whole shelf. It gives the
-  size of a relationship, such as the difference in abundance between stations one
-  unit of salinity apart, together with its uncertainty as an interval or a p-value.
-  The interval is only as trustworthy as the model's assumptions.
-- **Explanation** claims a cause: warmer water, by itself, changes the count. The
-  data alone cannot settle that. It needs study design and knowledge of the system.
+- **Prediction** estimates the outcome for new cases the model has not seen. It is
+  checked directly: hold some cases back from fitting, predict them, and measure the
+  error.
+- **Inference** uses a sample to draw conclusions about the wider population it came
+  from. It estimates the size of a relationship between an input and the outcome, and
+  states the uncertainty as an interval or a p-value. That uncertainty is only as
+  trustworthy as the model's assumptions.
+- **Explanation** claims a cause: changing an input, with everything else held fixed,
+  changes the outcome. The data alone cannot settle that. It needs a study design,
+  such as an experiment, or knowledge of the system.
 
 Uncertainty can be attached to a prediction or a cause as well. On this page,
 inference means estimating an association: two variables moving together, which on
 its own says nothing about one driving the other.
 
+In the simulated coastal survey used throughout this section, the three aims put
+three different questions to the same stations:
+
+- **Prediction:** the number of animals at a station not yet sampled, from its
+  temperature, salinity and depth.
+- **Inference:** the difference in abundance between stations one unit of salinity
+  apart, across the whole shelf, with an interval around it.
+- **Explanation:** whether warmer water, by itself, would change the count.
+
+::: {.diagram}
 ![Prediction, inference and explanation compared. Each aim asks more of the model and is harder to check.](img/prediction-inference-explanation.svg){fig-alt="At the top, one box reads 'A model fitted to the surveyed stations', with arrows to three columns. Prediction, in orange: a curve through scattered points with a new station marked on it; the question is the count at a station not yet sampled, the answer is a number for each new station, and it is checked by the error on stations held back from fitting. Inference, in blue: an estimate with an interval that does not reach zero; the question is the size of a relationship and how sure we can be, the answer is an estimate with an interval or p-value, and it is checked by the model's assumptions. Explanation, in green: depth points to both salinity and abundance, and a crossed-out dashed line joins salinity to abundance; the question is whether changing a driver changes the count, the answer is a claim about cause and effect, and it is checked by study design and subject knowledge, not data alone. A bar along the bottom runs from orange to green: from left to right, each aim asks more of the model and is harder to check."}
+:::
 
 A model can succeed at one aim and fail at the next, and its output gives no warning.
 The example below shows salinity doing exactly that.
