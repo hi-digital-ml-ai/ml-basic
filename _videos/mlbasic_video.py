@@ -145,7 +145,7 @@ class TitleScene(Scene):
         rule.shift(0.1 * DOWN)
         tagline.shift(0.15 * DOWN)
 
-        # Timed to the jingle: the text arrives with the arpeggio, the rule with the chord.
+        # Timed to the jingle: the text arrives with the skipping run, the rule with the final chord.
         self.play(FadeIn(series, shift=0.2 * DOWN), run_time=0.4)
         self.play(FadeIn(head, shift=0.3 * UP), run_time=0.5)
         self.play(GrowFromCenter(rule), FadeIn(tagline), run_time=0.6)

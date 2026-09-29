@@ -341,7 +341,9 @@ ridge shrinking the coefficients.
    - Series opening: `TitleScene` in `_videos/mlbasic_video.py` (series and
      title from the front matter; the section number was dropped on 2026-09-29) over `_videos/intro-music.wav`, a 3.2 s jingle
      synthesised by `tools/make-intro-music.py` (no licence to track; replace the WAV
-     with any 48 kHz track to change it). `rough-cut.py` puts it first.
+     with any 48 kHz track to change it). `rough-cut.py` puts it first. Made merrier on
+     2026-09-29 at the user's request: a skipping G-major run over a plucked bass and
+     light off-beat ticks, ending on a bright chord; still 3.2 s, so title timings hold.
    - `gap: 1.0` in the front matter (1 s between scenes, was 0.5); the soundtrack is now
      mixed at 48 kHz stereo.
    - Result: 6:35. Scene 55 reuses the approved take of the identical old closing line
@@ -488,25 +490,33 @@ Built like §9, to a rough cut on the draft voice: `_videos/10-interpretation/`.
 Built like §10, to a rough cut on the draft voice: `_videos/01-introduction/`. Sections
 1–4 were still without videos after §10; this starts them.
 
-- 47 scenes, 874 words, 7:28 on the draft voice. Hook: on 800 simulated stations a
-  linear model reports temperature at −0.074 per degree, p = 0.31, "no effect", but the
-  species was written to peak at 9 °C. Key points: machine learning is built to
-  predict, checked on held-back data (600 train, 200 held back; forest 2.09 against
-  linear 4.35 on training, 4.13 against 4.22 on test); the best predictor is not the
-  best explanation (linear with curves 4.01 and a fitted optimum of 8.6 °C, which
-  solves the puzzle; forest + coordinates 3.98, a proxy; the curve's negative ends);
-  and your data decide the question (presence forest 79% against always "present"
-  78%, 11 of 45 absences caught; k-means finds three habitats, the productive one
-  averaging 7.94 against 4.25 and 2.86; networks are a machine, not a type). The quiz:
-  unlabelled seabed photos are unsupervised, whatever the machine.
-- `exports.R` writes 11 CSVs from three pages; the applications page has no code and
-  appears as a schematic pipeline (scenes 39–40). The `fit-four` chunk prints its
-  scores without keeping them, so `exports.R` recomputes them from the page's own fits.
-  The figure's two temperature lines are refitted from `geom_smooth`'s own calls (lm,
-  and loess with span 0.6); the chart stops at 20, with a note for the 9 counts above.
-- Percentages are rounded half up (`whole_percent`): 0.785 is spoken as 79%, as on the
-  page, where Python's rounding could give 78%.
-- Every spoken number reproduced on the laptop. Not yet narrated with Gemini.
+**Rebuilt later on 2026-09-29 as an overview** (`feature/improve-introduction`), after
+the section's pages were rewritten. The user's brief: the video is not the place to
+explain everything; it introduces the section briefly and says what its pages cover.
+
+- 28 scenes, about 540 words, 5:09 on the draft voice. No puzzle hook: a short tour of
+  the five pages under three promises. First the survey data, opening with "Throughout
+  this course, we use one simulated marine dataset again and again"; the table's columns
+  appear as they are named, each with a short gloss (salinity "how salty", abundance
+  "animals counted"); the next section covers marine data in detail. Key point one,
+  the kinds of learning (supervised, regression and classification; k-means into
+  shallow, mid-depth and deep groups; discriminative and generative models,
+  schematic). Key point two, statistics and machine learning (the scale of methods;
+  the two aims; the flat straight line and the tree's hump from
+  `what-is-machine-learning.qmd#fig-shapes`; predicting is not explaining, as a
+  schematic where depth drives both salinity and the species, so salinity helps
+  predict but causes nothing, with "more on this later in the course"). Key point
+  three, the six tasks and the labelled-examples pipeline. The quiz: seabed
+  photographs, some named by a specialist, are supervised, and the task is naming
+  things.
+- The user's feedback on the first cut: don't open the data with "every page uses one
+  simulated survey"; say briefly what the variables are. And don't walk through the
+  salinity slopes (−2.2 to −0.2) in 15 seconds: name the concept and say the course
+  returns to it.
+- `exports.R` writes 4 CSVs from two pages (under a minute); the applications,
+  discriminative-generative and prediction-explanation pages appear as schematics.
+  The one spoken number, 800 stations, reproduced on the laptop.
+- Not yet narrated with Gemini.
 
 ## Eighth video: §2 Marine data (2026-09-29)
 

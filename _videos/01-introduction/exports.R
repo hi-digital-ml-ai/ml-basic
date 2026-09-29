@@ -7,46 +7,18 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # The stations, the split, the linear model's coefficients, the training data with
-  # the figure's two lines (geom_smooth's lm and loess, span 0.6), and the error table.
-  "what-is-machine-learning.qmd" = function(env, dir) {
-    write(with(env, dplyr::select(survey, longitude, latitude)), dir, "stations")
-    write(with(env, tibble::tibble(train = nrow(train), test = nrow(test))), dir, "split")
-    write(with(env, dplyr::select(tidy(lm_fit, conf.int = TRUE), term, estimate, conf.low,
-                                  conf.high, p.value)), dir, "coefficients")
-    write(with(env, dplyr::select(train, temperature_c, abundance)), dir, "train-points")
-    write(with(env, {
-      grid <- data.frame(temperature_c = seq(min(train$temperature_c), max(train$temperature_c),
-                                             length.out = 120))
-      tibble::tibble(temperature_c = grid$temperature_c,
-                     straight = predict(lm(abundance ~ temperature_c, train), grid),
-                     smooth = predict(loess(abundance ~ temperature_c, train, span = 0.6), grid))
-    }), dir, "temperature-lines")
-    write(with(env, dplyr::bind_rows(
-      dplyr::bind_cols(set = "training", performance(lm_fit, train, "linear")),
-      dplyr::bind_cols(set = "training", performance(rf_fit, train, "forest")),
-      dplyr::bind_cols(set = "test",     performance(lm_fit, test,  "linear")),
-      dplyr::bind_cols(set = "test",     performance(rf_fit, test,  "forest")))), dir, "errors")
-  },
-
-  # The four models' test errors, the curved model's temperature terms, and its
-  # temperature response with the fitted optimum. The `fit-four` chunk prints its table
-  # without keeping it, so the scores are recomputed here from the page's own fits.
-  "prediction-and-explanation.qmd" = function(env, dir) {
-    write(with(env, purrr::list_rbind(purrr::imap(fits, \(fit, name)
-      tibble::tibble(model = name, rmse = rmse_vec(test$abundance, predict(fit, test)$.pred))))),
-      dir, "four-models")
-    write(with(env, dplyr::filter(tidy(fits[["Linear model, with curves"]]), grepl("temperature", term))),
-          dir, "temperature-terms")
-    write(with(env, dplyr::mutate(dplyr::select(grid, temperature_c, predicted),
-                                  optimum = fitted_optimum)), dir, "optimum")
-  },
-
-  # Presence: the confusion matrix (from which accuracy and the always-present baseline
-  # follow), and the clustered stations with their habitat names.
+  # The first five stations as the page prints them, and the clustered stations with
+  # the names the page gives the groups.
   "types-of-learning.qmd" = function(env, dir) {
-    write(with(env, dplyr::count(predictions, truth = present, prediction = .pred_class)), dir, "presence")
-    write(with(env, dplyr::select(clustered, depth_m, temperature_c, chlorophyll_mg_m3, abundance, habitat)),
-          dir, "clusters")
+    write(with(env, head(dplyr::select(survey, temperature_c, salinity_psu, depth_m, abundance,
+                                       present), 5)), dir, "survey-head")
+    write(with(env, dplyr::select(clustered, depth_m, temperature_c, group)), dir, "clusters")
+  },
+
+  # The training stations and the two models' predictions across temperature, as
+  # @fig-shapes draws them.
+  "what-is-machine-learning.qmd" = function(env, dir) {
+    write(with(env, dplyr::select(train, temperature_c, abundance)), dir, "train-points")
+    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "shapes")
   }
 )
