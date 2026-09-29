@@ -1,54 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 330" width="100%" role="img" aria-label="Three panels. Supervised learning: a table of measurements with an answer column. Unsupervised learning: unlabelled points falling into three groups. Reinforcement learning: an underwater vehicle acting on the sea and receiving a reward in a loop.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 466" width="100%" role="img" aria-label="Three kinds of learning. Supervised learning: a table of measurements with an answer column. Unsupervised learning: unlabelled points falling into three groups. Reinforcement learning: an underwater vehicle acting on the sea and receiving a reward in a loop.">
 <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker><style>
       .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
-      .head { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
-      .body { font: 14px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
-      .note { font: italic 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
       .axis { stroke: #8a949c; stroke-width: 1.2; }
-      .alab { font: 12px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; }
+      .alab { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; }
       .yes  { fill: #0072B2; }
       .no   { fill: #E69F00; }
       .grey { fill: #5A5A5A; opacity: 0.75; }
-      .cell { font: 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
-      .ans  { font: bold 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #D55E00; }
+      .cell { font: 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .ans  { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #D55E00; }
     </style></defs>
-<rect class="box" x="8" y="8" width="302" height="314" rx="8"/>
-<text class="head" x="24" y="36">Supervised</text>
-<text class="body" x="24" y="286">Every example has an answer;</text><text class="body" x="24" y="304">the model learns to predict it.</text>
-<rect class="box" x="320" y="8" width="302" height="314" rx="8"/>
-<text class="head" x="336" y="36">Unsupervised</text>
-<text class="body" x="336" y="286">No answers; the method looks</text><text class="body" x="336" y="304">for groups in the measurements.</text>
-<rect class="box" x="632" y="8" width="302" height="314" rx="8"/>
-<text class="head" x="648" y="36">Reinforcement</text>
-<text class="body" x="648" y="286">It learns by acting and being</text><text class="body" x="648" y="304">rewarded. Not in this course.</text>
-<rect x="222" y="48" width="74" height="136" fill="#D55E00" fill-opacity="0.08" rx="4"/>
-<text class="cell" x="30" y="66" font-weight="bold">Temp</text>
-<text class="cell" x="92" y="66" font-weight="bold">Salinity</text>
-<text class="cell" x="168" y="66" font-weight="bold">Depth</text>
-<text class="ans" x="230" y="66" font-weight="bold">Found?</text>
-<line class="axis" x1="26" y1="73" x2="296" y2="73"/>
-<text class="cell" x="30" y="92">11.15</text>
-<text class="cell" x="92" y="92">33.26</text>
-<text class="cell" x="168" y="92">99.2</text>
-<text class="ans" x="230" y="92">yes</text>
-<text class="cell" x="30" y="114">4.42</text>
-<text class="cell" x="92" y="114">34.20</text>
-<text class="cell" x="168" y="114">134.7</text>
-<text class="ans" x="230" y="114">no</text>
-<text class="cell" x="30" y="136">14.69</text>
-<text class="cell" x="92" y="136">33.67</text>
-<text class="cell" x="168" y="136">52.3</text>
-<text class="ans" x="230" y="136">no</text>
-<text class="cell" x="30" y="158">10.02</text>
-<text class="cell" x="92" y="158">33.47</text>
-<text class="cell" x="168" y="158">90.8</text>
-<text class="ans" x="230" y="158">yes</text>
-<text class="cell" x="30" y="180">6.35</text>
-<text class="cell" x="92" y="180">34.22</text>
-<text class="cell" x="168" y="180">125.0</text>
-<text class="ans" x="230" y="180">yes</text>
-<text class="note" x="24" y="216">measurements</text>
-<text class="note" x="230" y="216">answer</text>
+<text class="title" x="470" y="26" text-anchor="middle">Three kinds of learning</text>
+<rect class="box" x="8" y="48" width="300" height="380" rx="8"/>
+<rect x="8" y="48" width="300" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="26" y="86">Supervised</text>
+<text class="lab" x="26" y="110">REGRESSION, CLASSIFICATION</text>
+<text class="body" x="26" y="388">Every example has an answer;</text>
+<text class="body" x="26" y="410">the model learns to predict it.</text>
+<rect class="box" x="320" y="48" width="300" height="380" rx="8"/>
+<rect x="320" y="48" width="300" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="338" y="86">Unsupervised</text>
+<text class="lab" x="338" y="110">CLUSTERING</text>
+<text class="body" x="338" y="388">No answers; the method looks</text>
+<text class="body" x="338" y="410">for groups in the measurements.</text>
+<rect class="box" x="632" y="48" width="300" height="380" rx="8"/>
+<rect x="632" y="48" width="300" height="6" rx="3" fill="#8a949c"/>
+<text class="head" x="650" y="86">Reinforcement</text>
+<text class="lab" x="650" y="110">NOT IN THIS COURSE</text>
+<text class="body" x="650" y="388">It learns by acting and</text>
+<text class="body" x="650" y="410">being rewarded.</text>
+<rect x="224" y="126" width="68" height="160" fill="#D55E00" fill-opacity="0.08" rx="4"/>
+<text class="cell" x="26" y="148" font-weight="bold">Temp</text>
+<text class="cell" x="90" y="148" font-weight="bold">Salinity</text>
+<text class="cell" x="168" y="148" font-weight="bold">Depth</text>
+<text class="ans" x="232" y="148">Found?</text>
+<line class="axis" x1="22" y1="156" x2="294" y2="156"/>
+<text class="cell" x="26" y="180">11.15</text>
+<text class="cell" x="90" y="180">33.26</text>
+<text class="cell" x="168" y="180">99.2</text>
+<text class="ans" x="232" y="180">yes</text>
+<text class="cell" x="26" y="206">4.42</text>
+<text class="cell" x="90" y="206">34.20</text>
+<text class="cell" x="168" y="206">134.7</text>
+<text class="ans" x="232" y="206">no</text>
+<text class="cell" x="26" y="232">14.69</text>
+<text class="cell" x="90" y="232">33.67</text>
+<text class="cell" x="168" y="232">52.3</text>
+<text class="ans" x="232" y="232">no</text>
+<text class="cell" x="26" y="258">10.02</text>
+<text class="cell" x="90" y="258">33.47</text>
+<text class="cell" x="168" y="258">90.8</text>
+<text class="ans" x="232" y="258">yes</text>
+<text class="cell" x="26" y="284">6.35</text>
+<text class="cell" x="90" y="284">34.22</text>
+<text class="cell" x="168" y="284">125.0</text>
+<text class="ans" x="232" y="284">yes</text>
+<text class="note" x="26" y="318">measurements</text><text class="note" x="232" y="318">answer</text>
+<g transform="translate(0,82)">
 <line class="axis" x1="360" y1="222" x2="596" y2="222"/><line class="axis" x1="360" y1="52" x2="360" y2="222"/><text class="alab" x="478.0" y="240" text-anchor="middle">Temperature</text><text class="alab" transform="translate(350,137.0) rotate(-90)" text-anchor="middle">Depth</text>
 <circle cx="420" cy="102" r="36" fill="none" stroke="#1b6a87" stroke-width="1.4" stroke-dasharray="5 4"/>
 <circle class="grey" cx="427.3" cy="108.6" r="4"/><circle class="grey" cx="398.0" cy="117.4" r="4"/><circle class="grey" cx="433.4" cy="108.4" r="4"/><circle class="grey" cx="392.4" cy="94.4" r="4"/><circle class="grey" cx="431.8" cy="80.3" r="4"/><circle class="grey" cx="417.4" cy="114.2" r="4"/><circle class="grey" cx="401.6" cy="121.3" r="4"/><circle class="grey" cx="427.7" cy="100.2" r="4"/><circle class="grey" cx="424.5" cy="109.8" r="4"/><circle class="grey" cx="421.7" cy="115.7" r="4"/><circle class="grey" cx="410.7" cy="97.0" r="4"/><circle class="grey" cx="434.6" cy="102.3" r="4"/>
@@ -62,6 +74,7 @@
 <text class="cell" x="783.0" y="233" text-anchor="middle">Environment: the sea</text>
 <path d="M 874 106 C 914 126, 914 186, 874 206" fill="none" stroke="#8a949c" stroke-width="1.5" marker-end="url(#arr2)"/>
 <path d="M 692 206 C 652 186, 652 126, 692 106" fill="none" stroke="#8a949c" stroke-width="1.5" marker-end="url(#arr2)"/>
-<text class="note" x="882" y="152.0" text-anchor="end">action:</text><text class="note" x="882" y="170.0" text-anchor="end">move, sample</text>
-<text class="note" x="684" y="152.0">reward,</text><text class="note" x="684" y="170.0">new position</text>
+<text class="note" x="884" y="134" text-anchor="end">action:</text><text class="note" x="884" y="153" text-anchor="end">move, sample</text>
+<text class="note" x="682" y="174">reward,</text><text class="note" x="682" y="193">new position</text>
+</g>
 </svg>

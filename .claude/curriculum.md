@@ -18,16 +18,16 @@ idiom without stopping to explain it, and so the Python tabs have somewhere to p
 ## 1. Introduction to machine learning in marine science
 `chapters/01-introduction/` · categories: `foundations`
 
-- Main types of learning: discriminative and generative models; supervised and
-  unsupervised learning (reinforcement learning named, not covered); neural networks
-  as a model rather than a type
+- Types of learning: supervised and unsupervised learning (reinforcement learning
+  named, not covered)
 - What machine learning is, and how it differs from traditional statistical modelling
-- Examples of machine-learning applications in marine science
 - Prediction versus explanation and scientific inference
+- Examples of machine-learning applications in marine science
+- Discriminative and generative models
 
-**Being revised (from 2026-09-29, `feature/improve-introduction`).** The types page now
-comes first. Examples use only temperature, salinity and depth, and each method is
-explained before it is used.
+**Being revised (from 2026-09-29, `feature/improve-introduction`).** Types of learning
+comes first; discriminative and generative models have their own page, last. Examples
+use only temperature, salinity and depth, and each method is explained before it is used.
 
 ## 2. Understanding and preparing marine datasets
 `chapters/02-marine-data/` · categories: `data-preparation`, `marine-data`

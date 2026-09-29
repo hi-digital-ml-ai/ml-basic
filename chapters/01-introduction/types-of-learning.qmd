@@ -1,6 +1,6 @@
 ---
-title: "Types of models and learning"
-description: "Some models learn only the line between outcomes; others learn the data well enough to invent new examples. Some data come with answers; some do not. This page sorts machine learning along those two lines, with a short example of each on one coastal survey."
+title: "Types of learning"
+description: "Some data come with answers and some do not. Supervised learning predicts a known answer; unsupervised learning looks for groups. A short example of each on one coastal survey, which the rest of the course also uses."
 order: 1
 categories: [foundations, supervised, unsupervised]
 ---
@@ -16,19 +16,37 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## A map before the methods
+## The data decide the kind of learning
 
 Machine learning comes with a long list of names: regression, classification,
 clustering, random forests, neural networks. They are easier to hold on to once you can
-place them on a map. This page draws that map with two divisions. The first separates
-models by the thing they learn. The second separates tasks by the data you have.
+place them on a map. The first division on that map depends on the data you hold rather
+than the method you choose.
+
+**Supervised learning** learns from examples with a known answer. Each example has
+measurements and an outcome, and the model learns to get from one to the other. The
+outcome sets the task: *regression* when it is a quantity, such as a temperature, and
+*classification* when it is a category, such as "yes" or "no".
+
+**Unsupervised learning** has no outcome at all. It receives a table of measurements
+and looks for structure in it: groups of similar examples, or variables that move
+together. Nothing tells it which answer is right, so its results need extra care.
+
+A third kind, **reinforcement learning**, learns from the consequences of its own
+actions: an autonomous underwater vehicle might learn a sampling route by trial,
+rewarded for each useful measurement. It needs a way to act and a reward, not a table
+of data, and this course does not cover it.
+
+::: {.diagram}
+![Three kinds of learning. Supervised learning has an answer for every example; unsupervised learning has none and looks for groups; reinforcement learning acts, receives a reward, and adjusts. The table shows the first five stations of the survey.](img/learning-types.svg){fig-alt="Three panels. The supervised panel shows a table of five stations with columns for temperature, salinity and depth, and a highlighted answer column, found, reading yes, no, no, yes, yes. The unsupervised panel shows grey points by temperature and depth, falling into three dashed circles. The reinforcement panel shows a box for an underwater vehicle above a box for the sea, joined in a loop: an arrow labelled action, move and sample, runs down to the sea, and an arrow labelled reward and new position runs back up."}
+:::
 
 ## One coastal survey runs through the course
 
 Every example in this course uses the same dataset: a survey of 800 stations on a
 temperate coastal shelf, visited between 2018 and 2023. At each station the survey
-measured the water and sampled the seabed, and counted one species of seabed animal.
-This page uses five of its columns:
+measured the water and counted one species of seabed animal. This page uses five of its
+columns:
 
 - **temperature**, the water temperature, in °C;
 - **salinity**, in practical salinity units (PSU), close to grams of salt per kilogram
@@ -47,64 +65,14 @@ survey |>
 ```
 
 The survey is simulated: we wrote the program that generated it, so we know the true
-relationships and can check whether a model finds them. It records more than these five
-columns, including chlorophyll, the type of seabed, the season and each station's
-position. [Section 2](../02-marine-data/index.qmd) introduces the full dataset and the
+relationships and can check whether a model finds them. It records more columns than
+these five. [Section 2](../02-marine-data/index.qmd) introduces the full dataset and the
 work needed before modelling it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+## Supervised learning on the survey
 
-### Two things a model can learn
-
-Suppose the question is whether a seabed species is present at a station, given the
-water temperature there. A model can learn one of two things.
-
-A **discriminative model** learns the answer directly: the chance that the species is
-present, for each temperature. It draws the boundary between "present" and "absent" and
-nothing else. Most models in this course are discriminative, including linear and
-logistic regression.
-
-A **generative model** learns the data themselves. It describes the temperatures at
-stations where the species was found, and separately the temperatures where it was not.
-To classify a new station, it asks which of the two descriptions fits that station's
-temperature better. Because it has learned the data, it can also *generate* new ones:
-plausible temperatures for a station where the species occurs. The tools that write
-text or draw pictures are generative models of the same kind, on a vastly larger scale.
-
-::: {.diagram}
-![The same stations seen by two kinds of model. A discriminative model learns only the boundary between the groups; a generative model learns a description of each group, from which it can draw new examples.](img/discriminative-generative.svg){fig-alt="Two panels showing the same scatter of stations by temperature and depth: blue dots where the species was found, orange triangles where it was not. In the left panel, labelled discriminative, a dashed line separates the two groups. In the right panel, labelled generative, a shaded oval surrounds each group, and a hollow dot inside the blue oval is marked as a new example."}
-:::
-
-Both can answer the same question. They differ in the thing they learn, and so in the
-assumptions they make and the extra jobs they can do.
-
-### Two kinds of data
-
-The second division depends on the data you hold rather than the model you choose.
-
-**Supervised learning** learns from examples with a known answer. Each row has
-measurements and an outcome, such as a station with a recorded catch, and the model
-learns to get from one to the other. The outcome sets the task: *regression* for a
-quantity (how many animals), *classification* for a category (present or absent).
-
-**Unsupervised learning** has no outcome at all. It receives a table of measurements
-and looks for structure in it: groups of similar stations, or variables that move
-together. Nothing tells it which answer is right, so its results need extra care.
-
-A third kind, **reinforcement learning**, learns from the consequences of its own
-actions: an autonomous underwater vehicle might learn a sampling route by trial,
-rewarded for each useful measurement. It needs a way to act and a reward, not a table
-of data, and this course does not cover it.
-
-::: {.diagram}
-![Three kinds of learning. Supervised learning has an answer for every example; unsupervised learning has none and looks for groups; reinforcement learning acts, receives a reward, and adjusts. The table shows the first five stations of the survey.](img/learning-types.svg){fig-alt="Three panels. The supervised panel shows a table of five stations with columns for temperature, salinity and depth, and a highlighted answer column, found, reading yes, no, no, yes, yes. The unsupervised panel shows grey points by temperature and depth, falling into three dashed circles. The reinforcement panel shows a box for an underwater vehicle above a box for the sea, joined in a loop: an arrow labelled action, move and sample, runs down to the sea, and an arrow labelled reward and new position runs back up."}
-:::
-
-## Worked example
-
-Each idea above gets its own short example, followed by a comparison of each pair.
 Three quarters of the stations are kept for fitting and a quarter set aside for later
 pages. Three new stations, one shallow, one mid-depth and one deep, serve as the test
 case every model is asked about.
@@ -128,141 +96,12 @@ names shallow, mid-depth and deep are labels we gave them from their depths (40,
 150 m) so the text can refer to them. The models never see the names, only the three
 measurements.
 
-### A discriminative model
+### Classification: is the species present?
 
-The question is whether the species is present, given the water temperature. The
-discriminative model here is **logistic regression**: linear regression adapted to a
-yes-or-no outcome, so that its answer is a probability between 0 and 1. A squared
-temperature term lets that probability rise and then fall again.
-
-```{r}
-#| label: fit-discriminative
-discriminative <- logistic_reg() |>
-  fit(present ~ temperature_c + I(temperature_c^2), data = train)
-
-bind_cols(select(new_stations, station, temperature_c),
-          predict(discriminative, new_stations, type = "prob"))
-```
-
-For each new station it returns one thing: the chance of presence, and its complement.
-The species is likely at 9 °C and at 12 °C, and closer to a coin toss at 5 °C. That
-is all the model knows.
-
-### A generative model
-
-The generative model answers the same question by learning the data instead. It
-describes the temperatures at stations with the species by a bell curve (a *Normal
-distribution*) with its own mean and spread, does the same for stations without the
-species, and records how common each group is.
-
-```{r}
-#| label: fit-generative
-generative <- train |>
-  group_by(present) |>
-  summarise(mean = mean(temperature_c), sd = sd(temperature_c), share = n() / nrow(train))
-
-generative |> mutate(across(where(is.numeric), \(x) round(x, 2)))
-```
-
-The two groups have similar mean temperatures, but the stations without the species
-spread much more widely: the species is missing mainly from the coldest and the warmest
-water.
-
-To classify a new station, **Bayes' rule** weighs the two descriptions: how well each
-bell curve fits the station's temperature, times how common that group is.
-
-```{r}
-#| label: predict-generative
-p_present_generative <- function(temperature) {
-  yes <- filter(generative, present == "yes")
-  no  <- filter(generative, present == "no")
-  fit_yes <- yes$share * dnorm(temperature, yes$mean, yes$sd)
-  fit_no  <- no$share  * dnorm(temperature, no$mean,  no$sd)
-  fit_yes / (fit_yes + fit_no)
-}
-
-new_stations |>
-  mutate(.pred_yes = p_present_generative(temperature_c)) |>
-  select(station, temperature_c, .pred_yes)
-```
-
-Because it holds a description of the data, it can also generate new data. Here are
-five plausible temperatures for stations where the species lives, drawn from its bell
-curve:
-
-```{r}
-#| label: generate
-with(filter(generative, present == "yes"), round(rnorm(5, mean, sd), 1))
-```
-
-### Discriminative and generative compared
-
-@fig-two-models puts the two side by side. The left panel is the generative model's
-view: the data of each group, and the bell curve it fitted. The right panel shows the
-answer both models give, the chance of presence at every temperature.
-
-```{r}
-#| label: fig-two-models
-#| fig-cap: "Left: the generative view, the temperatures at stations with and without the species, each summarised by a bell curve. Right: the chance of presence against temperature from both models, with the observed proportion in each one-degree band as points. The two models agree where most stations lie and part company at the edges."
-#| fig-alt: "Two panels. The left panel shows two histograms of temperature with a bell curve over each: stations with the species cluster between about 6 and 12 degrees, stations without it spread from about 3 to 15 degrees. The right panel shows two curves of the probability of presence against temperature, both rising from low values at 2 degrees to a peak near 0.85 to 0.9 around 9 degrees and falling again towards 16 degrees; the logistic curve falls more steeply at both ends. Points for the observed proportions follow the curves in the middle."
-#| fig-width: 8.5
-#| fig-height: 4.2
-curves <- tibble(temperature_c = seq(2, 16, by = 0.1)) |>
-  mutate(
-    Discriminative = predict(discriminative, pick(temperature_c), type = "prob")$.pred_yes,
-    Generative     = p_present_generative(temperature_c)
-  ) |>
-  pivot_longer(-temperature_c, names_to = "model", values_to = "p")
-
-bell <- generative |>
-  reframe(temperature_c = seq(0, 18, by = 0.1),
-          density = dnorm(temperature_c, mean, sd), .by = present) |>
-  mutate(group = if_else(present == "yes", "Species found", "Species not found"))
-
-observed <- train |>
-  mutate(band = round(temperature_c)) |>
-  summarise(p = mean(present == "yes"), stations = n(), .by = band) |>
-  filter(stations >= 10)
-
-p_data <- ggplot(mutate(train, group = if_else(present == "yes", "Species found", "Species not found")),
-                 aes(temperature_c, fill = group)) +
-  geom_histogram(aes(y = after_stat(density)), binwidth = 1, alpha = 0.45,
-                 position = "identity", colour = NA) +
-  geom_line(data = bell, aes(temperature_c, density, colour = group),
-            linewidth = 1, inherit.aes = FALSE) +
-  labs(x = "Temperature (°C)", y = "Density", fill = NULL, colour = NULL,
-       title = "The generative model learns the data")
-
-p_chance <- ggplot(curves, aes(temperature_c, p, colour = model)) +
-  geom_point(data = observed, aes(band, p), inherit.aes = FALSE, colour = "grey55", size = 2) +
-  geom_line(linewidth = 1.1) +
-  scale_colour_manual(values = unname(ml_palette[c("green", "purple")])) +
-  scale_y_continuous(limits = c(0, 1)) +
-  labs(x = "Temperature (°C)", y = "Chance the species is present", colour = NULL,
-       title = "Both give a chance of presence")
-
-p_data + p_chance
-```
-
-| | Discriminative | Generative |
-| --- | --- | --- |
-| Learns | The chance of presence at each temperature | The temperatures in each group, and how common each group is |
-| Answers "present or absent?" | Directly | Through Bayes' rule |
-| Can generate new stations | No | Yes |
-| Relies on | The shape of the probability curve | The shape of each group's data |
-
-Where most stations lie, between about 6 and 12 °C, the two agree closely. At the edges
-they part company, and the three new stations show it: at 5 °C the generative model is
-the more hopeful of the two. There the generative answer rests on its bell curves, and
-the stations without the species are not really bell-shaped: they sit at both ends of
-the range, not around a single middle. The discriminative model never had to describe
-them, so the wrong shape costs it nothing.
-
-### Supervised learning
-
-Both presence models above were already supervised: every training station came with
-its answer, present or absent, so each was a *classification*. Here is one on all three
-variables:
+With presence as the outcome, the task is a classification. **Logistic regression** is
+linear regression adapted to a yes-or-no outcome, so that its answer is a probability
+between 0 and 1. A squared temperature term lets that probability rise and then fall
+again. [Section 3](../03-supervised-learning/logistic-regression.qmd) covers it in full.
 
 ```{r}
 #| label: fit-classification
@@ -271,6 +110,11 @@ classifier <- logistic_reg() |>
 
 bind_cols(select(new_stations, station), predict(classifier, new_stations, type = "prob"))
 ```
+
+For each new station the model returns the chance that the species is present, and the
+chance that it is not.
+
+### Regression: how many animals?
 
 Change the outcome to the number of animals counted and the same survey becomes a
 *regression* problem. An ordinary linear regression:
@@ -287,10 +131,10 @@ bind_cols(select(new_stations, station), predict(regression, new_stations))
 
 Abundance falls with depth, by about 0.03 animals per metre. Salinity has no clear
 effect, which is correct: we built none into the simulation. The temperature slope is
-close to zero, even though the classification showed a strong link with temperature.
+close to zero, even though the classification needed a curved temperature term.
 [The next page](what-is-machine-learning.qmd) takes up that puzzle.
 
-### Unsupervised learning
+## Unsupervised learning on the survey
 
 Now remove the answers entirely: no abundance, no presence, only temperature, salinity
 and depth. We ask **k-means clustering** to sort the 800 stations into three groups. It
@@ -334,7 +178,7 @@ no surprise, because in this survey the three variables move together: salinity 
 with depth, and temperature falls with it. The cluster numbers themselves mean nothing;
 k-means numbers its groups in whatever order it happens to find them.
 
-### Supervised and unsupervised compared
+## Supervised and unsupervised compared
 
 Ask both kinds of model about the three new stations. The supervised classifier gives a
 chance of presence; k-means gives a group.
@@ -412,11 +256,7 @@ you get six, each just as confidently defined.
 [Section 8](../08-unsupervised-learning/index.qmd) covers the checks that tell a real
 structure from an artefact of the method.
 
-## Limits of these divisions
-
-**Generative models depend on their description of the data.** A bell curve suited the
-stations with the species and misdescribed those without it. A discriminative model
-makes fewer assumptions about the data, which is one reason it is the usual default.
+## Labels and groups both need care
 
 **Unsupervised does not mean assumption-free.** Choosing k-means, choosing three groups,
 choosing the variables and their scaling: each is a modelling decision, and each shapes
@@ -428,25 +268,24 @@ be more reliable than the labels it learned from.
 
 **The boundaries blur in practice.** Semi-supervised learning combines a few labels with
 many unlabelled examples; self-supervised learning builds labels from the data's own
-structure. The divisions on this page are a teaching map, not a law.
+structure. The division on this page is a teaching map, not a law.
+[Discriminative and generative models](discriminative-and-generative-models.qmd) adds a
+second division, by the thing the model learns.
 
 ::: {.callout-tip}
 ## Key points
-- A discriminative model learns the answer: the chance of an outcome at each value of the
-  predictors. A generative model learns the data themselves, and can generate new
-  examples.
 - Supervised learning needs examples with known answers. Regression predicts a quantity,
   classification a category.
 - Unsupervised learning has no answers. Methods such as k-means find groups, and will
   always return as many as you ask for.
 - Reinforcement learning learns from the consequences of actions, and is outside this
   course.
+- A supervised model is no more reliable than its labels; an unsupervised one is shaped
+  by the choices made in setting it up.
 :::
 
 ## Try it yourself
 
-1. Refit the clustering with `num_clusters = 6`, then with `num_clusters = 2`. Do the
-   groups still look like real habitats? Which evidence would make you prefer one
-   answer over another?
-2. Replace temperature with depth in both presence models. Do the discriminative and
-   generative curves still agree where most stations lie?
+Refit the clustering with `num_clusters = 6`, then with `num_clusters = 2`. Do the
+groups still look like real habitats? Which evidence would make you prefer one answer
+over another?
