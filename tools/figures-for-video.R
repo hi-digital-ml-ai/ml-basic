@@ -51,7 +51,7 @@ for (page in pages) {
   opts_knit$set(root.dir = root)
   opts_chunk$set(fig.path = paste0(out, "/"), dev = "ragg_png", dpi = dpi,
                  fig.width = width, fig.height = height, fig.retina = 1,
-                 message = FALSE, warning = FALSE)
+                 message = FALSE, warning = FALSE, error = FALSE)  # stop on a failing chunk
   # A page's own fig-width or fig-height would win over the defaults above.
   opts_hooks$set(fig.width  = function(o) { o$fig.width  <- width;  o },
                  fig.height = function(o) { o$fig.height <- height; o })
