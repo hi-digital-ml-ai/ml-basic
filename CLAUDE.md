@@ -79,3 +79,4 @@ gitflow: `main` (published site), `develop` (integration), `feature/*`, `release
 | `.claude/contributed-pages.md` | How participant pages are added and reviewed |
 | `.claude/workflow.md` | Build, freeze, renv, gitflow, GitHub Pages deployment |
 | `tools/README.md` | How the downloadable code is generated from the pages |
+| `.claude/videos.md` | YouTube videos per section: decisions, pipeline, laptop setup, next step |

@@ -1,0 +1,11 @@
+# Respellings applied by tools/narrate.py to the text sent for speech, never to the
+# captions. Keys are matched as whole words, case-sensitively, longest first.
+# Add an entry when a take mispronounces a word; delete one if the voice turns out
+# to say the original correctly. Changing an entry regenerates every scene using it.
+
+R²: R squared
+tidymodels: tidy models
+ggplot: gee gee plot
+RMSE: R M S E
+k-fold: kay fold
+λ: lambda

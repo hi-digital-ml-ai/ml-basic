@@ -205,7 +205,7 @@ tibble(
 
 Two parameters is ten thousand evaluations, trivial, and essentially what the contour
 figure above did, on a 120 × 120 grid. Four parameters is a hundred million. Ten is
-$10^{20}$, which at a billion evaluations a second takes longer than the Holocene. The
+$10^{20}$, which at a billion evaluations a second takes over 3,000 years. The
 modest linear model fitted above already has four parameters; a random forest has tens of
 thousands of thresholds.
 
