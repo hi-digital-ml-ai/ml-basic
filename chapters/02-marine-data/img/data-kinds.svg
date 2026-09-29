@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 474" width="100%" role="img" aria-label="Seven kinds of marine variable, each with examples and what it needs before a model can use it. Continuous, such as temperature, depth and salinity, needs scaling. Categorical, such as substrate, gear type and vessel, needs encoding as numbers. Circular, such as month, season, bearing and tidal phase, needs sine and cosine. Temporal, sampling dates and times, needs a known date format. Spatial, longitude and latitude, needs splits by area. Profile, a CTD cast with values down the water, needs one summary per cast. Compositional, species shares or grain-size fractions, needs log-ratios.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Seven kinds of marine variable</text>
+<rect class="box" x="0" y="60" width="220" height="180" rx="8"/><rect x="0" y="60" width="220" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="18" y="100">Continuous</text>
+<text class="body" x="18" y="132">temperature, depth,</text>
+<text class="body" x="18" y="156">salinity</text>
+<text class="lab" x="18" y="198" fill="#0072B2">NEEDS</text>
+<text class="note" x="18" y="222">scaling</text>
+<rect class="box" x="240" y="60" width="220" height="180" rx="8"/><rect x="240" y="60" width="220" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="258" y="100">Categorical</text>
+<text class="body" x="258" y="132">substrate, gear type,</text>
+<text class="body" x="258" y="156">vessel</text>
+<text class="lab" x="258" y="198" fill="#b36b00">NEEDS</text>
+<text class="note" x="258" y="222">encoding as numbers</text>
+<rect class="box" x="480" y="60" width="220" height="180" rx="8"/><rect x="480" y="60" width="220" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="498" y="100">Circular</text>
+<text class="body" x="498" y="132">month, season,</text>
+<text class="body" x="498" y="156">bearing, tidal phase</text>
+<text class="lab" x="498" y="198" fill="#009E73">NEEDS</text>
+<text class="note" x="498" y="222">sine and cosine</text>
+<rect class="box" x="720" y="60" width="220" height="180" rx="8"/><rect x="720" y="60" width="220" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="738" y="100">Temporal</text>
+<text class="body" x="738" y="132">sampling dates</text>
+<text class="body" x="738" y="156">and times</text>
+<text class="lab" x="738" y="198" fill="#D55E00">NEEDS</text>
+<text class="note" x="738" y="222">a known date format</text>
+<rect class="box" x="120" y="264" width="220" height="180" rx="8"/><rect x="120" y="264" width="220" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="138" y="304">Spatial</text>
+<text class="body" x="138" y="336">longitude,</text>
+<text class="body" x="138" y="360">latitude</text>
+<text class="lab" x="138" y="402" fill="#CC79A7">NEEDS</text>
+<text class="note" x="138" y="426">splits by area</text>
+<rect class="box" x="360" y="264" width="220" height="180" rx="8"/><rect x="360" y="264" width="220" height="6" rx="3" fill="#56B4E9"/>
+<text class="head" x="378" y="304">Profile</text>
+<text class="body" x="378" y="336">a CTD cast: values</text>
+<text class="body" x="378" y="360">down the water</text>
+<text class="lab" x="378" y="402" fill="#1b7fb8">NEEDS</text>
+<text class="note" x="378" y="426">one summary per cast</text>
+<rect class="box" x="600" y="264" width="220" height="180" rx="8"/><rect x="600" y="264" width="220" height="6" rx="3" fill="#F0E442"/>
+<text class="head" x="618" y="304">Compositional</text>
+<text class="body" x="618" y="336">species shares,</text>
+<text class="body" x="618" y="360">grain-size fractions</text>
+<text class="lab" x="618" y="402" fill="#8a7a00">NEEDS</text>
+<text class="note" x="618" y="426">log-ratios</text>
+</svg>
