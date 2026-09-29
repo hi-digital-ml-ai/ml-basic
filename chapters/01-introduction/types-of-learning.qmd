@@ -393,7 +393,8 @@ p_abund <- ggplot(clustered, aes(group, abundance, fill = group)) +
   geom_boxplot(alpha = 0.8, outlier.alpha = 0.3) +
   coord_cartesian(ylim = c(0, 20)) +
   guides(fill = "none") +
-  labs(x = NULL, y = "Abundance", title = "Abundance, never shown to it")
+  labs(x = NULL, y = "Abundance", title = "Abundance in each group",
+       subtitle = "k-means did not use abundance")
 
 p_space + p_abund + plot_layout(widths = c(1.25, 1))
 ```
