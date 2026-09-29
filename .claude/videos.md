@@ -516,7 +516,11 @@ explain everything; it introduces the section briefly and says what its pages co
 - `exports.R` writes 4 CSVs from two pages (under a minute); the applications,
   discriminative-generative and prediction-explanation pages appear as schematics.
   The one spoken number, 800 stations, reproduced on the laptop.
-- Not yet narrated with Gemini.
+- Narrated with Gemini on 2026-09-29: 28 requests, all first time, no retries; 8,356
+  audio tokens (about $0.08). Rough cut 5:04. Yesterday's failures were quota, not
+  length: the free tier's 10 requests a day, then the paid tier's 100 a day (retries
+  count), which made the Interactions API hang. The longest scene is 59 words, far
+  under the 8,192-token input limit.
 
 ## Eighth video: §2 Marine data (2026-09-29)
 
