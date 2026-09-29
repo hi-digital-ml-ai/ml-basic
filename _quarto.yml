@@ -67,7 +67,7 @@ website:
           - href: chapters/02-marine-data/missing-values-and-outliers.qmd
             text: "Missing values and outliers"
           - href: chapters/02-marine-data/scaling-and-encoding.qmd
-            text: "Scaling, transforming and encoding"
+            text: "Scaling and encoding"
           - href: chapters/02-marine-data/splitting-data.qmd
             text: "Training, validation and test data"
           - href: chapters/02-marine-data/information-leakage.qmd
