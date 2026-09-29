@@ -48,7 +48,7 @@ website:
           - href: chapters/01-introduction/what-is-machine-learning.qmd
             text: "Statistical modelling and machine learning"
           - href: chapters/01-introduction/prediction-and-explanation.qmd
-            text: "Prediction, inference and explanation"
+            text: "Prediction and explanation"
           - href: chapters/01-introduction/applications-in-marine-science.qmd
             text: "Applications, grouped by task shape"
       - section: "2 · Marine datasets"

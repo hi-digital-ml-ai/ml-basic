@@ -1,6 +1,6 @@
 ---
-title: "Prediction, inference and explanation"
-description: "One fitted model can serve three aims: predicting new cases, inferring a relationship with its uncertainty, and explaining cause. Each aim asks more of the model than the last and is harder to check."
+title: "Prediction and explanation"
+description: "A fitted model can be used to predict new cases or to explain what drives the outcome. A variable can help the first and mislead the second, and the model's output gives no warning."
 order: 3
 categories: [foundations, interpretation]
 ---
@@ -14,51 +14,37 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## One fitted model, three aims
+## Two uses for one model
 
-[The previous page](what-is-machine-learning.qmd) set prediction against explanation.
-Between the two sits a third aim, inference. All three can use the same fitted model;
-they differ in the question put to it.
+[The previous page](what-is-machine-learning.qmd) contrasted two aims: estimating an
+effect and predicting new cases. The same fitted model can serve either aim, but the
+two are checked in very different ways.
 
-- **Prediction** estimates the outcome for new cases the model has not seen. It is
+- **Prediction** estimates the outcome for cases the model has not seen. It is
   checked directly: hold some cases back from fitting, predict them, and measure the
-  error.
-- **Inference** uses a sample to draw conclusions about the wider population it came
-  from. It estimates the size of a relationship between an input and the outcome, and
-  states the uncertainty as an interval or a p-value. That uncertainty is only as
-  trustworthy as the model's assumptions.
-- **Explanation** claims a cause: changing an input, with everything else held fixed,
-  changes the outcome. The data alone cannot settle that. It needs a study design,
-  such as an experiment, or knowledge of the system.
-
-Uncertainty can be attached to a prediction or a cause as well. On this page,
-inference means estimating an association: two variables moving together, which on
-its own says nothing about one driving the other.
-
-In the simulated coastal survey used throughout this section, the three aims put
-three different questions to the same stations:
-
-- **Prediction:** the number of animals at a station not yet sampled, from its
-  temperature, salinity and depth.
-- **Inference:** the difference in abundance between stations one unit of salinity
-  apart, across the whole shelf, with an interval around it.
-- **Explanation:** whether warmer water, by itself, would change the count.
+  error. An input that lowers that error is useful, whatever the reason it helps.
+- **Explanation** claims a cause: if an input changed, with everything else held
+  fixed, the outcome would change. The data alone cannot check that. It needs an
+  experiment or knowledge of the system.
 
 ::: {.diagram}
-![Prediction, inference and explanation compared. Each aim asks more of the model and is harder to check.](img/prediction-inference-explanation.svg){fig-alt="At the top, one box reads 'One model fitted to the data', with arrows to three columns. Prediction, in orange: a curve through scattered points with a new case marked on it; the question is the outcome for a case the model has not seen, the answer is a value for each new case, and it is checked by the error on cases held back from fitting. Inference, in blue: an estimate with an interval that does not reach zero; the question is the size of a relationship and how sure we can be, the answer is an estimate with an interval or p-value, and it is checked by the model's assumptions. Explanation, in green: depth points to both salinity and the outcome, and a crossed-out dashed line joins salinity to the outcome; the question is whether changing a driver changes the outcome, the answer is a claim about cause and effect, and it is checked by study design and subject knowledge, not data alone. A bar along the bottom runs from orange to green: from left to right, each aim asks more of the model and is harder to check."}
+![Prediction and explanation compared. Explanation asks more of the model and is harder to check.](img/prediction-and-explanation.svg){fig-alt="At the top, one box reads 'One model fitted to the data', with arrows to two columns. Prediction, in orange: a curve through scattered points with a new case marked on it; the question is the outcome for a case the model has not seen, the answer is a value for each new case, and it is checked by the error on cases held back from fitting. Explanation, in green: depth points to both salinity and the outcome, and a crossed-out dashed line joins salinity to the outcome; the question is whether changing an input changes the outcome, the answer is a claim about cause and effect, and it is checked by study design and knowledge of the system, not by the data alone. A bar along the bottom runs from orange to green: explanation asks more of the model and is harder to check."}
 :::
 
-A model can succeed at one aim and fail at the next, and its output gives no warning.
-The example below shows salinity doing exactly that.
+A variable can do well for one aim and badly for the other. The example below shows
+salinity doing exactly that.
 
-## Three aims on the same stations
+## Depth confounds the salinity slope
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-In this simulated survey salinity has no effect on the species. It rises with depth,
-though, and depth does matter: the species is most common around 80 m. Three models
-are fitted to the same training stations. Each bends the temperature line with a
-squared term, as the previous page suggested trying.
+A **confounder** is a variable that affects both an input and the outcome, so the two
+move together even when neither affects the other. In this simulated survey salinity
+has no effect on the species. It rises with depth, though, and depth does matter: the
+species is most common around 80 m. Depth is the confounder.
+
+Three models are fitted to the same training stations. Each bends the temperature line
+with a squared term, as the previous page suggested trying.
 
 ```{r}
 #| label: fit-three
@@ -77,10 +63,10 @@ formulas <- list(
 fits <- map(formulas, \(f) fit(linear_reg(), f, data = train))
 ```
 
-### Prediction: salinity lowers the test error
+### For prediction, salinity can stand in for depth
 
-Adding salinity lowers the error on the test stations, and adding depth lowers it
-further:
+The test stations were held back from fitting, so the error on them shows how well
+each model predicts new stations:
 
 ```{r}
 #| label: test-error
@@ -92,14 +78,19 @@ imap(fits, \(fit, name) {
   list_rbind()
 ```
 
-For prediction, salinity has earned its place. If depth had not been recorded, the
-second model would be the one to use.
+Adding salinity lowers the error slightly, because it carries a little of depth's
+information. For prediction that is allowed: nothing more is asked of an input than
+that it helps.
 
-### Inference: saltier stations hold fewer animals
+### For explanation, the salinity slope misleads
 
-The salinity slope in the second model is about −2.2 animals per unit of salinity, and
-its interval sits well away from zero (@fig-salinity). As inference this is correct:
-across the shelf, stations with saltier water really do hold fewer animals.
+In the second model the salinity slope is about −2.2: each extra unit of salinity goes
+with about 2.2 fewer animals. Its 95% interval stays well clear of zero, the value that
+would mean no relationship (@fig-salinity).
+
+Read as a cause, that slope says freshening the water would bring more animals. It
+would not. Once depth enters the model, the salinity slope shrinks to about −0.2 and
+its interval includes zero.
 
 ```{r}
 #| label: fig-salinity
@@ -122,63 +113,22 @@ ggplot(slopes, aes(estimate, model)) +
   labs(x = "Salinity slope (animals per unit of salinity)", y = NULL)
 ```
 
-### Explanation: salinity only travels with depth
-
-Read as a cause, the same slope is wrong. Freshening the water would not bring more
-animals, because salinity only travels with depth. Once depth enters the model, the salinity slope shrinks to about −0.2 and its interval spans zero.
-
-### Salinity predicts abundance and does nothing
-
-The data could tell inference and explanation apart here only because depth was
-measured. With an
-unmeasured driver, the second model would be the best available, its interval would
-still be narrow, and nothing in the output would say the cause lay elsewhere. The
-check came from knowing that salinity rises with depth on this shelf, not from the
-test error or the p-value.
-
-## Limits of this separation
-
-**A good test score says nothing about cause.** The salinity model predicted better
-than the temperature model, and its salinity slope is still not a cause.
-
-**An interval depends on the model.** The salinity interval was narrow and correct as
-a statement about association. It was not a statement about what would happen if
-salinity changed, and a wrong model shape or correlated errors make even the interval
-unreliable. [Section 6](../06-assumptions-limitations/index.qmd) covers those
-assumptions. An interval can also be put on a causal effect; that is causal
-inference, and it needs the study design and system knowledge of explanation as well
-as the model's assumptions.
-
-**A curve through counts can go below zero.** The third model places the temperature
-optimum, the top of its curve, at the first number below, close to the 9 °C built into
-the simulation. The same curve predicts a negative count at the number of stations
-given by the second:
-
-```{r}
-#| label: optimum
-b <- coef(extract_fit_engine(fits[["Temperature + salinity + depth"]]))
--b[["temperature_c"]] / (2 * b[["I(temperature_c^2)"]])
-
-sum(predict(fits[["Temperature + salinity + depth"]], survey)$.pred < 0)
-```
-
-A model can recover a real optimum and still make impossible predictions.
-[Section 3](../03-supervised-learning/index.qmd) fixes this with a model built for
-counts.
-
-**Choosing the variables is a question about the system.** Which variables belong in
-an explanatory model is decided with subject knowledge, not by keeping whichever set
-scores best. [Section 10](../10-interpretation/index.qmd) returns to this.
+A confounder can be dealt with only by measuring it, as here, by knowing from the
+system that it is there, or by an experiment that changes the input alone. Had depth
+not been recorded, the second model would have a lower test error than the first and a
+confident salinity slope, and nothing in its output would point to depth.
+Test error cannot reveal a confounder. That is why explanation needs study design and
+knowledge of the system.
 
 ::: {.callout-tip}
 ## Key points
-- Prediction gives values for new cases and is checked on held-back data.
-- Inference gives the size of a relationship with its uncertainty, and rests on the
-  model's assumptions. On its own it is a statement about association.
-- Explanation claims a cause, and rests on study design and knowledge of the system.
-- A variable can predict well and carry a confident interval while causing nothing.
-  Salinity, which travels with depth, is such a variable here.
-- Decide which aim you have before choosing a model.
+- Prediction estimates the outcome for new cases and is checked on held-back data.
+- Explanation claims a cause, and rests on study design and knowledge of the system,
+  not on the data alone.
+- A confounder affects both an input and the outcome. It can give the input a
+  confident slope while the input causes nothing, as depth does for salinity here.
+- Test error cannot reveal a confounder. Measuring it or knowing about it can.
+- Decide which aim you have before choosing a model and its variables.
 :::
 
 ## Try it yourself
