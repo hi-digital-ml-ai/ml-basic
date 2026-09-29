@@ -52,8 +52,9 @@ For the same reason, more labelled examples that resemble the target data usuall
 help more than a cleverer algorithm. Published accuracy is also often optimistic,
 mostly because of the checking problems covered in [section 7](../07-validation/index.qmd).
 
-::: {.callout-tip}
 ## Key points
+
+::: {.key-points}
 - Group applications by the task the model performs, not by field. Plankton images
   and whale calls are the same task.
 - Six tasks cover most applications, and each has a typical way of going wrong.

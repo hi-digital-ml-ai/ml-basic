@@ -190,8 +190,9 @@ That is the usual trade. A generative model can do more, but it depends on its
 description of the data being right. A discriminative model makes fewer assumptions
 about the data, which is one reason it is the usual default.
 
-::: {.callout-tip}
 ## Key points
+
+::: {.key-points}
 - A discriminative model learns the answer: the chance of an outcome at each value of
   the inputs.
 - A generative model learns the data themselves, and can generate new examples. The

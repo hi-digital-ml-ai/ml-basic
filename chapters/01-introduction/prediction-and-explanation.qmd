@@ -120,8 +120,9 @@ confident salinity slope, and nothing in its output would point to depth.
 Test error cannot reveal a confounder. That is why explanation needs study design and
 knowledge of the system.
 
-::: {.callout-tip}
 ## Key points
+
+::: {.key-points}
 - Prediction estimates the outcome for new cases and is checked on held-back data.
 - Explanation claims a cause, and rests on study design and knowledge of the system,
   not on the data alone.

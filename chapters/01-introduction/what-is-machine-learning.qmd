@@ -138,8 +138,9 @@ effect of temperature". The linear model gives that number, but the number is wr
 because the shape was wrong. A statistician would bend the line instead, which
 [the next page](prediction-and-explanation.qmd) does.
 
-::: {.callout-tip}
 ## Key points
+
+::: {.key-points}
 - Statistical modelling and machine learning share their data, their models and their
   fitting. Linear regression belongs to both.
 - They differ in aim: a statistical model estimates an effect, a machine-learning

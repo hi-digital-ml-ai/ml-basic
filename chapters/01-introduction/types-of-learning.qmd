@@ -272,8 +272,9 @@ structure. The division on this page is a teaching map, not a law.
 [Discriminative and generative models](discriminative-and-generative-models.qmd) adds a
 second division, by the thing the model learns.
 
-::: {.callout-tip}
 ## Key points
+
+::: {.key-points}
 - Supervised learning needs examples with known answers. Regression predicts a quantity,
   classification a category.
 - Unsupervised learning has no answers. Methods such as k-means find groups, and will

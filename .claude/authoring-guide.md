@@ -57,7 +57,7 @@ categories: [...]
 ## Worked example              <- tidymodels on a dataset from data/
 ## <what the results say>      <- interpretation, and what would go wrong
 ## Limits of <this thing>      <- honest limitations; links to §6
-## Key points                  <- callout-tip, 3–5 bullets
+## Key points                  <- 3–5 bullets in a .key-points box
 ## Try it yourself             <- 1–2 small exercises (optional)
 ```
 
@@ -246,9 +246,15 @@ than `#| label: chunk-6`. See `tools/README.md` for how the extraction works.
 | Callout | Use for |
 | --- | --- |
 | `callout-note` | Optional depth, maths, side remarks |
-| `callout-tip` | "Key points" summary at the end of every page |
+| `callout-tip` | Practical tips (no longer the "Key points" summary, see below) |
 | `callout-warning` | Common mistakes, leakage traps, misuse of a metric |
 | `callout-important` | Things that invalidate results if ignored |
+
+The *Key points* summary is not a callout: inside one, its heading becomes the box's
+title, so the summary reads as part of the section above and drops out of the table of
+contents. It is a `## Key points` heading followed by the list in a `::: {.key-points}`
+box. Pages not yet revised still use the old `callout-tip` form; see
+`section-revision.md`.
 
 ## Cross-references
 
