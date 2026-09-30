@@ -1,7 +1,7 @@
 ---
-title: "Looking before modelling"
-description: "Exploratory analysis as damage assessment, with the plots that find sentinel values, impossible depths and missingness that is not random."
-order: 3
+title: "Exploring the data first"
+description: "A check order for a new dataset, and the plots and counts that find sentinel values, impossible depths, messy categories and missing values with a pattern."
+order: 4
 categories: [eda, data-preparation]
 ---
 
@@ -12,70 +12,55 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 ```
 
-## More than a polite preamble
+## A model will not tell you the data is wrong
 
-Exploratory analysis has a reputation as the polite preamble to the real work. Treat it
-that way and it will cost you a paper.
-
-A model will not tell you that your salinity column contains `-999`. It will fit
-happily, report a plausible score, and hand you coefficients built on a mean salinity
-of 2 PSU. Every problem in this section's dataset is visible in about ten minutes of
-looking, and invisible in the model output afterwards.
-
-The purpose of this pass is not to find results. It is to find out what is wrong.
+A model fits whatever it is given. It will not say that a salinity column holds `-999`:
+it reports a plausible score and builds on a mean salinity no ocean has. This page
+gives an order for checking a new dataset, and runs it on the raw survey file, whose
+problems take minutes to see by looking and are invisible in a model's output
+afterwards. The aim of this first look is not to find results but to find what is
+wrong.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Check in a fixed order
 
-A workable order, roughly cheapest first:
+A fixed order makes it harder to skip a check. This one runs roughly cheapest first:
 
-1. **Shape and types**: how many rows, how many columns, what did the reader decide
-   each column was?
-2. **Missingness**: how much, in which columns, and *is it patterned*?
-3. **One variable at a time**: range, distribution, impossible values, spikes.
-4. **Categories**: every level, with counts. Not a sample: every level.
-5. **Two variables at a time**: relationships, and correlations you did not expect.
-6. **The response**: its distribution, and the balance of classes if it is categorical.
-7. **By group**: does anything differ by vessel, observer, year, gear?
-
-Step 7 is the one most often skipped, and the one that catches instrument drift.
-
-## Worked example
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: load
-raw <- load_coastal_survey_raw()
-
-dim(raw)
-```
-
-## Python
-
-```python
-import pandas as pd
-
-from mlbasic_data import load_coastal_survey_raw
-
-raw = load_coastal_survey_raw()
-
-raw.shape
-```
-
+::: {.diagram}
+![A check order for a new dataset. Each step looks for a different kind of problem; the last, comparing groups such as vessels or observers, is the one that finds a faulty instrument.](img/check-order.svg){fig-alt="Seven numbered cards joined by arrows. 1 Shape and types: rows and columns, and how each was read. 2 Missing values: how many, and do they follow a pattern. 3 One column: its range, spikes and impossible values. 4 Every category: every level, with its count. 5 Two columns: relationships you did not expect. 6 The outcome: its spread, and how rare each class is. 7 By group: vessel, observer, year, gear. A note says step 7 is the one most often skipped, and the one that catches a faulty instrument."}
 :::
 
-### Numeric ranges
+The rest of the page runs the steps that find something in the raw survey file (see
+[The coastal survey](the-coastal-survey.qmd)).
 
-The highest-yield ten seconds in all of data preparation: print the minimum and maximum
-of every numeric column and read them as a scientist.
+```{r}
+#| label: facts
+#| include: false
+raw <- load_coastal_survey_raw()
+n_sal_999  <- sum(raw$salinity_psu == -999)
+n_temp_999 <- sum(raw$temperature_c == -999)
+chl_missing <- raw |>
+  group_by(season) |>
+  summarise(missing = 100 * mean(is.na(chlorophyll_mg_m3)))
+winter_missing <- round(chl_missing$missing[chl_missing$season == "winter"])
+vessel_salinity <- raw |>
+  filter(salinity_psu != -999) |>
+  group_by(vessel) |>
+  summarise(mean_salinity = round(mean(salinity_psu), 2))
+vessel_gap <- round(diff(range(vessel_salinity$mean_salinity)), 2)
+rare_pct <- round(100 * mean(raw$rare_species == "yes"))
+```
+
+## The ranges show impossible values
+
+The quickest useful check of all: the smallest, average and largest value of every
+numeric column, read as a scientist would.
 
 ::: {.panel-tabset group="language"}
 
@@ -83,6 +68,8 @@ of every numeric column and read them as a scientist.
 
 ```{r}
 #| label: ranges
+raw <- load_coastal_survey_raw()
+
 raw |>
   summarise(across(where(is.numeric),
                    list(min = \(x) min(x, na.rm = TRUE),
@@ -95,7 +82,13 @@ raw |>
 
 ## Python
 
-```python
+```{python}
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_raw
+
+raw = load_coastal_survey_raw()
+
 (raw.select_dtypes("number")
     .agg(["min", "mean", "max"])   # pandas skips missing values by default
     .T
@@ -105,29 +98,31 @@ raw |>
 
 :::
 
-Three things there should stop you.
+Three things should stop you:
 
-**Salinity has a minimum of $-999$ and a mean of 2.24.** No ocean is 2 PSU. This is the
-sentinel-value trap: some instrument or export wrote `-999` to mean "missing", and
-because it is a number, nothing complained. Temperature has it too.
+- **Salinity has a minimum of −999 and a mean of `r round(mean(raw$salinity_psu), 2)`.**
+  No ocean is that fresh. Some instrument or export wrote `-999` to mean "missing", a
+  **sentinel value**, and because it is a number nothing complained. Temperature has
+  it too.
+- **Depth reaches `r max(raw$depth_m)` m** on a shelf survey whose stations are all
+  shallower than 200 m.
+- **Chlorophyll** has `r sum(is.na(raw$chlorophyll_mg_m3))` values recorded as `NA`,
+  the honest way to record a missing value.
 
-**Depth reaches 1581 m** on a shelf survey whose stations were meant to be under 200 m.
-
-**Chlorophyll has a minimum but the row count differs**: it contains real `NA`s, which
-is the honest way to record a missing value.
-
-### Seeing the sentinel
+A histogram makes the sentinel impossible to miss, and a count by season shows the
+missing chlorophyll has a pattern:
 
 ```{r}
 #| label: fig-damage
-#| fig-cap: "Left: all salinity values. The real ocean is the sliver at the right; everything at −999 is a missing value wearing a number's clothes. Right: chlorophyll is missing far more often in winter: missingness with a pattern, which is the kind that biases results."
-#| fig-alt: "Two panels. The left panel is a histogram of salinity with a tall bar at minus 999 and a narrow cluster of real values near 34, separated by a wide empty gap. The right panel is a bar chart of the percentage of missing chlorophyll by season: about 1 percent in autumn, 2 in spring, 4 in summer and 19 in winter."
+#| fig-cap: "Left: every salinity value. The real ocean is the narrow cluster near 34; the bar at −999 is missing values disguised as a number. Right: chlorophyll is missing far more often in winter, a pattern that can bias results."
+#| fig-alt: "Two panels. The left panel is a histogram of salinity with a bar at minus 999 and a narrow cluster of real values near 34, separated by a wide empty gap. The right panel is a bar chart of the percentage of missing chlorophyll by season: about 1 percent in autumn, 2 in spring, 4 in summer and 19 in winter."
 #| fig-width: 8.5
 #| fig-height: 4
 p_sentinel <- ggplot(raw, aes(salinity_psu)) +
   geom_histogram(bins = 60, fill = ml_palette[["blue"]]) +
-  annotate("text", x = -999, y = 30, label = "−999\n(25 rows)", hjust = -0.15,
-           colour = ml_palette[["vermilion"]], size = 3.5) +
+  annotate("text", x = -999, y = 30,
+           label = paste0("−999\n(", sum(raw$salinity_psu == -999), " rows)"),
+           hjust = -0.15, colour = ml_palette[["vermilion"]], size = 3.5) +
   labs(x = "Salinity (PSU)", y = "Stations",
        title = "A number that is not a measurement")
 
@@ -145,10 +140,9 @@ p_missing <- raw |>
 p_sentinel + p_missing
 ```
 
-That left-hand panel is the whole argument for plotting before modelling. One
-histogram, no statistics, and the problem is unmissable.
+## Categories hide spelling variants
 
-### Every category, with counts
+Count every level of every category, not a sample of them:
 
 ::: {.panel-tabset group="language"}
 
@@ -161,38 +155,30 @@ raw |> count(substrate, sort = TRUE)
 
 ## Python
 
-```python
+```{python}
 raw["substrate"].value_counts().reset_index()
 ```
 
 :::
 
-Four substrate types, twelve spellings. A model will treat `Sand`, `SAND`, `sand` and
-`sandy` as four unrelated categories, splitting the evidence for sand four ways.
+Four kinds of seabed, `r n_distinct(raw$substrate)` spellings. A model treats `Sand`,
+`SAND`, `sand` and `sandy` as four unrelated categories, and splits the evidence for
+sand four ways.
 
-::: {.callout-note collapse="true"}
-## The file actually holds fourteen
-Two of the original spellings had trailing spaces: `"mud "` and `"gravel "`. `readr`
-trims whitespace by default, so they were silently repaired before you saw them. That
-is convenient here and alarming in general: a different tool, or `trim_ws = FALSE`,
-gives you fourteen categories instead of twelve. Know what your reader is fixing for
-you.
-:::
-
-### The response
+## The outcome can be rare
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: response
+#| label: outcome
 raw |> count(rare_species) |> mutate(percent = round(100 * n / sum(n), 1))
 ```
 
 ## Python
 
-```python
+```{python}
 counts = raw["rare_species"].value_counts().reset_index()
 counts["percent"] = (100 * counts["count"] / counts["count"].sum()).round(1)
 counts
@@ -200,11 +186,13 @@ counts
 
 :::
 
-The rare species is present at 5% of stations. Remember this number: any classifier
-you build for it must be compared against 95% accuracy, which you can get by answering
-"absent" every time.
+A rare species is present at only `r rare_pct`% of stations. A model that always
+answers "absent" would be right `r 100 - rare_pct`% of the time, so any model for it
+has to beat that. [Splitting the data](splitting-data.qmd) returns to rare classes.
 
-### By group
+## Groups reveal a faulty instrument
+
+Comparing the two vessels, with the sentinel values left out:
 
 ::: {.panel-tabset group="language"}
 
@@ -222,7 +210,7 @@ raw |>
 
 ## Python
 
-```python
+```{python}
 valid = raw.assign(
     temperature_c=raw["temperature_c"].where(raw["temperature_c"] != -999)
 ).query("salinity_psu != -999")
@@ -237,74 +225,51 @@ valid = raw.assign(
 
 :::
 
-The two vessels differ by 0.38 PSU in mean salinity, with no matching temperature
-difference. Two vessels sampling the same shelf should not disagree like that. This is
-an instrument calibration offset, and it would have been invisible in every plot that
-pooled the fleet.
+The two vessels differ by `r vessel_gap` PSU in mean salinity, with no matching
+difference in temperature. Two ships sampling the same shelf should not disagree like
+that: one instrument is off, and every plot that pooled the two vessels hid it.
 
-## Six findings, six decisions
+## Each finding is a decision
 
-Ten minutes of looking produced six findings, each of which is a *decision* rather than
-a repair:
+The checks found six problems. None is fixed automatically; each needs a decision from
+someone who knows how the data was collected:
 
 | Finding | The decision it forces |
 | --- | --- |
-| `-999` in salinity and temperature | Convert to `NA`, then decide what to do about missing values |
-| Depths up to 1581 m | Are these errors or real? Correct, drop, or flag |
-| Twelve spellings of four substrates | Standardise, and check no genuine distinction is being merged away |
-| Chlorophyll missing 19% in winter | Dropping those rows would delete most of winter |
-| Rare species at 5% | Accuracy is the wrong metric before you have even started |
-| One vessel reads 0.38 PSU high | Correct it, model it, or drop salinity entirely |
+| `-999` in salinity (`r n_sal_999` rows) and temperature (`r n_temp_999`) | Convert to missing, then decide how to handle missing values |
+| Depths up to `r max(raw$depth_m)` m | Error or real? Correct, drop or flag |
+| `r n_distinct(raw$substrate)` spellings of four substrates | Standardise, without merging a real distinction |
+| Chlorophyll missing in `r winter_missing`% of winter stations | Dropping those rows would delete a large part of winter |
+| Rare species at `r rare_pct`% | Always answering "absent" already scores `r 100 - rare_pct`% |
+| One vessel reads `r vessel_gap` PSU high | Correct it, model it, or leave salinity out |
 
-None of these is answered by a tool. Each needs someone who knows how the data was
-collected, which is why exploratory analysis cannot be delegated to a package or an
-assistant.
+[Missing values and outliers](missing-values-and-outliers.qmd) makes these decisions.
+Some errors will survive any amount of looking: a depth recorded ten times too deep is
+obvious at 1,500 m but not at 150 m. Cleaning reduces errors; it does not remove them
+all.
 
-::: {.callout-warning}
-## Exploring can itself leak
-We have just looked at every row, and we will later hold some of them back as a test
-set. Strictly, anything you learn here, such as that salinity needs fixing or that winter is
-sparse, is information from the test set influencing your modelling choices.
+This first look uses every row, including those that will later test a model. That is
+unavoidable, since data cannot be cleaned unseen, and harmless as long as it stays
+about data quality. Choices about the outcome and the model belong to the training
+data alone; [Avoiding information leakage](information-leakage.qmd) draws the line.
 
-This is unavoidable and mostly benign; you cannot clean data you are not allowed to
-look at. Keep it benign by restricting this pass to *data quality* and keeping decisions
-about the response, and any choice made by comparing model performance, on the training
-data alone. [The leakage page](information-leakage.qmd) draws the line more carefully.
-:::
-
-## Limits of looking
-
-**Summary statistics hide what plots reveal.** A mean salinity of 33.9 after removing
-sentinels looks fine, and conceals that one vessel's values are systematically high.
-Plot by group.
-
-**Some errors are undetectable.** Of the twelve depths recorded ten times too deep, ten
-are obvious. Two of them, 125 m and 166 m, sit comfortably inside the plausible range and no
-amount of looking will find them. Cleaning reduces error; it does not eliminate it.
-
-**Automated profiling is a starting point, not an audit.** `skimr::skim()` and
-`naniar::vis_miss()` will show you the missingness and the ranges in one call, and
-neither will tell you that 1581 m is impossible *on this shelf*. That judgement is
-yours.
-
-::: {.callout-tip}
 ## Key points
-- Exploratory analysis is damage assessment. Its output is a list of decisions, not a
-  set of figures for the paper.
-- Print the range of every numeric column and read it as a scientist. Sentinel values
-  and decimal errors surface immediately.
-- Count every level of every category. Twelve spellings of four substrates is normal,
-  not exceptional.
-- Ask whether missingness is patterned. Missing-in-winter is a different problem from
-  missing-at-random, and only the first one biases results.
-- Summarise by vessel, observer, year and gear. This is where instrument drift hides.
-- Some errors are simply undetectable. Cleaning improves data; it does not sterilise it.
+
+::: {.key-points}
+- A first look is a search for problems. Its output is a list of decisions.
+- Read the range of every numeric column: sentinel values such as −999 and impossible
+  depths show at once.
+- Count every level of every category: spelling variants split one category into
+  several.
+- Ask whether missing values follow a pattern, such as a season; patterned gaps can
+  bias results.
+- Compare groups such as vessels or observers: that is where a faulty instrument hides.
 :::
 
 ## Try it yourself
 
-1. Run `naniar::vis_miss(raw)` and `skimr::skim(raw)`. What do they surface faster than
-   the code above, and what do they miss entirely?
-2. Take the depth values above 250 m. Divide them by ten. Do the corrected values fit
-   the depth–temperature relationship of the rest of the survey? That is the kind of
-   evidence that turns a guess about an error into a defensible correction.
+1. Run `skimr::skim(raw)` and `naniar::vis_miss(raw)`. What do they show faster than the
+   code above, and what do they miss?
+2. Take the depths above 250 m and divide them by ten. Do the corrected values fit the
+   relationship between depth and temperature in the rest of the survey? That kind of
+   evidence turns a guess about an error into a defensible correction.

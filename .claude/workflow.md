@@ -21,6 +21,26 @@ build:
 tools/extract-code.py
 ```
 
+### Python for the tabs
+
+Converted pages run their Python tabs as `{python}` chunks, through `reticulate`, so
+rendering such a page needs a Python with `python/requirements.txt` installed. Tell
+Quarto which one in `_environment.local` at the project root (git-ignored, one per
+machine), and put `python/` on the import path so `mlbasic_data` loads:
+
+```bash
+RETICULATE_PYTHON=/path/to/env/bin/python
+PYTHONPATH=/path/to/ml-basic/python
+```
+
+`R/python-tabs.R` shows a chunk's final pandas DataFrame as a table, through
+`to_markdown()` (so `tabulate` must be installed). It wraps reticulate's internal
+`eng_python_autoprint()`, so after upgrading reticulate render a page with a Python
+table and check it still shows as a table.
+
+CI and anyone rendering only other pages need nothing: the Python output is stored in
+`_freeze/` like the R output, so commit the freeze with the page.
+
 ## R environment
 
 `renv` pins package versions so every author renders the same results. The project
@@ -117,6 +137,7 @@ renv::restore()   # or renv::install(<the rest>)
 | `tidyclust`, `embed` | §8 clustering and dimensionality reduction |
 | `vip`, `DALEX`, `DALEXtra`, `pdp` | §10 feature importance and interpretation |
 | `patchwork`, `ggrepel`, `gt` | figures and tables throughout |
+| `reticulate` | running the Python tabs (see Python for the tabs) |
 
 **Not installed: `torch` / `brulee` / `keras3`. Settled when §9 was written: not needed.**
 Section 9 teaches neurons, layers, forward propagation and backpropagation with about

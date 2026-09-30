@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 474" width="100%" role="img" aria-label="A check order for exploring data, cheapest first. 1 Shape and types: rows and columns, and how each was read. 2 Missing values: how many, and do they follow a pattern. 3 One column: its range, spikes and impossible values. 4 Every category: every level, with its count. 5 Two columns: relationships you did not expect. 6 The outcome: its spread, and how rare each class is. 7 By group: vessel, observer, year, gear. Step 7 is the one most often skipped, and the one that catches a faulty instrument.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 19px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .num  { font: bold 17px "Source Sans Pro", Helvetica, Arial, sans-serif; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">A check order, cheapest first</text>
+<rect class="box" x="0" y="60" width="214" height="150" rx="8"/><rect x="0" y="60" width="214" height="6" rx="3" fill="#0072B2"/>
+<circle cx="28" cy="100" r="15" fill="#0072B2"/><text class="num" x="28" y="106" text-anchor="middle" fill="#ffffff">1</text>
+<text class="head" x="50" y="107">Shape and types</text>
+<text class="body" x="18" y="152">rows and columns, and</text>
+<text class="body" x="18" y="176">how each was read</text>
+<rect class="box" x="242" y="60" width="214" height="150" rx="8"/><rect x="242" y="60" width="214" height="6" rx="3" fill="#E69F00"/>
+<circle cx="270" cy="100" r="15" fill="#E69F00"/><text class="num" x="270" y="106" text-anchor="middle" fill="#1f2933">2</text>
+<text class="head" x="292" y="107">Missing values</text>
+<text class="body" x="260" y="152">how many, and do</text>
+<text class="body" x="260" y="176">they follow a pattern</text>
+<rect class="box" x="484" y="60" width="214" height="150" rx="8"/><rect x="484" y="60" width="214" height="6" rx="3" fill="#009E73"/>
+<circle cx="512" cy="100" r="15" fill="#009E73"/><text class="num" x="512" y="106" text-anchor="middle" fill="#ffffff">3</text>
+<text class="head" x="534" y="107">One column</text>
+<text class="body" x="502" y="152">its range, spikes</text>
+<text class="body" x="502" y="176">and impossible values</text>
+<rect class="box" x="726" y="60" width="214" height="150" rx="8"/><rect x="726" y="60" width="214" height="6" rx="3" fill="#D55E00"/>
+<circle cx="754" cy="100" r="15" fill="#D55E00"/><text class="num" x="754" y="106" text-anchor="middle" fill="#ffffff">4</text>
+<text class="head" x="776" y="107">Every category</text>
+<text class="body" x="744" y="152">every level, with</text>
+<text class="body" x="744" y="176">its count</text>
+<rect class="box" x="121" y="250" width="214" height="150" rx="8"/><rect x="121" y="250" width="214" height="6" rx="3" fill="#CC79A7"/>
+<circle cx="149" cy="290" r="15" fill="#CC79A7"/><text class="num" x="149" y="296" text-anchor="middle" fill="#ffffff">5</text>
+<text class="head" x="171" y="297">Two columns</text>
+<text class="body" x="139" y="342">relationships you</text>
+<text class="body" x="139" y="366">did not expect</text>
+<rect class="box" x="363" y="250" width="214" height="150" rx="8"/><rect x="363" y="250" width="214" height="6" rx="3" fill="#56B4E9"/>
+<circle cx="391" cy="290" r="15" fill="#56B4E9"/><text class="num" x="391" y="296" text-anchor="middle" fill="#1f2933">6</text>
+<text class="head" x="413" y="297">The outcome</text>
+<text class="body" x="381" y="342">its spread, and how</text>
+<text class="body" x="381" y="366">rare each class is</text>
+<rect class="box" x="605" y="250" width="214" height="150" rx="8"/><rect x="605" y="250" width="214" height="6" rx="3" fill="#F0E442"/>
+<circle cx="633" cy="290" r="15" fill="#F0E442"/><text class="num" x="633" y="296" text-anchor="middle" fill="#1f2933">7</text>
+<text class="head" x="655" y="297">By group</text>
+<text class="body" x="623" y="342">vessel, observer,</text>
+<text class="body" x="623" y="366">year, gear</text>
+<line class="ln" x1="217" y1="135.0" x2="239" y2="135.0" marker-end="url(#arr)"/>
+<line class="ln" x1="459" y1="135.0" x2="481" y2="135.0" marker-end="url(#arr)"/>
+<line class="ln" x1="701" y1="135.0" x2="723" y2="135.0" marker-end="url(#arr)"/>
+<line class="ln" x1="338" y1="325.0" x2="360" y2="325.0" marker-end="url(#arr)"/>
+<line class="ln" x1="580" y1="325.0" x2="602" y2="325.0" marker-end="url(#arr)"/>
+<path class="ln" d="M 833.0 213 L 833.0 230 L 228.0 230 L 228.0 247" marker-end="url(#arr)"/>
+<text class="note" x="470" y="440" text-anchor="middle">Step 7 is the one most often skipped, and the one that catches a faulty instrument</text>
+</svg>

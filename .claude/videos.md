@@ -526,6 +526,26 @@ explain everything; it introduces the section briefly and says what its pages co
 
 Built like §1, to a rough cut on the draft voice: `_videos/02-marine-data/`.
 
+**Rebuilt on 2026-09-30 as an overview** (`feature/improve-marine-data`), after the
+section's pages were revised. The notes below describe the first version, which is
+replaced; the lessons are in `section-revision.md`.
+
+- 29 scenes, about 740 words, 5:41 with Gemini. A tour under three promises, with
+  linear regression as the only model: the survey (a row is a station; 815 rows, 800
+  unique, 160 sites), cleaning the raw file (salinity −999, mean 2.24 then 33.9; twelve
+  spellings of four seabed types; dropping incomplete rows loses 10% of stations but
+  20% of winter; the recipe), and testing a model honestly (a random split puts every
+  test station at a trained site; catch weight lifts R² from 0.28 to 0.98, the answer
+  in disguise; keeping sites whole drops the honest model from 0.28 to 0.08). Quiz:
+  filling chlorophyll gaps with the whole survey's median before splitting is leakage.
+- `exports.R` writes 9 CSVs from five pages. The user's feedback on the draft: space
+  out the stacked seabed labels; a class assigned from the catch read as an unseen
+  category rather than leakage, so catch weight replaced it in the video, the quiz and
+  the leakage page; the split scene became four concrete sites.
+- Narrated with Gemini on 2026-09-30: 29 requests, all first time, about $0.09.
+
+The first version:
+
 - 48 scenes, 8:11 on the draft voice. Hook: two random forests on the same survey, R² 0.87 and 0.13; which
   would you trust? Solved at the leakage climax: 0.87 is target leakage (catch weight,
   correlated 0.99 with the count; environment only scores 0.25), and 0.13 is the
@@ -553,7 +573,6 @@ Built like §1, to a rough cut on the draft voice: `_videos/02-marine-data/`.
   165", where the data give 199 to 159.
 - The shelf depth (200 m) and the two undetectable depth errors are stated in the
   pages' prose, so `scenes.py` holds them as named constants, like §1's optimum.
-- Not yet narrated with Gemini.
 
 ## Ninth video: §3 Supervised learning (2026-09-29)
 

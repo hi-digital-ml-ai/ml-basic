@@ -1,112 +1,57 @@
 ---
-title: "Missing values, outliers and imbalance"
-description: "What to do about the damage once you have found it, and why the right answer is a scientific judgement rather than a default."
-order: 4
-categories: [data-preparation, class-imbalance, marine-data]
+title: "Missing values and outliers"
+description: "What to do with missing and unusual values once you have found them, and why each fix depends on knowing why the value is missing or strange."
+order: 5
+categories: [data-preparation, marine-data]
 ---
 
 ```{r}
 #| label: setup
 #| include: false
 library(tidyverse)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-raw <- load_coastal_survey_raw()
+source(here::here("R/python-tabs.R"))
 ```
 
-## Defaults that go wrong
+## Every quick fix can do damage
 
-Every fix in this page has a default, and every default is occasionally a disaster.
-Dropping incomplete rows is the R default and it can quietly delete a season. Replacing
-missing values with the mean is the commonest imputation and it manufactures data that
-was never observed. Removing outliers is standard practice and it is how genuine
-extreme events get erased from the record.
-
-None of these decisions is technical. Each one requires you to know why the value is
-missing, or why the number is strange.
+Every fix for missing or unusual values has a default, and each default sometimes does
+damage. Dropping incomplete rows can quietly delete much of a season; filling gaps
+with the average invents data nobody measured; removing outliers erases real extreme
+events. This page shows how to choose a fix by asking first why a value is missing or
+strange, and applies that to the problems
+[Exploring the data first](exploratory-analysis.qmd) found in the raw survey file.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Ask why before fixing
 
-### Three kinds of missing
+A value can be missing for three kinds of reason, and a value can look unusual for
+three kinds of reason. Each needs a different response:
 
-The distinction matters because only one of them is harmless.
-
-**Missing completely at random.** The chance of a value being absent has nothing to do
-with anything; a technician dropped a tube. Rare in practice. Dropping these rows costs
-you precision and nothing else.
-
-**Missing at random** (a badly named category). The chance depends on things you *did*
-observe: chlorophyll is missing more often in winter, and you recorded the season.
-Dropping the rows biases your sample; imputation using the observed variables can
-repair much of it.
-
-**Missing not at random.** The chance depends on the missing value itself. A sensor
-that fails in rough weather, and rough weather is when the interesting mixing happens.
-A net that fails to retain the smallest individuals. Nothing in the data can fix this,
-and no imputation method will tell you that you have it. You have to know your
-instrument.
-
-Our chlorophyll gap is the middle case: 19% missing in winter, 1% in autumn, with
-season recorded. But ask *why* the winter values are absent. If it is cloud cover
-blocking an ocean-colour sensor, then cloudy days are missing, and cloud affects
-light, which affects chlorophyll. Framed that way, the same gap is closer to the third
-kind.
-
-### Outliers come in three kinds too
-
-**Impossible values.** A depth of 1581 m on a 200 m shelf. A salinity of $-999$. These
-are errors. Correct them if you can reconstruct the truth, otherwise mark them missing.
-
-**Genuine extremes.** A single haul with 400 individuals during a spawning aggregation.
-This is the most valuable observation in your dataset, and "outlier removal" deletes it.
-Extreme is not the same as wrong.
-
-**Plausible errors.** The two depths that are ten times too deep but land inside the
-normal range. Undetectable, and they stay in your data.
-
-::: {.callout-warning}
-"More than three standard deviations from the mean" is not a definition of an error. It
-is a definition of rare, and in ecological count data rare values are usually the real
-ones. Remove a value because you can say what is wrong with it, not because it is far
-from the middle.
+::: {.diagram}
+![Three reasons a value can be missing and three reasons a value can look unusual, with what to do in each case. Only the first kind of missing value is harmless, and only the first kind of unusual value is safe to remove.](img/missing-and-unusual.svg){fig-alt="Two rows of three cards. Why is it missing: completely at random, unrelated to anything, such as a dropped sample, where dropping costs only precision; at random, depending on something recorded, such as more gaps in winter, where you fill in from what was recorded; not at random, depending on the missing value itself, such as a sensor failing in storms, where no data fix exists and you must know the instrument. Why is it unusual: impossible, such as a salinity of minus 999, to correct or mark missing; a genuine extreme, such as a spawning aggregation, to keep; a plausible error, such as a depth ten times too deep that still looks normal, which cannot be found."}
 :::
 
-### Measurement error
+The names are statisticians' and not very clear. **Missing at random** means the
+gaps follow something you *did* record: the survey's chlorophyll is missing most often
+in winter, and the season is in the table. Filling those gaps from the recorded columns
+can undo much of the damage. But ask why winter values are missing. If cloud blocked
+the sensor, and cloud also lowers chlorophyll, then the gaps depend on the missing
+values themselves, and nothing in the data can repair that.
 
-The vessel offset found on the [previous page](exploratory-analysis.qmd) is not a
-missing value or an outlier. It is a systematic bias in an instrument, and it affects
-every row that vessel collected. Three options, in descending order of preference:
-correct it against a calibration standard; include `vessel` as a feature so the model
-can absorb the offset; or drop salinity, which here costs nothing since salinity has no
-real effect.
+Far from the average is not the same as wrong. A rule such as "more than three standard
+deviations from the mean" finds rare values, and in marine counts the rare values are
+often the real and important ones. Remove a value only when you can say what is wrong
+with it.
 
-### Class imbalance
+## Sentinels become missing values
 
-When one class is rare, as with the 5% rare species, two things follow. Accuracy becomes
-meaningless, as [section 7 shows](../07-validation/classification-metrics.qmd). And the
-fitting procedure itself is pulled towards the common class, because getting the
-common class right is where the easy gains are.
-
-Remedies exist: down-sampling the common class, up-sampling the rare one, synthetic
-methods such as SMOTE, or class weights. All are available through the `themis` package
-as recipe steps, and all come with the same condition:
-
-::: {.callout-important}
-Resampling for imbalance is applied to the **training data only**, never to the data you
-evaluate on. Balancing your test set means measuring performance on a population that
-does not exist. In `recipes` this is handled for you, since `themis` steps are skipped when
-the recipe is applied to new data, but only if you use them inside a recipe rather than
-balancing the table by hand beforehand.
-:::
-
-## Worked example
-
-### Sentinels first
+The `-999` values mean "missing", so they are converted to `NA`, R's code for a
+missing value, after removing the duplicated rows:
 
 ::: {.panel-tabset group="language"}
 
@@ -114,6 +59,8 @@ balancing the table by hand beforehand.
 
 ```{r}
 #| label: sentinels
+raw <- load_coastal_survey_raw()
+
 clean <- raw |>
   distinct() |>
   mutate(
@@ -129,7 +76,7 @@ clean |>
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
 
@@ -150,11 +97,11 @@ pd.DataFrame({
 
 :::
 
-Salinity's mean moves from 2.24 to 33.9. Nothing was fixed in the data, and the `-999`s
-are still missing values, but they are now *honestly* missing, and every summary
-downstream stops lying.
+Salinity's mean moves from `r round(mean(raw$salinity_psu), 2)` to
+`r round(mean(clean$salinity_psu, na.rm = TRUE), 1)`. The values are still missing,
+but now honestly so, and no summary is dragged towards −999 any more.
 
-### Categories
+## Categories are standardised
 
 ::: {.panel-tabset group="language"}
 
@@ -175,7 +122,7 @@ count(clean, substrate)
 
 ## Python
 
-```python
+```{python}
 substrate = clean["substrate"].str.strip().str.lower()
 clean["substrate"] = substrate.replace(
     {"sandy": "sand", "muddy": "mud", "rocky": "rock"}
@@ -186,12 +133,11 @@ clean["substrate"].value_counts().reset_index()
 
 :::
 
-Note the judgement hidden in that block. Is `sandy` the same category as `sand`, or was
-one observer distinguishing "sand" from "sandy mud"? We have merged them. On a real
-survey this is a question for whoever recorded it, and the honest version of this code
-comes with an answer, not an assumption.
+That code contains a judgement. Is `sandy` the same as `sand`, or was one observer
+recording "sandy mud"? Here they are merged; on a real survey, ask whoever recorded
+them.
 
-### Impossible depths
+## Impossible depths are corrected
 
 ::: {.panel-tabset group="language"}
 
@@ -199,22 +145,29 @@ comes with an answer, not an assumption.
 
 ```{r}
 #| label: depths
-clean |> filter(depth_m > 250) |> select(station_id, depth_m) |> arrange(desc(depth_m))
+clean |> filter(depth_m > 250) |> select(station_id, depth_m, temperature_c) |>
+  arrange(desc(depth_m))
 ```
 
 ## Python
 
-```python
-(clean.loc[clean["depth_m"] > 250, ["station_id", "depth_m"]]
+```{python}
+(clean.loc[clean["depth_m"] > 250, ["station_id", "depth_m", "temperature_c"]]
     .sort_values("depth_m", ascending=False))
 ```
 
 :::
 
-Ten stations, all suspiciously close to ten times a plausible shelf depth. Dividing by
-ten puts each one back into the range where its temperature makes sense, which is
-evidence rather than convenience: a station recorded at 1392 m with 6 °C water is
-impossible on this shelf, while the same station at 139 m is ordinary.
+```{r}
+#| label: deep-numbers
+#| include: false
+deep <- clean |> filter(depth_m > 250)
+```
+
+All `r nrow(deep)` lie between `r min(deep$depth_m)` and `r max(deep$depth_m)` m,
+about ten times a normal shelf depth, and their temperatures fit stations a
+tenth as deep. Dividing by ten is a correction with evidence behind it, not a
+convenience:
 
 ::: {.panel-tabset group="language"}
 
@@ -229,33 +182,39 @@ range(clean$depth_m)
 
 ## Python
 
-```python
+```{python}
 clean["depth_m"] = clean["depth_m"].where(
     clean["depth_m"] <= 250, clean["depth_m"] / 10
 )
 
-(clean["depth_m"].min(), clean["depth_m"].max())
+clean["depth_m"].agg(["min", "max"])
 ```
 
 :::
 
-Two of the twelve decimal errors are still in there, at 125 m and 166 m, and no
-inspection will find them. That is the normal state of a cleaned dataset.
+A correction that makes the data fit expectations is also how confirmation bias
+works. State the rule, apply it to every row, and report how many rows it changed.
 
-### The cost of complete-case deletion
+## An instrument offset shifts every reading
 
-The default in most modelling functions is to silently drop any row with a missing
-value. Here is the bill.
+The salinity offset between the two vessels is neither missing nor an outlier: it
+shifts every reading one vessel took. Correct it against a calibration record if one
+exists, or give the model `vessel` as a feature so it can learn the offset.
+
+## Dropping incomplete rows deletes winter
+
+Most modelling functions silently drop any row with a missing value. Here is what that
+costs:
 
 ```{r}
 #| label: fig-deletion
-#| fig-cap: "Season composition of the survey before and after dropping every row with a missing value. Winter loses about a fifth of its stations, and the dataset quietly becomes less wintry than the survey that produced it."
-#| fig-alt: "Grouped bar chart comparing the number of stations per season before and after complete-case deletion. Autumn, spring and summer barely change, while winter drops visibly from about 200 stations to about 160."
+#| fig-cap: "Stations per season before and after dropping every row with a missing value. Winter loses far more than the other seasons, so the data becomes less wintry than the survey that produced it."
+#| fig-alt: "Grouped bar chart of stations per season, with all rows and with complete cases only. Autumn, spring and summer barely change, while winter drops visibly."
 #| fig-width: 7.5
 #| fig-height: 4
 comparison <- bind_rows(
   clean |> count(season) |> mutate(dataset = "All rows"),
-  clean |> drop_na() |> count(season) |> mutate(dataset = "Complete cases only")
+  clean |> drop_na() |> count(season) |> mutate(dataset = "Complete rows only")
 )
 
 ggplot(comparison, aes(season, n, fill = dataset)) +
@@ -264,105 +223,55 @@ ggplot(comparison, aes(season, n, fill = dataset)) +
             vjust = -0.4, size = 3.4) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
   labs(x = NULL, y = "Stations", fill = NULL,
-       title = "Where the deleted rows come from")
+       title = "Where the dropped rows come from")
 ```
-
-::: {.panel-tabset group="language"}
-
-## R
 
 ```{r}
-#| label: deletion-cost
-tibble(
-  rows_before = nrow(clean),
-  rows_after  = nrow(drop_na(clean)),
-  lost        = nrow(clean) - nrow(drop_na(clean)),
-  winter_lost_pct = round(100 * (1 - sum(drop_na(clean)$season == "winter") /
-                                     sum(clean$season == "winter")), 1)
-)
+#| label: deletion-numbers
+#| include: false
+complete <- drop_na(clean)
+lost_pct <- round(100 * (1 - nrow(complete) / nrow(clean)))
+winter_lost_pct <- round(100 * (1 - sum(complete$season == "winter") /
+                                    sum(clean$season == "winter")))
 ```
 
-## Python
+Dropping incomplete rows loses `r lost_pct`% of the stations overall, but
+`r winter_lost_pct`% of winter. A question about winter conditions has just lost a
+large part of its evidence, without a warning.
 
-```python
-complete = clean.dropna()
-winter = clean["season"] == "winter"
+## Filling gaps belongs inside the model
 
-pd.DataFrame({
-    "rows_before": [len(clean)],
-    "rows_after": [len(complete)],
-    "lost": [len(clean) - len(complete)],
-    "winter_lost_pct": [round(
-        100 * (1 - (complete["season"] == "winter").sum() / winter.sum()), 1)],
-})
-```
+The alternative is **imputation**: predicting each missing value from the columns that
+were recorded. The `recipes` package has steps for it, such as `step_impute_median()`
+and `step_impute_knn()`, and [Scaling and encoding](scaling-and-encoding.qmd) puts
+them into a recipe. Two rules apply:
 
-:::
+- **Impute as part of the model, not beforehand.** Filling gaps with the average of the
+  whole dataset lets the data that will test the model shape the data that trains it;
+  [Avoiding information leakage](information-leakage.qmd) explains why that matters.
+- **An imputed value is a guess, not a measurement.** A column recording which values
+  were filled in lets the model, and you, see where the gaps were.
 
-About 10% of rows overall, and a fifth of winter. If your question involves
-winter conditions, the default has just removed a fifth of your evidence about them,
-without a warning.
+Imputation cannot create information that was never collected: winter chlorophyll will
+stay less certain than summer's whatever method is used. And every choice on this page
+changes the results, so each belongs in the methods section of a paper.
 
-## Imputation as the alternative
-
-The alternative is imputation: predict the missing chlorophyll values from the
-variables you do have. `recipes` offers several steps:
-`step_impute_median()`, `step_impute_knn()` and `step_impute_bag()`. The
-[next page](scaling-and-encoding.qmd) puts them into a recipe properly.
-
-Two conditions on imputation, both routinely broken:
-
-**It must happen inside the resampling, not before.** Imputing with the median of the
-whole dataset uses test-set values to fill training-set gaps. That is leakage, it is
-easy to do by accident, and it is [the last page of this section](information-leakage.qmd).
-
-**An imputed value is not an observation.** It is a prediction with uncertainty, and
-treating it as data understates how little you know. Adding a `was_missing` indicator
-column costs one feature and lets the model, and you, see where the gaps were.
-
-For this dataset, the defensible chain is: sentinels to `NA`; categories standardised;
-impossible depths corrected with a stated justification; chlorophyll imputed inside the
-resampling with a missingness indicator; the vessel offset either corrected or absorbed
-by including `vessel` as a feature. Not one of those steps is a default.
-
-## Limits of these repairs
-
-**Imputation cannot recover information that was never there.** With 19% of winter
-chlorophyll missing, winter estimates will be weaker than summer ones whatever you do.
-The honest response is to say so, not to impute until the table looks full.
-
-**Correcting outliers can manufacture the pattern you are looking for.** We divided ten
-depths by ten because the result fitted the rest of the survey. That reasoning is sound
-and it is also how confirmation bias operates. State the rule, apply it uniformly, and
-report how many rows it touched.
-
-**Balancing classes changes what the model is estimating.** Down-sampling gives a model
-trained on a 50/50 world when yours is 5/95, so its predicted probabilities no longer
-mean what they say. [Section 7](../07-validation/index.qmd) covers calibration.
-
-**Cleaning is a scientific record, not a chore.** Every decision here changes the
-results and should appear in the methods. "Data were cleaned in R" is not a method.
-
-::: {.callout-tip}
 ## Key points
-- Ask *why* a value is missing. Missing-in-winter and missing-at-random need different
-  responses, and missing-because-of-the-value cannot be fixed at all.
-- Complete-case deletion is the silent default. Here it removes about a fifth of
-  winter.
-- Impossible, extreme and plausible-but-wrong are three different kinds of outlier.
-  Only the first is safely removed; the second is often your most valuable data.
-- Systematic instrument bias is not an outlier. Correct it, or let the model see which
-  instrument took each reading.
-- Balance classes on the training data only, and expect predicted probabilities to shift
-  when you do.
-- Impute inside the resampling, never before it, and keep a record of where the gaps
-  were.
+
+::: {.key-points}
+- Ask why a value is missing: gaps that follow a recorded column can be filled in;
+  gaps that depend on the missing value itself cannot.
+- Impossible values are corrected or marked missing; genuine extremes are kept, however
+  far from the average.
+- Convert sentinel values such as −999 to missing values before any summary.
+- Dropping incomplete rows is a silent default, and here it removes far more of winter
+  than of any other season.
+- Impute as part of the model, and keep a record of which values were filled in.
 :::
 
 ## Try it yourself
 
-1. Compare `step_impute_median()` with `step_impute_knn()` on chlorophyll. How different
-   are the imputed winter values, and which set looks more like real winter chlorophyll?
-2. Suppose the missing chlorophyll is caused by cloud, and cloud reduces light and hence
-   chlorophyll. Which of the three kinds of missingness is that, and does any imputation
-   method fix it?
+1. Compare `step_impute_median()` with `step_impute_knn()` for chlorophyll. How
+   different are the filled-in winter values?
+2. If cloud causes the missing chlorophyll, and cloud also lowers chlorophyll, which
+   kind of missing value is it? Could any imputation method fix it?

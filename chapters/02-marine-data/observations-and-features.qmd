@@ -1,7 +1,7 @@
 ---
-title: "One row is a decision"
-description: "Observations, features, responses and labels, plus the question marine data makes genuinely hard: how many independent observations do you actually have?"
-order: 1
+title: "Observations and features"
+description: "The parts of a data table and their other names, and why a table's row count is not the number of independent observations it holds."
+order: 2
 categories: [data-preparation, marine-data]
 ---
 
@@ -11,69 +11,63 @@ categories: [data-preparation, marine-data]
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 ```
 
-## The rectangle is not a clerical step
+## Every method learns from a table
 
-Machine learning wants a rectangle: rows of observations, columns of variables, one
-column singled out as the thing to predict. Getting your data into that shape looks
-clerical. It is not. The choice of what a row represents fixes what the model can
-learn, what "independent" means, and, as we will see, how much data you actually
-have, which is usually less than the row count suggests.
-
-This is also where marine data stops resembling the textbook. A trawl, a CTD cast, a
-photograph, a fish, a monitoring site: any of them could be "one observation", and
-they give different answers.
+Every method in this course learns from a table of data. This page names the parts of
+that table, so later pages can use the words freely, and shows why a table of several
+hundred rows can hold far fewer independent observations. How many you really have
+decides how far you can trust any score a model gets.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Rows are observations and columns are features
 
-### The vocabulary, and its synonyms
+A data table has one **observation** in each row: one thing that was measured, such as
+one water sample. Each column records one property of it. The columns a model learns
+from are its **features**, which this course also calls its **inputs**. The column it
+learns to predict is the **outcome**. When the outcome is a category, such as present
+or absent, each of its values is a **label**.
 
-Machine learning grew up in computer science and statistics separately, so the same
-thing has two or three names. Reading across literatures is much easier once you have
-the map.
+::: {.diagram}
+![The parts of a data table. Each row is one observation; the features are the inputs a model learns from, and the outcome is what it predicts. Rows can share a source: here three rows come from one site.](img/data-table.svg){fig-alt="A table with five rows and the columns site, temperature, salinity, depth and species found. A bracket over temperature, salinity and depth labels them features, the inputs; a bracket over species found labels it the outcome. The first row is highlighted and labelled one row, an observation. A bracket beside the first three rows, all from site A, says site A was visited three times, so they are not three separate observations. A note gives the units: temperature in degrees Celsius, salinity in PSU, depth in metres."}
+:::
+
+Machine learning grew up in computer science and statistics separately, so each part
+has several names. The literature uses all of them:
 
 | In this course | Also called | What it is |
 | --- | --- | --- |
-| **Observation** | row, instance, example, sample, case | One thing you measured |
-| **Feature** | predictor, covariate, independent variable, input, attribute | Something you know about it |
-| **Response** | outcome, target, dependent variable, $y$ | The thing you want the model to produce |
-| **Label** | class, annotation, ground truth | The response when it is a category, usually assigned by a person |
+| **Observation** | row, instance, example, sample, case | One thing that was measured |
+| **Feature** or **input** | predictor, covariate, independent variable, attribute | Something known about it |
+| **Outcome** | response, target, dependent variable, $y$ | What the model predicts |
+| **Label** | class, annotation, ground truth | The outcome when it is a category |
 
-Two notes on the traps in that table. "Sample" means a single observation in machine
-learning and the whole collection of them in field science, so be careful which you mean
-in a mixed-discipline meeting. And "ground truth" is a confident phrase for something
-that is usually one specialist's opinion; [section 7](../07-validation/index.qmd)
-returns to the fact that your labels have an error rate too.
+Beware of "sample": in machine learning it means one observation, in field science the
+whole collection.
 
-### The harder question
+## One observation is a scientific choice
 
-The vocabulary is easy. This is not:
+The harder question is what one row should be. A survey that returns to the same
+sites could have one row for each:
 
-> **What is one observation?**
+- **sample**, as the database stores it;
+- **visit** to a site, averaging the samples taken that day;
+- **site**, if the question is about the site's character and not the visit;
+- **animal**, if the question is about individual growth.
 
-Consider a survey that visits 160 monitoring sites, several times each, over six years.
-A row could reasonably be:
+The right choice follows from the scientific question, not from how the database
+stores the data. It matters because a model treats every row as independent evidence.
 
-- **one trawl**: what the database stores;
-- **one site-year**: if you average the trawls, because repeat trawls at a site on the
-  same day are not independent;
-- **one site**: if the site's character, not the visit, is what varies;
-- **one fish**: if you are modelling individual growth rather than abundance.
+## The survey returns to the same sites
 
-There is no universally right answer. There is an answer that matches your scientific
-question, and the cost of getting it wrong is that your model, and every confidence
-interval and cross-validation score attached to it, silently treats correlated rows as
-independent evidence.
-
-## Worked example
-
-Here is the survey as it came off the ship, rather than the tidy extract used in
-[section 1](../01-introduction/index.qmd).
+The raw survey file (see [The coastal survey](the-coastal-survey.qmd)) has columns the
+clean one leaves out. One of them is `site_id`: the survey returns to fixed sites, and
+each visit to a site is one station.
 
 ::: {.panel-tabset group="language"}
 
@@ -83,77 +77,34 @@ Here is the survey as it came off the ship, rather than the tidy extract used in
 #| label: load
 raw <- load_coastal_survey_raw()
 
-dim(raw)
-names(raw)
+tibble(
+  rows              = nrow(raw),
+  `unique rows`     = nrow(distinct(raw)),
+  `distinct sites`  = n_distinct(raw$site_id)
+)
 ```
 
 ## Python
 
-```python
+```{python}
 import pandas as pd
 
 from mlbasic_data import load_coastal_survey_raw
 
 raw = load_coastal_survey_raw()
 
-print(raw.shape)
-print(list(raw.columns))
-```
-
-:::
-
-Seventeen columns and 815 rows. So $n = 815$?
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: counting
-tibble(
-  `rows in the file`       = nrow(raw),
-  `after removing exact duplicates` = nrow(distinct(raw)),
-  `distinct stations`      = n_distinct(raw$station_id),
-  `distinct sites`         = n_distinct(raw$site_id)
-)
-```
-
-## Python
-
-```python
 pd.DataFrame({
-    "rows in the file": [len(raw)],
-    "after removing exact duplicates": [len(raw.drop_duplicates())],
-    "distinct stations": [raw["station_id"].nunique()],
+    "rows": [len(raw)],
+    "unique rows": [len(raw.drop_duplicates())],
     "distinct sites": [raw["site_id"].nunique()],
 })
 ```
 
 :::
 
-Three different numbers, and the gap between the first and the last is a factor of
-five.
-
-```{r}
-#| label: fig-what-is-n
-#| fig-cap: "Four defensible answers to 'how many observations do I have?' from one file. Which is right depends on the question, but a model given the raw table will assume the first."
-#| fig-alt: "Horizontal bar chart with four bars: rows in the file, 815; unique rows, 800; distinct stations, 800; distinct monitoring sites, 160. The final bar is dramatically shorter than the others."
-#| fig-width: 7
-#| fig-height: 3.6
-counts <- tibble(
-  what = c("Rows in the file", "Unique rows", "Distinct stations", "Distinct sites"),
-  n    = c(nrow(raw), nrow(distinct(raw)), n_distinct(raw$station_id), n_distinct(raw$site_id))
-) |>
-  mutate(what = fct_rev(fct_inorder(what)))
-
-ggplot(counts, aes(n, what)) +
-  geom_col(fill = ml_palette[["blue"]], width = 0.62) +
-  geom_text(aes(label = n), hjust = -0.2, size = 4) +
-  scale_x_continuous(expand = expansion(mult = c(0, 0.12))) +
-  labs(x = "Count", y = NULL, title = "How many observations is this?")
-```
-
-Why so few sites? Because the survey revisits fixed stations.
+The file has `r nrow(raw)` rows, `r nrow(distinct(raw))` once exact duplicates are
+removed, and only `r n_distinct(raw$site_id)` sites. Counting the visits to each site
+shows why:
 
 ::: {.panel-tabset group="language"}
 
@@ -162,88 +113,74 @@ Why so few sites? Because the survey revisits fixed stations.
 ```{r}
 #| label: site-visits
 raw |>
+  distinct() |>
   count(site_id, name = "visits") |>
-  count(visits, name = "number_of_sites") |>
-  arrange(visits)
+  count(visits, name = "sites")
 ```
 
 ## Python
 
-```python
-(raw["site_id"].value_counts()
-    .rename("visits")
+```{python}
+(raw.drop_duplicates()["site_id"]
     .value_counts()
-    .rename("number_of_sites")
+    .value_counts()
     .sort_index()
-    .reset_index())
+    .rename_axis("visits")
+    .reset_index(name="sites"))
 ```
 
 :::
 
-Most sites appear four to six times; one appears fifteen times.
+```{r}
+#| label: visit-numbers
+#| include: false
+visits <- raw |> distinct() |> count(site_id, name = "visits")
+```
 
-## Counting the independent rows
+Most sites, `r paste0(round(100 * mean(between(visits$visits, 3, 7))), "%")`, were
+visited three to seven times, and one site `r max(visits$visits)` times.
 
-Fit a model on this table and it will treat all 815 rows as independent evidence. They
-are not, in three separate ways.
+## Rows that share information
 
-**Fifteen rows are exact duplicates**: the same station entered twice. They add no
-information at all, but they add weight: a duplicated station counts double in the
-fitting, and, worse, can land in the training set *and* the test set at once, where it
-guarantees a perfect prediction it did not earn. That is leakage, and it has
-[its own page](information-leakage.qmd).
+A model given this table treats all `r nrow(raw)` rows as independent evidence. They
+are not, in three ways:
 
-**Stations at the same site are not independent of each other.** They are metres to
-hundreds of metres apart, in the same water, on the same substrate, often on the same
-day. Statistically they are closer to one observation with replicates than to five
-observations. This is pseudo-replication, and ecologists have been warning about it for
-decades; machine learning simply gives you faster ways to commit it.
+- **Duplicates.** `r nrow(raw) - nrow(distinct(raw))` rows are the same station entered
+  twice. They add no information but count double, and a duplicate can land in the
+  training and the test data at once, where the model predicts it perfectly without
+  having learned anything. That is [information leakage](information-leakage.qmd).
+- **Repeat visits.** Visits to the same site share the water, the seabed and often the
+  season, so they are closer to repeats of one observation than to separate ones.
+  Ecologists call treating them as separate **pseudo-replication**.
+- **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth.
+  [Section 6](../06-assumptions-limitations/index.qmd) comes back to this.
 
-**Even across sites, nearby is not independent.** Two sites ten kilometres apart share
-water mass, depth and season. [Section 6](../06-assumptions-limitations/index.qmd) takes
-this seriously.
+So the number of independent observations here is nearer `r n_distinct(raw$site_id)`
+than `r nrow(raw)`, and any score computed as if it were `r nrow(raw)` will look
+better than it should.
 
-The practical consequence is that **your effective sample size is nearer 160 than 815**,
-and every performance figure computed as though it were 815 will be optimistic. Not by
-a rounding error, but typically by a lot.
+## Keep the rows and group them
 
-Note what this does *not* mean. You should not throw away rows. The extra visits carry
-real information about within-site variation. What you must do is stop the *resampling*
-scheme from splitting a site across training and test data, which
-[section 7](../07-validation/index.qmd) handles with grouped resampling. The fix lives
-in how you validate, not in how much data you keep.
+This does not mean throwing rows away: repeat visits show how much a site varies from
+one visit to the next. The fix is to remove the duplicates and keep each site's rows
+together when the data is split to test a model, so that a site is never in both the
+training and the test data. [Splitting the data](splitting-data.qmd) shows how.
 
-## Limits of the rectangle
-
-**Rectangles lose structure.** Flattening a depth profile into one row per cast throws
-away the shape of the profile; keeping one row per depth bin multiplies
-non-independent rows. Neither is free. The [next page](marine-data-types.qmd) deals
-with this.
-
-**The database schema is not a scientific decision.** Your data arrives at whatever
-granularity the survey software wrote it. That choice was made for data entry, not for
-your question, and it should not be adopted by default.
-
-**"Independent" is a property of the question, not the file.** Two trawls at one site
-are nearly the same observation for a habitat model, and two distinct observations for
-a model of gear variability. You cannot answer it by looking at the data alone.
-
-::: {.callout-tip}
 ## Key points
-- Observation, feature, response, label: learn the synonyms, because the literature
-  will use all of them.
-- Deciding what one row represents is a scientific decision, not a data-entry one.
-- The row count is not the sample size. Here: 815 rows, 800 unique, 160 sites.
-- Repeat visits, duplicate rows and spatial proximity all make rows share information.
-  A model handed the raw table assumes none of that.
-- The fix is in the resampling scheme, not in deleting data: keep the rows, and keep
-  a site's rows together.
+
+::: {.key-points}
+- Each row is an **observation**; the model learns from the **features** (inputs) and
+  predicts the **outcome**. A category outcome's values are **labels**.
+- What one row represents is a scientific choice, not a database default.
+- The row count is not the number of independent observations: here
+  `r nrow(raw)` rows, `r nrow(distinct(raw))` unique, `r n_distinct(raw$site_id)` sites.
+- Duplicates, repeat visits and nearby sites all make rows share information.
+- Keep the rows, but keep each site's rows together when splitting.
 :::
 
 ## Try it yourself
 
-1. Which site appears fifteen times? Look at its rows. How different are they from one
-   another, compared with two rows drawn from different sites?
-2. For your own data, write one sentence defining an observation, and one sentence
-   naming what makes two of your rows non-independent. Almost every later decision in
-   this course follows from those two sentences.
+1. Find the site visited `r max(visits$visits)` times and look at its rows. How much do
+   they differ, compared with rows from two different sites?
+2. For your own data, write one sentence saying what one observation is, and one naming
+   what makes two of your rows share information.

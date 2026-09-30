@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 440" width="100%" role="img" aria-label="One survey, four files. The clean survey, 800 stations with twelve columns, is used on almost every page. Three files are made from it: the raw file, the same visits as they came off the ship, with errors and extra columns, used in this section; the truth file, the average count the simulation expected at each station, used to check models; and the community file, counts of 24 species at the same stations, used for finding groups.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">One survey, four files</text>
+
+<!-- the clean survey -->
+<rect class="box" x="8" y="136" width="330" height="176" rx="8"/><rect x="8" y="136" width="330" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="28" y="176">The survey</text>
+<text class="lab" x="28" y="200" fill="#0072B2">CLEAN · 800 STATIONS · 12 COLUMNS</text>
+<text class="body" x="28" y="234">One row per station, ready</text>
+<text class="body" x="28" y="258">to model</text>
+<text class="note" x="28" y="290">Used on almost every page</text>
+
+<!-- arrows -->
+<line class="ln" x1="342" y1="224" x2="470" y2="108" marker-end="url(#arr)"/>
+<line class="ln" x1="342" y1="224" x2="470" y2="224" marker-end="url(#arr)"/>
+<line class="ln" x1="342" y1="224" x2="470" y2="340" marker-end="url(#arr)"/>
+<text class="note" x="432" y="194" text-anchor="middle">made</text>
+<text class="note" x="432" y="214" text-anchor="middle">from it</text>
+
+<!-- the three derived files -->
+<rect class="box" x="480" y="50" width="452" height="104" rx="8"/><rect x="480" y="50" width="452" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="500" y="88">Raw</text>
+<text class="body" x="500" y="116">The same visits as they came off the ship</text>
+<text class="note" x="500" y="140">With errors to find and fix; used in this section</text>
+
+<rect class="box" x="480" y="166" width="452" height="104" rx="8"/><rect x="480" y="166" width="452" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="500" y="204">Truth</text>
+<text class="body" x="500" y="232">The average count expected at each station</text>
+<text class="note" x="500" y="256">No real survey has this; used to check models</text>
+
+<rect class="box" x="480" y="282" width="452" height="104" rx="8"/><rect x="480" y="282" width="452" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="500" y="320">Community</text>
+<text class="body" x="500" y="348">Counts of 24 species at the same stations</text>
+<text class="note" x="500" y="372">Used for finding groups</text>
+</svg>

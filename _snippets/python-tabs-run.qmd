@@ -1,0 +1,12 @@
+::: {.callout-note collapse="true"}
+## About the Python tabs
+Most code blocks on this page have an **R** and a **Python** tab, and picking one
+switches the whole page. Both run when the site is built, and each tab shows its own
+output. The Python tab is the scikit-learn equivalent of the R; the figures come from
+R throughout, and a few steps with no scikit-learn counterpart have no Python tab,
+which is itself worth noticing.
+
+Expect the **numbers to differ slightly** where randomness is involved: R and Python
+draw their random splits from different generators, so the split is not the same one.
+The conclusions are.
+:::

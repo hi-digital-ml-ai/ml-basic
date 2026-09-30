@@ -250,7 +250,7 @@ apparent benefit of adding position was the validation scheme flattering itself.
 Compare **R²**, not RMSE, across resampling schemes. The spatially blocked folds have
 lower RMSE than the random folds for all three models here, which does not mean blocking
 is easier; it means the blocks contain different distributions of abundance, so their
-RMSEs are not on a common scale. [Section 3 hit the same
+RMSEs are not on a common scale. [Section 2 hit the same
 trap](../02-marine-data/information-leakage.qmd) comparing grouped and random splits, and
 the resolution is the same: a scale-free metric, or the same test set for both.
 :::

@@ -29,24 +29,26 @@ idiom without stopping to explain it, and so the Python tabs have somewhere to p
 comes first; discriminative and generative models have their own page, last. Examples
 use only temperature, salinity and depth, and each method is explained before it is used.
 
-## 2. Understanding and preparing marine datasets
+## 2. Understanding and preparing marine data
 `chapters/02-marine-data/` · categories: `data-preparation`, `marine-data`
 
-- Observations, features, responses, and labels
-- Continuous, categorical, spatial, temporal, and profile data
-- Exploratory data analysis before modelling
-- Missing values, outliers, measurement errors, and class imbalance
-- Feature scaling, transformation, and encoding
-- Training, validation, and test datasets
+- The coastal survey: the simulated dataset the course uses, its columns and files
+- Observations and features (with outcomes and labels)
+- Kinds of marine data: continuous, categorical, circular, temporal, spatial, profile
+  and compositional
+- Exploring the data first
+- Missing values and outliers (with measurement errors)
+- Scaling and encoding
+- Splitting the data: training, validation and test data, and class imbalance
 - Avoiding information leakage
 
-**Written, with one change from the original outline:** exploratory analysis moved
-*ahead* of missing values and outliers. You find the sentinel values and the impossible
-depths by looking, so the looking has to come first; the cleaning page then acts on what
-the EDA page found. The subtopics are otherwise as listed.
-
-Circular data (month, day of year, bearing, tidal phase) was added to the data-types
-page. It is not in the original outline and it is a genuine marine trap.
+**Revised 2026-09-30** (`feature/improve-marine-data`). A first page introduces the
+survey formally; class imbalance moved from the missing-values page to the splitting
+page; every page is shorter and has one diagram. Exploratory analysis still comes
+*before* missing values and outliers: the problems are found by looking, so the looking
+comes first. The pages use only linear regression as a model, since later sections
+introduce the others. The survey's true effects are deliberately not listed; later
+pages reveal them when checking a model.
 
 ## 3. Supervised learning
 `chapters/03-supervised-learning/` · categories: `supervised`, `regression`,

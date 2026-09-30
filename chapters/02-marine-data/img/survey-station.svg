@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="What the survey records at one station. On the left, a ship at the sea surface lowers an instrument through the water and a sampler to the seabed; an arrow down the side marks the depth. On the right, four cards list the columns: where and when, the water, the seabed, and the species. Lines join the ship to where and when, the instrument to the water, the seabed to the seabed card, and the sampler to the species.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<marker id="dep" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f2933"/></marker>
+<linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7ecf6"/><stop offset="1" stop-color="#8fc3de"/></linearGradient>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; stroke-dasharray: 5 4; }
+      .wire { stroke: #3d4852; stroke-width: 1.4; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">What the survey records at one station</text>
+
+<!-- the scene -->
+<rect x="40" y="130" width="400" height="250" fill="url(#sea)"/>
+<path d="M 40 130 q 25 -8 50 0 t 50 0 t 50 0 t 50 0 t 50 0 t 50 0 t 50 0 t 50 0" fill="none" stroke="#1b6a87" stroke-width="1.6"/>
+<!-- seabed -->
+<path d="M 40 380 L 440 380 L 440 440 L 40 440 Z" fill="#e8d6b0"/>
+<path d="M 40 380 q 50 -10 100 -2 t 100 0 t 100 -4 t 100 2" fill="#e8d6b0" stroke="#b08d57" stroke-width="1.6"/>
+<circle cx="80" cy="405" r="6" fill="#c9ad7c"/><circle cx="140" cy="420" r="4" fill="#c9ad7c"/><circle cx="215" cy="400" r="5" fill="#c9ad7c"/><circle cx="265" cy="425" r="7" fill="#c9ad7c"/><circle cx="395" cy="410" r="5" fill="#c9ad7c"/><circle cx="420" cy="428" r="3" fill="#c9ad7c"/>
+<!-- ship -->
+<path d="M 130 106 L 350 106 L 330 134 L 150 134 Z" fill="#3d4852"/>
+<rect x="190" y="80" width="90" height="26" fill="#55606a"/>
+<rect x="200" y="86" width="14" height="10" fill="#d7ecf6"/><rect x="222" y="86" width="14" height="10" fill="#d7ecf6"/><rect x="244" y="86" width="14" height="10" fill="#d7ecf6"/>
+<line x1="300" y1="106" x2="330" y2="66" stroke="#55606a" stroke-width="4"/>
+<!-- instrument on its wire -->
+<line class="wire" x1="170" y1="134" x2="170" y2="236"/>
+<rect x="158" y="236" width="24" height="52" rx="5" fill="#0072B2"/>
+<circle cx="170" cy="296" r="6" fill="none" stroke="#0072B2" stroke-width="2"/>
+<!-- seabed sampler on its wire -->
+<line class="wire" x1="330" y1="66" x2="360" y2="66"/>
+<line class="wire" x1="360" y1="66" x2="360" y2="354"/>
+<path d="M 342 354 L 378 354 L 384 378 Q 360 392 336 378 Z" fill="#009E73"/>
+<!-- animals in the sample -->
+<ellipse cx="352" cy="372" rx="4" ry="2.5" fill="#fff"/><ellipse cx="366" cy="370" rx="4" ry="2.5" fill="#fff"/>
+<!-- depth arrow -->
+<line x1="14" y1="136" x2="14" y2="376" stroke="#1f2933" stroke-width="1.6" marker-start="url(#dep)" marker-end="url(#dep)"/>
+<text class="sm" x="4" y="262" text-anchor="middle" transform="rotate(-90 4 262)">depth</text>
+
+<!-- connectors -->
+<line class="ln" x1="354" y1="94" x2="470" y2="100" marker-end="url(#arr)"/>
+<line class="ln" x1="190" y1="262" x2="470" y2="198" marker-end="url(#arr)"/>
+<line class="ln" x1="440" y1="410" x2="470" y2="394" marker-end="url(#arr)"/>
+<line class="ln" x1="386" y1="366" x2="470" y2="296" marker-end="url(#arr)"/>
+
+<!-- cards -->
+<rect class="box" x="480" y="56" width="452" height="84" rx="8"/><rect x="480" y="56" width="452" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="500" y="92">Where and when</text>
+<text class="body" x="500" y="122">longitude, latitude, survey year, season</text>
+
+<rect class="box" x="480" y="154" width="452" height="84" rx="8"/><rect x="480" y="154" width="452" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="500" y="190">The water</text>
+<text class="body" x="500" y="220">depth, temperature, salinity, chlorophyll</text>
+
+<rect class="box" x="480" y="252" width="452" height="84" rx="8"/><rect x="480" y="252" width="452" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="500" y="288">The species</text>
+<text class="body" x="500" y="318">abundance (animals counted), present (yes or no)</text>
+
+<rect class="box" x="480" y="350" width="452" height="84" rx="8"/><rect x="480" y="350" width="452" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="500" y="386">The seabed</text>
+<text class="body" x="500" y="416">substrate: sand, mud, gravel or rock</text>
+
+<text class="note" x="240" y="468" text-anchor="middle">One station is one visit: one row of the table</text>
+</svg>

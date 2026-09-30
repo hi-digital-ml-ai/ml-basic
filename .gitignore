@@ -21,6 +21,9 @@ chapters/**/index-listing.json
 .Ruserdata
 .Renviron
 
+# Quarto environment for this machine: which Python runs the Python tabs
+_environment.local
+
 # renv library (renv.lock is committed)
 renv/library/
 renv/staging/
@@ -52,3 +55,5 @@ _videos/**/*.wav
 _videos/**/*.mp3
 !_videos/intro-music.wav
 _videos/*/chapters.txt
+
+/_*.local

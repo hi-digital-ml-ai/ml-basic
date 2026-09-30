@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Run every Python snippet in the site, to stop the untested tabs from rotting.
 
-The site's tables and figures come from R, so Quarto never executes the Python
-tabs. This script does instead: it pulls the ```python blocks out of each page,
+The site's tables and figures come from R. Pages converted to ```{python} chunks
+run their Python tabs in the render; the rest only display them. This script runs
+all of them outside the render, which is quicker than a site build: it pulls the ```python blocks out of each page,
 in order, joins them into one program (the snippets on a page are cumulative,
 exactly as the R chunks beside them are) and runs it.
 
@@ -19,7 +20,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLOCK = re.compile(r'^```python\n(.*?)^```', re.S | re.M)
+# Plain ```python blocks (displayed only) and ```{python} chunks (run by knitr
+# through reticulate); their #| option lines are Python comments, so harmless.
+BLOCK = re.compile(r'^```\{?python[^\n]*\n(.*?)^```', re.S | re.M)
 
 
 def snippets(page):

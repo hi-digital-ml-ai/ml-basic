@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 478" width="100%" role="img" aria-label="Why a value is missing, and why it is unusual. Missing completely at random: unrelated to anything, such as a dropped sample; dropping costs only precision. Missing at random: depends on something recorded, such as more gaps in winter; fill in from what was recorded. Missing not at random: depends on the missing value, such as a sensor failing in storms; no fix in the data; know the instrument. Impossible: cannot be true, such as a salinity of minus 999; correct it or mark it missing. Genuine extreme: rare but real, such as a spawning aggregation; keep it, it may be the key row. Plausible error: wrong but looks normal, such as a depth ten times too deep; cannot be found, expect a few.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Ask why before you fix</text>
+<text class="lab" x="0" y="60" fill="#1b6a87">WHY IS IT MISSING?</text>
+<rect class="box" x="0" y="74" width="300" height="160" rx="8"/><rect x="0" y="74" width="300" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="18" y="114">Completely at random</text>
+<text class="body" x="18" y="146">unrelated to anything,</text>
+<text class="body" x="18" y="170">such as a dropped sample</text>
+<text class="note" x="18" y="212">→ dropping costs only precision</text>
+<rect class="box" x="320" y="74" width="300" height="160" rx="8"/><rect x="320" y="74" width="300" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="338" y="114">At random</text>
+<text class="body" x="338" y="146">depends on something recorded,</text>
+<text class="body" x="338" y="170">such as more gaps in winter</text>
+<text class="note" x="338" y="212">→ fill in from what was recorded</text>
+<rect class="box" x="640" y="74" width="300" height="160" rx="8"/><rect x="640" y="74" width="300" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="658" y="114">Not at random</text>
+<text class="body" x="658" y="146">depends on the missing value,</text>
+<text class="body" x="658" y="170">such as a sensor failing in storms</text>
+<text class="note" x="658" y="212">→ no data fix: know the instrument</text>
+<text class="lab" x="0" y="274" fill="#1b6a87">WHY IS IT UNUSUAL?</text>
+<rect class="box" x="0" y="288" width="300" height="160" rx="8"/><rect x="0" y="288" width="300" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="18" y="328">Impossible</text>
+<text class="body" x="18" y="360">cannot be true, such as</text>
+<text class="body" x="18" y="384">a salinity of −999</text>
+<text class="note" x="18" y="426">→ correct it, or mark it missing</text>
+<rect class="box" x="320" y="288" width="300" height="160" rx="8"/><rect x="320" y="288" width="300" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="338" y="328">Genuine extreme</text>
+<text class="body" x="338" y="360">rare but real, such as</text>
+<text class="body" x="338" y="384">a spawning aggregation</text>
+<text class="note" x="338" y="426">→ keep it: it may be the key row</text>
+<rect class="box" x="640" y="288" width="300" height="160" rx="8"/><rect x="640" y="288" width="300" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="658" y="328">Plausible error</text>
+<text class="body" x="658" y="360">wrong but looks normal, such as</text>
+<text class="body" x="658" y="384">a depth ten times too deep</text>
+<text class="note" x="658" y="426">→ cannot be found: expect a few</text>
+</svg>

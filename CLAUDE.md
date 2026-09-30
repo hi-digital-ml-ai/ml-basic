@@ -54,9 +54,10 @@ tools/extract-code.py --out /tmp/check  # the downloadable scripts, without buil
 - **tidymodels is the default toolkit** (`recipes` → `parsnip` → `workflows` →
   `rsample`/`tune` → `yardstick`). Show base-R or other packages only to contrast.
 - **Modelling steps carry a Python tab.** In sections 2, 3, 5, 7, 8 and 10 each
-  modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. The
-  R tab is the one Quarto runs; the Python is displayed only, and is kept honest
-  by `python/check-snippets.py`. See `.claude/authoring-guide.md`.
+  modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. Both
+  tabs run (the Python through `reticulate`) and show their own output; pages not
+  yet revised only display their Python. `python/check-snippets.py` runs every
+  Python tab. See `.claude/authoring-guide.md`.
 - **Every page** carries YAML `title`, `description`, `categories`, and ends with a
   *Key points* section. Categories come from the controlled list in
   `.claude/site-structure.md`; do not invent new ones ad hoc.
