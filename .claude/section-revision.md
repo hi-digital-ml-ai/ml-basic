@@ -245,8 +245,9 @@ about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
 | Section | Branch | Status |
 | --- | --- | --- |
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
-| 2 Marine data | `feature/improve-marine-data` | Pages, diagrams, overview and video done, video narrated (2026-09-30); not yet merged into `develop` |
-| 3–10 | | Not started |
+| 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
+| 3 Supervised learning | `feature/improve-supervised-learning` | Started 2026-09-30 |
+| 4–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".
