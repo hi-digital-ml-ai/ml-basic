@@ -91,7 +91,7 @@ Three deliberate spillovers outside the section's own subject:
   must stay consistent: §5 should refer back rather than re-deriving.
 - `reading-a-fit.qmd` uses §2's leaked `catch_weight_kg` column to produce separation, and
   measures random-forest run-to-run noise (0.037 RMSE) as the resolution limit for §3's
-  ten-model comparison.
+  comparison of its seven models, where the two count models finish closer than that.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -151,7 +151,7 @@ never quote a score against it without saying no real study could compute one.
 
 **RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
 Different folds or splits hold different distributions of the response, so a "harder" scheme
-can report a *lower* RMSE. Use R², or the same test set for both. §3's leakage page found it
+can report a *lower* RMSE. Use R², or the same test set for both. §2's leakage page found it
 first; §6 repeats it deliberately.
 
 **A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:

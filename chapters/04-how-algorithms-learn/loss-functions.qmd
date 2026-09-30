@@ -274,8 +274,9 @@ terms.
 **Classification accuracy is not a loss.** It cannot be optimised directly, being a step
 function, flat almost everywhere with no gradient to follow, which is why classifiers are
 fitted under log loss and only then thresholded. Section 3's
-[logistic model](../03-supervised-learning/logistic-regression.qmd) had a respectable log
-loss and predicted presence zero times; the fitting was working exactly as specified.
+[logistic model](../03-supervised-learning/logistic-regression.qmd) works this way: the fit
+gives a probability, and a threshold chosen afterwards, from the cost of each mistake, turns
+it into yes or no.
 
 ::: {.callout-tip}
 ## Key points

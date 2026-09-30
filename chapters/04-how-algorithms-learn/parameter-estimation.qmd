@@ -185,8 +185,8 @@ The chlorophyll coefficient here is **+0.348**, while `glm(present ~ ...)` repor
 **−0.348** on the same data. Nothing is wrong with either. `present` has levels `yes, no`,
 and base R models the probability of the *last* level, so `glm()` is describing absence
 while this hand-coded version describes presence. This is the same reversal that
-[section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) found in
-`tidy()` output, and it is worth recognising a second time: a sign flip of exactly this
+[section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) warned about
+when preparing the data, and it is worth recognising a second time: a sign flip of exactly this
 kind is a level-ordering problem until proven otherwise.
 :::
 

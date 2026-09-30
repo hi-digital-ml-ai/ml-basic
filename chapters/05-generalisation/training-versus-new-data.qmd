@@ -397,8 +397,8 @@ error honest. It will not do the same for a forest's.
 
 ::: {.callout-warning}
 Nothing on this page is an argument against flexible models. The random forest here is a
-perfectly respectable model, within 0.13 of the best of the five on test data, and
-[section 3 showed a tuned one doing better](../03-supervised-learning/choosing-a-method.qmd).
+perfectly respectable model, within 0.13 of the best of the five on test data;
+[section 3](../03-supervised-learning/forests-and-boosting.qmd) explains how it works.
 The argument is only that its self-report is worthless. Judge it on held-out data, or
 out-of-bag, and it does fine.
 :::

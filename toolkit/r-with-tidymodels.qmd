@@ -127,8 +127,9 @@ augment(forest, test) |>
 ROC AUC rises from 0.59 to 0.68. That gap is not an accident of this dataset: abundance
 in this survey peaks near 80 m and near 9 °C and falls away on both sides, and a logistic
 regression is linear in the log-odds, so it cannot represent a hump. The forest can.
-[Section 3](../chapters/03-supervised-learning/forests-and-boosting.qmd) develops that
-comparison properly.
+Section 3 explains [how a forest works](../chapters/03-supervised-learning/forests-and-boosting.qmd)
+and [compares it with regression models](../chapters/03-supervised-learning/choosing-a-method.qmd)
+on the same sites.
 
 The point here is the cost of having asked. Two lines, and nothing else on the page had
 to move.

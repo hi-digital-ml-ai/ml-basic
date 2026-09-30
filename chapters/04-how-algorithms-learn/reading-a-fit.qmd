@@ -24,10 +24,11 @@ the useful thing about failure is that it leaves signatures. This page is about 
 them.
 
 The reason to care is that a failed fit does not usually look like a failed fit. It returns
-coefficients. It prints a summary. It makes predictions. Section 3 contained one model that
-produced a perfectly respectable ROC AUC while predicting presence at zero stations, and the
-optimisation there was working exactly as instructed, which is precisely why you cannot rely
-on output looking reasonable.
+coefficients. It prints a summary. It makes predictions. A classifier for a rare species
+can produce a perfectly respectable ROC AUC while predicting presence at zero stations, with
+the optimisation working exactly as instructed ([class
+imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows why), which is precisely
+why you cannot rely on output looking reasonable.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -147,9 +148,9 @@ round(unseeded, 4)
 ```
 
 Five runs, five answers, spanning 0.037 RMSE. That is small, and it is the point. Section 3's
-[ten-model comparison](../03-supervised-learning/choosing-a-method.qmd) separated several
-models by less than that, which is exactly why that page refused to treat small gaps in the
-table as a ranking. **Run-to-run noise is a measurement you can make, and it sets the
+[comparison of its seven models](../03-supervised-learning/choosing-a-method.qmd) found its
+two count models closer than that on the test sites, which is exactly why that page would
+not rank them on one split. **Run-to-run noise is a measurement you can make, and it sets the
 resolution of every comparison you go on to draw.**
 
 For k-means the same instability is much larger, because the objective genuinely has multiple
