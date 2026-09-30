@@ -1,7 +1,7 @@
 ---
 title: "Choosing a method"
 description: "Ten models on one survey, scored fairly, and a way of deciding that does not depend on which algorithm is fashionable."
-order: 5
+order: 7
 categories: [supervised, regression, trees-ensembles]
 ---
 
@@ -46,7 +46,7 @@ covers the options, and this is the constraint people most often skip.
 **3. How much data, and how much signal?**
 Flexible methods need enough data to pin down what they are free to invent. Several
 hundred noisy rows will not support a large boosted model, as
-[the previous page](trees-forests-boosting.qmd) demonstrated.
+[Random forests and boosting](forests-and-boosting.qmd) demonstrated.
 
 **4. Do you need to predict outside the sampled range?**
 If so, trees and forests are disqualified, because their predictions are flat beyond the

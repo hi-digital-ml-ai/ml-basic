@@ -1,0 +1,451 @@
+---
+title: "Regression for counts"
+description: "Poisson regression models the log of the expected count, so it cannot predict a negative number of animals; the negative binomial handles counts that vary more than Poisson allows."
+order: 3
+categories: [supervised, regression]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(poissonreg)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## Counts need a model that respects them
+
+[Linear and polynomial regression](linear-and-polynomial-regression.qmd) fitted a curve
+that found the species' thermal optimum and still predicted a *negative* number of
+animals, which is impossible. This page fixes that with a model built for counts, and
+the fix turns out to improve prediction as well as plausibility.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+Here is the real fix. Ordinary regression assumes the response is unbounded and equally
+variable. Counts are neither. Poisson regression models the *logarithm* of the expected
+count:
+
+$$\log(\hat{\mu}) = \beta_0 + \beta_1 x_1 + \dots \qquad\text{so}\qquad \hat{\mu} = e^{\beta_0 + \beta_1 x_1 + \dots}$$
+
+Two consequences, both free. The exponential cannot be negative, so impossible
+predictions become impossible to make. And because effects are additive on the log
+scale, they are *multiplicative* on the count scale: a coefficient of 0.35 means
+each unit multiplies the expected count by $e^{0.35} \approx 1.42$, a 42% increase.
+Ecologically that is usually more sensible than "adds 0.35 individuals" regardless of
+whether the station holds two fish or two hundred.
+
+Poisson regression also assumes variance equals the mean, which
+[Regression and classification](regression-and-classification.qmd) showed is false
+here by a factor of about six. We will check it and deal with it.
+
+## Worked example
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+split <- initial_split(survey, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+base_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand")
+
+curved_recipe <- base_recipe |>
+  step_poly(depth_m, temperature_c, degree = 2)
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (OneHotEncoder, PolynomialFeatures,
+                                   StandardScaler)
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+
+train, test = train_test_split(survey, train_size=0.75, random_state=123)
+
+# The dropped level of each column is its baseline: sand, and spring as in R.
+dummies = OneHotEncoder(drop=["sand", "spring"], sparse_output=False)
+
+# Unlike lm(), scikit-learn will not dummy-code a column for you, so every
+# recipe here ends with the encoder.
+base_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", dummies, categorical),
+])
+
+# step_poly() defaults to orthogonal polynomials and PolynomialFeatures is raw;
+# the fitted values are the same, the coefficients are not comparable.
+curved_recipe = ColumnTransformer([
+    ("curved", Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), ["depth_m", "temperature_c"]),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical", dummies, categorical),
+])
+```
+
+:::
+
+Three models: a straight line, a curve, and a curve that knows it is predicting counts.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fit-three
+evaluate <- function(model, recipe, label) {
+  predictions <- workflow() |>
+    add_recipe(recipe) |>
+    add_model(model) |>
+    fit(train) |>
+    augment(test)
+
+  tibble(
+    model                = label,
+    rmse                 = round(as.numeric(rmse(predictions, abundance, .pred)$.estimate), 3),
+    rsq                  = round(as.numeric(rsq(predictions, abundance, .pred)$.estimate), 3),
+    lowest_prediction    = round(min(predictions$.pred), 2),
+    impossible_predictions = sum(predictions$.pred < 0)
+  )
+}
+
+bind_rows(
+  evaluate(linear_reg(), base_recipe,   "Linear"),
+  evaluate(linear_reg(), curved_recipe, "Polynomial"),
+  evaluate(poisson_reg() |> set_engine("glm"), curved_recipe, "Poisson + polynomial")
+)
+```
+
+## Python
+
+```python
+from sklearn.linear_model import LinearRegression, PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+
+def evaluate(model, recipe, label):
+    fitted = Pipeline([("recipe", recipe), ("model", model)]).fit(
+        train[predictors], train["abundance"])
+    predicted = fitted.predict(test[predictors])
+    return {
+        "model": label,
+        "rmse": round(root_mean_squared_error(test["abundance"], predicted), 3),
+        "rsq": round(np.corrcoef(predicted, test["abundance"])[0, 1] ** 2, 3),
+        "lowest_prediction": round(predicted.min(), 2),
+        "impossible_predictions": int((predicted < 0).sum()),
+    }
+
+pd.DataFrame([
+    evaluate(LinearRegression(), base_recipe, "Linear"),
+    evaluate(LinearRegression(), curved_recipe, "Polynomial"),
+    # alpha=0 removes the ridge penalty PoissonRegressor applies by default.
+    # Its solver is iterative where glm() is not, so it wants scaled inputs;
+    # with no penalty the scaling changes the arithmetic, not the fit.
+    evaluate(Pipeline([("normalise", StandardScaler()),
+                       ("poisson", PoissonRegressor(alpha=0, max_iter=1000))]),
+             curved_recipe, "Poisson + polynomial"),
+])
+```
+
+:::
+
+There is the debt, paid and then some.
+
+The polynomial model makes **six negative predictions** on 200 test stations, the lowest
+being about $-2.1$ individuals. The Poisson model makes none, because it cannot, and its lowest
+prediction is a sensible 0.16. It is also the best of the three on RMSE and $R^2$.
+
+The linear model, meanwhile, manages two negative predictions of its own without any
+curvature at all.
+
+### Reading Poisson coefficients
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: poisson-coefficients
+poisson_fit <- workflow() |>
+  add_recipe(base_recipe) |>
+  add_model(poisson_reg() |> set_engine("glm")) |>
+  fit(train)
+
+tidy(poisson_fit) |>
+  mutate(multiplier = round(exp(estimate), 3),
+         across(where(is.numeric), \(x) round(x, 3))) |>
+  select(term, estimate, multiplier, p.value)
+```
+
+## Python
+
+```python
+import statsmodels.api as sm
+
+# scikit-learn fits the Poisson model but reports no standard errors, so for a
+# coefficient table with p-values the honest Python answer is statsmodels.
+design = pd.DataFrame(
+    base_recipe.fit_transform(train[predictors]),
+    columns=base_recipe.get_feature_names_out(),
+)
+
+poisson_fit = sm.GLM(
+    train["abundance"].to_numpy(),
+    sm.add_constant(design),
+    family=sm.families.Poisson(),
+).fit()
+
+pd.DataFrame({
+    "term": poisson_fit.params.index,
+    "estimate": poisson_fit.params.round(3),
+    "multiplier": np.exp(poisson_fit.params).round(3),
+    "p.value": poisson_fit.pvalues.round(3),
+}).reset_index(drop=True)
+```
+
+:::
+
+Exponentiate to read them. Each substrate is compared with sand, the baseline that
+`step_relevel()` set in the recipe. Without it, R compares every level with whichever
+comes first alphabetically, here gravel, and a table read against the wrong baseline is
+quietly wrong. A muddy station holds about 1.46 times the count of a sandy one; the
+simulation built in 1.49, so that one is recovered well. Salinity, which has no real
+effect, is correctly indistinguishable from a multiplier of 1.
+
+Rock is more interesting. The fitted multiplier is 0.75, while the simulation built in
+0.55. The direction is right and the size is understated, and the reason is worth
+noting, because it is not a failure. Rock is the rarest substrate in the survey, so its
+coefficient rests on the fewest stations and carries the most noise. The table gives no
+hint of that, and the next check shows why: this model's standard errors are too small.
+
+### Checking the Poisson assumption
+
+Poisson regression assumes the variance equals the mean. The check is a ratio that
+should be near 1:
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: overdispersion
+fitted_glm <- extract_fit_engine(poisson_fit)
+
+tibble(
+  residual_deviance = round(fitted_glm$deviance, 1),
+  df                = fitted_glm$df.residual,
+  ratio             = round(fitted_glm$deviance / fitted_glm$df.residual, 2)
+)
+```
+
+## Python
+
+```python
+pd.DataFrame({
+    "residual_deviance": [round(poisson_fit.deviance, 1)],
+    "df": [int(poisson_fit.df_resid)],
+    "ratio": [round(poisson_fit.deviance / poisson_fit.df_resid, 2)],
+})
+```
+
+:::
+
+A ratio of almost 4, not 1. The counts vary far more than Poisson allows, which is the normal
+state of ecological data: individuals aggregate. The consequence is specific: the
+*predictions* are fine, but the standard errors are too small, so confidence intervals
+are too narrow and p-values too small. A model like this will tell you an effect is
+significant when it is not.
+
+The negative binomial distribution adds a parameter for exactly this.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: negative-binomial
+imputed <- train |>
+  mutate(across(where(is.numeric), \(x) replace_na(x, median(x, na.rm = TRUE))))
+
+nb_fit <- MASS::glm.nb(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = imputed
+)
+
+tibble(
+  theta      = round(nb_fit$theta, 3),
+  aic_poisson = round(AIC(fitted_glm)),
+  aic_negbin  = round(AIC(nb_fit))
+)
+```
+
+## Python
+
+```python
+# Neither scikit-learn nor statsmodels estimates theta jointly with the
+# coefficients the way MASS::glm.nb() does, so fit the coefficients at a given
+# theta and search over theta for the best likelihood.
+def negative_binomial(theta):
+    return sm.GLM(
+        train["abundance"].to_numpy(),
+        sm.add_constant(design),
+        family=sm.families.NegativeBinomial(alpha=1 / theta),
+    ).fit()
+
+from scipy.optimize import minimize_scalar
+
+search = minimize_scalar(lambda theta: negative_binomial(theta).aic,
+                         bounds=(0.1, 50), method="bounded")
+best = negative_binomial(search.x)
+
+pd.DataFrame({
+    "theta": [round(search.x, 3)],
+    "aic_poisson": [round(poisson_fit.aic)],
+    # one parameter more than the coefficients, for theta itself
+    "aic_negbin": [round(best.aic + 2)],
+})
+```
+
+:::
+
+The estimated $\theta$ of 1.07 sits below the 1.5 built into the simulation. It is the
+right order of magnitude and correctly identifies strong clustering, but it is not a
+precise recovery: dispersion parameters are hard to pin down from 600 noisy counts, and
+this model uses straight-line terms where the truth is curved. AIC nevertheless falls by
+over 900, which is emphatic. On real data you would report the negative binomial.
+
+::: {.callout-note collapse="true"}
+## Leaving tidymodels for this one
+`MASS::glm.nb()` estimates $\theta$ by maximum likelihood as part of fitting, and
+parsnip has no negative binomial engine for `poisson_reg()`. This is a normal situation:
+tidymodels covers a wide range of models and not every one. Reaching for the specialist
+package is the right answer; just be aware that you lose the workflow's protection
+against [leakage](../02-marine-data/information-leakage.qmd), which is why the
+imputation had to be done by hand above, and why doing so is a little more dangerous
+than it looks.
+:::
+
+```{r}
+#| label: fig-shapes
+#| fig-cap: "The temperature response fitted by each model, with other predictors held at their medians. The polynomial finds the optimum and then dives through zero in warm water. The Poisson curve finds the same optimum and flattens towards zero without ever reaching it, because an exponential cannot be negative. Even the straight line slips below zero at the warm end."
+#| fig-alt: "Three curves of predicted abundance against temperature from 2 to 17 degrees, with a horizontal line marking zero. The polynomial rises to a peak around 7 degrees then falls steeply, crossing zero near 13 degrees and reaching about minus 6. The Poisson curve peaks around 8 degrees and decays towards zero without crossing it. The straight line declines steadily and dips just below zero past 16 degrees."
+#| fig-width: 7.5
+#| fig-height: 4.5
+grid <- tibble(
+  temperature_c     = seq(2, 17, by = 0.1),
+  depth_m           = median(train$depth_m, na.rm = TRUE),
+  chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3, na.rm = TRUE),
+  salinity_psu      = median(train$salinity_psu, na.rm = TRUE),
+  substrate         = factor("sand", levels = levels(train$substrate)),
+  season            = factor("summer", levels = levels(train$season))
+)
+
+fit_of <- function(model, recipe) {
+  workflow() |> add_recipe(recipe) |> add_model(model) |> fit(train)
+}
+
+curves <- bind_rows(
+  grid |> mutate(.pred = predict(fit_of(linear_reg(), base_recipe), grid)$.pred,
+                 model = "Linear"),
+  grid |> mutate(.pred = predict(fit_of(linear_reg(), curved_recipe), grid)$.pred,
+                 model = "Polynomial"),
+  grid |> mutate(.pred = predict(fit_of(poisson_reg() |> set_engine("glm"), curved_recipe),
+                                 grid)$.pred,
+                 model = "Poisson + polynomial")
+)
+
+ggplot(curves, aes(temperature_c, .pred, colour = model)) +
+  geom_hline(yintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.6) +
+  geom_line(linewidth = 1.1) +
+  annotate("text", x = 2.2, y = -0.9, hjust = 0, size = 3.4,
+           colour = ml_palette[["grey"]], label = "impossible below this line") +
+  labs(x = "Temperature (°C)", y = "Predicted abundance", colour = NULL,
+       title = "Three models, one relationship")
+```
+
+## The work the link function does
+
+The exponential link is doing the work. It converts an additive model, which can
+produce any number, into a multiplicative one, which cannot go below zero. Nothing was
+constrained or clipped; the shape of the model makes the impossible unreachable.
+
+The gain in accuracy comes from the same place. Poisson regression weights observations
+by their expected variance, so a station predicted to hold 20 individuals is allowed a
+larger error than one predicted to hold 1. Ordinary least squares treats both errors as
+equally surprising, which for counts is simply wrong.
+
+The general principle is the most transferable thing in this section:
+
+> **Match the model to what the response actually is.** Non-negative, discrete,
+> bounded, proportional: each has a family built for it, and the built-for-it version
+> is usually both more plausible and more accurate.
+
+## Limits of these count models
+
+**Poisson assumes equidispersion and yours will not have it.** Always compute the
+deviance ratio. If it is well above 1, your p-values are too small; move to the negative
+binomial and say that you did.
+
+**A quarter of our stations caught nothing.** Negative binomial handles more zeros than
+Poisson, but if zeros arise from a separate process, with the species absent rather than
+present and missed, a hurdle or zero-inflated model represents the biology better.
+
+**Polynomials extrapolate catastrophically.** Even the Poisson version bends sharply
+outside the sampled range. Splines are safer; refusing to predict outside the data is
+safest.
+
+**Interpretation is on the log scale.** Coefficients must be exponentiated to be spoken
+aloud, and confidence intervals must be exponentiated as endpoints, not as a mean and a
+margin.
+
+::: {.callout-tip}
+## Key points
+- Fitting counts with ordinary regression produces negative predictions. Here: six on
+  200 test stations.
+- Poisson regression models the log of the expected count, so predictions cannot be
+  negative, and it was also the most accurate model of the three.
+- Poisson coefficients are multiplicative once exponentiated: mud holds about 1.5 times
+  as many as sand.
+- Check the deviance-to-df ratio. At almost 4 it is badly overdispersed, the predictions
+  survive but the p-values do not, and the negative binomial is the fix.
+- Match the model to the response type. It is usually both more honest and more
+  accurate.
+:::
+
+## Try it yourself
+
+1. Fit the Poisson model without `salinity_psu` and compare the coefficients on the
+   other terms. Which ones move?

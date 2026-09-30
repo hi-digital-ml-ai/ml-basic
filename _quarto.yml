@@ -76,13 +76,17 @@ website:
         href: chapters/03-supervised-learning/index.qmd
         contents:
           - href: chapters/03-supervised-learning/regression-and-classification.qmd
-            text: "Regression or classification?"
+            text: "Regression and classification"
           - href: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
-            text: "Linear, polynomial and count regression"
+            text: "Linear and polynomial regression"
+          - href: chapters/03-supervised-learning/count-regression.qmd
+            text: "Regression for counts"
           - href: chapters/03-supervised-learning/logistic-regression.qmd
             text: "Logistic regression"
-          - href: chapters/03-supervised-learning/trees-forests-boosting.qmd
-            text: "Trees, forests and boosting"
+          - href: chapters/03-supervised-learning/decision-trees.qmd
+            text: "Decision trees"
+          - href: chapters/03-supervised-learning/forests-and-boosting.qmd
+            text: "Random forests and boosting"
           - href: chapters/03-supervised-learning/choosing-a-method.qmd
             text: "Choosing a method"
       - section: "4 · How algorithms learn"

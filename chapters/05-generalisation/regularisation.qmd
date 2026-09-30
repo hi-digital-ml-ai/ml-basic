@@ -497,7 +497,7 @@ hand here, and both should be tuned, which is exactly what the next page does wi
 information, such as depth and temperature here, which are strongly related by
 construction, lasso picks one essentially arbitrarily and zeroes the other. Its absence
 from the model is then not evidence of irrelevance, exactly as [a variable's absence from
-a tree was not](../03-supervised-learning/trees-forests-boosting.qmd). Ridge handles
+a tree was not](../03-supervised-learning/decision-trees.qmd). Ridge handles
 correlated groups more gracefully by splitting the effect between them, and elastic net
 exists largely to get some of both behaviours.
 

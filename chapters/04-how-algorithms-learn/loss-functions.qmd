@@ -245,7 +245,7 @@ and classes are not, and each gets its own loss.
 | Two classes, unequal costs | Weighted log loss | Whichever error you declared expensive |
 
 Poisson deviance is why [section 3's count
-models](../03-supervised-learning/linear-and-polynomial-regression.qmd) behaved sensibly.
+models](../03-supervised-learning/count-regression.qmd) behaved sensibly.
 It scales the penalty with the expected count, so missing by 5 individuals matters far
 more where you expected 2 than where you expected 200, which is how counting animals
 actually works. Every one of these losses comes out of the same principle, and [maximum

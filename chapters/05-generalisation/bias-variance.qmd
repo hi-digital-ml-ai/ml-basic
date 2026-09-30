@@ -301,7 +301,7 @@ that approximation shows.
 The middle two rows are the important ones. A random forest does not reduce bias relative
 to a single tree, because the trees are the same kind of object. It reduces *variance*, by
 averaging models whose errors are partly independent, which is why the forest in [section
-3](../03-supervised-learning/trees-forests-boosting.qmd) beat a single grown-out tree
+3](../03-supervised-learning/forests-and-boosting.qmd) beat a single grown-out tree
 while sharing its flexibility. And ridge does the reverse of what you might expect: it
 accepts extra bias on purpose, because the variance it saves is worth more. That trade is
 exactly what [the λ curve](../04-how-algorithms-learn/map-and-priors.qmd) showed.

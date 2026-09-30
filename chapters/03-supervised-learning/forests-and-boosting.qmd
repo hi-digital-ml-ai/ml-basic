@@ -1,7 +1,7 @@
 ---
-title: "Trees, forests and boosting"
-description: "The workhorses of applied machine learning: how they work, and why the simplest of them wins on this survey."
-order: 4
+title: "Random forests and boosting"
+description: "Two ways to combine many trees, averaging them or building each to fix the last, and why neither beats a single tree on this survey."
+order: 6
 categories: [supervised, trees-ensembles, generalisation]
 ---
 
@@ -17,35 +17,18 @@ source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## Reputation against results
+## Many trees instead of one
 
-Tree-based methods dominate applied machine learning on tabular data, and for good
-reasons: they need no scaling, handle mixed variable types, find interactions without
-being told, and cope with non-linearity by construction. In marine work they are the
-default choice for habitat models and species distribution models.
-
-They also invite a specific mistake: assuming that the more elaborate member of the
-family is the better one. This page fits all three on the same survey and the ranking
-is the reverse of the reputation.
+A single [decision tree](decision-trees.qmd) is easy to read but unstable. Random forests
+and boosting combine many trees to fix that, in two different ways. They invite a
+specific mistake: assuming that the more elaborate model is the better one. This page
+fits all three on the same survey, and the ranking is the reverse of the reputation.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs.qmd >}}
 
 ## The idea
-
-### A single decision tree
-
-A tree asks a sequence of yes/no questions. *Is depth below 97 m? If yes, is temperature
-above 7.4 °C?* Each answer sends the station down a branch, and the prediction is the
-average of the training stations that ended in the same leaf.
-
-Fitting is greedy. At each node the algorithm tries every split of every variable and
-keeps the one that most reduces error, then repeats inside each side. It never revisits
-an earlier choice.
-
-The appeal is that you can read it. A tree is the only non-linear model in this course
-you can print and hand to a colleague who does not model.
 
 ### Random forest
 
@@ -126,53 +109,6 @@ base_recipe = ColumnTransformer([
 ```
 
 :::
-
-### A tree you can read
-
-```{r}
-#| label: fig-tree
-#| fig-cap: "A depth-3 regression tree for abundance. Each box shows the predicted count, the number of training stations reaching it, and their percentage of the total. The root splits on chlorophyll; the low-chlorophyll branch then carves out a temperature band."
-#| fig-alt: "A decision tree diagram three levels deep. The root splits on chlorophyll below 1.7. The low-chlorophyll branch, holding 76 percent of stations, splits on temperature below 6.4 and then on temperature at or above 11, isolating a middle band predicting 4.2 individuals against 1.4 for cold water and 2.1 for warm. The high-chlorophyll branch splits again on chlorophyll and on substrate, reaching leaves predicting up to 19 individuals from 3 stations. Depth does not appear anywhere in the tree."
-#| fig-width: 9
-#| fig-height: 5.5
-tree_fit <- workflow() |>
-  add_recipe(base_recipe) |>
-  add_model(decision_tree(tree_depth = 3, min_n = 5) |>
-              set_engine("rpart") |> set_mode("regression")) |>
-  fit(train)
-
-rpart.plot(extract_fit_engine(tree_fit),
-           roundint = FALSE, type = 2, extra = 101,
-           box.palette = "Blues", branch.lty = 3, cex = 0.8)
-```
-
-Read the left branch, which holds three-quarters of the stations. Below 6.4 °C the model
-expects 1.4 individuals. At or above 10.6 °C (the plot rounds it to 11) it expects 2.1. In
-between, from 6.4 to 10.6 °C, it expects 4.2. The tree has carved out a temperature band,
-and the simulation's true optimum of 9 °C sits inside it.
-
-That is worth pausing on, because it shows how a tree represents an optimum. A single
-threshold cannot express "best in the middle"; it takes **two splits at the same level**,
-one cutting off each tail. Anything hump-shaped costs a tree twice what a monotonic
-relationship costs.
-
-Which explains the surprise at the root. The strongest effects in the simulation are the
-depth and temperature optima, yet the first split is on **chlorophyll**, and depth does
-not appear anywhere in three levels. Chlorophyll's effect is monotonic, since more is better,
-so one threshold captures a good share of it, while depth needs two splits before it
-pays anything at all. A greedy algorithm that takes the best single split at each step is
-systematically biased towards monotonic predictors.
-
-::: {.callout-note}
-A variable's absence from a tree is not evidence that it does not matter. Depth is one of
-the two strongest drivers in this dataset by construction, and it is missing here because
-its effect is hump-shaped and partly carried by temperature, which is itself a function
-of depth. Read tree structure as *one* account of the data, not *the* account.
-:::
-
-The cost of this legibility is that the thresholds are arbitrary. There is nothing
-biological about 1.7 mg m⁻³; it is where this particular sample happened to split best,
-and another survey would give a different number.
 
 ### All three, side by side
 
@@ -314,35 +250,17 @@ The general claim is narrower and more useful: **the amount of flexibility you c
 afford is set by how much data and how much signal you have**, and neither is under your
 control.
 
-## Limits of tree-based models
+## Limits of forests and boosting
 
-**Trees cannot extrapolate. At all.** A tree's prediction is the mean of training
-stations in a leaf, so beyond the range of the training data the prediction is flat:
-constant, forever. A forest of trees is still flat. For predicting into warmer water
-than you have sampled, this is not conservatism; it is a model asserting no change with
-complete confidence. [Section 6](../06-assumptions-limitations/index.qmd) returns to
-this, and it is a strong argument for a parametric model when extrapolation is the point.
-
-**A single tree is unstable.** Refit on a bootstrap sample and the splits move. Do not
-over-interpret a specific threshold, and be wary of a paper that does.
+**A forest is still flat outside the data.** Like a single tree, it cannot
+extrapolate beyond the range it was trained on.
 
 **Forests and boosting are not interpretable** in the way the printed tree is. Variable
 importance is available ([section 10](../10-interpretation/index.qmd)) and it is a much
 weaker thing than a set of readable rules.
 
-**Greedy splitting is biased towards monotonic variables.** As above, a hump-shaped
-driver has to buy two splits before it earns anything, so it can lose to a weaker but
-monotonic competitor and vanish from the tree entirely.
-
-**Trees handle interactions but hide them.** The structure encodes interactions
-implicitly; nothing reports "depth and temperature interact". You have to go looking.
-
 ::: {.callout-tip}
 ## Key points
-- A tree is a sequence of yes/no splits, and it is the only non-linear model here you
-  can print and read.
-- A tree needs two splits to express an optimum, so it favours monotonic predictors. Here
-  depth, a real driver, never appears, while chlorophyll takes the root.
 - A random forest averages many deliberately varied trees; the random subset of
   variables at each split is what makes averaging pay.
 - Boosting fits trees in sequence to the previous trees' errors. It is the strongest and
@@ -351,14 +269,10 @@ implicitly; nothing reports "depth and temperature interact". You have to go loo
   not enough signal to pay for more flexibility.
 - Training error falling while held-out error rises is overfitting. Boosting reached a
   training RMSE of 0.58 against a test RMSE of 5.49.
-- Trees cannot extrapolate. Outside the sampled range their predictions are flat and
-  confident.
 :::
 
 ## Try it yourself
 
-1. Refit the depth-3 tree on three bootstrap samples of the training data and compare
-   the root split each time. Is it always chlorophyll, and is the threshold stable?
-2. Set `learn_rate = 0.01` in the 500-tree boosted model. Does slowing the learning
+1. Set `learn_rate = 0.01` in the 500-tree boosted model. Does slowing the learning
    rate recover the performance that 500 trees lost, and what does that suggest about
    which knob matters?

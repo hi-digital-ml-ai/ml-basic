@@ -1,0 +1,181 @@
+---
+title: "Decision trees"
+description: "A tree asks yes-or-no questions about the inputs and can be read like a key, but it needs two splits for an optimum and cannot predict beyond its data."
+order: 5
+categories: [supervised, trees-ensembles]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(rpart.plot)
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+set.seed(123)
+```
+
+## A model made of questions
+
+Tree-based methods dominate applied machine learning on tabular data: they need no
+scaling, handle mixed variable types, find interactions without being told, and cope
+with non-linearity by construction. This page introduces the single decision tree, the
+building block of the random forests and boosting on the
+[next page](forests-and-boosting.qmd).
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs.qmd >}}
+
+## The idea
+
+A tree asks a sequence of yes/no questions. *Is depth below 97 m? If yes, is temperature
+above 7.4 °C?* Each answer sends the station down a branch, and the prediction is the
+average of the training stations that ended in the same leaf.
+
+Fitting is greedy. At each node the algorithm tries every split of every variable and
+keeps the one that most reduces error, then repeats inside each side. It never revisits
+an earlier choice.
+
+The appeal is that you can read it. A tree is the only non-linear model in this course
+you can print and hand to a colleague who does not model.
+
+## Worked example
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+split <- initial_split(survey, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+base_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+
+dummied_recipe <- base_recipe |> step_dummy(all_nominal_predictors())
+```
+
+## Python
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+
+train, test = train_test_split(survey, train_size=0.75, random_state=123)
+
+# scikit-learn's trees need numbers, so unlike rpart there is no "plain" recipe
+# here: the encoder is not optional.
+base_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
+])
+```
+
+:::
+
+### A tree you can read
+
+```{r}
+#| label: fig-tree
+#| fig-cap: "A depth-3 regression tree for abundance. Each box shows the predicted count, the number of training stations reaching it, and their percentage of the total. The root splits on chlorophyll; the low-chlorophyll branch then carves out a temperature band."
+#| fig-alt: "A decision tree diagram three levels deep. The root splits on chlorophyll below 1.7. The low-chlorophyll branch, holding 76 percent of stations, splits on temperature below 6.4 and then on temperature at or above 11, isolating a middle band predicting 4.2 individuals against 1.4 for cold water and 2.1 for warm. The high-chlorophyll branch splits again on chlorophyll and on substrate, reaching leaves predicting up to 19 individuals from 3 stations. Depth does not appear anywhere in the tree."
+#| fig-width: 9
+#| fig-height: 5.5
+tree_fit <- workflow() |>
+  add_recipe(base_recipe) |>
+  add_model(decision_tree(tree_depth = 3, min_n = 5) |>
+              set_engine("rpart") |> set_mode("regression")) |>
+  fit(train)
+
+rpart.plot(extract_fit_engine(tree_fit),
+           roundint = FALSE, type = 2, extra = 101,
+           box.palette = "Blues", branch.lty = 3, cex = 0.8)
+```
+
+Read the left branch, which holds three-quarters of the stations. Below 6.4 °C the model
+expects 1.4 individuals. At or above 10.6 °C (the plot rounds it to 11) it expects 2.1. In
+between, from 6.4 to 10.6 °C, it expects 4.2. The tree has carved out a temperature band,
+and the simulation's true optimum of 9 °C sits inside it.
+
+That is worth pausing on, because it shows how a tree represents an optimum. A single
+threshold cannot express "best in the middle"; it takes **two splits at the same level**,
+one cutting off each tail. Anything hump-shaped costs a tree twice what a monotonic
+relationship costs.
+
+Which explains the surprise at the root. The strongest effects in the simulation are the
+depth and temperature optima, yet the first split is on **chlorophyll**, and depth does
+not appear anywhere in three levels. Chlorophyll's effect is monotonic, since more is better,
+so one threshold captures a good share of it, while depth needs two splits before it
+pays anything at all. A greedy algorithm that takes the best single split at each step is
+systematically biased towards monotonic predictors.
+
+::: {.callout-note}
+A variable's absence from a tree is not evidence that it does not matter. Depth is one of
+the two strongest drivers in this dataset by construction, and it is missing here because
+its effect is hump-shaped and partly carried by temperature, which is itself a function
+of depth. Read tree structure as *one* account of the data, not *the* account.
+:::
+
+The cost of this legibility is that the thresholds are arbitrary. There is nothing
+biological about 1.7 mg m⁻³; it is where this particular sample happened to split best,
+and another survey would give a different number.
+
+## Limits of a single tree
+
+**Trees cannot extrapolate. At all.** A tree's prediction is the mean of training
+stations in a leaf, so beyond the range of the training data the prediction is flat:
+constant, forever. A forest of trees is still flat. For predicting into warmer water
+than you have sampled, this is not conservatism; it is a model asserting no change with
+complete confidence. [Section 6](../06-assumptions-limitations/index.qmd) returns to
+this, and it is a strong argument for a parametric model when extrapolation is the point.
+
+**A single tree is unstable.** Refit on a bootstrap sample and the splits move. Do not
+over-interpret a specific threshold, and be wary of a paper that does.
+
+**Greedy splitting is biased towards monotonic variables.** As above, a hump-shaped
+driver has to buy two splits before it earns anything, so it can lose to a weaker but
+monotonic competitor and vanish from the tree entirely.
+
+**Trees handle interactions but hide them.** The structure encodes interactions
+implicitly; nothing reports "depth and temperature interact". You have to go looking.
+
+::: {.callout-tip}
+## Key points
+- A tree is a sequence of yes/no splits, and it is the only non-linear model here you
+  can print and read.
+- A tree needs two splits to express an optimum, so it favours monotonic predictors. Here
+  depth, a real driver, never appears, while chlorophyll takes the root.
+- Trees cannot extrapolate. Outside the sampled range their predictions are flat and
+  confident.
+:::
+
+## Try it yourself
+
+1. Refit the depth-3 tree on three bootstrap samples of the training data and compare
+   the root split each time. Is it always chlorophyll, and is the threshold stable?
+2. Set `learn_rate = 0.01` in the 500-tree boosted model. Does slowing the learning
+   rate recover the performance that 500 trees lost, and what does that suggest about
+   which knob matters?

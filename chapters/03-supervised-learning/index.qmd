@@ -23,8 +23,8 @@ workhorses, from linear regression through to boosted trees and, more importantl
 how to pick one.
 
 [Section 2](../02-marine-data/index.qmd) pointed here for a model that respects what a
-count is. That debt is paid on the [linear, polynomial and count regression
-page](linear-and-polynomial-regression.qmd), where a model that cannot predict negative
+count is. That debt is paid on the [regression for counts
+page](count-regression.qmd), where a model that cannot predict negative
 fish turns out to predict better as well as more plausibly.
 
 ::: {.callout-note}

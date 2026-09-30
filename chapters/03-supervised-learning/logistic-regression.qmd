@@ -1,7 +1,7 @@
 ---
 title: "Logistic regression"
 description: "Predicting presence and absence: why the model outputs probabilities rather than classes, and why the default threshold can make a working model do nothing."
-order: 3
+order: 4
 categories: [supervised, classification, class-imbalance]
 ---
 
@@ -444,7 +444,7 @@ informative, and at 0.1% ROC AUC is close to useless.
 
 **Logistic regression is still linear**, in the log-odds. A species with a depth
 *optimum* rather than a preference needs curved terms, exactly as in
-[the previous page](linear-and-polynomial-regression.qmd).
+[Linear and polynomial regression](linear-and-polynomial-regression.qmd).
 
 **Balancing the training data changes the probabilities.** Down-sampling or SMOTE will
 push predictions up above 0.5, which feels like an improvement and is really a
