@@ -1,6 +1,6 @@
 ---
 title: "Gradient descent"
-description: "The walk downhill that fits almost every modern model, and the two settings that decide whether it arrives."
+description: "The simplest search: find which way is downhill and take a step. The step size decides whether it arrives, and the units of the inputs decide how long it takes."
 order: 3
 categories: [optimisation]
 ---
@@ -10,59 +10,51 @@ categories: [optimisation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 set.seed(123)
 ```
 
-## From impossible search to a walk
+## Downhill one step at a time
 
-[The previous page](parameter-estimation.qmd) ended with an impossibility: four parameters
-on a modest grid is a hundred million evaluations, ten parameters is $10^{20}$, and a
-neural network has millions. Exhaustive search is not slow, it is out of the question.
+[Finding the parameters](parameter-estimation.qmd) ended with a search problem: trying
+every combination of parameter values is out of reach once a model has more than a few.
+**Gradient descent** is the simplest way round it. Find which direction is downhill from
+where you stand, take a step that way, and repeat until the ground is flat.
 
-Gradient descent is the answer, and it is almost embarrassingly simple. Work out which
-direction is downhill. Take a step that way. Repeat. That is the whole algorithm, and it is
-how every neural network you have heard of was trained.
-
-It is worth understanding for its own sake, but it also pays a debt. Section 2 told you to
-[scale your predictors](../02-marine-data/scaling-and-encoding.qmd) and gave a hand-waving
-reason. The real reason is on this page, and it is a factor of about ninety.
+This page writes it out for a straight line, where the answer is known and the walk can
+be checked against it. It shows the one setting that decides whether the walk arrives,
+and a reason to standardise inputs that
+[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) did not give.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+## The slope and the step
 
-### The direction of downhill
+The **gradient** is the slope of the objective in the direction of each parameter. For
+each one it says whether nudging that parameter up makes the objective larger or
+smaller, and by how much. Taken together, these slopes point uphill, so each step moves
+the parameters the opposite way.
 
-The **gradient** is the slope of the objective with respect to each parameter at once. For
-each parameter it answers one question: if I nudge this number up a little, does the
-objective get better or worse, and by how much?
+The **learning rate** sets how far each step goes: the step is the learning rate times
+the slope. It is a hyperparameter, chosen before fitting, and it decides the outcome.
 
-Collect those answers into a vector and you have the direction of steepest *increase*. Go
-the other way.
+- Too small, and every step is safe but the walk needs hundreds of them.
+- About right, and it reaches the bottom in a handful.
+- Too large, and each step crosses the valley and lands higher on the far side. The walk
+  climbs out instead of settling, and the parameters grow without limit.
 
-Each step is
+::: {.diagram}
+![The same objective walked with three learning rates. A small rate crawls towards the bottom; a rate below the limit arrives in a few steps; a rate above the limit overshoots further on every step and diverges.](img/step-sizes.svg){fig-alt="Three cards, each with a U-shaped objective curve against a parameter. Too small, crawls, rate far below the limit: a row of closely spaced dots from a point marked start creeps a short way down the left side of the curve; every step is safe, but it needs hundreds of them. About right, arrives, rate below the limit: dots from start take large then shrinking steps to the bottom; it reaches the bottom in a handful of steps. Too large, diverges, rate above the limit: dots start near the bottom and jump from side to side, each jump landing higher up the curve; each step lands further from the bottom than the last. A note says the steeper the objective, the smaller the largest safe step."}
+:::
 
-$$\theta_{\text{new}} = \theta_{\text{old}} - \eta \, \nabla J(\theta_{\text{old}})$$
+## Worked example
 
-where $\theta$ is the parameter vector, $\nabla J$ is the gradient of the objective, and
-$\eta$, the **learning rate**, is how far you move. The minus sign is the whole idea: the
-gradient points uphill, so subtract it.
+### Writing the walk out
 
-The metaphor everyone uses is fog. You are on a hillside and cannot see the valley floor,
-but you can feel the slope under your feet. You step downhill, feel again, step again.
-
-The metaphor also carries the two failure modes. Step too timidly and you are still on the
-hillside at nightfall. Stride too boldly and you cross the valley entirely and end up higher
-on the opposite slope, and if each stride is longer than the last, you leave the valley
-altogether.
-
-### Writing it out
-
-For linear regression with squared-error loss on centred data, the gradient has a compact
-form and the whole algorithm is five lines.
+We predict abundance from chlorophyll and depth. To keep the model to two parameters, so
+the walk can be drawn as a path on a map, we centre abundance and standardise both
+inputs; the intercept is then zero and only the two slopes remain.
 
 ```{r}
 #| label: prepare
@@ -72,57 +64,84 @@ d <- survey |>
   select(abundance, chlorophyll_mg_m3, depth_m) |>
   drop_na()
 
-# Centre the response and standardise the predictors, so the model has exactly
-# two parameters and we can draw the objective surface.
 y <- d$abundance - mean(d$abundance)
 X <- cbind(
   chlorophyll = as.numeric(scale(d$chlorophyll_mg_m3)),
   depth       = as.numeric(scale(d$depth_m))
 )
 
-gradient_descent <- function(X, y, learning_rate, iterations) {
-  n <- nrow(X)
+mse <- function(X, b) mean((y - X %*% b)^2)
+
+# Start both slopes at zero and take a fixed number of steps downhill.
+gradient_descent <- function(X, y, learning_rate, steps) {
   b <- c(0, 0)
-  path <- matrix(0, iterations + 1, 2)
-  for (k in seq_len(iterations)) {
-    grad <- 2 / n * drop(t(X) %*% (X %*% b - y))
-    b <- b - learning_rate * grad
+  path <- matrix(0, steps + 1, 2)
+  for (k in seq_len(steps)) {
+    slope <- 2 / nrow(X) * drop(t(X) %*% (X %*% b - y))
+    b <- b - learning_rate * slope
     path[k + 1, ] <- b
   }
   as_tibble(path, .name_repair = ~ c("chlorophyll", "depth"))
 }
 ```
 
-The exact answer is available here by formula, which is the point: we can check the walk
-against the destination.
+The line `b <- b - learning_rate * slope` is the whole algorithm. This model also has a
+formula, so we know where the walk should end.
 
 ```{r}
 #| label: optimum
 optimum <- drop(solve(t(X) %*% X, t(X) %*% y))
-round(optimum, 4)
+best_mse <- mse(X, optimum)
+round(optimum, 3)
 ```
-
-## Worked example
 
 ### Three learning rates
 
 ```{r}
+#| label: steps-needed
+# Steps until the mean squared error is within one part in a million of the best,
+# or NA if the walk never gets there.
+steps_needed <- function(X, learning_rate, max_steps = 10000) {
+  best <- mse(X, drop(solve(t(X) %*% X, t(X) %*% y)))
+  b <- c(0, 0)
+  for (k in seq_len(max_steps)) {
+    b <- b - learning_rate * 2 / nrow(X) * drop(t(X) %*% (X %*% b - y))
+    current <- mse(X, b)
+    if (!is.finite(current) || current > 1e6 * best) return(NA_integer_)
+    if (current - best < 1e-6 * best) return(k)
+  }
+  NA_integer_
+}
+
+rates <- tibble(`learning rate` = c(0.02, 0.3, 0.72, 0.8)) |>
+  mutate(
+    `MSE after 40 steps` = map_dbl(`learning rate`, \(r) {
+      mse(X, unlist(tail(gradient_descent(X, y, r, 40), 1)))
+    }),
+    `steps to arrive` = map_int(`learning rate`, \(r) steps_needed(X, r))
+  )
+rates |>
+  mutate(
+    `MSE after 40 steps` = map_chr(`MSE after 40 steps`, \(x) format(signif(x, 4), big.mark = ",")),
+    `steps to arrive` = replace_na(as.character(`steps to arrive`), "never")
+  )
+```
+
+```{r}
 #| label: fig-paths
-#| fig-cap: "Gradient descent on the two-parameter objective, from a standing start at the origin, at three learning rates. Each dot is one step. At 0.02 the walk is orderly but has not arrived after 40 steps; at 0.3 it reaches the minimum in six; at 0.72 it overshoots and zig-zags across the valley."
-#| fig-alt: "A contour plot with the chlorophyll slope on the horizontal axis from minus 0.3 to 2.9 and the depth slope on the vertical axis from minus 1.8 to 0.7. Concentric elongated ellipses surround a minimum marked by a black cross at 1.64, minus 0.49. Three paths of dots start at the origin. The slowest traces a short smooth arc that stops short of the cross. The middle path reaches the cross in a handful of steps. The fastest shoots past the minimum to the far lower right, returns past it to the upper left, and continues swinging across the valley on a long diagonal, each pass slightly shorter than the last."
+#| fig-cap: !expr glue::glue("The first 40 steps of gradient descent from slopes of zero, at three learning rates. Each dot is one step and the cross is the answer from the formula. At 0.02 the walk is still short after 40 steps; at 0.3 it arrives in {rates[[3]][2]}; at 0.72 it zig-zags across the valley.")
+#| fig-alt: !expr glue::glue("A contour plot with the chlorophyll slope on the horizontal axis and the depth slope on the vertical axis. Elongated ellipses surround a black cross at {round(optimum[1], 2)} and {round(optimum[2], 2)}. Three paths of dots start at zero. The slowest traces a short smooth arc that stops short of the cross. The middle path reaches the cross in a few steps. The fastest shoots past the cross and swings back and forth across the valley on a long diagonal, each pass slightly shorter than the last.")
 #| fig-width: 7
 #| fig-height: 5
 grid <- expand_grid(
   chlorophyll = seq(-0.3, 2.9, length.out = 160),
   depth       = seq(-1.8, 0.7, length.out = 160)
 ) |>
-  mutate(mse = map2_dbl(chlorophyll, depth,
-                        \(a, b) mean((y - X %*% c(a, b))^2)))
+  mutate(mse = map2_dbl(chlorophyll, depth, \(a, b) mse(X, c(a, b))))
 
-paths <- map_dfr(c(0.02, 0.3, 0.72), \(lr) {
-  gradient_descent(X, y, lr, 40) |>
-    mutate(step = row_number() - 1,
-           `learning rate` = factor(lr))
+paths <- map_dfr(c(0.02, 0.3, 0.72), \(r) {
+  gradient_descent(X, y, r, 40) |>
+    mutate(`learning rate` = factor(r))
 })
 
 ggplot(grid, aes(chlorophyll, depth)) +
@@ -140,181 +159,111 @@ ggplot(grid, aes(chlorophyll, depth)) +
 ```
 
 ```{r}
-#| label: rate-table
-tibble(`learning rate` = c(0.02, 0.3, 0.72)) |>
-  mutate(
-    final = map(`learning rate`, \(lr) tail(gradient_descent(X, y, lr, 40), 1)),
-    `chlorophyll after 40 steps` = map_dbl(final, "chlorophyll"),
-    `depth after 40 steps`       = map_dbl(final, "depth"),
-    `MSE after 40 steps`         = map_dbl(final, \(f) mean((y - X %*% c(f$chlorophyll, f$depth))^2))
-  ) |>
-  select(-final) |>
-  mutate(across(where(is.numeric), \(x) round(x, 4)))
+#| label: limit
+#| include: false
+limit <- function(X) 2 / max(eigen(2 / nrow(X) * t(X) %*% X)$values)
+safe <- limit(X)
 ```
 
-The best attainable MSE is 20.059. A learning rate of 0.3 gets there in six steps and sits
-on the exact answer. A rate of 0.02 is still short after forty: it needs 106. A rate of
-0.72 spends forty steps bouncing off the walls of the valley and is still further from the
-answer than the slow walk was; it eventually converges, after 161 steps.
+The best mean squared error is `r round(best_mse, 2)`. A learning rate of 0.3 reaches it
+in `r rates[[3]][2]` steps. A rate of 0.02 needs `r rates[[3]][1]`, and 0.72 needs
+`r rates[[3]][3]` because it spends most of them swinging from one side of the valley to
+the other. At 0.8 the walk never arrives: after 40 steps the mean squared error is
+`r format(signif(rates[[2]][4], 2), big.mark = ",", scientific = FALSE)`.
 
-### The cliff edge
+For this objective the largest rate that still arrives is about `r round(safe, 2)`.
+Just below it the walk still arrives, slowly and zig-zagging; just above it the walk
+fails, and nothing on the way warns you. A fit whose loss suddenly becomes enormous, or `NaN`, has usually crossed
+this limit, and a smaller learning rate is the first thing to try.
 
-There is a hard limit on the step size, and it is not a matter of taste.
+### The units of the inputs set the work
 
-```{r}
-#| label: stability
-n <- nrow(X)
-largest_stable_rate <- 2 / max(eigen(2 / n * t(X) %*% X)$values)
-round(largest_stable_rate, 4)
-```
+The limit depends on the shape of the objective, and the shape depends on the units of
+the inputs. Depth varies with a standard deviation of `r round(sd(d$depth_m), 1)` m,
+chlorophyll with one of `r round(sd(d$chlorophyll_mg_m3), 2)` mg m⁻³. In raw units the
+bowl is steep along depth and nearly flat along chlorophyll: the long, narrow bowl of
+[Finding the parameters](parameter-estimation.qmd), stretched much further. The step has
+to be small enough for the steep direction, so the walk along the flat one takes a very
+long time.
 
-Above 0.7282, gradient descent on this objective does not converge slowly; it diverges.
-Each step lands further from the minimum than the last, and the parameters grow without
-limit.
-
-```{r}
-#| label: divergence
-map_dfr(c(0.72, 0.80), \(lr) {
-  f <- tail(gradient_descent(X, y, lr, 60), 1)
-  tibble(`learning rate` = lr, chlorophyll = f$chlorophyll, depth = f$depth,
-         MSE = mean((y - X %*% c(f$chlorophyll, f$depth))^2))
-}) |>
-  mutate(across(where(is.numeric), \(x) signif(x, 5)))
-```
-
-At 0.80, a 10% larger step than the stable limit, sixty iterations put the chlorophyll
-slope at about −51,700 and the MSE at 7.3 billion. Nothing subtle happens on the way: it
-is orderly for a few steps and then gone.
-
-This is what "the loss became NaN" means when a neural network fails in its first minute
-of training, and lowering the learning rate really is the first thing to try.
-
-### Scaling, with a number attached
-
-The stable limit depends on the *shape* of the objective, and the shape depends on the
-units of your predictors. Depth here is measured in metres with a standard deviation of
-40.6; chlorophyll in mg m⁻³ with a standard deviation of 1.58. A step big enough to move
-the chlorophyll coefficient usefully is 26 times too big for depth.
-
-The **condition number** measures exactly this: how much more stretched the bowl is in one
-direction than another.
+We fit the same model twice, once with standardised inputs and once with the inputs
+only centred, each at 90% of its own largest safe rate.
 
 ```{r}
-#| label: conditioning
-centred_only <- cbind(
+#| label: scaling
+raw <- cbind(
   chlorophyll = d$chlorophyll_mg_m3 - mean(d$chlorophyll_mg_m3),
   depth       = d$depth_m - mean(d$depth_m)
 )
 
-condition_number <- function(M) {
-  ev <- eigen(2 / nrow(M) * t(M) %*% M)$values
-  max(ev) / min(ev)
-}
-
-tibble(
-  predictors = c("Standardised", "Centred but not scaled"),
-  `condition number` = c(condition_number(X), condition_number(centred_only)),
-  `largest stable learning rate` = c(
-    2 / max(eigen(2 / n * t(X) %*% X)$values),
-    2 / max(eigen(2 / n * t(centred_only) %*% centred_only)$values)
-  )
-) |>
-  mutate(across(where(is.numeric), \(x) signif(x, 4)))
+work <- tibble(
+  inputs = c("Standardised", "Raw units"),
+  `largest safe rate` = c(limit(X), limit(raw)),
+  `steps to arrive` = c(steps_needed(X, 0.9 * limit(X)),
+                        steps_needed(raw, 0.9 * limit(raw)))
+)
+work |>
+  mutate(`largest safe rate` = map_chr(`largest safe rate`, \(x) format(signif(x, 2))))
 ```
 
-Standardising takes the condition number from 766 to 2.2. Run each version at 90% of its
-own largest stable rate, giving both the best shot available to them, and count the steps
-to the same accuracy: **17 for the standardised predictors, 1,500 for the unstandardised
-ones.** Same data, same model, same answer at the end, eighty-eight times the work.
+Standardised, the walk arrives in `r work[[3]][1]` steps; in raw units it needs
+`r format(work[[3]][2], big.mark = ",")`, about `r round(work[[3]][2] / work[[3]][1], -1)`
+times the work for the same model and the same answer. The predictions at the end are
+identical; only the effort changes.
 
-## Scaling as an algorithmic matter
+## Standardise for any model fitted by a walk
 
-Scaling is not a cosmetic step you perform because a tutorial said to. For any model fitted
-by gradient descent it is the difference between a fit that converges and one that crawls or
-explodes, and the size of the difference is set by the ratio of your predictors' units,
-which is a fact about your instruments, not about your science.
+[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) gave two kinds of
+method that need standardised inputs: those that measure distances between rows and
+those that penalise large coefficients. Methods fitted by gradient descent are a third.
+The neural networks of [section 9](../09-neural-networks/index.qmd) are fitted this way,
+which is why they are always given standardised inputs.
 
-That is also why the advice is *conditional*, exactly as
-[section 2](../02-marine-data/scaling-and-encoding.qmd) said. Scaling matters enormously for
-gradient descent, ridge and lasso, neural networks, PCA and k-means. It does nothing at all
-for `lm()` or `glm()`, which use a formula or a Newton step, invariant to how you
-measured depth, and nothing for trees, which only ever compare values within one variable.
-The rule tracks the algorithm, not the data.
+`lm()` and `glm()` are not. The formula and the step-by-step search of the previous page
+adjust to the units by themselves, and trees compare values within one input at a time,
+so none of them needs it.
+
+With many observations, each step can use only a small random batch of them instead of
+the whole dataset. This is **stochastic gradient descent**, and
+[section 9](../09-neural-networks/index.qmd) uses it. On any walk, a fit stops either
+when its steps become tiny or when it reaches a set maximum number of steps, and
+[Checking a fit](reading-a-fit.qmd) shows how to tell the two apart.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
 
-For a quadratic objective the Hessian $H = \frac{2}{n}X^\top X$ is constant, and gradient
-descent converges if and only if $\eta < 2/\lambda_{\max}(H)$, where $\lambda_{\max}$ is the
-largest eigenvalue. The number of steps needed grows with the condition number
-$\kappa = \lambda_{\max}/\lambda_{\min}$, because the step size is capped by the *steepest*
-direction while progress along the flattest direction is what you are waiting for.
+With $\theta$ the parameters, $J$ the objective and $\eta$ the learning rate, each step is
 
-Standardising does not change the model or its predictions, and the fitted values are
-identical either way. It changes only $\kappa$, and so only the effort. This is the
-precise sense in which scaling is about the algorithm and not the science.
+$$\theta_{\text{new}} = \theta_{\text{old}} - \eta \, \nabla J(\theta_{\text{old}})$$
+
+where $\nabla J$, the gradient, collects the slope of $J$ along each parameter. For
+squared error with inputs $X$, $\nabla J = \frac{2}{n} X^\top (X\theta - y)$, the line
+in `gradient_descent()`. The walk arrives only if $\eta < 2/\lambda_{\max}$, where
+$\lambda_{\max}$ is the largest eigenvalue of $\frac{2}{n} X^\top X$, the curvature of
+the objective in its steepest direction. The number of steps grows with the ratio of the
+largest to the smallest eigenvalue, which is how stretched the bowl is; standardising
+brings that ratio close to one.
 :::
 
-### Variants you will meet
-
-Full gradient descent, as above, uses every observation to compute every step. With 749
-stations that is nothing. With ten million acoustic pings it is prohibitive, so the variants
-exist:
-
-| Variant | Each step uses | Trade-off |
-| --- | --- | --- |
-| Batch (full) gradient descent | All observations | Exact direction, expensive per step |
-| **Stochastic** gradient descent | One observation | Very cheap, very noisy path |
-| **Mini-batch** | 32–512 observations | The standard compromise; what neural networks use |
-| Momentum, Adam, RMSProp | Mini-batch, plus memory of past steps | Adapts the step size per parameter; fewer manual decisions |
-
-The noise in stochastic gradient descent turns out to be useful rather than merely tolerable:
-a path that rattles about can jump out of a shallow dip that a deterministic walk would settle
-into. That matters for the non-bowl-shaped objectives of
-[section 9](../09-neural-networks/index.qmd), and not at all here, where the objective has
-exactly one minimum.
-
-## Limits of the walk
-
-**On a bowl, any downhill walk arrives.** Linear and logistic regression have convex
-objectives, one minimum and no false floors, so gradient descent cannot get stuck, only be
-slow. Neural networks do not, and k-means does not. For those, where you start determines
-where you finish, which is why they take a seed and why running them twice is a diagnostic
-rather than a waste.
-
-**Convergence has to be declared, not detected.** The algorithm stops when the change falls
-below a tolerance, or when a maximum number of iterations is reached. Those are two very
-different outcomes and packages do not always distinguish loudly between them. A fit that
-quietly hit `maxit` is not a fit.
-
-**A flat region and a minimum look identical from inside.** The gradient is near zero in
-both. On a long flat valley floor, the elongated bowl above taken further, the algorithm
-will report itself finished while several parameter combinations remain effectively tied.
-The reported coefficients are then one arbitrary point in a set, quoted to four decimals.
-
-::: {.callout-tip}
 ## Key points
 
-- Gradient descent computes which way is downhill and steps that way, repeatedly. That is
-  the entire algorithm behind most modern model fitting.
-- The **learning rate** is the step size, and it has a hard upper limit. Below it, larger is
-  faster; above it, the fit diverges: here 0.72 worked and 0.80 reached an MSE of 7.3
-  billion in sixty steps.
-- The limit is set by the *shape* of the objective, which is set by the units of your
-  predictors. Standardising cut the condition number from 766 to 2.2 and the work from
-  1,500 steps to 17.
-- This is the real reason to scale predictors, and the reason `lm()`, `glm()` and trees do
-  not need it.
-- Stochastic and mini-batch variants trade an exact direction for cheap steps, and their
-  noise helps on objectives that are not bowls.
-
+::: {.key-points}
+- Gradient descent finds which way is downhill and takes a step, again and again.
+- The **learning rate** sets the step size. Too small crawls; too large diverges. Here
+  0.3 arrived in `r rates[[3]][2]` steps, and above about `r round(safe, 2)` the walk
+  never arrived.
+- The largest safe step is set by the steepest direction of the objective, and that
+  depends on the units of the inputs.
+- Standardising the inputs cut the work from
+  `r format(work[[3]][2], big.mark = ",")` steps to `r work[[3]][1]` without changing
+  the answer. Standardise the inputs of any model fitted by gradient descent.
+- `lm()`, `glm()` and trees are not fitted by gradient descent and do not need it.
 :::
 
 ## Try it yourself
 
-1. Add a third predictor, `temperature_c`, standardised, and extend `gradient_descent()` to
-   three parameters. How much does the condition number change, and does the stable learning
-   rate go up or down?
-2. Multiply `depth_m` by 1000 (millimetres) before centring, and recompute the largest stable
-   learning rate. Confirm that changing nothing but a unit changes the amount of computing by
-   a factor of a million.
+1. Run `steps_needed(raw, 0.3)`, the learning rate that worked well for standardised
+   inputs, on the inputs in raw units. What happens, and why?
+2. Add `temperature_c`, standardised, as a third input. Change `gradient_descent()` to
+   start from three zeros and find, by trying rates, the largest one that still arrives.
+   Is it higher or lower than before?
