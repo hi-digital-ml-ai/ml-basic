@@ -22,6 +22,11 @@ if (length(args) != 1) stop("usage: Rscript tools/figures-for-video.R _videos/NN
 video <- normalizePath(args[[1]], mustWork = TRUE)
 root  <- here::here()   # the repo root, found the same way the pages find it
 
+# Pages with Python tabs run them through reticulate, which needs the Python that
+# Quarto is told about in _environment.local (see .claude/workflow.md).
+local_env <- file.path(root, "_environment.local")
+if (file.exists(local_env)) readRenviron(local_env)
+
 script <- readLines(file.path(video, "script.md"), warn = FALSE)
 section <- sub("^section:\\s*", "", grep("^section:", script, value = TRUE))
 chapter <- file.path(root, dirname(section))
