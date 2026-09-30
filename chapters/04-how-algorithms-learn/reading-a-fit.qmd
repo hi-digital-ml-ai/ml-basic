@@ -1,5 +1,5 @@
 ---
-title: "Reading a fit"
+title: "Checking a fit"
 description: "How to tell whether the optimisation actually worked: the warnings that matter, the ones that do not, and the signatures of silent failure."
 order: 6
 categories: [optimisation, reproducibility]

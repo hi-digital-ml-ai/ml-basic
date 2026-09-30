@@ -83,6 +83,11 @@ commas.
 `reading-a-fit.qmd`, framed as a diagnostic page rather than a conceptual one, because
 "interpreting optimisation" is only useful as a set of things to check.
 
+**Revised 2026-09-30** (`feature/improve-how-algorithms-learn`): the same six pages in the
+same order, retitled *Loss functions*, *Finding the parameters*, *Gradient descent*,
+*Maximum likelihood*, *Priors and ridge regression* and *Checking a fit*. The file names
+are unchanged, since sections 5, 6 and 9 link to them.
+
 Three deliberate spillovers outside the section's own subject:
 
 - Gradient descent carries the *real* justification for §2's scaling advice (a factor of

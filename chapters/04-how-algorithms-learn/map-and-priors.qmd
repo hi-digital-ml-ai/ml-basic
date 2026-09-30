@@ -1,5 +1,5 @@
 ---
-title: "MAP estimation and priors"
+title: "Priors and ridge regression"
 description: "Adding what you knew before the survey to what the survey says, and discovering that this is exactly what regularisation does."
 order: 5
 categories: [optimisation, generalisation]

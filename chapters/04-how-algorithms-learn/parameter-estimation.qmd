@@ -1,5 +1,5 @@
 ---
-title: "Parameter estimation"
+title: "Finding the parameters"
 description: "Some models can be solved with a formula, most cannot, and knowing which is which explains a surprising amount of package behaviour."
 order: 2
 categories: [optimisation]
