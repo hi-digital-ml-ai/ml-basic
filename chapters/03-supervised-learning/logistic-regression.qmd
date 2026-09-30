@@ -1,8 +1,8 @@
 ---
 title: "Logistic regression"
-description: "Predicting presence and absence: why the model outputs probabilities rather than classes, and why the default threshold can make a working model do nothing."
+description: "Logistic regression predicts the log-odds of a yes-or-no outcome, so its answer is a probability between 0 and 1; a threshold, chosen from the cost of each mistake, turns it into yes or no."
 order: 4
-categories: [supervised, classification, class-imbalance]
+categories: [supervised, classification]
 ---
 
 ```{r}
@@ -10,48 +10,72 @@ categories: [supervised, classification, class-imbalance]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## Two mistakes that meet here
+## A probability stays between 0 and 1
 
-Presence and absence is the commonest response in marine ecology, and logistic
-regression is the standard tool for it. It is also the setting where two mistakes are
-almost universal: reading the coefficients in the wrong direction, and mistaking the
-model for the decision rule.
-
-This page demonstrates both, on a species present at 5% of stations, which is what
-"rare" usually means in a real survey.
+Whether a species is present at a station is a yes-or-no outcome, and a useful answer
+is a probability. Logistic regression gives one, with the same design as the Poisson
+regression of [Regression for counts](count-regression.qmd). This page shows how to
+read its coefficients as odds ratios, and that turning a probability into yes or no is
+a separate choice, made from the cost of each kind of mistake.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Predicting the log-odds
 
-We want a probability, which must lie between 0 and 1. A linear model would happily
-predict $1.4$. So we model the **log-odds** instead, which is unbounded:
+A probability $p$ must lie between 0 and 1, but a weighted sum of inputs can take any
+value. Logistic regression connects the two through the **odds**: the probability that
+something happens divided by the probability that it does not, $p / (1 - p)$. A
+probability of 0.8 gives odds of 4, often said "four to one". The odds run from 0
+upwards without limit, and their logarithm, the **log-odds**, from far below zero to far
+above, the same range as a weighted sum. So logistic regression predicts the log-odds:
 
-$$\log\!\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \dots$$
+$$\log\!\left(\frac{\hat{p}}{1 - \hat{p}}\right) = a + b_1 x_1 + b_2 x_2 + \dots \qquad\text{so}\qquad \hat{p} = \frac{1}{1 + e^{-(a + b_1 x_1 + b_2 x_2 + \dots)}}$$
 
-The odds $p/(1-p)$ run from 0 to infinity; their logarithm runs from $-\infty$ to
-$+\infty$, which is the right range for a linear predictor. Inverting gives the familiar
-S-shaped curve:
+However large or small the sum, $\hat{p}$ stays between 0 and 1. Against one input it
+traces an S-shaped curve, close to 0 at one end and close to 1 at the other.
 
-$$p = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x_1 + \dots)}}$$
+As with counts, raising $e$ to the power of a coefficient gives a multiplier, here on
+the odds: the **odds ratio**. A coefficient of 0.4 multiplies the odds by $e^{0.4}$ =
+`r round(exp(0.4), 2)` for each extra unit of the input. What that does to the
+probability depends on where it starts: an odds ratio of 2 takes a probability of 0.5
+to `r round(2 / 3, 2)`, but 0.9 only to `r round(0.9 * 2 / (0.1 + 0.9 * 2), 2)`. A
+squared input gives the log-odds one peak, as it did for counts, and the probability
+peaks at the same place.
 
-Exponentiating a coefficient gives an **odds ratio**: the multiplier on the odds for a
-one-unit increase. An odds ratio of 1.03 per metre of depth means each extra metre
-multiplies the odds of presence by 1.03.
+## A probability is not yet an answer
 
-The crucial property is that **the output is a probability, not a class.** Turning 0.31
-into "present" or "absent" requires a threshold, and the threshold is a decision about
-consequences, not a part of the model.
+Many uses need yes or no: survey a site or not, protect an area or not. A **threshold**
+turns the probability into an answer: yes if the probability reaches it, no if not.
+`predict()` uses 0.5, but nothing in the data chooses that number.
+
+A yes-or-no answer can be wrong in two ways. A **false alarm** says yes where the truth
+is no; a **miss** says no where the truth is yes. Raising the threshold gives fewer
+false alarms and more misses, and lowering it the reverse. The right balance depends on
+what each mistake costs, which only the person using the model can say.
+
+::: {.diagram}
+![Logistic regression predicts the log-odds with a weighted sum, as a straight line. The S-shaped curve turns the log-odds into a probability between 0 and 1. A threshold turns the probability into yes or no.](img/logistic-model.svg){fig-alt="Three cards. Log-odds, a straight line: log-odds equals a plus b times the input; a rising straight line crosses a dashed line marking zero; the weighted sum can take any value, as a straight line does. Probability, squeezed between 0 and 1: p equals 1 over 1 plus e to the minus log-odds; an S-shaped curve rises from near 0 to near 1, between dashed lines at 0 and 1, with observed no answers as dots along the bottom and yes answers along the top, more of them to the right; the curve nears 0 and 1 but never crosses them. Answer, a threshold you choose: yes if p is at least the threshold; a dashed line at 0.5 cuts the curve, inputs to the left of the crossing are called no and to the right called yes; raising the threshold gives fewer false alarms but more misses. A note says a probability stays between 0 and 1, and turning it into yes or no is a separate choice."}
+:::
 
 ## Worked example
+
+The outcome is `present`: whether any animal of the species was caught at a station.
+The split by site and the recipe with squared depth and temperature are those of
+[Linear and polynomial regression](linear-and-polynomial-regression.qmd).
+
+### Preparing the data
+
+In R, `logistic_reg()` fits with `glm()`, which predicts the probability of the
+outcome's second level. The survey lists `yes` before `no`, so the model would describe
+absence; `fct_relevel()` puts `no` first, so it describes presence.
 
 ::: {.panel-tabset group="language"}
 
@@ -59,54 +83,78 @@ consequences, not a part of the model.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean()
+survey <- load_coastal_survey_clean() |>
+  mutate(present = fct_relevel(present, "no"))
 
-split <- initial_split(survey, prop = 0.75, strata = rare_species, pool = 0.01)
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
 test  <- testing(split)
 
-tibble(
-  training_stations = nrow(train),
-  test_stations     = nrow(test),
-  present_in_test   = sum(test$rare_species == "yes"),
-  test_prevalence   = round(mean(test$rare_species == "yes"), 3)
-)
+predictors <- present ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+curve_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand") |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import statsmodels.api as sm
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
-              "salinity_psu", "substrate"]
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-X_train, X_test, y_train, y_test = train_test_split(
-    survey[predictors],
-    survey["rare_species"],
-    train_size=0.75,
-    stratify=survey["rare_species"],   # the equivalent of strata =
-    random_state=123,
-)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train, test = survey.iloc[train_rows], survey.iloc[test_rows]
 
-pd.DataFrame({
-    "training_stations": [len(X_train)],
-    "test_stations": [len(X_test)],
-    "present_in_test": [(y_test == "yes").sum()],
-    "test_prevalence": [round((y_test == "yes").mean(), 3)],
-})
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical", OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+     categorical),
+])
+
+# statsmodels gives confidence intervals, as for the count models, and takes
+# the outcome as 1 for present and 0 for absent, so no level order to watch.
+prepared = curve_recipe.fit(train[predictors])
+
+def design(data):
+    columns = pd.DataFrame(prepared.transform(data[predictors]),
+                           columns=prepared.get_feature_names_out(),
+                           index=data.index)
+    return sm.add_constant(columns)
+
+def outcome(data):
+    return (data["present"] == "yes").astype(int)
 ```
 
 :::
 
-Eleven positive stations in the test set. That is realistic and it is thin, and every
-performance figure below inherits that thinness.
+### The probability curve
 
 ::: {.panel-tabset group="language"}
 
@@ -114,228 +162,72 @@ performance figure below inherits that thinness.
 
 ```{r}
 #| label: fit
-logistic_fit <- workflow() |>
-  add_recipe(
-    recipe(rare_species ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-             salinity_psu + substrate, data = train) |>
-      step_impute_median(all_numeric_predictors())
-  ) |>
-  add_model(logistic_reg()) |>
-  fit(train)
-
-predictions <- augment(logistic_fit, test)
+logistic_fit <- workflow(curve_recipe, logistic_reg()) |> fit(train)
 ```
 
 ## Python
 
-```python
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
-
-numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
-
-# A ColumnTransformer is the recipe: it says what happens to which columns.
-# glm() dummy-codes factors for you; scikit-learn needs to be told.
-preprocess = ColumnTransformer([
-    ("numeric", SimpleImputer(strategy="median"), numeric),
-    ("substrate", OneHotEncoder(drop="first"), ["substrate"]),
-])
-
-# C is the inverse penalty strength, and it defaults to 1.0. scikit-learn
-# regularises unless you stop it, where glm() does not. C=inf turns it off,
-# so this is the same model as the R tab rather than a ridge fit.
-logistic_fit = Pipeline([
-    ("preprocess", preprocess),
-    ("model", LogisticRegression(C=np.inf, max_iter=1000)),
-]).fit(X_train, y_train)
-
-yes = list(logistic_fit.classes_).index("yes")
-pred_yes = logistic_fit.predict_proba(X_test)[:, yes]
-pred_class = logistic_fit.predict(X_test)
+```{python}
+logistic_fit = sm.GLM(outcome(train), design(train),
+                      family=sm.families.Binomial()).fit()
 ```
 
 :::
 
-### The model appears to be useless
+```{r}
+#| label: curve-numbers
+#| include: false
+logistic_coef <- tidy(logistic_fit) |> select(term, estimate) |> deframe()
+logistic_optimum <- -logistic_coef[["temperature_c_poly_1"]] /
+  (2 * logistic_coef[["temperature_c_poly_2"]])
 
-::: {.panel-tabset group="language"}
+# Linear regression with the same inputs, on presence coded as 1 and absence as 0
+train_01 <- train |> mutate(present = as.numeric(present == "yes"))
+linear_01 <- workflow(
+  recipe(predictors, data = train_01) |>
+    step_impute_median(all_numeric_predictors()) |>
+    step_relevel(substrate, ref_level = "sand") |>
+    step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE)),
+  linear_reg()
+) |> fit(train_01)
+linear_above_1 <- sum(predict(linear_01, test)$.pred > 1)
+```
 
-## R
+The probability of presence peaks at `r round(logistic_optimum, 1)` °C and falls away
+on either side. Linear regression with the same inputs, fitted to presence coded as 1
+and absence as 0, predicts a probability above 1 for `r linear_above_1` of the
+`r nrow(test)` test stations; logistic regression cannot.
 
 ```{r}
-#| label: accuracy
-bind_rows(
-  predictions |> accuracy(truth = rare_species, estimate = .pred_class) |>
-    transmute(measure = "Accuracy", value = round(.estimate, 4)),
-  tibble(measure = "Always answer \"absent\"",
-         value = round(mean(test$rare_species == "no"), 4))
+#| label: fig-curve
+#| fig-cap: "The predicted probability of presence across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The points are the training stations, where the species was present (top) or absent (bottom)."
+#| fig-alt: "A curve of the predicted probability of presence against temperature. It rises from about 0.1 in the coldest water to a peak of about 0.85 in the middle of the range, then falls again in warm water. Training stations are drawn as points along the top, where the species was present, and along the bottom, where it was absent; the points along the top are far more numerous, and the ones along the bottom are spread across the whole range."
+#| fig-width: 7.5
+#| fig-height: 4.5
+temp_range <- range(train$temperature_c, na.rm = TRUE)
+grid <- tibble(
+  temperature_c     = seq(temp_range[1], temp_range[2], length.out = 200),
+  depth_m           = median(train$depth_m, na.rm = TRUE),
+  chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3, na.rm = TRUE),
+  salinity_psu      = median(train$salinity_psu, na.rm = TRUE),
+  substrate         = factor("sand", levels = levels(train$substrate)),
+  season            = factor("summer", levels = levels(train$season))
 )
+
+ggplot(augment(logistic_fit, grid), aes(temperature_c, .pred_yes)) +
+  geom_jitter(data = train, aes(temperature_c, as.numeric(present == "yes")),
+              width = 0, height = 0.03, alpha = 0.3,
+              colour = ml_palette[["grey"]]) +
+  geom_line(colour = ml_palette[["vermilion"]], linewidth = 1.1) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  labs(x = "Temperature (°C)", y = "Probability of presence",
+       title = "The probability of presence rises and falls with temperature")
 ```
 
-## Python
+### Reading the coefficients as odds ratios
 
-```python
-pd.DataFrame({
-    "measure": ["Accuracy", 'Always answer "absent"'],
-    "value": [round((pred_class == y_test).mean(), 4),
-              round((y_test == "no").mean(), 4)],
-})
-```
-
-:::
-
-Identical to four decimal places. Now look at what it is doing:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: confusion
-predictions |> conf_mat(truth = rare_species, estimate = .pred_class)
-```
-
-## Python
-
-```python
-from sklearn.metrics import confusion_matrix
-
-pd.DataFrame(
-    confusion_matrix(y_test, pred_class, labels=["yes", "no"]),
-    index=["Truth: yes", "Truth: no"],
-    columns=["Predicted: yes", "Predicted: no"],
-)
-```
-
-:::
-
-**It never once predicts presence.** Not for a single station. Its accuracy equals the
-do-nothing baseline because it *is* the do-nothing baseline.
-
-### The model is not useless
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: auc
-bind_rows(
-  predictions |> roc_auc(truth = rare_species, .pred_yes) |>
-    transmute(measure = "ROC AUC", value = round(.estimate, 3)),
-  tibble(measure = "Highest probability it assigned to any station",
-         value = round(max(predictions$.pred_yes), 3))
-)
-```
-
-## Python
-
-```python
-from sklearn.metrics import roc_auc_score
-
-pd.DataFrame({
-    "measure": ["ROC AUC", "Highest probability it assigned to any station"],
-    "value": [round(roc_auc_score(y_test == "yes", pred_yes), 3),
-              round(pred_yes.max(), 3)],
-})
-```
-
-:::
-
-An ROC AUC of 0.79 says that if you pick one station where the species is present and
-one where it is absent, the model gives the present one a higher probability about 79%
-of the time. It has learned something real.
-
-The highest probability it ever assigns is 0.27. Nothing reaches 0.5, so under the
-default rule nothing is ever called present.
-
-The figure below also shows the ranking is far from clean: the few highest-scoring
-stations are absences. AUC 0.79 is a statement about averages, not about the top of the
-list, which matters if you plan to survey only the highest-ranked sites.
-
-```{r}
-#| label: fig-threshold
-#| fig-cap: "Left: predicted probabilities, separated by what was actually there. Most absences sit very close to zero while the present stations sit in the middle of the range, which is the ranking ability the AUC measures, yet no station of either kind reaches the default 0.5 cut-off, so everything is classified absent. Right: the ROC curve, which ignores thresholds entirely."
-#| fig-alt: "Two panels. The left panel shows jittered predicted probabilities. Absent stations cluster tightly near zero with a thin tail reaching 0.28; present stations are fewer and spread between about 0.03 and 0.17. A dashed vertical line at 0.5 lies far to the right of every point. The right panel is a stepped ROC curve bowing above the diagonal, with an area of 0.79."
-#| fig-width: 8.5
-#| fig-height: 4
-p_probs <- ggplot(predictions, aes(.pred_yes, rare_species, colour = rare_species)) +
-  geom_jitter(height = 0.22, alpha = 0.6, size = 1.8) +
-  geom_vline(xintercept = 0.5, linetype = "dashed",
-             colour = ml_palette[["vermilion"]], linewidth = 0.9) +
-  annotate("text", x = 0.48, y = 1.5, hjust = 1, size = 3.4,
-           colour = ml_palette[["vermilion"]], label = "default threshold") +
-  scale_x_continuous(limits = c(0, 0.62)) +
-  guides(colour = "none") +
-  labs(x = "Predicted probability of presence", y = "Actually",
-       title = "Nothing reaches the cut-off")
-
-p_roc <- predictions |>
-  roc_curve(truth = rare_species, .pred_yes) |>
-  ggplot(aes(1 - specificity, sensitivity)) +
-  geom_abline(slope = 1, intercept = 0, colour = ml_palette[["grey"]], linetype = "dotted") +
-  geom_path(colour = ml_palette[["blue"]], linewidth = 1.1) +
-  coord_fixed() +
-  labs(x = "False positive rate", y = "True positive rate",
-       title = "But it does rank correctly")
-
-p_probs + p_roc
-```
-
-### Choosing a threshold is your job, not the model's
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: thresholds
-thresholds <- map(c(0.5, 0.2, 0.15, 0.10, 0.05), \(cut) {
-  flagged <- predictions$.pred_yes >= cut
-  caught  <- sum(flagged & predictions$rare_species == "yes")
-  tibble(
-    threshold      = cut,
-    stations_flagged = sum(flagged),
-    caught         = caught,
-    missed         = sum(predictions$rare_species == "yes") - caught,
-    false_alarms   = sum(flagged) - caught
-  )
-}) |> list_rbind()
-
-thresholds
-```
-
-## Python
-
-```python
-def threshold_row(cut):
-    flagged = pred_yes >= cut
-    caught = int((flagged & (y_test == "yes")).sum())
-    return {
-        "threshold": cut,
-        "stations_flagged": int(flagged.sum()),
-        "caught": caught,
-        "missed": int((y_test == "yes").sum()) - caught,
-        "false_alarms": int(flagged.sum()) - caught,
-    }
-
-pd.DataFrame([threshold_row(cut) for cut in [0.5, 0.2, 0.15, 0.10, 0.05]])
-```
-
-:::
-
-There is no best row in that table. There is a row that matches your consequences.
-
-If flagging a station means sending a vessel to survey it, false alarms are expensive
-and the 0.15 row wastes eleven trips to catch two. If the species is protected and
-missing one carries a legal or conservation cost, the 0.05 row catching eight of eleven
-may be worth 68 wasted checks. The model is identical in every row. Only the decision
-changes.
-
-### The coefficient trap
+`exponentiate = TRUE` turns each coefficient into its odds ratio, with a 95% confidence
+interval as on the counts page.
 
 ::: {.panel-tabset group="language"}
 
@@ -343,132 +235,131 @@ changes.
 
 ```{r}
 #| label: odds-ratios
-tidy(logistic_fit, exponentiate = TRUE) |>
-  select(term, odds_ratio = estimate, p.value) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+odds_ratios <- tidy(logistic_fit, conf.int = TRUE, exponentiate = TRUE) |>
+  filter(str_detect(term, "substrate|season")) |>
+  transmute(term, odds_ratio = estimate,
+            conf_low = conf.low, conf_high = conf.high)
+
+odds_ratios |> mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-# scikit-learn reports no standard errors and no p-values; if you need them,
-# fit the same model with statsmodels instead.
-pd.DataFrame({
-    "term": logistic_fit[:-1].get_feature_names_out(),
-    "odds_ratio": np.exp(logistic_fit[-1].coef_[0]).round(3),
+```{python}
+interval = np.exp(logistic_fit.conf_int())
+odds_ratios = pd.DataFrame({
+    "term": logistic_fit.params.index,
+    "odds_ratio": np.exp(logistic_fit.params).round(2).to_numpy(),
+    "conf_low": interval[0].round(2).to_numpy(),
+    "conf_high": interval[1].round(2).to_numpy(),
 })
+
+odds_ratios[odds_ratios["term"].str.contains("substrate|season")]
 ```
 
 :::
 
-Depth has an odds ratio of 0.97, below 1, apparently meaning the species becomes *less*
-likely in deeper water. The simulation built in the opposite: deeper stations are more
-likely to hold it, with a true odds ratio of $e^{0.030} = 1.031$ per metre.
+```{r}
+#| label: odds-numbers
+#| include: false
+mud <- odds_ratios |> filter(term == "substratemud")
+excluding_1 <- sum(odds_ratios$conf_low > 1 | odds_ratios$conf_high < 1)
+```
 
-The model is not wrong. The table is being read wrong.
+With the other inputs held fixed, the odds of presence on mud are
+`r round(mud$odds_ratio, 2)` times those on sand, but the interval runs from
+`r round(mud$conf_low, 2)` to `r round(mud$conf_high, 2)` and includes 1.
+`r str_to_sentence(if (excluding_1 == 0) "none" else xfun::numbers_to_words(excluding_1))` of the six intervals leave
+out 1. The count models could tell mud from sand; whether any animal was caught
+carries less information than how many, as
+[Regression and classification](regression-and-classification.qmd) warned.
 
-::: {.callout-important}
-## The class your coefficients describe
-`rare_species` has levels `yes, no`, in that order. tidymodels treats the **first** level
-as the event, so `.pred_yes` is correctly the probability of presence. But the underlying
-`glm()` follows base R's convention and models the probability of the **last** level,
-"no".
+### Choosing a threshold
 
-So the fitted coefficients describe the odds of *absence*. Depth's 0.971 means each
-metre multiplies the odds of absence by 0.971, which is the odds of presence multiplied
-by $1/0.971 = 1.030$, the simulated truth, to three decimal places.
-
-The predictions were right all along. Only the coefficient table pointed the other way,
-and nothing in the output says so. Always sanity-check the sign of one coefficient
-against a simple cross-tabulation before publishing a direction.
-
-scikit-learn takes the **opposite** convention: `classes_` is sorted, so it is
-`['no', 'yes']` here, and the coefficients describe the odds of the *second* class,
-presence. The identical table therefore means the opposite thing in the two tabs,
-which is exactly why the cross-tabulation below is worth the four lines it costs.
-:::
+**Accuracy** is the share of answers that are right. Each row below applies one
+threshold to the test sites. A threshold of 0 calls every station present, the answer
+a model would give if it had learned nothing.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: sanity-check
-survey |>
-  mutate(depth_band = cut(depth_m, breaks = c(0, 50, 100, 150, 200))) |>
-  group_by(depth_band) |>
-  summarise(stations = n(),
-            present = sum(rare_species == "yes"),
-            prevalence = round(mean(rare_species == "yes"), 3))
+#| label: thresholds
+predicted <- augment(logistic_fit, test)
+
+calls <- function(threshold) {
+  called  <- predicted$.pred_yes >= threshold
+  present <- predicted$present == "yes"
+  tibble(threshold,
+         called_present = sum(called),
+         false_alarms   = sum(called & !present),
+         misses         = sum(!called & present),
+         accuracy       = round(mean(called == present), 2))
+}
+
+thresholds <- map(c(0, 0.5, 0.7, 0.9), calls) |> list_rbind()
+thresholds
 ```
 
 ## Python
 
-```python
-depth_band = pd.cut(survey["depth_m"], bins=[0, 50, 100, 150, 200])
+```{python}
+probability = logistic_fit.predict(design(test))
+present = outcome(test) == 1
 
-survey.groupby(depth_band, observed=True).agg(
-    stations=("rare_species", "size"),
-    present=("rare_species", lambda s: (s == "yes").sum()),
-    prevalence=("rare_species", lambda s: round((s == "yes").mean(), 3)),
-)
+def calls(threshold):
+    called = probability >= threshold
+    return {
+        "threshold": threshold,
+        "called_present": int(called.sum()),
+        "false_alarms": int((called & ~present).sum()),
+        "misses": int((~called & present).sum()),
+        "accuracy": round((called == present).mean(), 2),
+    }
+
+pd.DataFrame([calls(threshold) for threshold in [0, 0.5, 0.7, 0.9]])
 ```
 
 :::
 
-Prevalence rises with depth. Whatever the coefficient table appeared to say, the species
-is a deep-water one.
+```{r}
+#| label: threshold-numbers
+#| include: false
+at <- function(cut) thresholds |> filter(threshold == cut)
+```
 
-## Three questions behind one number
+Calling every station present is right `r round(100 * at(0)$accuracy)`% of the time,
+because the species is common. The default threshold of 0.5 raises that only to
+`r round(100 * at(0.5)$accuracy)`%, and it still gives `r at(0.5)$false_alarms` false
+alarms, against `r at(0.5)$misses` misses. At 0.7, the false alarms fall to
+`r at(0.7)$false_alarms` and the misses rise to `r at(0.7)$misses`; at 0.9, to
+`r at(0.9)$false_alarms` and `r at(0.9)$misses`. The model is the same in every row.
 
-Three separable things got conflated in the phrase "the model is 95% accurate":
+If the map is used to protect the species, a miss leaves a site unprotected, and a low
+threshold suits. If it sends a vessel to sample the species, a false alarm is a wasted
+trip, and a higher one suits. For a rare species the default can fail completely: its
+probabilities may never reach 0.5, so nothing is called present.
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) takes this up.
 
-1. **Does the model rank stations correctly?** ROC AUC 0.79: yes, imperfectly.
-2. **Are the probabilities on a sensible scale?** They top out at 0.27 because presence
-   really is rare. That is honest, not broken.
-3. **What do we do about it?** A threshold, chosen from the cost of a miss against the
-   cost of a false alarm.
-
-Accuracy silently combines all three and answers none of them. For rare events, report
-AUC or precision–recall, show the threshold you chose, and say why.
-
-## Limits of this model
-
-**Eleven positives is a thin test set.** Every figure here has wide uncertainty, and
-another split would move them. [Section 7](../07-validation/index.qmd) treats resampling
-as the fix.
-
-**ROC AUC is optimistic when classes are very imbalanced**, because the false-positive
-rate has a large denominator. At 5% prevalence a precision–recall curve is more
-informative, and at 0.1% ROC AUC is close to useless.
-
-**Logistic regression is still linear**, in the log-odds. A species with a depth
-*optimum* rather than a preference needs curved terms, exactly as in
-[Linear and polynomial regression](linear-and-polynomial-regression.qmd).
-
-**Balancing the training data changes the probabilities.** Down-sampling or SMOTE will
-push predictions up above 0.5, which feels like an improvement and is really a
-recalibration. If you balance, the probabilities no longer estimate real prevalence.
-
-::: {.callout-tip}
 ## Key points
-- Logistic regression models the log-odds, so predictions stay between 0 and 1;
-  exponentiated coefficients are odds ratios.
-- The model returns probabilities. Converting them to classes needs a threshold, and
-  the threshold encodes your costs, not the data's.
-- With a rare class the default 0.5 threshold can classify nothing as present. Here the
-  model never once predicted presence, yet had an AUC of 0.79.
-- Accuracy equal to the majority-class rate means your model may be doing nothing at
-  all. Always print the confusion matrix.
-- Check which class your coefficients refer to. Here `tidy()` reported odds of
-  *absence*, reversing every apparent direction, while the predictions were correct.
+
+::: {.key-points}
+- Logistic regression predicts the log-odds of a yes-or-no outcome, so its predicted
+  probabilities stay between 0 and 1.
+- Its coefficients read as odds ratios once raised as a power of $e$: multipliers on
+  the odds, not on the probability.
+- Check which outcome level the model describes: in R, `glm()` describes the second.
+- A threshold turns a probability into yes or no. Raising it gives fewer false alarms
+  and more misses; choose it from what each mistake costs.
+- Compare accuracy with the answer that ignores the inputs: here, calling every
+  station present was already right `r round(100 * at(0)$accuracy)`% of the time.
 :::
 
 ## Try it yourself
 
-1. Add `themis::step_downsample(rare_species)` to the recipe and refit. Does the model
-   now predict presence at 0.5? Compare the ROC AUC before and after: has the model
-   improved, or has the scale moved?
-2. Use `probably::threshold_perf()` to compute sensitivity and specificity across all
-   thresholds. Which one would you choose if a missed detection cost ten times a false
-   alarm?
+1. Refit the model without `step_poly()`, so temperature enters as a straight line in
+   the log-odds. What shape does the probability curve take on the figure?
+2. Fit the same model to `rare_species`, the species caught at about 5% of stations.
+   What is the highest probability it gives any test station, and how many stations
+   does the default threshold of 0.5 call present?
