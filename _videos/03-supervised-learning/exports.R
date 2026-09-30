@@ -3,88 +3,68 @@
 #
 # Each table is built with with(env, ...), which looks names up in the page's
 # environment, and written outside it: inside, `dir` would find base R's dir().
-# Tables a page prints without keeping are rerun with the page's own functions and
-# objects; nothing here fits a model the page does not.
 
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # The count as the page summarises it, its histogram, and what "present" hides.
+  # The count's shape: stations per count, and the summary the prose quotes.
   "regression-and-classification.qmd" = function(env, dir) {
-    write(with(env, dplyr::summarise(survey,
-      stations = dplyr::n(), mean_count = round(mean(abundance), 2),
-      variance = round(var(abundance), 2), zeros = sum(abundance == 0),
-      zero_pct = round(100 * mean(abundance == 0), 1))), dir, "count-summary")
-    write(with(env, dplyr::count(survey, abundance, name = "stations")), dir, "count-histogram")
-    write(with(env, survey |> dplyr::filter(abundance > 0) |>
-      dplyr::summarise(present = dplyr::n(), smallest = min(abundance),
-                       largest = max(abundance), median = median(abundance))), dir, "present")
+    write(with(env, dplyr::count(survey, abundance)), dir, "histogram")
+    write(with(env, tibble::tibble(count_mean, count_var, zero_pct)), dir, "count-shape")
   },
 
-  # The three models on 200 test stations, their temperature curves (the figure's own
-  # `curves`), the deviance ratio and the negative binomial's AIC.
+  # The curve's temperature optimum, and its negative predictions on the test sites.
   "linear-and-polynomial-regression.qmd" = function(env, dir) {
-    write(with(env, dplyr::bind_rows(
-      evaluate(linear_reg(), base_recipe, "Linear"),
-      evaluate(linear_reg(), curved_recipe, "Polynomial"),
-      evaluate(poisson_reg() |> set_engine("glm"), curved_recipe, "Poisson + polynomial")) |>
-      dplyr::mutate(test_stations = nrow(test))), dir, "three-models")
-    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "curves")
-    write(with(env, tibble::tibble(
-      ratio = round(fitted_glm$deviance / fitted_glm$df.residual, 2),
-      theta = round(nb_fit$theta, 3),
-      aic_poisson = round(AIC(fitted_glm)), aic_negbin = round(AIC(nb_fit)))), dir, "dispersion")
+    write(with(env, tibble::tibble(optimum, test_stations = nrow(test))), dir, "optimum")
+    write(with(env, scores), dir, "line-curve-scores")
   },
 
-  # The rare species: the split, every test prediction, the page's scores and threshold
-  # table, the depth odds ratio, and prevalence by depth band.
+  # The three curves across temperature, the multipliers of both count models, and
+  # the spread ratio.
+  "count-regression.qmd" = function(env, dir) {
+    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "count-curves")
+    write(with(env, dplyr::bind_rows(poisson = poisson_table, negbin = nb_table, .id = "fit")),
+          dir, "multipliers")
+    write(with(env, tibble::tibble(spread_ratio, theta = nb_fit$theta, wider)), dir, "spread")
+    write(with(env, scores), dir, "count-scores")
+  },
+
+  # The probability curve, the training stations it was fitted to, and the thresholds.
   "logistic-regression.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(
-      training = nrow(train), testing = nrow(test),
-      present_in_test = sum(test$rare_species == "yes"),
-      accuracy = round(accuracy(predictions, truth = rare_species, estimate = .pred_class)$.estimate, 4),
-      always_absent = round(mean(test$rare_species == "no"), 4),
-      predicted_present = sum(predictions$.pred_class == "yes"),
-      roc_auc = round(roc_auc(predictions, truth = rare_species, .pred_yes)$.estimate, 3),
-      highest = round(max(predictions$.pred_yes), 3))), dir, "rare-scores")
-    write(with(env, dplyr::select(predictions, .pred_yes, rare_species)), dir, "rare-predictions")
+    write(with(env, dplyr::select(augment(logistic_fit, grid), temperature_c, .pred_yes)),
+          dir, "logistic-curve")
+    write(with(env, dplyr::transmute(train, temperature_c,
+                                     present = as.integer(present == "yes"))), dir, "logistic-points")
     write(with(env, thresholds), dir, "thresholds")
-    write(with(env, tidy(logistic_fit, exponentiate = TRUE) |>
-      dplyr::filter(term == "depth_m") |>
-      dplyr::transmute(term, odds_ratio = round(estimate, 3))), dir, "depth-odds")
-    write(with(env, survey |>
-      dplyr::mutate(depth_band = cut(depth_m, breaks = c(0, 50, 100, 150, 200))) |>
-      dplyr::group_by(depth_band) |>
-      dplyr::summarise(stations = dplyr::n(), present = sum(rare_species == "yes"),
-                       prevalence = round(mean(rare_species == "yes"), 3))), dir, "depth-bands")
   },
 
-  # The depth-3 tree's nodes (rpart's own split labels), the four models' training and
-  # test error, and the two capacity curves the figure draws.
-  "trees-forests-boosting.qmd" = function(env, dir) {
-    write(with(env, {
-      engine <- extract_fit_engine(tree_fit)
-      tibble::tibble(node = as.integer(rownames(engine$frame)), var = as.character(engine$frame$var),
-                     n = engine$frame$n, prediction = round(engine$frame$yval, 1),
-                     rule = labels(engine))
-    }), dir, "tree")
-    write(with(env, dplyr::bind_rows(
-      evaluate(decision_tree(tree_depth = 3, min_n = 5) |> set_engine("rpart") |>
-                 set_mode("regression"), base_recipe, "Tree (depth 3)"),
-      evaluate(decision_tree() |> set_engine("rpart") |> set_mode("regression"),
-               base_recipe, "Tree (defaults)"),
-      evaluate(rand_forest(trees = 500) |> set_engine("ranger", seed = 9) |>
-                 set_mode("regression"), base_recipe, "Random forest (500)"),
-      evaluate(boost_tree(trees = 500, learn_rate = 0.1, tree_depth = 4) |>
-                 set_engine("xgboost") |> set_mode("regression"),
-               dummied_recipe, "Boosting (500 trees)")) |>
-      dplyr::mutate(training_stations = nrow(train))), dir, "four-models")
-    write(with(env, dplyr::bind_rows(dplyr::mutate(boosting_curve, method = "boosting"),
-                                     dplyr::mutate(depth_curve, method = "tree"))), dir, "capacity")
+  # The depth-3 tree's nodes, its steps against the Poisson curve, and the depths.
+  "decision-trees.qmd" = function(env, dir) {
+    write(with(env, dplyr::select(nodes, node, var, n, yval, cut)), dir, "tree-nodes")
+    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "tree-steps")
+    write(with(env, tibble::tibble(low = temp_range[1], high = temp_range[2])), dir, "tree-range")
+    write(with(env, depths), dir, "depths")
   },
 
-  # The ten models, as the page ranks them.
+  # The six first questions, the scores by number of trees, thirty of the forest's
+  # trees with their average, and the four models on the test sites.
+  "forests-and-boosting.qmd" = function(env, dir) {
+    write(with(env, tibble::tibble(question = first_questions, threshold = thresholds)),
+          dir, "first-questions")
+    write(with(env, dplyr::bind_rows(forest = forest_scores, boosting = boost_scores,
+                                     .id = "model")), dir, "tree-counts")
+    write(with(env, trees_long), dir, "forest-trees")
+    write(with(env, dplyr::select(augment(forest_fit, grid), temperature_c, .pred)),
+          dir, "forest-average")
+    write(with(env, tibble::tibble(model = names(test_rmse), rmse = unname(test_rmse),
+                                   depth = best_depth, trees = best_boost)), dir, "ensembles-test")
+  },
+
+  # The seven models on the validation and test sites, and the three curves beyond
+  # the sampled temperatures.
   "choosing-a-method.qmd" = function(env, dir) {
-    write(with(env, results), dir, "ten-models")
+    write(with(env, results), dir, "comparison")
+    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "extrapolate")
+    write(with(env, tibble::tibble(low = temp_range[1], high = temp_range[2])), dir, "extrapolate-range")
   }
 )
