@@ -31,7 +31,7 @@ survey, so you can recognise them in your own code.
 ## Four kinds of leakage
 
 ::: {.diagram}
-![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the data meant for testing shapes the model before the test.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column known only after the outcome, such as catch weight when predicting a count; ask whether it would exist before sampling. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test data shape the model before it is tested."}
+![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the data meant for testing shapes the model before the test.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column made from the outcome, such as catch weight when predicting a count; drop columns made from the outcome. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test data shape the model before it is tested."}
 :::
 
 The rule behind all four: the test data must be untouched by every decision, not just
@@ -122,7 +122,7 @@ def fit_and_test(predictors, train_data, test_data):
 
 :::
 
-## Target leakage: a column from the future
+## Target leakage: the answer in disguise
 
 The survey recorded `catch_weight_kg` alongside the count. Adding it to the model takes
 one word:
@@ -154,15 +154,17 @@ pd.DataFrame([
 
 :::
 
-$R^2$ jumps from `r target$rsq[1]` to `r target$rsq[2]`, and the model is worthless. Catch weight is
-the weight of the animals that were counted, so it is the count in other units
-(correlation `r round(cor(survey$abundance, survey$catch_weight_kg), 2)`). At a new
-station, where nothing has been caught yet, there is no catch weight to give the model.
+$R^2$ jumps from `r target$rsq[1]` to `r target$rsq[2]`, but the model has learnt
+nothing about habitat. Catch weight is the weight of the animals that were counted, so it
+is the count again, in other units (correlation
+`r round(cor(survey$abundance, survey$catch_weight_kg), 2)`). For every test station,
+the model is handed the answer it should predict: the `r target$rsq[2]` measures
+copying, not predicting.
 
-Real target leaks are rarely this obvious: a summary from the same haul, a note written
-after the catch was sorted, a habitat class assigned by looking at what was caught. The
-test is one question: **would this value exist, at this moment, for a station not yet
-sampled?**
+Real target leaks are rarely this obvious: a total from the same haul, a note written
+after the catch was sorted. Each is made from the outcome, so each carries part of the
+answer. The test is one question: **is this column worked out from the thing I am
+predicting?**
 
 ## Group leakage: the same site twice
 
@@ -326,8 +328,8 @@ that.
 ::: {.key-points}
 - Leakage is information from the test data reaching the model; it inflates every score
   and leaves no trace.
-- Target leakage: ask whether a column would exist for a station not yet sampled. Catch
-  weight took $R^2$ from `r target$rsq[1]` to `r target$rsq[2]`.
+- Target leakage: drop any column made from the outcome. Catch weight, the count in
+  other units, took $R^2$ from `r target$rsq[1]` to `r target$rsq[2]`.
 - Group leakage: keep a site's rows together. Here $R^2$ fell from `r group$rsq[1]` to
   `r group$rsq[2]` once sites were kept whole.
 - RMSEs from different test sets cannot be compared; a relative measure such as $R^2$
