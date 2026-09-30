@@ -302,7 +302,7 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 | --- | --- | --- |
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
 | 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
-| 3 Supervised learning | `feature/improve-supervised-learning` | Pages done; video narrated with Gemini 2026-09-30 (44 requests, about $0.14), under review |
+| 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
 | 4–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
