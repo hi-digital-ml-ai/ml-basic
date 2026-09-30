@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 684" width="100%" role="img" aria-label="Questions that narrow the choice of method. Predict or explain: To explain, choose a model whose parts can be read: regression coefficients, or a short tree. Quantity, count or yes/no: Quantity: linear or polynomial regression. Count: Poisson or negative binomial. Yes/no: logistic. Beyond the sampled range: Trees, forests and boosting stay level past the data. A regression model follows its shape, right or wrong. Hundreds or thousands: A few hundred noisy examples suit a simple curve. Many thousands give forests and boosting room. Who must accept it: People can check a short tree or a regression model; hundreds of trees need extra tools to explain. A note says: when unsure, fit a regression model and a forest; if the forest wins by a lot, the regression model is missing a shape.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .num  { font: bold 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #ffffff; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Questions that narrow the choice</text>
+<rect class="box" x="0" y="50" width="940" height="96" rx="8"/><rect x="0" y="50" width="940" height="6" rx="3" fill="#0072B2"/>
+<circle cx="38" cy="102" r="17" fill="#0072B2"/><text class="num" x="38" y="108" text-anchor="middle">1</text>
+<text class="lab" x="72" y="90" fill="#0072B2">THE AIM</text>
+<text class="head" x="72" y="118">Predict or explain</text>
+<line x1="382" y1="72" x2="382" y2="132" stroke="#d5dde3" stroke-width="1.4"/>
+<text class="body" x="406" y="96">To explain, choose a model whose parts can be read:</text>
+<text class="body" x="406" y="122">regression coefficients, or a short tree.</text>
+<rect class="box" x="0" y="162" width="940" height="96" rx="8"/><rect x="0" y="162" width="940" height="6" rx="3" fill="#E69F00"/>
+<circle cx="38" cy="214" r="17" fill="#E69F00"/><text class="num" x="38" y="220" text-anchor="middle">2</text>
+<text class="lab" x="72" y="202" fill="#E69F00">THE OUTCOME</text>
+<text class="head" x="72" y="230">Quantity, count or yes/no</text>
+<line x1="382" y1="184" x2="382" y2="244" stroke="#d5dde3" stroke-width="1.4"/>
+<text class="body" x="406" y="208">Quantity: linear or polynomial regression. Count:</text>
+<text class="body" x="406" y="234">Poisson or negative binomial. Yes/no: logistic.</text>
+<rect class="box" x="0" y="274" width="940" height="96" rx="8"/><rect x="0" y="274" width="940" height="6" rx="3" fill="#009E73"/>
+<circle cx="38" cy="326" r="17" fill="#009E73"/><text class="num" x="38" y="332" text-anchor="middle">3</text>
+<text class="lab" x="72" y="314" fill="#009E73">THE RANGE</text>
+<text class="head" x="72" y="342">Beyond the sampled range</text>
+<line x1="382" y1="296" x2="382" y2="356" stroke="#d5dde3" stroke-width="1.4"/>
+<text class="body" x="406" y="320">Trees, forests and boosting stay level past the data.</text>
+<text class="body" x="406" y="346">A regression model follows its shape, right or wrong.</text>
+<rect class="box" x="0" y="386" width="940" height="96" rx="8"/><rect x="0" y="386" width="940" height="6" rx="3" fill="#D55E00"/>
+<circle cx="38" cy="438" r="17" fill="#D55E00"/><text class="num" x="38" y="444" text-anchor="middle">4</text>
+<text class="lab" x="72" y="426" fill="#D55E00">THE DATA</text>
+<text class="head" x="72" y="454">Hundreds or thousands</text>
+<line x1="382" y1="408" x2="382" y2="468" stroke="#d5dde3" stroke-width="1.4"/>
+<text class="body" x="406" y="432">A few hundred noisy examples suit a simple curve.</text>
+<text class="body" x="406" y="458">Many thousands give forests and boosting room.</text>
+<rect class="box" x="0" y="498" width="940" height="96" rx="8"/><rect x="0" y="498" width="940" height="6" rx="3" fill="#CC79A7"/>
+<circle cx="38" cy="550" r="17" fill="#CC79A7"/><text class="num" x="38" y="556" text-anchor="middle">5</text>
+<text class="lab" x="72" y="538" fill="#CC79A7">THE AUDIENCE</text>
+<text class="head" x="72" y="566">Who must accept it</text>
+<line x1="382" y1="520" x2="382" y2="580" stroke="#d5dde3" stroke-width="1.4"/>
+<text class="body" x="406" y="544">People can check a short tree or a regression model;</text>
+<text class="body" x="406" y="570">hundreds of trees need extra tools to explain.</text>
+<text class="note" x="470" y="634" text-anchor="middle">When unsure, fit a regression model and a forest. If the forest wins by a lot,</text>
+<text class="note" x="470" y="657" text-anchor="middle">the regression model is missing a shape.</text>
+</svg>

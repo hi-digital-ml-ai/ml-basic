@@ -3,7 +3,8 @@
 How to revise a course section's pages, diagrams and video. Written on 2026-09-29 from the
 revision of section 1, Introduction (`feature/improve-introduction`, 11 commits), and
 updated on 2026-09-30 from section 2, Marine data (`feature/improve-marine-data`, 14
-commits). The general writing and figure rules are in `authoring-guide.md` and the video
+commits), and section 3, Supervised learning (`feature/improve-supervised-learning`, 11
+commits for the pages). The general writing and figure rules are in `authoring-guide.md` and the video
 pipeline in `videos.md`; this file collects what the revisions added to them, as a
 checklist.
 
@@ -26,7 +27,11 @@ The Welcome page and the two Toolkit pages are out of scope for now.
    merge, move or drop, whether a new page is needed (section 2 gained *The coastal
    survey* to open it), and the order in which methods are introduced. Splitting the
    whole section in two was considered for section 2 and rejected; ask before
-   proposing it. Update `_quarto.yml` (sidebar), each page's `order:` and
+   proposing it. **Revisit the titles and layout after the first page**, once its
+   rewrite shows how much each topic needs: section 3's first page needed little
+   change, but the user then asked to rethink the layout, and the section became
+   seven pages, counts before logistic regression and a single tree before forests
+   and boosting. Update `_quarto.yml` (sidebar), each page's `order:` and
    `curriculum.md` to match, and record the section's decisions in its
    `curriculum.md` entry.
 3. **One page at a time.** Rewrite, render, screenshot, and let the user review it.
@@ -41,11 +46,16 @@ The Welcome page and the two Toolkit pages are out of scope for now.
    appears: the overview, the sidebar, the home page and `curriculum.md`.
 6. **Check links from other sections.** Moving a topic between sections breaks their
    pointers to it: after section 2, a section 6 page still sent readers to "section 3"
-   for RMSEs that cannot be compared across test sets, which section 2 now shows. `grep -rn "section N\|§N" chapters/` for the section's number
-   and for every page it moved or renamed.
-7. **The video**, after the pages are settled, on the draft voice first (see below).
-8. **Gemini narration** only when the user approves the script.
-9. **Close:** full `quarto render`, then merge into `develop` when the user asks.
+   for RMSEs that cannot be compared across test sets, which section 2 now shows.
+   `grep -rn "section N\|§N" chapters/` for the section's number and for every page
+   it moved or renamed.
+7. **A consistency pass across the section** before the video: the same model gets
+   the same name on every page, in headings, plot legends and tables alike (see
+   Wording). In section 3 the user found the old shape names ("The straight line",
+   "The curve") and raw term labels only after the overview was done.
+8. **The video**, after the pages are settled, on the draft voice first (see below).
+9. **Gemini narration** only when the user approves the script.
+10. **Close:** full `quarto render`, then merge into `develop` when the user asks.
 
 Checking a page: `quarto render <page>`, then a headless Chrome screenshot of
 `_site/...` (a static server on port 4321 from `_site/` works). The user reviews
@@ -109,6 +119,10 @@ screenshots, so look at the rendered page yourself first.
   place of `python-tabs.qmd`. Fix any tab that fails first (`python/check-snippets.py
   <page>`); a failing `{python}` chunk fails the render. The survey page was the
   first converted; setup is in `workflow.md`, Python for the tabs.
+- **Tab the R-only chunks too.** Once a page has R and Python tabs, a chunk with no
+  Python equivalent still goes in a `panel-tabset` with a single *R* tab, so every
+  chunk looks the same (`authoring-guide.md`, Code). Python equivalents may need a
+  package R has built in: section 3 added statsmodels for the count models.
 
 ### Wording
 
@@ -124,6 +138,11 @@ screenshots, so look at the rendered page yourself first.
   code too. Section 2's demonstrations used random forests, and its scaling page had a
   table of nine methods and a lasso exercise; they became linear regression, a plain
   paragraph ("methods that measure distance need a common scale"), and nothing.
+- **Name a worked model by its method**, not its shape: *Linear regression*,
+  *Polynomial regression*, *Poisson regression*, *Negative binomial model*, not "The
+  straight line", "The curve" or "The Poisson curve". Use the same name in the
+  heading, the prose, the plot legend and the model labels in code, on every page
+  that fits the model.
 - **Explain a metric before its first number.** RMSE and R squared are each given one
   plain sentence on the first page that quotes them.
 - **Make an example show what its heading claims.** The salinity example was headed as
@@ -135,6 +154,13 @@ screenshots, so look at the rendered page yourself first.
 - **Explain any label the reader did not see being made.** "Shallow, mid-depth and
   deep" groups needed one sentence saying k-means found them and the page named them
   by their average depth.
+- **Tables show readable term labels.** R's `tidy()` pastes a factor's name onto
+  its level (`substrategravel`, `seasonsummer`); rewrite them as `substrate: gravel`
+  (`str_replace(term, "^(substrate|season)", "\\1: ")`) and match the Python tab's
+  labels to R's.
+- **An overview's pointers must be traceable.** "Section 2 pointed here for a model
+  that respects what a count is" named no page, and the user could not find it; it
+  was cut. Name the page, or drop the sentence if it is not essential.
 - **Plot titles must make sense on their own.** "Abundance, never shown to it" was
   unclear; say "k-means did not use abundance" in plain words.
 - Few *who, why, how, what* (see `authoring-guide.md`, Voice).
@@ -183,7 +209,8 @@ diagrams (`chapters/01-introduction/img/six-tasks.svg` is a good template to cop
 
 A section video is a **short overview**, not a place to teach everything: it
 introduces the section and says what its pages cover. Section 1's video is 28 scenes,
-about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
+about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41; section 3's,
+with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 `_videos/01-introduction/` or `_videos/02-marine-data/` as the template alongside
 `videos.md`.
 
@@ -217,12 +244,33 @@ about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
   course comes back to these ideas" worked.
 - **No section numbers** anywhere in the video, and no bare "the next section": say
   "the next section of the course" or "later in the course", or name the section.
+- **Define a term in its own scene before using it.** Section 3 used "false alarms"
+  and "misses" straight away, and the user found them confusing; a schematic scene
+  now defines each (said present, truly absent; said absent, truly present) before the
+  thresholds scene counts them, and the bars carry the same words.
+- **Name what the picture shows.** Overdispersion was drawn but never named, so the
+  difference between the two models' intervals meant nothing; the scene now says the
+  counts are overdispersed, so Poisson's intervals are too narrow, and keeps both
+  sets on screen. Say it on screen as well as in the voice: the tree scenes gained the
+  heading "a decision tree".
+- **Say what a data role means in the scene.** "Held-back sites" became "the
+  validation sites, which were held back from fitting".
+- **Name the lesson a result teaches.** The single tree led on the validation sites
+  but not on the test sites; the scene now says its depth, and boosting's number of
+  trees, were tuned on those sites, "a kind of overfitting", and marks their gaps.
 - Spoken numbers come only from the pages, via the video's `exports.R`; drop an export
   when the video stops using it. Schematic scenes use no numbers.
+- **Name models by method on screen**, as on the pages. The video reads the pages'
+  model labels from the CSVs, so renaming a model on a page means updating the keys in
+  `scenes.py` too, then re-running `exports.R`.
 - **Check frames**, not just the last frame: `manim -ql -s` for last frames, and an
   ffmpeg `tile` contact sheet of the rough cut to check text arrives with the voice.
   Look hard at stacked labels: section 2's twelve seabed spellings touched each other
-  vertically until the list was given more spacing.
+  vertically until the list was given more spacing. Section 3's charts put the axis
+  names on the zero line when the range went below zero (Manim draws the x axis at
+  y = 0), so its `Chart` places them from the chart's edges; and a tree's "yes" and
+  "no" crossed the branches until they became small tags on them, as `rpart.plot`
+  draws them.
 - **Pages with Python tabs knit for the video** because `tools/figures-for-video.R`
   reads `_environment.local` (the Python reticulate uses). If it fails on a
   `{python}` chunk, check that file first.
@@ -237,6 +285,14 @@ about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
   `timeout`. Section 1's 28 scenes and section 2's 29 all succeeded first time (about
   $0.08 and $0.09). `python tools/audio-list.py <video>` confirms that no scene is
   left on the draft voice.
+- **Write numbers that stand for words as words.** Gemini read "between 0 and 1" as
+  "between 1 and 1", though the draft voice read it right; "between zero and one" fixed
+  it. Listen to every Gemini take; the draft voice does not predict its mistakes.
+- **Names the voice may misread** go in `_videos/pronunciation.yml` as respellings,
+  which change only the speech; the captions keep the script's spelling. For a
+  doubtful name, one Gemini request can read several candidates in turn for the user
+  to choose from: section 3 chose "Pwah-son" for Poisson, which also applies to later
+  videos that say it.
 - Then re-render every scene (`manim -qh --frame_rate 30 -a scenes.py`, timing follows
   the new audio) and rebuild the rough cut.
 
@@ -245,8 +301,9 @@ about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
 | Section | Branch | Status |
 | --- | --- | --- |
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
-| 2 Marine data | `feature/improve-marine-data` | Pages, diagrams, overview and video done, video narrated (2026-09-30); not yet merged into `develop` |
-| 3–10 | | Not started |
+| 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
+| 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
+| 4–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".

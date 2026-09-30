@@ -218,7 +218,7 @@ extra layer of statistics bolted onto the fit; it is a by-product of the fit.
 
 ### Estimating a parameter that is not a coefficient
 
-[Section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd) found this
+[Section 3](../03-supervised-learning/count-regression.qmd) found this
 survey overdispersed: the Poisson deviance-to-degrees-of-freedom ratio here is 4.2 where
 1 is assumed. The negative binomial adds a dispersion parameter $\theta$ to absorb the
 excess, and $\theta$ is estimated by likelihood exactly like everything else.

@@ -245,7 +245,7 @@ and classes are not, and each gets its own loss.
 | Two classes, unequal costs | Weighted log loss | Whichever error you declared expensive |
 
 Poisson deviance is why [section 3's count
-models](../03-supervised-learning/linear-and-polynomial-regression.qmd) behaved sensibly.
+models](../03-supervised-learning/count-regression.qmd) behaved sensibly.
 It scales the penalty with the expected count, so missing by 5 individuals matters far
 more where you expected 2 than where you expected 200, which is how counting animals
 actually works. Every one of these losses comes out of the same principle, and [maximum
@@ -274,8 +274,9 @@ terms.
 **Classification accuracy is not a loss.** It cannot be optimised directly, being a step
 function, flat almost everywhere with no gradient to follow, which is why classifiers are
 fitted under log loss and only then thresholded. Section 3's
-[logistic model](../03-supervised-learning/logistic-regression.qmd) had a respectable log
-loss and predicted presence zero times; the fitting was working exactly as specified.
+[logistic model](../03-supervised-learning/logistic-regression.qmd) works this way: the fit
+gives a probability, and a threshold chosen afterwards, from the cost of each mistake, turns
+it into yes or no.
 
 ::: {.callout-tip}
 ## Key points

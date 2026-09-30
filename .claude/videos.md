@@ -578,6 +578,54 @@ The first version:
 
 Built like §2, to a rough cut on the draft voice: `_videos/03-supervised-learning/`.
 
+**Rebuilt on 2026-09-30 as an overview** (`feature/improve-supervised-learning`), after
+the section's seven pages were revised. The notes below describe the first version,
+which is replaced.
+
+- 34 scenes, 845 words, 6:43 on the draft voice. A tour under three promises: models
+  that add up their inputs (quantity or category; the count, 22.5% zeros, variance
+  about six times the mean; linear regression's one slope; polynomial regression's
+  peak at 7.5 °C and 12 of 202 test stations below zero; Poisson regression never
+  below zero, mud 1.34 times sand; spread 3.7 times Poisson's, the negative binomial's
+  wider intervals no longer tell rock from sand; logistic regression between 0 and 1,
+  thresholds 0.5 and 0.9 giving 34/4 and 6/97 false alarms and misses), models made of
+  questions (the depth-3 tree, the 6.4 to 10.4 °C band, steps level beyond the data,
+  validation lowest at depth 5, resampled first thresholds 2.57 to 12.6, the forest's
+  average, boosting best at 200 trees, test RMSE tree 4.48, boosting 4.35, forest 3.96,
+  Poisson 3.55), and choosing (five questions; the seven models on test and validation
+  sites; three models beyond the sampled temperatures). Quiz: clipping negative count
+  predictions to zero hides the symptom, not the cause (the linear page's own point).
+- `exports.R` writes 23 CSVs from all seven pages (under a minute). Every spoken
+  number matched the frozen pages. The pages first labelled some models by shape
+  ("Curve", "Poisson curve"); they were renamed by method on 2026-09-30, and
+  `METHOD_NAMES` in `scenes.py` now only lower-cases the choosing page's labels.
+- **Poisson** is respelled for the voice in `_videos/pronunciation.yml` (the voice
+  otherwise risks "poison"); the entry also changes the §4 and §6 scenes that say it.
+  `audio/poisson-audition.wav` (one Gemini request) reads four candidates: "Poisson",
+  "Pwasson", "Pwah-son" and "Pwahsonn". The user chose "Pwah-son" on 2026-09-30.
+- `Chart` in `scenes.py` places the axis names from the bottom and left edges: Manim
+  draws the x axis at y = 0, mid-chart when the range goes below zero.
+- Narrated with Gemini on 2026-09-30: 34 requests, all first time, 10,865 audio tokens
+  (about $0.10). Rough cut 6:30.
+- The user's review the same day, and the changes (9 more requests, $0.03; 35 scenes,
+  7:00):
+  - Gemini said "between 1 and 1" for "between 0 and 1", though the draft voice read it
+    right. Numbers that stand for words are now written as words ("zero and one").
+  - Overdispersion was shown but never named: scene 3 names it, and scene 9 keeps
+    Poisson's intervals on screen beside the negative binomial's, "too narrow" against
+    "wider".
+  - False alarms and misses were used before they were explained: a new scene 11
+    defines each (said present, truly absent; said absent, truly present), and the
+    thresholds scene labels its bars the same way.
+  - The tree scenes carry the heading "a decision tree", not only the narration. Their
+    "yes" and "no" sit in small tags on the branches, as `rpart.plot` draws them: set
+    beside the shallow branches, they collided with the question boxes.
+  - Scene 26 names the tuning as overfitting: the tree's depth and boosting's number of
+    trees were chosen on the validation sites, so both look better there than on the
+    test sites (1 more request; 7:13).
+  - "Held-back sites" became "the validation sites, which were held back from fitting",
+    and the key point says "validation data".
+
 - 50 scenes, 9:35 on the draft voice, the longest so far; the quiz and the multiplier
   scene (15) are the easiest cuts if it should come down. Hook: ten models on one
   survey, same predictors, same 200 test stations; boosting has the reputation, which

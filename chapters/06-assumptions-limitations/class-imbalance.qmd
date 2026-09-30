@@ -26,8 +26,9 @@ them badly in a specific and well-understood way.
 
 The machinery is not broken. Fitting minimises average loss; when 95% of stations share
 one answer, predicting that answer everywhere is a very good way to minimise average loss.
-[Section 3 met this already](../03-supervised-learning/logistic-regression.qmd), with a
-model that achieved ROC AUC 0.79 while predicting presence at zero stations.
+[Section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) warned
+about this: for a rare species, the probabilities may never reach 0.5, so nothing is called
+present.
 
 This page does the full treatment: how the metrics mislead, what the standard rebalancing tools
 actually do, and why the simplest fix is usually the right one.

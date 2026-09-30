@@ -52,7 +52,7 @@ I(depth^2)` is still a linear model; so is a Poisson GLM, where the linear part 
 scale and becomes a curve when exponentiated back. The
 [link function](../04-how-algorithms-learn/maximum-likelihood.qmd) already buys you a particular
 kind of nonlinearity for free, which is why the count models in
-[section 3](../03-supervised-learning/linear-and-polynomial-regression.qmd) beat the plain line.
+[section 3](../03-supervised-learning/count-regression.qmd) beat the plain line.
 
 ### Ways to bend
 
@@ -246,7 +246,7 @@ extrapolated, it is nonsense.
 [Extrapolation](sampling-and-extrapolation.qmd) has its own page for this reason.
 
 **Trees find shapes but not smooth ones.** [Section 3's
-tree](../03-supervised-learning/trees-forests-boosting.qmd) would express a thermal
+tree](../03-supervised-learning/decision-trees.qmd) would express a thermal
 optimum as two thresholds, and never produced one for depth at all. Step functions are a
 poor description of a physiological response even when they predict adequately.
 

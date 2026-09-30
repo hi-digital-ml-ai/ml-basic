@@ -54,11 +54,20 @@ pages reveal them when checking a model.
 `chapters/03-supervised-learning/` · categories: `supervised`, `regression`,
 `classification`, `trees-ensembles`
 
-- Regression and classification problems
+- Regression and classification
 - Linear and polynomial regression
+- Regression for counts: Poisson and negative binomial
 - Logistic regression
-- Decision trees, random forests, and boosting
+- Decision trees
+- Random forests and boosting
 - Choosing a method according to the scientific question and dataset
+
+**Revision started 2026-09-30** (`feature/improve-supervised-learning`). Seven pages,
+one new method each: the old linear, polynomial and count page split into two, and the
+old trees, forests and boosting page split into two. Counts come before logistic
+regression, so the log scale is introduced on counts and reused for probabilities. The
+single tree gets its own page before the ensembles, which build on it. Titles carry no
+commas.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`
@@ -82,7 +91,7 @@ Three deliberate spillovers outside the section's own subject:
   must stay consistent: §5 should refer back rather than re-deriving.
 - `reading-a-fit.qmd` uses §2's leaked `catch_weight_kg` column to produce separation, and
   measures random-forest run-to-run noise (0.037 RMSE) as the resolution limit for §3's
-  ten-model comparison.
+  comparison of its seven models, where the two count models finish closer than that.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -142,7 +151,7 @@ never quote a score against it without saying no real study could compute one.
 
 **RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
 Different folds or splits hold different distributions of the response, so a "harder" scheme
-can report a *lower* RMSE. Use R², or the same test set for both. §3's leakage page found it
+can report a *lower* RMSE. Use R², or the same test set for both. §2's leakage page found it
 first; §6 repeats it deliberately.
 
 **A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:

@@ -185,8 +185,8 @@ The chlorophyll coefficient here is **+0.348**, while `glm(present ~ ...)` repor
 **−0.348** on the same data. Nothing is wrong with either. `present` has levels `yes, no`,
 and base R models the probability of the *last* level, so `glm()` is describing absence
 while this hand-coded version describes presence. This is the same reversal that
-[section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) found in
-`tidy()` output, and it is worth recognising a second time: a sign flip of exactly this
+[section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) warned about
+when preparing the data, and it is worth recognising a second time: a sign flip of exactly this
 kind is a level-ordering problem until proven otherwise.
 :::
 
@@ -230,7 +230,7 @@ The division runs right through the course:
 Trees are the odd case, and worth stating plainly: a decision tree is not solving an
 optimisation problem in any global sense. It takes the best single split available at each
 node and never reconsiders. That is why
-[section 3's tree](../03-supervised-learning/trees-forests-boosting.qmd) split on
+[section 3's tree](../03-supervised-learning/decision-trees.qmd) split on
 chlorophyll and ignored depth entirely: the greedy step could not see that two depth
 splits together would have paid, because it only ever evaluates one.
 

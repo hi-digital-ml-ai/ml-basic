@@ -74,7 +74,7 @@ at the threshold that best separates high counts from low ones, such as "tempera
 below 6.4 °C", then splits each half again. Here it stops after three rounds of
 splits and predicts the average count in each final group. Nobody writes down the
 shape; the splits find it.
-[Section 3](../03-supervised-learning/trees-forests-boosting.qmd) explains trees in
+[Section 3](../03-supervised-learning/decision-trees.qmd) explains trees in
 full.
 
 ```{r}

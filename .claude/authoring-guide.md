@@ -183,9 +183,13 @@ never runs. Convert them to `{python}` chunks as part of each section's revision
 
 - `group="language"` syncs every tabset on the page, so choosing Python once
   chooses it throughout.
-- Wrap the modelling steps, not the figures. Figures stay R-only, and so does
-  any step with no honest Python counterpart, such as `mgcv`'s smooth table.
-  A missing tab is information, not an omission to fill in.
+- Give the modelling steps a Python tab, not the figures. Figures stay R-only, and
+  so does any step with no honest Python counterpart, such as `mgcv`'s smooth table.
+  A missing Python tab is information, not an omission to fill in.
+- An R-only chunk that shows its code still sits in a tabset, with a single `## R`
+  tab and the same `group="language"`, so every code block on the page is labelled
+  with its language. Hidden chunks (`include: false`, `echo: false`) need no tab.
+  Section 3 was the first to do this.
 - The Python is cumulative down the page, exactly as the R chunks are, and must
   run: `python/check-snippets.py` executes every snippet in the site. Do not add
   a tab you have not run.
