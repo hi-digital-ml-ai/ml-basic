@@ -51,8 +51,8 @@ reported.
 :::
 
 An objective can also carry a penalty on the parameters themselves, which keeps them
-small. [MAP estimation](map-and-priors.qmd), later in this section, shows where such a
-penalty comes from.
+small. [Priors and ridge regression](map-and-priors.qmd), later in this section, shows
+where such a penalty comes from.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
