@@ -1,9 +1,10 @@
 # Revising a section
 
 How to revise a course section's pages, diagrams and video. Written on 2026-09-29 from the
-revision of section 1, Introduction (`feature/improve-introduction`, 11 commits). The
-general writing and figure rules are in `authoring-guide.md` and the video pipeline in
-`videos.md`; this file collects what the section 1 revision added to them, as a
+revision of section 1, Introduction (`feature/improve-introduction`, 11 commits), and
+updated on 2026-09-30 from section 2, Marine data (`feature/improve-marine-data`, 14
+commits). The general writing and figure rules are in `authoring-guide.md` and the video
+pipeline in `videos.md`; this file collects what the revisions added to them, as a
 checklist.
 
 ## The aim
@@ -22,18 +23,29 @@ The Welcome page and the two Toolkit pages are out of scope for now.
    `feature/improve-<slug>`, e.g. `feature/improve-marine-data`.
 2. **Plan the pages.** Read the section's pages and its entry in `curriculum.md`. Agree
    the page list and order with the user before rewriting: which pages to split,
-   merge, move or drop, and the order in which methods are introduced. Update
-   `_quarto.yml` (sidebar), each page's `order:` and `curriculum.md` to match.
+   merge, move or drop, whether a new page is needed (section 2 gained *The coastal
+   survey* to open it), and the order in which methods are introduced. Splitting the
+   whole section in two was considered for section 2 and rejected; ask before
+   proposing it. Update `_quarto.yml` (sidebar), each page's `order:` and
+   `curriculum.md` to match, and record the section's decisions in its
+   `curriculum.md` entry.
 3. **One page at a time.** Rewrite, render, screenshot, and let the user review it.
-   Expect several rounds per page. Commit only when the user says so; one commit per
-   approved change keeps the history readable.
+   Section 1 took several rounds per page; section 2, with the rules below already
+   applied, mostly took one ("commit and move on to ..."). Commit only when the user
+   says so; one commit per page keeps the history readable, with a body that says
+   what went and what came in.
 4. **Diagrams** with each page, in the house style below. When a new diagram lands,
    restyle the section's older diagrams so the section looks consistent.
 5. **The section overview** (`index.qmd`) last among the pages: its summary must match
-   the pages as they now are.
-6. **The video**, after the pages are settled, on the draft voice first (see below).
-7. **Gemini narration** only when the user approves the script.
-8. **Close:** full `quarto render`, then merge into `develop` when the user asks.
+   the pages as they now are. If the section's title changes, change it everywhere it
+   appears: the overview, the sidebar, the home page and `curriculum.md`.
+6. **Check links from other sections.** Moving a topic between sections breaks their
+   pointers to it: after section 2, a section 6 page still sent readers to "section 3"
+   for RMSEs that cannot be compared across test sets, which section 2 now shows. `grep -rn "section N\|§N" chapters/` for the section's number
+   and for every page it moved or renamed.
+7. **The video**, after the pages are settled, on the draft voice first (see below).
+8. **Gemini narration** only when the user approves the script.
+9. **Close:** full `quarto render`, then merge into `develop` when the user asks.
 
 Checking a page: `quarto render <page>`, then a headless Chrome screenshot of
 `_site/...` (a static server on port 4321 from `_site/` works). The user reviews
@@ -61,6 +73,15 @@ screenshots, so look at the rendered page yourself first.
   section" aside, a "good fit can still predict impossible counts" section, a warning
   box about neural networks, and inference as a third aim (it confused more than it
   helped at that level).
+- **One diagram per page, in place of the longest passage.** In section 2 a diagram
+  replaced each page's long idea section, numbered list or run of subsections (seven
+  kinds of data, the order of checks, three reasons for a missing value, the recipe's
+  stages, the three data roles, four kinds of leakage). The prose then keeps only what
+  the diagram cannot show and the points readers get wrong.
+- **Put a topic where it is used.** Class imbalance moved from *Missing values and
+  outliers* to *Splitting the data*, where the stratified split needs it.
+- **Cut the page's limits section and warning boxes** down to a sentence, or drop them;
+  section 2 had one on nearly every page.
 - **Link backwards only to something that is really there.** "The previous page set
   prediction against explanation" failed because the previous page did not visibly do
   so. Name the page and point to the exact idea.
@@ -99,10 +120,18 @@ screenshots, so look at the rendered page yourself first.
   the outcome's units). "Without driving it" became plain words. If a reader could ask
   "what does that mean?", answer it in the sentence.
 - **Use methods the reader already knows** before the course has introduced others:
-  "you have fitted a linear regression", not "you have written a GLM".
+  "you have fitted a linear regression", not "you have written a GLM". This covers the
+  code too. Section 2's demonstrations used random forests, and its scaling page had a
+  table of nine methods and a lasso exercise; they became linear regression, a plain
+  paragraph ("methods that measure distance need a common scale"), and nothing.
+- **Explain a metric before its first number.** RMSE and R squared are each given one
+  plain sentence on the first page that quotes them.
 - **Make an example show what its heading claims.** The salinity example was headed as
   prediction but was really about a confounder and causality; the page was rewritten
-  around that, with *confounder* defined.
+  around that, with *confounder* defined. In section 2, a habitat class assigned from
+  the catch was meant to show target leakage, but the user read it as a category that
+  did not exist at training time, a different problem. Catch weight, the count again
+  in other units, shows target leakage directly: the model is handed the answer.
 - **Explain any label the reader did not see being made.** "Shallow, mid-depth and
   deep" groups needed one sentence saying k-means found them and the page named them
   by their average depth.
@@ -117,6 +146,12 @@ screenshots, so look at the rendered page yourself first.
   use the other variables, but explains each the first time it appears.
 - Every dataset is simulated. The `_snippets/simulated-data.qmd` note goes on each page
   that uses the survey; never write numbers that look like real survey results.
+- **Never reveal the survey's true effects** (which variables really drive the
+  species). Readers find them out by modelling; later pages reveal them when checking
+  a model. Section 2 removed a line saying salinity has no real effect.
+- **Compute every number in prose with inline R** (`` `r ...` ``) from the page's own
+  objects, rather than typing it. Section 2 did this throughout and found three typed
+  numbers that disagreed with the page's own tables.
 - **Check every number quoted in prose against the rendered output** after each
   render (k-means group depths, percentages, slopes). A changed seed or split silently
   breaks them.
@@ -148,8 +183,16 @@ diagrams (`chapters/01-introduction/img/six-tasks.svg` is a good template to cop
 
 A section video is a **short overview**, not a place to teach everything: it
 introduces the section and says what its pages cover. Section 1's video is 28 scenes,
-about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template alongside
+about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41. Use
+`_videos/01-introduction/` or `_videos/02-marine-data/` as the template alongside
 `videos.md`.
+
+- **Rebuild the old video; don't patch it.** Every section already has a video, made
+  before its pages were revised. Section 2's was 48 scenes and 8 minutes, a puzzle
+  built on two random forests. Write a new script from the revised pages, one chapter
+  per group of pages, and keep only the scene classes that still fit.
+- **Use only the methods the course has introduced**, as on the pages: section 2's
+  video uses linear regression only.
 
 - **Shape:** title with the jingle; scene 1 promises three things (`PROMISES`); a
   chapter per promise, each ending on a key-point scene (`ANSWERS`); a quiz with a
@@ -160,6 +203,14 @@ about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template along
 - **Introduce the data plainly** where it first appears: "Throughout this course, we
   use one simulated marine dataset again and again", then what a row is and what each
   variable means, each column appearing as it is named.
+- **Concrete, not abstract.** "A habitat map is asked about sites nobody has
+  surveyed" lost the user. The scene became four sites, A to D: a random split tests
+  another visit to a site the model knows, the split by site holds back site D, new to
+  the model. Say what happens to what, in everyday words.
+- **The quiz tests the video's main idea, with the page's example.** Section 2's quiz
+  (filling gaps with the whole survey's median, then splitting) is the leakage page's
+  own case. When the video finds a clearer example than the page, change the page too
+  (the leakage page was reworded to match), so the two tell the same story.
 - **Name a hard concept; don't walk through its numbers.** The salinity slopes (−2.2
   shrinking to −0.2) could not be followed in 15 seconds. A schematic (depth drives
   both salinity and the species; salinity helps predict but causes nothing) plus "the
@@ -170,6 +221,11 @@ about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template along
   when the video stops using it. Schematic scenes use no numbers.
 - **Check frames**, not just the last frame: `manim -ql -s` for last frames, and an
   ffmpeg `tile` contact sheet of the rough cut to check text arrives with the voice.
+  Look hard at stacked labels: section 2's twelve seabed spellings touched each other
+  vertically until the list was given more spacing.
+- **Pages with Python tabs knit for the video** because `tools/figures-for-video.R`
+  reads `_environment.local` (the Python reticulate uses). If it fails on a
+  `{python}` chunk, check that file first.
 - **Draft voice first** (`tools/draft-narration.py`, free, offline). Gemini only when
   the user approves the script, with the key passed as
   `GEMINI_API_KEY=$(secret-tool lookup service gemini-api)` and never printed or
@@ -178,7 +234,9 @@ about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template along
   requests a day and retries count; when it runs out the request hangs rather than
   erroring. A full video is 30–60 requests, so narrate at most one or two full videos
   a day, re-narrate only changed scenes (`narrate.py` does this), and wrap the run in
-  `timeout`. Section 1's 28 scenes all succeeded first time (about $0.08).
+  `timeout`. Section 1's 28 scenes and section 2's 29 all succeeded first time (about
+  $0.08 and $0.09). `python tools/audio-list.py <video>` confirms that no scene is
+  left on the draft voice.
 - Then re-render every scene (`manim -qh --frame_rate 30 -a scenes.py`, timing follows
   the new audio) and rebuild the rough cut.
 
@@ -187,7 +245,7 @@ about 540 words, 5 minutes. Use `_videos/01-introduction/` as the template along
 | Section | Branch | Status |
 | --- | --- | --- |
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
-| 2 Marine data | `feature/improve-marine-data` | Pages, diagrams and overview done (2026-09-30); video next |
+| 2 Marine data | `feature/improve-marine-data` | Pages, diagrams, overview and video done, video narrated (2026-09-30); not yet merged into `develop` |
 | 3–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
