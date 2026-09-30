@@ -1,6 +1,6 @@
 ---
 title: "3 · Supervised learning"
-description: "Regression, classification and tree-based methods, and how to choose between them for a given scientific question."
+description: "Regression for quantities and counts, logistic regression for yes-or-no outcomes, decision trees and their ensembles, and how to choose between them for a scientific question."
 categories: [supervised, regression, classification, trees-ensembles]
 listing:
   id: pages
@@ -13,26 +13,29 @@ listing:
 toc: false
 ---
 
-Supervised learning means learning from examples where you already know the answer:
+Supervised learning means learning from examples where the answer is already known:
 casts where the water mass was identified, hauls where the catch was recorded, images
-where a specialist labelled the species. The model learns the relationship, then
-applies it to cases where the answer is unknown.
+where a specialist labelled the species. The model learns the relationship between the
+inputs and the answer, then applies it to cases where the answer is unknown. This is
+the family of methods most marine work needs.
 
-This is the family of methods most marine work needs. This section covers the
-workhorses, from linear regression through to boosted trees and, more importantly,
-how to pick one.
+The section starts with the outcome, because the kind of thing being predicted
+decides which models can be used and how their errors are scored. It then introduces
+one method per page, each on the same simulated survey, so each new method can be
+compared with the ones before it:
 
-[Section 2](../02-marine-data/index.qmd) pointed here for a model that respects what a
-count is. That debt is paid on the [regression for counts
-page](count-regression.qmd), where a model that cannot predict negative
-fish turns out to predict better as well as more plausibly.
+- **linear and polynomial regression** for a quantity, a straight line and then a curve;
+- **Poisson and negative binomial regression** for a count, which never predict fewer
+  than zero animals;
+- **logistic regression** for a yes-or-no outcome, such as present or absent;
+- **decision trees**, which predict by asking yes-or-no questions about the inputs;
+- **random forests and boosting**, which combine many trees into one prediction.
 
-::: {.callout-note}
-The closing page runs all ten models on the same survey with identical features. The
-winner is a generalised linear model with two quadratic terms, ahead of the random
-forest and both boosted models. That ordering is a fact about this dataset, not a
-general ranking, and the page says why it turned out that way.
-:::
+It ends on choosing between them. The aim, the kind of outcome, the range the model
+must predict over, the amount of data and the people who must accept the result all
+narrow the choice before any model is fitted. Comparing the section's models on the
+same new sites then shows why one test split cannot settle a close contest, which
+[7 · Validation](../07-validation/index.qmd) takes up.
 
 ## Pages in this section
 
@@ -61,5 +64,5 @@ general ranking, and the page says why it turned out that way.
 
 - [![](../../img/video/J4Wdy0Wc_xQ.jpg){.video-thumb fig-alt="StatQuest: Random Forests Part 1, on YouTube" loading="lazy"}](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ)
 
-  [StatQuest: Random Forests Part 1](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ), StatQuest with Josh Starmer. Bagging and out-of-bag error, which is where the forest's self-validation comes from.
+  [StatQuest: Random Forests Part 1](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ), StatQuest with Josh Starmer. Growing each tree on a resampled copy of the data, and the out-of-bag error that this gives without a separate validation set.
 :::
