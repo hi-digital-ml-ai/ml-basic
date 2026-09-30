@@ -25,8 +25,8 @@ different training examples can change its first question, and every question be
 changes too. Combining many trees steadies the prediction, and there are two common
 ways to do it. A **random forest** grows many trees side by side and averages them.
 **Boosting** grows small trees one after another, each correcting the ones before it.
-This page shows both on the survey and compares them with a single tree and with the
-Poisson curve of [Regression for counts](count-regression.qmd).
+This page shows both on the survey and compares them with a single tree and with
+Poisson regression from [Regression for counts](count-regression.qmd).
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -461,9 +461,9 @@ test_rsq <- map_dbl(list(tree = tree_fit, forest = forest_fit,
 | Single tree, depth `r best_depth` | `r round(test_rmse[["tree"]], 2)` | `r round(test_rsq[["tree"]], 2)` |
 | Boosting, `r best_boost` trees | `r round(test_rmse[["boost"]], 2)` | `r round(test_rsq[["boost"]], 2)` |
 | Random forest, 400 trees | `r round(test_rmse[["forest"]], 2)` | `r round(test_rsq[["forest"]], 2)` |
-| Poisson curve | `r round(test_rmse[["poisson"]], 2)` | `r round(test_rsq[["poisson"]], 2)` |
+| Poisson regression | `r round(test_rmse[["poisson"]], 2)` | `r round(test_rsq[["poisson"]], 2)` |
 
-: The four models on the test sites. The single tree and the Poisson curve are those of the two earlier pages. {#tbl-test}
+: The four models on the test sites. The single tree and Poisson regression are those of the two earlier pages. {#tbl-test}
 
 Both ensembles predict the test sites better than the single tree did, and the forest
 does best of the three, with an RMSE of `r round(test_rmse[["forest"]], 2)` against
@@ -474,7 +474,7 @@ another small set, and the next set of sites shows how fragile that was. This is
 more reason to judge models on several splits, as
 [Section 7](../07-validation/index.qmd) does.
 
-Neither ensemble matches the Poisson curve on this survey. About 600 noisy stations do
+Neither ensemble matches Poisson regression on this survey. About 600 noisy stations do
 not hold enough information for many trees to learn a shape that a smooth curve with
 a few terms describes as well. With far more stations, the balance can shift towards
 the ensembles. [Choosing a method](choosing-a-method.qmd) compares the section's
@@ -497,8 +497,8 @@ each.
   down by a learning rate. Too many trees fit the noise, so the number is chosen on
   validation data.
 - Averaging smooths a tree's steps, but a forest still stays level beyond the data.
-- On the test sites both ensembles beat the single tree, and neither beat the Poisson
-  curve.
+- On the test sites both ensembles beat the single tree, and neither beat Poisson
+  regression.
 :::
 
 ## Try it yourself

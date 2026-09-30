@@ -253,8 +253,8 @@ neither.
 
 ```{r}
 #| label: fig-shapes
-#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. The straight line falls steadily; the curve finds the peak and falls below zero in warm water."
-#| fig-alt: "Two lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The straight line declines slowly. The curve rises from the cold end to a peak in the middle of the range, then falls steeply and crosses zero before the warm end of the data."
+#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. Linear regression falls steadily; polynomial regression finds the peak and falls below zero in warm water."
+#| fig-alt: "Two lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The linear regression line declines slowly. The polynomial regression curve rises from the cold end to a peak in the middle of the range, then falls steeply and crosses zero before the warm end of the data."
 #| fig-width: 7.5
 #| fig-height: 4.5
 grid <- tibble(
@@ -267,8 +267,8 @@ grid <- tibble(
 )
 
 curves <- bind_rows(
-  augment(line_fit, grid)  |> mutate(model = "Straight line"),
-  augment(curve_fit, grid) |> mutate(model = "Curve")
+  augment(line_fit, grid)  |> mutate(model = "Linear regression"),
+  augment(curve_fit, grid) |> mutate(model = "Polynomial regression")
 )
 
 ggplot(curves, aes(temperature_c, .pred, colour = model)) +
@@ -276,11 +276,11 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   geom_rug(data = train, aes(temperature_c), inherit.aes = FALSE,
            sides = "b", alpha = 0.3, colour = ml_palette[["grey"]]) +
   geom_line(linewidth = 1.1) +
-  scale_colour_manual(values = c("Straight line" = ml_palette[["blue"]],
-                                 "Curve" = ml_palette[["orange"]]),
-                      breaks = c("Straight line", "Curve")) +
+  scale_colour_manual(values = c("Linear regression" = ml_palette[["blue"]],
+                                 "Polynomial regression" = ml_palette[["orange"]]),
+                      breaks = c("Linear regression", "Polynomial regression")) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
-       title = "The curve finds a peak the straight line misses")
+       title = "Polynomial regression finds a peak the straight line misses")
 ```
 
 :::
@@ -311,8 +311,8 @@ score <- function(fitted, label) {
 }
 
 scores <- bind_rows(
-  score(line_fit,  "Straight line"),
-  score(curve_fit, "Curve")
+  score(line_fit,  "Linear regression"),
+  score(curve_fit, "Polynomial regression")
 )
 scores |> mutate(across(rmse:lowest, \(x) round(x, 2)))
 ```
@@ -333,7 +333,8 @@ def score(fitted, label):
         "below_zero": int((predicted < 0).sum()),
     }
 
-pd.DataFrame([score(line_fit, "Straight line"), score(curve_fit, "Curve")])
+pd.DataFrame([score(line_fit, "Linear regression"),
+              score(curve_fit, "Polynomial regression")])
 ```
 
 :::
@@ -341,11 +342,11 @@ pd.DataFrame([score(line_fit, "Straight line"), score(curve_fit, "Curve")])
 ```{r}
 #| label: compare-numbers
 #| include: false
-line_score  <- scores |> filter(model == "Straight line")
-curve_score <- scores |> filter(model == "Curve")
+line_score  <- scores |> filter(model == "Linear regression")
+curve_score <- scores |> filter(model == "Polynomial regression")
 ```
 
-On sites the models have never seen, the curve does better: $R^2$ rises from
+On sites the models have never seen, polynomial regression does better: $R^2$ rises from
 `r round(line_score$rsq, 2)` to `r round(curve_score$rsq, 2)`, and the RMSE falls from
 `r round(line_score$rmse, 2)` to `r round(curve_score$rmse, 2)` animals. Neither is
 high; predicting a new site is hard, as
@@ -353,9 +354,9 @@ high; predicting a new site is hard, as
 
 ## Fewer than zero animals
 
-The better model is also the more impossible one. The curve predicts a negative count
+The better model is also the more impossible one. Polynomial regression predicts a negative count
 at `r curve_score$below_zero` of the `r nrow(test)` test stations, the lowest
-`r round(curve_score$lowest, 1)` animals; the straight line does so at
+`r round(curve_score$lowest, 1)` animals; linear regression does so at
 `r line_score$below_zero`. Nothing in linear regression knows that a count
 stops at zero. The curve falls steeply after its peak, so it crosses zero sooner.
 

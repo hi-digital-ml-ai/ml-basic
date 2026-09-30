@@ -219,7 +219,7 @@ exercise below shows how much they move.
 
 ### Predictions come in steps
 
-@fig-steps sets the tree beside the Poisson curve of
+@fig-steps sets the tree beside Poisson regression from
 [Regression for counts](count-regression.qmd), fitted to the same training stations,
 across a wider range of temperatures than the survey sampled.
 
@@ -240,7 +240,7 @@ temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```{r}
 #| label: fig-steps
 #| fig-cap: "The predicted count across temperature, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The shaded ends lie beyond the temperatures of the training stations, shown as ticks along the bottom."
-#| fig-alt: "Two lines of predicted count against temperature from 0 to 20 degrees. The tree is a staircase: low in cold water, a step up to its highest level in the middle of the range, and a step down in warm water, after which it stays level through the shaded region beyond the warmest training station. The Poisson curve rises smoothly to a peak in the same middle range and falls towards zero on both sides, continuing to fall in the shaded regions."
+#| fig-alt: "Two lines of predicted count against temperature from 0 to 20 degrees. The tree is a staircase: low in cold water, a step up to its highest level in the middle of the range, and a step down in warm water, after which it stays level through the shaded region beyond the warmest training station. The Poisson regression curve rises smoothly to a peak in the same middle range and falls towards zero on both sides, continuing to fall in the shaded regions."
 #| fig-width: 7.5
 #| fig-height: 4.5
 grid <- tibble(
@@ -254,7 +254,7 @@ grid <- tibble(
 
 curves <- bind_rows(
   augment(tree_fit, grid)    |> mutate(model = "Decision tree"),
-  augment(poisson_fit, grid) |> mutate(model = "Poisson curve")
+  augment(poisson_fit, grid) |> mutate(model = "Poisson regression")
 )
 
 ggplot(curves, aes(temperature_c, .pred, colour = model)) +
@@ -266,7 +266,7 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
            sides = "b", alpha = 0.3, colour = ml_palette[["grey"]]) +
   geom_line(linewidth = 1.1) +
   scale_colour_manual(values = c("Decision tree" = ml_palette[["green"]],
-                                 "Poisson curve" = ml_palette[["vermilion"]])) +
+                                 "Poisson regression" = ml_palette[["vermilion"]])) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
        title = "The tree predicts in steps and stays level beyond the data")
 ```
@@ -278,7 +278,7 @@ in steps: every station on the same side of each threshold gets the same predict
 however far it is from the threshold. Beyond the warmest training station, at
 `r round(temp_range[2], 1)` °C, the tree keeps predicting what it predicted for the
 warmest stations it saw. It has no rule for going further, so it predicts no change.
-The Poisson curve continues its shape instead. Neither has any data there, and
+Poisson regression continues its shape instead. Neither has any data there, and
 [Section 6](../06-assumptions-limitations/index.qmd) returns to predicting beyond the
 data.
 
@@ -412,8 +412,8 @@ poisson_rsq  <- rsq_vec(test$abundance, poisson_pred)
 
 On the test sites the tree's RMSE is `r round(tree_rmse, 2)`, worse than its
 validation error of `r round(at_depth(best_depth)$validation, 2)`, and its $R^2$ is
-`r round(tree_rsq, 2)`. The Poisson curve of
-[Regression for counts](count-regression.qmd) scored `r round(poisson_rmse, 2)` and
+`r round(tree_rsq, 2)`. Poisson regression, from
+[Regression for counts](count-regression.qmd), scored `r round(poisson_rmse, 2)` and
 `r round(poisson_rsq, 2)` on the same sites. Two things are at work. A few validation
 sites are a noisy guide to the best depth, and
 [Section 7](../07-validation/index.qmd) averages over several splits instead. And a
@@ -434,7 +434,7 @@ question, and everything below it changes too. The
 - Predictions change in steps and stay level beyond the data.
 - Deeper trees fit their training data ever more closely and new data worse, so the
   depth is chosen on validation data. The chosen tree predicted the test sites less
-  well than the Poisson curve.
+  well than Poisson regression.
 :::
 
 ## Try it yourself
