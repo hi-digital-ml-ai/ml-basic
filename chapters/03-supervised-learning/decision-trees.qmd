@@ -182,6 +182,10 @@ nodes <- tree_engine$frame |>
 node <- function(k) filter(nodes, node == k)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-tree
 #| fig-cap: "The depth-3 tree for the count. Each box shows the average count of the training stations that reach it, how many stations that is, and their share of all training stations. Follow the answer yes to the left and no to the right."
@@ -191,6 +195,8 @@ node <- function(k) filter(nodes, node == k)
 rpart.plot(tree_engine, roundint = FALSE, type = 2, extra = 101,
            box.palette = "Blues", branch.lty = 3, cex = 0.8)
 ```
+
+:::
 
 Read it from the top. The first question sets apart the `r node(3)$n` training
 stations with more than `r round(node(2)$cut, 1)` mg m⁻³ of chlorophyll, which average
@@ -227,6 +233,10 @@ poisson_fit <- workflow(poisson_recipe, poisson_reg()) |> fit(train)
 temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-steps
 #| fig-cap: "The predicted count across temperature, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The shaded ends lie beyond the temperatures of the training stations, shown as ticks along the bottom."
@@ -260,6 +270,8 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
        title = "The tree predicts in steps and stays level beyond the data")
 ```
+
+:::
 
 Both models find the most animals in the middle of the range, but the tree gets there
 in steps: every station on the same side of each threshold gets the same prediction,
@@ -313,6 +325,10 @@ depths.loc[[depths["validation"].idxmin()]].round(2)
 
 :::
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-depth
 #| fig-cap: "The RMSE of trees of each depth on the stations they were fitted to and on the validation sites. The dashed line marks the depth with the lowest validation error."
@@ -335,6 +351,8 @@ depths |>
   labs(x = "Tree depth", y = "RMSE", colour = NULL,
        title = "Deeper trees fit their own stations better, new sites worse")
 ```
+
+:::
 
 ```{r}
 #| label: depth-numbers

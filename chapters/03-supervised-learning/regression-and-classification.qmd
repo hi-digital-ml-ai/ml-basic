@@ -127,6 +127,10 @@ and cannot reproduce a spike at zero; it will even predict negative counts. The
 
 Recording only whether any animal was caught turns the count into a category.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-two-framings
 #| fig-cap: "One measurement, two outcomes. Left: the count, with a spike at zero and a long right tail. Right: the same stations as present or absent."
@@ -148,6 +152,8 @@ p_binary <- survey |>
 
 p_count + p_binary
 ```
+
+:::
 
 The category is simpler, but it hides how many animals each present station caught:
 

@@ -308,6 +308,10 @@ n_test_sites <- n_distinct(test$site_id)
 n_val_sites  <- n_distinct(validation$site_id)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-comparison
 #| fig-cap: "The RMSE of each model on the validation sites (fitted on the fitting sites) and on the test sites (fitted on all the training sites), ordered by the test score. The tree's depth and the boosted model's number of trees were chosen on the validation sites."
@@ -326,6 +330,8 @@ results |>
   labs(x = "RMSE (lower is better)", y = NULL, colour = NULL,
        title = "Two sets of new sites rank the models differently")
 ```
+
+:::
 
 On the `r n_test_sites` test sites, the two count models come first, with RMSEs of
 `r round(row("Negative binomial curve")$test_rmse, 2)` and
@@ -356,6 +362,10 @@ The training stations span `r round(min(train$temperature_c, na.rm = TRUE), 1)` 
 `r round(max(train$temperature_c, na.rm = TRUE), 1)` °C. @fig-extrapolate asks three of
 the models for predictions from 0 to 22 °C, with the other inputs held at typical
 values.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-extrapolate
@@ -391,6 +401,8 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
        title = "Beyond the data each model follows its own rule")
 ```
+
+:::
 
 ```{r}
 #| label: extrapolate-numbers

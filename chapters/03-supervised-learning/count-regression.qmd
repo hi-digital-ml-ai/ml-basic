@@ -159,7 +159,7 @@ def design(data):
 
 :::
 
-### The Poisson curve
+### Poisson regression
 
 In tidymodels, Poisson regression is `poisson_reg()`, from the poissonreg package; it
 takes the same recipe as linear regression.
@@ -197,15 +197,19 @@ curve_optimum <- -curve_coef[["temperature_c_poly_1"]] /
 temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```
 
-The Poisson curve puts the temperature peak at `r round(poisson_optimum, 1)` °C, close
-to the `r round(curve_optimum, 1)` °C of the linear regression curve. The two part
-company after the peak. The linear regression curve falls ever faster and crosses
-zero; the Poisson curve levels off towards zero and stays above it.
+Poisson regression puts the temperature peak at `r round(poisson_optimum, 1)` °C, close
+to the `r round(curve_optimum, 1)` °C of polynomial regression. The two part company
+after the peak. The polynomial regression curve falls ever faster and crosses zero; the
+Poisson regression curve levels off towards zero and stays above it.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-shapes
-#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. The two linear regression models are those of the previous page; the Poisson curve finds a similar peak and levels off above zero in warm water."
-#| fig-alt: "Three lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The straight line declines slowly. The linear regression curve rises to a peak in the middle of the range, then falls steeply and crosses zero before the warm end. The Poisson curve rises to a similar peak, then falls more gently and flattens just above zero."
+#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. Linear and polynomial regression are those of the previous page; Poisson regression finds a similar peak and levels off above zero in warm water."
+#| fig-alt: "Three lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The linear regression line declines slowly. The polynomial regression curve rises to a peak in the middle of the range, then falls steeply and crosses zero before the warm end. The Poisson regression curve rises to a similar peak, then falls more gently and flattens just above zero."
 #| fig-width: 7.5
 #| fig-height: 4.5
 grid <- tibble(
@@ -218,9 +222,9 @@ grid <- tibble(
 )
 
 curves <- bind_rows(
-  augment(line_fit, grid)    |> mutate(model = "Straight line"),
-  augment(curve_fit, grid)   |> mutate(model = "Curve"),
-  augment(poisson_fit, grid) |> mutate(model = "Poisson curve")
+  augment(line_fit, grid)    |> mutate(model = "Linear regression"),
+  augment(curve_fit, grid)   |> mutate(model = "Polynomial regression"),
+  augment(poisson_fit, grid) |> mutate(model = "Poisson regression")
 )
 
 ggplot(curves, aes(temperature_c, .pred, colour = model)) +
@@ -228,13 +232,16 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   geom_rug(data = train, aes(temperature_c), inherit.aes = FALSE,
            sides = "b", alpha = 0.3, colour = ml_palette[["grey"]]) +
   geom_line(linewidth = 1.1) +
-  scale_colour_manual(values = c("Straight line" = ml_palette[["blue"]],
-                                 "Curve" = ml_palette[["orange"]],
-                                 "Poisson curve" = ml_palette[["vermilion"]]),
-                      breaks = c("Straight line", "Curve", "Poisson curve")) +
+  scale_colour_manual(values = c("Linear regression" = ml_palette[["blue"]],
+                                 "Polynomial regression" = ml_palette[["orange"]],
+                                 "Poisson regression" = ml_palette[["vermilion"]]),
+                      breaks = c("Linear regression", "Polynomial regression",
+                                 "Poisson regression")) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
-       title = "The Poisson curve levels off above zero")
+       title = "Poisson regression levels off above zero")
 ```
+
+:::
 
 ### Reading the coefficients as multipliers
 
@@ -252,7 +259,8 @@ baseline; one that includes 1 says they cannot.
 multipliers <- function(fitted) {
   tidy(fitted, conf.int = TRUE, exponentiate = TRUE) |>
     filter(str_detect(term, "substrate|season")) |>
-    transmute(term, multiplier = estimate,
+    transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
+              multiplier = estimate,
               conf_low = conf.low, conf_high = conf.high)
 }
 
@@ -265,7 +273,8 @@ multipliers(poisson_fit) |> mutate(across(where(is.numeric), \(x) round(x, 2)))
 def multipliers(fitted):
     interval = np.exp(fitted.conf_int())
     table = pd.DataFrame({
-        "term": fitted.params.index,
+        "term": fitted.params.index.str.replace(
+            r"^categorical__(substrate|season)_", r"\1: ", regex=True),
         "multiplier": np.exp(fitted.params).round(2).to_numpy(),
         "conf_low": interval[0].round(2).to_numpy(),
         "conf_high": interval[1].round(2).to_numpy(),
@@ -281,8 +290,8 @@ multipliers(poisson_fit)
 #| label: multiplier-numbers
 #| include: false
 poisson_table <- multipliers(poisson_fit)
-mud  <- poisson_table |> filter(term == "substratemud")
-rock <- poisson_table |> filter(term == "substraterock")
+mud  <- poisson_table |> filter(term == "substrate: mud")
+rock <- poisson_table |> filter(term == "substrate: rock")
 ```
 
 With the other inputs held fixed, a muddy station is expected to hold
@@ -330,7 +339,7 @@ The ratio is `r round(spread_ratio, 1)`: after the inputs have explained what th
 the counts still vary about `r round(spread_ratio, 1)` times as much as Poisson
 expects. The predictions can stand, but the intervals above are too narrow.
 
-### The negative binomial
+### Negative binomial model
 
 parsnip has no negative binomial model, so it comes from the MASS package. The recipe
 is still used: `prep()` estimates it on the training data and `bake()` applies it,
@@ -391,8 +400,8 @@ both.filter(regex="term|conf")
 #| label: nb-numbers
 #| include: false
 nb_table <- multipliers(nb_fit)
-nb_rock  <- nb_table |> filter(term == "substraterock")
-nb_mud   <- nb_table |> filter(term == "substratemud")
+nb_rock  <- nb_table |> filter(term == "substrate: rock")
+nb_mud   <- nb_table |> filter(term == "substrate: mud")
 wider    <- mean((nb_table$conf_high - nb_table$conf_low) /
                    (poisson_table$conf_high - poisson_table$conf_low))
 ```
@@ -426,11 +435,11 @@ score <- function(predicted, label) {
 }
 
 scores <- bind_rows(
-  score(predict(line_fit, test)$.pred,    "Straight line"),
-  score(predict(curve_fit, test)$.pred,   "Curve"),
-  score(predict(poisson_fit, test)$.pred, "Poisson"),
+  score(predict(line_fit, test)$.pred,    "Linear regression"),
+  score(predict(curve_fit, test)$.pred,   "Polynomial regression"),
+  score(predict(poisson_fit, test)$.pred, "Poisson regression"),
   score(predict(nb_fit, bake(prepared, new_data = test), type = "response"),
-        "Negative binomial")
+        "Negative binomial model")
 )
 scores |> mutate(across(rmse:lowest, \(x) round(x, 2)))
 ```
@@ -458,10 +467,10 @@ def score(predicted, label):
     }
 
 pd.DataFrame([
-    score(linear(line_recipe), "Straight line"),
-    score(linear(curve_recipe), "Curve"),
-    score(poisson_fit.predict(design(test)), "Poisson"),
-    score(nb_fit.predict(design(test)), "Negative binomial"),
+    score(linear(line_recipe), "Linear regression"),
+    score(linear(curve_recipe), "Polynomial regression"),
+    score(poisson_fit.predict(design(test)), "Poisson regression"),
+    score(nb_fit.predict(design(test)), "Negative binomial model"),
 ])
 ```
 
@@ -471,14 +480,14 @@ pd.DataFrame([
 #| label: compare-numbers
 #| include: false
 get_score <- function(label) scores |> filter(model == label)
-curve_score   <- get_score("Curve")
-poisson_score <- get_score("Poisson")
-nb_score      <- get_score("Negative binomial")
+curve_score   <- get_score("Polynomial regression")
+poisson_score <- get_score("Poisson regression")
+nb_score      <- get_score("Negative binomial model")
 ```
 
 The two count models make no negative predictions; the lowest is
-`r round(poisson_score$lowest, 2)` animals. They also score a little better than the
-linear regression curve on new sites: $R^2$ rises from `r round(curve_score$rsq, 2)`
+`r round(poisson_score$lowest, 2)` animals. They also score a little better than
+polynomial regression on new sites: $R^2$ rises from `r round(curve_score$rsq, 2)`
 to `r round(poisson_score$rsq, 2)` for Poisson and `r round(nb_score$rsq, 2)` for the
 negative binomial. Poisson and the negative binomial predict almost the same counts;
 what the negative binomial changes is how sure the model is.

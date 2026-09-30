@@ -154,7 +154,7 @@ def outcome(data):
 
 :::
 
-### The probability curve
+### Logistic regression
 
 ::: {.panel-tabset group="language"}
 
@@ -198,6 +198,10 @@ on either side. Linear regression with the same inputs, fitted to presence coded
 and absence as 0, predicts a probability above 1 for `r linear_above_1` of the
 `r nrow(test)` test stations; logistic regression cannot.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-curve
 #| fig-cap: "The predicted probability of presence across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The points are the training stations, where the species was present (top) or absent (bottom)."
@@ -224,6 +228,8 @@ ggplot(augment(logistic_fit, grid), aes(temperature_c, .pred_yes)) +
        title = "The probability of presence rises and falls with temperature")
 ```
 
+:::
+
 ### Reading the coefficients as odds ratios
 
 `exponentiate = TRUE` turns each coefficient into its odds ratio, with a 95% confidence
@@ -237,7 +243,8 @@ interval as on the counts page.
 #| label: odds-ratios
 odds_ratios <- tidy(logistic_fit, conf.int = TRUE, exponentiate = TRUE) |>
   filter(str_detect(term, "substrate|season")) |>
-  transmute(term, odds_ratio = estimate,
+  transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
+            odds_ratio = estimate,
             conf_low = conf.low, conf_high = conf.high)
 
 odds_ratios |> mutate(across(where(is.numeric), \(x) round(x, 2)))
@@ -248,7 +255,8 @@ odds_ratios |> mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```{python}
 interval = np.exp(logistic_fit.conf_int())
 odds_ratios = pd.DataFrame({
-    "term": logistic_fit.params.index,
+    "term": logistic_fit.params.index.str.replace(
+        r"^categorical__(substrate|season)_", r"\1: ", regex=True),
     "odds_ratio": np.exp(logistic_fit.params).round(2).to_numpy(),
     "conf_low": interval[0].round(2).to_numpy(),
     "conf_high": interval[1].round(2).to_numpy(),
@@ -262,7 +270,7 @@ odds_ratios[odds_ratios["term"].str.contains("substrate|season")]
 ```{r}
 #| label: odds-numbers
 #| include: false
-mud <- odds_ratios |> filter(term == "substratemud")
+mud <- odds_ratios |> filter(term == "substrate: mud")
 excluding_1 <- sum(odds_ratios$conf_low > 1 | odds_ratios$conf_high < 1)
 ```
 

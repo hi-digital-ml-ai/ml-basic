@@ -276,6 +276,10 @@ pd.concat({
 
 :::
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-trees
 #| fig-cap: "The RMSE of forests and boosted models of each size on the stations they were fitted to and on the validation sites. The number of trees is on a log scale."
@@ -301,6 +305,8 @@ plot_scores(forest_scores, "Forest: more trees stop helping") +
   plot_layout(guides = "collect", axes = "collect") &
   theme(legend.position = "bottom")
 ```
+
+:::
 
 ```{r}
 #| label: count-numbers
@@ -335,6 +341,10 @@ forest_fit <- workflow(tree_recipe, forest_model(400)) |> fit(train)
 temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-average
 #| fig-cap: "Predicted count across temperature from 30 of the forest's trees (thin lines) and from the whole forest (thick line), with the other inputs held at typical values (sand, summer, median depth, chlorophyll and salinity). The shaded ends lie beyond the temperatures of the training stations."
@@ -367,6 +377,8 @@ ggplot(trees_long, aes(temperature_c, .pred)) +
   labs(x = "Temperature (°C)", y = "Predicted count",
        title = "Each tree jumps; their average moves in small steps")
 ```
+
+:::
 
 A forest's trees are grown deep, so each is a jagged staircase with its own
 thresholds, and some reach far higher than the rest. Averaged, the large jumps shrink

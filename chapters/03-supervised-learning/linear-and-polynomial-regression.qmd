@@ -153,7 +153,7 @@ curve_recipe = ColumnTransformer([
 
 :::
 
-### The straight line
+### Linear regression
 
 ::: {.panel-tabset group="language"}
 
@@ -202,7 +202,7 @@ count by `r abs(signif(line_coef[["temperature_c"]], 2))` animals, with the othe
 held fixed. Read on its own, the line says warmer water always means fewer animals, at
 the same rate from the coldest station to the warmest.
 
-### The curve
+### Polynomial regression
 
 ::: {.panel-tabset group="language"}
 
@@ -247,6 +247,10 @@ to the peak and falls after it. A straight line cannot show that. Fitted through
 hump, it averages the rising side with the falling side, and its one slope describes
 neither.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-shapes
 #| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. The straight line falls steadily; the curve finds the peak and falls below zero in warm water."
@@ -278,6 +282,8 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
        title = "The curve finds a peak the straight line misses")
 ```
+
+:::
 
 ### The two compared on new sites
 
