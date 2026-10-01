@@ -79,6 +79,9 @@ survey <- load_coastal_survey_clean()
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
 
+# 20 random splits of the training sites: fitting sites and new sites
+splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
+
 predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
   salinity_psu + substrate + season
 
@@ -86,9 +89,6 @@ tree_recipe <- recipe(predictors, data = train) |>
   step_impute_median(all_numeric_predictors())
 boost_recipe <- tree_recipe |>
   step_dummy(all_nominal_predictors())
-
-# 20 random splits of the training sites: fitting sites and new sites
-splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
 
 c(training_sites = n_distinct(train$site_id), splits = nrow(splits))
 ```
@@ -237,7 +237,8 @@ for fit_rows, new_rows in splits:
 
 results = (pd.DataFrame(rows).groupby("model", as_index=False).mean()
            .assign(optimism=lambda d: d["new"] - d["training"])
-           .sort_values("training", na_position="last"))
+           .sort_values("training", na_position="last")
+           .reset_index(drop=True))
 
 results.drop(columns="oob").round(2)
 ```
@@ -325,7 +326,7 @@ results |>
 ## Python
 
 ```{python}
-(results.query("model == 'Random forest'")
+(results.query("model == 'Random forest'").reset_index(drop=True)
  [["training", "oob", "new"]].rename(columns={"oob": "out_of_bag"}).round(2))
 ```
 

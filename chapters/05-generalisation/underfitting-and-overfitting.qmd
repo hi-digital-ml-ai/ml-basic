@@ -81,14 +81,14 @@ survey <- load_coastal_survey_clean()
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
 
+# 20 random splits of the training sites: fitting sites and new sites
+splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
+
 predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
   salinity_psu + substrate + season
 
 tree_recipe <- recipe(predictors, data = train) |>
   step_impute_median(all_numeric_predictors())
-
-# 20 random splits of the training sites: fitting sites and new sites
-splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
 
 # The depth limit is set high so that min_n alone sets the size of the tree.
 tree_model <- function(min_n) {
@@ -345,7 +345,7 @@ sweep |>
 
 **The rigid end.** With a node size of `r max(sizes)`, the largest here, the tree has
 about `r round(stiff$leaves)` leaves. Its training error is `r f2(stiff$training)` and its
-error on new sites `r f2(stiff$new)`, a gap of only `r f2(stiff$gap)`. That is the sign of
+error on new sites `r f2(stiff$new)`, within `r f2(abs(stiff$gap))` of each other. That is the sign of
 underfitting: both errors high and close together. A tree that never splits at all would
 predict the average count everywhere, the dashed line at `r f2(baseline)`.
 

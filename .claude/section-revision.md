@@ -125,6 +125,12 @@ screenshots, so look at the rendered page yourself first.
 - **Assign a fitted model, even inside a loop** (`fitted = model.fit(...)`, not a bare
   `model.fit(...)`). reticulate prints the last bare expression it ran, and a scikit-learn
   estimator prints as a long block of HTML and CSS.
+- **Draw the resamples before building any recipe.** `recipe()` and each `step_*()`
+  draw a random ID, so a recipe made between `set.seed()` and `group_mc_cv()` shifts
+  the splits. Pages that claim to share splits must create them straight after
+  `training(split)`. §5's first two pages had different splits until this was fixed.
+- **Reset a sorted or filtered DataFrame's index** (`.reset_index(drop=True)`) before
+  showing it. Any index other than 0, 1, 2 ... prints as an extra unnamed column.
 - **Tab the R-only chunks too.** Once a page has R and Python tabs, a chunk with no
   Python equivalent still goes in a `panel-tabset` with a single *R* tab, so every
   chunk looks the same (`authoring-guide.md`, Code). Python equivalents may need a
@@ -332,7 +338,7 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 | 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
 | 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
-| 5 Generalisation | `feature/improve-generalisation` | In progress: pages 1–2 rewritten |
+| 5 Generalisation | `feature/improve-generalisation` | In progress: pages 1–3 rewritten |
 | 6–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
