@@ -248,7 +248,7 @@ fit_panel <- ggplot(noise_sweep, aes(noise, r_squared)) +
   geom_line(linewidth = 1, colour = ml_palette[["blue"]]) +
   geom_point(size = 2, colour = ml_palette[["blue"]]) +
   scale_x_sqrt(breaks = breaks) +
-  labs(x = NULL, y = "R², fitting stations",
+  labs(x = NULL, y = "R² on the\nfitting stations",
        title = "The fit to the fitting stations only improves")
 
 new_panel <- ggplot(noise_sweep, aes(noise, new)) +
@@ -260,7 +260,7 @@ new_panel <- ggplot(noise_sweep, aes(noise, new)) +
            hjust = 0, colour = ml_palette[["grey"]], size = 3.4) +
   scale_x_sqrt(breaks = breaks) +
   scale_y_log10() +
-  labs(x = "Columns of random numbers added", y = "RMSE, new sites",
+  labs(x = "Columns of random numbers added", y = "RMSE on new sites\n(individuals)",
        title = "The error on new sites only worsens",
        subtitle = "Log scale")
 
@@ -269,7 +269,7 @@ fit_panel / new_panel
 
 :::
 
-### Reading the sweep
+### A better fit with every useless column
 
 **The fit only improves.** With no random columns, the regression's $R^2$ on the fitting
 stations is `r sprintf("%.3f", none$r_squared)`. Every column added raises it, and with
