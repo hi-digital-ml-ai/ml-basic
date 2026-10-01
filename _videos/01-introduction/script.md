@@ -119,20 +119,36 @@ pause-after: 0.5
 A decision tree was never asked for a slope, and it finds the hump.
 
 ## Scene 15
+visual: manim Rmse: the page's first five test stations, observed and the tree's predicted count; then the miss, then its square; "… and 195 more"; the mean of the squares 19.29; its square root 4.39 animals (page results, what-is-machine-learning.qmd)
+
+To compare the two, each one predicts the stations held back. At every station, take
+the miss: the observed count minus the predicted one. Square the misses, so that none
+cancel out, average them, and take the square root. This is the root mean squared
+error, or RMSE: a typical miss, in animals.
+
+## Scene 16
+visual: manim Scores: three bars, predicting the average 4.72, the straight line 4.59, the tree 4.39; "lower is better" (page results, what-is-machine-learning.qmd)
+pause-after: 0.5
+
+Lower is better. The tree's RMSE is 4.39 animals, the straight line's 4.59. Simply
+predicting the average count everywhere gives 4.72, so both models have learned
+something, if not much. The course scores predictions this way throughout.
+
+## Scene 17
 visual: manim Cause: depth drives both salinity and the species; a dashed line from salinity to the species, "helps predict", then "but causes nothing" (schematic)
 
 Predicting and explaining are different jobs, too. A variable can help predict without
 causing anything. In the survey, salinity helps predict the species, but only because
 it rises with depth, and depth is what the species responds to.
 
-## Scene 16
+## Scene 18
 visual: manim Cause: "a good test error gives no warning", "explaining needs a study design and knowledge of the system", "more on this later in the course"
 pause-after: 0.5
 
 A good test error gives no warning of this. Explaining needs a study design and
 knowledge of the system, and the course comes back to these ideas as it goes.
 
-## Scene 17
+## Scene 19
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -141,30 +157,30 @@ whether you want to predict or to explain.
 
 # Machine learning in marine science
 
-## Scene 18
+## Scene 20
 visual: manim Tasks: six cards appear, naming things to standing in for a slow model (schematic)
 
 Most marine applications come down to six tasks: naming things, mapping across space,
 filling gaps, forecasting, finding groups, and standing in for a slow model.
 
-## Scene 19
+## Scene 21
 visual: manim Tasks: each card gains a warning mark, "a typical way of going wrong"
 
 Each has a typical way of going wrong, and later sections deal with each one.
 
-## Scene 20
+## Scene 22
 visual: manim Pipeline: plentiful data, a specialist's scarce labels, a model, predictions at scale (schematic)
 
 Most of the six are supervised, and the answers usually come from a specialist: slow
 and costly. A model turns those few labels into predictions for everything else.
 
-## Scene 21
+## Scene 23
 visual: manim Pipeline: the labelled few bunched in one corner, "not a random sample"
 
 But the labelled examples are rarely a random sample, and the model inherits their
 gaps.
 
-## Scene 22
+## Scene 24
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -173,14 +189,14 @@ labels came from.
 
 # Quiz
 
-## Scene 23
+## Scene 25
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. You have a folder of seabed photographs, and a specialist has named the
 species in some of them. Supervised or unsupervised? And which of the six tasks?
 
-## Scene 24
+## Scene 26
 visual: manim QuizAnswer: the named photos marked "supervised", and the "naming things" card (schematic)
 
 Supervised, because some photographs come with answers. The task is naming things: a
@@ -188,22 +204,22 @@ classification.
 
 # Key points
 
-## Scene 25
+## Scene 27
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: your data decide the kind of learning.
 
-## Scene 26
+## Scene 28
 visual: manim KeyPoints: the second ticked
 
 Two: decide whether you want to predict or to explain.
 
-## Scene 27
+## Scene 29
 visual: manim KeyPoints: the third ticked
 
 Three: most applications are one of six tasks, limited by their labels.
 
-## Scene 28
+## Scene 30
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.

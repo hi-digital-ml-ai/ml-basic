@@ -326,7 +326,7 @@ class Scene10(KeyPointScene):
     number, point = 10, 1
 
 
-# Statistics and machine learning (scenes 11–16) --------------------------------------------
+# Statistics and machine learning (scenes 11–19) --------------------------------------------
 
 class Scene11(VideoScene):
     number = 11
@@ -438,6 +438,108 @@ class Scene14(VideoScene):
         self.finish()
 
 
+class Scene15(VideoScene):
+    number = 15
+
+    def construct(self):
+        # Page results: the first five test stations as the page tabulates them, and the
+        # RMSE built from all of them.
+        misses = self.data("misses")
+        steps = self.data("rmse-steps").iloc[0]
+        widths = [2.0, 2.3, 2.0, 2.3]
+        rows = [["observed", "predicted", "miss", "squared"]] + [
+            [f"{r.observed:g}", f"{r.predicted:.2f}", f"{r.miss:.2f}".replace("-", "−"), f"{r.squared:.2f}"]
+            for r in misses.itertuples()]
+        cells = VGroup()
+        for i, row in enumerate(rows):
+            x = 0
+            line = VGroup()
+            for text, w in zip(row, widths):
+                cell = label(text, 26 if i == 0 else 32, SUBDUED if i == 0 else INK, weight=BOLD if i == 0 else NORMAL)
+                cell.move_to([x + w, -0.62 * i, 0], aligned_edge=RIGHT)
+                line.add(cell)
+                x += w
+            cells.add(line)
+        more = label(f"… and {steps.stations - len(misses):g} more stations", 26, SUBDUED).next_to(cells, DOWN, 0.35)
+        grid_ = VGroup(cells, more).move_to([-2.6, -0.5, 0])
+        columns = [VGroup(*[row[c] for row in cells]) for c in range(4)]
+        columns[2][1:].set_color(VERMILION)
+        columns[3][1:].set_color(PURPLE)
+        mean_ = VGroup(label("mean of the squares", 30, SUBDUED),
+                       label(f"{steps.mean_squared:.2f}", 44, PURPLE, weight=BOLD)).arrange(DOWN, buff=0.15)
+        root = VGroup(label("square root", 30, SUBDUED),
+                      label(f"{steps.rmse:.2f} animals", 44, ORANGE, weight=BOLD)).arrange(DOWN, buff=0.15)
+        VGroup(mean_, root).arrange(DOWN, buff=0.9).move_to([4.6, -0.3, 0])
+        arrow = Arrow(mean_.get_bottom(), root.get_top(), color=GRID, stroke_width=5, buff=0.12)
+        head = label("the tree on the held-back stations", 36, INK, weight=BOLD).to_edge(UP, buff=0.6)
+        name = card("RMSE: a typical miss", ORANGE, 36).next_to(root, DOWN, 0.5)
+        # "To compare the two, each one predicts the stations held back."
+        self.play(FadeIn(head), FadeIn(columns[0]), FadeIn(columns[1]), FadeIn(more), run_time=self.share(0.14))
+        # "At every station, take the miss: the observed count minus the predicted one."
+        at(self, 0.18)
+        self.play(LaggedStart(*[FadeIn(c, shift=0.15 * LEFT) for c in columns[2]], lag_ratio=0.12),
+                  run_time=self.share(0.14))
+        # "Square the misses, so that none cancel out,"
+        at(self, 0.4)
+        self.play(LaggedStart(*[FadeIn(c, shift=0.15 * LEFT) for c in columns[3]], lag_ratio=0.12),
+                  run_time=self.share(0.12))
+        # "average them,"
+        at(self, 0.55)
+        self.play(FadeIn(mean_, shift=0.2 * LEFT), run_time=self.share(0.06))
+        # "and take the square root."
+        at(self, 0.62)
+        self.play(GrowArrow(arrow), FadeIn(root, shift=0.2 * DOWN), run_time=self.share(0.07))
+        # "This is the root mean squared error, or RMSE: a typical miss, in animals."
+        at(self, 0.72)
+        self.play(FadeIn(name, shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene16(VideoScene):
+    number = 16
+
+    def construct(self):
+        # Page results: the test RMSE of each model, beside predicting the average.
+        scores = self.data("test-rmse")
+        colours = {"predicting the average": GREY, "straight line": BLUE, "decision tree": ORANGE}
+        unit = 1.3   # scene units per animal
+        left = -1.0
+        bars = {}
+        for i, r in enumerate(scores.itertuples()):
+            y = 1.0 - 1.4 * i
+            bar = Rectangle(width=r.rmse * unit, height=0.75, stroke_width=0, fill_color=colours[r.model],
+                            fill_opacity=0.9).move_to([left, y, 0], aligned_edge=LEFT)
+            name = label(r.model, 32, INK, weight=BOLD).next_to(bar, LEFT, 0.3)
+            value = label(f"{r.rmse:.2f}", 36, colours[r.model], weight=BOLD)
+            value.move_to([left + scores["rmse"].max() * unit + 0.3, y, 0], aligned_edge=LEFT)   # clear of the dashed line
+            bars[r.model] = VGroup(bar, name, value)
+        base = Line([left, 1.7, 0], [left, -3.2, 0], color=GRID, stroke_width=4)
+        average = scores.loc[scores["model"] == "predicting the average", "rmse"].iloc[0]
+        mark = DashedLine([left + average * unit, 1.75, 0], [left + average * unit, -2.4, 0],
+                          color=SUBDUED, stroke_width=4)
+        unit_ = label("test RMSE, animals per station", 26, SUBDUED).move_to([left + 3.0, -2.9, 0])
+        head = label("lower is better", 44, INK, weight=BOLD).to_edge(UP, buff=0.6)
+        learned = label("both beat the average, if not by much", 30, PURPLE, weight=BOLD)
+        learned.next_to(mark, UP, 0.15).align_to(mark, RIGHT).shift(0.6 * RIGHT)
+        # "Lower is better."
+        self.play(FadeIn(head), Create(base), FadeIn(unit_), run_time=self.share(0.1))
+        # "The tree's RMSE is 4.39 animals, the straight line's 4.59."
+        at(self, 0.12)
+        self.play(GrowFromEdge(bars["decision tree"][0], LEFT), FadeIn(bars["decision tree"][1:]),
+                  run_time=self.share(0.12))
+        at(self, 0.3)
+        self.play(GrowFromEdge(bars["straight line"][0], LEFT), FadeIn(bars["straight line"][1:]),
+                  run_time=self.share(0.1))
+        # "Simply predicting the average count everywhere gives 4.72,"
+        at(self, 0.45)
+        self.play(GrowFromEdge(bars["predicting the average"][0], LEFT),
+                  FadeIn(bars["predicting the average"][1:]), run_time=self.share(0.12))
+        # "so both models have learned something, if not much."
+        at(self, 0.66)
+        self.play(Create(mark), FadeIn(learned), run_time=self.share(0.12))
+        self.finish()
+
+
 def cause_layout():
     """Schematic: depth drives both salinity and the species, as on the prediction and
     explanation page's diagram; salinity itself causes nothing."""
@@ -454,8 +556,8 @@ def cause_layout():
     return depth, salinity, species, drives, link, predicts, cross, nothing, title_
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         depth, salinity, species, drives, link, predicts, cross, nothing, title_ = cause_layout()
@@ -476,8 +578,8 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         depth, salinity, species, drives, link, predicts, cross, nothing, title_ = cause_layout()
@@ -498,11 +600,11 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(KeyPointScene):
-    number, point = 17, 2
+class Scene19(KeyPointScene):
+    number, point = 19, 2
 
 
-# Machine learning in marine science (scenes 18–22) ------------------------------------------
+# Machine learning in marine science (scenes 20–24) ------------------------------------------
 
 TASKS = [("Naming things", "classification", ORANGE), ("Mapping across space", "regression or classification", BLUE),
          ("Filling gaps", "regression", BLUE), ("Forecasting", "regression", BLUE),
@@ -527,8 +629,8 @@ def warning_mark():
     return VGroup(tri, label("!", 30, BACKGROUND, weight=BOLD).move_to(tri.get_center() + 0.05 * DOWN))
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         head, cards = tasks_layout()
@@ -539,8 +641,8 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         head, cards = tasks_layout()
@@ -572,8 +674,8 @@ def pipeline_layout():
     return boxes, arrows
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         # Schematic: the applications page's pipeline.
@@ -592,8 +694,8 @@ class Scene20(VideoScene):
         self.finish()
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         # Schematic: a cloud of cases, and the labelled few bunched in one corner of it.
@@ -614,20 +716,20 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(KeyPointScene):
-    number, point = 22, 3
+class Scene24(KeyPointScene):
+    number, point = 24, 3
 
 
-# The quiz (scenes 23–24) ------------------------------------------------------------------
+# The quiz (scenes 25–26) ------------------------------------------------------------------
 
-class Scene23(QuizScene):
-    number = 23
+class Scene25(QuizScene):
+    number = 25
     question = ("Seabed photographs, some named", "by a specialist.",
                 "Supervised or unsupervised?", "Which of the six tasks?")
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         # Schematic: photos, some carrying a name; the naming-things card.
@@ -651,19 +753,19 @@ class Scene24(VideoScene):
         self.finish()
 
 
-# The recap (scenes 25–27) and the end card (scene 28) --------------------------------------
-
-class Scene25(RecapScene):
-    number, point = 25, 1
-
-
-class Scene26(RecapScene):
-    number, point = 26, 2
-
+# The recap (scenes 27–29) and the end card (scene 30) --------------------------------------
 
 class Scene27(RecapScene):
-    number, point = 27, 3
+    number, point = 27, 1
 
 
-class Scene28(EndCardScene):
-    number = 28
+class Scene28(RecapScene):
+    number, point = 28, 2
+
+
+class Scene29(RecapScene):
+    number, point = 29, 3
+
+
+class Scene30(EndCardScene):
+    number = 30
