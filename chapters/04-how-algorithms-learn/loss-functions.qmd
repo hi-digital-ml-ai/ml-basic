@@ -12,6 +12,7 @@ library(tidymodels)
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
@@ -25,6 +26,8 @@ common choices, squared and absolute error, drawing two different lines through 
 same data, and how to choose between them.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
 ## From one miss to the whole dataset
 
@@ -66,6 +69,52 @@ For a straight line, $\hat{y}_i = a + b\,x_i$, and fitting means choosing the in
 $a$ and slope $b$ that make the chosen objective smallest.
 :::
 
+## A residual is not an error
+
+Statistics keeps apart two quantities that everyday speech, and much of machine
+learning, both call "error".
+
+- The **error** is how far an observation sits from the true average for its
+  conditions: the abundance a station would show on average if it were sampled again
+  and again under the same chlorophyll, temperature and everything else. Nobody knows
+  that true average, so the error can never be computed. It is the **noise**, the part
+  of the count that the conditions do not decide: patchy animals, a net that fished
+  well or badly, and chance.
+- The **residual** is how far an observation sits from the model's prediction. It can
+  always be computed, and it is the fit's estimate of the error.
+
+The two differ because the prediction is not the true average. The fitted line was
+drawn through these same stations, so it leans towards them, and the residuals on the
+data used for fitting come out smaller, on average, than the errors they estimate.
+[Section 5](../05-generalisation/index.qmd) builds on this gap: a model looks better on
+its training data than on new data.
+
+A residual also mixes two sources. Part of it is noise, and part is the model's own
+mistake: a straight line through a curved relationship misses in the same direction
+over a whole range of chlorophyll, however many stations there are. That systematic
+part is **bias**, and [The bias–variance trade-off](../05-generalisation/bias-variance.qmd)
+separates the two.
+
+Machine learning also uses "error" loosely, for any measure of how wrong the
+predictions are: squared error, training error, test error. This course keeps that usage
+for the names of losses, so squared error is worked out from residuals, not from
+errors.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+
+Write the outcome at station $i$ as its true average plus noise,
+$y_i = f(x_i) + \varepsilon_i$, where $f$ is the unknown relationship and $x_i$ the
+station's conditions. Then
+
+$$\text{error: } \varepsilon_i = y_i - f(x_i) \qquad\qquad \text{residual: } e_i = y_i - \hat{f}(x_i)$$
+
+where $\hat{f}$ is the fitted model. The residual is the error plus the model's miss of
+the truth, $e_i = \varepsilon_i + \bigl(f(x_i) - \hat{f}(x_i)\bigr)$. A least-squares
+fit makes $\sum e_i^2$ as small as any line can, and the true line is one of those
+lines, so $\sum e_i^2 \le \sum \varepsilon_i^2$ whenever the truth is a straight line.
+:::
+
 ## Worked example
 
 We fit a straight line of abundance against chlorophyll twice, changing only the loss.
@@ -74,6 +123,10 @@ tries values until the function is as small as it can make it.
 [The next two pages](parameter-estimation.qmd) show how a search like this works.
 
 ### Two losses, two lines
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fit-two-losses
@@ -104,10 +157,59 @@ coefs <- tibble(
 coefs |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+from scipy.optimize import minimize
+from sklearn.linear_model import LinearRegression
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+d = survey[["abundance", "chlorophyll_mg_m3"]].dropna()
+
+# Fit a + b * chlorophyll by making the average loss smallest. Nelder-Mead
+# compares trial points without using the slope of the objective, so the sharp
+# corner of absolute error at zero does not stop it, as it stops scipy's BFGS.
+def fit_loss(data, loss):
+    def objective(par):
+        residual = data["abundance"] - (par[0] + par[1] * data["chlorophyll_mg_m3"])
+        return np.mean(loss(residual))
+    return minimize(objective, x0=[0, 0], method="Nelder-Mead",
+                    options={"xatol": 1e-8, "fatol": 1e-10, "maxiter": 5000}).x
+
+squared = fit_loss(d, lambda r: r**2)
+absolute = fit_loss(d, np.abs)
+
+coefs = pd.DataFrame({
+    "loss": ["Squared error", "Absolute error"],
+    "intercept": [squared[0], absolute[0]],
+    "slope": [squared[1], absolute[1]],
+})
+coefs.round(3)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: lm-check
 coef(lm(abundance ~ chlorophyll_mg_m3, data = d)) |> round(3)
 ```
+
+## Python
+
+```{python}
+line = LinearRegression().fit(d[["chlorophyll_mg_m3"]], d["abundance"])
+pd.Series({"intercept": line.intercept_, "chlorophyll_mg_m3": line.coef_[0]}).round(3)
+```
+
+:::
 
 The squared-error line starts at `r round(squared[1], 2)` animals and rises
 `r round(squared[2], 2)` for each mg m⁻³ of chlorophyll. The absolute-error line starts
@@ -115,6 +217,10 @@ at `r round(absolute[1], 2)` and rises `r round(absolute[2], 2)`. The squared-er
 is the one `lm()` returns, and `lm()` is the engine behind `linear_reg()` in section 3:
 linear regression is the line that makes squared error smallest.
 [The next page](parameter-estimation.qmd) shows it can be found without a search.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-two-lines
@@ -134,10 +240,16 @@ ggplot(d, aes(chlorophyll_mg_m3, abundance)) +
   )
 ```
 
+:::
+
 ### A few stations dominate squared error
 
 The two lines differ because squared error gives most of its weight to the largest
 misses. We can measure how much.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: error-share
@@ -151,12 +263,31 @@ share <- c(
 round(share, 3)
 ```
 
+## Python
+
+```{python}
+residual = d["abundance"] - (squared[0] + squared[1] * d["chlorophyll_mg_m3"])
+worst = residual.abs().nlargest(round(0.05 * len(d))).index
+
+share = pd.Series({
+    "squared": (residual[worst] ** 2).sum() / (residual**2).sum(),
+    "absolute": residual[worst].abs().sum() / residual.abs().sum(),
+})
+share.round(3)
+```
+
+:::
+
 The `r length(worst)` stations with the largest misses, 5% of the data, supply
 `r scales::percent(share[["squared"]], 1)` of the total squared error but only
 `r scales::percent(share[["absolute"]], 1)` of the total absolute error. Half of what
 the squared-error fit tries to reduce comes from those few stations.
 
 ### One station moves the slope
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: drop-one
@@ -172,6 +303,23 @@ slopes <- tibble(
 
 slopes |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
+
+## Python
+
+```{python}
+d_minus = d.drop(d["abundance"].idxmax())
+
+slopes = pd.DataFrame({
+    "loss": ["Squared error", "Absolute error"],
+    "all stations": [squared[1], absolute[1]],
+    "largest catch removed": [fit_loss(d_minus, lambda r: r**2)[1],
+                              fit_loss(d_minus, np.abs)[1]],
+})
+slopes["change"] = slopes["largest catch removed"] / slopes["all stations"] - 1
+slopes.round(3)
+```
+
+:::
 
 Removing the largest catch, `r max(d$abundance)` animals at one station out of
 `r nrow(d)`, moves the squared-error slope from `r sprintf("%.2f", slopes[[2]][1])` to
@@ -236,6 +384,9 @@ which [Maximum likelihood](maximum-likelihood.qmd) describes.
 ::: {.key-points}
 - A **loss** scores one prediction from its residual; the **objective** averages it over
   the data, and fitting means making the objective as small as possible.
+- A **residual** is the miss against the model's prediction and can be computed; an
+  **error** is the miss against the unknown true average, the noise. Residuals on the
+  training data understate the errors.
 - Squared error prices a miss of 10 at a hundred times a miss of 1. Here the worst 5% of
   stations supplied `r scales::percent(share[["squared"]], 1)` of the total squared
   error, and removing one station moved the slope by

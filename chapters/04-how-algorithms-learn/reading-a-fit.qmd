@@ -13,6 +13,7 @@ library(tidyverse)
 library(ranger)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 
 # A number for the prose, with a true minus sign.
@@ -30,6 +31,8 @@ coefficient.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
 ## Three ways a search goes wrong
 
 1. **It stopped early.** The search ran out of steps and returned wherever it had got to.
@@ -44,6 +47,10 @@ coefficient.
 
 ## Worked example
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -54,10 +61,41 @@ d <- survey |>
   drop_na()
 ```
 
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy.optimize import minimize
+from scipy.stats import poisson
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+d = survey[["abundance", "present", "catch_weight_kg", "depth_m", "temperature_c",
+            "chlorophyll_mg_m3", "salinity_psu", "substrate", "season"]].dropna()
+
+# glm() models the second level of a factor, and present's second level is
+# "no", so the R fits on this page predict absence. We do the same, so the
+# signs match.
+absent = (d["present"] == "no").astype(float)
+```
+
+:::
+
 ### A search that stopped early
 
 `glm()` searches step by step and stops after 25 steps at most. We fit logistic
 regression for presence twice: once allowed only two steps, and once left to finish.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: maxit
@@ -77,6 +115,27 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
+## Python
+
+```{python}
+X = sm.add_constant(d[["chlorophyll_mg_m3", "depth_m"]])
+binomial = sm.families.Binomial()
+
+stopped_early = sm.GLM(absent, X, family=binomial).fit(maxiter=2)
+full_fit = sm.GLM(absent, X, family=binomial).fit()
+
+pd.DataFrame({
+    "fit": ["two steps", "left to finish"],
+    "converged": [stopped_early.converged, full_fit.converged],
+    "steps": [stopped_early.fit_history["iteration"], full_fit.fit_history["iteration"]],
+    "chlorophyll": [stopped_early.params["chlorophyll_mg_m3"],
+                    full_fit.params["chlorophyll_mg_m3"]],
+    "depth": [stopped_early.params["depth_m"], full_fit.params["depth_m"]],
+}).round(4)
+```
+
+:::
+
 ```{r}
 #| label: maxit-numbers
 #| include: false
@@ -94,6 +153,10 @@ A search can also report success without having moved. On
 depth in metres and its square in the thousands. It returned the coefficients it
 started from and a code saying it had finished. We repeat that fit and compare it with
 `glm()` on the same inputs.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: silent-optim
@@ -114,6 +177,28 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 1)))
 ```
 
+## Python
+
+```{python}
+Xraw = sm.add_constant(d[["chlorophyll_mg_m3", "depth_m"]]
+                       .assign(depth_m2=d["depth_m"] ** 2))
+y = d["abundance"].to_numpy()
+
+# scipy fails here by overflowing, and says so, where optim() reports success.
+with np.errstate(over="ignore", invalid="ignore"):
+    raw_optim = minimize(lambda b: -poisson.logpmf(y, mu=np.exp(Xraw.to_numpy() @ b)).sum(),
+                         np.zeros(Xraw.shape[1]), method="BFGS")
+raw_glm = sm.GLM(y, Xraw, family=sm.families.Poisson()).fit()
+
+pd.DataFrame({
+    "fit": ["minimize()", "statsmodels"],
+    "reports success": [raw_optim.success, raw_glm.converged],
+    "log-likelihood": [-raw_optim.fun, raw_glm.llf],
+}).round(1)
+```
+
+:::
+
 Both report success, but the log-likelihoods differ by
 `r format(round(as.numeric(logLik(raw_glm)) + raw_optim$value), big.mark = ",")`, and
 higher is better. `optim()` stopped at its starting point. The flag says only that the
@@ -127,6 +212,10 @@ the same model, or a look at whether the parameters moved from where they starte
 same catch that was counted, so every station where the species was present weighs
 more than every station where it was absent. We use it to predict presence.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: separation
 #| warning: true
@@ -135,6 +224,33 @@ separated <- glm(present ~ catch_weight_kg, data = d, family = binomial)
 round(summary(separated)$coefficients, 3)
 c(converged = separated$converged, steps = separated$iter)
 ```
+
+## Python
+
+```{python}
+# statsmodels warns of "perfect separation" here, yet reports converged.
+# errstate hides numpy's overflow warnings on the way, which say the same.
+with np.errstate(over="ignore"):
+    separated = sm.GLM(absent, sm.add_constant(d[["catch_weight_kg"]]),
+                       family=binomial).fit()
+
+# scikit-learn's LogisticRegression gives no sign at all: its default penalty
+# (C=1.0) stops the coefficient from walking off, so it looks ordinary.
+default = LogisticRegression().fit(d[["catch_weight_kg"]], absent)
+
+pd.DataFrame({
+    "fit": ["statsmodels", "LogisticRegression()"],
+    "coefficient": [separated.params["catch_weight_kg"], default.coef_[0, 0]],
+    "std. error": [f"{separated.bse['catch_weight_kg']:,.0f}", "none"],
+    "converged": [separated.converged, default.n_iter_[0] < default.max_iter],
+    "training accuracy": [
+        np.mean((separated.predict() > 0.5) == absent),
+        default.score(d[["catch_weight_kg"]], absent),
+    ],
+}).round(3)
+```
+
+:::
 
 ```{r}
 #| label: separation-numbers
@@ -166,6 +282,10 @@ A random forest draws stations and inputs at random for each tree, so a forest f
 without a seed is a slightly different model every time. We fit one ten times on the
 same training stations and score each on the same test stations.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: forest-runs
 split <- initial_split(d |> select(-present, -catch_weight_kg), prop = 0.75)
@@ -180,6 +300,31 @@ unseeded <- map_dbl(1:10, \(i) {
 round(unseeded, 3)
 ```
 
+## Python
+
+```{python}
+# max_features="sqrt" and min_samples_leaf=5 are ranger's defaults for
+# regression; scikit-learn's own defaults differ.
+features = pd.get_dummies(d.drop(columns=["abundance", "present", "catch_weight_kg"]),
+                          dtype=float)
+train_X, test_X, train_y, test_y = train_test_split(
+    features, d["abundance"], train_size=0.75, random_state=123)
+
+def unseeded_rmse():
+    forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                                   min_samples_leaf=5).fit(train_X, train_y)
+    return np.sqrt(np.mean((test_y - forest.predict(test_X)) ** 2))
+
+unseeded = np.array([unseeded_rmse() for _ in range(10)])
+print(unseeded.round(3))
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-forest-runs
 #| fig-cap: !expr glue::glue("Test RMSE of the same random forest fitted ten times without a seed. The runs spread over {num(diff(range(unseeded)), 3)} animals, and every one reported success.")
@@ -193,6 +338,8 @@ tibble(rmse = unseeded) |>
        title = "One forest, ten runs without a seed") +
   theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
 ```
+
+:::
 
 The ten runs range from `r num(min(unseeded), 3)` to `r num(max(unseeded), 3)`, a
 spread of `r num(diff(range(unseeded)), 3)` animals. That is small, and it is still

@@ -123,6 +123,14 @@ screenshots, so look at the rendered page yourself first.
   Python equivalent still goes in a `panel-tabset` with a single *R* tab, so every
   chunk looks the same (`authoring-guide.md`, Code). Python equivalents may need a
   package R has built in: section 3 added statsmodels for the count models.
+- **A section with no tabs may still need them.** Section 4 had none, as it fits
+  models by hand rather than through the pipeline, yet every step had an honest
+  numpy, scipy or statsmodels twin, and scikit-learn's defaults gave the tabs
+  something to teach: `LogisticRegression` and `PoissonRegressor` carry a ridge
+  penalty unless switched off, which hides separation. Three traps there: R's
+  `glm()` models a factor's second level (`present` → "no"), so match it or the
+  signs flip; scipy's BFGS stops on absolute error's corner (use Nelder-Mead); and
+  Python warnings do not reach the rendered page, so say in a comment what warns.
 
 ### Wording
 

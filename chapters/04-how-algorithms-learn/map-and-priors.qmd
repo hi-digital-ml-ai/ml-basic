@@ -13,6 +13,7 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(2026)
 
 # A number for the prose, with a true minus sign.
@@ -32,6 +33,8 @@ the result is **ridge regression**, a method that
 [section 5](../05-generalisation/regularisation.qmd) uses to stop models overfitting.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
 ## A prior says how large effects usually are
 
@@ -104,6 +107,10 @@ substrate and season as dummy columns. The other stations are held back as a tes
 Every input is standardised on the forty training stations, so each coefficient is the
 change in abundance for one standard deviation of its input.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
@@ -137,6 +144,50 @@ rownames(mle) <- colnames(X)
 round(mle[, 1:2], 2)
 ```
 
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy.optimize import minimize
+from scipy.stats import norm
+from sklearn.linear_model import Ridge
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+d = survey[["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+            "salinity_psu", "substrate", "season"]].dropna().reset_index(drop=True)
+
+X_all = pd.concat([
+    d[["depth_m"]], (d["depth_m"] ** 2).rename("depth_m^2"),
+    d[["temperature_c"]], (d["temperature_c"] ** 2).rename("temperature_c^2"),
+    d[["chlorophyll_mg_m3", "salinity_psu"]],
+    pd.get_dummies(d[["substrate", "season"]], drop_first=True,
+                   prefix_sep=": ", dtype=float),
+], axis=1)
+
+# A different random 40 from R's, so the numbers differ from the page's.
+rng = np.random.default_rng(2026)
+is_train = np.isin(np.arange(len(d)), rng.choice(len(d), size=40, replace=False))
+
+# Standardise with the training stations only, and centre abundance on
+# their mean, so the model needs no intercept.
+centre = X_all[is_train].mean()
+spread = X_all[is_train].std()
+X = (X_all - centre) / spread
+y = d["abundance"] - d["abundance"][is_train].mean()
+
+X_train, y_train = X[is_train], y[is_train]
+X_test, y_test = X[~is_train], y[~is_train]
+
+mle_fit = sm.OLS(y_train, X_train).fit()
+pd.DataFrame({"estimate": mle_fit.params, "std. error": mle_fit.bse}).round(2)
+```
+
+:::
+
 ```{r}
 #| label: mle-numbers
 #| include: false
@@ -152,6 +203,10 @@ that partly cancel, and the standard error of the temperature coefficient is
 Maximum likelihood reports it anyway.
 
 ### A tighter prior pulls harder
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-prior-likelihood
@@ -190,6 +245,8 @@ ggplot(curves, aes(b, density, colour = curve)) +
   theme(axis.text.y = element_blank())
 ```
 
+:::
+
 A prior with a standard deviation of 5 barely objects to `r num(b_temp, 2)` and moves
 the estimate to `r num(peaks[1], 2)`. A prior of 1, the belief that effects are usually
 within about ±2, moves it to `r num(peaks[2], 2)`. The data never supported a large
@@ -203,6 +260,10 @@ We fit MAP directly with `optim()`, using a Normal likelihood and a Normal prior
 standard deviation of 1 on every coefficient. For the noise standard deviation we use
 the residual standard deviation of the maximum-likelihood fit. Then we fit ridge
 regression by its formula, with λ equal to the noise variance over the prior variance.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: map-equals-ridge
@@ -232,6 +293,42 @@ coefs <- tibble(
 coefs |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
+## Python
+
+```{python}
+sigma = np.sqrt(mle_fit.scale)   # noise sd, from the unpenalised fit
+tau = 1                          # prior sd on each coefficient
+
+def neg_log_posterior(b):
+    return (-norm.logpdf(y_train, X_train.to_numpy() @ b, sigma).sum()
+            - norm.logpdf(b, 0, tau).sum())
+
+map_fit = minimize(neg_log_posterior, np.zeros(X_train.shape[1]), method="BFGS",
+                   options={"gtol": 1e-10})
+
+def ridge(lam):
+    return np.linalg.solve(X_train.T @ X_train + lam * np.eye(X_train.shape[1]),
+                           X_train.T @ y_train)
+
+lam = sigma**2 / tau**2
+
+# scikit-learn's Ridge makes the same objective smallest, with alpha in the
+# place of lambda. Its LogisticRegression and PoissonRegressor carry this
+# penalty by default.
+sk_ridge = Ridge(alpha=lam, fit_intercept=False).fit(X_train, y_train)
+
+coefs = pd.DataFrame({
+    "term": X_train.columns,
+    "maximum likelihood": ridge(0),
+    "MAP": map_fit.x,
+    "ridge": ridge(lam),
+    "Ridge()": sk_ridge.coef_,
+})
+coefs.round(3)
+```
+
+:::
+
 ```{r}
 #| label: map-numbers
 #| include: false
@@ -253,6 +350,10 @@ A prior makes the fit to the forty stations worse, since it pulls the coefficien
 from the values that fit them best. The test is whether it predicts the other stations
 better. We fit ridge regression over a range of λ and measure the RMSE on both sets.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: lambda-curve
 rmse <- function(b, X, y) sqrt(mean((y - X %*% b)^2))
@@ -267,6 +368,26 @@ curve <- tibble(lambda = exp(seq(log(0.01), log(500), length.out = 120))) |>
 mean_only <- sqrt(mean(y_test^2))   # predict the training mean everywhere
 best <- curve |> slice_min(test)
 ```
+
+## Python
+
+```{python}
+def rmse(b, X, y):
+    return np.sqrt(np.mean((y - X @ b) ** 2))
+
+curve = pd.DataFrame({"lambda": np.exp(np.linspace(np.log(0.01), np.log(500), 120))})
+curve["train"] = [rmse(ridge(l), X_train, y_train) for l in curve["lambda"]]
+curve["test"] = [rmse(ridge(l), X_test, y_test) for l in curve["lambda"]]
+
+mean_only = np.sqrt(np.mean(y_test**2))   # predict the training mean everywhere
+best = curve.loc[curve["test"].idxmin()]
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-lambda
@@ -288,6 +409,8 @@ curve |>
     subtitle = "Dashed line: predicting the training mean everywhere"
   )
 ```
+
+:::
 
 ```{r}
 #| label: gains

@@ -13,6 +13,7 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 
 # A number for the prose, with a true minus sign.
@@ -30,10 +31,16 @@ survey: what kind of quantity is the response, and how does it vary?
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
 ## Likelihood reads probability backwards
 
 Probability starts from a model and asks how likely the data are. **Likelihood** starts
 from the data and asks which parameter values make them most likely.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-one-station
@@ -64,6 +71,8 @@ three <- map_dfr(counts, \(k) tibble(mu, L = dpois(k, mu), curve = paste("counte
 
 one + three
 ```
+
+:::
 
 Take one station where 3 animals were counted, and suppose the counts follow a Poisson
 distribution with some expected count $\mu$. If $\mu$ were 3, a count of 3 would be
@@ -145,6 +154,10 @@ We fit a line of abundance against standardised chlorophyll twice: once by writi
 the Normal negative log-likelihood and minimising it with `optim()`, once with `lm()`.
 The likelihood never mentions a squared residual.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: normal-mle
 X <- model.matrix(~ chl_z, data = d)
@@ -168,6 +181,50 @@ normal_compare <- tibble(
 normal_compare |> mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy.optimize import minimize
+from scipy.stats import norm, poisson
+from sklearn.linear_model import LinearRegression, PoissonRegressor
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+def standardise(column):
+    return (column - column.mean()) / column.std()
+
+d = survey[["abundance", "chlorophyll_mg_m3", "depth_m"]].dropna()
+d = d.assign(chl_z=standardise(d["chlorophyll_mg_m3"]),
+             depth_z=standardise(d["depth_m"]))
+y = d["abundance"].to_numpy()
+
+X = sm.add_constant(d[["chl_z"]]).to_numpy()
+
+# The spread sigma is a parameter too. It is searched on the log scale, so the
+# search cannot propose a negative one.
+def neg_log_lik_normal(par):
+    return -norm.logpdf(y, loc=X @ par[:2], scale=np.exp(par[2])).sum()
+
+normal_mle = minimize(neg_log_lik_normal, x0=[0, 0, 1], method="BFGS",
+                      options={"gtol": 1e-8})
+ls_fit = LinearRegression().fit(d[["chl_z"]], y)
+
+pd.DataFrame({
+    "method": ["Maximum likelihood", "Least squares, LinearRegression"],
+    "intercept": [normal_mle.x[0], ls_fit.intercept_],
+    "slope": [normal_mle.x[1], ls_fit.coef_[0]],
+    "sigma": [np.exp(normal_mle.x[2]),
+              np.sqrt(np.mean((y - ls_fit.predict(d[["chl_z"]])) ** 2))],
+}).round(4)
+```
+
+:::
+
 The two agree to the fourth decimal place: asking for the line that makes the counts
 most likely under a Normal distribution gives the least-squares line.
 
@@ -176,6 +233,10 @@ most likely under a Normal distribution gives the least-squares line.
 Changing `dnorm` to `dpois`, and passing the weighted sum through $e$ so that the
 expected count stays above zero, gives Poisson regression. We add depth and its square,
 as in [Regression for counts](../03-supervised-learning/count-regression.qmd).
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: poisson-mle
@@ -198,6 +259,31 @@ tibble(
   mutate(across(where(is.numeric), \(x) round(x, 5)))
 ```
 
+## Python
+
+```{python}
+Xp = sm.add_constant(d[["chl_z", "depth_z"]].assign(depth_z2=d["depth_z"] ** 2))
+
+def neg_log_lik_poisson(b):
+    return -poisson.logpmf(y, mu=np.exp(Xp.to_numpy() @ b)).sum()
+
+poisson_mle = minimize(neg_log_lik_poisson, x0=np.zeros(Xp.shape[1]), method="BFGS",
+                       options={"gtol": 1e-8})
+poisson_glm = sm.GLM(y, Xp, family=sm.families.Poisson()).fit()
+
+# scikit-learn's PoissonRegressor adds a penalty by default (alpha=1.0);
+# alpha=0 switches it off, and then it fits the same likelihood.
+poisson_sk = PoissonRegressor(alpha=0, max_iter=1000).fit(Xp.drop(columns="const"), y)
+
+pd.DataFrame({
+    "by minimize": poisson_mle.x,
+    "by statsmodels": poisson_glm.params,
+    "by PoissonRegressor": [poisson_sk.intercept_, *poisson_sk.coef_],
+}).round(5)
+```
+
+:::
+
 The coefficients agree to five decimal places, and so do the log-likelihoods:
 `r num(-poisson_mle$value, 3)` by `optim()` and `r num(as.numeric(logLik(poisson_glm)), 3)`
 by `glm()`. `glm(family = poisson)` is this likelihood with a faster search.
@@ -211,6 +297,10 @@ standard error is small; a flat peak means they do not, and it is large.
 The search above used standardised inputs. Here it is with depth in metres, so that
 depth squared runs into the thousands.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: raw-units
 Xraw <- model.matrix(~ chlorophyll_mg_m3 + depth_m + I(depth_m^2), data = d)
@@ -223,6 +313,25 @@ signif(raw_mle$par, 2)
 raw_mle$convergence
 ```
 
+## Python
+
+```{python}
+Xraw = sm.add_constant(d[["chlorophyll_mg_m3", "depth_m"]]
+                       .assign(depth_m2=d["depth_m"] ** 2)).to_numpy()
+
+# scipy's search also fails here, but differently: its first step is so large
+# that exp() overflows, and it reports failure where optim() reports success.
+with np.errstate(over="ignore", invalid="ignore"):
+    raw_mle = minimize(lambda b: -poisson.logpmf(y, mu=np.exp(Xraw @ b)).sum(),
+                       x0=np.zeros(Xraw.shape[1]), method="BFGS")
+
+print("coefficients:", np.array2string(raw_mle.x, precision=2))
+print("success:", raw_mle.success)
+print("message:", raw_mle.message)
+```
+
+:::
+
 The coefficients are still zero, where the search started, and a convergence code of 0
 means `optim()` reports success. The search gives up at the first step, and nothing in
 the output says so. It is the problem from [Gradient descent](gradient-descent.qmd):
@@ -232,6 +341,10 @@ trouble, because its search, the one written out on
 [Checking a fit](reading-a-fit.qmd) shows how to catch a search that stops like this.
 
 ### The negative binomial model adds one parameter
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: nb-fit
@@ -247,6 +360,24 @@ tibble(
 ) |>
   mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
+
+## Python
+
+```{python}
+dispersion = poisson_glm.deviance / poisson_glm.df_resid
+
+# statsmodels estimates alpha = 1 / theta, the extra spread the other way round.
+nb_fit = sm.NegativeBinomial(y, Xp).fit(method="newton", disp=0)
+
+pd.DataFrame({
+    "model": ["Poisson regression", "Negative binomial model"],
+    "parameters": [len(poisson_glm.params), len(nb_fit.params)],
+    "log-likelihood": [poisson_glm.llf, nb_fit.llf],
+    "theta": ["none", f"{1 / nb_fit.params['alpha']:.2f}"],
+}).round(2)
+```
+
+:::
 
 ```{r}
 #| label: se-ratio

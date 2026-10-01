@@ -12,6 +12,7 @@ library(tidymodels)
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 
 # A number for the prose, with a true minus sign.
@@ -29,6 +30,8 @@ of model you have tells you which of those checks it needs.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
 ## Parameters and hyperparameters
 
 A **parameter** is a number the fit chooses from the data: a slope in a regression, or
@@ -41,11 +44,36 @@ its job is to limit what the fit may do.
 several on the validation sites; [section 5](../05-generalisation/index.qmd) returns to
 this.
 
+::: {.callout-note}
+## "Parameter" means different things in different fields
+
+In this course a parameter is always a number the fit estimates from the data. Marine
+science often uses the word differently, so check which meaning a paper or a help page
+has in mind.
+
+- **Oceanography and water-quality monitoring** call the measured variables
+  parameters: temperature, salinity, oxygen and nutrients are "hydrographic
+  parameters". In this course those are [features](../02-marine-data/observations-and-features.qmd)
+  or the outcome, never parameters.
+- **Population and stock-assessment models** call any constant in the model a
+  parameter, including ones fixed from the literature, such as natural mortality,
+  rather than estimated from the data at hand.
+- **Statistics** reserves the word for a property of the population, such as the true
+  mean, and calls the fitted value its estimate.
+- **scikit-learn** calls the settings you pass to a model its parameters, so what this
+  course calls hyperparameters come back from `get_params()`. The values it learns end
+  in an underscore, as in `coef_`.
+:::
+
 ## The objective as a landscape
 
 For a straight line, the objective depends on two parameters, the intercept and the
 slope. Draw it as a map, with the two parameters as the axes and the objective as the
 height, and fitting means finding the lowest point.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-surface
@@ -79,6 +107,8 @@ ggplot(grid, aes(intercept, slope, fill = mse)) +
   )
 ```
 
+:::
+
 The bowl has one lowest point, so every way downhill ends there. It is also long and
 narrow: along the diagonal valley, a higher intercept with a lower slope fits almost as
 well, so the data pin down some combinations of the two far better than others. That
@@ -99,6 +129,10 @@ For linear regression under squared error, algebra gives the lowest point of the
 directly: the **normal equations**, solved once. We fit abundance on chlorophyll, depth
 and temperature this way and compare with `lm()`.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: closed-form
 d3 <- survey |>
@@ -114,6 +148,35 @@ by_lm <- coef(lm(abundance ~ chlorophyll_mg_m3 + depth_m + temperature_c, data =
 tibble(term = names(by_lm), `by formula` = by_formula, `by lm()` = by_lm) |>
   mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
+
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.linear_model import LinearRegression
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+inputs = ["chlorophyll_mg_m3", "depth_m", "temperature_c"]
+
+d3 = survey[["abundance", *inputs]].dropna()
+X = sm.add_constant(d3[inputs]).to_numpy()
+y = d3["abundance"].to_numpy()
+
+by_formula = np.linalg.solve(X.T @ X, X.T @ y)
+line = LinearRegression().fit(d3[inputs], y)
+
+pd.DataFrame({
+    "term": ["intercept", *inputs],
+    "by formula": by_formula,
+    "by LinearRegression": [line.intercept_, *line.coef_],
+}).round(4)
+```
+
+:::
 
 The two agree: the largest difference is
 `r format(max(abs(by_formula - by_lm)), digits = 1)`, rounding error in the last digits
@@ -145,6 +208,10 @@ coefficients, solves that by formula, and starts again from the answer. We write
 steps out, starting from coefficients of zero, and watch the log-likelihood, a measure
 of fit that [Maximum likelihood](maximum-likelihood.qmd) explains; higher is better.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: search-steps
 d3b <- survey |>
@@ -175,12 +242,57 @@ steps <- map_dfr(1:6, function(k) {
 steps |> mutate(across(where(is.numeric), \(x) round(x, 5)))
 ```
 
+## Python
+
+```{python}
+d3b = survey[["present", *inputs]].dropna()
+Xb = sm.add_constant(d3b[inputs]).to_numpy()
+yb = (d3b["present"] == "yes").to_numpy(dtype=float)
+
+def log_likelihood(b):
+    eta = Xb @ b
+    return np.sum(yb * eta - np.log1p(np.exp(eta)))
+
+b = np.zeros(Xb.shape[1])
+start = log_likelihood(b)
+rows = []
+for step in range(1, 7):
+    eta = Xb @ b
+    p = 1 / (1 + np.exp(-eta))
+    w = p * (1 - p)
+    z = eta + (yb - p) / w
+    b = np.linalg.solve(Xb.T @ (Xb * w[:, None]), Xb.T @ (w * z))
+    rows.append({"step": step, "log_likelihood": log_likelihood(b),
+                 "chlorophyll": b[1], "depth": b[2], "temperature": b[3]})
+
+steps = pd.DataFrame(rows)
+steps.round(5)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: glm-check
 glm_fit <- glm(present ~ chlorophyll_mg_m3 + depth_m + temperature_c,
                data = d3b, family = binomial)
 round(coef(glm_fit), 5)
 ```
+
+## Python
+
+```{python}
+# scikit-learn's LogisticRegression would not match: it adds a penalty by
+# default (C=1.0), which Priors and ridge regression explains. statsmodels fits
+# the model as glm() does.
+glm_fit = sm.GLM(yb, sm.add_constant(d3b[inputs]), family=sm.families.Binomial()).fit()
+glm_fit.params.round(5)
+```
+
+:::
 
 ```{r}
 #| label: settled
@@ -202,6 +314,10 @@ Stepping downhill can look roundabout next to the obvious alternative: try every
 combination of parameter values on a grid and keep the best. The bowl figure above did
 exactly that, with 120 values for each of two parameters.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: grid-cost
 grid_cost <- tibble(
@@ -210,6 +326,8 @@ grid_cost <- tibble(
 )
 grid_cost
 ```
+
+:::
 
 Two parameters make ten thousand combinations, done in a moment. Four, the number in the
 linear regression above, make a hundred million. Ten make $10^{20}$, which at a billion

@@ -12,6 +12,7 @@ library(tidymodels)
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
@@ -28,6 +29,8 @@ and a reason to standardise inputs that
 [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) did not give.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
 ## The slope and the step
 
@@ -55,6 +58,10 @@ the slope. It is a hyperparameter, chosen before fitting, and it decides the out
 We predict abundance from chlorophyll and depth. To keep the model to two parameters, so
 the walk can be drawn as a path on a map, we centre abundance and standardise both
 inputs; the intercept is then zero and only the two slopes remain.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
@@ -85,8 +92,45 @@ gradient_descent <- function(X, y, learning_rate, steps) {
 }
 ```
 
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+d = survey[["abundance", "chlorophyll_mg_m3", "depth_m"]].dropna()
+
+def standardise(column):
+    return (column - column.mean()) / column.std()   # pandas' std divides by n - 1, as R's does
+
+y = (d["abundance"] - d["abundance"].mean()).to_numpy()
+X = np.column_stack([standardise(d["chlorophyll_mg_m3"]), standardise(d["depth_m"])])
+
+def mse(X, b):
+    return np.mean((y - X @ b) ** 2)
+
+# Start both slopes at zero and take a fixed number of steps downhill.
+def gradient_descent(X, y, learning_rate, steps):
+    b = np.zeros(2)
+    path = [b]
+    for _ in range(steps):
+        slope = 2 / len(X) * X.T @ (X @ b - y)
+        b = b - learning_rate * slope
+        path.append(b)
+    return pd.DataFrame(path, columns=["chlorophyll", "depth"])
+```
+
+:::
+
 The line `b <- b - learning_rate * slope` is the whole algorithm. This model also has a
 formula, so we know where the walk should end.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: optimum
@@ -95,7 +139,21 @@ best_mse <- mse(X, optimum)
 round(optimum, 3)
 ```
 
+## Python
+
+```{python}
+optimum = np.linalg.solve(X.T @ X, X.T @ y)
+best_mse = mse(X, optimum)
+pd.Series(optimum, index=["chlorophyll", "depth"]).round(3)
+```
+
+:::
+
 ### Three learning rates
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: steps-needed
@@ -126,6 +184,40 @@ rates |>
     `steps to arrive` = replace_na(as.character(`steps to arrive`), "never")
   )
 ```
+
+## Python
+
+```{python}
+# Steps until the mean squared error is within one part in a million of the best,
+# or None if the walk never gets there. A walk that blows up overflows on the
+# way; errstate keeps numpy quiet about it, since the check below catches it.
+def steps_needed(X, learning_rate, max_steps=10_000):
+    best = mse(X, np.linalg.solve(X.T @ X, X.T @ y))
+    b = np.zeros(2)
+    with np.errstate(over="ignore", invalid="ignore"):
+        for k in range(1, max_steps + 1):
+            b = b - learning_rate * 2 / len(X) * X.T @ (X @ b - y)
+            current = mse(X, b)
+            if not np.isfinite(current) or current > 1e6 * best:
+                return None
+            if current - best < 1e-6 * best:
+                return k
+    return None
+
+rates = pd.DataFrame({"learning rate": [0.02, 0.3, 0.72, 0.8]})
+rates["MSE after 40 steps"] = [
+    mse(X, gradient_descent(X, y, r, 40).iloc[-1].to_numpy())
+    for r in rates["learning rate"]
+]
+rates["steps to arrive"] = [steps_needed(X, r) or "never" for r in rates["learning rate"]]
+rates.assign(**{"MSE after 40 steps": rates["MSE after 40 steps"].map(lambda x: f"{x:,.4g}")})
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-paths
@@ -158,6 +250,8 @@ ggplot(grid, aes(chlorophyll, depth)) +
   )
 ```
 
+:::
+
 ```{r}
 #| label: limit
 #| include: false
@@ -189,6 +283,10 @@ long time.
 We fit the same model twice, once with standardised inputs and once with the inputs
 only centred, each at 90% of its own largest safe rate.
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: scaling
 raw <- cbind(
@@ -205,6 +303,25 @@ work <- tibble(
 work |>
   mutate(`largest safe rate` = map_chr(`largest safe rate`, \(x) format(signif(x, 2))))
 ```
+
+## Python
+
+```{python}
+def limit(X):
+    return 2 / np.linalg.eigvalsh(2 / len(X) * X.T @ X).max()
+
+raw = np.column_stack([d["chlorophyll_mg_m3"] - d["chlorophyll_mg_m3"].mean(),
+                       d["depth_m"] - d["depth_m"].mean()])
+
+pd.DataFrame({
+    "inputs": ["Standardised", "Raw units"],
+    "largest safe rate": [f"{limit(X):.2g}", f"{limit(raw):.2g}"],
+    "steps to arrive": [steps_needed(X, 0.9 * limit(X)),
+                        steps_needed(raw, 0.9 * limit(raw))],
+})
+```
+
+:::
 
 Standardised, the walk arrives in `r work[[3]][1]` steps; in raw units it needs
 `r format(work[[3]][2], big.mark = ",")`, about `r round(work[[3]][2] / work[[3]][1], -1)`
