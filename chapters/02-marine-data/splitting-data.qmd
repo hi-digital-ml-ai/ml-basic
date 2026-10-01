@@ -44,7 +44,8 @@ The validation role is the one most often skipped. Try eight models and report t
 best one's test score, and that score is the best of eight noisy numbers, which is too
 high. The test data answers "how good is this model?", never "which model is best?".
 When data is scarce, **cross-validation** takes the validation role by letting parts of
-the training data take turns; [section 7](../07-validation/index.qmd) covers it.
+the training data take turns;
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) covers it.
 
 Common splits keep 70 to 80% for training. The exact share is a trade-off between
 training the model well and measuring it precisely; how the rows are chosen matters

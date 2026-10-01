@@ -1,6 +1,6 @@
 ---
 title: "5 · Generalisation and model complexity"
-description: "Why a model that fits the data perfectly is usually a bad model, and how complexity, bias and variance trade off."
+description: "A model can fit its training stations closely and still fail on new sites. The section traces that failure to the model's complexity, splits its error into bias, variance and noise, and chooses complexity settings by cross-validation."
 categories: [generalisation, tuning]
 listing:
   id: pages
@@ -13,47 +13,36 @@ listing:
 toc: false
 ---
 
-Any sufficiently flexible model can reproduce your data exactly. It can pass through
-every point, explain every wobble, and report an almost perfect fit. It will also be
-worthless, because it has learned the noise in your particular survey along with the
-signal.
+A flexible enough model can fit its training stations almost perfectly and still predict
+new sites no better than the average count. Its error on the data it was fitted to says
+little about new data, and the gap grows with how freely the model can bend. Each page in
+this section takes one step, on the same simulated survey as the rest of the course:
 
-This is overfitting, and it is the central problem of machine learning. Everything in
-this section, the bias–variance trade-off, regularisation and hyperparameter selection,
-is a response to it.
+- **training error and the error on new data**, two scores from one model, and the gap
+  between them;
+- **underfitting and overfitting**, the two ways to fail on new data, and the signs each
+  leaves in the two errors;
+- **model complexity**, the setting in each method that controls how freely it bends, and
+  the reason counting parameters measures it only for a linear model;
+- **the bias–variance trade-off**, which splits the error on new data into bias, variance
+  and noise;
+- **regularisation**, a penalty that makes a linear model simpler: ridge regression shrinks
+  every coefficient, and the lasso sets some to zero;
+- **hyperparameter selection**, choosing a setting by cross-validation by site, with the
+  test sites kept for one final score.
 
-The marine version of the problem is sharper than the textbook version. With
-autocorrelated data, a model can look like it is generalising when it is really just
-memorising the neighbourhood.
+The section picks up threads from earlier ones.
+[Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
+validation sites, and [Underfitting and overfitting](underfitting-and-overfitting.qmd)
+shows the cost of choosing badly. The penalty in [Regularisation](regularisation.qmd) is
+the prior from [Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd).
+[Splitting the data](../02-marine-data/splitting-data.qmd) set validation sites aside for
+choosing a model; [Hyperparameter selection](hyperparameter-selection.qmd) replaces them
+with cross-validation, which lets every training site take a turn.
 
 ## Pages in this section
 
 ::: {#pages}
-:::
-
-## Findings from this section
-
-Four results from these pages are worth knowing before you read them:
-
-- On the coastal survey, ranking five models by **training** error gave the exact reverse of
-  ranking them by test error. A tree fitted to a training RMSE of zero scored worse on new
-  stations than predicting the mean and using no predictors at all.
-- Adding **539 columns of pure random noise** to 540 training stations produced a training
-  R² of exactly 1.000, and a test RMSE of 185, against a response whose largest observed
-  value is 40.
-- Splitting the error properly shows that the **irreducible noise is more than double**
-  everything a model could control. Most of what looks like model error in marine count data
-  is not model error.
-- Lasso's selected variables are **not a stable finding**. Over 100 resampled fits, real
-  predictors survived 24.7% of the time and pure noise columns 17.9%.
-
-::: {.callout-note}
-This section deliberately cheats until its last page: every earlier page chooses its
-complexity by looking at the test set, and says so each time.
-[Hyperparameter selection](hyperparameter-selection.qmd) is where that is done honestly, and
-[section 7](../07-validation/index.qmd) is where the resampling itself is made appropriate to
-marine data, because a random split of repeat visits to 160 sites flatters every number in
-this section.
 :::
 
 

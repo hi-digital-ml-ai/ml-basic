@@ -338,7 +338,7 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 | 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
 | 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
-| 5 Generalisation | `feature/improve-generalisation` | In progress: pages 1–3 rewritten |
+| 5 Generalisation | `feature/improve-generalisation` | In progress: pages and overview rewritten; video next |
 | 6–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
