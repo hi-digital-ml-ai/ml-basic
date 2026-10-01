@@ -256,6 +256,10 @@ beat_baseline <- results |>
   pull(model)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-crossing
 #| fig-cap: "Each model's RMSE on the stations it was fitted to and on new sites, averaged over 20 splits of the training sites. Every line rises, but by very different amounts, so the order changes. The dashed line is the error of predicting the fitting stations' average count."
@@ -278,6 +282,8 @@ results |>
   labs(x = NULL, y = "RMSE (individuals)", colour = NULL,
        title = "The order on new sites is not the order on the fitting stations")
 ```
+
+:::
 
 ### The ranking turns over
 
@@ -430,6 +436,10 @@ by_sites.round(2)
 
 :::
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-by-sites
 #| fig-cap: "RMSE on the fitting stations and on new sites against the number of fitting sites, averaged over 20 splits. The polynomial model's two errors draw together as sites are added; the forest's stay apart."
@@ -447,6 +457,8 @@ by_sites |>
   labs(x = "Fitting sites", y = "RMSE (individuals)", colour = NULL,
        title = "More sites close the gap for one model but not the other")
 ```
+
+:::
 
 ```{r}
 #| label: gaps

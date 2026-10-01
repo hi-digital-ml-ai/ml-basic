@@ -122,6 +122,9 @@ screenshots, so look at the rendered page yourself first.
 - **Never assign `_` in a Python tab** (`train_rows, _ = next(...)`). reticulate reads
   the chunk's last value from `_`, so every later table on the page prints as plain text
   instead of a table. Name the variable (`test_rows`).
+- **Assign a fitted model, even inside a loop** (`fitted = model.fit(...)`, not a bare
+  `model.fit(...)`). reticulate prints the last bare expression it ran, and a scikit-learn
+  estimator prints as a long block of HTML and CSS.
 - **Tab the R-only chunks too.** Once a page has R and Python tabs, a chunk with no
   Python equivalent still goes in a `panel-tabset` with a single *R* tab, so every
   chunk looks the same (`authoring-guide.md`, Code). Python equivalents may need a
@@ -328,7 +331,9 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 | 1 Introduction | `feature/improve-introduction` | Done; merged into `develop` 2026-09-29 |
 | 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
 | 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
-| 4–10 | | Not started |
+| 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
+| 5 Generalisation | `feature/improve-generalisation` | In progress: pages 1–2 rewritten |
+| 6–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".
