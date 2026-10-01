@@ -231,7 +231,7 @@ trouble, because its search, the one written out on
 [Finding the parameters](parameter-estimation.qmd), handles scale differently.
 [Checking a fit](reading-a-fit.qmd) shows how to catch a search that stops like this.
 
-### The negative binomial adds one parameter
+### The negative binomial model adds one parameter
 
 ```{r}
 #| label: nb-fit
@@ -240,7 +240,7 @@ dispersion <- deviance(poisson_glm) / df.residual(poisson_glm)
 nb_fit <- MASS::glm.nb(abundance ~ chl_z + depth_z + I(depth_z^2), data = d)
 
 tibble(
-  model            = c("Poisson", "Negative binomial"),
+  model            = c("Poisson regression", "Negative binomial model"),
   parameters       = c(length(coef(poisson_glm)), length(coef(nb_fit)) + 1),
   `log-likelihood` = c(as.numeric(logLik(poisson_glm)), as.numeric(logLik(nb_fit))),
   theta            = c("none", format(round(nb_fit$theta, 2)))
@@ -257,7 +257,7 @@ se_ratio <- summary(poisson_glm)$coefficients[, 2] / summary(nb_fit)$coefficient
 These counts vary more than Poisson allows: the deviance is `r round(dispersion, 1)`
 times its degrees of freedom, where Poisson expects about 1.
 [Regression for counts](../03-supervised-learning/count-regression.qmd) called this
-overdispersion. The negative binomial adds one parameter, $\theta$, for the extra spread,
+overdispersion. The negative binomial model adds one parameter, $\theta$, for the extra spread,
 and `glm.nb()` estimates it by maximum likelihood along with the coefficients:
 $\theta$ = `r round(nb_fit$theta, 2)`.
 
@@ -265,7 +265,7 @@ That one parameter raises the log-likelihood from
 `r num(as.numeric(logLik(poisson_glm)), 0)` to `r num(as.numeric(logLik(nb_fit)), 0)`.
 The coefficients change little, but the Poisson standard errors are only
 `r scales::percent(min(se_ratio), 1)` to `r scales::percent(max(se_ratio), 1)` of the
-negative binomial's: under the wrong distribution, the model was far more sure of itself
+negative binomial model's: under the wrong distribution, the model was far more sure of itself
 than the data allow.
 
 Two cautions come with these numbers. $\theta$ describes the spread left over *given
@@ -299,7 +299,7 @@ preference for small parameters to the likelihood to hold them back.
 - One dispersion parameter raised the log-likelihood from
   `r num(as.numeric(logLik(poisson_glm)), 0)` to `r num(as.numeric(logLik(nb_fit)), 0)`,
   and the Poisson standard errors were `r scales::percent(min(se_ratio), 1)` to
-  `r scales::percent(max(se_ratio), 1)` of the negative binomial's.
+  `r scales::percent(max(se_ratio), 1)` of the negative binomial model's.
 - Forests and boosting have no likelihood, and so no standard errors of this kind.
 :::
 

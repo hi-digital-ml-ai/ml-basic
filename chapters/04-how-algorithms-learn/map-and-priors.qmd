@@ -224,8 +224,8 @@ ridge <- function(lambda) {
 
 lambda <- sigma^2 / tau^2
 coefs <- tibble(
-  term  = colnames(X_train),
-  MLE   = ridge(0),
+  term  = str_replace(colnames(X_train), "^(substrate|season)", "\\1: "),
+  `maximum likelihood` = ridge(0),
   MAP   = map_fit$par,
   ridge = ridge(lambda)
 )
@@ -325,9 +325,9 @@ labels <- c(
   depth_m = "depth", `I(depth_m^2)` = "depth squared",
   temperature_c = "temperature", `I(temperature_c^2)` = "temperature squared",
   chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
-  substratemud = "mud substrate", substraterock = "rock substrate",
-  substratesand = "sand substrate", seasonsummer = "summer",
-  seasonautumn = "autumn", seasonwinter = "winter"
+  `substrate: mud` = "mud substrate", `substrate: rock` = "rock substrate",
+  `substrate: sand` = "sand substrate", `season: summer` = "summer",
+  `season: autumn` = "autumn", `season: winter` = "winter"
 )
 ```
 
