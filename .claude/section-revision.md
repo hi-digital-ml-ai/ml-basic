@@ -119,6 +119,9 @@ screenshots, so look at the rendered page yourself first.
   place of `python-tabs.qmd`. Fix any tab that fails first (`python/check-snippets.py
   <page>`); a failing `{python}` chunk fails the render. The survey page was the
   first converted; setup is in `workflow.md`, Python for the tabs.
+- **Never assign `_` in a Python tab** (`train_rows, _ = next(...)`). reticulate reads
+  the chunk's last value from `_`, so every later table on the page prints as plain text
+  instead of a table. Name the variable (`test_rows`).
 - **Tab the R-only chunks too.** Once a page has R and Python tabs, a chunk with no
   Python equivalent still goes in a `panel-tabset` with a single *R* tab, so every
   chunk looks the same (`authoring-guide.md`, Code). Python equivalents may need a

@@ -113,10 +113,18 @@ Three deliberate spillovers outside the section's own subject:
 **Written, one page per subtopic, in the order listed** (complexity before bias–variance,
 so the axis is defined before it is decomposed).
 
-Every page before the last deliberately chooses its complexity by looking at the test set,
-and says so each time; `hyperparameter-selection.qmd` is where that is done properly. Keep
-that framing if these pages are edited; it is what makes §7 feel necessary rather than
-pedantic.
+**Revision decisions, 2026-10-01** (`feature/improve-generalisation`): the same six pages
+in the same order. They replace the old test-set framing ("every page before the last
+deliberately chooses its complexity by looking at the test set"):
+
+- Every page uses §2's split by site into fitting, validation and test sites, as §3 does,
+  not a random split of stations. Earlier pages choose a setting on the validation sites;
+  the test sites are scored once.
+- *Underfitting and overfitting* builds on §3's training-versus-validation curve for tree
+  depth rather than re-teaching it.
+- *Hyperparameter selection* introduces k-fold cross-validation (folds of sites) and shows
+  that one validation split picks unstable winners. §2's pointer to cross-validation points
+  here; §7's *Cross-validation* page builds on it with spatial and temporal versions.
 
 `regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
 [Priors and ridge regression](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
