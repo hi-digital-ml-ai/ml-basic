@@ -1,6 +1,6 @@
 ---
 title: "Hyperparameter selection"
-description: "Finding the bottom of the U-curve without spending your test set, and how unstable that choice really is."
+description: "A setting such as a tree's node size must be chosen on data the model was not fitted to. Cross-validation by site lets every training site take a turn as new data, and gives a steadier verdict than one set of validation sites."
 order: 6
 categories: [generalisation, tuning]
 ---
@@ -10,58 +10,72 @@ categories: [generalisation, tuning]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(rpart)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(506)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The setting every page has left open
+## Settings the fitting cannot choose
 
-Every page in this section has ended in the same place. There is a setting, tree depth or
-λ or `minbucket`, with a best value, and the best value cannot be read off the training
-data because the training curve has no minimum. Each page has also cheated, choosing the
-setting by looking at the test set, and said so.
-
-This page stops cheating. It is the procedural heart of applied machine learning: how to choose
-the knob honestly, what tidymodels calls the pieces, and, the part usually left out, how much
-that choice moves if you had sampled different stations.
+Each page in this section has turned a setting, a tree's minimum node size or the lasso's
+penalty λ, and found that its best value cannot be read from the training error. This page
+names those settings and introduces **cross-validation**, the standard way to choose them.
+It also shows that one set of validation sites, as earlier sections used, gives a verdict
+that swings with the sites that happen to be held back.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Parameters and hyperparameters
 
-A **hyperparameter** is a setting fixed before fitting, which the fitting cannot choose because
-its job is to constrain the fitting. Tree depth, the number of neighbours in k-NN, λ in ridge,
-the learning rate in boosting. Parameters are learned; hyperparameters are selected.
+A **parameter** is learned by fitting: the coefficients of a regression, or the splits of a
+tree and the prediction in each leaf. A **hyperparameter** is fixed before fitting begins,
+and limits what the fitting can do: a tree's depth or minimum node size, the number of trees
+in a forest, the penalty λ. The fitting cannot choose a hyperparameter, because on its own
+data the most flexible setting always looks best, as
+[Underfitting and overfitting](underfitting-and-overfitting.qmd) showed. It has to be
+chosen on data the model was not fitted to.
 
-Selecting them needs data the model has not been fitted to. There are two ways to get it.
+[Splitting the data](../02-marine-data/splitting-data.qmd) gave that job to validation
+data: fit the model at each candidate setting, score it on the validation sites, and keep
+the setting that scores best. The test sites are kept for one final score of the chosen
+model. But one set of validation sites is a small sample, and a different set could
+favour a different setting.
 
-**A validation split.** Divide the training data again: fit on one part, score on the other,
-choose the setting with the best score. Simple, and it wastes data and depends heavily on which
-stations happened to fall in the validation part.
+## Cross-validation by site
 
-**k-fold cross-validation.** Divide the training data into *k* parts. Fit on *k*−1 and
-score on the remaining one, *k* times, so every station is scored exactly once by a model
-that did not see it. Average the *k* scores. Nothing is wasted, and the average is far
-steadier, and that steadiness is measured below.
+**k-fold cross-validation** lets the training data take turns as the validation data. It
+cuts the training sites into *k* groups, called **folds**. In each of *k* rounds, one fold
+is held out, the model is fitted to the other *k* − 1, and the held-out fold is scored as
+new sites. Every training site is scored once, by a model that was not fitted to it, and
+the *k* errors are averaged. That average, the **cross-validated error**, is worked out
+for every candidate setting, and the setting with the lowest one is chosen.
 
-So the split is three-way:
+::: {.diagram}
+![The training sites are cut into five folds. In each of five rounds a different fold is held out and scored as new sites, while the model is fitted to the other four. The five errors are averaged. This is repeated for every candidate setting; the best is refitted on all the training sites, and the test sites are scored once at the end.](img/hyperparameter-selection.svg){fig-alt="A card shows the training sites cut into five folds, each fold a block of four sites. In five rounds, a different fold is held out and scored as new sites while the model is fitted to the other four, giving errors one to five. The five errors are averaged to give the setting's cross-validated error. Below, four steps: repeat for every candidate setting; choose the setting with the lowest average; refit it on all the training sites; score the test sites once, at the end. A note says each fold holds whole sites, so no site is fitted to and scored in the same round."}
+:::
 
-| Data | Used for | How often |
-| --- | --- | --- |
-| Training folds | Fitting parameters | Every candidate setting |
-| Held-out fold | Choosing hyperparameters | Every candidate setting |
-| **Test set** | Estimating performance | **Once, at the very end** |
+The folds hold whole sites, for the reason the split does: visits to one site resemble each
+other, so a site on both sides would score the model on a place it has already seen. Five
+or ten folds are usual. With more folds, each round fits to more of the data, but there is
+more fitting to do: every candidate setting is fitted once per fold.
 
-The test set is spent the first time you look at it and adjust. There is no way to unspend it,
-which is why it is set aside in
-[section 2](../02-marine-data/splitting-data.qmd) before any modelling happens.
+Anything learned from the data belongs inside the rounds, including the preprocessing. The
+median that fills a gap is worked out again from each round's fitting folds, which a
+workflow does by itself; worked out once from all the training sites, it would leak the
+held-out fold into the fitting
+([Avoiding information leakage](../02-marine-data/information-leakage.qmd)).
 
 ## Worked example
+
+The data, split by site, and the tree are those of
+[Underfitting and overfitting](underfitting-and-overfitting.qmd), and so are the 12
+minimum node sizes. That page averaged 20 random splits of the training sites; here the
+training sites are cut into ten folds instead. The test sites are scored at the very end.
+
+### Preparing the folds
 
 ::: {.panel-tabset group="language"}
 
@@ -71,56 +85,97 @@ which is why it is set aside in
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-set.seed(506)
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na()
-
-split <- initial_split(d, prop = 0.75)
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
-test  <- testing(split)
 
-folds <- vfold_cv(train, v = 10)
+# ten folds of training sites
+folds <- group_vfold_cv(train, group = site_id, v = 10)
 
-c(folds = nrow(folds),
-  fitted_on = nrow(analysis(folds$splits[[1]])),
-  scored_on = nrow(assessment(folds$splits[[1]])))
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+tree_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+
+leaves_of <- function(fitted) sum(extract_fit_engine(fitted)$frame$var == "<leaf>")
+
+held_out <- map(folds$splits, assessment)
+tibble(folds = length(held_out),
+       `sites in a fold` = n_distinct(held_out[[1]]$site_id),
+       `fewest stations` = min(map_int(held_out, nrow)),
+       `most stations` = max(map_int(held_out, nrow)))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GridSearchCV, KFold, train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GridSearchCV, GroupKFold, GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season"]
-d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-train, test = train_test_split(d, train_size=0.75, random_state=506)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train, test = survey.iloc[train_rows], survey.iloc[test_rows]
 
-features = [c for c in d.columns if c != "abundance"]
-X_train, y_train = train[features], train["abundance"]
-X_test, y_test = test[features], test["abundance"]
+# ten folds of training sites
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=123)
 
-folds = KFold(n_splits=10, shuffle=True, random_state=506)
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
+])
 
-first_train, first_test = next(folds.split(X_train))
-pd.Series({"folds": folds.get_n_splits(),
-           "fitted_on": len(first_train), "scored_on": len(first_test)})
+# rpart also keeps every leaf at a third of min_n or more; this matches it.
+def tree_pipeline(min_n):
+    model = DecisionTreeRegressor(min_samples_split=min_n,
+                                  min_samples_leaf=max(1, round(min_n / 3)),
+                                  random_state=123)
+    return Pipeline([("recipe", tree_recipe), ("model", model)])
+
+held_out = [train.iloc[new_rows]
+            for fit_rows, new_rows in folds.split(train, groups=train["site_id"])]
+pd.DataFrame({"folds": [len(held_out)],
+              "sites in a fold": [held_out[0]["site_id"].nunique()],
+              "fewest stations": [min(len(h) for h in held_out)],
+              "most stations": [max(len(h) for h in held_out)]})
 ```
 
 :::
 
-A tree with two hyperparameters to choose: how deep it may grow, and how many stations a node
-needs before it may split. `tune()` marks each as a value to be filled in later.
+```{r}
+#| label: fold-numbers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+in_words <- function(n) {
+  if (n > 10) return(as.character(n))
+  c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
+}
+n_sites <- n_distinct(train$site_id)
+```
+
+The `r n_sites` training sites make ten folds of
+`r n_distinct(held_out[[1]]$site_id)`. The folds hold different numbers of stations,
+because some sites were visited more often than others.
+
+### Tuning the node size
+
+`tune()` marks the setting to be filled in later, and `tune_grid()` fits and scores the
+workflow at every candidate value in every fold: 12 values in ten folds, 120 trees. Each
+fold also gets the error of predicting its fitting folds' average count, as a baseline.
 
 ::: {.panel-tabset group="language"}
 
@@ -128,474 +183,378 @@ needs before it may split. `tune()` marks each as a value to be filled in later.
 
 ```{r}
 #| label: tune
-tree_spec <- decision_tree(
-  tree_depth      = tune(),
-  min_n           = tune(),
-  cost_complexity = 0
-) |>
-  set_engine("rpart") |>
-  set_mode("regression")
+sizes <- c(300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2)
 
-tree_workflow <- workflow() |>
-  add_formula(abundance ~ .) |>
-  add_model(tree_spec)
+# The depth limit is set high so that min_n alone sets the size of the tree.
+tree_model <- decision_tree(mode = "regression", tree_depth = 30,
+                            min_n = tune(), cost_complexity = 0)
+tree_workflow <- workflow(tree_recipe, tree_model)
 
-grid <- expand_grid(
-  tree_depth = c(2, 3, 4, 6, 8, 12),
-  min_n      = c(2, 5, 10, 20, 40, 80)
-)
+tuned <- tune_grid(tree_workflow, resamples = folds,
+                   grid = tibble(min_n = sizes),
+                   metrics = metric_set(rmse),
+                   control = control_grid(extract = leaves_of))
 
-tuned <- tune_grid(tree_workflow, resamples = folds, grid = grid,
-                   metrics = metric_set(rmse))
+# the baseline: predict each round's fitting average for its held-out sites
+average <- map_dbl(folds$splits, \(s) {
+  rmse_vec(assessment(s)$abundance,
+           rep(mean(analysis(s)$abundance), nrow(assessment(s))))
+})
 
 collect_metrics(tuned) |>
-  arrange(mean) |>
-  select(tree_depth, min_n, mean, std_err) |>
-  slice_head(n = 6) |>
-  mutate(across(c(mean, std_err), \(x) round(x, 4)))
+  select(min_n, mean, std_err) |>
+  arrange(desc(min_n)) |>
+  mutate(across(c(mean, std_err), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-grid = {"max_depth": [2, 3, 4, 6, 8, 12],
-        "min_samples_split": [2, 5, 10, 20, 40, 80]}
+```{python}
+sizes = [300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2]
 
-# cost_complexity = 0 is ccp_alpha = 0: no pruning, so the two knobs above are
-# the only thing holding the tree back.
-tuned = GridSearchCV(
-    DecisionTreeRegressor(ccp_alpha=0.0, random_state=506),
-    param_grid=grid,
-    scoring="neg_root_mean_squared_error",
-    cv=folds,
-).fit(X_train, y_train)
+# The two tree settings move together, so each candidate is its own small grid.
+grid = [{"model__min_samples_split": [n],
+         "model__min_samples_leaf": [max(1, round(n / 3))]} for n in sizes]
 
-# GridSearchCV reports the standard deviation across folds; the standard error
-# tidymodels prints is that divided by the root of the number of folds.
+tuned = GridSearchCV(tree_pipeline(2), grid, cv=folds,
+                     scoring="neg_root_mean_squared_error")
+tuned = tuned.fit(train[predictors], train["abundance"], groups=train["site_id"])
+
+# One row per setting, one column per fold. The standard error is the folds'
+# standard deviation over the root of the number of folds, as tidymodels has it.
+fold_errors = -np.column_stack([tuned.cv_results_[f"split{k}_test_score"]
+                                for k in range(10)])
 metrics = pd.DataFrame({
-    "tree_depth": tuned.cv_results_["param_max_depth"],
-    "min_n": tuned.cv_results_["param_min_samples_split"],
-    "mean": -tuned.cv_results_["mean_test_score"],
-    "std_err": tuned.cv_results_["std_test_score"] / np.sqrt(folds.get_n_splits()),
+    "min_n": sizes,
+    "mean": fold_errors.mean(axis=1),
+    "std_err": fold_errors.std(axis=1, ddof=1) / np.sqrt(10),
 })
-
-metrics.sort_values("mean").head(6).round(4)
+metrics.round(2)
 ```
 
 :::
 
-Thirty-six candidate settings, each scored on ten folds, so 360 model fits, which is why
-tuning is the expensive step.
+In the table, `mean` is the cross-validated error: the average of the ten folds' RMSEs.
+`std_err` is its **standard error**, a measure of how far that average could move with a
+different draw of sites. It is the spread of the ten fold errors divided by the square root
+of ten.
 
 ```{r}
-#| label: fig-surface
-#| fig-cap: "Cross-validated RMSE across the grid of tree depth and minimum node size. The best cell is 4.482, at depth 3 with min_n = 10. The surface is almost flat across most of the grid; only the deep, small-node corner at the top left, where the tree is allowed to grow to depth 8 or 12 with nodes of 2 to 10 stations, is clearly bad."
-#| fig-alt: "A grid of tiles with minimum node size on the horizontal axis at values 2, 5, 10, 20, 40 and 80, and tree depth on the vertical axis at 2, 3, 4, 6, 8 and 12 running upward. Each tile is shaded by cross-validated RMSE and labelled with its value. Most tiles read between 4.48 and 4.73 and are shaded a similar pale green. Five tiles in the top-left corner, depth 8 and 12 at node sizes 2, 5 and 10, are distinctly darker, reading 5.06, 5.09, 5.16, 5.59 and 5.76. The best tile, 4.48, sits at depth 3 and node size 10 and is outlined in black."
-#| fig-width: 7
-#| fig-height: 4.6
-surface <- collect_metrics(tuned)
+#| label: tune-numbers
+#| include: false
+cv <- collect_metrics(tuned) |>
+  left_join(collect_extracts(tuned) |>
+              mutate(leaves = unlist(.extracts)) |>
+              summarise(leaves = mean(leaves), .by = min_n),
+            by = "min_n")
 best <- select_best(tuned, metric = "rmse")
-
-ggplot(surface, aes(factor(min_n), factor(tree_depth), fill = mean)) +
-  geom_tile(colour = "white", linewidth = 0.6) +
-  geom_text(aes(label = sprintf("%.2f", mean)), size = 3,
-            colour = if_else(surface$mean > 5, "white", "grey15")) +
-  geom_tile(data = best, fill = NA, colour = "black", linewidth = 1) +
-  scale_fill_viridis_c(option = "mako", direction = -1,
-                       breaks = c(4.5, 5.0, 5.5)) +
-  labs(x = "min_n: stations required to split a node", y = "tree_depth",
-       fill = "CV RMSE",
-       title = "Most of this grid is a tie",
-       subtitle = "Outlined: the best cell. Ten-fold cross-validation on 540 stations.") +
-  theme(panel.grid.major = element_blank())
+simplest <- select_by_one_std_err(tuned, desc(min_n), metric = "rmse")
+best_row <- filter(cv, min_n == best$min_n)
+simplest_row <- filter(cv, min_n == simplest$min_n)
+flexible_row <- filter(cv, min_n == min(sizes))
+cut_off <- best_row$mean + best_row$std_err
+tied <- filter(cv, mean <= cut_off)
+baseline <- mean(average)
 ```
-
-How many of the thirty-six settings are genuinely distinguishable from the winner?
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: one-se
-one_se <- select_by_one_std_err(tuned, metric = "rmse", tree_depth, desc(min_n))
-
-best_row <- collect_metrics(tuned) |> slice_min(mean, n = 1)
-
-c(`settings within one SE of the best` =
-    sum(collect_metrics(tuned)$mean <= best_row$mean + best_row$std_err),
-  `grid points` = nrow(grid))
-```
-
-## Python
-
-```python
-best_row = metrics.loc[metrics["mean"].idxmin()]
-within = metrics["mean"] <= best_row["mean"] + best_row["std_err"]
-
-pd.Series({"settings within one SE of the best": int(within.sum()),
-           "grid points": len(metrics)})
+#| label: fig-cv
+#| fig-cap: "Cross-validated error of trees with 12 minimum node sizes, against the average number of leaves they grew. The bars reach one standard error either side. The dotted line is one standard error above the lowest point; the dashed line is the error of predicting the average."
+#| fig-alt: !expr glue::glue("Points joined by a line show cross-validated RMSE against the number of leaves on a log scale, each with a vertical error bar. From the left, at about {round(simplest_row$leaves)} leaves, the error stays within one standard error of the lowest up to about {round(max(tied$leaves))} leaves, then climbs steadily to {f2(flexible_row$mean)} at about {round(flexible_row$leaves)} leaves. The lowest point, {f2(best_row$mean)}, is marked at about {round(best_row$leaves)} leaves. A dotted line one standard error above it, at {f2(cut_off)}, sits above {in_words(nrow(tied))} of the points. A dashed line for predicting the average is at {f2(baseline)}.")
+#| fig-width: 7
+#| fig-height: 4.5
+ggplot(cv, aes(leaves, mean)) +
+  geom_hline(yintercept = baseline, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  geom_hline(yintercept = cut_off, linetype = "dotted") +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err),
+                width = 0.05, colour = ml_palette[["blue"]]) +
+  geom_line(colour = ml_palette[["blue"]], linewidth = 1) +
+  geom_point(colour = ml_palette[["blue"]], size = 2) +
+  geom_point(data = best_row, colour = ml_palette[["vermilion"]], size = 4) +
+  annotate("text", x = max(cv$leaves), y = baseline, label = "predict the average",
+           hjust = 1, vjust = 1.6, colour = ml_palette[["grey"]], size = 3.4) +
+  scale_x_log10() +
+  labs(x = "Leaves in the tree (log scale)", y = "Cross-validated RMSE (individuals)",
+       title = "The bottom of the curve is flat: many node sizes tie")
 ```
 
 :::
 
+### Choosing the node size
+
+The lowest cross-validated error is `r f2(best_row$mean)`, for a node size of
+`r best$min_n` and trees of about `r round(best_row$leaves)` leaves, the same setting
+[Underfitting and overfitting](underfitting-and-overfitting.qmd) found. Predicting the
+average scores `r f2(baseline)`. But the bottom of the curve is flat:
+`r in_words(nrow(tied))` of the 12 settings, from about `r round(min(tied$leaves))` to
+`r round(max(tied$leaves))` leaves, lie within one standard error of the lowest. The data
+cannot tell those settings apart.
+
+A common way to break the tie is the **one-standard-error rule**: among the settings within
+one standard error of the lowest, take the simplest. Here, that is a node size of
+`r simplest$min_n`.
+
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: one-se-choice
-one_se |> select(tree_depth, min_n)
+#| label: choose
+best <- select_best(tuned, metric = "rmse")
+simplest <- select_by_one_std_err(tuned, desc(min_n), metric = "rmse")
+
+bind_rows(`lowest error` = best, `one-standard-error rule` = simplest,
+          .id = "rule") |>
+  select(rule, min_n)
 ```
 
 ## Python
 
-```python
-# scikit-learn has no select_by_one_std_err(): the rule is a sort over the
-# settings that tie, simplest first: shallow trees, then large nodes.
-one_se = (metrics[within]
-    .sort_values(["tree_depth", "min_n"], ascending=[True, False])
-    .iloc[0])
+```{python}
+lowest = metrics.loc[metrics["mean"].idxmin()]
+within = metrics["mean"] <= lowest["mean"] + lowest["std_err"]
 
-one_se[["tree_depth", "min_n"]]
+# Larger nodes make smaller trees, so the simplest tied setting has the largest min_n.
+pd.DataFrame({"rule": ["lowest error", "one-standard-error rule"],
+              "min_n": [int(lowest["min_n"]), int(metrics.loc[within, "min_n"].max())]})
 ```
 
 :::
 
-### Finalising, and spending the test set once
+`desc(min_n)` tells `select_by_one_std_err()` which way is simpler: a larger node size
+makes a smaller tree. The rule trades a little of the error for a simpler model, on the
+grounds that the more flexible model's lead is within the noise.
+
+### One validation split against cross-validation
+
+The choice above rests on one cutting of the sites into folds. To see how much a choice
+depends on the sites that happen to be held out, the whole selection is repeated 40 times,
+in two ways. One uses a single validation split, three quarters of the training sites for
+fitting, as in [Decision trees](../03-supervised-learning/decision-trees.qmd). The other
+uses ten-fold cross-validation, with the sites dealt into new folds each time. Each run
+records the node size that won and the error it claimed.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: finalise
-final_fit <- tree_workflow |>
-  finalize_workflow(best) |>
-  last_fit(split, metrics = metric_set(rmse, rsq, mae))
-
-collect_metrics(final_fit) |>
-  select(.metric, .estimate) |>
-  mutate(.estimate = round(.estimate, 4))
-```
-
-## Python
-
-```python
-from sklearn.metrics import (mean_absolute_error, r2_score,
-                             root_mean_squared_error)
-
-# last_fit(): refit at the chosen setting on all the training data, then score
-# once on the test set that tuning never saw. GridSearchCV has already done the
-# refitting, at its own best setting.
-final_fit = tuned.best_estimator_
-predicted = final_fit.predict(X_test)
-
-pd.DataFrame({
-    ".metric": ["rmse", "rsq", "mae"],
-    ".estimate": [
-        root_mean_squared_error(y_test, predicted),
-        r2_score(y_test, predicted),
-        mean_absolute_error(y_test, predicted),
-    ],
-}).round(4)
-```
-
-:::
-
-`last_fit()` is the only function in this section that touches the test set. It refits the
-chosen workflow on the whole training set and scores it on the test set, once. Everything
-before it used cross-validation.
-
-### The reliability of the choice
-
-The CV surface picks depth 3 and `min_n` 10. To see whether that is a finding, we repeat the
-selection with a single validation split, the simpler procedure, forty times, each time with a
-different random split of the same training data.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: instability
-rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
-
-set.seed(61)
-winners <- map_dfr(1:40, \(r) {
-  rows <- sample(nrow(train), round(0.75 * nrow(train)))
-  inner_train <- train[rows, ]
-  validation  <- train[-rows, ]
-
-  errors <- pmap_dbl(grid, \(tree_depth, min_n) {
-    fit <- rpart(abundance ~ ., data = inner_train,
-                 control = rpart.control(cp = 0, maxdepth = tree_depth,
-                                         minsplit = min_n,
-                                         minbucket = ceiling(min_n / 3)))
-    rmse_of(validation$abundance, predict(fit, validation))
+#| label: repeats
+# The error on the held-out sites of each node size, fitted to the rest
+errors_on <- function(s) {
+  fitting <- analysis(s)
+  new     <- assessment(s)
+  map_dbl(sizes, \(n) {
+    fitted <- finalize_workflow(tree_workflow, tibble(min_n = n)) |> fit(fitting)
+    rmse_vec(new$abundance, predict(fitted, new)$.pred)
   })
+}
+winner <- function(errors) tibble(min_n = sizes[which.min(errors)], claimed = min(errors))
 
-  grid[which.min(errors), ] |>
-    mutate(replicate = r, winning_rmse = min(errors))
-})
+repeats <- map(1:40, \(r) {
+  one_split <- group_initial_split(train, group = site_id, prop = 0.75)
+  ten_folds <- group_vfold_cv(train, group = site_id, v = 10)
+  # one column per fold; the row means are the cross-validated errors
+  fold_errors <- sapply(ten_folds$splits, errors_on)
+  bind_rows(`One validation split` = winner(errors_on(one_split)),
+            `Ten-fold cross-validation` = winner(rowMeans(fold_errors)),
+            .id = "method")
+}) |>
+  list_rbind()
 
-c(`distinct winning settings` = nrow(distinct(winners, tree_depth, min_n)),
-  `grid points` = nrow(grid))
+repeats |>
+  summarise(`different winners` = n_distinct(min_n),
+            `lowest claimed` = min(claimed),
+            `highest claimed` = max(claimed),
+            .by = method) |>
+  mutate(across(contains("claimed"), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-from sklearn.model_selection import ParameterGrid
+```{python}
+def errors_on(fit_rows, new_rows):
+    fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
+    fitted = [tree_pipeline(n).fit(fitting[predictors], fitting["abundance"])
+              for n in sizes]
+    return np.array([root_mean_squared_error(new["abundance"], f.predict(new[predictors]))
+                     for f in fitted])
 
-settings = list(ParameterGrid(grid))
-rng = np.random.default_rng(61)
+runs = []
+for r in range(40):
+    one_split = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=r)
+    ten_folds = GroupKFold(n_splits=10, shuffle=True, random_state=r)
+    groups = train["site_id"]
+    one = errors_on(*next(one_split.split(train, groups=groups)))
+    ten = np.mean([errors_on(*f) for f in ten_folds.split(train, groups=groups)], axis=0)
+    for method, errors in [("One validation split", one),
+                           ("Ten-fold cross-validation", ten)]:
+        runs.append({"method": method, "min_n": sizes[errors.argmin()],
+                     "claimed": errors.min()})
+repeats = pd.DataFrame(runs)
 
-def winner_of_one_split():
-    rows = rng.choice(len(train), round(0.75 * len(train)), replace=False)
-    held = np.setdiff1d(np.arange(len(train)), rows)
-    inner, validation = train.iloc[rows], train.iloc[held]
-
-    errors = [
-        root_mean_squared_error(
-            validation["abundance"],
-            DecisionTreeRegressor(ccp_alpha=0.0, random_state=506, **setting)
-            .fit(inner[features], inner["abundance"])
-            .predict(validation[features]))
-        for setting in settings
-    ]
-    k = int(np.argmin(errors))
-    return {"tree_depth": settings[k]["max_depth"],
-            "min_n": settings[k]["min_samples_split"],
-            "winning_rmse": errors[k]}
-
-winners = pd.DataFrame([winner_of_one_split() for _ in range(40)])
-
-pd.Series({
-    "distinct winning settings": len(winners[["tree_depth", "min_n"]].drop_duplicates()),
-    "grid points": len(settings),
-})
+(repeats.groupby("method", sort=False)
+    .agg(**{"different winners": ("min_n", "nunique"),
+            "lowest claimed": ("claimed", "min"),
+            "highest claimed": ("claimed", "max")})
+    .reset_index()
+    .round(2))
 ```
 
 :::
+
+```{r}
+#| label: repeat-numbers
+#| include: false
+summary_of <- function(m) filter(repeats, method == m)
+one_runs <- summary_of("One validation split")
+cv_runs <- summary_of("Ten-fold cross-validation")
+one_spread <- diff(range(one_runs$claimed))
+lead <- baseline - best_row$mean
+cv_mode <- count(cv_runs, min_n) |> slice_max(n, n = 1, with_ties = FALSE)
+in_tie <- sum(repeats$min_n %in% tied$min_n)
+```
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: instability-detail
-winners |>
-  count(tree_depth, min_n, sort = TRUE) |>
-  slice_head(n = 6)
-```
-
-## Python
-
-```python
-(winners.value_counts(["tree_depth", "min_n"])
-    .reset_index(name="n")
-    .head(6))
+#| label: fig-repeats
+#| fig-cap: "The node size chosen in each of 40 runs, and the error claimed for it, by a single validation split (top) and by ten-fold cross-validation (bottom). Node sizes run from rigid on the left to flexible on the right."
+#| fig-alt: !expr glue::glue("Two panels of points share an axis of the 12 node sizes, from 300 on the left to 2 on the right. Each point is one run, placed at the node size it chose and the error it claimed. With one validation split, the points spread over {n_distinct(one_runs$min_n)} node sizes, from {max(one_runs$min_n)} to {min(one_runs$min_n)}, and from {f2(min(one_runs$claimed))} to {f2(max(one_runs$claimed))} in error. With ten-fold cross-validation, they sit over {n_distinct(cv_runs$min_n)} node sizes, from {max(cv_runs$min_n)} to {min(cv_runs$min_n)}, in a narrow band from {f2(min(cv_runs$claimed))} to {f2(max(cv_runs$claimed))}. No run chose a node size smaller than {min(repeats$min_n)}.")
+#| fig-width: 7
+#| fig-height: 5
+repeats |>
+  mutate(method = factor(method, levels = c("One validation split",
+                                            "Ten-fold cross-validation")),
+         min_n = factor(min_n, levels = sizes)) |>
+  ggplot(aes(min_n, claimed, colour = method)) +
+  geom_point(position = position_jitter(width = 0.2, height = 0, seed = 1),
+             size = 2, alpha = 0.7, show.legend = FALSE) +
+  facet_wrap(~ method, ncol = 1) +
+  scale_x_discrete(drop = FALSE) +
+  scale_colour_manual(values = c(ml_palette[["vermilion"]], ml_palette[["blue"]])) +
+  labs(x = "Minimum node size chosen (rigid on the left, flexible on the right)",
+       y = "RMSE claimed for the winner (individuals)",
+       title = "One validation split gives a noisy verdict")
 ```
 
 :::
+
+**One validation split gives a noisy verdict.** Across the 40 runs, the error it claimed
+for its winner ranged from `r f2(min(one_runs$claimed))` to `r f2(max(one_runs$claimed))`,
+a spread caused only by which sites were held out. That spread is about
+`r round(one_spread / lead)` times the tree's whole lead over predicting the average.
+Ten-fold cross-validation's claimed errors ranged only from `r f2(min(cv_runs$claimed))` to
+`r f2(max(cv_runs$claimed))`: each rests on every training site, not a quarter of them.
+
+**Both choices wander within the flat bottom.** One validation split chose
+`r in_words(n_distinct(one_runs$min_n))` different node sizes, from
+`r max(one_runs$min_n)` down to `r min(one_runs$min_n)`. Cross-validation chose
+`r in_words(n_distinct(cv_runs$min_n))`, and settled on `r cv_mode$min_n` in
+`r cv_mode$n` of the 40 runs. `r if (in_tie == 80) "Every one of the 80 choices was" else paste(in_tie, "of the 80 choices were")`
+among the settings that tie, so neither method can pin the node size down, and the data
+say it matters little.
+
+The claimed error is also a little flattering. It is the lowest of 12 errors, so part of
+the winner's lead is luck. The honest figure comes from data that played no part in the
+choice: the test sites.
+
+### Scoring the test sites once
+
+`last_fit()` refits the chosen workflow on all the training sites and scores the test
+sites. It is the only step on this page that touches them, and it comes after the choice
+is made.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: instability-spread
-c(lowest_claimed = min(winners$winning_rmse),
-  highest_claimed = max(winners$winning_rmse),
-  sd = sd(winners$winning_rmse)) |>
-  round(3)
+#| label: last-fit
+final <- tree_workflow |>
+  finalize_workflow(best) |>
+  last_fit(split, metrics = metric_set(rmse))
+
+test <- testing(split)
+tibble(model = c("decision tree", "predict the average"),
+       `test sites` = c(collect_metrics(final)$.estimate,
+                        rmse_vec(test$abundance,
+                                 rep(mean(train$abundance), nrow(test))))) |>
+  mutate(`test sites` = round(`test sites`, 2))
 ```
 
 ## Python
 
-```python
-pd.Series({
-    "lowest_claimed": winners["winning_rmse"].min(),
-    "highest_claimed": winners["winning_rmse"].max(),
-    "sd": winners["winning_rmse"].std(),
-}).round(3)
-```
-
-:::
-
-```{r}
-#| label: fig-instability
-#| fig-cap: "Which grid cell wins, across forty different single validation splits of the same training data. Sixteen of the thirty-six cells win at least once, spanning the full range of both hyperparameters. The reported score of the winner ranges from 3.36 to 5.53, a spread of more than two individuals, caused entirely by which stations landed in the validation set."
-#| fig-alt: "Two panels. The left panel is a grid of tiles matching the tuning surface, shaded by how many of forty validation splits chose each cell; sixteen cells are shaded at all, scattered across the whole grid rather than clustered, and the darkest cell was chosen five times. The right panel is a histogram of the winning validation RMSE across the forty splits, spread from 3.4 to 5.5 with a broad peak near 4.4."
-#| fig-width: 8
-#| fig-height: 3.8
-p1 <- winners |>
-  count(tree_depth, min_n) |>
-  right_join(grid, by = c("tree_depth", "min_n")) |>
-  mutate(n = replace_na(n, 0)) |>
-  ggplot(aes(factor(min_n), factor(tree_depth), fill = n)) +
-  geom_tile(colour = "white", linewidth = 0.6) +
-  scale_fill_gradient(low = "#f2f5f7", high = ml_palette[["vermilion"]]) +
-  labs(x = "min_n", y = "tree_depth", fill = "times\nchosen",
-       title = "Where the winner landed") +
-  theme(panel.grid.major = element_blank())
-
-p2 <- ggplot(winners, aes(winning_rmse)) +
-  geom_histogram(bins = 14, fill = ml_palette[["blue"]], colour = "white") +
-  labs(x = "Validation RMSE of the chosen setting", y = "Splits",
-       title = "And what it claimed to score")
-
-p1 + p2
-```
-
-## Most of the grid is a tie
-
-**Most of the grid is a tie.** The best cross-validated RMSE is 4.482 with a standard error of
-0.187. Nineteen of the thirty-six settings are within one standard error of it. "Depth 3 with
-`min_n` 10 is optimal" is not supportable; what the data supports is "keep the tree shallow, and
-do not let nodes get small".
-
-**A single validation split chooses almost at random.** Forty splits of the same training data
-produced **sixteen different winners**, using every depth from 2 to 8 and every node size from 2
-to 80, the entire grid range on both axes. The winning setting's own reported RMSE ranged from
-3.36 to 5.53. If you tune with one validation split and report the validation score, you are
-reporting the best of thirty-six noisy numbers and calling it performance.
-
-Cross-validation does not remove this, but it averages ten estimates instead of one, and
-the effect on stability is large. This is the whole argument for *k*-fold, and it is worth
-the tenfold computing cost.
-
-**The 1-SE rule.** When many settings tie, the convention is to take the *simplest* one
-within one standard error of the best rather than the best itself. Here that is depth 2
-with `min_n` 20, a tree you could print on a postcard, chosen on the grounds that the more
-elaborate model's advantage is not distinguishable from noise and simpler models
-generalise more safely. It is a convention, not a theorem, and worth applying deliberately
-rather than by default.
-
-**And tuning bought very little here.** The tuned tree scores 4.463 on the test set.
-Predicting the training mean at every station scores 4.492. Careful ten-fold tuning of a
-tree over thirty-six settings improved on using no predictors at all by 0.6%.
-
-That is not a failure of the procedure. It is the
-[bias–variance page's](bias-variance.qmd) finding arriving in practice: the irreducible noise in
-these counts dwarfs what any model can extract, so the room tuning has to work in is narrow. The
-procedure is still correct, and on a problem with more signal, or with the penalised models of
-[the previous page](regularisation.qmd) where the untuned fit scored 7.41 against 4.64, the same
-machinery is worth a great deal.
-
-::: {.callout-warning}
-The CV score of the *selected* setting is optimistic as an estimate of that setting's
-performance, because it is the minimum of thirty-six noisy numbers. Here CV said 4.482 and
-the test set said 4.463, so the bias is invisible against the noise of one 180-station
-test set, but it is real, and it grows with the size of the grid. This is why a test set
-held back from tuning is not optional, and why [section 7](../07-validation/index.qmd)
-covers nested resampling for the cases where you cannot afford one.
-:::
-
-### Searching a larger space
-
-A regular grid costs the product of its axes. Two hyperparameters at six values each is 36
-settings; four at six values is 1,296, times ten folds. Two standard escapes:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: grids
-#| eval: false
-# Regular grid: every combination. Fine for one or two hyperparameters.
-grid_regular(tree_depth(), min_n(), levels = 6)
-
-# Space-filling: spreads points to cover the space evenly. Much better once
-# you have three or more hyperparameters, at the same computational budget.
-grid_space_filling(
-  trees(range = c(200, 1500)),
-  learn_rate(range = c(-3, -0.5)),
-  tree_depth(range = c(2, 10)),
-  loss_reduction(),
-  size = 40
-)
-```
-
-## Python
-
-```python
-from scipy.stats import qmc
-from sklearn.model_selection import ParameterGrid
-
-# Regular grid: every combination. Fine for one or two hyperparameters.
-pd.DataFrame(ParameterGrid({"tree_depth": [1, 4, 8, 11, 15],
-                            "min_n": [2, 11, 21, 30, 40]})).head()
-
-# Space-filling: spreads points to cover the space evenly. Much better once
-# you have three or more hyperparameters, at the same computational budget.
-# scikit-learn has no grid_space_filling(); scipy's qmc module is the tool.
-design = qmc.scale(
-    qmc.LatinHypercube(d=4, rng=np.random.default_rng(1)).random(40),
-    l_bounds=[200, -3, 2, -10],      # trees, log10 learning rate,
-    u_bounds=[1500, -0.5, 10, 1.5],  # tree depth, log10 loss reduction
-)
+```{python}
+# GridSearchCV has already refitted its best setting on all the training sites.
+final = tuned.best_estimator_
 
 pd.DataFrame({
-    "trees": design[:, 0].round(),
-    "learn_rate": (10 ** design[:, 1]).round(5),
-    "tree_depth": design[:, 2].round(),
-    "loss_reduction": (10 ** design[:, 3]).round(5),
-}).head()
+    "model": ["decision tree", "predict the average"],
+    "test sites": [
+        root_mean_squared_error(test["abundance"], final.predict(test[predictors])),
+        root_mean_squared_error(test["abundance"],
+                                np.full(len(test), train["abundance"].mean())),
+    ],
+}).round(2)
 ```
 
 :::
 
-Space-filling designs win for a reason worth knowing: hyperparameters differ enormously in how
-much they matter, and a regular grid wastes most of its evaluations re-testing the ones that do
-not. Forty well-spread points usually beat a 1,296-point grid on the same budget.
+```{r}
+#| label: test-numbers
+#| include: false
+test_tree <- collect_metrics(final)$.estimate
+test_average <- rmse_vec(test$abundance, rep(mean(train$abundance), nrow(test)))
+n_test_sites <- n_distinct(test$site_id)
+```
 
-## Limits of this tuning
+The tree scores `r f2(test_tree)` on the test sites, against `r f2(test_average)` for
+predicting the training sites' average: better by `r f2(test_average - test_tree)`.
+Cross-validation put the tree `r f2(baseline - best_row$mean)` ahead of the average.
+Both errors are lower on the test sites than in cross-validation, because these
+`r n_test_sites` sites happen to be easier to predict; a single set of test sites is one
+draw too. The gain over the average on the same sites is the fairer comparison, and it
+holds up.
 
-**Tuning on cross-validation, then reporting the cross-validation score, is circular.** The
-resampling was used to choose; it can no longer be used to estimate. The fix is a held-out test
-set, as above, or **nested resampling**, an inner loop that tunes and an outer loop that
-estimates, which [section 7](../07-validation/index.qmd) covers.
+Once the test sites have been scored, they are spent. Choosing again because their score
+disappointed would make them validation sites, and the score would flatter the model as
+the claimed errors above do. [Cross-validation](../07-validation/cross-validation.qmd), in
+section 7, shows how to get an honest score when the data are too few to set test sites
+aside.
 
-**Every preprocessing step must go inside the resampling.** Imputing, centring, selecting
-variables or balancing classes on the whole training set before cross-validating leaks
-information from each held-out fold into the model that will score it. `recipe()` inside a
-`workflow()` exists precisely to prevent this, and it is why
-[section 2](../02-marine-data/information-leakage.qmd) insisted on recipes over `mutate()`.
-
-**Random k-fold is wrong for this dataset.** These 720 stations come from 160 repeatedly
-visited sites, so ordinary `vfold_cv()` puts visits to the same site in both the training
-and the held-out fold. The tuning above is therefore optimistic in a way this page cannot
-fix. `group_vfold_cv()` and `spatial_block_cv()` can, and [section
-7](../07-validation/index.qmd) is where they belong.
-
-**A winning hyperparameter is not a scientific result.** Depth 3 beat depth 4 by 0.05 on this
-survey. Nothing follows from that about trees, about this species, or about the next survey. The
-tuned value is a setting, not a finding, and it should be reported as one.
-
-::: {.callout-tip}
 ## Key points
 
-- Hyperparameters need data the model was not fitted to. Use cross-validation on the training set,
-  and keep the test set for one final measurement.
-- The tidymodels route is `tune()` → `vfold_cv()` → `tune_grid()` → `select_best()` →
-  `finalize_workflow()` → `last_fit()`. Only the last touches the test set.
-- **The choice is much less certain than it looks.** Nineteen of thirty-six settings were within
-  one standard error of the best, and forty single validation splits picked sixteen different
-  winners spanning the whole grid.
-- Prefer the **simplest setting within one standard error** of the best.
-- Tuning is worth what the signal allows: 0.6% over the mean for this tree, against a 37%
-  improvement for penalised regression on the previous page.
-
+::: {.key-points}
+- A **hyperparameter** is fixed before fitting and limits it. The training error always
+  favours the most flexible setting, so a hyperparameter is chosen on data the model was
+  not fitted to.
+- **k-fold cross-validation** cuts the training data into *k* folds; each takes a turn as
+  new data while the model is fitted to the rest, and the *k* errors are averaged. Folds
+  hold whole sites, as a split does.
+- **One validation split gives a noisy verdict.** In 40 runs, the error it claimed for its
+  winner ranged from `r f2(min(one_runs$claimed))` to `r f2(max(one_runs$claimed))`;
+  with ten-fold cross-validation, from `r f2(min(cv_runs$claimed))` to
+  `r f2(max(cv_runs$claimed))`.
+- Settings within one standard error of the best cannot be told apart. The
+  **one-standard-error rule** takes the simplest of them.
+- In tidymodels: `tune()`, `group_vfold_cv()`, `tune_grid()`, `select_best()`,
+  `finalize_workflow()`, then `last_fit()`, the only step that scores the test sites.
 :::
 
 ## Try it yourself
 
-1. Re-run the instability experiment using `vfold_cv(v = 5)` inside each replicate instead of a
-   single validation split. How many distinct winners now, and how much does the spread of winning
-   scores narrow?
-2. Swap `vfold_cv()` for `group_vfold_cv(group = site_id)`; you will need to keep `site_id` in the
-   data. Does the chosen tree get simpler or more complex, and why should honest resampling push it
-   in that direction?
+1. Replace `group_vfold_cv()` with `vfold_cv(train, v = 10)`, which deals stations into
+   folds regardless of their site. Does the cross-validated error fall, and does the
+   chosen tree get more flexible?
+2. Tune the lasso of [Regularisation](regularisation.qmd) on these folds, with
+   `linear_reg(penalty = tune(), mixture = 1) |> set_engine("glmnet")` and a grid of λ
+   from 0.001 to 10. The recipe needs `step_dummy()` for substrate and season, and
+   `step_normalize()`. Which inputs does the lasso keep at the chosen λ?
