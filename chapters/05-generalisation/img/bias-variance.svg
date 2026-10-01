@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 772" width="100%" role="img" aria-label="Three small panels, each with a dashed hump-shaped curve for the expected count and a dotted mark at one station. Rigid model, high bias and low variance: six straight lines fitted to six surveys lie close together, and all miss the top of the hump; a bracket marked bias spans the gap between the curve and the lines. Flexible model, low bias and high variance: six wavy curves follow the hump but spread apart; a bracket marked variance spans their spread. Noise, the same for every model: dots for counts at one station scatter above and below the curve; a bracket marked noise spans them. Below, a wide panel says the error at a new station is bias squared plus variance plus noise, and shows two stacked bars. The rigid model's bar is mostly bias with a little variance; the flexible model's bar is mostly variance with a little bias. Both end in a noise segment of the same length. More flexibility trades bias for variance, and the noise stays the same. A note says bias and variance belong to the model, and the noise belongs to the counts.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Three parts of the error</text>
+<rect class="box" x="0" y="48" width="300" height="300" rx="8"/><rect x="0" y="48" width="300" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="20" y="86">Rigid model</text>
+<text class="lab" x="20" y="108" fill="#0072B2">HIGH BIAS, LOW VARIANCE</text>
+<path class="ax" d="M30 132 V318 H275"/>
+<path d="M152.5 132 V318" stroke="#b9c2c9" stroke-width="1.4" stroke-dasharray="3 4"/>
+<path d="M38.0 233.8 L267.0 235.3" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M38.0 227.5 L267.0 221.9" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M38.0 238.8 L267.0 238.8" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M38.0 235.1 L267.0 233.8" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M38.0 239.7 L267.0 237.6" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M38.0 237.5 L267.0 224.1" stroke="#0072B2" stroke-width="2" opacity="0.75"/>
+<path d="M42.6 272.2 L45.4 271.6 L48.1 270.7 L50.9 269.5 L53.7 268.1 L56.5 266.4 L59.3 264.4 L62.1 262.2 L64.8 259.8 L67.6 257.2 L70.4 254.4 L73.2 251.4 L76.0 248.2 L78.8 244.9 L81.5 241.4 L84.3 237.9 L87.1 234.2 L89.9 230.5 L92.7 226.8 L95.5 223.0 L98.2 219.3 L101.0 215.5 L103.8 211.8 L106.6 208.2 L109.4 204.7 L112.1 201.3 L114.9 198.0 L117.7 194.8 L120.5 191.8 L123.3 189.0 L126.1 186.4 L128.8 184.0 L131.6 181.9 L134.4 179.9 L137.2 178.3 L140.0 176.9 L142.8 175.7 L145.5 174.9 L148.3 174.3 L151.1 174.0 L153.9 174.0 L156.7 174.3 L159.5 174.9 L162.2 175.7 L165.0 176.9 L167.8 178.3 L170.6 179.9 L173.4 181.9 L176.2 184.0 L178.9 186.4 L181.7 189.0 L184.5 191.8 L187.3 194.8 L190.1 198.0 L192.9 201.3 L195.6 204.7 L198.4 208.2 L201.2 211.8 L204.0 215.5 L206.8 219.3 L209.5 223.0 L212.3 226.8 L215.1 230.5 L217.9 234.2 L220.7 237.9 L223.5 241.4 L226.2 244.9 L229.0 248.2 L231.8 251.4 L234.6 254.4 L237.4 257.2 L240.2 259.8 L242.9 262.2 L245.7 264.4 L248.5 266.4 L251.3 268.1 L254.1 269.5 L256.9 270.7 L259.6 271.6 L262.4 272.2" fill="none" stroke="#1f2933" stroke-width="2.6" stroke-dasharray="7 5"/>
+<path d="M161.5 174.0 H166.5 V233.7 H161.5" fill="none" stroke="#0072B2" stroke-width="2.2"/>
+<text class="lab" x="174.5" y="168.0" fill="#0072B2">BIAS</text>
+<text class="sm" x="152.5" y="338" text-anchor="middle">one station</text>
+<rect class="box" x="330" y="48" width="300" height="300" rx="8"/><rect x="330" y="48" width="300" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="350" y="86">Flexible model</text>
+<text class="lab" x="350" y="108" fill="#D55E00">LOW BIAS, HIGH VARIANCE</text>
+<path class="ax" d="M360 132 V318 H605"/>
+<path d="M482.5 132 V318" stroke="#b9c2c9" stroke-width="1.4" stroke-dasharray="3 4"/>
+<path d="M372.6 277.9 L375.4 278.2 L378.1 278.4 L380.9 278.4 L383.7 278.1 L386.5 277.6 L389.3 276.7 L392.1 275.5 L394.8 273.9 L397.6 271.9 L400.4 269.4 L403.2 266.5 L406.0 263.1 L408.8 259.2 L411.5 254.9 L414.3 250.0 L417.1 244.8 L419.9 239.2 L422.7 233.2 L425.5 227.0 L428.2 220.5 L431.0 214.0 L433.8 207.3 L436.6 200.7 L439.4 194.3 L442.1 188.1 L444.9 182.2 L447.7 176.7 L450.5 171.7 L453.3 167.4 L456.1 163.7 L458.8 160.7 L461.6 158.5 L464.4 157.1 L467.2 156.5 L470.0 156.8 L472.8 157.9 L475.5 159.7 L478.3 162.4 L481.1 165.7 L483.9 169.7 L486.7 174.2 L489.5 179.2 L492.2 184.5 L495.0 190.1 L497.8 195.8 L500.6 201.5 L503.4 207.2 L506.2 212.7 L508.9 217.9 L511.7 222.8 L514.5 227.2 L517.3 231.1 L520.1 234.5 L522.9 237.3 L525.6 239.5 L528.4 241.2 L531.2 242.3 L534.0 242.8 L536.8 242.9 L539.5 242.5 L542.3 241.7 L545.1 240.7 L547.9 239.5 L550.7 238.1 L553.5 236.8 L556.2 235.5 L559.0 234.3 L561.8 233.4 L564.6 232.8 L567.4 232.5 L570.2 232.7 L572.9 233.3 L575.7 234.3 L578.5 235.8 L581.3 237.8 L584.1 240.3 L586.9 243.1 L589.6 246.3 L592.4 249.8" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 281.3 L375.4 276.1 L378.1 270.5 L380.9 264.9 L383.7 259.1 L386.5 253.5 L389.3 248.0 L392.1 242.9 L394.8 238.2 L397.6 234.0 L400.4 230.3 L403.2 227.3 L406.0 224.9 L408.8 223.1 L411.5 222.0 L414.3 221.5 L417.1 221.4 L419.9 221.9 L422.7 222.7 L425.5 223.9 L428.2 225.1 L431.0 226.5 L433.8 227.8 L436.6 229.0 L439.4 229.9 L442.1 230.4 L444.9 230.5 L447.7 230.2 L450.5 229.3 L453.3 227.8 L456.1 225.8 L458.8 223.3 L461.6 220.2 L464.4 216.7 L467.2 212.8 L470.0 208.6 L472.8 204.2 L475.5 199.8 L478.3 195.4 L481.1 191.1 L483.9 187.2 L486.7 183.6 L489.5 180.6 L492.2 178.2 L495.0 176.5 L497.8 175.5 L500.6 175.4 L503.4 176.1 L506.2 177.7 L508.9 180.2 L511.7 183.5 L514.5 187.5 L517.3 192.2 L520.1 197.6 L522.9 203.5 L525.6 209.8 L528.4 216.5 L531.2 223.3 L534.0 230.2 L536.8 237.0 L539.5 243.7 L542.3 250.1 L545.1 256.1 L547.9 261.7 L550.7 266.8 L553.5 271.2 L556.2 275.1 L559.0 278.4 L561.8 281.0 L564.6 283.0 L567.4 284.3 L570.2 285.1 L572.9 285.3 L575.7 285.0 L578.5 284.3 L581.3 283.2 L584.1 281.8 L586.9 280.2 L589.6 278.3 L592.4 276.3" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 275.9 L375.4 273.9 L378.1 271.4 L380.9 268.4 L383.7 264.9 L386.5 261.1 L389.3 256.9 L392.1 252.4 L394.8 247.8 L397.6 243.1 L400.4 238.3 L403.2 233.7 L406.0 229.1 L408.8 224.9 L411.5 220.9 L414.3 217.3 L417.1 214.1 L419.9 211.4 L422.7 209.1 L425.5 207.3 L428.2 206.0 L431.0 205.2 L433.8 204.8 L436.6 204.7 L439.4 205.0 L442.1 205.5 L444.9 206.2 L447.7 207.0 L450.5 207.8 L453.3 208.6 L456.1 209.2 L458.8 209.7 L461.6 209.9 L464.4 209.8 L467.2 209.4 L470.0 208.7 L472.8 207.6 L475.5 206.3 L478.3 204.6 L481.1 202.7 L483.9 200.7 L486.7 198.5 L489.5 196.2 L492.2 194.0 L495.0 191.9 L497.8 190.0 L500.6 188.3 L503.4 187.0 L506.2 186.2 L508.9 185.8 L511.7 185.9 L514.5 186.6 L517.3 187.8 L520.1 189.7 L522.9 192.1 L525.6 195.0 L528.4 198.4 L531.2 202.3 L534.0 206.6 L536.8 211.2 L539.5 216.0 L542.3 221.0 L545.1 226.0 L547.9 231.1 L550.7 236.0 L553.5 240.8 L556.2 245.3 L559.0 249.6 L561.8 253.5 L564.6 257.0 L567.4 260.2 L570.2 263.0 L572.9 265.3 L575.7 267.3 L578.5 268.9 L581.3 270.2 L584.1 271.2 L586.9 271.9 L589.6 272.4 L592.4 272.8" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 271.3 L375.4 272.3 L378.1 273.1 L380.9 273.6 L383.7 273.7 L386.5 273.5 L389.3 272.8 L392.1 271.7 L394.8 270.2 L397.6 268.3 L400.4 265.8 L403.2 263.0 L406.0 259.7 L408.8 256.0 L411.5 252.0 L414.3 247.6 L417.1 243.0 L419.9 238.1 L422.7 233.2 L425.5 228.1 L428.2 223.1 L431.0 218.0 L433.8 213.1 L436.6 208.4 L439.4 203.9 L442.1 199.7 L444.9 195.8 L447.7 192.3 L450.5 189.1 L453.3 186.3 L456.1 184.0 L458.8 182.0 L461.6 180.3 L464.4 179.1 L467.2 178.1 L470.0 177.5 L472.8 177.1 L475.5 176.9 L478.3 176.9 L481.1 177.1 L483.9 177.4 L486.7 177.8 L489.5 178.2 L492.2 178.7 L495.0 179.2 L497.8 179.8 L500.6 180.4 L503.4 181.1 L506.2 181.8 L508.9 182.7 L511.7 183.7 L514.5 184.9 L517.3 186.3 L520.1 187.9 L522.9 189.9 L525.6 192.2 L528.4 194.8 L531.2 197.9 L534.0 201.3 L536.8 205.1 L539.5 209.3 L542.3 213.9 L545.1 218.9 L547.9 224.1 L550.7 229.7 L553.5 235.4 L556.2 241.3 L559.0 247.2 L561.8 253.1 L564.6 259.0 L567.4 264.6 L570.2 269.9 L572.9 274.9 L575.7 279.4 L578.5 283.4 L581.3 286.8 L584.1 289.6 L586.9 291.7 L589.6 293.1 L592.4 293.8" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 279.5 L375.4 276.5 L378.1 273.1 L380.9 269.4 L383.7 265.3 L386.5 260.9 L389.3 256.3 L392.1 251.4 L394.8 246.5 L397.6 241.5 L400.4 236.4 L403.2 231.4 L406.0 226.4 L408.8 221.6 L411.5 217.0 L414.3 212.6 L417.1 208.4 L419.9 204.6 L422.7 201.1 L425.5 197.9 L428.2 195.1 L431.0 192.7 L433.8 190.7 L436.6 189.0 L439.4 187.7 L442.1 186.8 L444.9 186.3 L447.7 186.0 L450.5 186.1 L453.3 186.4 L456.1 187.0 L458.8 187.7 L461.6 188.7 L464.4 189.8 L467.2 191.0 L470.0 192.3 L472.8 193.7 L475.5 195.1 L478.3 196.5 L481.1 197.9 L483.9 199.3 L486.7 200.7 L489.5 202.1 L492.2 203.5 L495.0 204.9 L497.8 206.3 L500.6 207.7 L503.4 209.1 L506.2 210.6 L508.9 212.1 L511.7 213.7 L514.5 215.5 L517.3 217.3 L520.1 219.3 L522.9 221.5 L525.6 223.8 L528.4 226.3 L531.2 229.0 L534.0 231.8 L536.8 234.9 L539.5 238.0 L542.3 241.4 L545.1 244.8 L547.9 248.3 L550.7 252.0 L553.5 255.6 L556.2 259.2 L559.0 262.8 L561.8 266.2 L564.6 269.6 L567.4 272.7 L570.2 275.6 L572.9 278.2 L575.7 280.5 L578.5 282.5 L581.3 284.0 L584.1 285.1 L586.9 285.8 L589.6 286.0 L592.4 285.7" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 271.5 L375.4 270.4 L378.1 269.1 L380.9 267.8 L383.7 266.4 L386.5 264.9 L389.3 263.3 L392.1 261.8 L394.8 260.1 L397.6 258.4 L400.4 256.5 L403.2 254.6 L406.0 252.5 L408.8 250.3 L411.5 247.8 L414.3 245.2 L417.1 242.3 L419.9 239.3 L422.7 236.0 L425.5 232.4 L428.2 228.7 L431.0 224.8 L433.8 220.7 L436.6 216.6 L439.4 212.3 L442.1 208.1 L444.9 203.8 L447.7 199.7 L450.5 195.7 L453.3 192.0 L456.1 188.5 L458.8 185.3 L461.6 182.5 L464.4 180.1 L467.2 178.1 L470.0 176.6 L472.8 175.6 L475.5 175.1 L478.3 175.1 L481.1 175.5 L483.9 176.3 L486.7 177.5 L489.5 179.1 L492.2 180.9 L495.0 183.0 L497.8 185.3 L500.6 187.7 L503.4 190.1 L506.2 192.6 L508.9 195.0 L511.7 197.3 L514.5 199.5 L517.3 201.5 L520.1 203.4 L522.9 205.1 L525.6 206.6 L528.4 207.9 L531.2 209.1 L534.0 210.2 L536.8 211.1 L539.5 212.1 L542.3 213.0 L545.1 213.9 L547.9 214.9 L550.7 216.1 L553.5 217.4 L556.2 218.9 L559.0 220.7 L561.8 222.7 L564.6 224.9 L567.4 227.5 L570.2 230.3 L572.9 233.3 L575.7 236.5 L578.5 239.9 L581.3 243.4 L584.1 247.0 L586.9 250.6 L589.6 254.2 L592.4 257.7" fill="none" stroke="#D55E00" stroke-width="2" opacity="0.75"/>
+<path d="M372.6 272.2 L375.4 271.6 L378.1 270.7 L380.9 269.5 L383.7 268.1 L386.5 266.4 L389.3 264.4 L392.1 262.2 L394.8 259.8 L397.6 257.2 L400.4 254.4 L403.2 251.4 L406.0 248.2 L408.8 244.9 L411.5 241.4 L414.3 237.9 L417.1 234.2 L419.9 230.5 L422.7 226.8 L425.5 223.0 L428.2 219.3 L431.0 215.5 L433.8 211.8 L436.6 208.2 L439.4 204.7 L442.1 201.3 L444.9 198.0 L447.7 194.8 L450.5 191.8 L453.3 189.0 L456.1 186.4 L458.8 184.0 L461.6 181.9 L464.4 179.9 L467.2 178.3 L470.0 176.9 L472.8 175.7 L475.5 174.9 L478.3 174.3 L481.1 174.0 L483.9 174.0 L486.7 174.3 L489.5 174.9 L492.2 175.7 L495.0 176.9 L497.8 178.3 L500.6 179.9 L503.4 181.9 L506.2 184.0 L508.9 186.4 L511.7 189.0 L514.5 191.8 L517.3 194.8 L520.1 198.0 L522.9 201.3 L525.6 204.7 L528.4 208.2 L531.2 211.8 L534.0 215.5 L536.8 219.3 L539.5 223.0 L542.3 226.8 L545.1 230.5 L547.9 234.2 L550.7 237.9 L553.5 241.4 L556.2 244.9 L559.0 248.2 L561.8 251.4 L564.6 254.4 L567.4 257.2 L570.2 259.8 L572.9 262.2 L575.7 264.4 L578.5 266.4 L581.3 268.1 L584.1 269.5 L586.9 270.7 L589.6 271.6 L592.4 272.2" fill="none" stroke="#1f2933" stroke-width="2.6" stroke-dasharray="7 5"/>
+<path d="M517.5 167.7 H522.5 V201.7 H517.5" fill="none" stroke="#D55E00" stroke-width="2.2"/>
+<text class="lab" x="530.5" y="189.7" fill="#D55E00">VARIANCE</text>
+<text class="sm" x="482.5" y="338" text-anchor="middle">one station</text>
+<rect class="box" x="660" y="48" width="300" height="300" rx="8"/><rect x="660" y="48" width="300" height="6" rx="3" fill="#6b7680"/>
+<text class="head" x="680" y="86">Noise</text>
+<text class="lab" x="680" y="108" fill="#6b7680">THE SAME FOR EVERY MODEL</text>
+<path class="ax" d="M690 132 V318 H935"/>
+<path d="M812.5 132 V318" stroke="#b9c2c9" stroke-width="1.4" stroke-dasharray="3 4"/>
+<path d="M702.6 272.2 L705.4 271.6 L708.1 270.7 L710.9 269.5 L713.7 268.1 L716.5 266.4 L719.3 264.4 L722.1 262.2 L724.8 259.8 L727.6 257.2 L730.4 254.4 L733.2 251.4 L736.0 248.2 L738.8 244.9 L741.5 241.4 L744.3 237.9 L747.1 234.2 L749.9 230.5 L752.7 226.8 L755.5 223.0 L758.2 219.3 L761.0 215.5 L763.8 211.8 L766.6 208.2 L769.4 204.7 L772.1 201.3 L774.9 198.0 L777.7 194.8 L780.5 191.8 L783.3 189.0 L786.1 186.4 L788.8 184.0 L791.6 181.9 L794.4 179.9 L797.2 178.3 L800.0 176.9 L802.8 175.7 L805.5 174.9 L808.3 174.3 L811.1 174.0 L813.9 174.0 L816.7 174.3 L819.5 174.9 L822.2 175.7 L825.0 176.9 L827.8 178.3 L830.6 179.9 L833.4 181.9 L836.2 184.0 L838.9 186.4 L841.7 189.0 L844.5 191.8 L847.3 194.8 L850.1 198.0 L852.9 201.3 L855.6 204.7 L858.4 208.2 L861.2 211.8 L864.0 215.5 L866.8 219.3 L869.5 223.0 L872.3 226.8 L875.1 230.5 L877.9 234.2 L880.7 237.9 L883.5 241.4 L886.2 244.9 L889.0 248.2 L891.8 251.4 L894.6 254.4 L897.4 257.2 L900.2 259.8 L902.9 262.2 L905.7 264.4 L908.5 266.4 L911.3 268.1 L914.1 269.5 L916.9 270.7 L919.6 271.6 L922.4 272.2" fill="none" stroke="#1f2933" stroke-width="2.6" stroke-dasharray="7 5"/>
+<circle cx="806.5" cy="225.0" r="5" fill="#1f2933"/>
+<circle cx="816.5" cy="204.6" r="5" fill="#1f2933"/>
+<circle cx="809.5" cy="187.6" r="5" fill="#1f2933"/>
+<circle cx="817.5" cy="170.6" r="5" fill="#1f2933"/>
+<circle cx="807.5" cy="157.0" r="5" fill="#1f2933"/>
+<circle cx="815.5" cy="145.1" r="5" fill="#1f2933"/>
+<circle cx="810.5" cy="129.8" r="5" fill="#1f2933"/>
+<circle cx="818.5" cy="214.8" r="5" fill="#1f2933"/>
+<circle cx="812.5" cy="165.5" r="5" fill="#1f2933"/>
+<path d="M829.5 129.8 H834.5 V225.0 H829.5" fill="none" stroke="#6b7680" stroke-width="2.2"/>
+<text class="lab" x="842.5" y="182.4" fill="#6b7680">NOISE</text>
+<text class="sm" x="812.5" y="338" text-anchor="middle">one station</text>
+<text class="body" x="20" y="380">Fitted to six surveys, the lines</text>
+<text class="body" x="20" y="402">agree, and all miss the hump.</text>
+<text class="body" x="350" y="380">Fitted to six surveys, the curves</text>
+<text class="body" x="350" y="402">follow the hump but disagree.</text>
+<text class="body" x="680" y="380">Counts at the same spot vary</text>
+<text class="body" x="680" y="402">around the expected count.</text>
+<path d="M230 432 h46" stroke="#1f2933" stroke-width="2.6" stroke-dasharray="7 5"/><text class="sm" x="284" y="437">expected count (the truth)</text>
+<path d="M520 432 h46" stroke="#6b7680" stroke-width="2"/><text class="sm" x="574" y="437">a model fitted to one survey</text>
+<rect class="box" x="0" y="466" width="960" height="226" rx="8"/><rect x="0" y="466" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="506">Error at a new station = bias² + variance + noise</text>
+<text class="body" x="22" y="568">Rigid model</text>
+<rect x="170" y="542" width="190" height="38" fill="#0072B2" opacity="0.85"/>
+<text class="lab" x="265.0" y="567" text-anchor="middle" fill="#ffffff">BIAS²</text>
+<rect x="362" y="542" width="40" height="38" fill="#D55E00" opacity="0.85"/>
+<rect x="404" y="542" width="330" height="38" fill="#6b7680" opacity="0.45"/>
+<text class="lab" x="569.0" y="567" text-anchor="middle" fill="#ffffff">NOISE</text>
+<text class="body" x="22" y="630">Flexible model</text>
+<rect x="170" y="604" width="40" height="38" fill="#0072B2" opacity="0.85"/>
+<rect x="212" y="604" width="260" height="38" fill="#D55E00" opacity="0.85"/>
+<text class="lab" x="342.0" y="629" text-anchor="middle" fill="#ffffff">VARIANCE</text>
+<rect x="474" y="604" width="330" height="38" fill="#6b7680" opacity="0.45"/>
+<text class="lab" x="639.0" y="629" text-anchor="middle" fill="#ffffff">NOISE</text>
+<text class="sm" x="170" y="672">More flexibility trades bias for variance. The noise stays the same, whatever the model.</text>
+<text class="note" x="470" y="728" text-anchor="middle">Bias and variance belong to the model; the noise belongs to the counts.</text>
+</svg>
