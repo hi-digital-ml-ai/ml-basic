@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 670" width="100%" role="img" aria-label="Three cards, each with six coefficient bars about a zero line. Least squares, no penalty: bars of different heights, fitted as closely to the stations as possible. Ridge regression, squared penalty: every bar is shorter than its least-squares outline, and none reaches zero. Lasso, absolute penalty: the three large bars are shorter, and the three small ones are exactly zero, drawn as open circles, so those inputs are dropped. Below, a card says the weight lambda sets how hard the penalty pulls, with an arrow from lambda equals zero, least squares and the most flexible, to a large lambda, where every coefficient is zero and the model predicts the average. Raising lambda adds bias and removes variance. A note says to standardise the inputs first, because the penalty is charged per unit of each input.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Two penalties on the coefficients</text>
+<rect class="box" x="0" y="48" width="300" height="330" rx="8"/><rect x="0" y="48" width="300" height="6" rx="3" fill="#6b7680"/>
+<text class="head" x="20" y="86">Least squares</text>
+<text class="lab" x="20" y="108" fill="#6b7680">NO PENALTY</text>
+<path class="ax" d="M26 222 H278"/>
+<text class="sm" x="22" y="227" text-anchor="end">0</text>
+<rect x="48" y="144.0" width="22" height="78.0" fill="#6b7680" opacity="0.85"/>
+<rect x="88" y="222.0" width="22" height="57.2" fill="#6b7680" opacity="0.85"/>
+<rect x="128" y="185.6" width="22" height="36.4" fill="#6b7680" opacity="0.85"/>
+<rect x="168" y="203.8" width="22" height="18.2" fill="#6b7680" opacity="0.85"/>
+<rect x="208" y="222.0" width="22" height="11.7" fill="#6b7680" opacity="0.85"/>
+<rect x="248" y="214.2" width="22" height="7.8" fill="#6b7680" opacity="0.85"/>
+<text class="sm" x="150" y="314" text-anchor="middle">six coefficients</text>
+<text class="body" x="20" y="344">Fits the stations as closely</text>
+<text class="body" x="20" y="366">as it can.</text>
+<rect class="box" x="330" y="48" width="300" height="330" rx="8"/><rect x="330" y="48" width="300" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="350" y="86">Ridge regression</text>
+<text class="lab" x="350" y="108" fill="#0072B2">SQUARED PENALTY</text>
+<path class="ax" d="M356 222 H608"/>
+<text class="sm" x="352" y="227" text-anchor="end">0</text>
+<rect x="378" y="173.6" width="22" height="48.4" fill="#0072B2" opacity="0.85"/>
+<rect x="378" y="144.0" width="22" height="78.0" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="418" y="222.0" width="22" height="34.3" fill="#0072B2" opacity="0.85"/>
+<rect x="418" y="222.0" width="22" height="57.2" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="458" y="200.9" width="22" height="21.1" fill="#0072B2" opacity="0.85"/>
+<rect x="458" y="185.6" width="22" height="36.4" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="498" y="212.0" width="22" height="10.0" fill="#0072B2" opacity="0.85"/>
+<rect x="498" y="203.8" width="22" height="18.2" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="538" y="222.0" width="22" height="6.4" fill="#0072B2" opacity="0.85"/>
+<rect x="538" y="222.0" width="22" height="11.7" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="578" y="217.9" width="22" height="4.1" fill="#0072B2" opacity="0.85"/>
+<rect x="578" y="214.2" width="22" height="7.8" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<text class="sm" x="480" y="314" text-anchor="middle">six coefficients</text>
+<text class="body" x="350" y="344">Shrinks every coefficient</text>
+<text class="body" x="350" y="366">and sets none to zero.</text>
+<rect class="box" x="660" y="48" width="300" height="330" rx="8"/><rect x="660" y="48" width="300" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="680" y="86">Lasso</text>
+<text class="lab" x="680" y="108" fill="#D55E00">ABSOLUTE PENALTY</text>
+<path class="ax" d="M686 222 H938"/>
+<text class="sm" x="682" y="227" text-anchor="end">0</text>
+<rect x="708" y="164.8" width="22" height="57.2" fill="#D55E00" opacity="0.85"/>
+<rect x="708" y="144.0" width="22" height="78.0" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="748" y="222.0" width="22" height="36.4" fill="#D55E00" opacity="0.85"/>
+<rect x="748" y="222.0" width="22" height="57.2" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<rect x="788" y="206.4" width="22" height="15.6" fill="#D55E00" opacity="0.85"/>
+<rect x="788" y="185.6" width="22" height="36.4" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<circle cx="839" cy="222" r="5" fill="#ffffff" stroke="#D55E00" stroke-width="2.2"/>
+<rect x="828" y="203.8" width="22" height="18.2" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<circle cx="879" cy="222" r="5" fill="#ffffff" stroke="#D55E00" stroke-width="2.2"/>
+<rect x="868" y="222.0" width="22" height="11.7" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<circle cx="919" cy="222" r="5" fill="#ffffff" stroke="#D55E00" stroke-width="2.2"/>
+<rect x="908" y="214.2" width="22" height="7.8" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/>
+<text class="sm" x="810" y="314" text-anchor="middle">six coefficients</text>
+<text class="body" x="680" y="344">Shrinks them, and sets the</text>
+<text class="body" x="680" y="366">small ones to exactly zero.</text>
+<rect x="300" y="399" width="22" height="18" fill="none" stroke="#6b7680" stroke-width="1.3" stroke-dasharray="3 3"/><text class="sm" x="332" y="413">the least-squares coefficient</text>
+<circle cx="566" cy="408" r="5" fill="#ffffff" stroke="#D55E00" stroke-width="2.2"/><text class="sm" x="580" y="413">exactly zero: the input is dropped</text>
+<rect class="box" x="0" y="440" width="960" height="150" rx="8"/><rect x="0" y="440" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="480">The weight λ sets how hard the penalty pulls</text>
+<path d="M60 524 H880" stroke="#1b6a87" stroke-width="3"/><path d="M880 515 L898 524 L880 533 Z" fill="#1b6a87"/>
+<circle cx="60" cy="524" r="6" fill="#1b6a87"/>
+<text class="body" x="60" y="556">λ = 0: least squares, the most flexible</text>
+<text class="body" x="900" y="556" text-anchor="end">large λ: every coefficient zero, predict the average</text>
+<text class="lab" x="470" y="510" text-anchor="middle" fill="#1b6a87">RAISE λ: MORE BIAS, LESS VARIANCE</text>
+<text class="note" x="470" y="626" text-anchor="middle">Standardise the inputs first: the penalty is charged per unit of each input.</text>
+</svg>
