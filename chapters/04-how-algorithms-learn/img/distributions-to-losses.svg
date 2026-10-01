@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="Three distributions, three losses. Normal, for a measurement that can take any value: its negative log-likelihood is squared error; a bell curve around the prediction, same spread everywhere, with part of it below zero, so it allows values below zero even for a count. Poisson, for a count: it gives Poisson deviance; bars for counts of 0, 1, 2 and up, whose spread grows with the expected count. Bernoulli, for presence or absence: it gives log loss; two bars, a probability of presence and the rest for absence. A note says: name the distribution, and its negative log-likelihood is the loss.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .eq   { font: italic 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Three distributions, three losses</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Normal</text>
+<text class="lab" x="22" y="114" fill="#0072B2">GIVES SQUARED ERROR</text>
+<text class="eq" x="22" y="146">a measurement, any value</text>
+<text class="body" x="22" y="348">Same spread everywhere, and</text>
+<text class="body" x="22" y="372">values below zero allowed.</text>
+<path class="ax" d="M34 168 V295 H266"/>
+<text class="sm" x="266" y="315" text-anchor="end">value</text>
+<text class="sm" x="26" y="231.5" text-anchor="middle" transform="rotate(-90 26 231.5)" dy="-4">probability</text>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="345" y="90">Poisson</text>
+<text class="lab" x="345" y="114" fill="#009E73">GIVES POISSON DEVIANCE</text>
+<text class="eq" x="345" y="146">a count: 0, 1, 2, …</text>
+<text class="body" x="345" y="348">Whole numbers from zero, with</text>
+<text class="body" x="345" y="372">spread growing with the mean.</text>
+<path class="ax" d="M357 168 V295 H589"/>
+<text class="sm" x="589" y="315" text-anchor="end">count</text>
+<text class="sm" x="349" y="231.5" text-anchor="middle" transform="rotate(-90 349 231.5)" dy="-4">probability</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="668" y="90">Bernoulli</text>
+<text class="lab" x="668" y="114" fill="#D55E00">GIVES LOG LOSS</text>
+<text class="eq" x="668" y="146">presence or absence</text>
+<text class="body" x="668" y="348">One probability of presence;</text>
+<text class="body" x="668" y="372">the rest goes to absence.</text>
+<path class="ax" d="M680 168 V295 H912"/>
+<text class="sm" x="672" y="231.5" text-anchor="middle" transform="rotate(-90 672 231.5)" dy="-4">probability</text>
+<path d="M40 295 L40 293.8 L42 293.6 L44 293.4 L46 293.1 L48 292.8 L50 292.5 L52 292.1 L54 291.7 L56 291.3 L58 290.7 L60 290.2 L62 289.5 L64 288.8 L66 288.0 L68 287.2 L70 286.2 L72 285.2 L74 284.1 L76 282.9 L78 281.5 L80 280.1 L82 278.6 L84 276.9 L86 275.1 L88 273.2 L90 271.2 L92 269.1 L94 266.8 L96 264.4 L98 261.9 L100 259.3 L100 295 Z" fill="#D55E00" fill-opacity="0.35"/>
+<path d="M40 293.8 L42 293.6 L44 293.4 L46 293.1 L48 292.8 L50 292.5 L52 292.1 L54 291.7 L56 291.3 L58 290.7 L60 290.2 L62 289.5 L64 288.8 L66 288.0 L68 287.2 L70 286.2 L72 285.2 L74 284.1 L76 282.9 L78 281.5 L80 280.1 L82 278.6 L84 276.9 L86 275.1 L88 273.2 L90 271.2 L92 269.1 L94 266.8 L96 264.4 L98 261.9 L100 259.3 L102 256.6 L104 253.7 L106 250.8 L108 247.7 L110 244.6 L112 241.5 L114 238.2 L116 234.9 L118 231.6 L120 228.3 L122 224.9 L124 221.6 L126 218.4 L128 215.1 L130 212.0 L132 208.9 L134 205.9 L136 203.1 L138 200.4 L140 197.9 L142 195.6 L144 193.5 L146 191.5 L148 189.8 L150 188.4 L152 187.2 L154 186.2 L156 185.5 L158 185.1 L160 185.0 L162 185.1 L164 185.5 L166 186.2 L168 187.2 L170 188.4 L172 189.8 L174 191.5 L176 193.5 L178 195.6 L180 197.9 L182 200.4 L184 203.1 L186 205.9 L188 208.9 L190 212.0 L192 215.1 L194 218.4 L196 221.6 L198 224.9 L200 228.3 L202 231.6 L204 234.9 L206 238.2 L208 241.5 L210 244.6 L212 247.7 L214 250.8 L216 253.7 L218 256.6 L220 259.3 L222 261.9 L224 264.4 L226 266.8 L228 269.1 L230 271.2 L232 273.2 L234 275.1 L236 276.9 L238 278.6 L240 280.1 L242 281.5 L244 282.9 L246 284.1 L248 285.2 L250 286.2 L252 287.2 L254 288.0 L256 288.8 L258 289.5 L260 290.2" fill="none" stroke="#0072B2" stroke-width="3"/>
+<path d="M100 172 V295" stroke="#1f2933" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text class="sm" x="100" y="315" text-anchor="middle">0</text>
+<path d="M160 180 V295" stroke="#0072B2" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text class="sm" x="168" y="182">prediction</text>
+<rect x="368" y="270.6" width="14" height="24.4" fill="#009E73"/>
+<text class="sm" x="375" y="315" text-anchor="middle">0</text>
+<rect x="388" y="221.7" width="14" height="73.3" fill="#009E73"/>
+<rect x="408" y="185.0" width="14" height="110.0" fill="#009E73"/>
+<rect x="428" y="185.0" width="14" height="110.0" fill="#009E73"/>
+<rect x="448" y="212.5" width="14" height="82.5" fill="#009E73"/>
+<rect x="468" y="245.5" width="14" height="49.5" fill="#009E73"/>
+<text class="sm" x="475" y="315" text-anchor="middle">5</text>
+<rect x="488" y="270.2" width="14" height="24.8" fill="#009E73"/>
+<rect x="508" y="284.4" width="14" height="10.6" fill="#009E73"/>
+<rect x="528" y="291.0" width="14" height="4.0" fill="#009E73"/>
+<rect x="548" y="293.7" width="14" height="1.3" fill="#009E73"/>
+<rect x="568" y="294.6" width="14" height="0.4" fill="#009E73"/>
+<rect x="720" y="250.0" width="52" height="45.0" fill="#E69F00"/>
+<text class="sm" x="746" y="315" text-anchor="middle">absent</text>
+<rect x="820" y="190.0" width="52" height="105.0" fill="#E69F00"/>
+<text class="sm" x="846" y="315" text-anchor="middle">present</text>
+<text class="note" x="470" y="452" text-anchor="middle">Name the distribution, and its negative log-likelihood is the loss.</text>
+</svg>

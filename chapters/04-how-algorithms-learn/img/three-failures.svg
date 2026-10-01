@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="Three ways a search goes wrong. Stopped early: the search ran out of steps; a U-shaped objective with a row of dots stepping down one side and stopping partway, short of the lowest point; the fit reports converged is false, and the coefficients look normal. No lowest point: the objective keeps falling; a curve that falls towards a level it never reaches, with an arrow pointing further out; the fit reports a huge coefficient with a huge standard error. A different answer each run: random choices inside the fit; a row of dots for runs without a seed, spread along a scale of test error; a seed repeats one answer but does not remove the spread. A note says: each one still prints coefficients, so check for it.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .eq   { font: italic 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Three ways a search goes wrong</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Stopped early</text>
+<text class="lab" x="22" y="114" fill="#0072B2">RAN OUT OF STEPS</text>
+<text class="eq" x="22" y="146">converged = FALSE</text>
+<text class="body" x="22" y="348">Short of the lowest point, with</text>
+<text class="body" x="22" y="372">coefficients that look normal.</text>
+<path class="ax" d="M34 168 V295 H266"/>
+<text class="sm" x="266" y="315" text-anchor="end">parameter</text>
+<text class="sm" x="26" y="231.5" text-anchor="middle" transform="rotate(-90 26 231.5)" dy="-4">objective</text>
+<path d="M60 182.9 L62 185.8 L64 188.6 L66 191.3 L68 194.0 L70 196.6 L72 199.2 L74 201.8 L76 204.2 L78 206.7 L80 209.1 L82 211.4 L84 213.7 L86 215.9 L88 218.0 L90 220.2 L92 222.2 L94 224.2 L96 226.2 L98 228.1 L100 230.0 L102 231.8 L104 233.5 L106 235.2 L108 236.9 L110 238.5 L112 240.0 L114 241.5 L116 242.9 L118 244.3 L120 245.7 L122 246.9 L124 248.2 L126 249.3 L128 250.5 L130 251.5 L132 252.6 L134 253.5 L136 254.4 L138 255.3 L140 256.1 L142 256.9 L144 257.6 L146 258.2 L148 258.8 L150 259.4 L152 259.9 L154 260.3 L156 260.7 L158 261.1 L160 261.3 L162 261.6 L164 261.8 L166 261.9 L168 262.0 L170 262.0 L172 262.0 L174 261.9 L176 261.8 L178 261.6 L180 261.3 L182 261.1 L184 260.7 L186 260.3 L188 259.9 L190 259.4 L192 258.8 L194 258.2 L196 257.6 L198 256.9 L200 256.1 L202 255.3 L204 254.4 L206 253.5 L208 252.6 L210 251.5 L212 250.5 L214 249.3 L216 248.2 L218 246.9 L220 245.7 L222 244.3 L224 242.9 L226 241.5 L228 240.0 L230 238.5 L232 236.9 L234 235.2 L236 233.5 L238 231.8 L240 230.0 L242 228.1 L244 226.2 L246 224.2 L248 222.2 L250 220.2 L252 218.0 L254 215.9 L256 213.7 L258 211.4 L260 209.1" fill="none" stroke="#0072B2" stroke-width="3"/>
+<circle cx="62" cy="185.8" r="6" fill="#0072B2"/>
+<circle cx="80" cy="209.1" r="6" fill="#0072B2"/>
+<circle cx="94" cy="224.2" r="6" fill="#0072B2"/>
+<circle cx="105" cy="234.4" r="6" fill="#0072B2"/>
+<text class="sm" x="114" y="224.4">stopped</text>
+<path d="M164 174 l12 12 M176 174 l-12 12" stroke="#1f2933" stroke-width="2.4" transform="translate(0 82.0)"/>
+<text class="sm" x="170" y="284.0" text-anchor="middle">lowest point</text>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="345" y="90">No lowest point</text>
+<text class="lab" x="345" y="114" fill="#009E73">THE OBJECTIVE KEEPS FALLING</text>
+<text class="eq" x="345" y="146">huge coefficient, huge error</text>
+<text class="body" x="345" y="348">The search walks off until a</text>
+<text class="body" x="345" y="372">limit stops it.</text>
+<path class="ax" d="M357 168 V295 H589"/>
+<text class="sm" x="589" y="315" text-anchor="end">coefficient</text>
+<text class="sm" x="349" y="231.5" text-anchor="middle" transform="rotate(-90 349 231.5)" dy="-4">objective</text>
+<path d="M373 185.0 L375 188.7 L377 192.2 L379 195.6 L381 198.8 L383 201.9 L385 204.9 L387 207.7 L389 210.4 L391 213.0 L393 215.5 L395 217.9 L397 220.1 L399 222.3 L401 224.4 L403 226.4 L405 228.3 L407 230.1 L409 231.8 L411 233.5 L413 235.1 L415 236.6 L417 238.0 L419 239.4 L421 240.7 L423 242.0 L425 243.2 L427 244.4 L429 245.5 L431 246.6 L433 247.6 L435 248.6 L437 249.5 L439 250.4 L441 251.2 L443 252.1 L445 252.8 L447 253.6 L449 254.3 L451 255.0 L453 255.6 L455 256.3 L457 256.9 L459 257.4 L461 258.0 L463 258.5 L465 259.0 L467 259.5 L469 259.9 L471 260.4 L473 260.8 L475 261.2 L477 261.6 L479 261.9 L481 262.3 L483 262.6 L485 262.9 L487 263.3 L489 263.5 L491 263.8 L493 264.1 L495 264.4 L497 264.6 L499 264.8 L501 265.1 L503 265.3 L505 265.5 L507 265.7 L509 265.9 L511 266.0 L513 266.2 L515 266.4 L517 266.5 L519 266.7 L521 266.8 L523 267.0 L525 267.1 L527 267.2 L529 267.3 L531 267.5 L533 267.6 L535 267.7 L537 267.8 L539 267.9 L541 268.0 L543 268.1 L545 268.1 L547 268.2 L549 268.3 L551 268.4 L553 268.4" fill="none" stroke="#009E73" stroke-width="3"/>
+<circle cx="383" cy="201.9" r="6" fill="#009E73"/>
+<circle cx="423" cy="242.0" r="6" fill="#009E73"/>
+<circle cx="473" cy="260.8" r="6" fill="#009E73"/>
+<circle cx="523" cy="267.0" r="6" fill="#009E73"/>
+<path d="M559 268.4 H581" stroke="#009E73" stroke-width="3"/><path d="M585 268.4 l-10 -6 v12 z" fill="#009E73"/>
+<text class="sm" x="585" y="232.4" text-anchor="end">keeps going</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="668" y="90">Different each run</text>
+<text class="lab" x="668" y="114" fill="#D55E00">RANDOM CHOICES IN THE FIT</text>
+<text class="eq" x="668" y="146">no seed, no repeat</text>
+<text class="body" x="668" y="348">A seed repeats one answer; it</text>
+<text class="body" x="668" y="372">does not remove the spread.</text>
+<path class="ax" d="M680 168 V295 H912"/>
+<text class="sm" x="912" y="315" text-anchor="end">test error</text>
+<path d="M706 232 H886" stroke="#c9d1d7" stroke-width="2"/>
+<circle cx="738" cy="222" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="764" cy="242" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="777" cy="220" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="796" cy="240" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="809" cy="226" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="830" cy="244" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<circle cx="851" cy="224" r="7" fill="#E69F00" fill-opacity="0.75"/>
+<text class="sm" x="796" y="200" text-anchor="middle">runs with no seed</text>
+<path d="M738 262 H851 M738 256 v12 M851 256 v12" stroke="#D55E00" stroke-width="2"/>
+<text class="sm" x="794" y="284" text-anchor="middle" fill="#D55E00">spread</text>
+<text class="note" x="470" y="452" text-anchor="middle">Each one still prints coefficients and predictions, so check for it.</text>
+</svg>

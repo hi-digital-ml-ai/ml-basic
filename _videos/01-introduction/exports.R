@@ -16,9 +16,19 @@ exports <- list(
   },
 
   # The training stations and the two models' predictions across temperature, as
-  # @fig-shapes draws them.
+  # @fig-shapes draws them; the RMSE built by hand from the tree's misses; and the
+  # test RMSE of each model beside predicting the average.
   "what-is-machine-learning.qmd" = function(env, dir) {
     write(with(env, dplyr::select(train, temperature_c, abundance)), dir, "train-points")
     write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "shapes")
+    write(with(env, head(misses, 5)), dir, "misses")
+    write(with(env, tibble::tibble(stations = nrow(misses), mean_squared = mean(misses$squared),
+                                   rmse = sqrt(mean(misses$squared)))), dir, "rmse-steps")
+    write(with(env, tibble::tibble(
+      model = c("predicting the average", "straight line", "decision tree"),
+      rmse = c(yardstick::rmse_vec(test$abundance, rep(baseline, nrow(test))),
+               yardstick::rmse_vec(test$abundance, predict(linear, test)$.pred),
+               yardstick::rmse_vec(test$abundance, predict(tree, test)$.pred))
+    )), dir, "test-rmse")
   }
 )

@@ -93,17 +93,17 @@ website:
         href: chapters/04-how-algorithms-learn/index.qmd
         contents:
           - href: chapters/04-how-algorithms-learn/loss-functions.qmd
-            text: "Loss and objective functions"
+            text: "Loss functions"
           - href: chapters/04-how-algorithms-learn/parameter-estimation.qmd
-            text: "Parameter estimation"
+            text: "Finding the parameters"
           - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
             text: "Gradient descent"
           - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
             text: "Maximum likelihood"
           - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
-            text: "MAP estimation and priors"
+            text: "Priors and ridge regression"
           - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
-            text: "Reading a fit"
+            text: "Checking a fit"
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:

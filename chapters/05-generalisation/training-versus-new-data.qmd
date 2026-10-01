@@ -408,8 +408,9 @@ out-of-bag, and it does fine.
 **One split is one number.** Everything above rests on a single random 75/25 division of 720
 stations. Re-split and the test values move, by rather more than the 0.13 separating the top
 three. That is what [cross-validation](../07-validation/index.qmd) is for, and until you get
-there, treat small differences in this table as noise. Section 4 measured the relevant scale:
-an [unseeded forest alone varies by about 0.04](../04-how-algorithms-learn/reading-a-fit.qmd).
+there, treat small differences in this table as noise.
+[Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) shows that even refitting
+the same forest without a seed moves its test RMSE.
 
 **A random split flatters everything here.** These 720 stations come from 160 monitoring sites
 visited repeatedly, so almost every test station has a sibling in the training set. The

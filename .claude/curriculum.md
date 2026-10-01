@@ -83,15 +83,22 @@ commas.
 `reading-a-fit.qmd`, framed as a diagnostic page rather than a conceptual one, because
 "interpreting optimisation" is only useful as a set of things to check.
 
+**Revised 2026-09-30** (`feature/improve-how-algorithms-learn`): the same six pages in the
+same order, retitled *Loss functions*, *Finding the parameters*, *Gradient descent*,
+*Maximum likelihood*, *Priors and ridge regression* and *Checking a fit*. The file names
+are unchanged, since sections 5, 6 and 9 link to them.
+
 Three deliberate spillovers outside the section's own subject:
 
-- Gradient descent carries the *real* justification for §2's scaling advice (a factor of
-  about ninety in iterations on this data). §2 could only assert it.
-- MAP derives ridge regression, which §5 will then present as a technique. The two pages
-  must stay consistent: §5 should refer back rather than re-deriving.
-- `reading-a-fit.qmd` uses §2's leaked `catch_weight_kg` column to produce separation, and
-  measures random-forest run-to-run noise (0.037 RMSE) as the resolution limit for §3's
-  comparison of its seven models, where the two count models finish closer than that.
+- *Gradient descent* carries the real justification for §2's scaling advice: the same
+  model takes many times more steps in raw units. §2 could only assert it.
+- *Priors and ridge regression* derives ridge from a Normal prior, which §5 then presents
+  as a technique. The two pages must stay consistent: §5 should refer back rather than
+  re-deriving.
+- *Checking a fit* uses §2's leaked `catch_weight_kg` column to produce separation, and
+  measures the spread of ten unseeded forests as the resolution limit for comparing
+  models, which §3's two count models fall inside. §5's *Training versus new data* points
+  to it without quoting a number.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -112,7 +119,7 @@ that framing if these pages are edited; it is what makes §7 feel necessary rath
 pedantic.
 
 `regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
-[MAP page](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
+[Priors and ridge regression](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
 and §5 refers back. The same applies in reverse if §4 is edited.
 
 ### New dataset: `data/coastal-survey-truth.csv`

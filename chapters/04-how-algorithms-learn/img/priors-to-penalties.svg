@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="Three priors, three penalties. A flat prior, which finds every coefficient equally plausible: it gives no penalty, which is maximum likelihood; a level line across the whole axis. A Normal prior centred on zero: it gives the squared penalty of ridge regression; a bell curve at zero, so most effects are small and large ones rare, and every coefficient is shrunk but none reaches zero. A Laplace prior: it gives the absolute penalty of lasso; a sharp peak at zero, which can set some coefficients exactly to zero. A note says: choose a prior on the coefficients, and its negative log is the penalty.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .eq   { font: italic 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Three priors, three penalties</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Flat prior</text>
+<text class="lab" x="22" y="114" fill="#0072B2">GIVES NO PENALTY</text>
+<text class="eq" x="22" y="146">maximum likelihood</text>
+<text class="body" x="22" y="348">A coefficient of 900 is as</text>
+<text class="body" x="22" y="372">plausible as one of 0.9.</text>
+<path class="ax" d="M34 168 V295 H266"/>
+<text class="sm" x="266" y="315" text-anchor="end">coefficient</text>
+<text class="sm" x="150" y="315" text-anchor="middle">0</text>
+<path d="M150 172 V295" stroke="#1f2933" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text class="sm" x="26" y="231.5" text-anchor="middle" transform="rotate(-90 26 231.5)" dy="-4">plausibility</text>
+<path d="M40 250.0 L42 250.0 L44 250.0 L46 250.0 L48 250.0 L50 250.0 L52 250.0 L54 250.0 L56 250.0 L58 250.0 L60 250.0 L62 250.0 L64 250.0 L66 250.0 L68 250.0 L70 250.0 L72 250.0 L74 250.0 L76 250.0 L78 250.0 L80 250.0 L82 250.0 L84 250.0 L86 250.0 L88 250.0 L90 250.0 L92 250.0 L94 250.0 L96 250.0 L98 250.0 L100 250.0 L102 250.0 L104 250.0 L106 250.0 L108 250.0 L110 250.0 L112 250.0 L114 250.0 L116 250.0 L118 250.0 L120 250.0 L122 250.0 L124 250.0 L126 250.0 L128 250.0 L130 250.0 L132 250.0 L134 250.0 L136 250.0 L138 250.0 L140 250.0 L142 250.0 L144 250.0 L146 250.0 L148 250.0 L150 250.0 L152 250.0 L154 250.0 L156 250.0 L158 250.0 L160 250.0 L162 250.0 L164 250.0 L166 250.0 L168 250.0 L170 250.0 L172 250.0 L174 250.0 L176 250.0 L178 250.0 L180 250.0 L182 250.0 L184 250.0 L186 250.0 L188 250.0 L190 250.0 L192 250.0 L194 250.0 L196 250.0 L198 250.0 L200 250.0 L202 250.0 L204 250.0 L206 250.0 L208 250.0 L210 250.0 L212 250.0 L214 250.0 L216 250.0 L218 250.0 L220 250.0 L222 250.0 L224 250.0 L226 250.0 L228 250.0 L230 250.0 L232 250.0 L234 250.0 L236 250.0 L238 250.0 L240 250.0 L242 250.0 L244 250.0 L246 250.0 L248 250.0 L250 250.0 L252 250.0 L254 250.0 L256 250.0 L258 250.0 L260 250.0" fill="none" stroke="#0072B2" stroke-width="3"/>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="345" y="90">Normal prior</text>
+<text class="lab" x="345" y="114" fill="#009E73">GIVES THE SQUARED PENALTY</text>
+<text class="eq" x="345" y="146">ridge regression</text>
+<text class="body" x="345" y="348">Most effects small; shrinks every</text>
+<text class="body" x="345" y="372">coefficient but zeroes none.</text>
+<path class="ax" d="M357 168 V295 H589"/>
+<text class="sm" x="589" y="315" text-anchor="end">coefficient</text>
+<text class="sm" x="473" y="315" text-anchor="middle">0</text>
+<path d="M473 172 V295" stroke="#1f2933" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text class="sm" x="349" y="231.5" text-anchor="middle" transform="rotate(-90 349 231.5)" dy="-4">plausibility</text>
+<path d="M363 294.7 L365 294.6 L367 294.5 L369 294.4 L371 294.3 L373 294.2 L375 294.0 L377 293.8 L379 293.5 L381 293.2 L383 292.9 L385 292.5 L387 292.0 L389 291.5 L391 290.9 L393 290.2 L395 289.4 L397 288.4 L399 287.4 L401 286.2 L403 284.9 L405 283.5 L407 281.9 L409 280.1 L411 278.2 L413 276.0 L415 273.7 L417 271.2 L419 268.5 L421 265.6 L423 262.5 L425 259.3 L427 255.9 L429 252.3 L431 248.5 L433 244.6 L435 240.7 L437 236.6 L439 232.4 L441 228.3 L443 224.1 L445 220.0 L447 215.9 L449 212.0 L451 208.2 L453 204.5 L455 201.1 L457 197.9 L459 195.0 L461 192.5 L463 190.2 L465 188.4 L467 186.9 L469 185.9 L471 185.2 L473 185.0 L475 185.2 L477 185.9 L479 186.9 L481 188.4 L483 190.2 L485 192.5 L487 195.0 L489 197.9 L491 201.1 L493 204.5 L495 208.2 L497 212.0 L499 215.9 L501 220.0 L503 224.1 L505 228.3 L507 232.4 L509 236.6 L511 240.7 L513 244.6 L515 248.5 L517 252.3 L519 255.9 L521 259.3 L523 262.5 L525 265.6 L527 268.5 L529 271.2 L531 273.7 L533 276.0 L535 278.2 L537 280.1 L539 281.9 L541 283.5 L543 284.9 L545 286.2 L547 287.4 L549 288.4 L551 289.4 L553 290.2 L555 290.9 L557 291.5 L559 292.0 L561 292.5 L563 292.9 L565 293.2 L567 293.5 L569 293.8 L571 294.0 L573 294.2 L575 294.3 L577 294.4 L579 294.5 L581 294.6 L583 294.7" fill="none" stroke="#009E73" stroke-width="3"/>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="668" y="90">Laplace prior</text>
+<text class="lab" x="668" y="114" fill="#D55E00">GIVES THE ABSOLUTE PENALTY</text>
+<text class="eq" x="668" y="146">lasso</text>
+<text class="body" x="668" y="348">A sharp peak at zero can set</text>
+<text class="body" x="668" y="372">some coefficients to zero.</text>
+<path class="ax" d="M680 168 V295 H912"/>
+<text class="sm" x="912" y="315" text-anchor="end">coefficient</text>
+<text class="sm" x="796" y="315" text-anchor="middle">0</text>
+<path d="M796 172 V295" stroke="#1f2933" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text class="sm" x="672" y="231.5" text-anchor="middle" transform="rotate(-90 672 231.5)" dy="-4">plausibility</text>
+<path d="M686 294.2 L688 294.2 L690 294.1 L692 294.0 L694 293.9 L696 293.8 L698 293.7 L700 293.5 L702 293.4 L704 293.2 L706 293.1 L708 292.9 L710 292.7 L712 292.5 L714 292.2 L716 292.0 L718 291.7 L720 291.4 L722 291.0 L724 290.6 L726 290.2 L728 289.8 L730 289.3 L732 288.7 L734 288.1 L736 287.5 L738 286.8 L740 286.0 L742 285.1 L744 284.2 L746 283.2 L748 282.0 L750 280.8 L752 279.4 L754 278.0 L756 276.3 L758 274.6 L760 272.6 L762 270.5 L764 268.1 L766 265.6 L768 262.8 L770 259.7 L772 256.4 L774 252.7 L776 248.7 L778 244.3 L780 239.4 L782 234.1 L784 228.3 L786 222.0 L788 215.1 L790 207.5 L792 199.1 L794 190.0 L796 180.0 L798 190.0 L800 199.1 L802 207.5 L804 215.1 L806 222.0 L808 228.3 L810 234.1 L812 239.4 L814 244.3 L816 248.7 L818 252.7 L820 256.4 L822 259.7 L824 262.8 L826 265.6 L828 268.1 L830 270.5 L832 272.6 L834 274.6 L836 276.3 L838 278.0 L840 279.4 L842 280.8 L844 282.0 L846 283.2 L848 284.2 L850 285.1 L852 286.0 L854 286.8 L856 287.5 L858 288.1 L860 288.7 L862 289.3 L864 289.8 L866 290.2 L868 290.6 L870 291.0 L872 291.4 L874 291.7 L876 292.0 L878 292.2 L880 292.5 L882 292.7 L884 292.9 L886 293.1 L888 293.2 L890 293.4 L892 293.5 L894 293.7 L896 293.8 L898 293.9 L900 294.0 L902 294.1 L904 294.2 L906 294.2" fill="none" stroke="#E69F00" stroke-width="3"/>
+<text class="note" x="470" y="452" text-anchor="middle">Choose a prior on the coefficients, and its negative log is the penalty.</text>
+</svg>

@@ -10,7 +10,7 @@ scipy>=1.11
 tabulate>=0.9
 
 # Only where scikit-learn has no equivalent: GLM inference (standard errors,
-# p-values, deviance) and the negative binomial, in sections 3 and 6.
+# p-values, deviance) and the negative binomial, in sections 3, 4 and 6.
 statsmodels>=0.14
 
 # Section 8 only: UMAP, which began life as a Python library and has no

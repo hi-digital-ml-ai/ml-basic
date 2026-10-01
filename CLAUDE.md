@@ -53,7 +53,7 @@ tools/extract-code.py --out /tmp/check  # the downloadable scripts, without buil
   results mean" repeated on every page, and not phrased as questions.
 - **tidymodels is the default toolkit** (`recipes` → `parsnip` → `workflows` →
   `rsample`/`tune` → `yardstick`). Show base-R or other packages only to contrast.
-- **Modelling steps carry a Python tab.** In sections 2, 3, 5, 7, 8 and 10 each
+- **Modelling steps carry a Python tab.** In sections 2, 3, 4, 5, 7, 8 and 10 each
   modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. Both
   tabs run (the Python through `reticulate`) and show their own output; pages not
   yet revised only display their Python. `python/check-snippets.py` runs every

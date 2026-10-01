@@ -1,6 +1,6 @@
 ---
-title: "MAP estimation and priors"
-description: "Adding what you knew before the survey to what the survey says, and discovering that this is exactly what regularisation does."
+title: "Priors and ridge regression"
+description: "Add what you knew before the survey to what the survey says, and the result is ridge regression: a Normal prior on the coefficients is the same thing as a penalty on their size."
 order: 5
 categories: [optimisation, generalisation]
 ---
@@ -13,128 +13,103 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(2026)
+
+# A number for the prose, with a true minus sign.
+num <- function(x, digits) sub("^-", "−", format(round(x, digits), nsmall = digits))
 ```
 
-## The blind spot in maximum likelihood
+## Maximum likelihood trusts every station
 
-[Maximum likelihood](maximum-likelihood.qmd) has one blind spot, and it is serious. It
-considers only the data in front of it. If forty stations happen to suggest that abundance
-rises by 8.6 individuals per standard deviation of temperature and falls by 6.2 per squared
-standard deviation, maximum likelihood will report those numbers, because they are the ones
-that make those forty stations most probable.
+[Maximum likelihood](maximum-likelihood.qmd) chooses the parameters that make the data
+most probable, and it looks at nothing but the data. With many stations that is a
+strength. With a small survey and many inputs, it reports whatever those few stations
+happen to show, including effects far larger than any the species could have.
 
-You know that is wrong. Not from the data, but from everything else you know about the species.
-Effects that large do not occur; a pair of coefficients that huge and opposite is two
-collinear terms fighting, not biology.
-
-**Maximum a posteriori** estimation is the machinery for saying so. And the reason it appears
-in a machine-learning course, rather than only a Bayesian statistics course, is that it turns
-out to be the same calculation as ridge regression, a technique
-[section 5](../05-generalisation/regularisation.qmd) will present with no mention of priors at
-all.
+You usually know better. From earlier surveys and the literature, you know roughly how
+large an effect can be. This page shows how to add that knowledge to the fit, and that
+the result is **ridge regression**, a method that
+[section 5](../05-generalisation/regularisation.qmd) uses to stop models overfitting.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-### Adding a second term
+## A prior says how large effects usually are
 
-Maximum likelihood maximises $\log p(\text{data} \mid \theta)$. MAP maximises that plus one
-more term: how plausible the parameters themselves are, before any data arrived.
+A **prior** is what you believe about a parameter before seeing the data, written as a
+distribution. "The effect of one standard deviation of temperature is usually within
+about ±2 animals, and very rarely ±9" is a prior on the temperature coefficient. It is
+a statement about scale, not a claim to know the answer.
 
-$$\hat\theta_{\text{MAP}} = \arg\max_\theta \; \underbrace{\log p(y \mid \theta)}_{\text{what the data say}} \; + \; \underbrace{\log p(\theta)}_{\text{what you knew}}$$
+**Maximum a posteriori** (MAP) estimation adds the prior to the likelihood. It chooses
+the parameters that make the data probable *and* are plausible under the prior. The
+result is a compromise between the two, and the one that is more certain wins more of
+it. Many stations outweigh a loose prior; a few stations get pulled towards it. The
+distribution that combines them is the **posterior**, and the MAP estimate is its
+highest point.
 
-$p(\theta)$ is the **prior**. It is not a statement of certainty; it is a statement of scale.
-"Coefficients of this model are typically within about ±1, occasionally ±2, essentially never
-±9" is a prior, and it is a claim you can defend from the literature.
+## A Normal prior is the ridge penalty
 
-The result is a compromise, and where the compromise lands is governed by which term is more
-confident. Strong data overwhelm a vague prior; weak data get pulled towards it.
+[Maximum likelihood](maximum-likelihood.qmd) turned the likelihood into a loss by taking
+its negative log. Do the same with a prior, and it becomes a **penalty**: a second term
+added to the loss that grows as the coefficients move away from zero.
 
-```{r}
-#| label: fig-prior-likelihood
-#| fig-cap: "Prior, likelihood and posterior for the temperature coefficient, from the forty-station fit below. The likelihood (grey) peaks at 8.59 but is very wide: the standard error is 5.95, so the data barely distinguish 8.59 from zero. As the prior tightens from left to right, the posterior peak is dragged towards zero: 3.56, then 0.31, then 0.06."
-#| fig-alt: "Three side-by-side panels, each showing three curves against a coefficient axis from minus 5 to 15. In every panel a broad flat grey curve peaks at 8.59, representing the likelihood. A prior curve centred on zero narrows from panel to panel, and a posterior curve sits between the two. In the left panel, with the widest prior, the posterior peaks near 3.6. In the middle panel it peaks just above zero. In the right panel, with the narrowest prior, the posterior is almost indistinguishable from the prior and peaks at 0.06."
-#| fig-width: 8
-#| fig-height: 3.4
-b_hat <- 8.590   # temperature coefficient from the 40-station fit
-se    <- 5.950   # its standard error
+A Normal prior centred on zero gives a penalty equal to the sum of the squared
+coefficients, times a weight called λ (lambda). Least squares plus that penalty is ridge
+regression. λ is the noise variance divided by the prior's variance: noisy data or a
+tight prior make λ large and pull the coefficients harder towards zero.
 
-curves <- map_dfr(c(5.0, 1.146, 0.5), \(tau) {
-  b <- seq(-5, 15, length.out = 500)
-  post_mode <- b_hat * tau^2 / (tau^2 + se^2)
-  post_sd   <- sqrt(1 / (1 / se^2 + 1 / tau^2))
-  tibble(
-    b,
-    Likelihood = dnorm(b, b_hat, se),
-    Prior      = dnorm(b, 0, tau),
-    Posterior  = dnorm(b, post_mode, post_sd),
-    panel = factor(sprintf("prior sd = %.2f  →  peak at %.2f", tau, post_mode),
-                   levels = sprintf("prior sd = %.2f  →  peak at %.2f",
-                                    c(5.0, 1.146, 0.5),
-                                    b_hat * c(5.0, 1.146, 0.5)^2 /
-                                      (c(5.0, 1.146, 0.5)^2 + se^2)))
-  )
-}) |>
-  pivot_longer(c(Likelihood, Prior, Posterior), names_to = "curve", values_to = "density")
+Other priors give other penalties. A Laplace prior, with a sharp peak at zero, gives the
+**lasso**, which section 5 uses to drop inputs altogether. A flat prior, which treats
+every value as equally plausible, gives no penalty at all, and that is maximum
+likelihood. Maximum likelihood is not free of assumptions: it assumes a coefficient of
+900 is as plausible as one of 0.9.
 
-ggplot(curves, aes(b, density, colour = curve)) +
-  geom_line(linewidth = 0.9) +
-  facet_wrap(~panel, scales = "free_y") +
-  scale_colour_manual(values = c(
-    Likelihood = ml_palette[["grey"]],
-    Prior      = ml_palette[["orange"]],
-    Posterior  = ml_palette[["blue"]]
-  )) +
-  labs(x = "Temperature coefficient", y = NULL, colour = NULL,
-       title = "Prior × likelihood = posterior") +
-  theme(axis.text.y = element_blank())
-```
-
-The middle panel is the honest description of what a modest prior does to a badly determined
-coefficient: it removes almost all of it. The data never really supported 8.59, as the standard
-error says, and the prior is simply refusing to pretend otherwise.
-
-::: {.callout-note}
-This figure treats the temperature coefficient one at a time, holding the others fixed. The
-joint fit below gives 0.329 where the single-coefficient calculation gives 0.307, because the
-other eleven coefficients are being shrunk at the same time. The picture is the right picture;
-the third decimal is illustrative.
+::: {.diagram}
+![A flat prior gives no penalty, which is maximum likelihood. A Normal prior centred on zero gives the squared penalty of ridge regression, which shrinks every coefficient but sets none to zero. A Laplace prior gives the absolute penalty of the lasso, which can set some coefficients to zero.](img/priors-to-penalties.svg){fig-alt="Three cards. Flat prior, gives no penalty, maximum likelihood: a level line across the coefficient axis; a coefficient of 900 is as plausible as one of 0.9. Normal prior, gives the squared penalty, ridge regression: a bell curve centred on zero; most effects small, shrinks every coefficient but zeroes none. Laplace prior, gives the absolute penalty, lasso: a sharp peak at zero; can set some coefficients to zero. A note says: choose a prior on the coefficients, and its negative log is the penalty."}
 :::
 
-### The step that matters for machine learning
+The prior says how large a coefficient is per unit of its input, so the inputs must be on
+a common scale first. A prior of ±2 animals per metre of depth and ±2 per millimetre
+would be two very different beliefs. Ridge regression standardises every input to a
+standard deviation of 1 before fitting, for the same reason
+[Gradient descent](gradient-descent.qmd) did.
 
-Choose a Normal prior centred at zero, with standard deviation $\tau$, and write out what MAP
-is maximising. The log of a Normal density is a negative squared term, so
+::: {.callout-note collapse="true"}
+## The maths, if you want it
 
-$$\log p(y \mid \beta) + \log p(\beta) \;=\; -\frac{1}{2\sigma^2}\sum_i (y_i - x_i^\top\beta)^2 \;-\; \frac{1}{2\tau^2}\sum_j \beta_j^2 + \text{const}$$
+MAP maximises the log-likelihood plus the log-prior:
 
-Multiply through by $-2\sigma^2$ and maximising becomes minimising
+$$\hat\beta_{\text{MAP}} = \arg\max_\beta \; \log p(y \mid \beta) + \log p(\beta)$$
+
+With a Normal response of standard deviation $\sigma$ and a Normal prior
+$\beta_j \sim \text{Normal}(0, \tau)$ on each coefficient, this is
+
+$$-\frac{1}{2\sigma^2}\sum_i (y_i - x_i^\top\beta)^2 \;-\; \frac{1}{2\tau^2}\sum_j \beta_j^2 + \text{const}$$
+
+Multiply by $-2\sigma^2$, and maximising it becomes minimising
 
 $$\sum_i (y_i - x_i^\top\beta)^2 + \lambda \sum_j \beta_j^2, \qquad \lambda = \frac{\sigma^2}{\tau^2}$$
 
-That is **ridge regression**, exactly. The penalty is not a computational trick invented to
-stabilise a matrix inverse; it is a Normal prior on the coefficients, and $\lambda$ is the
-ratio of how noisy you think the data are to how large you think the effects are.
-
-Swap the prior and you get a different penalty:
-
-| Prior on each coefficient | Penalty it becomes | Method |
-| --- | --- | --- |
-| Normal(0, τ) | $\lambda\sum \beta_j^2$ | Ridge |
-| Laplace(0, b) | $\lambda\sum \lvert\beta_j\rvert$ | Lasso |
-| Mixture of the two | Both terms | Elastic net |
-| Flat (improper) | None | Maximum likelihood |
-
-The last row is the point. Maximum likelihood is not the neutral, assumption-free default it
-feels like. It is MAP with a prior that considers a coefficient of 900 exactly as plausible as
-a coefficient of 0.9.
+which is the ridge objective. A Laplace prior puts $\lvert\beta_j\rvert$ in place of
+$\beta_j^2$, which is the lasso.
+:::
 
 ## Worked example
 
-We will take forty stations, a realistic size for a pilot survey, twelve predictors, and
-compare the unpenalised fit with the MAP fit.
+### Forty stations and twelve inputs
+
+A pilot survey might have forty stations. We draw forty at random and fit abundance on
+twelve inputs: depth and temperature with their squares, chlorophyll, salinity, and
+substrate and season as dummy columns. The other stations are held back as a test set.
+Every input is standardised on the forty training stations, so each coefficient is the
+change in abundance for one standard deviation of its input.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
@@ -145,25 +120,155 @@ d <- survey |>
          salinity_psu, substrate, season) |>
   drop_na()
 
-X <- scale(model.matrix(
+X_all <- model.matrix(
   ~ depth_m + I(depth_m^2) + temperature_c + I(temperature_c^2) +
     chlorophyll_mg_m3 + salinity_psu + substrate + season,
   data = d
-)[, -1])
-y <- d$abundance - mean(d$abundance)
+)[, -1]
 
 train_rows <- sample(nrow(d), 40)
+
+# Standardise with the training stations only, and centre abundance on
+# their mean, so the model needs no intercept.
+centre <- colMeans(X_all[train_rows, ])
+spread <- apply(X_all[train_rows, ], 2, sd)
+X <- scale(X_all, centre, spread)
+y <- d$abundance - mean(d$abundance[train_rows])
+
 X_train <- X[train_rows, ];  y_train <- y[train_rows]
 X_test  <- X[-train_rows, ]; y_test  <- y[-train_rows]
 
-c(stations_training = nrow(X_train), predictors = ncol(X_train),
-  stations_testing = nrow(X_test))
+mle_fit <- lm(y_train ~ X_train - 1)
+mle <- summary(mle_fit)$coefficients
+rownames(mle) <- colnames(X)
+round(mle[, 1:2], 2)
 ```
+
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy.optimize import minimize
+from scipy.stats import norm
+from sklearn.linear_model import Ridge
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+d = survey[["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+            "salinity_psu", "substrate", "season"]].dropna().reset_index(drop=True)
+
+X_all = pd.concat([
+    d[["depth_m"]], (d["depth_m"] ** 2).rename("depth_m^2"),
+    d[["temperature_c"]], (d["temperature_c"] ** 2).rename("temperature_c^2"),
+    d[["chlorophyll_mg_m3", "salinity_psu"]],
+    pd.get_dummies(d[["substrate", "season"]], drop_first=True,
+                   prefix_sep=": ", dtype=float),
+], axis=1)
+
+# A different random 40 from R's, so the numbers differ from the page's.
+rng = np.random.default_rng(2026)
+is_train = np.isin(np.arange(len(d)), rng.choice(len(d), size=40, replace=False))
+
+# Standardise with the training stations only, and centre abundance on
+# their mean, so the model needs no intercept.
+centre = X_all[is_train].mean()
+spread = X_all[is_train].std()
+X = (X_all - centre) / spread
+y = d["abundance"] - d["abundance"][is_train].mean()
+
+X_train, y_train = X[is_train], y[is_train]
+X_test, y_test = X[~is_train], y[~is_train]
+
+mle_fit = sm.OLS(y_train, X_train).fit()
+pd.DataFrame({"estimate": mle_fit.params, "std. error": mle_fit.bse}).round(2)
+```
+
+:::
+
+```{r}
+#| label: mle-numbers
+#| include: false
+b_temp  <- mle["temperature_c", 1]
+se_temp <- mle["temperature_c", 2]
+b_temp2 <- mle["I(temperature_c^2)", 1]
+```
+
+Temperature gets `r num(b_temp, 2)` animals per standard deviation and its square
+`r num(b_temp2, 2)`. Those are two closely related columns taking large opposite values
+that partly cancel, and the standard error of the temperature coefficient is
+`r num(se_temp, 2)`: the forty stations barely tell `r num(b_temp, 2)` apart from zero.
+Maximum likelihood reports it anyway.
+
+### A tighter prior pulls harder
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-prior-likelihood
+#| fig-cap: !expr glue::glue("Prior, likelihood and posterior for the temperature coefficient on its own. The likelihood (grey) peaks at {num(b_temp, 2)} but is very wide. As the prior tightens from left to right, the posterior peak moves towards zero, to {num(peaks[1], 2)}, then {num(peaks[2], 2)}, then {num(peaks[3], 2)}.")
+#| fig-alt: !expr glue::glue("Three side-by-side panels, each with three curves against the temperature coefficient. In every panel a broad, flat grey likelihood curve peaks at {num(b_temp, 2)}. An orange prior curve centred on zero narrows from panel to panel, and a blue posterior curve sits between the two. The posterior peak is at {num(peaks[1], 2)} in the left panel, {num(peaks[2], 2)} in the middle and {num(peaks[3], 2)} on the right, where it almost matches the prior.")
+#| fig-width: 8
+#| fig-height: 3.4
+prior_sds <- c(5, 1, 0.5)
+peaks <- b_temp * prior_sds^2 / (prior_sds^2 + se_temp^2)
+panel_names <- sprintf("prior sd %.1f, peak at %.2f", prior_sds, peaks)
+
+curves <- map2_dfr(prior_sds, panel_names, \(tau, panel) {
+  b <- seq(-5, 15, length.out = 500)
+  peak <- b_temp * tau^2 / (tau^2 + se_temp^2)
+  tibble(
+    b,
+    Likelihood = dnorm(b, b_temp, se_temp),
+    Prior      = dnorm(b, 0, tau),
+    Posterior  = dnorm(b, peak, sqrt(1 / (1 / se_temp^2 + 1 / tau^2))),
+    panel = factor(panel, levels = panel_names)
+  )
+}) |>
+  pivot_longer(c(Likelihood, Prior, Posterior), names_to = "curve",
+               values_to = "density")
+
+ggplot(curves, aes(b, density, colour = curve)) +
+  geom_line(linewidth = 0.9) +
+  facet_wrap(~panel, scales = "free_y") +
+  scale_colour_manual(values = c(
+    Likelihood = ml_palette[["grey"]],
+    Prior      = ml_palette[["orange"]],
+    Posterior  = ml_palette[["blue"]]
+  )) +
+  labs(x = "Temperature coefficient", y = NULL, colour = NULL,
+       title = "The posterior sits between the prior and the likelihood") +
+  theme(axis.text.y = element_blank())
+```
+
+:::
+
+A prior with a standard deviation of 5 barely objects to `r num(b_temp, 2)` and moves
+the estimate to `r num(peaks[1], 2)`. A prior of 1, the belief that effects are usually
+within about ±2, moves it to `r num(peaks[2], 2)`. The data never supported a large
+effect, and even a loose prior is enough to say so. The figure treats temperature alone;
+the full fit below shrinks all twelve coefficients together, so its numbers differ a
+little.
+
+### MAP and ridge give the same coefficients
+
+We fit MAP directly with `optim()`, using a Normal likelihood and a Normal prior with a
+standard deviation of 1 on every coefficient. For the noise standard deviation we use
+the residual standard deviation of the maximum-likelihood fit. Then we fit ridge
+regression by its formula, with λ equal to the noise variance over the prior variance.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: map-equals-ridge
-sigma <- 4.5      # assumed noise scale, individuals
-tau   <- 1.146    # prior sd on the coefficients
+sigma <- summary(mle_fit)$sigma   # noise sd, from the unpenalised fit
+tau   <- 1                        # prior sd on each coefficient
 
 neg_log_posterior <- function(b) {
   -sum(dnorm(y_train, X_train %*% b, sigma, log = TRUE)) -
@@ -173,54 +278,121 @@ neg_log_posterior <- function(b) {
 map_fit <- optim(rep(0, ncol(X_train)), neg_log_posterior, method = "BFGS",
                  control = list(reltol = 1e-14, maxit = 10000))
 
-ridge_closed_form <- function(lambda) {
+ridge <- function(lambda) {
   drop(solve(t(X_train) %*% X_train + lambda * diag(ncol(X_train)),
              t(X_train) %*% y_train))
 }
 
-tibble(
-  term  = colnames(X_train),
-  MLE   = ridge_closed_form(0),
+lambda <- sigma^2 / tau^2
+coefs <- tibble(
+  term  = str_replace(colnames(X_train), "^(substrate|season)", "\\1: "),
+  `maximum likelihood` = ridge(0),
   MAP   = map_fit$par,
-  ridge = ridge_closed_form(sigma^2 / tau^2)
-) |>
-  mutate(across(where(is.numeric), \(x) round(x, 4)))
+  ridge = ridge(lambda)
+)
+coefs |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
-The MAP column and the ridge column agree to eight decimal places. They are not similar
-procedures; they are the same arithmetic reached from two directions.
+## Python
 
-Look at the MLE column while you are here. Temperature gets +8.59 and its square −6.20; depth
-gets +1.04 and its square −1.78. Those pairs are not estimates of anything: they are two
-nearly collinear terms taking large opposite values that partly cancel. MAP reports +0.33 and
-−0.16 for the same pair.
+```{python}
+sigma = np.sqrt(mle_fit.scale)   # noise sd, from the unpenalised fit
+tau = 1                          # prior sd on each coefficient
 
-### The effect on prediction
+def neg_log_posterior(b):
+    return (-norm.logpdf(y_train, X_train.to_numpy() @ b, sigma).sum()
+            - norm.logpdf(b, 0, tau).sum())
+
+map_fit = minimize(neg_log_posterior, np.zeros(X_train.shape[1]), method="BFGS",
+                   options={"gtol": 1e-10})
+
+def ridge(lam):
+    return np.linalg.solve(X_train.T @ X_train + lam * np.eye(X_train.shape[1]),
+                           X_train.T @ y_train)
+
+lam = sigma**2 / tau**2
+
+# scikit-learn's Ridge makes the same objective smallest, with alpha in the
+# place of lambda. Its LogisticRegression and PoissonRegressor carry this
+# penalty by default.
+sk_ridge = Ridge(alpha=lam, fit_intercept=False).fit(X_train, y_train)
+
+coefs = pd.DataFrame({
+    "term": X_train.columns,
+    "maximum likelihood": ridge(0),
+    "MAP": map_fit.x,
+    "ridge": ridge(lam),
+    "Ridge()": sk_ridge.coef_,
+})
+coefs.round(3)
+```
+
+:::
+
+```{r}
+#| label: map-numbers
+#| include: false
+map_ridge_gap <- max(abs(coefs$MAP - coefs$ridge))
+agree_places <- floor(-log10(map_ridge_gap))
+temp_map  <- coefs$ridge[coefs$term == "temperature_c"]
+temp2_map <- coefs$ridge[coefs$term == "I(temperature_c^2)"]
+```
+
+The MAP and ridge columns agree to `r agree_places` decimal places: the same answer
+reached from two directions, with λ = `r num(lambda, 1)`. Setting λ to zero
+gives back maximum likelihood, the first column. The temperature pair falls from
+`r num(b_temp, 2)` and `r num(b_temp2, 2)` to `r num(temp_map, 2)` and
+`r num(temp2_map, 2)`.
+
+### A prior improves prediction
+
+A prior makes the fit to the forty stations worse, since it pulls the coefficients away
+from the values that fit them best. The test is whether it predicts the other stations
+better. We fit ridge regression over a range of λ and measure the RMSE on both sets.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: lambda-curve
 rmse <- function(b, X, y) sqrt(mean((y - X %*% b)^2))
 
-lambdas <- exp(seq(log(0.01), log(500), length.out = 120))
-
-curve <- tibble(lambda = lambdas) |>
+curve <- tibble(lambda = exp(seq(log(0.01), log(500), length.out = 120))) |>
   mutate(
-    b      = map(lambda, ridge_closed_form),
-    train  = map_dbl(b, rmse, X = X_train, y = y_train),
-    test   = map_dbl(b, rmse, X = X_test,  y = y_test),
-    largest_coefficient = map_dbl(b, \(v) max(abs(v)))
+    b     = map(lambda, ridge),
+    train = map_dbl(b, rmse, X = X_train, y = y_train),
+    test  = map_dbl(b, rmse, X = X_test,  y = y_test)
   )
 
-curve |>
-  filter(lambda %in% lambdas[c(1, 40, 60, 75, 90, 120)]) |>
-  select(lambda, largest_coefficient, train, test) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+mean_only <- sqrt(mean(y_test^2))   # predict the training mean everywhere
+best <- curve |> slice_min(test)
 ```
+
+## Python
+
+```{python}
+def rmse(b, X, y):
+    return np.sqrt(np.mean((y - X @ b) ** 2))
+
+curve = pd.DataFrame({"lambda": np.exp(np.linspace(np.log(0.01), np.log(500), 120))})
+curve["train"] = [rmse(ridge(l), X_train, y_train) for l in curve["lambda"]]
+curve["test"] = [rmse(ridge(l), X_test, y_test) for l in curve["lambda"]]
+
+mean_only = np.sqrt(np.mean(y_test**2))   # predict the training mean everywhere
+best = curve.loc[curve["test"].idxmin()]
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-lambda
-#| fig-cap: "Training and test error against the prior strength λ, for the forty-station fit. Training error rises steadily as the prior tightens, because the fit to the forty stations can only get worse. Test error falls to a minimum near λ = 15 and then rises again. The horizontal line is the error from predicting the overall mean at every station."
-#| fig-alt: "Two curves against lambda from 0.01 to 500 on a logarithmic horizontal axis, with root mean squared error from 3.2 to 5 on the vertical axis. The training curve starts at 3.32 and rises smoothly to about 4.2 at the right-hand edge. The test curve starts at 4.75, dips to a minimum of 4.50 near lambda 15, then rises back above 4.7. A dashed horizontal line at 4.85 marks the error of predicting the mean, which sits above both curves everywhere."
+#| fig-cap: !expr glue::glue("Training and test RMSE against λ for the forty-station fit. Training error rises as λ grows. Test error falls to its lowest near λ = {round(best$lambda)} and then rises again. The dashed line is the error from predicting the training mean at every station.")
+#| fig-alt: !expr glue::glue("Two curves against lambda from 0.01 to 500 on a logarithmic horizontal axis. The training curve starts at {num(curve$train[1], 2)} and rises steadily. The test curve starts at {num(curve$test[1], 2)}, dips to {num(best$test, 2)} near lambda {round(best$lambda)}, then rises again. A dashed horizontal line at {num(mean_only, 2)} marks the error of predicting the mean.")
 #| fig-width: 7
 #| fig-height: 4.3
 curve |>
@@ -228,91 +400,91 @@ curve |>
   pivot_longer(-lambda, names_to = "set", values_to = "rmse") |>
   ggplot(aes(lambda, rmse, colour = set)) +
   geom_line(linewidth = 1) +
-  geom_hline(yintercept = sqrt(mean(y_test^2)), linetype = "dashed",
+  geom_hline(yintercept = mean_only, linetype = "dashed",
              colour = ml_palette[["grey"]]) +
-  scale_x_log10() +
+  scale_x_log10(labels = scales::label_number()) +
   labs(
-    x = "λ, prior strength (log scale)", y = "RMSE (individuals)", colour = NULL,
-    title = "A prior is not a cost, it is an investment",
-    subtitle = "Dashed line: predicting the mean everywhere"
+    x = "λ (log scale)", y = "RMSE (animals)", colour = NULL,
+    title = "The prior costs training fit and buys test accuracy",
+    subtitle = "Dashed line: predicting the training mean everywhere"
   )
 ```
 
-## The return on a prior
-
-The unpenalised fit, the one that makes these forty stations most probable, achieves a test
-RMSE of 4.745. Predicting the overall mean at every station achieves 4.850. Maximum likelihood
-on forty stations and twelve predictors bought about 2% over a model with no predictors at all.
-
-With a prior of the right strength, the same data and the same twelve predictors give 4.495,
-more than three times the improvement, from adding a term that contains no data whatsoever.
-
-The shape of the two curves is the whole lesson of the next section, arriving early:
-
-- **Training error rises monotonically with λ.** It must. Every unit of prior pulls the fit
-  away from the point that best matches the training stations. A model that fits your data
-  worse is what you are buying.
-- **Test error falls, then rises.** Up to about λ = 15 the shrinkage removes more noise than
-  signal. Past it, real effects start being flattened too, and by λ = 200 the model is barely
-  better than the mean.
-- **You cannot pick λ from the training curve.** It has no minimum. This is precisely why
-  [hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) needs held-out
-  data, and why λ is a hyperparameter rather than a parameter.
-
-Notice also what shrinkage does *not* do. Salinity, which has no effect at all in this
-simulation, gets 0.88 from maximum likelihood and still 0.54 from MAP. A Normal prior pulls
-coefficients towards zero but never to zero, so ridge cannot tell you a variable is irrelevant.
-That is the Laplace prior's job, and lasso's, in
-[section 5](../05-generalisation/regularisation.qmd).
-
-::: {.callout-warning}
-Ridge and lasso penalise coefficients on the scale they are measured on, so a predictor in
-millimetres is penalised a thousand times more lightly than the same predictor in metres.
-The prior reading makes this obvious, since "coefficients are around ±1" is meaningless
-without knowing what a unit is, and it is why every penalised fit must standardise its
-predictors first. The example above scales `X` before doing anything else.
 :::
 
-## Limits of MAP
+```{r}
+#| label: gains
+#| include: false
+map_test <- rmse(ridge(lambda), X_test, y_test)
+gain <- function(e) 1 - e / mean_only
+```
 
-**A prior can be wrong, and then it hurts.** Everything above assumed effects are centred on
-zero and modest. If your species really does have a threshold response with a huge
-coefficient, a tight prior will shrink a real effect and you will conclude, confidently, that
-it is not there. Priors are assumptions; they belong in the methods section with the rest.
+Predicting the training mean at every station gives a test RMSE of
+`r num(mean_only, 2)`. Maximum likelihood with twelve inputs gives
+`r num(curve$test[1], 2)`, only `r scales::percent(gain(curve$test[1]), 0.1)` better.
+The prior with a standard deviation of 1 gives `r num(map_test, 2)`,
+`r scales::percent(gain(map_test), 0.1)` better, from the same stations and inputs.
 
-**MAP is a point, not a posterior.** It reports the single most probable parameter value and
-discards the shape of the distribution around it. A genuinely Bayesian analysis keeps the whole
-posterior, which is what lets it quote intervals honestly. MAP is the cheap corner of Bayesian
-inference, giving the shrinkage without the uncertainty, and you should not describe a
-ridge fit as a Bayesian analysis.
+The two curves carry the main idea of section 5:
 
-**Choosing λ from the data is not a prior.** Selecting λ by cross-validation, which is what
-everyone does and what section 5 will teach, means the "prior" was read off the data. It works
-well and it is standard practice, but it is no longer a statement of prior belief, and the
-resulting intervals are optimistic for the same reason any twice-used dataset is.
+- **Training error only rises with λ.** Every step pulls the fit further from the
+  forty stations.
+- **Test error falls, then rises.** A small λ removes more noise than pattern; a large
+  one flattens the real effects too.
+- **The training curve cannot choose λ.** It has no low point. λ is a hyperparameter,
+  and [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd)
+  chooses it on held-out data.
 
-::: {.callout-tip}
+Here the test set drew the curve, which is fine for showing its shape but would be
+cheating as a way of choosing λ.
+
+## Ridge shrinks but never removes
+
+```{r}
+#| label: smallest
+#| include: false
+smallest <- coefs |> slice_min(abs(ridge))
+labels <- c(
+  depth_m = "depth", `I(depth_m^2)` = "depth squared",
+  temperature_c = "temperature", `I(temperature_c^2)` = "temperature squared",
+  chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
+  `substrate: mud` = "mud substrate", `substrate: rock` = "rock substrate",
+  `substrate: sand` = "sand substrate", `season: summer` = "summer",
+  `season: autumn` = "autumn", `season: winter` = "winter"
+)
+```
+
+No coefficient in the ridge fit is exactly zero. The smallest, for
+`r labels[[smallest$term]]`, is `r num(smallest$ridge, 3)`. A
+Normal prior pulls every coefficient towards zero but never onto it, so ridge regression
+cannot tell you an input is irrelevant. The lasso's Laplace prior can, and
+[Regularisation](../05-generalisation/regularisation.qmd) in section 5 uses it that way.
+
+MAP also gives a single best value, not a range. A full Bayesian analysis keeps the
+whole posterior, which gives honest intervals; a ridge fit gives the shrinkage without
+the intervals. And once λ is chosen from the data, as section 5 does, it is no longer a
+belief held before the survey, so report it as a tuned setting.
+
 ## Key points
 
-- **MAP** maximises the likelihood plus a prior: what the data say, plus what you knew about
-  the size of plausible effects.
-- A Normal prior on the coefficients **is** ridge regression, with $\lambda = \sigma^2/\tau^2$,
-  verified here to eight decimal places. A Laplace prior is lasso.
-- Maximum likelihood is therefore not assumption-free; it is MAP with a prior that finds any
-  coefficient equally plausible.
-- On forty stations and twelve predictors, unpenalised fitting beat predicting the mean by 2%;
-  the MAP fit beat it by 7%.
-- Training error rises monotonically with the prior strength while test error is U-shaped. The
-  training curve cannot choose λ for you.
-
+::: {.key-points}
+- A **prior** states how large a parameter is likely to be before the data arrive;
+  **MAP** chooses the parameters that fit the data and are plausible under the prior.
+- A Normal prior on the coefficients is the ridge penalty, with λ equal to the noise
+  variance over the prior variance. Here MAP and ridge agreed to
+  `r agree_places` decimal places.
+- A Laplace prior gives the lasso, and a flat prior gives maximum likelihood.
+- Priors are stated per standard deviation of each input, so standardise first.
+- On forty stations, maximum likelihood beat predicting the mean by
+  `r scales::percent(gain(curve$test[1]), 0.1)` and MAP by
+  `r scales::percent(gain(map_test), 0.1)`.
+- Training error only rises with λ, so λ has to be chosen on held-out data.
 :::
 
 ## Try it yourself
 
-1. Change `sigma` from 4.5 to 9 and refit, leaving `tau` alone. Predict first what should
-   happen to the coefficients, then check, and explain the direction in terms of the two
-   things λ is a ratio of.
-2. Replace the Normal prior in `neg_log_posterior()` with a Laplace one
-   (`-sum(abs(b)) / scale` plus a constant) and refit. Do any coefficients reach exactly zero?
-   `optim()` will struggle at the kink: what does that tell you about why lasso needs a
-   different algorithm?
+1. Double `sigma` and refit, leaving `tau` alone. Predict first which way the
+   coefficients move, then check against λ = σ²/τ².
+2. Replace the Normal prior in `neg_log_posterior()` with a Laplace one,
+   `sum(abs(b)) / tau` in place of the `dnorm()` term, and refit. Do any coefficients
+   reach exactly zero?

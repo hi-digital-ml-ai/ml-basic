@@ -151,7 +151,7 @@ Rules for what goes in it:
 
 ### Python tabs
 
-Pages in sections 2, 3, 5, 7, 8 and 10 show each modelling step twice, R and
+Pages in sections 2, 3, 4, 5, 7, 8 and 10 show each modelling step twice, R and
 scikit-learn, in a tabset. The two `toolkit/` pages are the exception: they are
 single-language orientation pages, one per library, and carry no tabsets. Both tabs
 run: the R chunk directly, the Python as a `{python}` chunk that knitr hands to

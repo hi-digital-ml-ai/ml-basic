@@ -139,8 +139,8 @@ descriptions mid-sentence (the longest is 210 characters).
 
 ## Code tabsets
 
-Sections 2, 3, 5, 7, 8 and 10, the pages that teach the modelling pipeline,
-show each step as an R and a Python tab:
+Sections 2, 3, 4, 5, 7, 8 and 10, the pages that teach the modelling pipeline and
+how its models are fitted, show each step as an R and a Python tab:
 
 ````markdown
 ::: {.panel-tabset group="language"}

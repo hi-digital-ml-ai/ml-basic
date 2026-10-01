@@ -18,103 +18,49 @@ contours <- function(grid, x, y, levels) {
 }
 
 exports <- list(
-  # The three fitted lines over the stations, the worst 5%'s share of each total error,
-  # and the slopes without the single largest catch.
+  # The stations and the two fitted lines, the worst 5%'s share of each total, and the
+  # slopes without the largest catch.
   "loss-functions.qmd" = function(env, dir) {
-    write(with(env, coefs), dir, "three-losses")
     write(with(env, dplyr::select(d, chlorophyll = chlorophyll_mg_m3, abundance)), dir, "stations")
+    write(with(env, coefs), dir, "two-losses")
     write(with(env, tibble::tibble(
-      squared_share = sum(residuals[worst]^2) / sum(residuals^2),
-      absolute_share = sum(abs(residuals[worst])) / sum(abs(residuals)),
-      stations = length(y), worst_stations = length(worst))), dir, "error-share")
-    write(with(env, tibble::tibble(
-      loss = c("Squared error", "Absolute error"), largest_catch = max(y),
-      all = c(coefs$slope[1], coefs$slope[2]),
-      minus_one = c(fit_loss2(\(r) r^2)[2], fit_loss2(abs)[2]))), dir, "drop-one")
+      squared_share = share[["squared"]], absolute_share = share[["absolute"]],
+      stations = nrow(d), worst_stations = length(worst))), dir, "error-share")
+    write(with(env, dplyr::transmute(slopes, loss, all = `all stations`,
+                                     minus_one = `largest catch removed`, change,
+                                     largest_catch = max(d$abundance))), dir, "drop-one")
   },
 
-  # The formula against lm(), the IRLS trace with its standing start, and the grid cost.
-  "parameter-estimation.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(
-      term = rownames(beta_hat), formula = drop(beta_hat),
-      lm = coef(lm(abundance ~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3)))),
-      dir, "closed-form")
-    write(with(env, dplyr::bind_rows(
-      tibble::tibble(iteration = 0, log_likelihood = log_likelihood(rep(0, ncol(Xb)))),
-      dplyr::select(trace, iteration, log_likelihood))), dir, "irls")
-  },
-
-  # The objective's contours, the three walks, the stable limit, a divergent walk, the
-  # conditioning, and the steps each walk needs. The page states the step counts in
-  # prose; "arrived" is an MSE within 0.002 of the best, which gives all five of them.
+  # The objective's contours, the walks drawn on the page, the steps each rate needs,
+  # and the optimum.
   "gradient-descent.qmd" = function(env, dir) {
     write(with(env, contours(grid, "chlorophyll", "depth",
-      min(grid$mse) + c(0.05, 0.2, 0.5, 1, 2, 3.5, 5.5, 8, 11, 15))), dir, "contours")
-    write(with(env, dplyr::mutate(paths, learning_rate = as.numeric(as.character(`learning rate`))) |>
+      best_mse + c(0.05, 0.2, 0.5, 1, 2, 3.5, 5.5, 8, 11, 15))), dir, "contours")
+    write(with(env, dplyr::mutate(paths, learning_rate = as.numeric(as.character(`learning rate`)),
+                                  step = dplyr::row_number() - 1, .by = `learning rate`) |>
       dplyr::select(learning_rate, step, chlorophyll, depth)), dir, "paths")
-    write(with(env, {
-      mse <- \(M, b) mean((y - M %*% b)^2)
-      best <- mse(X, optimum)
-      limit <- \(M) 2 / max(eigen(2 / nrow(M) * t(M) %*% M)$values)
-      steps <- function(M, rate) {
-        b <- c(0, 0); k <- 0
-        while (mse(M, b) - best > 0.002) {
-          b <- b - rate * 2 / nrow(M) * drop(t(M) %*% (M %*% b - y)); k <- k + 1
-        }
-        k
-      }
-      diverged <- tail(gradient_descent(X, y, 0.80, 60), 1)
-      tibble::tibble(
-        optimum_chlorophyll = optimum[1], optimum_depth = optimum[2], best_mse = best,
-        steps_002 = steps(X, 0.02), steps_03 = steps(X, 0.3), steps_072 = steps(X, 0.72),
-        limit = limit(X), limit_unscaled = limit(centred_only),
-        diverged_rate = 0.80, diverged_steps = 60,
-        diverged_mse = mse(X, c(diverged$chlorophyll, diverged$depth)),
-        condition = condition_number(X), condition_unscaled = condition_number(centred_only),
-        steps_standardised = steps(X, 0.9 * limit(X)),
-        steps_unscaled = steps(centred_only, 0.9 * limit(centred_only)),
-        sd_depth = sd(d$depth_m), sd_chlorophyll = sd(d$chlorophyll_mg_m3))
-    }), dir, "descent")
+    write(with(env, dplyr::transmute(rates, learning_rate = `learning rate`,
+                                     mse_40 = `MSE after 40 steps`, steps = `steps to arrive`)),
+          dir, "rates")
+    write(with(env, tibble::tibble(optimum_chlorophyll = optimum[1], optimum_depth = optimum[2])),
+          dir, "descent")
   },
 
-  # Least squares as Gaussian maximum likelihood, and the three counts' joint likelihood.
-  "maximum-likelihood.qmd" = function(env, dir) {
-    write(with(env, {
-      ls <- lm(abundance ~ chl_z, data = d)
-      tibble::tibble(method = c("Maximum likelihood", "Least squares"),
-                     intercept = c(mle$par[1], coef(ls)[1]), slope = c(mle$par[2], coef(ls)[2]),
-                     sigma = c(exp(mle$par[3]), sqrt(mean(residuals(ls)^2))))
-    }), dir, "normal-mle")
-    write(with(env, tibble::tibble(count = counts)), dir, "counts")
-  },
-
-  # The forty-station fit: the coefficients three ways, the prior's figure values, the
-  # error curves against λ, and the three test errors the page compares.
+  # The forty-station fit, the prior's figure values, and the three test errors the
+  # page compares.
   "map-and-priors.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(term = colnames(X_train), mle = ridge_closed_form(0),
-                                   map = map_fit$par, ridge = ridge_closed_form(sigma^2 / tau^2))),
-          dir, "coefficients")
-    write(with(env, dplyr::select(curve, lambda, train, test)), dir, "lambda-curve")
+    write(with(env, tibble::tibble(prior_sd = prior_sds, peak = peaks)), dir, "prior-peaks")
     write(with(env, tibble::tibble(
-      training = nrow(X_train), testing = nrow(X_test), predictors = ncol(X_train),
-      b_hat = b_hat, se = se, sigma = sigma, tau = tau, lambda = sigma^2 / tau^2,
-      mean_rmse = sqrt(mean(y_test^2)), mle_rmse = rmse(ridge_closed_form(0), X_test, y_test),
-      map_rmse = rmse(map_fit$par, X_test, y_test))), dir, "map-summary")
+      training = nrow(X_train), testing = nrow(X_test), inputs = ncol(X_train),
+      b_temp, se_temp, b_temp2,
+      mean_rmse = mean_only, mle_rmse = curve$test[1], map_rmse = map_test)), dir, "map-summary")
   },
 
-  # The truncated fit, the separated fit, and the unseeded forests and k-means starts.
+  # The fit stopped after two steps, against the finished one.
   "reading-a-fit.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(
-      fit = c("maxit = 2", "run to convergence"),
+      fit = c("two steps", "left to finish"),
       converged = c(stopped_early$converged, full_fit$converged),
-      iterations = c(stopped_early$iter, full_fit$iter),
-      chlorophyll = c(coef(stopped_early)[2], coef(full_fit)[2]))), dir, "truncated")
-    write(with(env, tibble::tibble(
-      estimate = summary(separated)$coefficients[2, 1], se = summary(separated)$coefficients[2, 2],
-      p = summary(separated)$coefficients[2, 4], converged = separated$converged,
-      iterations = separated$iter)), dir, "separation")
-    write(with(env, tibble::tibble(run = seq_along(unseeded), rmse = unseeded)), dir, "forest-runs")
-    write(with(env, tibble::tibble(start = seq_along(single_starts), withinss = single_starts)),
-          dir, "kmeans-starts")
+      chlorophyll = c(coef(stopped_early)[2], coef(full_fit)[2]), off = chl_off)), dir, "truncated")
   }
 )

@@ -50,7 +50,7 @@ also a linearity assumption and is violated even more often in ecology than the 
 "Linear" also means *linear in the parameters*, not in the predictors. `abundance ~ depth +
 I(depth^2)` is still a linear model; so is a Poisson GLM, where the linear part sits on the log
 scale and becomes a curve when exponentiated back. The
-[link function](../04-how-algorithms-learn/maximum-likelihood.qmd) already buys you a particular
+[log scale of a count model](../03-supervised-learning/count-regression.qmd) already buys you a particular
 kind of nonlinearity for free, which is why the count models in
 [section 3](../03-supervised-learning/count-regression.qmd) beat the plain line.
 
