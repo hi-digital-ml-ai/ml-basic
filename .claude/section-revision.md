@@ -152,7 +152,11 @@ screenshots, so look at the rendered page yourself first.
   heading, the prose, the plot legend and the model labels in code, on every page
   that fits the model.
 - **Explain a metric before its first number.** RMSE and R squared are each given one
-  plain sentence on the first page that quotes them.
+  plain sentence on the first page that quotes them. One sentence was not enough for
+  RMSE, which every section uses: *Statistical modelling and machine learning* now
+  builds it by hand (square, mean, root) from five test stations, compares it with
+  predicting the average, and the introduction video gives it two scenes. Later pages
+  link there rather than define it again.
 - **Make an example show what its heading claims.** The salinity example was headed as
   prediction but was really about a confounder and causality; the page was rewritten
   around that, with *confounder* defined. In section 2, a habitat class assigned from
@@ -222,6 +226,13 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 `_videos/01-introduction/` or `_videos/02-marine-data/` as the template alongside
 `videos.md`.
 
+- **Three major points, each with its reason; not a tour of every page.** Section 4's
+  first rebuild covered all six pages in 34 scenes and 8:19, and the user rejected it:
+  it "touches all aspects without enough explanation of why we are checking and doing
+  these things". The second kept three ideas (the loss decides what a model attends
+  to; a search can fail quietly, so check it; a prior keeps a small survey sensible),
+  one example each plus why it matters, and left the rest to the pages: 25 scenes,
+  about 735 words, 5:43. Motivate first, then name the concept.
 - **Rebuild the old video; don't patch it.** Every section already has a video, made
   before its pages were revised. Section 2's was 48 scenes and 8 minutes, a puzzle
   built on two random forests. Write a new script from the revised pages, one chapter
@@ -271,6 +282,9 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 - **Name models by method on screen**, as on the pages. The video reads the pages'
   model labels from the CSVs, so renaming a model on a page means updating the keys in
   `scenes.py` too, then re-running `exports.R`.
+- **Long text wraps.** Manim's `Text` breaks a line it finds too wide, so a heading of
+  about 40 characters at size 44 or more comes out on two lines. Keep characters × size
+  under about 1,700, or split the text with `\n` yourself.
 - **Check frames**, not just the last frame: `manim -ql -s` for last frames, and an
   ffmpeg `tile` contact sheet of the rough cut to check text arrives with the voice.
   Look hard at stacked labels: section 2's twelve seabed spellings touched each other

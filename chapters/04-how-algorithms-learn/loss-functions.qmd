@@ -44,10 +44,7 @@ larger the worse the miss. The two common ones treat large misses very different
 
 A loss scores one prediction, and a fit needs one number for the whole dataset, so the
 algorithm averages the loss over every observation. That average is the **objective**,
-and fitting means finding the parameter values that make it smallest. For squared error
-the objective is the mean squared error, whose square root is the RMSE that
-[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-reported.
+and fitting means finding the parameter values that make it smallest.
 
 ::: {.diagram}
 ![A residual is how far one prediction missed. A loss turns it into a penalty, and squared error grows much faster than absolute error as the miss grows. The objective averages the loss over all the data, and the fit is the parameter value that makes it smallest.](img/loss-to-fit.svg){fig-alt="Three cards. Residual, the size of one miss: residual equals observed minus predicted; a line through scattered points, with a dashed segment from one point down to the line labelled residual; positive above the line, negative below it. Loss, the penalty for one miss: squared or absolute error; a steep U-shaped curve labelled squared and a shallow V labelled absolute, meeting at a residual of zero; squared error grows fast with the miss, absolute error grows in step. Objective, the average over all data: objective equals average loss; a U-shaped curve against a parameter, its lowest point marked the fit. A note says: change the loss, and the fit changes with it."}
@@ -68,6 +65,23 @@ $$\text{mean squared error} = \frac{1}{n}\sum_{i=1}^{n} (y_i - \hat{y}_i)^2 \qqu
 For a straight line, $\hat{y}_i = a + b\,x_i$, and fitting means choosing the intercept
 $a$ and slope $b$ that make the chosen objective smallest.
 :::
+
+### The fit uses squared error and the RMSE reports it
+
+Three names come from the same squared misses. The **squared error** is one residual
+multiplied by itself. The **mean squared error** averages it over the stations, and it is
+the objective a squared-error fit makes small. The **RMSE**, built by hand in
+[Statistical modelling and machine learning](../01-introduction/what-is-machine-learning.qmd#the-test-error-is-a-typical-miss),
+is the square root of that mean.
+
+The square root changes the units, not the winner. The mean squared error is in animals
+squared, which is hard to picture; the RMSE is back in animals, a typical miss. The line
+with the smaller mean squared error also has the smaller RMSE, so fitting by either gives
+the same line. Algorithms make the mean squared error small, as it is simpler to work
+with, and people report the RMSE, as it reads in the outcome's own units.
+
+The RMSE is not the average size of a miss. That is the mean absolute error, and the RMSE
+is never smaller than it, because squaring gives the large misses more weight.
 
 ## A residual is not an error
 
@@ -285,6 +299,11 @@ the squared-error fit tries to reduce comes from those few stations.
 
 ### One station moves the slope
 
+A large share of the objective matters only if the answer rests on those few stations.
+The answer here is the slope, the number you would report as the effect of chlorophyll,
+so we remove the largest catch, a single haul that a repeat survey could easily have
+missed, and refit with each loss.
+
 ::: {.panel-tabset group="language"}
 
 ## R
@@ -325,7 +344,9 @@ Removing the largest catch, `r max(d$abundance)` animals at one station out of
 `r nrow(d)`, moves the squared-error slope from `r sprintf("%.2f", slopes[[2]][1])` to
 `r sprintf("%.2f", slopes[[3]][1])`, a change of
 `r scales::percent(abs(slopes$change[1]), 0.1)`. The same deletion moves the
-absolute-error slope by `r scales::percent(abs(slopes$change[2]), 0.1)`.
+absolute-error slope by `r scales::percent(abs(slopes$change[2]), 0.1)`. The
+squared-error slope rests noticeably on one haul; the absolute-error slope hardly
+notices it.
 
 ## The loss is a choice about the science
 
@@ -384,6 +405,8 @@ which [Maximum likelihood](maximum-likelihood.qmd) describes.
 ::: {.key-points}
 - A **loss** scores one prediction from its residual; the **objective** averages it over
   the data, and fitting means making the objective as small as possible.
+- A squared-error fit makes the mean squared error small. The RMSE is its square root:
+  the same best line, reported in the outcome's own units.
 - A **residual** is the miss against the model's prediction and can be computed; an
   **error** is the miss against the unknown true average, the noise. Residuals on the
   training data understate the errors.

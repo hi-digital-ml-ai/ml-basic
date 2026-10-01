@@ -1,5 +1,5 @@
 ---
-title: "How algorithms learn: the loss, the search, and the prior"
+title: "How algorithms learn: the loss, the search and the prior"
 section: chapters/04-how-algorithms-learn/index.qmd
 voice: Sadaltager
 style: "friendly British English, speaking at a natural, conversational pace"
@@ -12,6 +12,12 @@ lists the directive lines. In short: "# " starts a YouTube chapter, "## Scene N"
 scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
+
+This video is an overview built on three ideas, each with the reason it matters: the
+loss decides what a model pays attention to, a search can fail quietly so it must be
+checked, and a prior keeps a small survey sensible. It does not tour every page;
+maximum likelihood, the units of the inputs, separation and random runs are left to
+the pages. It never says which variables truly drive the species.
 -->
 
 # In this video
@@ -20,299 +26,184 @@ section's pages. No section numbers anywhere in the video: other sections are na
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-In this video, you will learn three things. Where a model's loss comes from. Why a fit
-can fail without telling you. And why a term with no data in it can make predictions
-better.
+This video looks at what happens when a model is fitted. It covers three ideas: the one
+number every fit makes small, the search that finds the best parameters, and how
+knowing something before the survey helps a small one.
 
-# The puzzle
+# The number a fit makes small
 
 ## Scene 2
-visual: manim Two fits: one model, the same forty stations, temperature 8.59 against 0.33 (page results, map-and-priors.qmd)
+visual: manim Loop: three cards in a circle, "guess the parameters", "score how wrong", "adjust and repeat" (schematic)
 
-Here are two fits of the same model to the same forty stations, a pilot survey with
-twelve predictors. In one, the temperature coefficient is 8.59. In the other, 0.33.
+Every model in this course was fitted the same way. The algorithm guesses its
+parameters, the numbers it learns from the data. It scores how wrong that guess is,
+adjusts the parameters to do better, and repeats. Fitting is a search for the best
+score.
 
 ## Scene 3
-visual: manim Two fits: the second "plus one term, containing no data", "which predicts new stations better?"
-pause-after: 1.5
+visual: manim Residual: a line through scattered points, one point's gap to the line drawn and labelled "residual = observed − predicted"; then a dashed curve, "the true average: unknown", and the same point's gap to it labelled "error"; a card "the residual is the fit's estimate of the error" (schematic, after loss-functions.qmd)
+pause-after: 0.5
 
-The second fit had one extra term, and that term contains no data at all. Which one
-predicts new stations better? By the end of this video, you will know, and why.
+The score is built from residuals. A residual is how far one prediction missed: the
+observed count minus the predicted one. It is not quite an error. The error is the miss
+against the true average for those conditions, the count you would get on average if
+you sampled there again and again. Nobody knows that average, so the residual is the
+fit's estimate of the error.
 
 ## Scene 4
-visual: manim Loop: score how wrong, change the numbers, repeat (schematic)
+visual: manim Losses: squared error as a steep U and absolute error as a shallow V against the residual; a miss of 10 marked, costing 100 and 10 (schematic, the page's definitions)
 
-To see why, you need to know what fitting is. It is a search: score how wrong the model
-is, change its numbers to be a little less wrong, and repeat.
-
-# Every fit minimises a loss
+A loss function turns each miss into a penalty, and the average penalty is the score.
+The two common losses treat big misses very differently. Under squared error, a miss of
+10 costs a hundred times a miss of 1. Under absolute error, only ten times.
 
 ## Scene 5
-visual: manim Losses: squared error, absolute error and Huber against the residual (schematic, the page's definitions)
+visual: manim Lines: abundance against chlorophyll at 749 stations, the squared-error line and the absolute-error line (page results, loss-functions.qmd#fig-two-lines)
 
-The score is the loss. Squared error makes a miss of 10 a hundred times worse than a miss
-of 1. Absolute error makes it ten times worse. Huber is a compromise.
+That difference changes the answer. On the survey's 749 stations, the two losses draw
+two different lines through exactly the same data.
 
 ## Scene 6
-visual: manim Lines: abundance against chlorophyll at 749 stations, three fitted lines (page results, loss-functions.qmd#fig-three-lines)
+visual: manim Share: the worst 5% of stations, 37 of them, supplying 50% of the squared error; the question "does the slope rest on a few stations?"; then the largest catch removed, the squared-error slope moving 13.5% and the absolute-error slope 2.1% (page results, loss-functions.qmd)
+pause-after: 0.5
 
-Fit abundance against chlorophyll three times, changing nothing but the loss, and you get
-three answers. The squared-error line starts at 2.36 individuals, the absolute-error line
-at 1.13.
+Squared error listens hardest to the biggest misses. Just 37 stations, 5 per cent of
+the data, supply half of it. That matters if the slope we would report rests on those
+few stations. So remove one large catch, a single haul a repeat survey could easily
+miss, and refit. The squared-error slope moves by 13.5 per cent; the absolute-error
+slope, by 2.1.
 
 ## Scene 7
-visual: manim Share: the worst 5% of stations, 49.7% of the squared error, 21.0% of the absolute error (page results)
+visual: manim Readings: two cards, "a real shoal: let squared error listen" and "a net that fished badly: absolute error is safer", under "the loss is a choice about the science" (schematic)
+pause-after: 0.5
 
-Why? Thirty-seven stations, 5% of the data, supply half of the total squared error, but
-only a fifth of the absolute error.
+So which loss is right? If the big catches are real shoals, they matter, and squared
+error should listen to them. If they come from a net that fished badly, absolute error
+is safer. The data cannot tell you which. It is a choice about your science, so say
+which loss you used.
 
 ## Scene 8
-visual: manim Drop one: the largest catch removed, the squared-error slope moves 13.5%, the absolute-error slope 2.1% (page results)
-
-Delete the single largest catch, one station of 749, and the least-squares slope moves by
-13.5%. The absolute-error slope moves by 2.1%.
-
-## Scene 9
-visual: manim Two readings: "a real aggregation" favours squared error, "a net that fished badly" absolute error (schematic)
-
-Neither loss is wrong. If the big hauls are real aggregations, squared error is right. If
-they are a net that fished badly, you have handed half the objective to your worst data.
-
-## Scene 10
-visual: manim Likelihood: the Poisson probability of counts 3, 0 and 11 against the expected count, their product peaking at the mean, 4.67 (page results, maximum-likelihood.qmd#fig-one-station)
-
-So where do losses come from? Likelihood asks which values make the data you saw most
-probable. For three stations that caught 3, 0 and 11, the answer is their mean.
-
-## Scene 11
-visual: manim Menu: the assumed distribution and the loss it becomes, Normal to squared error, Poisson to Poisson deviance, yes or no to log loss (schematic, the page's table)
-
-Take the negative logarithm, and a likelihood becomes a loss. Assume Normal errors, and
-you get squared error. Poisson gives Poisson deviance. Yes or no gives log loss.
-
-## Scene 12
-visual: manim Normal: maximum likelihood and least squares side by side, identical to four decimal places (page results)
-
-It is not an analogy. Maximum likelihood under a Normal model returns exactly the
-least-squares line.
-
-## Scene 13
-visual: manim Normal: the Normal curve around a small expected count, its tail running below zero, "negative fish" (schematic)
-
-So least squares on counts silently assumes a distribution that runs to minus infinity.
-That is why a linear model can predict negative fish.
-
-## Scene 14
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point one. The loss is an assumption about your data. Choose it deliberately, and
-report it.
+Key point one. A fit makes a loss small, and the loss decides what the model pays
+attention to.
 
-# Fitting is a search
+# The search that finds the parameters
 
-## Scene 15
-visual: manim Formula: the normal equations against lm(), the same four coefficients (page results, parameter-estimation.qmd)
+## Scene 9
+visual: manim Landscape: the score as a bowl over two parameters, its lowest point marked "the best parameters"; "a formula for a straight line, a search for most models" (schematic)
 
-For a few models the best numbers can be calculated. Least squares has a formula: exact,
-in one step, the same every time. Almost nothing else does.
+For a straight line, a formula gives the best parameters in one step. Most models have
+no formula, so the algorithm has to search. Picture the score as a landscape. The best
+parameters sit at its lowest point.
 
-## Scene 16
-visual: manim IRLS: logistic regression's log-likelihood by step, −513.6, −378.3, −373.3, then flat (page results)
+## Scene 10
+visual: manim Downhill: a bowl, a dot feeling the slope and stepping down; "the learning rate: the size of each step" (schematic)
 
-Logistic regression has to search. From a standing start, each step improves the
-log-likelihood, and by the fourth it has stopped changing.
+Gradient descent is the simplest search. Find which way is downhill, take a step, and
+repeat until the ground is flat. The size of each step is called the learning rate.
 
-## Scene 17
-visual: manim Grid: 100 values per parameter, two parameters 10⁴ evaluations, four 10⁸, ten 10²⁰ (page results)
+## Scene 11
+visual: manim Paths: the objective's contours for two slopes; the walk at learning rate 0.3 arriving in 11 steps, then 0.02 creeping, needing 197 (page results, gradient-descent.qmd#fig-paths)
 
-Why not simply try every combination? At a hundred values each, two parameters is ten
-thousand evaluations. Four is a hundred million. Ten is ten to the power twenty.
+The step size matters. At a learning rate of 0.3, this walk reaches the bottom in 11
+steps. At 0.02, it creeps, and needs 197.
 
-## Scene 18
-visual: manim Downhill: a bowl, a dot feeling the slope and stepping down (schematic)
+## Scene 12
+visual: manim Overshoot: a bowl, each step crossing the valley and landing higher on the far side; "0.8: never arrives", "no warning" (schematic, the page's rate)
+pause-after: 0.5
 
-So the search has to be directed. Feel which way is downhill, take a step, and repeat.
-That is gradient descent, and it trains every neural network you have heard of.
+Too large, and each step overshoots the valley and lands higher on the other side. At
+0.8, the walk climbs out and never arrives, and nothing on the way warns you.
 
-## Scene 19
-visual: manim Paths: the objective's contours for two slopes, the walk at learning rate 0.3 reaching the minimum (page results, gradient-descent.qmd#fig-paths)
+## Scene 13
+visual: manim Printout: a model's output, coefficients that look normal, and a line "converged: FALSE" highlighted; "check the flag first" (schematic)
 
-The size of each step is the learning rate. At 0.3, this walk reaches the bottom of the
-bowl in six steps.
+That is why a fit needs checking. A search that went wrong still prints coefficients,
+and they look perfectly normal. The software records whether the search finished, in a
+convergence flag. Look at it before you read anything else.
 
-## Scene 20
-visual: manim Paths: 0.02 still short after 40 steps, it needs 106; 0.72 zig-zagging, it needs 161
-
-At 0.02 it is still short after forty steps, and needs 106. At 0.72 it zig-zags across
-the valley, and needs 161.
-
-## Scene 21
-visual: manim Cliff: the stable limit 0.7282; at 0.80, sixty steps and an MSE of 7.3 billion (page results)
-
-And there is a cliff edge. Above 0.7282 the walk does not arrive slowly; it diverges. At
-0.8, sixty steps take the error to 7.3 billion.
-
-## Scene 22
-visual: manim Units: depth's standard deviation 40.6 m, chlorophyll's 1.58 mg m⁻³; the bowl stretched 766 to 1, standardised 2.2 (page results)
-
-That limit is set by the shape of the bowl, and the shape by your units. Unscaled, this
-bowl is 766 times more stretched one way than the other. Standardised, 2.2.
-
-## Scene 23
-visual: manim Steps: at the best rate each allows, 17 steps standardised, 1,500 unscaled (page results)
-
-Give each its best learning rate. The standardised version arrives in 17 steps, the
-unscaled one in 1,500. The same answer, with eighty-eight times the work.
-
-## Scene 24
-visual: manim Which: scaling matters for gradient descent, penalties, networks and k-means; not for lm, glm or trees (schematic, the page's list)
-
-That is the real reason to scale your predictors. It matters for gradient descent,
-penalised regression, networks and k-means, and not at all for trees. The rule follows the
-algorithm.
-
-## Scene 25
-visual: manim Truncated: logistic regression stopped after 2 iterations, −0.312 against −0.344, converged FALSE (page results, reading-a-fit.qmd)
-
-A search can also fail without saying so. Stop logistic regression after two iterations,
-and the chlorophyll coefficient is 9% out, and perfectly plausible.
-
-## Scene 26
-visual: manim Truncated: the converged flag highlighted, "check the flag, not the coefficients"
-
-The only difference is a flag, "converged", and you have to ask for it.
-
-## Scene 27
-visual: manim Separation: the leaked catch weight, coefficient −158, standard error 13,515, p 0.99 (page results)
-
-Or give it the leaked catch weight. The coefficient is minus 158, with a standard error of
-13,515, and a p-value of 0.99.
-
-## Scene 28
-visual: manim Separation: the likelihood rising forever, no maximum, the search stopped by its cap at 25 iterations (schematic, the page's cap)
-
-That is not weak evidence. The predictor separates the classes, so there is no best
-value, and the search walked on until its cap of 25 iterations stopped it.
-
-## Scene 29
-visual: manim Runs: five unseeded forests spanning 0.037 in RMSE; twenty k-means starts, ten different answers (page results, reading-a-fit.qmd#fig-instability)
-
-Random algorithms land somewhere different each run. Five unseeded forests spanned 0.037
-in error. Twenty k-means runs found ten different answers, and every one reported success.
-
-## Scene 30
-visual: manim Runs: "a seed gives reproducibility, not stability"
-
-A seed makes a result reproducible, not stable. Remove it on purpose, and treat the spread
-as the resolution of every comparison you make.
-
-## Scene 31
+## Scene 14
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point two. Fitting is a search. Check that it arrived, not just that it printed an
-answer.
+Key point two. Fitting is a search, and a search can fail quietly. Check that it
+finished.
 
-# A penalty is a prior
+# Knowing something before the survey
 
-## Scene 32
-visual: manim Wide: the likelihood for the temperature coefficient, peak 8.59, standard error 5.95 (page results, map-and-priors.qmd#fig-prior-likelihood)
+## Scene 15
+visual: manim Forty: forty stations, twelve inputs; temperature +9.23 animals per standard deviation and its square −6.78, two bars cancelling (page results, map-and-priors.qmd)
 
-Back to the forty stations. Maximum likelihood looks only at the data in front of it, and
-gives temperature 8.59. But its standard error is 5.95: the data barely tell it from zero.
+Now a small survey: forty stations and twelve inputs. The fit gives temperature an
+effect of 9.23 animals, and its square minus 6.78. Two large effects that cancel out
+are a warning sign: with so few stations, the fit is chasing chance patterns.
 
-## Scene 33
-visual: manim Fighting: temperature +8.59 and its square −6.20, "two collinear terms fighting, not biology" (page results)
+## Scene 16
+visual: manim Prior: the heading "what you knew before can help"; the likelihood for the temperature coefficient, wide, peaking at 9.23; the heading turns into "a prior: effects that large are rare" as a prior centred on zero is added; the combined estimate at 0.22 (page results, map-and-priors.qmd#fig-prior-likelihood)
 
-Temperature and its square take huge opposite values that partly cancel. That is two
-collinear terms fighting, not biology.
+With so few stations, what you knew before the survey can help the model predict
+better. And you did know something: effects that large are rare. A prior writes that
+down, as a curve centred on zero. Combined with the data, it pulls the temperature
+effect to 0.22.
 
-## Scene 34
-visual: manim Wide: a prior centred on zero added, the posterior pulled almost to zero
+## Scene 17
+visual: manim Penalty: "loss + penalty on large parameters"; "a prior = a penalty", "this is ridge regression" (schematic)
 
-You know effects that large do not occur. A prior says so: coefficients here are usually
-within about plus or minus one. Combined with the likelihood, it pulls the estimate
-almost to zero.
+In the fit, a prior works as a penalty added to the loss, one that grows as the
+parameters grow. This is ridge regression, and the next section of the course uses it
+to stop models overfitting.
 
-## Scene 35
-visual: manim Ridge: the MAP and ridge coefficients, identical, "a Normal prior is ridge regression" (page results)
-
-That is MAP estimation, and written out, it is exactly ridge regression. The penalty is
-a Normal prior on the coefficients.
-
-## Scene 36
-visual: manim Flat: maximum likelihood as a flat prior, 900 as plausible as 0.9 (schematic, the page's example)
-
-So maximum likelihood is not assumption-free. It is a prior that finds a coefficient of
-900 exactly as plausible as 0.9.
-
-## Scene 37
-visual: manim Scores: test error on 680 stations, the mean 4.850, maximum likelihood 4.745 (page results)
-
-Now, the puzzle. On the other 680 stations, predicting the mean everywhere gives an error
-of 4.850. Maximum likelihood gives 4.745, about 2% better.
-
-## Scene 38
-visual: manim Scores: the fit with the prior, 4.495, three times the improvement
+## Scene 18
+visual: manim Scores: test RMSE on the 680 stations held back, predicting the average 4.85, without the prior 4.76, with the prior 4.45 (page results, map-and-priors.qmd)
 pause-after: 0.5
 
-The fit with the prior gives 4.495: more than three times the improvement, from a term
-with no data in it.
+Does it help? On the 680 stations held back, predicting the average gives an error of
+4.85. The fit without a prior gives 4.76; with the prior, 4.45. The prior fits the
+forty stations a little worse, and predicts new ones better.
 
-## Scene 39
-visual: manim Curve: training and test error against the prior's strength, training rising, test falling then rising (page results, map-and-priors.qmd#fig-lambda)
-
-As the prior tightens, training error only rises. Test error falls, then rises. The
-training curve cannot choose the strength for you.
-
-## Scene 40
-visual: manim Curve: "a prior can be wrong", a tight one shrinks real effects too
-
-And a prior can be wrong. A tight one shrinks real effects too. Like the loss, it is an
-assumption, and it belongs in your methods.
-
-## Scene 41
+## Scene 19
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point three. A penalty is a prior: what you knew before the survey. With few
-stations, it can be worth more than the data.
+Key point three. With little data, what you knew before the survey keeps a model
+sensible.
 
 # Quiz
 
-## Scene 42
+## Scene 20
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. A colleague fits ridge regression with depth in millimetres and temperature in
-degrees, without standardising. What goes wrong?
+Quick quiz. A colleague fits logistic regression, and every coefficient looks
+sensible. Can they trust them?
 
-## Scene 43
-visual: manim QuizAnswer: "about plus or minus one" means nothing without a unit; depth in millimetres barely penalised (schematic)
+## Scene 21
+visual: manim QuizAnswer: "not yet"; the fit stopped after two steps beside the finished one, chlorophyll −0.312 against −0.344, "converged: FALSE" highlighted (page results, reading-a-fit.qmd)
 
-The prior says coefficients are about plus or minus one, and that means nothing without a
-unit. Depth in millimetres is barely penalised at all. Standardise first.
+Not yet. On the survey, a fit stopped after two steps gave a chlorophyll coefficient 9
+per cent out, and it looked entirely normal. Only the convergence flag showed the
+problem. Check it first.
 
 # Key points
 
-## Scene 44
+## Scene 22
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: the loss is an assumption, so choose it
-and report it.
+To sum up. <short pause> One: the loss decides what a model pays attention to.
 
-## Scene 45
+## Scene 23
 visual: manim KeyPoints: the second ticked
 
-Two: fitting is a search, so check that it arrived.
+Two: a search can fail quietly, so check that it finished.
 
-## Scene 46
+## Scene 24
 visual: manim KeyPoints: the third ticked
 
-Three: a penalty is a prior, and with little data it can help.
+Three: with little data, a prior keeps a model sensible.
 
-## Scene 47
-visual: manim EndCard: the site's address and a thanks
+## Scene 25
+visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.
