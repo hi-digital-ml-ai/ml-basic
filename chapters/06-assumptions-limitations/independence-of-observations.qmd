@@ -1,6 +1,6 @@
 ---
 title: "Independence of observations"
-description: "How many observations do you really have? Usually fewer than the number of rows, and the difference shows up in your standard errors."
+description: "Visits to the same site share their water and seabed, so a survey's rows are worth fewer independent stations than their number. Resampling whole sites measures the shortfall, and shows that a model's inputs can explain most of it."
 order: 3
 categories: [assumptions, spatial-temporal]
 ---
@@ -10,313 +10,369 @@ categories: [assumptions, spatial-temporal]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(601)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The assumption behind every standard error
+## Repeat visits are not separate evidence
 
-Nearly every method in this course assumes that one row tells you nothing about the next. That
-assumption is what turns *n* rows into *n* pieces of evidence: it is the reason standard errors
-shrink with $\sqrt{n}$, the reason cross-validation works, and the reason a *p*-value means
-anything.
+[Observations and features](../02-marine-data/observations-and-features.qmd) found that
+the survey's rows come from a much smaller number of monitoring sites, and called
+treating repeat visits as separate observations **pseudo-replication**. That is why
+[Splitting the data](../02-marine-data/splitting-data.qmd) keeps each site's rows
+together. This page measures what the repeat visits are worth, and what treating them
+as independent does to a model's uncertainty.
 
-Marine data violates it routinely, and usually by design. You revisit the same monitoring
-stations. You take three sub-samples from one grab. You measure twenty individuals from one
-haul. You record a CTD profile every metre. In each case the number of rows in your spreadsheet
-is much larger than the number of independent things you learned.
+The same problem appears wherever one unit is sampled several times:
 
-This page measures the gap on the coastal survey and shows what it does to a result you might
-otherwise have published.
+| What is repeated | What the rows share | The unit to count |
+| --- | --- | --- |
+| Visits to a fixed station | Depth, seabed, local water | The station |
+| Sub-samples from one grab | The grab | The grab |
+| Fish measured from one haul | The haul, the gear, the day | The haul |
+| Readings down one CTD cast | The water column | The cast |
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-### Pseudo-replication
+## Resampling whole sites measures what the visits are worth
 
-Treating repeated measurements of the same unit as independent replicates is called
-**pseudo-replication**. It does not usually bias your estimates; what it does is make them look
-far more certain than they are.
+[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) grew each
+tree on a **bootstrap sample**: rows drawn at random with replacement, as many as the
+data has. Fitting the same model to many bootstrap samples shows how much an estimate
+moves from one sample to the next, and the spread of those estimates is its standard
+error.
 
-The mechanism is simple. Two visits to the same site share everything the site has that your
-covariates do not measure: a rock ledge, a persistent eddy, a patch of the population. When the
-model is wrong at that site, it tends to be wrong in the same direction on both visits. Those
-two errors are not two independent pieces of evidence about the model; they are closer to one.
+Drawing single rows treats every row as independent. Drawing whole sites, each with
+all its visits, treats only the sites as independent. If the two spreads agree, the
+visits were as good as separate stations. If drawing sites gives the wider spread, the
+visits were partly repeating each other.
 
-Common marine cases, all of which look like independent rows:
+The difference converts into a number of stations. A standard error shrinks with the
+square root of the number of independent observations, so a spread $k$ times wider
+means the rows are worth $k^2$ times fewer: the **effective sample size**.
 
-| What is repeated | What the rows share | The unit you actually have |
-| --- | --- | --- |
-| Annual visits to fixed stations | Local habitat, depth, substrate | The station |
-| Sub-samples from one grab or core | The grab | The grab |
-| Individuals measured from one haul | The haul, the gear, the day | The haul |
-| Points along a CTD profile | The cast, the water column | The cast |
-| Images from one transect | Illumination, habitat patch | The transect |
-
-### Measuring it
-
-The **intra-class correlation** (ICC) is the proportion of the total variation that sits
-*between* groups rather than within them. Zero means the grouping tells you nothing; one means
-everything within a group is identical.
-
-From it comes the number that matters, the **design effect**:
-
-$$\text{design effect} = 1 + (\bar{m} - 1)\,\rho, \qquad n_{\text{eff}} = \frac{n}{\text{design effect}}$$
-
-where $\rho$ is the ICC and $\bar{m}$ is the average group size. The effective sample size
-$n_{\text{eff}}$ is roughly how many genuinely independent observations your rows are worth.
+::: {.diagram}
+![Visits to one site share its water and seabed. Resampling stations draws single visits, so every row counts as separate evidence. Resampling sites draws a site with all its visits, so only sites count. If resampling sites spreads an estimate wider, the visits were repeating each other.](img/resample-sites.svg){fig-alt="Three cards. The survey, sites with repeat visits: four sites, A to D, each a box holding three to five visits drawn as dots in the site's colour; visits to one site share its water and seabed, so they tend to agree. Resample stations, draw one row at a time: sixteen draws of a single visit each, with the colours mixed, so every row counts as separate evidence. Resample sites, draw whole sites: four draws of a whole site with all its visits, one site drawn twice and one not at all, so only sites count as separate evidence. A note says if resampling sites spreads an estimate wider, the visits were repeating each other."}
+:::
 
 ## Worked example
 
-The raw survey export carries `site_id`: the 720 usable visits come from a smaller number of
-repeatedly visited monitoring sites.
+The data, the split by site, the recipe and the negative binomial model are those of
+[Distributional assumptions](distributional-assumptions.qmd). The prepared training
+data keeps each station's `site_id` beside its inputs, so that the resampling can draw
+whole sites.
+
+### Preparing the data
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(site_id, abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na()
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
 
-visits <- d |> count(site_id, name = "visits")
-
-c(rows = nrow(d),
-  sites = nrow(visits),
-  median_visits = median(visits$visits),
-  most_visits = max(visits$visits))
-```
-
-```{r}
-#| label: fig-sites
-#| fig-cap: "Left: how many visits each of the 158 sites received: most have three to five, one has thirteen. Right: abundance at the twenty most-visited sites, ordered by site mean. Some sites are consistently empty and some consistently productive, which is what makes repeat visits worth less than independent stations."
-#| fig-alt: "Two panels. The left is a bar chart of visits per site, with counts from one to thirteen on the horizontal axis; the tallest bars are at four and five visits, with a long thin tail out to thirteen. The right panel is a strip plot of abundance for twenty sites arranged on the vertical axis in order of their mean, each site shown as a row of points. The lowest rows have all their points at or near zero; the highest rows have points scattered between two and twenty-five. The spread within a row is wide, but the rows clearly differ from one another."
-#| fig-width: 8
-#| fig-height: 4
-p1 <- ggplot(visits, aes(visits)) +
-  geom_bar(fill = ml_palette[["blue"]]) +
-  scale_x_continuous(breaks = 1:13) +
-  labs(x = "Visits to a site", y = "Sites",
-       title = "Repeat visits, not fresh stations")
-
-top_sites <- visits |> slice_max(visits, n = 20) |> pull(site_id)
-
-p2 <- d |>
-  filter(site_id %in% top_sites) |>
-  mutate(site_id = fct_reorder(site_id, abundance, .fun = mean)) |>
-  ggplot(aes(abundance, site_id)) +
-  geom_point(alpha = 0.6, size = 1.8, colour = ml_palette[["vermilion"]]) +
-  labs(x = "Abundance (individuals)", y = NULL,
-       title = "The twenty most-visited sites") +
-  theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
-
-p1 + p2
-```
-
-```{r}
-#| label: icc
-group <- factor(d$site_id)
-y     <- log1p(d$abundance)
-
-anova_table <- anova(lm(y ~ group))
-mean_sq_between <- anova_table$`Mean Sq`[1]
-mean_sq_within  <- anova_table$`Mean Sq`[2]
-
-sizes <- table(group)
-m_bar <- (sum(sizes) - sum(sizes^2) / sum(sizes)) / (nlevels(group) - 1)
-
-icc <- (mean_sq_between - mean_sq_within) /
-  (mean_sq_between + (m_bar - 1) * mean_sq_within)
-
-design_effect <- 1 + (m_bar - 1) * icc
-
-c(ICC = icc,
-  `average group size` = m_bar,
-  `design effect` = design_effect,
-  `effective sample size` = nrow(d) / design_effect) |>
-  round(3)
-```
-
-### The cost in precision
-
-The damage is to precision, so we compare a model's standard errors two ways: the ordinary ones,
-which assume 720 independent visits, and **cluster-robust** ones, which assume only that
-different *sites* are independent.
-
-To make the stakes concrete we also add `site_noise`, a random number drawn once per site
-and attached to every visit to it. It has nothing to do with abundance, by construction.
-It is the kind of variable a site-level covariate would be: bottom type, management zone,
-distance to port.
-
-```{r}
-#| label: cluster-robust
-set.seed(77)
-site_level <- tibble(site_id = unique(d$site_id),
-                     site_noise = rnorm(n_distinct(d$site_id)))
-
-dd <- left_join(d, site_level, by = "site_id")
-
-fit <- lm(abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + site_noise, data = dd)
-
-# Cluster-robust variance: independence between sites, anything within them.
-X <- model.matrix(fit)
-u <- residuals(fit)
-bread <- solve(t(X) %*% X)
-meat <- reduce(unique(dd$site_id), \(acc, s) {
-  rows <- dd$site_id == s
-  score <- t(X[rows, , drop = FALSE]) %*% u[rows]
-  acc + tcrossprod(score)
-}, .init = matrix(0, ncol(X), ncol(X)))
-
-G <- n_distinct(dd$site_id)
-adjust <- (G / (G - 1)) * ((nrow(X) - 1) / (nrow(X) - ncol(X)))
-cluster_se <- sqrt(diag(bread %*% meat %*% bread * adjust))
-
-naive <- summary(fit)$coefficients
-
-tibble(
-  term            = rownames(naive),
-  estimate        = naive[, 1],
-  `naive SE`      = naive[, 2],
-  `cluster SE`    = cluster_se,
-  `SE inflation`  = cluster_se / naive[, 2],
-  `naive p`       = naive[, 4],
-  `cluster p`     = 2 * pnorm(-abs(naive[, 1] / cluster_se))
+curve_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
 ) |>
-  mutate(across(where(is.numeric), \(x) round(x, 4)))
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand") |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+
+prepared <- bake(prep(curve_recipe), new_data = NULL) |>
+  mutate(site_id = train$site_id)
+
+fit_nb <- \(data) MASS::glm.nb(abundance ~ . - site_id, data = data)
+nb_fit <- fit_nb(prepared)
 ```
 
-```{r}
-#| label: fig-se
-#| fig-cap: "Naive and cluster-robust standard errors for the same four coefficients, each expressed as a multiple of its naive value. Chlorophyll's honest standard error is 2.77 times the naive one. Depth and temperature move the other way, which is not a mistake; see the text."
-#| fig-alt: "A horizontal dot plot with four terms on the vertical axis and standard error inflation factor on the horizontal axis from 0.8 to 3. A dotted vertical reference line marks 1. Chlorophyll sits far to the right at 2.77. Site noise sits at 1.29. Depth and temperature sit just left of the line at 0.93 and 0.87."
-#| fig-width: 7
-#| fig-height: 3.2
-tibble(term = rownames(naive)[-1],
-       inflation = (cluster_se / naive[, 2])[-1]) |>
-  mutate(term = fct_reorder(term, inflation)) |>
-  ggplot(aes(inflation, term)) +
-  geom_vline(xintercept = 1, linetype = "dotted") +
-  geom_point(size = 3.4, colour = ml_palette[["vermilion"]]) +
-  labs(x = "Cluster-robust SE ÷ naive SE", y = NULL,
-       title = "What pretending the visits are independent buys you") +
-  theme(panel.grid.major.y = element_blank())
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows]
+
+categorical = ["substrate", "season"]
+predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
+              "salinity_psu"] + categorical
+
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical",
+     OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+     categorical),
+])
+
+fitted_recipe = curve_recipe.fit(train[predictors])
+design = sm.add_constant(pd.DataFrame(
+    fitted_recipe.transform(train[predictors]),
+    columns=fitted_recipe.get_feature_names_out(), index=train.index))
+counts = train["abundance"].to_numpy()
+sites = train["site_id"].to_numpy()
+
+nb_fit = sm.NegativeBinomial(counts, design).fit(method="newton", disp=0)
 ```
 
-### And the cost to a predictive model
-
-```{r}
-#| label: grouped-cv
-model <- workflow() |>
-  add_recipe(
-    recipe(abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-             salinity_psu + substrate + season, data = d) |>
-      step_impute_median(all_numeric_predictors())
-  ) |>
-  add_model(rand_forest(trees = 400) |> set_engine("ranger") |> set_mode("regression"))
-
-set.seed(601)
-random_cv <- fit_resamples(model, vfold_cv(d, v = 10),
-                           metrics = metric_set(rmse, rsq))
-set.seed(601)
-grouped_cv <- fit_resamples(model, group_vfold_cv(d, group = site_id, v = 10),
-                            metrics = metric_set(rmse, rsq))
-
-bind_rows(
-  collect_metrics(random_cv)  |> mutate(scheme = "Random 10-fold"),
-  collect_metrics(grouped_cv) |> mutate(scheme = "Grouped by site")
-) |>
-  select(scheme, .metric, mean, std_err) |>
-  mutate(across(where(is.numeric), \(x) round(x, 4)))
-```
-
-## Rows against observations
-
-**You have fewer observations than rows.** 720 visits to 158 sites, with an ICC of 0.088, give a
-design effect of 1.31 and an effective sample size of **549**. A quarter of the dataset is
-redundant: not worthless, but not new information either. Any calculation that used 720 where it
-should have used 549 is overconfident by about 15% in its standard errors.
-
-**The precision cost is concentrated, not uniform.** Chlorophyll's honest standard error
-is **2.77 times** the naive one, moving its *p*-value from effectively zero to 0.002,
-which is still a solid result, but a different claim. Meanwhile the fabricated
-`site_noise` variable, which cannot matter, goes from *p* = 0.090 to *p* = 0.187: the
-naive analysis was on the road to calling a random number marginally significant.
-
-Depth and temperature go the other way, their standard errors *shrinking* by 7% and 13%. This is
-real, not a numerical artefact. Clustering inflates a coefficient's standard error when that
-predictor's errors line up within a site, and can shrink it when they do not. The lesson is that
-you cannot guess which coefficients are affected or by how much; you have to compute it.
-
-**The predictive cost is much smaller than the inferential one.** Random 10-fold
-cross-validation gives RMSE 4.46; grouping the folds by site gives 4.55. That gap is real
-but modest, and it is smaller than it would be if sites were tightly packed, because these
-158 sites are spread across the whole shelf so a held-out site still has training stations
-nearby.
-
-That last clause is important, and it is a warning rather than a reassurance.
-[Grouping by site](../07-validation/index.qmd) fixes repeat visits; it does **not** fix the fact
-that a held-out site has neighbours in the training set. That is a separate violation, with a
-bigger effect, and it is
-[two pages away](spatial-and-temporal-dependence.qmd).
-
-::: {.callout-important}
-The phrase "we had 720 samples" is the single most common overstatement in survey-based
-analysis. Report both numbers: how many observations and how many independent units. If a
-reviewer cannot tell from your methods section whether your 720 rows came from 720 places
-or 158, the methods section is incomplete.
 :::
 
-## Limits of cluster-robust errors
+### Visits to one site repeat each other's catch
 
-**Cluster-robust standard errors need enough clusters.** The rule of thumb is around 40;
-with 158 sites we are comfortable. With eight transects or five vessels, cluster-robust
-standard errors are themselves unreliable and a mixed model or a permutation test is the
-better route.
+The first estimate is the simplest: the average catch per station. Five hundred
+bootstrap samples are drawn by station and five hundred by site, and the average is
+computed in each.
 
-**They fix the standard errors, not the estimates.** If sites differ systematically in
-ways correlated with your predictors, if the deep sites are also the muddy ones and were
-visited more often, the coefficient itself is affected, and a robust standard error around
-a biased estimate is a precise answer to the wrong question. A mixed model with a site
-random effect, or including site-level means as covariates, addresses that; this page does
-not.
+::: {.panel-tabset group="language"}
 
-**Grouping is only as good as the grouping variable.** `site_id` was recoverable here
-because the raw export carried it. Real datasets frequently lose it, when the grab
-identifier is dropped in a summary table or the haul is aggregated away, and once it is
-gone the dependence is invisible and uncorrectable. Keep the identifier of the unit you
-sampled, at every stage of processing.
+## R
 
-**Independence is not the only assumption.** A model can have perfectly independent observations
-and still be wrong about linearity, about the distribution, or about the range it is being asked
-to predict over. Those are the next three pages.
+```{r}
+#| label: average-catch
+by_station <- bootstraps(prepared, times = 500)
+by_site <- group_bootstraps(prepared, group = site_id, times = 500)
 
-::: {.callout-tip}
+average_catch <- \(boots) {
+  map_dbl(boots$splits, \(s) mean(analysis(s)$abundance))
+}
+
+average_spread <- tibble(
+  by_station = sd(average_catch(by_station)),
+  by_site = sd(average_catch(by_site))
+) |>
+  mutate(ratio = by_site / by_station,
+         worth = nrow(prepared) / ratio^2)
+average_spread |> mutate(across(by_station:ratio, \(x) round(x, 2)),
+                          worth = round(worth))
+```
+
+## Python
+
+```{python}
+rng = np.random.default_rng(1)
+site_rows = {s: np.flatnonzero(sites == s) for s in np.unique(sites)}
+
+def by_station():
+    return rng.integers(0, len(counts), len(counts))
+
+def by_site():
+    drawn = rng.choice(list(site_rows), size=len(site_rows), replace=True)
+    return np.concatenate([site_rows[s] for s in drawn])
+
+spread_station = np.std([counts[by_station()].mean() for _ in range(500)])
+spread_site = np.std([counts[by_site()].mean() for _ in range(500)])
+ratio = spread_site / spread_station
+pd.DataFrame({"by_station": [spread_station], "by_site": [spread_site],
+              "ratio": [ratio], "worth": [len(counts) / ratio**2]}).round(
+                 {"by_station": 2, "by_site": 2, "ratio": 2, "worth": 0})
+```
+
+:::
+
+```{r}
+#| label: average-numbers
+#| include: false
+two <- \(x) format(round(x, 2), nsmall = 2)
+n_rows <- nrow(prepared)
+n_sites <- n_distinct(prepared$site_id)
+```
+
+The `r n_rows` training stations come from `r n_sites` sites. Drawing whole sites
+spreads the average catch `r two(average_spread$ratio)` times wider than drawing
+single stations, so for this estimate the rows are worth about
+`r round(average_spread$worth, -1)` independent stations. A confidence interval built
+as if all `r n_rows` were independent would be too narrow by the same factor of
+`r two(average_spread$ratio)`.
+
+The visits repeat each other because a site's depth, temperature and seabed stay the
+same from one visit to the next. A deep muddy site is rich every time it is sampled,
+and a shallow rocky one is poor every time.
+
+### The model's inputs explain most of what visits share
+
+The negative binomial model knows each station's depth, temperature and seabed. Once
+those are in the model, what remains to be shared between a site's visits is only what
+the inputs miss. The same bootstrap samples are now used to refit the model, and each
+coefficient's spread is compared.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: model-spread
+coefficients_of <- \(boots) {
+  map(boots$splits, \(s) coef(fit_nb(analysis(s)))) |> bind_rows()
+}
+
+model_spread <- tibble(
+  term = names(coef(nb_fit)),
+  by_station = map_dbl(coefficients_of(by_station), sd),
+  by_site = map_dbl(coefficients_of(by_site), sd)
+) |>
+  filter(term != "(Intercept)") |>
+  mutate(ratio = by_site / by_station)
+model_spread |> mutate(ratio = round(ratio, 2)) |> select(term, ratio)
+```
+
+## Python
+
+```{python}
+def coefficients(rows):
+    refit = sm.NegativeBinomial(counts[rows], design.iloc[rows]).fit(
+        start_params=nb_fit.params, method="newton", disp=0)
+    return refit.params.drop(["const", "alpha"])
+
+spread_station = pd.DataFrame(
+    [coefficients(by_station()) for _ in range(500)]).std()
+spread_site = pd.DataFrame(
+    [coefficients(by_site()) for _ in range(500)]).std()
+model_spread = pd.DataFrame({"by_station": spread_station,
+                             "by_site": spread_site})
+model_spread["ratio"] = model_spread["by_site"] / model_spread["by_station"]
+model_spread["ratio"].round(2)
+```
+
+:::
+
+```{r}
+#| label: model-numbers
+#| include: false
+labels <- c(
+  depth_m_poly_1 = "depth", depth_m_poly_2 = "depth squared",
+  temperature_c_poly_1 = "temperature",
+  temperature_c_poly_2 = "temperature squared",
+  chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
+  substratemud = "substrate: mud", substrategravel = "substrate: gravel",
+  substraterock = "substrate: rock", seasonsummer = "season: summer",
+  seasonautumn = "season: autumn", seasonwinter = "season: winter"
+)
+model_spread <- model_spread |> mutate(label = labels[term])
+model_worth <- n_rows / mean(model_spread$ratio^2)
+widest <- slice_max(model_spread, ratio, n = 1)
+near_one <- sum(between(model_spread$ratio, 0.9, 1.1))
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-spread
+#| fig-cap: "How much wider each estimate spreads when whole sites are resampled instead of single stations. The survey's average catch spreads much wider. The negative binomial model's coefficients mostly spread about as much either way, because the model's inputs explain most of what a site's visits share."
+#| fig-alt: !expr 'glue::glue("A dot plot with estimates on the vertical axis and the ratio of the spread when resampling sites to the spread when resampling stations on the horizontal axis, with a dotted line at 1. The average catch is drawn in vermilion at the top, at {two(average_spread$ratio)}. The twelve coefficients of the negative binomial model are drawn in blue below it; {near_one} of them lie between 0.9 and 1.1, and the widest is {widest$label} at {two(widest$ratio)}.")'
+#| fig-width: 7
+#| fig-height: 4.4
+spread_plot <- bind_rows(
+  tibble(label = "average catch", ratio = average_spread$ratio,
+         estimate = "Average catch"),
+  model_spread |> mutate(estimate = "Negative binomial coefficient")
+) |>
+  mutate(label = fct_reorder(label, ratio))
+
+ggplot(spread_plot, aes(ratio, label, colour = estimate)) +
+  geom_vline(xintercept = 1, linetype = "dotted") +
+  geom_point(size = 3.2) +
+  scale_colour_manual(values = c(
+    "Average catch" = ml_palette[["vermilion"]],
+    "Negative binomial coefficient" = ml_palette[["blue"]])) +
+  labs(x = "Spread when resampling sites ÷ spread when resampling stations",
+       y = NULL, colour = NULL) +
+  theme(legend.position = "bottom", panel.grid.major.y = element_blank())
+```
+
+:::
+
+@fig-spread puts the two side by side. Of the model's `r nrow(model_spread)`
+coefficients, `r near_one` have ratios between 0.9 and 1.1, about as close to 1 as two
+sets of 500 resamples can tell apart. The widest is
+`r widest$label`, at `r two(widest$ratio)` times. Averaged over the coefficients, the
+rows are worth about `r round(model_worth, -1)` independent stations to the model,
+against `r round(average_spread$worth, -1)` for the average catch.
+
+This answers the question
+[Distributional assumptions](distributional-assumptions.qmd) left open. The negative
+binomial model's intervals assume every station is independent, and here they are
+close to right: only `r widest$label`'s should be noticeably wider. A model that left
+out depth or the seabed would leave more for a site's visits to share, and its
+intervals would be too narrow by more.
+
+The number of stations a survey is worth is therefore not fixed. It depends on the
+estimate, and on how much of what the visits share the model's inputs explain.
+
+## Neighbouring sites share their water too
+
+Resampling by site treats different sites as independent. Two sites a few kilometres
+apart share a water mass and a stretch of seabed, and anything the inputs miss there is
+shared by both. Resampling by site cannot see that, and neither can a split by site:
+a held-out site can still have a neighbour in the training data.
+[Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) asks how much
+that flatters a model's score.
+
+## Resampling by site needs many sites and their identifiers
+
+Resampling sites works when there are many of them; this survey has `r n_sites` in its
+training data. With a handful of transects or vessels, the possible resamples are too
+few to give a reliable spread, and **mixed models**, which fit a separate shift for
+each group, are the usual route; they are beyond this course.
+
+It also needs the identifier. `site_id` survived here because the survey kept it.
+Real datasets often lose the grab, haul or cast that a row came from when the data are
+summarised, and once that column is gone the repeats cannot be found. Keep the
+identifier of the unit sampled at every stage of processing, and report both numbers:
+how many rows, and how many sites.
+
 ## Key points
 
-- Models assume one row is one independent piece of evidence. Repeat visits, sub-samples, and
-  profile points are not.
-- The **design effect** converts rows into effective observations. Here 720 visits to 158 sites,
-  ICC 0.088, gave an effective sample size of **549**.
-- Pseudo-replication mainly damages **precision**, not estimates. Chlorophyll's honest standard
-  error was 2.77 times the naive one, and a fabricated site-level variable went from *p* = 0.09 to
-  *p* = 0.19.
-- It is not uniform: two of the four coefficients had *smaller* cluster-robust standard errors.
-  Compute it rather than assuming a direction.
-- Grouped cross-validation cost only 0.09 RMSE here, because the sites are spread out. It fixes
-  repeat visits, not spatial proximity.
-
+::: {.key-points}
+- Visits to one site share its water and seabed, so they count as less than separate
+  evidence. This is pseudo-replication.
+- **Resampling whole sites** instead of single stations measures it: a spread $k$
+  times wider means the rows are worth $k^2$ times fewer independent stations, the
+  **effective sample size**.
+- For the average catch, the `r n_rows` training stations were worth about
+  `r round(average_spread$worth, -1)` independent ones.
+- For the negative binomial model they were worth about `r round(model_worth, -1)`:
+  its inputs explain most of what a site's visits share.
+- Resampling by site still treats neighbouring sites as independent, which the next
+  page takes up.
 :::
 
 ## Try it yourself
 
-1. Compute the ICC on `present` instead of `log1p(abundance)`. Is a site's tendency to hold the
-   species at all more or less consistent than how many it holds, and which is the more useful
-   thing to know about a monitoring site?
-2. Restrict the data to sites with at least five visits and recompute the design effect. It will
-   rise. Explain why that does *not* mean you should visit fewer sites more often.
+1. Remove `depth_m` and `temperature_c` from `curve_recipe`, refit, and compare the
+   coefficients' spreads again. How many stations are the rows worth to this model?
+2. Repeat the average-catch comparison for the share of stations where the species is
+   present. Are presence and absence more or less consistent from visit to visit than
+   the count?
