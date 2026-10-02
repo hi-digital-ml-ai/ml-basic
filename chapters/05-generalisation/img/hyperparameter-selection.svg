@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 668" width="100%" role="img" aria-label="A card shows the training sites cut into five folds, each fold a block of four sites. In five rounds, a different fold is held out and scored as new sites while the model is fitted to the other four, giving errors one to five. The five errors are averaged to give the setting's cross-validated error. Below, four steps: repeat for every candidate setting; choose the setting with the lowest average; refit it on all the training sites; score the test sites once, at the end. A note says each fold holds whole sites, so no site is fitted to and scored in the same round.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Cross-validation by site</text>
+<rect class="box" x="0" y="48" width="960" height="408" rx="8"/><rect x="0" y="48" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="88">The training sites, cut into five folds</text>
+<rect x="520" y="74" width="26" height="18" rx="3" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/><text class="sm" x="554" y="89">fitted to</text>
+<rect x="660" y="74" width="26" height="18" rx="3" fill="#D55E00"/><text class="sm" x="694" y="89">held out, scored as new sites</text>
+<text class="body" x="22" y="145">Round 1</text>
+<rect x="140" y="120" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="160" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="184" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="208" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="232" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<rect x="262" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<path d="M754 138.0 H788" stroke="#6b7680" stroke-width="2"/><path d="M788 132.0 L798 138.0 L788 144.0 Z" fill="#6b7680"/>
+<text class="body" x="808" y="144.0" fill="#D55E00">error 1</text>
+<text class="body" x="22" y="199">Round 2</text>
+<rect x="140" y="174" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="160" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="184" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="208" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="232" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="174" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="282" cy="192.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="306" cy="192.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="330" cy="192.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="354" cy="192.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<rect x="384" y="174" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="174" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="174" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="192.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<path d="M754 192.0 H788" stroke="#6b7680" stroke-width="2"/><path d="M788 186.0 L798 192.0 L788 198.0 Z" fill="#6b7680"/>
+<text class="body" x="808" y="198.0" fill="#D55E00">error 2</text>
+<text class="body" x="22" y="253">Round 3</text>
+<rect x="140" y="228" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="160" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="184" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="208" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="232" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="228" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="228" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="404" cy="246.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="428" cy="246.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="452" cy="246.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="476" cy="246.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<rect x="506" y="228" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="228" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="246.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<path d="M754 246.0 H788" stroke="#6b7680" stroke-width="2"/><path d="M788 240.0 L798 246.0 L788 252.0 Z" fill="#6b7680"/>
+<text class="body" x="808" y="252.0" fill="#D55E00">error 3</text>
+<text class="body" x="22" y="307">Round 4</text>
+<rect x="140" y="282" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="160" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="184" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="208" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="232" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="282" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="282" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="282" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="526" cy="300.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="550" cy="300.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="574" cy="300.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="598" cy="300.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<rect x="628" y="282" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="300.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<path d="M754 300.0 H788" stroke="#6b7680" stroke-width="2"/><path d="M788 294.0 L798 300.0 L788 306.0 Z" fill="#6b7680"/>
+<text class="body" x="808" y="306.0" fill="#D55E00">error 4</text>
+<text class="body" x="22" y="361">Round 5</text>
+<rect x="140" y="336" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="160" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="184" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="208" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="232" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="336" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="336" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="336" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="336" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="648" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="672" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="696" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="720" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<path d="M754 354.0 H788" stroke="#6b7680" stroke-width="2"/><path d="M788 348.0 L798 354.0 L788 360.0 Z" fill="#6b7680"/>
+<text class="body" x="808" y="360.0" fill="#D55E00">error 5</text>
+<circle cx="160" cy="404" r="6" fill="#ffffff" stroke="#0072B2" stroke-width="1.2"/><text class="sm" x="174" y="409">one site, with all its visits</text>
+<text class="body" x="938" y="410" text-anchor="end">Average the five errors:</text>
+<text class="body" x="938" y="434" text-anchor="end">the setting’s cross-validated error.</text>
+<rect class="box" x="0" y="482" width="222" height="96" rx="8"/><rect x="0" y="482" width="222" height="6" rx="3" fill="#1b6a87"/>
+<text class="lab" x="18" y="514" fill="#1b6a87">STEP 1</text>
+<text class="body" x="18" y="540">Repeat for every</text>
+<text class="body" x="18" y="562">candidate setting.</text>
+<path d="M225 530.0 H235" stroke="#6b7680" stroke-width="2"/><path d="M235 524.0 L243 530.0 L235 536.0 Z" fill="#6b7680"/>
+<rect class="box" x="246" y="482" width="222" height="96" rx="8"/><rect x="246" y="482" width="222" height="6" rx="3" fill="#1b6a87"/>
+<text class="lab" x="264" y="514" fill="#1b6a87">STEP 2</text>
+<text class="body" x="264" y="540">Choose the setting with</text>
+<text class="body" x="264" y="562">the lowest average.</text>
+<path d="M471 530.0 H481" stroke="#6b7680" stroke-width="2"/><path d="M481 524.0 L489 530.0 L481 536.0 Z" fill="#6b7680"/>
+<rect class="box" x="492" y="482" width="222" height="96" rx="8"/><rect x="492" y="482" width="222" height="6" rx="3" fill="#1b6a87"/>
+<text class="lab" x="510" y="514" fill="#1b6a87">STEP 3</text>
+<text class="body" x="510" y="540">Refit it on all the</text>
+<text class="body" x="510" y="562">training sites.</text>
+<path d="M717 530.0 H727" stroke="#6b7680" stroke-width="2"/><path d="M727 524.0 L735 530.0 L727 536.0 Z" fill="#6b7680"/>
+<rect class="box" x="738" y="482" width="222" height="96" rx="8"/><rect x="738" y="482" width="222" height="6" rx="3" fill="#6b7680"/>
+<text class="lab" x="756" y="514" fill="#6b7680">STEP 4</text>
+<text class="body" x="756" y="540">Score the test sites</text>
+<text class="body" x="756" y="562">once, at the end.</text>
+<text class="note" x="470" y="620" text-anchor="middle">Each fold holds whole sites, so no site is fitted to and scored in the same round.</text>
+</svg>

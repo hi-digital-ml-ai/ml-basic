@@ -21,9 +21,10 @@ puts near-identical observations on both sides of the split, so the model is tes
 has effectively already seen. Reporting a measure chosen by default rewards whichever model
 happens to suit that default.
 
-[Section 5](../05-generalisation/index.qmd) chose complexity by looking at the test set on
-every page, and said so each time. [Section 6](../06-assumptions-limitations/index.qmd)
-diagnosed dependence and deferred the remedy. This section settles both debts, and then asks
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) introduced
+cross-validation by site for choosing a setting.
+[Section 6](../06-assumptions-limitations/index.qmd) diagnosed dependence and deferred the
+remedy. This section takes up both, and then asks
 the question neither of them did: what should the number have been measuring in the first
 place?
 

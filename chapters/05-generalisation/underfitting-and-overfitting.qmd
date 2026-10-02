@@ -1,6 +1,6 @@
 ---
 title: "Underfitting and overfitting"
-description: "The U-shaped curve at the centre of machine learning, drawn from a marine survey rather than a textbook."
+description: "A model can fail on new data by being too rigid or too flexible. The two failures leave different signs in its two errors, and on the survey the flexible one costs far more."
 order: 2
 categories: [generalisation]
 ---
@@ -10,90 +10,66 @@ categories: [generalisation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(rpart)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(502)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The shape of the test-error curve
+## Two ways to fail on new data
 
-[The previous page](training-versus-new-data.qmd) showed that training error falls as a model
-becomes more flexible, and keeps falling, right down to zero. Test error does something else,
-and the shape it makes is the single most important picture in this course.
-
-It falls, reaches a minimum, and rises. To the left of that minimum the model is too rigid
-to represent what is there, which is **underfitting**. To the right it is representing
-things that are not there, which is **overfitting**. Everything in the rest of this
-section is machinery for finding the bottom of that curve without cheating.
+[Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
+validation sites: as the tree grew deeper, its error on those sites fell a little and then
+rose. This page names the two ends of that curve. A model can be too rigid to follow the
+pattern in the data, or so flexible that it follows the noise as well, and the two failures
+need opposite fixes. Setting the model's training error beside its error on new data, the
+two errors of [the previous page](training-versus-new-data.qmd), tells you which one you
+have.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## The U-shaped error curve and its two failures
 
-A model has to commit to a class of shapes before it sees the data. A straight line can only
-be a straight line. A tree with four leaves can only produce four distinct predictions. A tree
-with one station per leaf can produce anything at all.
+Before it sees any data, a model is limited to a family of shapes. A straight line can only
+be a straight line; a tree with four leaves can only give four different predictions. How
+wide that family is, is the model's **flexibility**.
 
-- **Underfitting** is a model whose shapes are too restricted to hold the pattern. You can
-  recognise it because training and test error are both poor *and about equal*: the model is
-  not being fooled by noise, it simply cannot bend.
-- **Overfitting** is a model flexible enough to bend around the noise as well as the signal.
-  Training error is excellent, test error is poor, and the gap between them is the tell.
+- **Underfitting** is a model too rigid to follow the pattern. It misses the training data
+  and new data by about as much, so its two errors are both high and close together. It is
+  not fooled by noise; it simply cannot bend enough.
+- **Overfitting** is a model flexible enough to follow the noise as well as the signal. Its
+  training error is low and its error on new data high, and the wide gap between them is
+  the sign.
 
-The two failures look nothing alike in the diagnostics and are routinely confused in
-conversation, because both are described as "the model isn't working".
+As flexibility grows, the training error keeps falling. The error on new data falls while
+the model is still picking up the pattern, reaches a lowest point, then rises as the model
+fits more and more noise. Plotted against flexibility, it makes a U, called the
+**U-shaped error curve**. The best setting lies at its lowest point, between the two
+failures, and only the error on new data shows where.
 
-```{r}
-#| label: fig-three-fits
-#| fig-cap: "Abundance against depth for 480 training stations, with three regression trees of increasing flexibility. Left: a single split, which can only say shallow or deep. Centre: nine leaves, following the decline from about 7 individuals in the shallows to under 2 below 150 m. Right: one station per leaf, which passes through almost every point and has recorded the survey rather than learned from it."
-#| fig-alt: "Three panels, each a scatter of 480 stations with depth on the horizontal axis from zero to about 195 metres and abundance on the vertical axis from zero to 40 individuals. Most points lie below ten, and the cloud thins with depth. An orange step function is drawn over each. In the left panel it has two levels, about 6 in the shallows dropping to about 3 beyond 60 metres. In the centre panel it has nine descending levels, starting near 7 and ending near 1.5. In the right panel it is a dense comb of narrow spikes reaching every high point in the cloud, including the isolated catch of 40 near 20 metres."
-#| fig-width: 8.5
-#| fig-height: 3.4
-survey <- load_coastal_survey_clean()
+::: {.diagram}
+![An underfitted model is too rigid to follow the pattern, so both its errors are high and close together. An overfitted model bends through every point, so its training error is low but its error on new data is high. The training error falls all the way; the error on new data has a lowest point in between.](img/underfitting-and-overfitting.svg){fig-alt="Three small panels show the same eleven points with a hump-shaped pattern. Too rigid, underfitting: a straight line that misses the hump. In between: a smooth curve that follows the hump. Too flexible, overfitting: a zigzag through every point. Below, a wide panel plots two errors against flexibility. The training error falls steadily to zero. The error on new data falls a little, reaches its lowest point, then rises. On the left, the underfitting zone, both errors are high and close together. On the right, the overfitting zone, the training error is low and the error on new data high, with a wide gap between them."}
+:::
 
-set.seed(77)
-one_d <- survey |> select(abundance, depth_m) |> drop_na()
-one_d_split <- initial_split(one_d, prop = 0.6)
-one_d_train <- training(one_d_split)
-
-step_plot <- function(label, ...) {
-  fit <- rpart(abundance ~ depth_m, data = one_d_train,
-               control = rpart.control(cp = 0, minsplit = 2, ...))
-  line <- tibble(depth_m = seq(min(one_d_train$depth_m), max(one_d_train$depth_m),
-                               length.out = 1200)) |>
-    mutate(abundance = predict(fit, pick(everything())))
-  leaves <- sum(fit$frame$var == "<leaf>")
-  ggplot(one_d_train, aes(depth_m, abundance)) +
-    geom_point(alpha = 0.2, size = 1.1, colour = ml_palette[["grey"]]) +
-    geom_step(data = line, colour = ml_palette[["vermilion"]], linewidth = 0.8) +
-    labs(x = "Depth (m)", y = "Abundance",
-         title = label,
-         subtitle = paste(leaves, if (leaves == 1) "leaf" else "leaves"))
-}
-
-step_plot("Underfitted", maxdepth = 1) +
-  step_plot("About right", minbucket = 45) +
-  step_plot("Overfitted", minbucket = 1)
-```
-
-Depth's true effect in this simulation peaks near 80 m, but the *marginal* relationship over
-the sampled range is a decline, because temperature and chlorophyll, both of which fall with
-depth, carry much of the effect. A one-predictor tree can only show what is marginally there.
-
-The right-hand panel is the one to sit with. It is not a *worse* description of these 480
-stations than the middle panel; it is a strictly better one, and its training error is zero.
-Every spike in it is a real station that really caught that many individuals. It is also
-useless, because the next survey's stations will be at different depths and will catch
-different numbers, and none of those spikes will be where they need to be.
+Both failures show up as a model that predicts badly, so they are easily confused, yet the
+fixes go in opposite directions. An underfitted model needs more flexibility or better
+inputs. An overfitted one needs less flexibility or more data, and
+[Regularisation](regularisation.qmd) offers a third way to hold it back.
 
 ## Worked example
 
-The picture above varies one knob on one predictor. Now the real thing: the full set of
-predictors, a single tree, and its flexibility swept from very rigid to completely free.
+The data and split are those of [the previous page](training-versus-new-data.qmd): the
+training sites are split 20 times at random, by site, into fitting sites and new sites,
+and each error is averaged over the 20 splits. The test sites are still unused.
+
+The setting varied here is a tree's **minimum node size**, `min_n`: the smallest group of
+stations the tree may split into two. [Decision trees](../03-supervised-learning/decision-trees.qmd)
+varied the depth instead. Set large, it lets the tree split only a few times; set to 2, it lets
+the tree go on splitting until each leaf holds a single station.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -101,54 +77,160 @@ predictors, a single tree, and its flexibility swept from very rigid to complete
 
 ```{r}
 #| label: prepare
-set.seed(502)
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na()
+survey <- load_coastal_survey_clean()
 
-split <- initial_split(d, prop = 0.75)
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
-test  <- testing(split)
 
-rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
-baseline <- rmse_of(test$abundance, mean(train$abundance))
-round(baseline, 3)
+# 20 random splits of the training sites: fitting sites and new sites
+splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+tree_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+
+# The depth limit is set high so that min_n alone sets the size of the tree.
+tree_model <- function(min_n) {
+  decision_tree(mode = "regression", tree_depth = 30, min_n = min_n,
+                cost_complexity = 0)
+}
+leaves_of <- function(fitted) sum(extract_fit_engine(fitted)$frame$var == "<leaf>")
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import root_mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season"]
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-# get_dummies() is the closest thing to model.matrix(): scikit-learn's trees
-# take numbers only, so the factors are encoded once, here.
-d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train = survey.iloc[train_rows]
 
-train, test = train_test_split(d, train_size=0.75, random_state=502)
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
+])
 
-X_train, y_train = train.drop(columns="abundance"), train["abundance"]
-X_test, y_test = test.drop(columns="abundance"), test["abundance"]
+# 20 random splits of the training sites: fitting sites and new sites
+splitter = GroupShuffleSplit(n_splits=20, train_size=0.75, random_state=123)
+splits = list(splitter.split(train, groups=train["site_id"]))
 
-baseline = root_mean_squared_error(y_test, np.repeat(y_train.mean(), len(y_test)))
-round(baseline, 3)
+# rpart also keeps every leaf at a third of min_n or more; this matches it.
+def tree_model(min_n):
+    return DecisionTreeRegressor(min_samples_split=min_n,
+                                 min_samples_leaf=max(1, round(min_n / 3)),
+                                 random_state=123)
 ```
 
 :::
 
-`minbucket` is the smallest number of stations allowed in a leaf. Large values force a coarse
-tree; `minbucket = 1` allows a leaf per station.
+### Node size sets how closely a tree follows temperature
+
+To see what the setting does, three trees are fitted to all the training stations with
+temperature as their only input, so that each tree's predictions can be drawn as a line.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: one-input
+temperature_recipe <- recipe(abundance ~ temperature_c, data = train) |>
+  step_impute_median(temperature_c)
+
+three_sizes <- c(300, 50, 2)
+one_input <- map(three_sizes, \(n) {
+  workflow(temperature_recipe, tree_model(n)) |> fit(train)
+})
+
+tibble(min_n = three_sizes, leaves = map_int(one_input, leaves_of))
+```
+
+## Python
+
+```{python}
+one_input = {
+    n: Pipeline([("recipe", SimpleImputer(strategy="median")),
+                 ("model", tree_model(n))])
+       .fit(train[["temperature_c"]], train["abundance"])
+    for n in [300, 50, 2]
+}
+
+pd.DataFrame({"min_n": list(one_input),
+              "leaves": [m["model"].get_n_leaves() for m in one_input.values()]})
+```
+
+:::
+
+```{r}
+#| label: one-input-numbers
+#| include: false
+one_leaves <- map_int(one_input, leaves_of)
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-one-input
+#| fig-cap: "Three trees fitted to the training stations with temperature as their only input. A node must hold at least 300, 50 or 2 stations before it may split. The grey points are the stations."
+#| fig-alt: !expr glue::glue("Three panels of abundance against temperature, each with grey points for the training stations and an orange step line for one tree's predictions. Left, a node needs 300 stations to split and the tree has {one_leaves[1]} leaves, so the line has a few broad, level steps. Centre, 50 stations and {one_leaves[2]} leaves, a staircase with more steps that rises and falls across the temperature range. Right, 2 stations and {one_leaves[3]} leaves, a dense comb of narrow spikes reaching up to the highest catches.")
+#| fig-width: 9
+#| fig-height: 4.2
+grid <- tibble(temperature_c = seq(min(train$temperature_c, na.rm = TRUE),
+                                   max(train$temperature_c, na.rm = TRUE),
+                                   length.out = 1500))
+
+lines <- map2(one_input, three_sizes, \(fitted, n) {
+  grid |> mutate(.pred = predict(fitted, grid)$.pred, min_n = n)
+}) |>
+  list_rbind()
+
+labeller <- \(n) paste0("A node needs ", n, " stations\n",
+                        one_leaves[match(as.numeric(n), three_sizes)], " leaves")
+
+ggplot(train, aes(temperature_c, abundance)) +
+  geom_point(alpha = 0.25, size = 1, colour = ml_palette[["grey"]]) +
+  geom_step(data = lines, aes(y = .pred), colour = ml_palette[["vermilion"]],
+            linewidth = 0.7) +
+  facet_wrap(~ factor(min_n, levels = three_sizes),
+             labeller = as_labeller(labeller)) +
+  labs(x = "Temperature (°C)", y = "Abundance")
+```
+
+:::
+
+The first tree has `r one_leaves[1]` leaves and gives the same prediction across wide bands
+of temperature: it can show only the coarsest rise and fall. The second, with
+`r one_leaves[2]` leaves, follows more of the pattern. The third has `r one_leaves[3]` leaves
+and jumps up to meet nearly every large catch. Those catches are mostly luck, and a new
+station at the same temperature is unlikely to repeat them.
+
+### Sweeping the node size draws the U-shaped curve
+
+Now the trees use all six inputs, as in [Decision trees](../03-supervised-learning/decision-trees.qmd).
+For each split, trees with 12 minimum node sizes, from 300 down to 2, are fitted to the
+fitting sites and scored on the fitting stations and on the new sites. Predicting the
+fitting stations' average count everywhere gives a baseline.
 
 ::: {.panel-tabset group="language"}
 
@@ -156,167 +238,164 @@ tree; `minbucket = 1` allows a leaf per station.
 
 ```{r}
 #| label: sweep
-sweep <- map_dfr(c(60, 40, 25, 15, 10, 7, 5, 3, 2, 1), \(mb) {
-  fit <- rpart(abundance ~ ., data = train,
-               control = rpart.control(cp = 0, minsplit = 2, minbucket = mb, maxdepth = 30))
-  tibble(
-    minbucket = mb,
-    leaves    = sum(fit$frame$var == "<leaf>"),
-    training  = rmse_of(train$abundance, predict(fit, train)),
-    test      = rmse_of(test$abundance,  predict(fit, test))
-  )
-})
+sizes <- c(300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2)
 
-sweep |> mutate(across(c(training, test), \(x) round(x, 3)))
+score_split <- function(s) {
+  fitting <- analysis(s)
+  new     <- assessment(s)
+  map(sizes, \(n) {
+    fitted <- workflow(tree_recipe, tree_model(n)) |> fit(fitting)
+    tibble(min_n    = n,
+           leaves   = leaves_of(fitted),
+           training = rmse_vec(fitting$abundance, predict(fitted, fitting)$.pred),
+           average  = rmse_vec(new$abundance, rep(mean(fitting$abundance), nrow(new))),
+           new      = rmse_vec(new$abundance, predict(fitted, new)$.pred))
+  }) |>
+    list_rbind()
+}
+
+sweep <- map(splits$splits, score_split) |>
+  list_rbind() |>
+  group_by(min_n) |>
+  summarise(across(c(leaves, training, average, new), mean)) |>
+  mutate(gap = new - training) |>
+  arrange(desc(min_n))
+
+sweep |> select(-average) |> mutate(across(-min_n, \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-def grow(min_bucket):
-    tree = DecisionTreeRegressor(
-        min_samples_leaf=min_bucket, min_samples_split=2,
-        ccp_alpha=0.0, random_state=502,
-    ).fit(X_train, y_train)
-    return {
-        "minbucket": min_bucket,
-        "leaves": tree.get_n_leaves(),
-        "training": round(
-            root_mean_squared_error(y_train, tree.predict(X_train)), 3),
-        "test": round(root_mean_squared_error(y_test, tree.predict(X_test)), 3),
-    }
+```{python}
+sizes = [300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2]
 
-pd.DataFrame([grow(mb) for mb in [60, 40, 25, 15, 10, 7, 5, 3, 2, 1]])
+rmse = root_mean_squared_error
+rows = []
+for fit_rows, new_rows in splits:
+    fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
+    for n in sizes:
+        fitted = (Pipeline([("recipe", tree_recipe), ("model", tree_model(n))])
+                  .fit(fitting[predictors], fitting["abundance"]))
+        rows.append({
+            "min_n": n,
+            "leaves": fitted["model"].get_n_leaves(),
+            "training": rmse(fitting["abundance"],
+                             fitted.predict(fitting[predictors])),
+            "average": rmse(new["abundance"],
+                            np.full(len(new), fitting["abundance"].mean())),
+            "new": rmse(new["abundance"], fitted.predict(new[predictors])),
+        })
+
+sweep = (pd.DataFrame(rows).groupby("min_n", as_index=False).mean()
+         .assign(gap=lambda d: d["new"] - d["training"])
+         .sort_values("min_n", ascending=False))
+
+sweep.drop(columns="average").round(2)
 ```
 
 :::
 
 ```{r}
-#| label: fig-u-curve
-#| fig-cap: "Training and test RMSE against the number of leaves in the tree. Training error falls all the way to zero. Test error falls to a minimum at 16 leaves, then climbs and ends a full unit worse than predicting the training mean at every station. The shaded band on the left is the underfitted region; the band on the right is overfitted."
-#| fig-alt: "Two curves against number of leaves on a logarithmic horizontal axis from 7 to 377, with RMSE on the vertical axis from zero to six. The training curve starts at 4.39 and descends smoothly, steepening, to exactly zero at 377 leaves. The test curve starts at 4.39, dips to a shallow minimum of 4.26 at 16 leaves, then rises to about 5.7. A dashed horizontal line at 4.67 marks the baseline; the test curve is below it from 7 leaves to about 60, and above it thereafter. A vertical dotted line marks the minimum at 16 leaves."
-#| fig-width: 7
-#| fig-height: 4.6
-best <- sweep |> slice_min(test, n = 1)
+#| label: sweep-numbers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+in_words <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
+row_at <- function(n) filter(sweep, min_n == n)
+baseline <- mean(sweep$average)
+best <- slice_min(sweep, new)
+stiff <- row_at(max(sizes))
+# a tree that never splits predicts the average: the baseline
+loose <- row_at(min(sizes))
+# the most flexible tree that still beats predicting the average
+last_good <- sweep |> filter(new < baseline) |> slice_max(leaves)
+first_bad <- sweep |> filter(leaves > last_good$leaves) |> slice_min(leaves)
+cost_rigid <- baseline - best$new
+cost_flexible <- loose$new - best$new
+```
 
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-sweep
+#| fig-cap: "RMSE on the fitting stations and on new sites against the number of leaves in the tree, averaged over 20 splits of the training sites. The dashed line is the error of predicting the fitting stations' average count; the dotted line marks the lowest error on new sites."
+#| fig-alt: !expr glue::glue("Two lines of RMSE against the number of leaves on a logarithmic axis from 1 to about {round(loose$leaves)}. The training line starts at {f2(stiff$training)} with about {round(stiff$leaves)} leaves and falls ever faster to zero at the right. The line for new sites starts at {f2(stiff$new)}, dips to its lowest point, {f2(best$new)}, at about {round(best$leaves)} leaves, marked by a dotted line, then climbs to {f2(loose$new)}. A dashed line at {f2(baseline)} marks predicting the average; the line for new sites crosses above it between {round(last_good$leaves)} and {round(first_bad$leaves)} leaves.")
+#| fig-width: 7
+#| fig-height: 4.4
 sweep |>
-  select(leaves, Training = training, Test = test) |>
-  pivot_longer(-leaves, names_to = "set", values_to = "rmse") |>
+  pivot_longer(c(training, new), names_to = "set", values_to = "rmse") |>
+  mutate(set = factor(set, levels = c("training", "new"),
+                      labels = c("Fitting stations", "New sites"))) |>
   ggplot(aes(leaves, rmse, colour = set)) +
-  annotate("rect", xmin = 6, xmax = 12, ymin = -Inf, ymax = Inf,
-           fill = ml_palette[["orange"]], alpha = 0.10) +
-  annotate("rect", xmin = 60, xmax = 400, ymin = -Inf, ymax = Inf,
-           fill = ml_palette[["purple"]], alpha = 0.10) +
   geom_hline(yintercept = baseline, linetype = "dashed",
              colour = ml_palette[["grey"]]) +
   geom_vline(xintercept = best$leaves, linetype = "dotted") +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  annotate("text", x = 8.5, y = 5.6, label = "under", size = 3.4,
-           colour = ml_palette[["orange"]]) +
-  annotate("text", x = 150, y = 5.6, label = "over", size = 3.4,
-           colour = ml_palette[["purple"]]) +
+  annotate("text", x = 1.3, y = baseline + 0.3, label = "predict the average",
+           hjust = 0, colour = ml_palette[["grey"]], size = 3.4) +
   scale_x_log10() +
   labs(x = "Leaves in the tree (log scale)", y = "RMSE (individuals)", colour = NULL,
-       title = "The curve this whole section is about",
-       subtitle = "Dashed: predicting the training mean. Dotted: best test error, at 16 leaves.")
+       title = "Training error falls all the way; the error on new sites does not")
 ```
 
-## Reading the two ends
-
-The best tree on this survey has **16 leaves** and a test RMSE of 4.26. Around it:
-
-**The left end is underfitting, and it is mild.** At 7 leaves, training error is 4.390 and test
-error 4.391, indistinguishable. That equality is the signature: a model this coarse has
-no capacity to chase noise, so it has no optimism, and what it reports about itself is honest.
-It is also only 0.13 worse than the best tree, which is worth remembering before assuming that
-simple models cost you much.
-
-**The right end is overfitting, and it is severe.** At one station per leaf, training error is
-exactly zero and test error is 5.71, worse than the 4.67 you get from predicting the training
-mean everywhere and using no predictors at all. Between 16 leaves and 377, the model acquired
-361 additional distinctions and got worse at every one.
-
-**The crossing point is the practical warning.** Test error passes the no-predictors baseline
-at somewhere between 62 and 85 leaves. Past that, the model's use of depth, temperature,
-chlorophyll, salinity, substrate and season is a net liability. Nothing in the training output
-changes at that point; training error is still falling smoothly through it.
-
-::: {.callout-important}
-Underfitting and overfitting are diagnosed by the *relationship* between the two errors, not
-by either alone.
-
-| Training | Test | Diagnosis | What to do |
-| --- | --- | --- | --- |
-| Poor | Poor, about equal | Underfitting | Add flexibility, features, or interactions |
-| Good | Much worse | Overfitting | Reduce flexibility, regularise, get more data |
-| Good | Good | Working | Check it is not [leakage](../02-marine-data/information-leakage.qmd) |
-| Poor | Better than training | Something is wrong | Usually a split or preprocessing bug |
-
-The last row happens more often than people admit. It normally means the test set is easier
-than the training set, often because a filter was applied to one and not the other.
 :::
 
-### Overfitting is not caused by flexible models
+### Too much flexibility costs more than too little
 
-It is caused by flexibility *relative to how much data you have and how noisy it is*. All three
-terms matter, and only one of them is under your control at analysis time.
+**The rigid end.** With a node size of `r max(sizes)`, the largest here, the tree has
+about `r round(stiff$leaves)` leaves. Its training error is `r f2(stiff$training)` and its
+error on new sites `r f2(stiff$new)`, within `r f2(abs(stiff$gap))` of each other. That is the sign of
+underfitting: both errors high and close together. A tree that never splits at all would
+predict the average count everywhere, the dashed line at `r f2(baseline)`.
 
-This survey has 720 usable stations and a heavily overdispersed response: the negative
-binomial dispersion from
-[section 4](../04-how-algorithms-learn/maximum-likelihood.qmd) means the variance grows much
-faster than the mean. A 377-leaf tree on 540 training stations is hopeless here. The same tree
-on 50,000 stations of a cleanly measured response might be entirely reasonable.
+**The lowest point.** The error on new sites is lowest, at `r f2(best$new)`, for a node size
+of `r best$min_n`, which gives trees of about `r round(best$leaves)` leaves. That is better
+than the baseline, but only by `r f2(baseline - best$new)`: the counts are noisy, and even
+the best tree leaves most of their variation unexplained.
 
-Which is why "a random forest overfits" and "deep learning needs a lot of data" are the same
-statement, and why neither is a property of the algorithm.
+**The flexible end.** With a node size of 2, the tree has about `r round(loose$leaves)` leaves
+and a training error of `r if (loose$training < 0.005) "zero" else f2(loose$training)`. Its
+error on new sites is `r f2(loose$new)`, worse than predicting the average. Trees of about
+`r round(last_good$leaves)` leaves still beat the baseline; at about
+`r round(first_bad$leaves)` leaves and beyond, using the inputs at all does more harm than
+good. The training error gives no sign of that point: it falls smoothly through it.
 
-## Limits of the U-shape
+**The two costs are lopsided.** On new sites, a tree that never splits, the most rigid
+there can be, is `r f2(cost_rigid)` worse than the best one. The most flexible is
+`r f2(cost_flexible)` worse, about `r in_words(round(cost_flexible / cost_rigid))` times as much. With counts this noisy there is much
+more noise to fit than signal to miss, so on these data too much flexibility is the
+costlier mistake.
 
-**The curve is not always U-shaped.** For some models, random forests in particular, test
-error falls and then flattens rather than rising, because averaging many overfitted trees
-cancels much of the overfitting. Adding trees to a forest does not overfit; adding depth to a
-single tree does. Treat "more flexible is eventually worse" as a strong default, not a law.
+The best node size here was found by averaging over 20 splits of the training sites.
+[Hyperparameter selection](hyperparameter-selection.qmd) turns that idea into the standard
+method, cross-validation, and shows why a single split is not enough.
 
-**The minimum is shallower than it looks.** Between 7 and 27 leaves the test error moves by
-0.17, which is close to the noise of a single split, and the
-[previous page](training-versus-new-data.qmd) put run-to-run variation at a comparable scale.
-Reading "16 leaves is optimal" off this curve is over-reading it; what the curve supports is
-"somewhere in the teens, and definitely not hundreds".
-
-**You cannot use the test set to find the minimum.** This page did exactly that, for
-demonstration, and in doing so spent the test set: any number now quoted from it is optimistic,
-because the model was selected using it. The legitimate procedure uses a third split or
-cross-validation, and is [two pages away](hyperparameter-selection.qmd).
-
-**None of this addresses spatial structure.** A random split of repeat visits to 160 sites makes
-every test station a near-neighbour of a training station, which suppresses the apparent
-overfitting. The honest version of this curve, with
-[spatially blocked validation](../07-validation/index.qmd), is worse everywhere and its minimum
-is further left.
-
-::: {.callout-tip}
 ## Key points
 
-- Test error against model flexibility is **U-shaped**: too rigid on the left, too flexible on
-  the right. Finding the bottom without cheating is what the rest of this section is for.
-- **Underfitting** shows as poor training *and* test error, roughly equal. Here, 4.39 and 4.39
-  at seven leaves.
-- **Overfitting** shows as a large gap. Here, 0.000 and 5.71 at one station per leaf, worse
-  than using no predictors at all.
-- Training error gives no warning as you cross from one to the other. It falls smoothly through
-  the whole range.
-- Overfitting is about flexibility *relative to* sample size and noise. It is not a property of
-  an algorithm.
-
+::: {.key-points}
+- A model's **flexibility** is how wide a family of shapes it can take. Too little and it
+  **underfits**; too much and it **overfits**.
+- Underfitting shows as two errors that are both high and close together. Overfitting shows
+  as a low training error and a much higher error on new data.
+- The training error falls with every gain in flexibility, so it cannot locate the best
+  setting. The error on new data traces the **U-shaped error curve**, and its lowest point,
+  in between, is the target.
+- On the survey, a tree with a station in every leaf did worse on new sites than predicting
+  the average, and the cost of too much flexibility was several times the cost of too
+  little.
+- The fixes are opposite: more flexibility or better inputs for underfitting; less
+  flexibility, regularisation or more data for overfitting.
 :::
 
 ## Try it yourself
 
-1. Re-run the sweep with `abundance` replaced by `temperature_c` as the response. Temperature is
-   far more predictable from the other variables than abundance is. Does the minimum move left
-   or right, and why should a stronger signal change where the optimum sits?
-2. Take the 377-leaf tree and average the predictions of twenty such trees, each fitted to a
-   different bootstrap sample of the training set. Compare the result to the single tree. You
-   have built a random forest, and the number you get explains why the U-curve flattens for
-   ensembles.
+1. Sweep the depth instead, as [Decision trees](../03-supervised-learning/decision-trees.qmd)
+   did. In `tree_model()`, write `tree_depth = min_n, min_n = 2` in place of
+   `tree_depth = 30, min_n = min_n`, then set `sizes <- 1:15`. Averaged over 20 splits, is the lowest
+   point at the same depth that one validation split chose in section 3?
+2. Give each split fewer fitting sites by adding
+   `fitting <- fitting |> filter(site_id %in% sample(unique(site_id), 30))` after the line
+   that sets `fitting`. Does the lowest point move to smaller or larger trees, and why
+   should less data change where it lies?

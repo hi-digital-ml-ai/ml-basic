@@ -18,11 +18,11 @@ source(here::here("R/data.R"))
 ## Beyond a single held-out set
 
 [Section 5](../05-generalisation/index.qmd) established that training error is not
-performance, and that you must measure on data the model has not seen. It then cheerfully
-broke its own rule on every page, choosing complexity by looking at the test set and saying
-so each time.
+performance, and that you must measure on data the model has not seen.
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a setting
+by cross-validation by site and kept the test sites for one final score.
 
-This page fixes that. The problem with holding out a test set and looking at it is not
+This page goes further. The problem with holding out a test set and looking at it is not
 philosophical fussiness; it is that a single held-out set is a *noisy* measurement, and
 looking at it repeatedly converts that noise into a systematically flattering answer.
 Cross-validation reduces the noise. Nesting the cross-validation removes the flattery.

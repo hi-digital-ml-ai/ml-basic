@@ -41,7 +41,8 @@ A **hyperparameter** is a number you set before fitting, which controls the fit:
 depth of a tree, or the number of trees in a forest. The fit cannot choose it, because
 its job is to limit what the fit may do.
 [Decision trees](../03-supervised-learning/decision-trees.qmd) chose the depth by trying
-several on the validation sites; [section 5](../05-generalisation/index.qmd) returns to
+several on the validation sites;
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) returns to
 this.
 
 ::: {.callout-note}

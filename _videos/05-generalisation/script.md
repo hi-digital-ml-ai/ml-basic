@@ -13,7 +13,7 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
   _videos/intro-music.wav); the script starts after it.
 - A level-1 heading starts a YouTube chapter; its text becomes the chapter title.
 - A level-2 heading starts a scene. Everything after the directive lines is narration.
-- One idea per scene: one or two short sentences, at most one number.
+- One idea per scene: one or two short sentences, few numbers.
 - Directive lines, directly under the scene heading:
     visual: manim <SceneName>: <what>   an animation in scenes.py; "page results" means
                                         R writes the numbers the page computed to a CSV,
@@ -26,6 +26,13 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
 - Every number spoken comes from the section's pages.
 - No section numbers anywhere in the video, spoken or shown: they can change, so they
   go only in the YouTube title and description. Refer to other sections by name.
+
+This video is an overview built on three ideas, each with the reason it matters: a
+perfect fit on the fitting stations is a warning sign, the U-shaped error curve comes
+from bias and variance, and complexity is chosen by cross-validation with the test
+sites opened once. It does not tour every page: the out-of-bag error, the number of
+sites, the one-standard-error rule and the lasso's list of inputs are left to the
+pages. It never says which inputs truly drive the species.
 -->
 
 # In this video
@@ -38,79 +45,57 @@ In this video, you will learn three things. Why a perfect fit is a warning sign.
 Where the U-shaped error curve comes from. And how to choose a model's complexity
 honestly.
 
-# The puzzle
+# A perfect fit is a warning sign
 
 ## Scene 2
-visual: manim FiveModels: five bars grow, training error only (page results, training-versus-new-data.qmd)
+visual: manim FiveModels: five bars grow, each model's error on its fitting stations (page results, training-versus-new-data.qmd#fig-crossing)
 
-Here are five models, fitted to the same coastal survey. The bars show their error on
-the stations they learned from.
+Here are five models from earlier in the course, fitted to the same simulated coastal
+survey. The bars show each model's error on the stations it was fitted to.
 
 ## Scene 3
-visual: manim FiveModels: the zero bar is highlighted
+visual: manim FiveModels: the grown-out tree's empty bar is highlighted, "0.00"
 
-One of them is perfect: an error of exactly zero.
+One of them is perfect. A decision tree, grown until every leaf holds a single
+station, has an error of exactly zero.
 
 ## Scene 4
-visual: manim FiveModels: a question mark appears in the hidden column
+visual: manim FiveModels: an empty column headed "new sites", a question mark in it
 pause-after: 1.5
 
-Which one would you trust with next year's survey?
+Which one would you trust at sites it has never seen?
 
 ## Scene 5
-visual: manim Simulated: a "true process" box sends dots to a map of stations (schematic)
+visual: manim FiveModels: the new-site bars grow beside the old ones; the dashed "predict the average" line (page results)
 
-A note first: this survey is simulated. We wrote the process that made it, so we know
-the true answer.
-
-# Training error answers the wrong question
+So score them on new sites, held back from fitting. The perfect tree comes last, at
+6.21. That is worse than ignoring every input and predicting the average count, 4.83.
 
 ## Scene 6
-visual: manim RankReversal: the slope chart's axes, training errors on the left (page results)
+visual: manim Crossing: each model a line from its error on the fitting stations to its error on new sites; the lines cross (page results, training-versus-new-data.qmd#fig-crossing)
 
-Now give the five models stations they have never seen.
+The order turns over. Linear regression, last on its own stations, is close to the
+best on new ones.
 
 ## Scene 7
-visual: manim RankReversal: the lines draw to the new-station errors
+visual: manim SignalAndNoise: dots, a smooth trend through them labelled "signal", then the scatter around it labelled "noise" (schematic)
 
-Every error goes up. New data is always harder. But look at the order.
+Why? Data hold two kinds of pattern. Signal, such as warmer water holding more of a
+species, turns up again at new sites. Noise, such as one lucky haul, does not.
 
 ## Scene 8
-visual: manim Rankings: two ranked lists with arrows between them
+visual: manim SignalAndNoise: a zigzag chases every dot while a "fitting stations" error bar falls to zero and a "new sites" bar stays long (schematic)
 
-Ranked by training error, and ranked on new stations, the order is exactly reversed.
+A flexible model cannot tell the two apart. Fitting the noise lowers its error on its
+own stations, but not on new ones. The perfect tree has memorised the noise.
 
 ## Scene 9
-visual: manim Rankings: the grown-out tree circled at the top of one list and the bottom of the other
+visual: manim SiteSplit: sites on a map split into fitting sites and new sites, whole sites on each side (schematic)
 
-The model you would have picked is the worst of the five.
+So a model is always judged on data it was not fitted to. And the split is made by
+site, so that new sites really are new.
 
 ## Scene 10
-visual: manim RankReversal: the grown-out tree highlighted, its error labelled
-
-That perfect tree scores 6.9 on new stations.
-
-## Scene 11
-visual: manim RankReversal: the dashed "predict the mean" line appears
-
-Just guessing the average scores 5.3. The tree has not learned. It has memorised.
-
-## Scene 12
-visual: manim SignalAndNoise: dots, then a smooth trend through them (schematic)
-
-Every survey holds two things. Signal is the pattern that turns up again next year.
-
-## Scene 13
-visual: manim SignalAndNoise: the scatter around the trend is drawn
-
-Noise is what belongs only to these stations, on these days, with this net.
-
-## Scene 14
-visual: manim SignalAndNoise: a wiggly curve chases the dots while a training-error bar falls to zero
-
-Training error cannot tell them apart. Chasing the noise lowers it just as well.
-
-## Scene 15
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -119,200 +104,136 @@ training error cannot tell.
 
 # The U-shaped error curve
 
-## Scene 16
-visual: manim ThreeFits: abundance against depth, a tree with one split (page results, underfitting-and-overfitting.qmd#fig-three-fits)
+## Scene 11
+visual: manim NodeSize: a group of stations that may split in two only if it holds enough of them; "minimum node size" (schematic)
 
-Here is a tree fitted to abundance and depth. With one split, it is too rigid. That is
-underfitting.
+How flexible should a model be? For a decision tree, one setting decides: the minimum
+node size, the smallest group of stations the tree may split in two.
+
+## Scene 12
+visual: manim ThreeTrees: abundance against temperature, the trees with node sizes 300, 50 and 2 drawn in turn, with their leaf counts (page results, underfitting-and-overfitting.qmd#fig-one-input)
+
+Here are three trees with temperature as their only input. A node size of 300 gives
+four leaves. A size of 50 gives twenty. A size of 2 gives 414, jumping up to meet
+nearly every large catch.
+
+## Scene 13
+visual: manim UCurve: the error on the fitting stations against leaves, drawn from rigid to flexible, falling to zero (page results, underfitting-and-overfitting.qmd#fig-sweep)
+
+Now sweep the setting from rigid to flexible, with all six inputs. The error on the
+fitting stations falls all the way to zero.
+
+## Scene 14
+visual: manim UCurve: the error on new sites drawn, falling a little and then rising; "the U-shaped error curve"
+pause-after: 0.5
+
+The error on new sites falls a little, then rises. This is the U-shaped error curve.
+
+## Scene 15
+visual: manim UCurve: "underfitting" over the left end, both errors high and close; "overfitting" over the right end, a wide gap
+
+On the left, the tree underfits: both errors are high and close together. On the
+right, it overfits: a low error on its own stations, and a high one on new sites.
+
+## Scene 16
+visual: manim Targets: the same model fitted to many surveys, its predictions as dots around a target; "bias" the miss of their centre (schematic)
+
+Where does the U come from? Imagine surveying the shelf again and again, and fitting
+the same model each time. Bias is how far the average of those models misses.
 
 ## Scene 17
-visual: manim ThreeFits: the tree grows to nine leaves
+visual: manim Targets: a second target, the dots spread wide around the centre; "variance" the spread (schematic)
 
-With nine leaves, it follows the decline with depth.
+Variance is how much the model changes from one survey to the next.
 
 ## Scene 18
-visual: manim ThreeFits: the tree grows to one station per leaf
+visual: manim Parts: bias² and variance against leaves, then their sum, a U (page results, bias-variance.qmd#fig-parts)
 
-With one station per leaf, it chases every point. That is overfitting.
+Because the survey is simulated, the true expected counts are known, so both can be
+measured. As the tree grows, bias falls and then stops. Variance keeps rising. Their
+sum is the U.
 
 ## Scene 19
-visual: manim UCurve: the training curve draws down to zero (page results, underfitting-and-overfitting.qmd#fig-u-curve)
+visual: manim Parts: the dashed noise line appears above the best tree's bias² and variance; "noise: 72% of the best tree's error"
 
-Now make a tree more and more flexible. Its training error falls, all the way to zero.
+Under it all lies noise: chance in the counts, which no model removes. For the best
+tree, noise was 72 per cent of the error.
 
 ## Scene 20
-visual: manim UCurve: the new-station curve draws, the best point marked
+visual: manim TreeAndForest: bias² and variance bars for a single tree and a random forest of the same trees; the forest's variance bar shrinks (page results, bias-variance.qmd)
 
-Its error on new stations falls, bottoms out at sixteen leaves, then climbs again.
+This is why a random forest works. Averaging many trees keeps their bias, but cuts
+their variance, here about fifteen-fold.
 
 ## Scene 21
-visual: manim UCurve: the U-shaped error curve is traced and named
-
-That is the U-shaped error curve, and it is what this whole section is about.
-
-## Scene 22
-visual: manim UCurve: the "predict the mean" line and the band where the curve crosses it
-
-Between 62 and 85 leaves, the tree becomes worse than using no predictors at all.
-
-## Scene 23
-visual: manim UCurve: a flash runs down the training curve
-
-And training error gives no warning. It keeps on falling.
-
-## Scene 24
-visual: manim Diagnosis: two bars, both poor and about equal (schematic)
-
-So read both errors together. Both poor, and about equal: that is underfitting.
-
-## Scene 25
-visual: manim Diagnosis: a short bar and a tall one, the gap marked
-
-Good on training data, much worse on new data: overfitting. The gap is the tell.
-
-# Complexity is not a count of parameters
-
-## Scene 26
-visual: manim NoiseColumns: a data table grows columns of random numbers (schematic)
-
-How flexible is too flexible? Take three real predictors, and add columns of pure
-random numbers.
-
-## Scene 27
-visual: manim NoiseColumns: a training R² gauge steps up to 1.000 (page results, model-complexity.qmd#fig-noise)
-
-With 539 noise columns on 540 stations, training R² is exactly one. A perfect fit.
-
-## Scene 28
-visual: manim NoiseColumns: the new-station error shoots past a bar for the largest catch
-
-On new stations, its error is 185, in a survey whose largest catch is 40.
-
-## Scene 29
-visual: manim Balance: a see-saw with "flexibility" on one side and "data" on the other (schematic)
-
-What matters is not the number of parameters. It is flexibility, compared with how much
-data you have.
-
-# Bias, variance and the noise floor
-
-## Scene 30
-visual: manim Targets: an empty target with the true value at the centre (schematic)
-
-Why is the error curve U-shaped? Imagine repeating the survey many times, and fitting
-the same model to each one.
-
-## Scene 31
-visual: manim Targets: a tight cluster of hits, off to one side
-
-Bias is being wrong the same way every time, like a thermometer that always reads high.
-
-## Scene 32
-visual: manim Targets: a second target, hits centred but widely scattered
-
-Variance is being right on average, but different every time. Deep trees are like this.
-
-## Scene 33
-visual: manim Decomposition: bias² falls and levels off, variance rises (page results, bias-variance.qmd#fig-decomposition)
-
-More flexibility trades one for the other. Bias falls, then stops. Variance keeps
-rising.
-
-## Scene 34
-visual: manim Decomposition: the sum of the two draws as a U
-
-Add them together, and you get the U-shaped error curve.
-
-## Scene 35
-visual: manim Decomposition: the irreducible-noise line drops in above everything
-
-And underneath it all sits a floor: noise that no model can remove.
-
-## Scene 36
-visual: manim Decomposition: the floor compared with the smallest reachable error, as two bars
-
-Here it is more than double everything a model can control. That is simply what counting
-animals is like.
-
-## Scene 37
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
 Key point two. The U-shaped error curve comes from bias falling and variance rising as
 a model gets more flexible.
 
-# Regularisation
+# Choosing complexity honestly
 
-## Scene 38
-visual: manim RidgeShrink: coefficient bars shrink towards zero as a penalty slider rises (schematic)
+## Scene 22
+visual: manim Penalty: a linear model's coefficients as bars; a slider for λ, the penalty's weight; as it rises, the bars shrink towards zero (schematic)
 
-Regularisation charges a model for large coefficients, so they shrink towards zero.
+A linear model has its own dial: a penalty. The fit is charged for large coefficients,
+so it keeps them small unless the data clearly need them. A weight called lambda sets how
+hard the penalty pulls.
 
-## Scene 39
-visual: manim RidgeBars: least squares and predict-the-mean bars (page results, regularisation.qmd)
+## Scene 23
+visual: manim TwoPenalties: two panels; "ridge regression: charges the squared coefficients", every bar shrinks and none reaches zero; "the lasso: charges their absolute size", the small bars drop to exactly zero (schematic)
 
-With 44 predictors on 120 stations, least squares did worse than guessing the mean.
+There are two common penalties. Ridge regression charges the squared coefficients, so it
+shrinks every one but removes none. The lasso charges their absolute size, which makes a
+small coefficient cheaper to drop than to keep. It sets those to exactly zero, and their
+inputs leave the model.
 
-## Scene 40
-visual: manim RidgeBars: the ridge bar grows, lowest of the three
+## Scene 24
+visual: manim LambdaCurve: error on new sites against λ for ridge regression and the lasso, with lines for linear regression on all inputs and on the measured inputs only (page results, regularisation.qmd#fig-sweep)
 
-Ridge beat both.
+Give a regression 200 columns of random numbers, and its error on new sites is 6.41.
+The lasso, at its best penalty, scores 4.55: as good as being told which inputs were
+real.
 
-## Scene 41
-visual: manim LassoStability: one dot per term, placed by how often lasso kept it (page results, regularisation.qmd#fig-stability)
+## Scene 25
+visual: manim Settings: "node size" and "penalty λ" as two dials; the training error always favours the most flexible end (schematic)
 
-Lasso can also drop predictors. But which ones it keeps is not stable.
+A node size, a penalty: every method has a setting like this, and it has to be chosen.
+Not by training error, which always favours the most flexible.
 
-## Scene 42
-visual: manim LassoStability: the real and noise dots separate into two rows, their averages marked
+## Scene 26
+visual: manim Repeats: forty runs of one validation split as dots, the error each claimed for its winner, spread wide (page results, hyperparameter-selection.qmd#fig-repeats)
 
-Over a hundred resamples, real predictors were kept only a little more often than pure
-noise.
+The simplest way is one validation split: hold back some sites and compare settings on
+them. But it depends on which sites were held back. In 40 repeats, the error it claimed
+ranged from 3.52 to 6.36.
 
-# The trap
+## Scene 27
+visual: manim Folds: the training sites dealt into ten folds; each fold lights up in turn as new data while the rest are fitted (schematic)
 
-## Scene 43
-visual: manim PeekAtTest: a box labelled "test set" is opened again and again (schematic)
+Cross-validation does better. Deal the training sites into ten folds. Each fold takes a
+turn as new data while the model is fitted to the rest, and the ten errors are averaged.
 
-Now the trap. Every result so far chose its settings by looking at the test set.
+## Scene 28
+visual: manim Repeats: the forty cross-validation dots added below, in a narrow band (page results)
 
-## Scene 44
-visual: manim PeekAtTest: the box's label changes to "training set, again"
+Every training site counts, so the verdict is steadier: in 40 repeats, from 4.45 to
+4.70.
 
-Look, adjust, look again, and the test set quietly becomes a second training set.
+## Scene 29
+visual: manim TestOnce: a sealed box of test sites opened once; the tree against predicting the average, 0.29 better, beside the 0.26 cross-validation promised (page results, hyperparameter-selection.qmd)
 
-## Scene 45
-visual: manim CrossValidation: the training data splits into ten folds; the test box stays sealed (schematic)
+Last, the test sites, held back since the start, are scored once. The chosen tree beats
+predicting the average by 0.29, close to the 0.26 that cross-validation promised.
 
-The honest way is cross-validation. Split the training data into ten folds.
+## Scene 30
+visual: manim TestOnce: the box marked "spent"; choosing again turns test sites into validation sites (schematic)
 
-## Scene 46
-visual: manim CrossValidation: the held-out fold rotates, then the test box opens once
+Then the test sites are spent. Choose again because the score disappointed, and they
+can no longer give an honest one.
 
-Fit on nine, score on the tenth, and rotate. Open the test set once, at the very end.
-
-## Scene 47
-visual: manim Instability: forty validation splits drop their winners into the grid (page results, hyperparameter-selection.qmd#fig-instability)
-
-Even then, be modest. Forty validation splits chose sixteen different winners.
-
-## Scene 48
-visual: manim Instability: an arrow points to the simpler corner of the grid
-
-So when settings tie, prefer the simplest.
-
-## Scene 49
-visual: manim RepeatVisits: 160 sites, each with a stack of repeat visits (schematic apart from the 160)
-
-One more catch. The stations come from 160 sites, visited again and again.
-
-## Scene 50
-visual: manim RepeatVisits: sites with visits on both sides of the split are circled
-
-A random split puts the same site on both sides, and flatters every number here.
-The validation section puts that right.
-
-## Scene 51
+## Scene 31
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -321,36 +242,38 @@ and open the test set only once.
 
 # Quiz
 
-## Scene 52
+## Scene 32
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. You add a column of random numbers to a regression. Can its training R² go
-down?
+Quick quiz. A colleague adds ten new columns to a regression, and its R squared on the
+fitting stations goes up. Does that show the new columns help?
 
-## Scene 53
-visual: manim QuizAnswer: "No", with the R² steps from the noise experiment rising (page results)
+## Scene 33
+visual: manim QuizAnswer: "No"; R² on the fitting stations rising with columns of random numbers, the error on new sites rising too (page results, model-complexity.qmd#fig-noise)
 
-No. It never falls, not even for random numbers.
+No. R squared on the fitting stations never falls when a column is added, even a column
+of random numbers. On the survey, ten random columns raised it, and raised the error on
+new sites from 4.56 to 4.66. Only new sites can tell.
 
 # Key points
 
-## Scene 54
+## Scene 34
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up the three key points. <short pause> One: a perfect fit is a warning sign.
 
-## Scene 55
+## Scene 35
 visual: manim KeyPoints: the second ticked
 
 Two: the U-shaped error curve comes from bias and variance.
 
-## Scene 56
+## Scene 36
 visual: manim KeyPoints: the third ticked
 
 Three: choose complexity with cross-validation, and open the test set once.
 
-## Scene 57
+## Scene 37
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.

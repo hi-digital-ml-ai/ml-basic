@@ -698,6 +698,29 @@ Every section now has a video.
   the page now says "over 3,000 years".
 - Not yet narrated with Gemini.
 
+## §5 Generalisation rebuilt (2026-10-02)
+
+Rebuilt from the revised pages on the same three points as the pilot (a perfect fit is a
+warning sign; the U-shaped error curve comes from bias and variance; choose complexity
+with cross-validation and open the test set once). 37 scenes, about 900 words, 7:22,
+narrated with Gemini (34 requests; scenes 1, 10 and 37 reused their earlier takes).
+
+- Examples, all through `exports.R` from the six pages: five models on their fitting
+  stations and on new sites (the grown-out tree 0.00 and 6.21, the average 4.83); the
+  three temperature trees (4, 20 and 414 leaves); the node-size sweep as the U-shaped
+  curve; bias² and variance measured on the simulated truth, noise 72% of the best
+  tree's error, a forest cutting a tree's variance about fifteen-fold; ridge regression
+  and the lasso against 200 random columns (6.41 against 4.55, as good as the measured
+  inputs alone at 4.56); one validation split against ten-fold cross-validation in 40
+  repeats (3.52–6.36 against 4.45–4.70); the test sites scored once (0.29 against the
+  0.26 cross-validation promised). Quiz: ten new columns raise R².
+- Manim draws each axis through the other's zero, so a chart whose range excludes zero
+  (the λ sweep from 0.001 to 1,000) shifts both ranges to start at 0 and translates the
+  tick labels back (`Scene24`).
+- A knob drawn with `always_redraw` does not follow a later `shift()` of its track until
+  an animation starts, so the first frames showed it off the track: place the track
+  before making the knob.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
