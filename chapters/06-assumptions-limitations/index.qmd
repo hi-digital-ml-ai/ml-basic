@@ -1,6 +1,6 @@
 ---
 title: "6 · Model assumptions and limitations"
-description: "What your model quietly assumes about the ocean, and what happens when the ocean disagrees."
+description: "Machine learning frees a model from straight lines, but not from the way the data were collected. The section tests what a model assumes about shape and spread, then what repeat visits, neighbouring sites, uneven survey effort and a rare species do to its scores and predictions."
 categories: [assumptions, spatial-temporal, class-imbalance]
 listing:
   id: pages
@@ -13,54 +13,51 @@ listing:
 toc: false
 ---
 
-Machine-learning methods are often described as assumption-free. They are not. They
-make fewer assumptions about the *shape* of relationships than a linear model does,
-which is a real advantage. But they make strong assumptions about how the data were
-collected, and marine data violates most of them.
+Machine-learning methods are often called assumption-free. They make fewer assumptions
+about the shape of a relationship than a linear model does, but they still assume the
+data were collected in a way that lets the stations stand for the ocean. The section
+takes each assumption in turn, on the same simulated survey as the rest of the course.
+The first two pages cover what a model assumes about shape and spread, which machine
+learning relaxes:
 
-Two stations ten metres apart are not independent observations. A time series sampled
-monthly for three years tells you little about a decadal cycle. Survey effort follows
-ports, weather windows and funding. Predicting into unsampled depth or an unprecedented
-temperature is extrapolation, whatever the model's confidence output says.
+- **linearity and nonlinearity**: a generalised additive model gives each input its own
+  smooth curve, fits the stations best, and still gets one curve wrong;
+- **distributional assumptions**: simulating surveys from a fitted count model shows
+  whether it could have produced the real one.
 
-This is the section that determines whether the rest of the course helps you or
-misleads you.
+The next three cover how the data were collected, which it does not relax:
+
+- **independence of observations**: repeat visits to a site are worth fewer stations
+  than their number, and resampling whole sites measures how many fewer;
+- **spatial and temporal dependence**: neighbouring sites share their water, and
+  holding out whole areas of the map measures what a model knows without them;
+- **uneven sampling and extrapolation**: each method carries on past the survey in its
+  own way, and the distance to the nearest surveyed station shows where that happens.
+
+The last page takes a rare answer:
+
+- **class imbalance**: sensitivity, specificity and precision count misses and false
+  alarms apart, and rebalancing the training data turns out to move the threshold.
+
+The section picks up threads from earlier ones. The penalty on bending in
+[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) works like the ridge penalty
+in [Regularisation](../05-generalisation/regularisation.qmd).
+[Distributional assumptions](distributional-assumptions.qmd) tests the negative binomial
+model from [Count regression](../03-supervised-learning/count-regression.qmd).
+[Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
+side of the split; [Independence of observations](independence-of-observations.qmd)
+measures what those visits are worth. Cross-validation by site from
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) scores every
+model here, and [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd)
+compares it with spatial blocks, which
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+develops. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves
+whole-curve scores to [Classification metrics](../07-validation/classification-metrics.qmd).
 
 ## Pages in this section
 
 ::: {#pages}
-:::
-
-## Findings from this section
-
-- 720 survey visits turned out to be worth **549** independent observations. One
-  coefficient's honest standard error was **2.77 times** the naive one, and a fabricated
-  site-level variable went from *p* = 0.09 to *p* = 0.19.
-- A flexible model recovered the true temperature optimum almost exactly, 9.30 °C against
-  a true 9, and put the depth optimum at **15 m where the truth is 80 m**. Same method,
-  same data, same flexibility. The difference was confounding.
-- A Poisson model of these counts expects 68 empty stations where **159** were observed,
-  and its standard errors are too small by a factor of **1.9**, which moves three terms
-  from *p* < 0.01 to *p* > 0.05.
-- A random forest using **only longitude and latitude** scored R² 0.075 under random
-  cross-validation and **0.011** under spatially blocked folds.
-- Asked to predict below 100 m having trained above it, a random forest over-predicted by
-  **73%**, against models biased by 2–8% in range.
-- Downsampling, upsampling and SMOTE **moved along** the sensitivity–specificity curve
-  rather than lifting it; upsampling matched simply setting the threshold to the
-  prevalence.
-
-::: {.callout-important}
-If observations are spatially or temporally dependent, ordinary cross-validation will
-overstate performance, sometimes dramatically. The fix is in
-[7 · Validation](../07-validation/index.qmd).
-:::
-
-::: {.callout-note}
-Three of these pages compare models across *different* test sets, and each one notes that
-**RMSE is not comparable between resampling schemes**, because different folds hold different
-distributions of the response. Use R², or the same test set for both. It is the single
-most repeated methodological trap in the course.
 :::
 
 
