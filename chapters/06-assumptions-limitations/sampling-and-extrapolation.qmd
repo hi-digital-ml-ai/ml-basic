@@ -56,7 +56,7 @@ than 100 m deep. The deeper sites are the area the model is asked to map. Three
 methods from earlier pages are fitted with the same inputs: polynomial regression from
 [Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
 and the negative binomial model from
-[Distributional assumptions](distributional-assumptions.qmd), both with squared terms
+[Count regression](../03-supervised-learning/count-regression.qmd), both with squared terms
 for depth and temperature, and the random forest from
 [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
@@ -310,11 +310,6 @@ within_range <- ratios |>
   pull(ratio) |>
   range() |>
   round(1)
-deep_truth <- predictions |>
-  filter(depth_m > 140) |>
-  distinct(station_id, true_mean) |>
-  summarise(mean(true_mean)) |>
-  pull()
 ```
 
 Within the survey's depths, @fig-beyond shows the ten fits of each method bunched
@@ -324,55 +319,14 @@ survey, while the true mean count keeps falling. The lines of polynomial regress
 and the negative binomial model fan out instead: some fits follow the truth down,
 others level off or turn back up.
 
-### The random forest is too high on every survey and the curved models only on some
-
-For each survey, each method's mean prediction is divided by the mean true count,
-once over the left-out shallow sites and once over the stations deeper than 140 m,
-where the true mean count averages `r round(deep_truth, 1)`. A ratio of 1 is right
-on average; 2 is twice too high.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: ratio-table
-ratios |>
-  summarise(lowest = min(ratio), highest = max(ratio),
-            .by = c(model, where)) |>
-  mutate(range = paste(format(round(lowest, 1), nsmall = 1),
-                       format(round(highest, 1), nsmall = 1), sep = "–")) |>
-  select(model, where, range) |>
-  pivot_wider(names_from = where, values_from = range) |>
-  rename(Method = model,
-         "Left-out shallow sites" = within,
-         "Stations deeper than 140 m" = below)
-```
-
-## Python
-
-```{python}
-predictions["where"] = np.select(
-    [predictions["site_id"].isin(shallow["site_id"]),
-     predictions["depth_m"] > 140],
-    ["Left-out shallow sites", "Stations deeper than 140 m"], default="")
-ratios = (predictions[predictions["where"] != ""]
-          .groupby(["model", "id", "where"])[["predicted", "true_mean"]].mean()
-          .eval("ratio = predicted / true_mean")
-          .groupby(["model", "where"])["ratio"].agg(["min", "max"]).round(1))
-ratios["range"] = ratios["min"].astype(str) + "–" + ratios["max"].astype(str)
-ratios["range"].unstack().reset_index(names="Method")
-```
-
-:::
-
-At the left-out shallow sites every method is close to right on every survey, with
-ratios between `r within_range[1]` and `r within_range[2]`. Below
-140 m the random forest is too high on all ten surveys, at
-`r spread_of("Random forest", "below")` times the truth. Polynomial regression
-ranges from `r spread_of("Polynomial regression", "below")` and the negative binomial
-model from `r spread_of("Negative binomial model", "below")`: a curve can be close to
-right or far off, depending on which sites its survey happened to include.
+Dividing each survey's mean prediction by the mean true count puts numbers on this.
+At the left-out shallow sites every method is close to right on every survey, between
+`r within_range[1]` and `r within_range[2]` times the truth. Below 140 m the random
+forest is too high on all ten surveys, at `r spread_of("Random forest", "below")`
+times the truth. Polynomial regression ranges from
+`r spread_of("Polynomial regression", "below")` and the negative binomial model from
+`r spread_of("Negative binomial model", "below")`: a curve can be close to right or far
+off, depending on which sites its survey happened to include.
 
 The survey is simulated, so the reason can be given. The simulation makes the
 species' numbers rise with depth to a peak at 80 m and fall beyond it, a curve on the
