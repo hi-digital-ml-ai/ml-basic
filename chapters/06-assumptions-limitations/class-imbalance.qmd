@@ -1,6 +1,6 @@
 ---
 title: "Class imbalance"
-description: "Why 95% accuracy can mean the model never once predicted the thing you care about, and why rebalancing the classes is not the fix people think it is."
+description: "When one answer is rare, a model can be right 95% of the time by never giving it. Sensitivity, specificity and precision count the two kinds of mistake apart, and show that rebalancing the training data does no more than move the threshold."
 order: 6
 categories: [assumptions, class-imbalance, metrics]
 ---
@@ -11,316 +11,479 @@ categories: [assumptions, class-imbalance, metrics]
 library(tidymodels)
 library(tidyverse)
 library(themis)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(606)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The events worth predicting are the rare ones
+## Accuracy rewards a model that ignores the rare class
 
-The events marine scientists most want to predict are the rare ones: a protected species in a
-haul, a harmful algal bloom, a vessel fishing where it should not be, a coral bleaching event.
-These are a few percent of observations at most, and standard classification machinery handles
-them badly in a specific and well-understood way.
+Some of the outcomes marine scientists most want to predict are rare: a protected
+species in a haul, a harmful algal bloom, a bleaching event. When one answer is much
+rarer than the other the classes are **imbalanced**, and a model can score well by
+never giving the rare answer. If a species is caught at 5% of stations, calling it
+absent everywhere is right 95% of the time and finds nothing. This page counts the rare
+cases such a model actually finds, and tests the usual fix.
 
-The machinery is not broken. Fitting minimises average loss; when 95% of stations share
-one answer, predicting that answer everywhere is a very good way to minimise average loss.
-[Section 3's logistic page](../03-supervised-learning/logistic-regression.qmd) warned
-about this: for a rare species, the probabilities may never reach 0.5, so nothing is called
-present.
-
-This page does the full treatment: how the metrics mislead, what the standard rebalancing tools
-actually do, and why the simplest fix is usually the right one.
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) turned a
+predicted probability into yes or no with a threshold, and named the two ways that
+answer can be wrong: a **false alarm** says yes where the truth is no, and a **miss**
+says no where the truth is yes. It also warned that for a rare species the
+probabilities may never reach the default threshold of 0.5.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-### The accuracy trap
+## Three measures count misses and false alarms apart
 
-With a 5% positive class, a model that always says "no" is 95% accurate. It is also
-completely useless, and no accuracy-based comparison will reveal that, because nothing a
-real model does can beat 95% by much.
+Accuracy adds up both kinds of right answer. Three measures keep them apart, each the
+share of one group of cases:
 
-Worse, the model does not have to be told to behave this way. A logistic regression fitted
-normally will assign every station a probability below 0.5 if that is what the data say, and the
-default rule, predict the class with probability above 0.5, then never fires.
+- **Sensitivity**, also called recall: of the cases that are truly yes, the share
+  called yes. Misses lower it.
+- **Specificity**: of the cases that are truly no, the share called no. False alarms
+  lower it.
+- **Precision**: of the cases called yes, the share that are truly yes. False alarms
+  lower it too, and when yes is rare they easily outnumber the true yeses: with 5
+  yeses in 100 cases, calling one no in ten yes gives about 10 false alarms.
 
-### Metrics that survive imbalance
+When nearly every case is no, accuracy is mostly specificity, so a model can miss
+every yes and still look good.
 
-| Metric | What it asks | Under imbalance |
-| --- | --- | --- |
-| Accuracy | What fraction did I get right? | **Useless**, dominated by the majority class |
-| Sensitivity (recall) | Of the real events, how many did I catch? | Essential |
-| Specificity | Of the non-events, how many did I leave alone? | Easy to score well on |
-| Precision | Of the ones I flagged, how many were real? | Essential, and usually poor |
-| **ROC AUC** | Does it rank events above non-events? | Usable, but flattering |
-| **PR AUC** | Precision across all recall levels | The honest summary |
+::: {.diagram}
+![The same twenty cases, four truly yes and sixteen truly no, with six called yes. Sensitivity is the share of true yeses called yes, lowered by misses. Specificity is the share of true noes called no, lowered by false alarms. Precision is the share of yes calls that are true, also lowered by false alarms.](img/three-measures.svg){fig-alt="Three cards show the same twenty cases in two rows: four truly yes, drawn filled, and sixteen truly no, drawn open. A dashed box marks the six the model called yes: three true yeses and three noes. One true yes lies outside the box. Sensitivity, lowered by misses: of the four true yeses, three were called yes and one, the miss, was not; 3 of 4. Specificity, lowered by false alarms: of the sixteen true noes, thirteen were called no and three, the false alarms, sit in the box; 13 of 16. Precision, lowered by false alarms: of the six yes calls, three are true and three are false alarms; 3 of 6. A note says accuracy, 16 of 20, hides the miss, because when yeses are few it mostly counts the noes."}
+:::
 
-ROC AUC and PR AUC differ in a way worth understanding. ROC AUC uses the false-positive
-*rate*, whose denominator is the enormous negative class, so adding a hundred false
-positives to a set of 5,000 negatives barely moves it. Precision's denominator is the
-number of things you flagged, so those hundred false positives matter enormously. When
-positives are rare, ROC AUC looks respectable while precision is dreadful, and precision
-is what determines whether anyone can act on the output.
+## Rebalancing evens out the classes before fitting
 
-The baseline for PR AUC is the prevalence itself: a random ranker scores about 0.05 here,
-where a random ranker scores 0.5 on ROC AUC.
+The common fix for imbalance is to change the data the model is fitted to, so that
+both answers are equally common. **Downsampling** drops cases of the common class at
+random until they match the rare one. **Upsampling** copies cases of the rare class at
+random until they match the common one. **SMOTE**, a popular variant of upsampling,
+makes new rare cases between pairs of real ones instead of copying them.
+
+In R these are recipe steps from the `themis` package, so they change only the stations
+a model is fitted to. The stations it is scored on keep their real mix, as they must:
+upsampling the whole survey before splitting would put copies of the same station on
+both sides of the split, a kind of
+[information leakage](../02-marine-data/information-leakage.qmd).
 
 ## Worked example
 
-The survey carries `rare_species`, present at about 5% of stations. It is genuinely
-predictable, since the simulation makes it more likely in deeper water and on rock, so
-this is a real signal problem, not a hopeless one.
+The outcome is `rare_species`, a second species caught at only a few stations. The
+model is logistic regression on the six inputs, each entering the log-odds as a
+straight line: with so few presences, squared terms would leave too little data for
+each coefficient. The split by site is that of
+[Independence of observations](independence-of-observations.qmd), and the scores come
+from cross-validation by site, introduced in
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). One
+round of ten folds holds only a few presences in each, so the round is repeated five
+times, and every training station is predicted five times by models that never saw its
+site.
+
+### Preparing the data
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(rare_species, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na(rare_species)
-
-c(stations = nrow(d),
-  present  = sum(d$rare_species == "yes"),
-  prevalence = mean(d$rare_species == "yes")) |>
-  round(4)
-```
-
-```{r}
-#| label: split
-# pool = 0.01 is required: rsample's default pools strata below 10% of the data,
-# which silently ignores a 5% class. Section 2 has the demonstration.
-set.seed(606)
-split <- initial_split(d, prop = 0.75, strata = rare_species, pool = 0.01)
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
+folds <- group_vfold_cv(train, group = site_id, v = 10, repeats = 5)
 
-set.seed(606)
-folds <- vfold_cv(train, v = 10, strata = rare_species, pool = 0.01)
-
-c(`training stations` = nrow(train),
-  `present in training` = sum(train$rare_species == "yes"))
-```
-
-### Four recipes
-
-`themis` supplies the standard rebalancing steps. They go **inside the recipe**, so they
-are applied to each analysis fold and never to the fold being scored. Rebalancing the
-whole dataset before resampling is a [leakage](../02-marine-data/information-leakage.qmd)
-error and a common one.
-
-```{r}
-#| label: recipes
-base <- recipe(rare_species ~ ., data = train) |>
+no_rebalancing <- recipe(
+  rare_species ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
+) |>
   step_impute_median(all_numeric_predictors()) |>
+  # dummies before rebalancing, so a fit that lacks a seabed type still runs
   step_dummy(all_nominal_predictors())
 
 recipes <- list(
-  `Untouched`  = base,
-  `Downsample` = base |> step_downsample(rare_species),
-  `Upsample`   = base |> step_upsample(rare_species),
-  `SMOTE`      = base |> step_smote(rare_species)
+  "No rebalancing" = no_rebalancing,
+  "Downsampling"   = no_rebalancing |> step_downsample(rare_species),
+  "Upsampling"     = no_rebalancing |> step_upsample(rare_species)
 )
-
-measures <- metric_set(accuracy, roc_auc, pr_auc, sensitivity, specificity, precision)
-
-results <- map_dfr(names(recipes), \(name) {
-  wf <- workflow() |>
-    add_recipe(recipes[[name]]) |>
-    add_model(logistic_reg() |> set_engine("glm"))
-  suppressWarnings(
-    fit_resamples(wf, folds, metrics = measures,
-                  control = control_resamples(save_pred = TRUE))
-  ) |>
-    collect_metrics() |>
-    mutate(recipe = name)
-})
-
-results |>
-  select(recipe, .metric, mean) |>
-  pivot_wider(names_from = .metric, values_from = mean) |>
-  select(recipe, accuracy, sensitivity, specificity, precision, roc_auc, pr_auc) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
-### The untouched model's probabilities
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows].reset_index(drop=True)
+folds = [fold for r in range(5)
+         for fold in GroupKFold(n_splits=10, shuffle=True, random_state=r)
+         .split(train, groups=train["site_id"])]
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+present = (train["rare_species"] == "yes").to_numpy()
+
+model = Pipeline([
+    ("recipe", ColumnTransformer([
+        # scaling leaves an unpenalised fit unchanged; it helps the solver converge
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]), numeric),
+        # every level listed, so a fit that lacks a seabed type still runs
+        ("categorical", OneHotEncoder(
+            categories=[list(train[c].cat.categories) for c in categorical],
+            drop="first", sparse_output=False), categorical),
+    ])),
+    ("model", LogisticRegression(C=np.inf, max_iter=5000)),
+])
+
+# scikit-learn has no rebalancing step, so the fitting rows are resampled by hand
+def rebalance(rows, training, rng):
+    yes, no = rows[present[rows]], rows[~present[rows]]
+    if training == "Downsampling":
+        no = rng.choice(no, size=len(yes), replace=False)
+    if training == "Upsampling":
+        yes = rng.choice(yes, size=len(no), replace=True)
+    return np.concatenate([yes, no])
+```
+
+:::
 
 ```{r}
-#| label: fig-probabilities
-#| fig-cap: "Predicted probabilities from the untouched model, by true class, across all ten cross-validation folds. The model does rank the classes, since present stations score higher on average, but its highest probability anywhere is 0.372, so the default 0.5 threshold is never crossed and nothing is ever flagged. The dashed line at 0.05 is the prevalence."
-#| fig-alt: "Two overlaid density curves of predicted probability from 0 to 0.4. The much taller curve, for absent stations, peaks sharply near 0.02 and falls away by 0.15. The curve for present stations is lower and broader, peaking near 0.05 and extending to about 0.37. A dotted vertical line at 0.5 lies entirely outside the plotted data; a dashed line at 0.05 sits near the peak of the present-station curve, with most of that curve to its right."
-#| fig-width: 7
-#| fig-height: 4
-untouched <- workflow() |>
-  add_recipe(base) |>
-  add_model(logistic_reg() |> set_engine("glm")) |>
-  fit_resamples(folds, metrics = metric_set(roc_auc),
-                control = control_resamples(save_pred = TRUE)) |>
-  suppressWarnings() |>
-  collect_predictions()
-
-ggplot(untouched, aes(.pred_yes, fill = rare_species)) +
-  geom_density(alpha = 0.55, colour = NA) +
-  geom_vline(xintercept = mean(untouched$rare_species == "yes"),
-             linetype = "dashed") +
-  annotate("text", x = 0.075, y = 12, hjust = 0, size = 3.4,
-           colour = ml_palette[["grey"]],
-           label = "prevalence, 0.05") +
-  labs(x = "Predicted probability the rare species is present", y = "Density",
-       fill = "Actually present",
-       title = "Nothing reaches 0.5, so nothing is ever flagged",
-       subtitle = paste0("Highest probability assigned anywhere: ",
-                         round(max(untouched$.pred_yes), 3)))
+#| label: prepare-numbers
+#| include: false
+n_present <- sum(train$rare_species == "yes")
+prevalence <- mean(train$rare_species == "yes")
 ```
 
-### Moving the threshold instead
+The `r nrow(train)` training stations include only `r n_present` with the rare species,
+`r round(100 * prevalence, 1)`% of them.
+
+### The default threshold calls almost no station present
+
+Each recipe is fitted in every fold, and its predictions for the left-out sites are
+kept. `calls()` is the function of
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd), with the three
+measures added. The counts cover all five repeats, so each station is counted five
+times.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fit
+predictions <- recipes |>
+  imap(\(recipe, training) {
+    workflow(recipe, logistic_reg()) |>
+      fit_resamples(folds, control = control_resamples(save_pred = TRUE)) |>
+      collect_predictions() |>
+      mutate(training = training)
+  }) |>
+  list_rbind()
+
+calls <- function(probability, truth, threshold) {
+  called  <- probability >= threshold
+  present <- truth == "yes"
+  tibble(threshold,
+         called_present = sum(called),
+         false_alarms   = sum(called & !present),
+         misses         = sum(!called & present),
+         sensitivity    = mean(called[present]),
+         specificity    = mean(!called[!present]),
+         precision      = mean(present[called]),
+         accuracy       = mean(called == present))
+}
+
+at_default <- predictions |>
+  summarise(calls(.pred_yes, rare_species, 0.5), .by = training)
+
+at_default |> mutate(across(sensitivity:accuracy, \(x) round(x, 3)))
+```
+
+## Python
+
+```{python}
+rng = np.random.default_rng(123)
+pieces = []
+for training in ["No rebalancing", "Downsampling", "Upsampling"]:
+    for fitting, scoring in folds:
+        kept = rebalance(fitting, training, rng)
+        fitted = model.fit(train.loc[kept, predictors], present[kept])
+        pieces.append(pd.DataFrame({
+            "training": training,
+            "present": present[scoring],
+            "pred_yes": fitted.predict_proba(
+                train.loc[scoring, predictors])[:, 1],
+        }))
+predictions = pd.concat(pieces, ignore_index=True)
+
+def calls(probability, is_present, threshold):
+    called = probability >= threshold
+    return {
+        "threshold": threshold,
+        "called_present": int(called.sum()),
+        "false_alarms": int((called & ~is_present).sum()),
+        "misses": int((~called & is_present).sum()),
+        "sensitivity": called[is_present].mean(),
+        "specificity": (~called[~is_present]).mean(),
+        "precision": is_present[called].mean() if called.any() else np.nan,
+        "accuracy": (called == is_present).mean(),
+    }
+
+at_default = pd.DataFrame([
+    {"training": training,
+     **calls(group["pred_yes"].to_numpy(), group["present"].to_numpy(), 0.5)}
+    for training, group in predictions.groupby("training", sort=False)
+])
+at_default.round(3)
+```
+
+:::
+
+```{r}
+#| label: default-numbers
+#| include: false
+row_of <- \(name) filter(at_default, training == name)
+plain <- row_of("No rebalancing")
+upsampled <- row_of("Upsampling")
+downsampled <- row_of("Downsampling")
+top <- predictions |>
+  filter(training == "No rebalancing") |>
+  pull(.pred_yes) |>
+  max()
+presences <- plain$misses + plain$called_present - plain$false_alarms
+```
+
+Without rebalancing, the highest probability logistic regression gives any station is
+`r round(top, 2)`, so the default threshold calls only `r plain$called_present` of the
+`r nrow(train) * 5` predictions present and catches
+`r plain$called_present - plain$false_alarms` of the `r presences` presences. Its
+sensitivity is `r round(plain$sensitivity, 2)` and its accuracy
+`r round(100 * plain$accuracy)`%: reported as accuracy alone, a model that finds
+nothing would sound like a success.
+
+Both kinds of rebalancing raise the sensitivity to about
+`r round(mean(c(upsampled$sensitivity, downsampled$sensitivity)), 1)`, so most
+presences are now found. The price is the specificity: about
+`r round(100 * (1 - mean(c(upsampled$specificity, downsampled$specificity))))`% of
+the absences become false alarms, and accuracy falls to about
+`r round(100 * mean(c(upsampled$accuracy, downsampled$accuracy)))`%. Precision stays low
+whichever way: about one station in `r round(1 / upsampled$precision)` called present by
+the upsampled model holds the species.
+
+### Upsampling gives the same answers as a lower threshold
+
+Lowering the threshold is the other way to call more stations present. The curve below
+applies every threshold from 0 to 1 to the predictions made without rebalancing: each
+point is a sensitivity and specificity the same probabilities can give.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: thresholds
-threshold_table <- map_dfr(c(0.50, 0.15, 0.10, 0.05, 0.03), \(t) {
-  flagged <- untouched$.pred_yes >= t
-  actual  <- untouched$rare_species == "yes"
-  tp <- sum(flagged & actual);  fp <- sum(flagged & !actual)
-  fn <- sum(!flagged & actual); tn <- sum(!flagged & !actual)
-  tibble(threshold = t, flagged = tp + fp,
-         sensitivity = tp / (tp + fn), specificity = tn / (tn + fp),
-         precision = if (tp + fp > 0) tp / (tp + fp) else NA_real_,
-         accuracy = (tp + tn) / nrow(untouched))
-})
+plain_predictions <- filter(predictions, training == "No rebalancing")
+by_threshold <- function(threshold) {
+  calls(plain_predictions$.pred_yes, plain_predictions$rare_species,
+        threshold)
+}
 
-threshold_table |> mutate(across(-c(threshold, flagged), \(x) round(x, 3)))
+curve <- map(seq(0, 1, by = 0.002), by_threshold) |> list_rbind()
+
+bind_rows(
+  "Upsampling, threshold 0.5"             = select(upsampled, -training),
+  "No rebalancing, threshold = prevalence" = by_threshold(prevalence),
+  .id = "model"
+) |>
+  mutate(across(threshold:accuracy, \(x) round(x, 3)))
+```
+
+## Python
+
+```{python}
+plain_predictions = predictions[predictions["training"] == "No rebalancing"]
+prevalence = present.mean()
+
+def by_threshold(threshold):
+    return calls(plain_predictions["pred_yes"].to_numpy(),
+                 plain_predictions["present"].to_numpy(), threshold)
+
+curve = pd.DataFrame([by_threshold(t) for t in np.arange(0, 1.001, 0.002)])
+
+upsampled = at_default[at_default["training"] == "Upsampling"]
+pd.DataFrame([
+    {"model": "Upsampling, threshold 0.5",
+     **upsampled.drop(columns="training").iloc[0].to_dict()},
+    {"model": "No rebalancing, threshold = prevalence",
+     **by_threshold(prevalence)},
+]).round(3)
+```
+
+:::
+
+```{r}
+#| label: fig-curve
+#| fig-cap: "Sensitivity against specificity for logistic regression on the rare species, from cross-validation by site. The grey curve is the model fitted without rebalancing, at every threshold. The cross is that model at the default threshold of 0.5, and the open circle at a threshold equal to the share of stations with the species. The coloured points are the downsampled and upsampled models at 0.5."
+#| fig-alt: !expr 'paste0("A plot of sensitivity from 0 to 1 against specificity running from 1 on the left to 0 on the right. A grey curve rises steeply from the bottom left corner and flattens towards the top right. A black cross sits in the bottom left corner, at specificity 1 and sensitivity 0. An orange point for upsampling sits on the curve at specificity ", round(upsampled$specificity, 2), " and sensitivity ", round(upsampled$sensitivity, 2), ", over an open circle for the model without rebalancing at a threshold equal to the prevalence. A blue point for downsampling, at specificity ", round(downsampled$specificity, 2), " and sensitivity ", round(downsampled$sensitivity, 2), ", sits below the curve.")'
+#| fig-width: 7
+#| fig-height: 4.6
+rebalanced <- filter(at_default, training != "No rebalancing")
+
+ggplot(curve, aes(specificity, sensitivity)) +
+  geom_path(colour = "grey60", linewidth = 1) +
+  geom_point(data = by_threshold(prevalence), shape = 1, size = 6,
+             stroke = 1.2) +
+  geom_point(data = rebalanced, aes(colour = training), size = 3.6) +
+  geom_point(data = plain, shape = 4, size = 4, stroke = 1.3) +
+  scale_colour_manual(values = c(Downsampling = ml_palette[["blue"]],
+                                 Upsampling   = ml_palette[["orange"]])) +
+  scale_x_reverse() +
+  labs(x = "Specificity", y = "Sensitivity", colour = NULL,
+       title = "Rebalancing moves along the threshold's curve, not above it",
+       subtitle = paste("Grey: logistic regression without rebalancing,",
+                        "at every threshold"))
 ```
 
 ```{r}
-#| label: fig-tradeoff
-#| fig-cap: "Sensitivity against specificity. The grey curve is the untouched model swept across every possible threshold: everything it can do. The coloured points are what downsampling, upsampling and SMOTE achieved at the default 0.5 threshold. Upsampling and SMOTE land on the curve. Downsampling lands clearly below it, meaning the untouched model can beat it at the same specificity."
-#| fig-alt: "A plot of sensitivity from 0 to 1 against specificity running from 1 on the left to 0 on the right. A grey step curve rises from the bottom left corner, climbing steeply at first and then flattening towards a sensitivity of about 0.95. An orange point for SMOTE at specificity 0.70, sensitivity 0.67 and a green point for upsampling at 0.70, 0.63 both sit directly on the curve. A blue point for downsampling at specificity 0.63, sensitivity 0.57 sits well below the curve, which at that specificity reaches about 0.78. A black cross marks the untouched model at the default threshold, in the bottom-left corner at specificity 1 and sensitivity 0."
-#| fig-width: 7
-#| fig-height: 4.6
-sweep <- map_dfr(seq(0.005, 0.5, length.out = 250), \(t) {
-  flagged <- untouched$.pred_yes >= t
-  actual  <- untouched$rare_species == "yes"
-  tibble(specificity = sum(!flagged & !actual) / sum(!actual),
-         sensitivity = sum(flagged & actual) / sum(actual))
-})
-
-points <- results |>
-  filter(.metric %in% c("sensitivity", "specificity")) |>
-  select(recipe, .metric, mean) |>
-  pivot_wider(names_from = .metric, values_from = mean)
-
-ggplot(sweep, aes(specificity, sensitivity)) +
-  geom_line(colour = ml_palette[["grey"]], linewidth = 1) +
-  geom_point(data = filter(points, recipe != "Untouched"),
-             aes(colour = recipe), size = 3.6) +
-  geom_point(data = filter(points, recipe == "Untouched"),
-             shape = 4, size = 4, stroke = 1.3) +
-  scale_x_reverse() +
-  labs(x = "Specificity (← better)", y = "Sensitivity", colour = NULL,
-       title = "Rebalancing moves you along the curve, it does not lift it",
-       subtitle = "Grey: the untouched model at every threshold. Cross: the untouched model at 0.5.")
+#| label: curve-numbers
+#| include: false
+copies <- (nrow(train) - n_present) / n_present
+same <- by_threshold(prevalence)
+three <- \(x) sprintf("%.3f", x)
+reached <- curve |>
+  filter(specificity >= downsampled$specificity) |>
+  pull(sensitivity) |>
+  max()
 ```
 
-## Moving along the curve, not lifting it
+Upsampling at 0.5 and no rebalancing at a threshold of `r round(prevalence, 3)`, the
+share of training stations with the species, are the same point: a sensitivity of
+`r three(upsampled$sensitivity)` against `r three(same$sensitivity)`, and a
+specificity of `r three(upsampled$specificity)` against
+`r three(same$specificity)`. The odds from
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) explain the match.
+Copying each presence about `r round(copies)` times multiplies every station's odds of
+presence by about `r round(copies)`, which leaves the order of the stations as it was.
+A probability of 0.5 after upsampling is therefore one near the prevalence before it.
 
-**The untouched model never flags anything.** Sensitivity 0.000, accuracy 0.950, precision
-undefined because it made no positive predictions at all. Its highest probability anywhere is
-**0.372**, so the 0.5 rule can never fire. Reported as "95% accurate", it would sound like a
-success.
+Downsampling lands below the curve. At its specificity of
+`r round(downsampled$specificity, 2)`, a lower threshold on the model without
+rebalancing reaches a sensitivity of `r round(reached, 2)`, where downsampling reaches
+`r round(downsampled$sensitivity, 2)`. Each downsampled fit keeps only as many
+absences as there are presences, about one absence in `r round(copies)`, so it learns
+the absences from far fewer stations.
 
-**It also has the best ranking of the four.** ROC AUC 0.762 and PR AUC 0.192, both higher
-than any of the rebalanced versions. Rebalancing extracted no extra signal and degraded
-the ranking, mildly for SMOTE (PR AUC 0.172) and severely for downsampling (0.088, less
-than half), which is what you would expect from a method that discards most of the real
-negatives.
+### Rebalanced probabilities overstate the chance of presence
 
-**What rebalancing did was move the operating point.** Compare two rows:
+A predicted probability should match the rate of the event: of the stations given
+0.1, about one in ten should hold the species. The table compares each model's average
+predicted probability with the share of its predictions where the species was present.
 
-| | Sensitivity | Specificity | Precision | Accuracy |
-| --- | --- | --- | --- | --- |
-| Upsampling, threshold 0.5 | 0.633 | 0.701 | 0.101 | 0.698 |
-| **Untouched, threshold 0.05** | 0.633 | 0.703 | 0.101 | 0.699 |
+::: {.panel-tabset group="language"}
 
-They are the same result, identical to within 0.002 on every measure, having reached it by
-completely different routes.
+## R
 
-Downsampling did worse than that. Its point sits visibly *below* the untouched model's
-curve: at its specificity of 0.625 the untouched model reaches a sensitivity of about
-0.78, where downsampling manages 0.567. Throwing away five-sixths of the negatives did not
-just relocate the operating point, it cost real discrimination. Rebalancing the training
-data to 50/50 is an indirect way of shifting the decision threshold to roughly the
-prevalence, and you can do that directly, in one line, on a model whose probabilities are
-still calibrated to reality. The trade-off figure shows it geometrically: the rebalanced
-models land *on or below* the curve the untouched model already traced. None of them lands
-above it, and none of them can: the curve is everything that model's probabilities can be
-made to do.
+```{r}
+#| label: probabilities
+predictions |>
+  summarise(average_probability = round(mean(.pred_yes), 3),
+            share_present       = round(mean(rare_species == "yes"), 3),
+            .by = training)
+```
 
-**And precision is poor whatever you do.** At every operating point, about nine out of
-every ten flagged stations have no rare species. That is not a modelling failure; it is
-arithmetic. With a 5% prevalence and a model this good, high precision is not available,
-and a survey plan built on "we will inspect the flagged stations" needs to know that ten
-inspections buy roughly one detection.
+## Python
 
-::: {.callout-important}
-Pick the threshold from the **costs**, not from a default and not from a metric. Missing a
-protected species in a haul and wasting an inspection are not equally bad, and only you know the
-exchange rate. Write it down: "we accept nine false alarms per detection because a missed
-detection costs X" is a defensible methods sentence. "We used the default threshold" is not a
-decision at all.
+```{python}
+(predictions.groupby("training", sort=False)
+ .agg(average_probability=("pred_yes", "mean"),
+      share_present=("present", "mean"))
+ .round(3).reset_index())
+```
+
 :::
 
-::: {.callout-warning}
-These estimates are fragile. Thirty positives in the training set spread over ten folds is three
-per fold, and several folds produced `glm` separation warnings. A five-fold run of the same data
-moves the untouched model's PR AUC from 0.19 to 0.13, a third of its value, without changing
-anything real. With a class this rare, use repeated cross-validation, report the
-spread rather than the mean, and treat any difference smaller than the fold-to-fold variation as
-nothing.
-:::
+```{r}
+#| label: probability-numbers
+#| include: false
+averages <- predictions |>
+  summarise(average = mean(.pred_yes), .by = training)
+average_of <- \(name) averages$average[averages$training == name]
+high <- predictions |>
+  filter(training == "Upsampling", .pred_yes > 0.8)
+```
 
-## Limits of this argument
+Without rebalancing, the average probability, `r round(average_of("No rebalancing"), 3)`,
+matches the share of stations with the species, as it should. After upsampling it
+averages `r round(average_of("Upsampling"), 2)`, about
+`r round(average_of("Upsampling") / prevalence)` times too high: of the
+`r nrow(high)` predictions above 0.8, only
+`r round(100 * mean(high$rare_species == "yes"))`% are stations with the species.
+A rebalanced model can still rank stations, but its probabilities are no longer chances.
+To report "a 10% chance of the species here", leave the data alone and move the
+threshold.
 
-**Rebalancing does help some models.** The argument above is clearest for methods that produce
-calibrated probabilities. Trees and forests can genuinely struggle to find splits that isolate a
-rare class, and downsampling or class weights can change which splits are available rather than
-merely shifting the threshold. `ranger`'s `class.weights` and `xgboost`'s `scale_pos_weight` are
-the more direct versions of the same idea.
+## The costs of the two mistakes set the threshold
 
-**SMOTE invents observations.** It creates synthetic positives by interpolating between
-real ones in predictor space. For continuous environmental variables that is defensible;
-for a synthetic station at 40% rock and 60% mud, or a date halfway between January and
-July, it is not. Check that what it invents is physically possible before using it.
+Neither rebalancing nor a lower threshold makes the model better at telling presence
+from absence. Both choose where on the same curve to work, and the threshold does it
+without discarding stations or distorting the probabilities. The place to work comes
+from what each mistake costs, as
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) said: if a
+miss leaves a protected species unprotected, work far up the curve and accept the false
+alarms; if every station called present sends out a dive team, work lower down. At a
+sensitivity of about `r round(same$sensitivity, 1)` here, each presence found comes with
+about `r round(same$false_alarms / (same$called_present - same$false_alarms))` false
+alarms. [Classification metrics](../07-validation/classification-metrics.qmd)
+summarises a whole curve in one number, so that models can be compared before a
+threshold is chosen.
 
-**Rebalancing destroys calibration, and that is often the real loss.** After upsampling, a
-predicted probability of 0.5 does not mean a 50% chance; it means whatever the artificial
-class ratio made it mean. If you want to report "this haul has a 12% chance of containing
-the species", leave the data alone and move the threshold.
-
-**The imbalance may be in the sampling, not the world.** If rare events are under-recorded
-because observers miss them, no resampling method addresses that; the training labels
-themselves are wrong. That is a data-collection problem wearing a modelling problem's
-clothes.
-
-::: {.callout-tip}
 ## Key points
 
-- With a 5% positive class, "95% accurate" is the score for predicting *no* every time. Never
-  report accuracy on imbalanced data.
-- Use **sensitivity, precision and PR AUC**. PR AUC's baseline is the prevalence (0.05 here), not
-  0.5.
-- The untouched model had the best ROC AUC (0.762) and PR AUC (0.192) of the four and flagged
-  **nothing**, because its highest probability was 0.372.
-- Downsampling, upsampling and SMOTE **moved along the sensitivity–specificity curve rather than
-  lifting it**. Upsampling at threshold 0.5 matched the untouched model at threshold 0.05.
-- Choose the threshold from the costs of the two errors, and say what exchange rate you assumed.
-
+::: {.key-points}
+- With a rare class, accuracy mostly measures a model's success on the common
+  class. Logistic regression without rebalancing was
+  `r round(100 * plain$accuracy)`% accurate and found
+  `r plain$called_present - plain$false_alarms` of `r presences` presences.
+- Sensitivity is the share of true yeses called yes, which misses lower. Specificity is
+  the share of true noes called no, and precision the share of yes calls that are true;
+  false alarms lower both.
+- Rebalancing belongs in the recipe, so that it changes only the stations a model is
+  fitted to.
+- Rebalancing moves a model along the curve that the threshold traces. Upsampling at 0.5
+  matched no rebalancing at a threshold of `r round(prevalence, 3)`, and downsampling
+  landed below the curve.
+- A rebalanced model's probabilities are no longer chances: upsampling's averaged
+  `r round(average_of("Upsampling"), 2)` where the species was at
+  `r round(100 * prevalence, 1)`% of stations.
+- Choose the threshold from the cost of each mistake. With a rare class, precision stays
+  low wherever it is set.
 :::
 
 ## Try it yourself
 
-1. Swap the logistic regression for a random forest with `class.weights = c(yes = 19, no = 1)`.
-   Does weighting lift the sensitivity–specificity curve, or does it also just move along it?
-2. Compute the PR AUC of a model that ranks stations purely by depth, with no fitting at all. How
-   much of the 0.192 does one variable and no model account for?
+1. `step_downsample(rare_species, under_ratio = 3)` keeps three absences for each
+   presence. Add it as a fourth recipe: where does its point land on @fig-curve?
+2. Replace `logistic_reg()` with
+   `rand_forest(trees = 500) |> set_engine("ranger") |> set_mode("classification")`, as
+   in [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), and
+   redraw @fig-curve. Does upsampling still land on the forest's own curve?
