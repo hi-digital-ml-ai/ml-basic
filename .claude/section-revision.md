@@ -2,11 +2,12 @@
 
 How to revise a course section's pages, diagrams and video. Written on 2026-09-29 from the
 revision of section 1, Introduction (`feature/improve-introduction`, 11 commits), and
-updated on 2026-09-30 from section 2, Marine data (`feature/improve-marine-data`, 14
-commits), and section 3, Supervised learning (`feature/improve-supervised-learning`, 11
-commits for the pages). The general writing and figure rules are in `authoring-guide.md` and the video
-pipeline in `videos.md`; this file collects what the revisions added to them, as a
-checklist.
+updated from section 2, Marine data (`feature/improve-marine-data`, 14 commits), section 3,
+Supervised learning (`feature/improve-supervised-learning`), section 4, How algorithms
+learn (`feature/improve-how-algorithms-learn`), and section 5, Generalisation
+(`feature/improve-generalisation`, 2026-10-02). The general writing and figure rules are
+in `authoring-guide.md` and the video pipeline in `videos.md`; this file collects what
+the revisions added to them, as a checklist.
 
 ## The aim
 
@@ -48,18 +49,43 @@ The Welcome page and the two Toolkit pages are out of scope for now.
    pointers to it: after section 2, a section 6 page still sent readers to "section 3"
    for RMSEs that cannot be compared across test sets, which section 2 now shows.
    `grep -rn "section N\|§N" chapters/` for the section's number and for every page
-   it moved or renamed.
-7. **A consistency pass across the section** before the video: the same model gets
-   the same name on every page, in headings, plot legends and tables alike (see
-   Wording). In section 3 the user found the old shape names ("The straight line",
-   "The curve") and raw term labels only after the overview was done.
-8. **The video**, after the pages are settled, on the draft voice first (see below).
-9. **Gemini narration** only when the user approves the script.
-10. **Close:** full `quarto render`, then merge into `develop` when the user asks.
+   it moved or renamed. Check what the other pages **claim** about the section, not
+   only where they link: after section 5 was revised, two section 7 pages still said
+   it had tuned on the test set, which it no longer did.
+7. **A consistency pass across the section** before the video. The same model gets
+   the same name on every page, in headings, plot legends, tables and the labels in
+   code (see Wording). In section 3 the user found the old shape names ("The straight
+   line", "The curve") and raw term labels only after the overview was done. Section
+   5's pass also checked that legends and tables are in sentence case like the rest
+   ("Ridge regression", not "ridge regression"), that every RMSE axis gives its unit
+   the same way ("RMSE on new sites (individuals)"), that no two pages share a
+   subheading, and that every mention of another section names a page.
+8. **A headings pass.** Read the section's table of contents alone, page by page: can
+   a reader say what each section shows? Rewrite the headings that fail (see Wording),
+   as a before-and-after table the user approves before any page is edited. Check
+   that every term the video will stress is named on a page, in bold and in a heading.
+   `grep -rn "<page>.qmd#"` for links to the old heading anchors. Section 5 did this
+   after its video's first cut, and the video had to wait for it: do it before.
+9. **The video**, after the pages are settled, on the draft voice first (see below).
+10. **Gemini narration** only when the user approves the script.
+11. **Close:** full `quarto render`, then merge into `develop` when the user asks.
 
 Checking a page: `quarto render <page>`, then a headless Chrome screenshot of
 `_site/...` (a static server on port 4321 from `_site/` works). The user reviews
 screenshots, so look at the rendered page yourself first.
+
+Rendering: with `freeze: auto`, render a changed page **twice** (the first run executes,
+the second writes the cache that matches the source), then check that no
+`chapters/*/*.rmarkdown` intermediate is left behind. Any edit to a `.qmd`, even to a
+heading, changes its `_freeze` file, which is committed with the page. Heavy pages take
+minutes (section 5's hyperparameter page refits 40 selections), so render in the
+background and check for "Output created" on each.
+
+Committing: one commit per page, each with its own `_freeze/` and `img/` files. A
+`git rm` of an old figure stays staged, so the first commit takes every staged deletion
+with it, whichever page they belong to. Unstage first (`git reset`), then
+`git add -A <page> <its _freeze folder> <its svg>` per commit, and check each commit's
+`git show --stat`.
 
 ## Pages
 
@@ -191,6 +217,10 @@ screenshots, so look at the rendered page yourself first.
 - **Explain any label the reader did not see being made.** "Shallow, mid-depth and
   deep" groups needed one sentence saying k-means found them and the page named them
   by their average depth.
+- **Introduce a method in the section that needs it,** even when a later section
+  covers it in full. Section 5 introduced cross-validation by site to choose a
+  hyperparameter, and section 7's pages were adjusted to build on it rather than
+  introduce it again.
 - **Tables show readable term labels.** R's `tidy()` pastes a factor's name onto
   its level (`substrategravel`, `seasonsummer`); rewrite them as `substrate: gravel`
   (`str_replace(term, "^(substrate|season)", "\\1: ")`) and match the Python tab's
@@ -220,6 +250,14 @@ screenshots, so look at the rendered page yourself first.
   breaks them.
 - Commit `_freeze/` with its page.
 
+### Figures
+
+- **Stacked panels need short axis titles.** In a patchwork stack each panel is short,
+  so a long y-axis title ("RMSE on new sites (individuals)") runs up past the panel into
+  its title. Break it onto two lines with `\n`.
+- **Give every RMSE axis its unit**, worded the same on every page:
+  "RMSE (individuals)", "RMSE on new sites (individuals)".
+
 ## Diagrams
 
 Hand-drawn SVG in the section's `img/`, inside `::: {.diagram}` so it uses the full
@@ -247,7 +285,8 @@ diagrams (`chapters/01-introduction/img/six-tasks.svg` is a good template to cop
 A section video is a **short overview**, not a place to teach everything: it
 introduces the section and says what its pages cover. Section 1's video is 28 scenes,
 about 540 words, 5 minutes; section 2's is 29 scenes, about 740 words, 5:41; section 3's,
-with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
+with seven pages to cover, is 35 scenes, about 950 words, 7:13; section 5's, three points
+over six pages, is 37 scenes, about 900 words, 7:22. Use
 `_videos/01-introduction/` or `_videos/02-marine-data/` as the template alongside
 `videos.md`.
 
@@ -264,6 +303,9 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
   per group of pages, and keep only the scene classes that still fit.
 - **Use only the methods the course has introduced**, as on the pages: section 2's
   video uses linear regression only.
+- **Keep a scene's words when its point is unchanged.** `narrate.py` reuses any
+  approved take whose text is identical, even under a new scene number, so the opening,
+  key-point and end-card lines carried over from the pilot cost nothing to narrate.
 
 - **Shape:** title with the jingle; scene 1 promises three things (`PROMISES`); a
   chapter per promise, each ending on a key-point scene (`ANSWERS`); a quiz with a
@@ -309,6 +351,12 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
   trees, were tuned on those sites, "a kind of overfitting", and marks their gaps.
 - Spoken numbers come only from the pages, via the video's `exports.R`; drop an export
   when the video stops using it. Schematic scenes use no numbers.
+- **Read the page's own objects in `exports.R`, after checking their names.** A page
+  may reuse a name: section 5's hyperparameter page sets `best` twice and its
+  bias-variance page has a scalar `noise` where model complexity has a matrix. Knitting
+  all six section 5 pages takes about 15 minutes, so start
+  `tools/figures-for-video.R` first and write `scenes.py` while it runs; the CSVs
+  appear page by page, so scenes can be checked as their data arrive.
 - **Name models by method on screen**, as on the pages. The video reads the pages'
   model labels from the CSVs, so renaming a model on a page means updating the keys in
   `scenes.py` too, then re-running `exports.R`.
@@ -323,6 +371,19 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
   y = 0), so its `Chart` places them from the chart's edges; and a tree's "yes" and
   "no" crossed the branches until they became small tags on them, as `rpart.plot`
   draws them.
+- **Schematic layouts need fixed sizes.** Boxes drawn around random dots
+  (`SurroundingRectangle`) came out at different heights, so two sibling nodes were not
+  level, and a fixed box shorter than its tallest stack let dots spill over its edge.
+  Give each box a fixed size and place its contents inside it. Keep labels a little
+  clear of axis and divider lines, and check every scene that shares a layout after
+  changing it (section 5 fixed scene 29 and left scene 30, built from the same
+  layout, unrendered).
+- **Manim draws each axis through the other's zero.** A chart whose range excludes
+  zero (a λ sweep from 0.001 to 1,000) drew its y axis in the middle, at λ = 1. Shift
+  both ranges to start at zero and translate the tick labels back.
+- **Place a slider's track before making its knob.** A knob drawn with
+  `always_redraw` ignores a later `shift()` of its track until an animation starts, so
+  the first frames show it off the track.
 - **Pages with Python tabs knit for the video** because `tools/figures-for-video.R`
   reads `_environment.local` (the Python reticulate uses). If it fails on a
   `{python}` chunk, check that file first.
@@ -339,14 +400,20 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
   left on the draft voice.
 - **Write numbers that stand for words as words.** Gemini read "between 0 and 1" as
   "between 1 and 1", though the draft voice read it right; "between zero and one" fixed
-  it. Listen to every Gemini take; the draft voice does not predict its mistakes.
+  it. Listen to every Gemini take; the draft voice does not predict its mistakes. A
+  quick first check: each take's length against its draft's (`wave`); a ratio outside
+  about 0.8–1.25 suggests a misread or a skipped line. Section 5's 34 takes all fell
+  within it.
 - **Names the voice may misread** go in `_videos/pronunciation.yml` as respellings,
   which change only the speech; the captions keep the script's spelling. For a
   doubtful name, one Gemini request can read several candidates in turn for the user
   to choose from: section 3 chose "Pwah-son" for Poisson, which also applies to later
   videos that say it.
 - Then re-render every scene (`manim -qh --frame_rate 30 -a scenes.py`, timing follows
-  the new audio) and rebuild the rough cut.
+  the new audio) and rebuild the rough cut. **The video changes only when the cut is
+  rebuilt:** new takes are not in `rough-cut.mp4` until the re-render (about five
+  minutes for section 5) and `rough-cut.py` have finished. The user watched the old cut
+  once and heard the draft voice; say when the new file is written, and check its time.
 
 ## Status
 
