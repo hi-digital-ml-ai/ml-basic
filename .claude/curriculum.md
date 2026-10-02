@@ -144,9 +144,9 @@ never quote a score against it without saying no real study could compute one.
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
 `class-imbalance`
 
-- Independence of observations
 - Linearity and nonlinearity
 - Distributional assumptions
+- Independence of observations
 - Spatial and temporal dependence
 - Uneven sampling and extrapolation
 - Class imbalance
@@ -162,6 +162,28 @@ never quote a score against it without saying no real study could compute one.
   `sampling-and-extrapolation.qmd`, because uneven coverage and extrapolation are the same problem
   at two severities and read badly when separated.
 
+**Revision decisions, 2026-10-02** (`feature/improve-assumptions-limitations`): the same
+six pages, reordered. The first two cover what a model assumes about shape and spread,
+which machine learning relaxes; the next three cover how the data were collected, which
+it does not.
+
+- Every page uses §2's split by site and §5's cross-validation by site, not AIC or a
+  random split.
+- Material earlier sections now teach is cut, not repeated: pseudo-replication and the
+  split by site (§2), overdispersion and the negative binomial (§3), Poisson standard
+  errors that are too small (§4), random against grouped cross-validation (§5).
+- *Linearity and nonlinearity* introduces the GAM (smooth bumps with a penalty on
+  bending, tied to §5's ridge penalty); the fitted curves are read before the truth is
+  shown. *Distributional assumptions* centres on simulating from the fitted model.
+  *Independence* shrinks to effective sample size and its cost to standard errors.
+  *Spatial and temporal dependence* compares cross-validation by site against spatial
+  blocks and diagnoses with a residual map, not Moran's I. *Extrapolation* replaces
+  Mahalanobis distance with the distance to the nearest surveyed station. *Class
+  imbalance* introduces sensitivity, specificity and precision; ROC AUC and PR AUC stay
+  in §7.
+- Running Python tabs on every page. scikit-learn has no GAM: its tab uses
+  `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
+
 ### Two threads that must be kept if these pages are edited
 
 **RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
@@ -170,9 +192,9 @@ can report a *lower* RMSE. Use R², or the same test set for both. §2's leakage
 first; §6 repeats it deliberately.
 
 **A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
-the GAM has the best AIC of three models by a wide margin and the most wrong depth response,
-because depth is confounded with temperature, chlorophyll and an unmodelled spatial field.
-Flexibility buys shape, not identifiability.
+the GAM fits its own stations best of three Poisson models, predicts new sites no worse,
+and has the most wrong depth response, because depth is confounded with position, which
+carries an unmodelled spatial field. Flexibility buys shape, not identifiability.
 
 ### Uses of `coastal-survey-truth.csv`
 

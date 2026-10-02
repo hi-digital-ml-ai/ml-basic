@@ -1,7 +1,7 @@
 ---
 title: "Linearity and nonlinearity"
-description: "Straight lines, the shapes that are not straight, and a flexible model that recovers one optimum perfectly and the other not at all."
-order: 2
+description: "A generalised additive model lets each input find its own smooth curve. It fits its own stations better than straight lines or squared terms, yet one of its curves is wrong: a better fit is not a more correct model."
+order: 1
 categories: [assumptions]
 ---
 
@@ -10,272 +10,469 @@ categories: [assumptions]
 #| include: false
 library(tidymodels)
 library(tidyverse)
+library(poissonreg)
 library(mgcv)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(602)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Straight lines in a curved ocean
+## A flexible curve can fit well and still be wrong
 
-Marine responses are rarely straight lines. Species have thermal optima. Productivity saturates.
-Oxygen has thresholds below which nothing survives. Depth relationships are humped, because the
-shelf edge is a boundary and not a gradient.
-
-A linear model asked to describe a hump does not fail loudly. It fits a line through the middle,
-reports a coefficient, and produces a *scientifically wrong* conclusion, that the response is
-best at one end, while its diagnostics look acceptable.
-
-The standard remedy is to add flexibility: a quadratic term, a spline, a tree. This page does
-that, and then checks the answer against the truth the simulation recorded. One of the two
-optima comes back almost exactly. The other does not, and the reason is worth more than the
-technique.
+Few marine responses are straight lines. A species has a temperature it prefers, growth
+levels off when food is plentiful, and oxygen has a level below which little survives.
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
+bent a straight line with a squared term. This page introduces a more flexible tool, the
+**generalised additive model (GAM)**, which lets each input find its own curve. It fits
+its own stations better than the squared terms do, yet one of its curves is wrong. The
+reason, confounding, is the page's main lesson: a better fit is not a more correct model.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-### The actual assumption behind "linear"
+## Linear models give each input a fixed effect
 
-A linear model assumes the response is a weighted sum of the predictors, with the weights
-constant everywhere. Two consequences follow, and the second is the one people forget:
+A linear model predicts the outcome as a starting value plus a fixed amount for each
+input. Two assumptions follow:
 
-1. The effect of one more metre of depth is the same at 20 m as at 180 m.
-2. The effect of depth does not depend on temperature.
+- **One shape for each input.** One more metre of depth has the same effect at 20 m as
+  at 180 m. On the log scale of
+  [Poisson regression](../03-supervised-learning/count-regression.qmd), the same holds
+  for the log of the count.
+- **No interactions.** The effects add up, so the effect of depth is the same in cold
+  water and in warm.
 
-The first is the shape assumption. The second is the **absence of interactions**, which is
-also a linearity assumption and is violated even more often in ecology than the first.
+A squared term relaxes the first. The curve then has one peak and falls the same way on
+both sides, whatever the data say. A response that rises steeply and tails off slowly,
+or levels off, does not fit that shape.
 
-"Linear" also means *linear in the parameters*, not in the predictors. `abundance ~ depth +
-I(depth^2)` is still a linear model; so is a Poisson GLM, where the linear part sits on the log
-scale and becomes a curve when exponentiated back. The
-[log scale of a count model](../03-supervised-learning/count-regression.qmd) already buys you a particular
-kind of nonlinearity for free, which is why the count models in
-[section 3](../03-supervised-learning/count-regression.qmd) beat the plain line.
+## A GAM fits a smooth curve to each input
 
-### Ways to bend
+A GAM replaces each input's straight line with a smooth curve, and adds the curves up
+as a linear model adds its terms. The curve is built from short, smooth bumps spread
+along the input's range. Each bump gets a weight, as a column does in linear regression,
+and the weighted bumps add up to a curve of almost any shape.
 
-| Approach | What it gives | Cost |
-| --- | --- | --- |
-| Log or square-root transform | Saturating or accelerating shapes | Changes what the model is of |
-| Polynomial terms | Smooth curves, few parameters | Wild at the edges; degree is arbitrary |
-| **Splines / GAM** (`mgcv`) | Smooth curves of learned wiggliness | Harder to summarise in one number |
-| Trees and forests | Any shape, plus interactions | Step functions; no smoothness |
-| Explicit interactions | Effects that depend on each other | Parameter count grows fast |
+With enough bumps the curve could pass through every station and follow the noise as
+well as the signal. A GAM therefore adds a **penalty** on bending, as ridge regression
+in [Regularisation](../05-generalisation/regularisation.qmd) adds a penalty on the size
+of the coefficients. The penalty's weight is chosen from the data, so a curve bends only
+as much as the data support. The **effective degrees of freedom** report how much
+bending is left: 1 is a straight line, and each extra unit is roughly one more bend.
 
-A GAM is the natural middle ground for marine work: it keeps the interpretable structure
-of a regression, so you can still plot the effect of temperature, while letting each term
-take whatever smooth shape the data support.
+::: {.diagram}
+![A GAM covers the input's range with short smooth bumps, weights them, and adds them up into a curve. A penalty on bending stops the curve chasing the noise; with bending made very costly the curve becomes a straight line.](img/gam.svg){fig-alt="Three cards. Pieces, short smooth bumps: seven bell-shaped curves overlap along the input's range. Added up, a weight for each bump: the bumps, each scaled by its weight, are drawn dashed, and their sum is a solid curve that rises and falls with the data points. Penalty, each bend costs: three curves through the same points; a dashed curve with bends made cheap chases the noise, a dotted straight line is what bends made dear give, and the solid curve between them follows the rise and fall. The text says fitting chooses the weights and pays for every bend, and the data set the price. A note says the effective degrees of freedom count the bends the penalty leaves, and 1 is a straight line."}
+:::
+
+A GAM keeps the rest of the model. Here it is a Poisson model on the log scale, so a
+count never falls below zero, and its inputs without a curve (chlorophyll, salinity,
+substrate and season) keep a straight line or a level each.
 
 ## Worked example
 
-Three Poisson models on the same data, differing only in how much bending they allow.
+Three Poisson models are fitted to the survey with the inputs of
+[Count regression](../03-supervised-learning/count-regression.qmd): one with a straight
+line for every input, one with squared terms for depth and temperature, as that page
+used, and a GAM with a smooth curve for each. They are scored with ten-fold
+cross-validation by site, from
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd), on the
+training sites.
+
+### Preparing the data
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, substrate, season) |>
-  drop_na()
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
+folds <- group_vfold_cv(train, group = site_id, v = 10)
 
-linear <- glm(
-  abundance ~ depth_m + temperature_c + log1p(chlorophyll_mg_m3) + substrate,
-  data = d, family = poisson
-)
-
-quadratic <- glm(
-  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
-    log1p(chlorophyll_mg_m3) + substrate,
-  data = d, family = poisson
-)
-
-smooth <- gam(
-  abundance ~ s(depth_m) + s(temperature_c) + log1p(chlorophyll_mg_m3) + substrate,
-  data = d, family = poisson
-)
-
-tibble(
-  model = c("Straight lines", "Quadratic terms", "GAM (penalised splines)"),
-  AIC   = c(AIC(linear), AIC(quadratic), AIC(smooth))
+straight_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
 ) |>
-  mutate(AIC = round(AIC, 1))
-```
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand")
 
-Allowing the two environmental terms to curve is worth 383 AIC units; letting the curves find
-their own shape is worth another 50. There is no ambiguity about whether these relationships are
-straight.
+squared_recipe <- straight_recipe |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
 
-```{r}
-#| label: edf
-summary(smooth)$s.table |> round(3)
-```
+# s() asks mgcv for a smooth curve; it chooses the penalty's weight itself
+smooth_terms <- abundance ~ s(depth_m) + s(temperature_c) +
+  chlorophyll_mg_m3 + salinity_psu + substrate + season
+gam_model <- gen_additive_mod() |>
+  set_engine("mgcv", family = poisson, method = "REML") |>
+  set_mode("regression")
 
-The **effective degrees of freedom** is the GAM's own statement about wiggliness: 1 would mean a
-straight line, and the penalty is free to choose that if the data support it. Depth gets 5.5 and
-temperature 8.1. Both are emphatically curves.
-
-### Against the truth
-
-Because the survey is simulated, we know what the fitted curves should look like. The generating
-script builds abundance on the log scale as
-
-$$-0.55\left(\frac{\text{depth} - 80}{60}\right)^2 \;-\; 0.60\left(\frac{\text{temperature} - 9}{3}\right)^2 \;+\; \dots$$
-
-so the true depth optimum is 80 m and the true temperature optimum is 9 °C.
-
-```{r}
-#| label: fig-shapes
-#| fig-cap: "Fitted GAM smooths (solid) against the true generating curves (dashed), each centred for comparison. Temperature is recovered almost exactly, peaking at 9.30 °C against a true 9 °C. Depth is not: the fitted curve declines from the shallowest stations, putting its maximum at 15 m where the truth puts it at 80."
-#| fig-alt: "Two panels. The left panel, depth, shows a dashed inverted parabola peaking at 80 metres and falling away on both sides, and a solid fitted curve that is highest at the shallow end near 15 metres, falls to a trough around 80 metres, rises to a small secondary bump near 110 metres, and then falls steeply. The two curves cross just under 50 metres and agree closely beyond about 150 metres, but at the shallow end they are opposite: where the truth is at its lowest the fit is at its highest. The right panel, temperature, shows a dashed inverted parabola peaking at 9 degrees and a solid fitted curve lying almost on top of it across the full range from 2 to 16 degrees, separating visibly only below about 4 degrees and above about 14."
-#| fig-width: 8
-#| fig-height: 4
-centre <- function(x) x - mean(x)
-
-depth_grid <- tibble(
-  depth_m = seq(min(d$depth_m), max(d$depth_m), length.out = 200),
-  temperature_c = median(d$temperature_c),
-  chlorophyll_mg_m3 = median(d$chlorophyll_mg_m3),
-  substrate = factor("sand", levels = levels(d$substrate))
+models <- list(
+  "Poisson regression" = workflow(straight_recipe, poisson_reg()),
+  "Poisson with squared terms" = workflow(squared_recipe, poisson_reg()),
+  "GAM" = workflow(straight_recipe) |>
+    add_model(gam_model, formula = smooth_terms)
 )
-
-temp_grid <- tibble(
-  temperature_c = seq(min(d$temperature_c), max(d$temperature_c), length.out = 200),
-  depth_m = median(d$depth_m),
-  chlorophyll_mg_m3 = median(d$chlorophyll_mg_m3),
-  substrate = factor("sand", levels = levels(d$substrate))
-)
-
-depth_curves <- depth_grid |>
-  mutate(
-    Fitted = centre(predict(smooth, depth_grid, type = "terms")[, "s(depth_m)"]),
-    Truth  = centre(-0.55 * ((depth_m - 80) / 60)^2)
-  )
-
-temp_curves <- temp_grid |>
-  mutate(
-    Fitted = centre(predict(smooth, temp_grid, type = "terms")[, "s(temperature_c)"]),
-    Truth  = centre(-0.60 * ((temperature_c - 9) / 3)^2)
-  )
-
-p1 <- depth_curves |>
-  pivot_longer(c(Fitted, Truth), names_to = "curve", values_to = "effect") |>
-  ggplot(aes(depth_m, effect, colour = curve, linetype = curve)) +
-  geom_line(linewidth = 1) +
-  scale_linetype_manual(values = c(Fitted = "solid", Truth = "dashed")) +
-  labs(x = "Depth (m)", y = "Partial effect (log scale)", colour = NULL, linetype = NULL,
-       title = "Depth: recovered badly")
-
-p2 <- temp_curves |>
-  pivot_longer(c(Fitted, Truth), names_to = "curve", values_to = "effect") |>
-  ggplot(aes(temperature_c, effect, colour = curve, linetype = curve)) +
-  geom_line(linewidth = 1) +
-  scale_linetype_manual(values = c(Fitted = "solid", Truth = "dashed")) +
-  labs(x = "Temperature (°C)", y = NULL, colour = NULL, linetype = NULL,
-       title = "Temperature: recovered well")
-
-p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
-```{r}
-#| label: recovery
-tibble(
-  term = c("Depth", "Temperature"),
-  `true optimum`   = c(80, 9),
-  `fitted optimum` = c(
-    depth_curves$depth_m[which.max(depth_curves$Fitted)],
-    temp_curves$temperature_c[which.max(temp_curves$Fitted)]
-  ),
-  `correlation with true curve` = c(
-    cor(depth_curves$Fitted, depth_curves$Truth),
-    cor(temp_curves$Fitted, temp_curves$Truth)
-  )
-) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import (GridSearchCV, GroupKFold,
+                                     GroupShuffleSplit)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (OneHotEncoder, PolynomialFeatures,
+                                   SplineTransformer, StandardScaler)
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows].reset_index(drop=True)
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=123)
+
+categorical = ["substrate", "season"]
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+predictors = numeric + categorical
+
+# shape() turns depth and temperature into columns: themselves, with their
+# squares, or a set of spline bumps
+def recipe(shape):
+    def curved(column):
+        steps = Pipeline([("impute", SimpleImputer(strategy="median")),
+                          ("shape", shape),
+                          ("scale", StandardScaler())])
+        return (column, steps, [column])
+    return ColumnTransformer([
+        curved("depth_m"),
+        curved("temperature_c"),
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]),
+         ["chlorophyll_mg_m3", "salinity_psu"]),
+        ("categorical",
+         OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+         categorical),
+    ])
+
+def poisson(shape, alpha=0.0):
+    model = PoissonRegressor(alpha=alpha, max_iter=1000)
+    return Pipeline([("recipe", recipe(shape)), ("model", model)])
+
+# scikit-learn has no GAM. Spline bumps with a ridge penalty come close; the
+# penalty's weight is chosen by five-fold cross-validation by site.
+gam = GridSearchCV(poisson(SplineTransformer(n_knots=8)),
+                   {"model__alpha": 10.0 ** np.arange(-4, 1)},
+                   cv=GroupKFold(n_splits=5),
+                   scoring="neg_root_mean_squared_error")
+
+models = {
+    "Poisson regression": poisson("passthrough"),
+    "Poisson with squared terms":
+        poisson(PolynomialFeatures(2, include_bias=False)),
+    "GAM": gam,
+}
 ```
 
-## One optimum found, one missed
-
-The GAM gave both terms the same freedom and used it on both: 5.5 effective degrees of freedom
-for depth, 8.1 for temperature. On temperature, it worked: the fitted optimum is 9.30 °C against
-a true 9 °C, and the fitted curve correlates 0.972 with the true one. That is a genuine recovery
-of a thermal optimum from noisy counts, and it is what these methods are for.
-
-On depth it failed completely. The fitted curve is *highest* at the shallow end, falls to a
-trough right where the true optimum sits, and recovers only slightly, placing its maximum at
-15 m where the truth puts it at 80 m. Beyond 150 m the two curves agree well; it is the shallow
-half, where most of the stations are, that is inverted. A manager reading the depth panel
-would conclude that this species does best in the shallowest water available. The truth is that
-the shallowest water is among the worst places for it.
-
-**Nothing about the method differed between the two panels.** The difference is in the data.
-
-- Temperature varies for reasons that have nothing to do with depth: season moves it by several
-  degrees, and within any 50 m depth band the standard deviation of temperature is about 2.4 °C.
-  That independent variation is what lets the model separate a temperature effect from everything
-  else.
-- Depth has no such independent driver. It is correlated with temperature (−0.46), it drives
-  chlorophyll, and it is correlated with position, and position carries a smooth spatial field
-  that the model does not include at all. Depth's fitted curve is therefore carrying pieces of
-  three other things.
-
-This is **confounding**, and it is not a nonlinearity problem. Flexibility lets a model express
-any shape; it does not tell the model which variable a shape belongs to. Handing a confounded
-predictor a spline gives you a flexible wrong answer instead of a rigid one, delivered with more
-confidence because the fit is better.
-
-::: {.callout-important}
-A better-fitting model is not a more correct model. The GAM has the best AIC of the three
-by a wide margin *and* the most wrong depth response. Fit statistics rank models by how
-well they reproduce the data; they say nothing about whether a particular curve within the
-model means what you want to read into it.
 :::
 
-## Limits of additive smoothing
+### The GAM fits its own stations best and new sites no better
 
-**Interactions are the nonlinearity people forget.** Everything above is *additive*: each
-term gets its own curve and the curves add up. If this species' thermal optimum shifts
-with depth, which is exactly what happens for many benthic species, no amount of smoothing
-on separate terms will find it. That needs `te(depth_m, temperature_c)` in a GAM, or a
-tree-based model, which gets interactions automatically.
+Each model is scored twice: on the training stations it was fitted to, and on new sites,
+as the average over the ten folds. The last column is the standard error of that
+average, from [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
 
-**Polynomials misbehave outside the data.** The quadratic fitted above puts its depth maximum at
-293 m, beyond the deepest station, at 195 m. Inside the sampled range it is a reasonable curve;
-extrapolated, it is nonsense.
-[Extrapolation](sampling-and-extrapolation.qmd) has its own page for this reason.
+::: {.panel-tabset group="language"}
 
-**Trees find shapes but not smooth ones.** [Section 3's
-tree](../03-supervised-learning/decision-trees.qmd) would express a thermal
-optimum as two thresholds, and never produced one for depth at all. Step functions are a
-poor description of a physiological response even when they predict adequately.
+## R
 
-**The residual plot may not warn you.** The linear model's residuals, averaged in 30 m depth
-bands, range from −0.41 to +0.45 individuals against a mean count of 3.9. That is a visible
-pattern if you look for it deliberately, and easy to miss in a scatter of 741 overdispersed
-counts. Do not rely on noticing curvature by eye in count data; fit the flexible version and
-compare.
+```{r}
+#| label: scores
+score <- function(model) {
+  fitted <- fit(model, train)
+  on_new <- fit_resamples(model, folds, metrics = metric_set(rmse)) |>
+    collect_metrics()
+  tibble(fitting = rmse_vec(train$abundance, predict(fitted, train)$.pred),
+         new = on_new$mean, std_err = on_new$std_err)
+}
 
-::: {.callout-tip}
+scores <- map(models, score) |> list_rbind(names_to = "model")
+scores |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+def fit(model, data):
+    # only the GAM's search over its penalty needs the sites
+    extra = {"groups": data["site_id"]} if model is gam else {}
+    return clone(model).fit(data[predictors], data["abundance"], **extra)
+
+def score(name, model):
+    fitted = fit(model, train)
+    fitting = root_mean_squared_error(train["abundance"],
+                                      fitted.predict(train[predictors]))
+    errors = []
+    for fit_rows, new_rows in folds.split(train, groups=train["site_id"]):
+        fold_fit = fit(model, train.iloc[fit_rows])
+        new = train.iloc[new_rows]
+        predicted = fold_fit.predict(new[predictors])
+        errors.append(root_mean_squared_error(new["abundance"], predicted))
+    std_err = np.std(errors, ddof=1) / np.sqrt(len(errors))
+    return {"model": name, "fitting": round(fitting, 2),
+            "new": round(np.mean(errors), 2), "std_err": round(std_err, 2)}
+
+pd.DataFrame([score(name, model) for name, model in models.items()])
+```
+
+:::
+
+```{r}
+#| label: score-numbers
+#| include: false
+straight <- filter(scores, model == "Poisson regression")
+squared  <- filter(scores, model == "Poisson with squared terms")
+smooth   <- filter(scores, model == "GAM")
+gam_fit <- fit(models[["GAM"]], train)
+squared_fit <- fit(models[["Poisson with squared terms"]], train)
+edf <- summary(extract_fit_engine(gam_fit))$s.table[, "edf"]
+two <- \(x) format(round(x, 2), nsmall = 2)
+```
+
+The GAM uses its freedom: `r round(edf[["s(depth_m)"]], 1)` effective degrees of
+freedom for depth and `r round(edf[["s(temperature_c)"]], 1)` for temperature, far
+from a straight line's 1. On the stations it was fitted to, its error is the lowest,
+`r two(smooth$fitting)` against `r two(squared$fitting)`
+for squared terms and `r two(straight$fitting)` for straight
+lines. On new sites the gain is gone: `r two(smooth$new)` against
+`r two(squared$new)`, a difference far smaller than one standard error. Both curved
+models do a little better than straight lines, at `r two(straight$new)`; the GAM's
+extra bends add nothing to the predictions.
+
+### The GAM puts the most animals in shallow water
+
+What do the curves say? @fig-curves shows each model's prediction across depth and
+across temperature, with the other inputs held at typical values.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-curves
+#| fig-cap: "Predicted count across the survey's depths and temperatures, with the other inputs held at typical values (sand, summer, the median of the rest). The ticks along the bottom are the training stations. Both models put a temperature peak in mid-range. For depth, the squared terms fall from the shallowest station and the GAM peaks in shallow water and falls offshore."
+#| fig-alt: "Two panels of predicted count. Left, against depth from 5 to about 195 metres: the Poisson model with squared terms is highest at the shallowest depth and falls steadily; the GAM rises to a peak at a shallow depth, falls with a small second bump, and is low beyond 150 metres. Right, against temperature from about 2 to 16 degrees: both curves rise to a peak in mid-range and fall again, the GAM's peak a little sharper. Ticks along the bottom of each panel mark the training stations."
+#| fig-width: 8
+#| fig-height: 4
+typical <- train |>
+  summarise(across(c(depth_m, temperature_c, chlorophyll_mg_m3,
+                     salinity_psu), \(x) median(x, na.rm = TRUE))) |>
+  mutate(substrate = factor("sand", levels = levels(train$substrate)),
+         season    = factor("summer", levels = levels(train$season)))
+
+across_input <- function(input) {
+  values <- range(train[[input]], na.rm = TRUE)
+  steps <- tibble(!!input := seq(values[1], values[2], length.out = 200))
+  grid <- typical |>
+    select(-all_of(input)) |>
+    cross_join(steps)
+  bind_rows(
+    augment(squared_fit, grid) |>
+      mutate(model = "Poisson with squared terms"),
+    augment(gam_fit, grid) |> mutate(model = "GAM")
+  ) |>
+    transmute(model, value = .data[[input]], .pred)
+}
+
+curves <- list(depth_m = across_input("depth_m"),
+               temperature_c = across_input("temperature_c"))
+
+curve_plot <- function(input, x_label) {
+  ggplot(curves[[input]], aes(value, .pred, colour = model)) +
+    geom_rug(data = train, aes(.data[[input]]), inherit.aes = FALSE,
+             sides = "b", alpha = 0.3, colour = ml_palette[["grey"]]) +
+    geom_line(linewidth = 1.1) +
+    scale_colour_manual(values = c(
+      "Poisson with squared terms" = ml_palette[["orange"]],
+      "GAM" = ml_palette[["blue"]])) +
+    labs(x = x_label, y = "Predicted count", colour = NULL)
+}
+
+curve_plot("depth_m", "Depth (m)") +
+  curve_plot("temperature_c", "Temperature (°C)") +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+:::
+
+```{r}
+#| label: curve-numbers
+#| include: false
+peak <- curves |>
+  map(\(d) d |> group_by(model) |> slice_max(.pred, n = 1) |> select(model, value) |> deframe())
+depth_range <- range(train$depth_m, na.rm = TRUE)
+```
+
+The two models agree on temperature: the count rises to a peak near
+`r round(peak$temperature_c[["GAM"]], 1)` °C (GAM) or
+`r round(peak$temperature_c[["Poisson with squared terms"]], 1)` °C (squared terms)
+and falls on either side. On depth the GAM has found something squared terms could not
+show: a peak at `r round(peak$depth_m[["GAM"]])` m, then a long decline offshore. The
+squared terms fall all the way from the shallowest station, at
+`r round(depth_range[1])` m. Read at face value, both say the species does best in
+shallow water.
+
+## The GAM recovers the temperature curve but not the depth curve
+
+The survey is simulated, so the curves can be checked against the ones the simulation
+used. For depth, the simulated count peaks at 80 m and falls away on either side; for
+temperature, at 9 °C. No real study can make this check; it is the reason the course
+uses a simulated survey.
+
+Each curve in @fig-truth is divided by its own peak, so only its shape is compared.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-truth
+#| fig-cap: "The GAM's curves (solid) against the curves the simulation used (dashed), each divided by its own peak. Temperature is close to the truth. Depth is not: between the GAM's shallow peak and the true peak at 80 m, the GAM's curve falls while the true one rises."
+#| fig-alt: "Two panels, each with a solid GAM curve and a dashed true curve, scaled so each peaks at 1. Left, depth: the true curve is an arch peaking at 80 metres; the GAM's curve peaks in shallow water and is falling where the true curve peaks, the two agreeing only beyond about 150 metres. Right, temperature: the true curve is an arch peaking at 9 degrees and the GAM's curve lies close to it across the range, peaking a little cooler."
+#| fig-width: 8
+#| fig-height: 4
+# the curves R/make-example-data.R used, on the log scale
+true_curve <- list(
+  depth_m       = \(depth) -0.55 * ((depth - 80) / 60)^2,
+  temperature_c = \(temperature) -0.60 * ((temperature - 9) / 3)^2
+)
+
+shapes <- map(names(curves), \(name) {
+  truth <- true_curve[[name]]
+  curves[[name]] |>
+    filter(model == "GAM") |>
+    transmute(input = name, value, GAM = .pred / max(.pred),
+              Simulation = exp(truth(value)) / max(exp(truth(value))))
+}) |>
+  list_rbind() |>
+  pivot_longer(c(GAM, Simulation), names_to = "curve",
+               values_to = "relative")
+
+shape_plot <- function(which, x_label) {
+  ggplot(filter(shapes, input == which),
+         aes(value, relative, linetype = curve)) +
+    geom_line(linewidth = 1.1, colour = ml_palette[["blue"]]) +
+    scale_linetype_manual(values = c(GAM = "solid",
+                                     Simulation = "dashed")) +
+    labs(x = x_label, y = "Count relative to its peak", linetype = NULL)
+}
+
+shape_plot("depth_m", "Depth (m)") +
+  shape_plot("temperature_c", "Temperature (°C)") +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+:::
+
+```{r}
+#| label: truth-numbers
+#| include: false
+middle <- mean(between(train$depth_m, peak$depth_m[["GAM"]], 80), na.rm = TRUE)
+```
+
+Temperature comes back close to the truth, its peak a little cool. Depth does not. Between the GAM's peak at
+`r round(peak$depth_m[["GAM"]])` m and the true one at 80 m, where
+`r round(100 * middle)`% of the training stations lie, the GAM's curve falls while the
+true one rises. A manager reading the depth panel would send effort to the
+shallowest water, which the simulation made among the poorer places for this species.
+
+Nothing in the scores warned of this. The GAM fitted its stations best and predicted new
+sites as well as any model here.
+
+## Confounding gives depth a curve that belongs to other inputs
+
+The method was the same for both inputs. The difference is in the data.
+
+```{r}
+#| label: confounding
+#| include: false
+complete <- drop_na(train, depth_m, temperature_c)
+depth_temperature <- cor(complete$depth_m, complete$temperature_c)
+depth_longitude <- cor(complete$depth_m, complete$longitude)
+within_band <- complete |>
+  group_by(band = cut(depth_m, seq(0, 200, 50))) |>
+  summarise(sd = sd(temperature_c))
+```
+
+- **Temperature changes for reasons other than depth.** Season and latitude move it, so
+  within any 50 m band of depth it still varies, with a standard deviation of
+  `r round(min(within_band$sd), 1)`–`r round(max(within_band$sd), 1)` °C. Stations at the
+  same depth but different temperatures let the model separate temperature's effect
+  from the rest.
+- **Depth has no such independent variation.** It follows position closely: its
+  correlation with longitude is `r two(depth_longitude)`, because the shelf
+  deepens offshore. It also moves with temperature
+  (`r two(depth_temperature)`) and with chlorophyll. Anything that differs between
+  inshore and offshore water, measured or not, can end up in depth's curve.
+
+This is **confounding**, met in
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd): a
+variable tied to both an input and the outcome lends the input an effect that is not
+its own. Here the culprit is something about position that none of the inputs
+measures; [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) looks
+for it. Flexibility does not help. A GAM can draw any shape, but it cannot tell which
+input a shape belongs to, and a flexible wrong curve looks more convincing than a rigid
+wrong one.
+
+The new-site scores could not catch it either. Depth stands in for position, so a
+curve that is wrong about depth can still predict well, as long as depth and position
+keep their link at the new sites.
+
+## Additive curves cannot show interactions
+
+A GAM's curves add up. If the species' preferred temperature shifted with depth, which
+is common in benthic species, no set of separate curves could show it. That needs a
+curve over two inputs at once, `te(depth_m, temperature_c)` in mgcv, or a tree-based
+model: a [decision tree](../03-supervised-learning/decision-trees.qmd) splits on one
+input inside a split on another, so interactions come built in.
+
 ## Key points
 
-- Linear models assume constant effects and no interactions. Both are usually false in marine
-  data, and the failure is quiet.
-- A GAM's **effective degrees of freedom** is the model's own report on wiggliness: 5.5 for depth
-  and 8.1 for temperature here, against 1.0 for a straight line.
-- Adding flexibility clearly improved fit: AIC 4794 → 4411 → 4361.
-- **It only recovered one of the two true optima.** Temperature came back at 9.30 °C against a
-  true 9 °C (r = 0.97); depth came back at 15 m against a true 80 m (r = 0.76).
-- The difference was confounding, not flexibility. A predictor entangled with others gets a
-  flexible wrong curve, fitted with more confidence than the rigid wrong one.
-
+::: {.key-points}
+- A linear model gives each input one fixed effect and lets the effects add up. A
+  squared term allows one peak, the same shape on both sides.
+- A **GAM** builds a smooth curve for each input from weighted bumps, with a penalty on
+  bending. The **effective degrees of freedom** report how much it bent: 1 is a
+  straight line.
+- On the survey the GAM fitted its own stations best and predicted new sites about as
+  well as squared terms.
+- Checked against the simulation, its temperature curve was close and its depth curve
+  was wrong where most stations lie.
+- The cause was **confounding**: depth follows position, which carries an effect no
+  input measures. A better fit is not a more correct model, and a good score on new
+  sites does not show that a curve is right.
 :::
 
 ## Try it yourself
 
-1. Add `s(longitude, latitude)` to the GAM so the spatial field has somewhere to live, and re-plot
-   the depth smooth. How much of depth's error was the model having nowhere else to put the
-   spatial structure?
-2. Replace the two separate smooths with `te(depth_m, temperature_c)` and plot the surface. Does
-   the interaction improve AIC, and does the depth response at fixed temperature look any more
-   like the truth?
+1. Add `s(longitude, latitude)` to `smooth_terms`, a smooth surface over position, and
+   redraw @fig-truth. Does depth's curve come closer to the simulation's once position
+   has a curve of its own?
+2. Replace `s(depth_m) + s(temperature_c)` with `te(depth_m, temperature_c)` and score
+   the model with the same folds. Does a curve over both inputs at once predict new
+   sites better?

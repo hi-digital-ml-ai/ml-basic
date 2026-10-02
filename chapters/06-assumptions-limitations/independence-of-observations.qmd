@@ -1,7 +1,7 @@
 ---
 title: "Independence of observations"
 description: "How many observations do you really have? Usually fewer than the number of rows, and the difference shows up in your standard errors."
-order: 1
+order: 3
 categories: [assumptions, spatial-temporal]
 ---
 
