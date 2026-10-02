@@ -364,7 +364,8 @@ under-prediction has no place in abundance work, and this is why.
 ::: {.callout-important}
 ## The fold-to-fold spread, and comparing across schemes
 
-Section 6 ran into this three times. Here it is directly: the *same* negative binomial model,
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+warns about this when it compares schemes. Here it is directly: the *same* negative binomial model,
 scored fold by fold on the same ten folds.
 
 ::: {.panel-tabset group="language"}

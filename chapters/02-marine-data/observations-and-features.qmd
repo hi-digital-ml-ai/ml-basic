@@ -153,7 +153,8 @@ are not, in three ways:
   season, so they are closer to repeats of one observation than to separate ones.
   Ecologists call treating them as separate **pseudo-replication**.
 - **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth.
-  [Section 6](../06-assumptions-limitations/index.qmd) comes back to this.
+  [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+  comes back to this.
 
 So the number of independent observations here is nearer `r n_distinct(raw$site_id)`
 than `r nrow(raw)`, and any score computed as if it were `r nrow(raw)` will look

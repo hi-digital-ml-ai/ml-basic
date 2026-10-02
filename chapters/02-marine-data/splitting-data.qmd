@@ -259,8 +259,9 @@ provides them as recipe steps. Two conditions apply:
   a population that does not exist. `themis` steps skip new data automatically, but
   only inside a recipe, not when the table is balanced by hand.
 - **Expect the probabilities to shift.** A model trained on a 50/50 world predicts as if
-  the species were common; [section 7](../07-validation/index.qmd) shows how to
-  correct that.
+  the species were common;
+  [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows how far
+  they shift.
 
 ## Key points
 

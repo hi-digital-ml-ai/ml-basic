@@ -279,8 +279,8 @@ however far it is from the threshold. Beyond the warmest training station, at
 `r round(temp_range[2], 1)` °C, the tree keeps predicting what it predicted for the
 warmest stations it saw. It has no rule for going further, so it predicts no change.
 Poisson regression continues its shape instead. Neither has any data there, and
-[Section 6](../06-assumptions-limitations/index.qmd) returns to predicting beyond the
-data.
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+returns to predicting beyond the data.
 
 ### Choosing the depth
 

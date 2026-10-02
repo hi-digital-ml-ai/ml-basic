@@ -144,9 +144,9 @@ never quote a score against it without saying no real study could compute one.
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
 `class-imbalance`
 
-- Independence of observations
 - Linearity and nonlinearity
 - Distributional assumptions
+- Independence of observations
 - Spatial and temporal dependence
 - Uneven sampling and extrapolation
 - Class imbalance
@@ -162,17 +162,63 @@ never quote a score against it without saying no real study could compute one.
   `sampling-and-extrapolation.qmd`, because uneven coverage and extrapolation are the same problem
   at two severities and read badly when separated.
 
+**Revision decisions, 2026-10-02** (`feature/improve-assumptions-limitations`): the same
+six pages, reordered. The first two cover what a model assumes about shape and spread,
+which machine learning relaxes; the next three cover how the data were collected, which
+it does not.
+
+- Every page uses §2's split by site and §5's cross-validation by site, not AIC or a
+  random split.
+- Material earlier sections now teach is cut, not repeated: pseudo-replication and the
+  split by site (§2), overdispersion and the negative binomial (§3), Poisson standard
+  errors that are too small (§4), random against grouped cross-validation (§5).
+- *Linearity and nonlinearity* is framed for a machine-learning course: linearity is an
+  assumption of linear models, which trees and forests drop. It checks the assumption by
+  dividing caught by predicted along each input (temperature shows a hump), then
+  draws the curves of a random forest and a GAM, which drops the straight lines but keeps one
+  readable curve per input (smooth bumps with a penalty on bending, tied to §5's
+  penalty; no effective degrees of freedom), against the simulation's curves. §10's GAM pages still use effective degrees of freedom, so §10's
+  revision must explain them where it uses them, or drop them. *Distributional
+  assumptions* is framed the same way: most machine-learning models predict without
+  Normal errors or equal spread, but the distribution decides what a prediction means
+  and how sure it can be. One random forest throughout: its cross-validated errors fail
+  both checks; trained on log counts it scores the same RMSE but predicts about 30% too
+  few animals (it aims at the median, not the average); a Normal interval reaches below
+  zero, while a quantile forest's intervals widen where the catches do. Generative
+  models get one sentence (§1 covers them). Simulating from Poisson and negative
+  binomial models was cut (2026-10-02); the negative binomial model is now credited to
+  §3's *Count regression* on the pages that reuse it.
+  *Independence* shrinks to effective sample size and its cost to standard errors.
+  *Spatial and temporal dependence* compares cross-validation by site against spatial
+  blocks and diagnoses with a residual map, not Moran's I. *Extrapolation* replaces
+  Mahalanobis distance with the distance to the nearest surveyed station. *Class
+  imbalance* introduces sensitivity, specificity and precision; ROC AUC and PR AUC stay
+  in §7.
+- **One to three worked-example parts per page, each on the page's topic** (user,
+  2026-10-02: four was too many; give good, easy examples and leave the rest for
+  learners to pursue). Cut that day: linearity's scores of four models on their own
+  stations and new sites (a §5 lesson) and its Poisson model with squared terms (left
+  as an exercise); spatial's count of fitted sites within 30 km (the diagram makes the
+  point); extrapolation's ratio table (two sentences under the depth figure keep its
+  numbers). Extrapolation then dropped the negative binomial model, which behaved like
+  polynomial regression past the data, leaving two methods.
+- Running Python tabs on every page. scikit-learn has no GAM: its tab uses
+  `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
+
 ### Two threads that must be kept if these pages are edited
 
-**RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
-Different folds or splits hold different distributions of the response, so a "harder" scheme
-can report a *lower* RMSE. Use R², or the same test set for both. §2's leakage page found it
-first; §6 repeats it deliberately.
+**RMSE is not comparable across resampling schemes.** Different folds or splits hold
+different distributions of the response, so a "harder" scheme can report a *lower* RMSE.
+Use R², or the same test set for both. §2's leakage page found it first;
+`spatial-and-temporal-dependence.qmd` meets it when it compares cross-validation by site
+with spatial blocks, says so in the prose and repeats it in its Key points.
 
-**A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
-the GAM has the best AIC of three models by a wide margin and the most wrong depth response,
-because depth is confounded with temperature, chlorophyll and an unmodelled spatial field.
-Flexibility buys shape, not identifiability.
+**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
+the forest and the GAM
+recover the temperature hump, but both put depth's peak in shallow water, because depth
+is confounded with position, which carries an unmodelled spatial field. The page keeps
+this to one paragraph and links to §1 and §10's partial-effects page, which teach
+confounding; the page itself stays on linearity.
 
 ### Uses of `coastal-survey-truth.csv`
 

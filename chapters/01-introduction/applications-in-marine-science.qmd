@@ -22,9 +22,9 @@ Each task has a typical way of going wrong, and later sections deal with each on
 | Task | Typical way of going wrong | Sections |
 | --- | --- | --- |
 | Naming things | Most images are empty water, so a model that always says "nothing here" scores well and is useless | [§3](../03-supervised-learning/index.qmd), [§7](../07-validation/index.qmd), [§9](../09-neural-networks/index.qmd) |
-| Mapping across space | Nearby sites are alike, so the usual checks overstate accuracy in areas never sampled | [§6](../06-assumptions-limitations/index.qmd), [§7](../07-validation/index.qmd) |
-| Filling gaps | The gaps are not random: cloud comes with particular weather | [§2](../02-marine-data/index.qmd), [§6](../06-assumptions-limitations/index.qmd) |
-| Forecasting | A random split lets the model learn from the future; 40 years of annual data is only 40 observations | [§6](../06-assumptions-limitations/index.qmd), [§7](../07-validation/index.qmd) |
+| Mapping across space | Nearby sites are alike, so the usual checks overstate accuracy in areas never sampled | [§6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd), [§7](../07-validation/index.qmd) |
+| Filling gaps | The gaps are not random: cloud comes with particular weather | [§2](../02-marine-data/index.qmd), [§6](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
+| Forecasting | A random split lets the model learn from the future; 40 years of annual data is only 40 observations | [§6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd), [§7](../07-validation/index.qmd) |
 | Finding groups | The methods return groups whether or not real groups exist | [§8](../08-unsupervised-learning/index.qmd) |
 | Standing in for a model | The copy is valid only within the conditions it was trained on | [§6](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
 

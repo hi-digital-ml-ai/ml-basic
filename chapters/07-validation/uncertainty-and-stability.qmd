@@ -499,9 +499,10 @@ the intervals here as optimistic rather than conservative.
 
 The bootstrap interval has its own version of the problem. Resampling stations independently
 assumes stations are independent, which
-[section 6 showed they are not](../06-assumptions-limitations/independence-of-observations.qmd):
-720 visits were worth about 549 independent observations. Bootstrap the *sites*, not the
-rows, and the interval widens accordingly.
+[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd)
+showed they are not: resampled as whole sites, the training stations were worth far fewer
+independent ones than their number. Bootstrap the *sites*, not the rows, and the interval
+widens accordingly.
 
 ::: {.callout-tip}
 ## Key points

@@ -148,7 +148,7 @@ pd.Series({"stations": len(d), "present at": (truth == "yes").mean()})
 :::
 
 Note the prevalence: the species is present at 78% of stations. This is the *opposite*
-situation to [section 6's rare-species page](../06-assumptions-limitations/class-imbalance.qmd),
+situation to [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd),
 and the measures behave in mirror image.
 
 ::: {.panel-tabset group="language"}
@@ -437,9 +437,10 @@ the prevalence.** Here the prevalence is 0.78, so the logistic model's PR AUC of
 0.07 above a coin flip, while its ROC AUC of 0.650 is 0.15 above one. Reported without its
 baseline, "PR AUC 0.85" sounds like a strong model and is not.
 
-Section 6 met the same arithmetic from the other end: with a 5% positive class a PR AUC of 0.19
-sounded terrible and was in fact nearly four times its baseline. Neither number means anything
-until you say what the prevalence was.
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) met the same arithmetic
+from the other end: with the species at about 5% of stations, a precision near 0.1 sounded
+poor and was about twice what calling every station present would give. Neither number
+means anything until you say what the prevalence was.
 
 ### Whether the probabilities mean what they say
 

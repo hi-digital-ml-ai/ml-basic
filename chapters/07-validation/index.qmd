@@ -23,8 +23,8 @@ happens to suit that default.
 
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) introduced
 cross-validation by site for choosing a setting.
-[Section 6](../06-assumptions-limitations/index.qmd) diagnosed dependence and deferred the
-remedy. This section takes up both, and then asks
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+compared it with holding out whole areas. This section takes up both, and then asks
 the question neither of them did: what should the number have been measuring in the first
 place?
 
@@ -63,8 +63,9 @@ most common validation error in applied work.
 ::: {.callout-note}
 Two habits make everything on these pages comparable, and nothing here works without them.
 **Pool the out-of-fold predictions before computing a metric**, so every scheme is scored on
-identical rows. This is the proper fix for the trap
-[section 6 hit three times](../06-assumptions-limitations/index.qmd). And **use the same
+identical rows. This is the proper fix for the RMSEs that
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+warns cannot be compared across schemes. And **use the same
 resamples object for every model you intend to compare**, so the fold cancels out of the
 difference.
 :::

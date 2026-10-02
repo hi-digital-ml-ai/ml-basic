@@ -320,8 +320,9 @@ One question catches all four kinds:
 If it does, it belongs after the split, or inside the recipe. Some leakage cannot be
 removed, only reported: the whole dataset was explored in order to clean it, and that
 shaped the choices that followed. And keeping sites whole does not stop two *nearby*
-sites sharing their water; [section 7](../07-validation/index.qmd) splits by area for
-that.
+sites sharing their water;
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+holds out whole areas for that.
 
 ## Key points
 
