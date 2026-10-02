@@ -20,8 +20,9 @@ source(here::here("R/data.R"))
 ## Drawing the fold boundaries elsewhere
 
 [Section 6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd) showed that
-survey residuals carry spatial structure the covariates never absorb, and that ordinary
-cross-validation therefore flatters a model. It deferred the fix to here.
+survey residuals gather in patches on the map that the covariates never absorb, and that
+cross-validation by site therefore flatters a model. It held out whole areas once; this page
+draws those boundaries with care.
 
 The fix is not a better algorithm. It is drawing the fold boundaries somewhere else. And the
 right place to draw them is not a matter of statistical purity; it depends entirely on what
@@ -304,13 +305,14 @@ to a harder prediction task, and you should choose the task deliberately.
 ::: {.callout-important}
 ## Choosing the block size
 
-Section 6 estimated the spatial range of this survey's residual structure from a variogram.
-Blocks should be **at least that range across**, otherwise a block's neighbours still carry
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+mapped this survey's residuals, which gather in patches. Blocks should be **at least as wide
+as a patch**, otherwise a block's neighbours still carry
 the structure it was supposed to hide. Blocks much larger than the range cost you training
 data for nothing, and at 1.20° there are so few blocks left that `spatial_block_cv()` quietly
 reduces `v` from 10 to 6.
 
-Choose the block size from the variogram, not from the score. Choosing it because it gives a
+Choose the block size from the residual map, not from the score. Choosing it because it gives a
 number you like is the spatial version of choosing a threshold to get *p* < 0.05.
 :::
 
@@ -436,7 +438,7 @@ hold out the region most like it, not ten blocks at random.
 Blocked cross-validation also shrinks the training set in a way random folds do not: a block
 removes a contiguous chunk of environmental space, not a random sample of it. Some of the
 penalty you measure is the model being asked to extrapolate, which is
-[section 6's problem](../06-assumptions-limitations/sampling-and-extrapolation.qmd) rather than
+the problem in [Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) rather than
 a fair reflection of interpolation skill inside the blocks.
 
 ::: {.callout-tip}
@@ -449,7 +451,7 @@ a fair reflection of interpolation skill inside the blocks.
   comparable. Without that, they would not be.
 - Performance falls with the distance between held-out and training stations: R² 0.200 at
   four kilometres down to 0.114 at twenty-five. There is no single "true" score.
-- Set block size from the variogram range, before you look at the score.
+- Set block size from the size of the residual patches, before you look at the score.
 - Grouping handles repeated measurements; blocking handles proximity. They are different, and
   most survey data needs both.
 :::

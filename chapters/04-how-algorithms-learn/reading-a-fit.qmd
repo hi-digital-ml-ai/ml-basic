@@ -382,7 +382,8 @@ success.
 Finally, every check on this page asks whether the search did what it was told. None of
 them asks whether it was told the right thing: a Poisson model of counts that vary far
 more than Poisson allows converges without complaint.
-[Section 6](../06-assumptions-limitations/index.qmd) takes up that question.
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
+takes up that question.
 
 ### A checklist before reading the coefficients
 

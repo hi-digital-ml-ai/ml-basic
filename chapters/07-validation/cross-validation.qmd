@@ -320,9 +320,9 @@ instead of after. The gap grows with the number of folds, 0.005 at two folds aga
 twenty**, for no reason connected to the model at all.
 
 So an RMSE reported from twenty-fold cross-validation is not comparable with one from
-five-fold, even for the same model on the same data. This is the same trap
-[section 6](../06-assumptions-limitations/index.qmd) hit three times from a different
-direction, and the [regression measures page](regression-metrics.qmd) takes it apart properly.
+five-fold, even for the same model on the same data. This is the trap
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+warns about from a different direction, and the [regression measures page](regression-metrics.qmd) takes it apart properly.
 :::
 
 ### Quoting the winning score
@@ -517,7 +517,8 @@ Quoting (1) as if it were (2) is the single most common validation error in appl
 
 Everything on this page assumed that a random division of the rows produces folds that are
 independent of each other. For survey data that assumption is false, for exactly the reasons
-[section 6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd) set out: a
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+set out: a
 station in the held-out fold usually has a near neighbour in the training fold, and repeat
 visits to one site can be split across both.
 

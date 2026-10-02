@@ -42,7 +42,7 @@ false if the sentence were false.
 | "Total abundance in the survey area is about *N*" | bias in the sum, not per-station error |
 | "These fifty stations are where the species is densest" | what a ranked shortlist actually finds |
 | "Flag a station for follow-up if …" | expected cost at the chosen threshold |
-| "Abundance peaks at 80 m" | none of the above; see §6 on confounding |
+| "Abundance peaks at 80 m" | none of the above; see [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd) on confounding |
 
 The last row is a reminder rather than a recipe. No predictive measure tests whether a
 relationship is causal, and a model can be excellent at the first four while being wrong about
@@ -458,5 +458,5 @@ bias too, and no validation scheme will tell you.
 1. Recompute the shortlist column for budgets of 20, 50, 100 and 200. Does the same model win
    at every budget?
 2. Take the cost framework to the rare-species response from
-   [section 6](../06-assumptions-limitations/class-imbalance.qmd) and find the threshold for
+   [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) and find the threshold for
    *k* = 0.1, a missed detection costing ten wasted dives. How many stations does that flag?
