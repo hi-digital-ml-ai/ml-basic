@@ -27,7 +27,7 @@ that it is guessing.
 
 Two problems are worth keeping apart. **Uneven sampling** means some conditions are
 covered thinly, so the fit there rests on a few stations. **Extrapolation** means
-predicting for conditions the survey did not cover at all. This page shows what three
+predicting for conditions the survey did not cover at all. This page shows what two
 familiar methods do when they are asked to extrapolate, and how to measure how far a
 station lies from the survey, so that a prediction map can say where it is guessing.
 
@@ -52,12 +52,10 @@ however far the truth moves on.
 ## Worked example
 
 The survey here visits only the shallower sites: those whose stations average less
-than 100 m deep. The deeper sites are the area the model is asked to map. Three
-methods from earlier pages are fitted with the same inputs: polynomial regression from
-[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-and the negative binomial model from
-[Count regression](../03-supervised-learning/count-regression.qmd), both with squared terms
-for depth and temperature, and the random forest from
+than 100 m deep. The deeper sites are the area the model is asked to map. Two methods
+from earlier pages are fitted with the same inputs: polynomial regression from
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
+with squared terms for depth and temperature, and the random forest from
 [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
 One survey could be lucky or unlucky, so the fit is repeated on ten surveys, each
@@ -98,7 +96,6 @@ curve_recipe <- forest_recipe |>
 ```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from scipy.spatial.distance import cdist
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
@@ -155,7 +152,7 @@ sites. The other `r n_distinct(deep$site_id)` sites, down to
 
 ### Methods that agree within the survey's depths disagree below them
 
-Each of the ten surveys fits all three methods, which then predict every station at
+Each of the ten surveys fits both methods, which then predict every station at
 the left-out shallow sites and at the deep sites.
 
 ::: {.panel-tabset group="language"}
@@ -164,14 +161,11 @@ the left-out shallow sites and at the deep sites.
 
 ```{r}
 #| label: fits
-predict_three <- \(one_survey) {
+predict_two <- \(one_survey) {
   fitting <- analysis(one_survey)
   new_sites <- bind_rows(assessment(one_survey), deep)
 
   polynomial <- fit(workflow(curve_recipe, linear_reg()), fitting)
-  prepped <- prep(curve_recipe, training = fitting)
-  nb_fit <- MASS::glm.nb(abundance ~ .,
-                         data = bake(prepped, new_data = NULL))
   forest <- fit(
     workflow(forest_recipe,
              rand_forest(trees = 500) |>
@@ -184,50 +178,40 @@ predict_three <- \(one_survey) {
     select(station_id, site_id, depth_m) |>
     mutate(
       "Polynomial regression" = predict(polynomial, new_sites)$.pred,
-      "Negative binomial model" = predict(nb_fit, bake(prepped, new_sites),
-                                          type = "response"),
       "Random forest" = predict(forest, new_sites)$.pred
     )
 }
 
 predictions <- surveys |>
-  mutate(predicted = map(splits, predict_three)) |>
+  mutate(predicted = map(splits, predict_two)) |>
   select(id, predicted) |>
   unnest(predicted) |>
-  pivot_longer(c("Polynomial regression", "Negative binomial model",
-                 "Random forest"),
+  pivot_longer(c("Polynomial regression", "Random forest"),
                names_to = "model", values_to = "predicted")
 ```
 
 ## Python
 
 ```{python}
-def predict_three(fit_rows, held_rows):
+def predict_two(fit_rows, held_rows):
     fitting = shallow.iloc[fit_rows]
     new_sites = pd.concat([shallow.iloc[held_rows], deep], ignore_index=True)
 
     polynomial = Pipeline([("recipe", curve_recipe),
                            ("model", LinearRegression())]).fit(
         fitting[predictors], fitting["abundance"])
-    prepped = curve_recipe.fit(fitting[predictors])
-    design = sm.add_constant(prepped.transform(fitting[predictors]))
-    nb_fit = sm.NegativeBinomial(fitting["abundance"].to_numpy(), design).fit(
-        method="newton", disp=0)
     forest = Pipeline([
         ("recipe", forest_recipe),
         ("model", RandomForestRegressor(n_estimators=500, random_state=1,
                                         n_jobs=-1)),
     ]).fit(fitting[predictors], fitting["abundance"])
 
-    new_design = sm.add_constant(prepped.transform(new_sites[predictors]),
-                                 has_constant="add")
     return new_sites[["station_id", "site_id", "depth_m"]].assign(
         **{"Polynomial regression": polynomial.predict(new_sites[predictors]),
-           "Negative binomial model": nb_fit.predict(new_design),
            "Random forest": forest.predict(new_sites[predictors])})
 
 predictions = pd.concat(
-    [predict_three(fit_rows, held_rows).assign(id=i)
+    [predict_two(fit_rows, held_rows).assign(id=i)
      for i, (fit_rows, held_rows) in enumerate(surveys)]
 ).melt(id_vars=["id", "station_id", "site_id", "depth_m"],
        var_name="model", value_name="predicted")
@@ -236,10 +220,9 @@ predictions = pd.concat(
 :::
 
 The survey is simulated, so the predictions can be compared with the **true mean
-count** at each station: the number the simulation drew that station's count around,
-before the chance of the catch was added. No real study has this, and no score
-computed against it could be achieved in practice. It is used here because it shows
-each method's error free of the noise in single counts.
+count** at each station: the number the simulation drew that station's count around.
+No real study has this; it shows each method's error free of the noise in single
+counts.
 
 ::: {.panel-tabset group="language"}
 
@@ -265,9 +248,9 @@ predictions = predictions.merge(load_coastal_survey_truth(), on="station_id")
 
 ```{r}
 #| label: fig-beyond
-#| fig-cap: "Mean predicted count at new sites in 20 m bands of depth, one thin line for each of the ten shallow surveys, against the true mean count (black). The shaded region holds the depths of the sites the surveys left out. Within the survey's depths the ten fits of each method agree with each other and with the truth. Below them the random forest's lines run flat, and the two curves' lines fan out."
-#| fig-alt: "Three panels, one per method, each with depth from 20 to 180 metres on the horizontal axis and mean count on the vertical, with the region deeper than 100 metres shaded. A thick black line for the true mean count falls from about 7 at 30 metres to about 4 at 90 metres, stays near 3.5 to 120 metres and then drops to about 1 at 170 metres. In every panel the ten thin blue lines bunch around the black line up to 100 metres. Beyond it: for polynomial regression and the negative binomial model the thin lines spread out, some following the black line down, others staying level or turning upward; for the random forest all ten lines stay level between about 3 and 5, well above the black line at the deepest bands."
-#| fig-width: 8.5
+#| fig-cap: "Mean predicted count at new sites in 20 m bands of depth, one thin line for each of the ten shallow surveys, against the true mean count (black). The shaded region holds the depths of the sites the surveys left out. Within the survey's depths the ten fits of each method agree with each other and with the truth. Below them the random forest's lines run flat, and polynomial regression's lines fan out."
+#| fig-alt: "Two panels, one per method, each with depth from 20 to 180 metres on the horizontal axis and mean count on the vertical, with the region deeper than 100 metres shaded. A thick black line for the true mean count falls from about 7 at 30 metres to about 4 at 90 metres, stays near 3.5 to 120 metres and then drops to about 1 at 170 metres. In every panel the ten thin blue lines bunch around the black line up to 100 metres. Beyond it: for polynomial regression the thin lines spread out, some following the black line down, others staying level or turning upward; for the random forest all ten lines stay level between about 3 and 5, well above the black line at the deepest bands."
+#| fig-width: 7
 #| fig-height: 3.8
 bands <- predictions |>
   filter(between(depth_m, 20, 180)) |>
@@ -283,8 +266,7 @@ bands |>
            fill = "grey92") +
   geom_line(aes(group = id), colour = ml_palette[["blue"]], alpha = 0.45) +
   geom_line(aes(y = true_mean), data = truth_line, linewidth = 1.3) +
-  facet_wrap(~ fct_relevel(model, "Polynomial regression",
-                           "Negative binomial model")) +
+  facet_wrap(~ model) +
   labs(x = "Depth (m)", y = "Mean count (individuals)")
 ```
 
@@ -305,38 +287,16 @@ spread_of <- \(m, w) {
   r <- range(ratios$ratio[ratios$model == m & ratios$where == w])
   paste(format(round(r, 1), nsmall = 1), collapse = " to ")
 }
-within_range <- ratios |>
-  filter(where == "within") |>
-  pull(ratio) |>
-  range() |>
-  round(1)
 ```
 
 Within the survey's depths, @fig-beyond shows the ten fits of each method bunched
 around the truth. Past 100 m they part company. The random forest's lines run flat:
 it predicts a station at 170 m much as it predicts one at the deepest point of its
-survey, while the true mean count keeps falling. The lines of polynomial regression
-and the negative binomial model fan out instead: some fits follow the truth down,
-others level off or turn back up.
-
-Dividing each survey's mean prediction by the mean true count puts numbers on this.
-At the left-out shallow sites every method is close to right on every survey, between
-`r within_range[1]` and `r within_range[2]` times the truth. Below 140 m the random
-forest is too high on all ten surveys, at `r spread_of("Random forest", "below")`
-times the truth. Polynomial regression ranges from
-`r spread_of("Polynomial regression", "below")` and the negative binomial model from
-`r spread_of("Negative binomial model", "below")`: a curve can be close to right or far
-off, depending on which sites its survey happened to include.
-
-The survey is simulated, so the reason can be given. The simulation makes the
-species' numbers rise with depth to a peak at 80 m and fall beyond it, a curve on the
-log scale of just the shape that the negative binomial model's squared terms draw. Even
-so, its fits fan out. Within 100 m the water gets colder as it gets deeper, so the
-depth curve and the temperature curve can trade off against each other, and fits
-that describe the shallow sites equally well can bend in different directions below
-them. A better fit within the data is not a more correct model, as
-[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) found for the forest and
-the GAM, and past the data the difference shows.
+survey, while the true mean count keeps falling. Below 140 m it is too high on all ten
+surveys, at `r spread_of("Random forest", "below")` times the truth. Polynomial
+regression's lines fan out instead, from `r spread_of("Polynomial regression", "below")`
+times the truth: within 100 m the water gets colder as it gets deeper, so fits that
+describe the shallow sites equally well can bend in different directions below them.
 
 ## A range check misses new combinations of conditions
 
@@ -347,16 +307,11 @@ summer and autumn, and its model is asked about spring and winter stations.
 
 The usual check takes each input in turn and asks whether a station's value lies
 between the smallest and largest the survey recorded. A check that looks at all the
-inputs together measures the **distance to the nearest surveyed station**. Each
-input is first put on a common scale, standardised to a mean of 0 and a spread of 1
-as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd), with
-chlorophyll logged first. The distance is then the straight-line distance across
-depth, temperature, chlorophyll and salinity together.
-
-A distance means little alone, so it is compared with how far surveyed stations lie
-from their own nearest neighbour at another site. A station further from the survey
-than 95% of surveyed stations are from their neighbours is flagged as far from the
-survey.
+inputs together measures the **distance to the nearest surveyed station**: the inputs
+are standardised as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd),
+with chlorophyll logged first, and the distance is the straight line across all four.
+A station further from the survey than 95% of surveyed stations lie from their nearest
+neighbour at another site is flagged as far from the survey.
 
 ::: {.panel-tabset group="language"}
 
@@ -505,9 +460,8 @@ ggplot(mapping = aes(depth_m, temperature_c)) +
 
 A random forest fitted to the summer and autumn survey predicts the spring and winter
 stations. Season itself is left out of its inputs, as the survey has none of the
-seasons asked about. Its predictions are compared with the true mean count again,
-which only a simulation allows, in four groups of stations from the nearest quarter
-to the furthest. A prediction 2 times too high or 2 times too low is off by a factor
+seasons asked about. Its predictions are compared with the true mean count again, in
+four groups of stations from the nearest quarter to the furthest. A prediction 2 times too high or 2 times too low is off by a factor
 of 2.
 
 ::: {.panel-tabset group="language"}
@@ -582,20 +536,13 @@ distance is the only sign that its predictions there deserve less trust.
 
 ## The distance to the nearest station belongs on a prediction map
 
-The distance to the nearest surveyed station can be mapped alongside any prediction,
-so that a reader sees where the map rests on the survey and where it is extrapolating.
-Areas far from the survey can be greyed out or left unmapped. The same distance shows
-uneven sampling too: conditions the survey covered thinly sit further from their
-nearest station than well-covered ones, and their predictions rest on fewer stations.
-
-Sometimes extrapolating is the point, as in projecting a species' range under warmer
-water than any survey recorded. Then say plainly which predictions are
-extrapolations, prefer a model whose shape can be defended from what is known about
-the species, and expect errors larger than any cross-validation on the survey has
-measured. Spatial blocks, from
-[Spatial and temporal dependence](spatial-and-temporal-dependence.qmd), measure part
-of this, as a held-out block often holds conditions the rest of the map covers
-thinly.
+Mapped alongside a prediction, the distance to the nearest surveyed station shows
+where the map rests on the survey and where it is extrapolating; areas far from the
+survey can be greyed out or left unmapped. The same distance shows uneven sampling too:
+conditions the survey covered thinly lie further from their nearest station. When
+extrapolating is the point, as in projecting a species' range under warmer water than
+any survey recorded, say which predictions are extrapolations and expect errors larger
+than any cross-validation on the survey has measured.
 
 ## Key points
 
@@ -605,10 +552,9 @@ thinly.
 - Past the data, a random forest repeats the value at the edge. Below 140 m it was
   too high on all ten shallow surveys, at `r spread_of("Random forest", "below")`
   times the true mean count.
-- Polynomial regression and the negative binomial model follow their curves, which
-  can be close to right or far off depending on the survey: from
-  `r spread_of("Polynomial regression", "below")` and
-  `r spread_of("Negative binomial model", "below")` times the truth.
+- Polynomial regression follows its curve, which can be close to right or far off
+  depending on the survey: from `r spread_of("Polynomial regression", "below")` times
+  the truth.
 - A range check on each input misses new combinations. `r n_hidden` of the
   `r n_range` spring and winter stations that passed it were far from every surveyed
   station.
@@ -620,7 +566,7 @@ thinly.
 
 ## Try it yourself
 
-1. Refit the forest in `predict_three()` with `rand_forest(trees = 500, min_n = 50)`,
+1. Refit the forest in `predict_two()` with `rand_forest(trees = 500, min_n = 50)`,
    so each leaf holds at least 50 stations, and redraw @fig-beyond. Does a smoother
    forest extrapolate any better?
 2. Use `nearest()` to measure how far each deep station lies from the shallow

@@ -200,7 +200,8 @@ it does not.
   stations and new sites (a §5 lesson) and its Poisson model with squared terms (left
   as an exercise); spatial's count of fitted sites within 30 km (the diagram makes the
   point); extrapolation's ratio table (two sentences under the depth figure keep its
-  numbers).
+  numbers). Extrapolation then dropped the negative binomial model, which behaved like
+  polynomial regression past the data, leaving two methods.
 - Running Python tabs on every page. scikit-learn has no GAM: its tab uses
   `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
 
