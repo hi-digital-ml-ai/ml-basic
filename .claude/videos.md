@@ -721,6 +721,54 @@ narrated with Gemini (34 requests; scenes 1, 10 and 37 reused their earlier take
   an animation starts, so the first frames showed it off the track: place the track
   before making the knob.
 
+## §6 Assumptions rebuilt (2026-10-02, cut down 2026-10-03)
+
+Rebuilt from the revised pages (`feature/improve-assumptions-limitations`) on three
+points: a model can fit well and still be wrong, rows are worth less than they seem,
+and a model never says when it is guessing. 29 scenes, about 860 words, 6:36 on the draft
+voice. Narrated with Gemini on 2026-10-03 (29 requests, no retries, about $0.10): 6:28.
+
+- Examples, all through `exports.R` from five pages: linear models assume straight
+  lines, random forests and GAMs do not; caught ÷ predicted along each input shows
+  temperature's hump; the forest and the GAM find it, but put depth's peak at 17 and
+  31 m against the true 80, confounded with position; 598 training stations from 120
+  sites, worth about 350 when whole sites are resampled (1.30 times wider); a forest on
+  position alone scores R² 0.076 by site and 0.027 by block; ten shallow-survey forests
+  run flat below 100 m (1.8–2.8 times the truth below 140 m); winter stations inside
+  every range but far from the survey, and the forest's error growing with that
+  distance. Quiz: two forests with almost the same RMSE (4.69, 4.78), the one on log
+  counts predicting 1,699 animals against 2,421 caught, 30% short.
+- The first rebuild (41 scenes, 958 words, 7:28) also had the models' scores on
+  fitting and new sites, Poisson regression's simulated surveys and summer effect, the
+  error map, the fitted neighbours within 30 km and four class-imbalance scenes with an
+  upsampling quiz. After the pages were trimmed to one to three examples each, the user
+  asked for the video to follow with less information: the scores, the Poisson spread
+  and the neighbour count had left the pages, and the rest went to keep one example per
+  idea. Class imbalance and prediction intervals are named on the end card only.
+- The user then asked for one pronunciation of GAM and a little more explanation of each
+  result. `pronunciation.yml` now says "G A M" (as RMSE is "R M S E"), for every video,
+  and the result scenes each gained a sentence on what the number means: where a ratio of
+  1 is right, why 1.3 times wider means about 350 stations, that the position-only score
+  comes from the neighbours, why a forest runs flat past its data, and why log counts
+  give a short total.
+- First built around the GAM alone; the user pointed out that most machine-learning
+  models handle curves, and that this is a machine-learning course, not a statistical
+  one. The linearity page and the first chapter now lead with the random forest, and
+  the GAM appears as the flexible model whose curves can be read.
+- The spatial scenes draw a line from each held-out site to its nearest fitted site,
+  computed from `sites.csv`, instead of counting neighbours: by block the lines cross
+  out of the held-out squares.
+- `exports.R` knits five pages. The independence page keeps only the bootstrap
+  spreads, so `exports.R` averages the page's own `by_station` and `by_site` samples
+  again.
+- Delete the old video's CSVs from `visuals/data/` when `exports.R` is rewritten, and
+  old `SceneNN.mp4` files past the new last scene: stale files stay there, and a scene
+  could read one without error.
+- pandas: `group.empty` is the DataFrame's emptiness flag, not a column called
+  `empty`; use `group["empty"]`.
+- Manim: `FadeIn(x)` and `Rotate(group_containing_x)` in one `play` leave `x`
+  invisible; fade in first, then rotate.
+
 ### Still open
 
 - Source Sans 3 or Inter for titles. The scenes use Source Sans 3 (installed on the
