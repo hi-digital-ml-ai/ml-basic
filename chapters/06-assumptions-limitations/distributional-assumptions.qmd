@@ -156,7 +156,7 @@ nb_fit = sm.NegativeBinomial(train["abundance"], design).fit(
 
 :::
 
-### The Poisson model makes far too few empty stations
+### Poisson regression makes far too few empty stations
 
 Each model's expected count at every training station is the starting point. The
 negative binomial also needs its $\theta$. Five hundred surveys are drawn from each
@@ -244,7 +244,7 @@ range_of <- \(row) paste0(round(row$low), "–", round(row$high))
 ```
 
 The training stations include `r poisson_empty$real` empty ones out of
-`r nrow(train)`. Surveys simulated from the Poisson model have
+`r nrow(train)`. Surveys simulated from Poisson regression have
 `r range_of(poisson_empty)`. Their largest catch runs from
 `r range_of(poisson_largest)` animals, where the real survey's was
 `r poisson_largest$real`. @fig-check shows the whole spread.
@@ -255,7 +255,7 @@ The training stations include `r poisson_empty$real` empty ones out of
 
 ```{r}
 #| label: fig-check
-#| fig-cap: "The number of empty stations and the largest catch in 500 surveys simulated from each fitted model, against the real survey (dashed). The Poisson model's surveys have far fewer empty stations and smaller largest catches than the real one. The negative binomial model's surveys contain the real values."
+#| fig-cap: "The number of empty stations and the largest catch in 500 surveys simulated from each fitted model, against the real survey (dashed). Poisson regression's surveys have far fewer empty stations and smaller largest catches than the real one. The negative binomial model's surveys contain the real values."
 #| fig-alt: !expr 'glue::glue("Two panels of overlapping histograms, one colour for surveys simulated from Poisson regression and one for the negative binomial model, with a dashed vertical line for the real survey. Left, empty stations: the Poisson histogram lies between about {round(poisson_empty$low)} and {round(poisson_empty$high)}, far to the left of the real value of {poisson_empty$real}; the negative binomial histogram spreads from about {round(nb_empty$low)} to {round(nb_empty$high)} and contains it. Right, the largest catch: the Poisson histogram is narrow, ending near {round(poisson_largest$high)}, with the real value of {poisson_largest$real} at or beyond its edge; the negative binomial histogram is wide, with a long tail to the right, and contains the real value.")'
 #| fig-width: 8
 #| fig-height: 3.8
@@ -277,7 +277,7 @@ check_plot("empty", "Empty stations") +
 
 :::
 
-The Poisson model fails both checks. Its distribution allows too little scatter, so
+Poisson regression fails both checks. Its distribution allows too little scatter, so
 the counts stay near their expected values: few stations come up empty and none comes
 up very large. The real survey has both, because animals gather in groups. The
 negative binomial model passes: its surveys have `r range_of(nb_empty)` empty stations
@@ -288,7 +288,7 @@ Both models predict much the same expected counts, as
 [Count regression](../03-supervised-learning/count-regression.qmd) found. The check
 tells them apart by their scatter, which the predictions alone never show.
 
-## The Poisson model is sure of a summer effect the data do not support
+## Poisson regression is sure of a summer effect the data do not support
 
 A distribution that allows too little scatter makes the model too sure of everything it
 estimates. The table below shows each seabed and season multiplier with its 95%
@@ -359,7 +359,7 @@ se_ratio <- mean(summary(nb_fit)$coefficients[, 2] /
                    summary(extract_fit_engine(poisson_fit))$coefficients[, 2])
 ```
 
-Under the Poisson model, summer stations hold `r two(summer$multiplier)` times
+Under Poisson regression, summer stations hold `r two(summer$multiplier)` times
 the count of spring ones, with an interval from
 `r interval_of(summer$conf_low, summer$conf_high)`. Taken at face value,
 the data show a summer effect beyond what temperature and chlorophyll explain. The
@@ -367,16 +367,16 @@ negative binomial model's estimate is close, `r two(summer_nb$multiplier)`, but 
 interval runs from `r interval_of(summer_nb$conf_low, summer_nb$conf_high)` and
 includes 1: allowing for the real scatter, the data cannot tell summer from spring.
 Averaged over the coefficients, its standard errors are
-`r format(round(se_ratio, 1), nsmall = 1)` times the Poisson model's.
+`r format(round(se_ratio, 1), nsmall = 1)` times Poisson regression's.
 
 The negative binomial model has it right. The simulation gave season no effect of its
 own: season changes the water's temperature and chlorophyll, and both are already in
-the model. A report built on the Poisson model would have described a seasonal effect
+the model. A report built on Poisson regression would have described a seasonal effect
 that is not there, and nothing in its predictions or its coefficients would have
 warned of it.
 
 Honest intervals have a price. The simulation did make rocky ground poorer for the
-species, and the Poisson model's interval for rock,
+species, and Poisson regression's interval for rock,
 `r interval_of(rock$conf_low, rock$conf_high)`, stays below 1. The
 negative binomial model's,
 `r interval_of(rock_nb$conf_low, rock_nb$conf_high)`, does not, as
@@ -421,10 +421,10 @@ ensembles such as `xgboost` also offer, matches the data better.
   says the variance equals the expected count; animals that gather in groups vary more.
 - **Simulating from the fitted model** tests that claim: draw many surveys from the
   model and see whether the real one looks like them.
-- Surveys from the Poisson model had `r range_of(poisson_empty)` empty stations against
+- Surveys from Poisson regression had `r range_of(poisson_empty)` empty stations against
   `r poisson_empty$real` in the real one. The negative binomial model's contained the
   real survey's empty stations and largest catch.
-- The Poisson model was sure of a summer effect that the simulation never put there;
+- Poisson regression was sure of a summer effect that the simulation never put there;
   the negative binomial model's wider intervals were not. They could no longer tell
   rock from sand either, which is what the data support.
 - A passed check tests only the features it counts, and the simulation assumes every

@@ -186,10 +186,11 @@ it does not.
 
 ### Two threads that must be kept if these pages are edited
 
-**RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
-Different folds or splits hold different distributions of the response, so a "harder" scheme
-can report a *lower* RMSE. Use R², or the same test set for both. §2's leakage page found it
-first; §6 repeats it deliberately.
+**RMSE is not comparable across resampling schemes.** Different folds or splits hold
+different distributions of the response, so a "harder" scheme can report a *lower* RMSE.
+Use R², or the same test set for both. §2's leakage page found it first;
+`spatial-and-temporal-dependence.qmd` meets it when it compares cross-validation by site
+with spatial blocks, says so in the prose and repeats it in its Key points.
 
 **A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
 the GAM fits its own stations best of three Poisson models, predicts new sites no worse,

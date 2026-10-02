@@ -114,7 +114,7 @@ gam_model <- gen_additive_mod() |>
   set_mode("regression")
 
 models <- list(
-  "Poisson regression" = workflow(straight_recipe, poisson_reg()),
+  "Poisson with straight lines" = workflow(straight_recipe, poisson_reg()),
   "Poisson with squared terms" = workflow(squared_recipe, poisson_reg()),
   "GAM" = workflow(straight_recipe) |>
     add_model(gam_model, formula = smooth_terms)
@@ -182,7 +182,7 @@ gam = GridSearchCV(poisson(SplineTransformer(n_knots=8)),
                    scoring="neg_root_mean_squared_error")
 
 models = {
-    "Poisson regression": poisson("passthrough"),
+    "Poisson with straight lines": poisson("passthrough"),
     "Poisson with squared terms":
         poisson(PolynomialFeatures(2, include_bias=False)),
     "GAM": gam,
@@ -245,7 +245,7 @@ pd.DataFrame([score(name, model) for name, model in models.items()])
 ```{r}
 #| label: score-numbers
 #| include: false
-straight <- filter(scores, model == "Poisson regression")
+straight <- filter(scores, model == "Poisson with straight lines")
 squared  <- filter(scores, model == "Poisson with squared terms")
 smooth   <- filter(scores, model == "GAM")
 gam_fit <- fit(models[["GAM"]], train)
@@ -276,7 +276,7 @@ across temperature, with the other inputs held at typical values.
 ```{r}
 #| label: fig-curves
 #| fig-cap: "Predicted count across the survey's depths and temperatures, with the other inputs held at typical values (sand, summer, the median of the rest). The ticks along the bottom are the training stations. Both models put a temperature peak in mid-range. For depth, the squared terms fall from the shallowest station and the GAM peaks in shallow water and falls offshore."
-#| fig-alt: "Two panels of predicted count. Left, against depth from 5 to about 195 metres: the Poisson model with squared terms is highest at the shallowest depth and falls steadily; the GAM rises to a peak at a shallow depth, falls with a small second bump, and is low beyond 150 metres. Right, against temperature from about 2 to 16 degrees: both curves rise to a peak in mid-range and fall again, the GAM's peak a little sharper. Ticks along the bottom of each panel mark the training stations."
+#| fig-alt: "Two panels of predicted count. Left, against depth from 5 to about 195 metres: Poisson with squared terms is highest at the shallowest depth and falls steadily; the GAM rises to a peak at a shallow depth, falls with a small second bump, and is low beyond 150 metres. Right, against temperature from about 2 to 16 degrees: both curves rise to a peak in mid-range and fall again, the GAM's peak a little sharper. Ticks along the bottom of each panel mark the training stations."
 #| fig-width: 8
 #| fig-height: 4
 typical <- train |>
