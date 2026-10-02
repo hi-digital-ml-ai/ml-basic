@@ -382,8 +382,10 @@ success.
 Finally, every check on this page asks whether the search did what it was told. None of
 them asks whether it was told the right thing: a Poisson model of counts that vary far
 more than Poisson allows converges without complaint.
+[Count regression](../03-supervised-learning/count-regression.qmd) showed what that
+costs, and
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-takes up that question.
+asks which models need a distribution at all.
 
 ### A checklist before reading the coefficients
 

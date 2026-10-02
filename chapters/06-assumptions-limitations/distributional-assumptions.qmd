@@ -1,6 +1,6 @@
 ---
 title: "Distributional assumptions"
-description: "A count model assumes how widely counts scatter around its predictions. Simulating surveys from the fitted model shows whether it could have produced the real one, and a model that could not is sure of effects the data do not support."
+description: "Most machine-learning models predict without Normal data or equal spread, but the distribution still decides what a prediction means and how sure it can be. A random forest's errors fail both checks; trained on log counts it predicts far fewer animals than were caught, and a quantile forest gives intervals that follow the errors."
 order: 2
 categories: [assumptions]
 ---
@@ -10,7 +10,6 @@ categories: [assumptions]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(poissonreg)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
@@ -18,61 +17,51 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## Every count model claims how widely counts scatter
+## Normal data and equal spread are not requirements of machine learning
 
-[Count regression](../03-supervised-learning/count-regression.qmd) fitted Poisson
-regression to the survey and found the counts varying more than Poisson allows.
-[Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) showed why that
-matters: the distribution a model assumes is what its fit is built on, and its standard
-errors come from it. This page adds a check that works for any model with a
-distribution, **simulating from the fitted model**, and shows what the wrong
-distribution costs: a model that is sure of an effect the data do not support.
+Statistics courses teach two checks before a model is fitted: that the model's errors
+follow a **Normal distribution** (the bell curve), and that their spread is the same
+everywhere, **equal spread** (homogeneity of variance, in statistics). Counts of animals
+usually fail both. Most machine-learning models predict without either: trees, forests
+and boosting split the data by the order of its values, whatever its shape. The
+exception is the generative model of
+[Discriminative and generative models](../01-introduction/discriminative-and-generative-models.qmd),
+which describes the data with a shape.
+
+The distribution still matters in two places: what a prediction means, and how sure it
+can be. This page follows one random forest through both.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Each distribution ties the spread to the mean
+## Each loss aims at a different middle of the data
 
-A model predicts an expected value at each station. Its distribution says how far the
-real values scatter around it, and for most distributions that scatter depends on the
-expected value itself.
+A prediction is one number standing for all the catches a station could give, and the
+loss decides which number. [Loss functions](../04-how-algorithms-learn/loss-functions.qmd)
+set squared error against absolute error. Squared error is smallest at the **average**
+of the catches, and absolute error at the **median**, the middle catch. A **quantile
+loss** aims at any chosen point: its 95% version at the catch that only 1 in 20 stations
+exceed.
 
-| Distribution | Variance at expected value μ | Used for |
-| --- | --- | --- |
-| Normal | The same everywhere | Linear regression |
-| Poisson | μ, the expected value itself | Poisson regression |
-| Negative binomial | μ + μ²/θ, more than Poisson | Counts of animals that gather in groups |
-| Bernoulli | μ(1 − μ), with μ a probability | Logistic regression, presence and absence |
-
-The choice is a claim about the animals. Poisson says that at a station expecting 4
-animals, repeat hauls would vary with a standard deviation of 2. Animals that school or
-gather on patches of food vary far more than that, and the negative binomial's $\theta$
-(theta) allows for it: the smaller $\theta$, the wider the scatter.
-
-## Simulated surveys test a fitted model's distribution
-
-A fitted count model gives each station an expected count and a distribution around
-it. Drawing one random count for each station from that distribution gives a survey the
-model could have produced. Repeat that many times, and each simulated survey can be
-compared with the real one.
-
-The comparison needs a feature to count. Two are easy to read and matter to a
-biologist: the number of empty stations, and the largest catch. If the real survey's
-value sits far outside the range of the simulated ones, the model could not have
-produced the survey, whatever its predictions look like.
+For a symmetric bell curve the average and the median are the same. For counts with a
+long right tail they are not: a few large catches pull the average above the typical
+one. A model fitted with squared error predicts the average, which is what a total needs:
+predicted animals per station times the number of stations. Any step that changes what
+the loss aims at changes that total, and the second part of the worked example shows a
+common one.
 
 ::: {.diagram}
-![A fitted model gives each station an expected count and a distribution around it. Drawing a random count for every station, many times over, gives simulated surveys. A feature such as the number of empty stations is counted in each, and the real survey's value is compared with the range of simulated ones.](img/simulate.svg){fig-alt="Three cards. Fitted model, an expected count per station: bars of different heights for eight stations; the model gives each station an expected count and says how counts scatter. Simulated surveys, draw new counts many times: a grid of counts, one row for each of four surveys and one column for each station, with the zeros shaded, and the words and so on, 500 times. Compare, the real survey among them: a histogram of the number of empty stations in the simulated surveys, with a dashed line for the real survey far to its right; far outside means the model fails. A note says a model that could have produced the survey makes surveys that look like it."}
+![The errors of a model fitted to counts are skewed and spread wider where more is predicted. Squared error on log counts aims at the typical catch, below the average, so totals come out short. A Normal interval has one width and reaches below zero, while intervals from quantiles widen where the catches do.](img/spread.svg){fig-alt="Three cards. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway, and the checks say where to take care. Log counts, aim below the average: a histogram with a long right tail, a dashed line at the median marked log counts aim here and a solid line further right at the average marked a total needs this; squared error on log counts aims at the typical catch, so totals come out short. Intervals, follow the errors: the fan-shaped scatter with a dashed band of one width, marked Normal, that reaches below zero on the left, and a blue band from quantiles that starts narrow above zero and widens to the right; a Normal band has one width, and quantiles widen where the catches do. A note says the distribution decides what a prediction means and how sure it can be."}
 :::
 
 ## Worked example
 
 The data, the split by site and the recipe are those of
-[Count regression](../03-supervised-learning/count-regression.qmd): the survey's inputs,
-with squared depth and temperature, sand as the baseline seabed and spring as the
-baseline season. Poisson regression and the negative binomial model are fitted to the
-training stations.
+[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), with missing
+values filled with the median. The training sites are dealt into ten folds for
+cross-validation by site, as in
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
 
 ### Preparing the data
 
@@ -85,21 +74,25 @@ training stations.
 survey <- load_coastal_survey_clean()
 
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
-train <- training(split)
+train <- training(split) |>
+  mutate(log_abundance = log(abundance + 1))
+test  <- testing(split)
 
-curve_recipe <- recipe(
+# ten folds of training sites
+folds <- group_vfold_cv(train, group = site_id, v = 10)
+
+tree_recipe <- recipe(
   abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
     substrate + season,
   data = train
 ) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_relevel(substrate, ref_level = "sand") |>
-  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+  step_impute_median(all_numeric_predictors())
 
-poisson_fit <- workflow(curve_recipe, poisson_reg()) |> fit(train)
-
-prepared <- prep(curve_recipe)
-nb_fit <- MASS::glm.nb(abundance ~ ., data = bake(prepared, new_data = NULL))
+tibble(stations = nrow(train),
+       empty = sum(train$abundance == 0),
+       median = median(train$abundance),
+       average = round(mean(train$abundance), 1),
+       largest = max(train$abundance))
 ```
 
 ## Python
@@ -107,240 +100,374 @@ nb_fit <- MASS::glm.nb(abundance ~ ., data = bake(prepared, new_data = NULL))
 ```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import GroupShuffleSplit
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit, cross_val_predict
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
-train_rows, test_rows = next(grouper.split(survey,
-                                           groups=survey["site_id"]))
-train = survey.iloc[train_rows]
-
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
 categorical = ["substrate", "season"]
-predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
-              "salinity_psu"] + categorical
+predictors = numeric + categorical
 
-def squared(column):
-    return (column, Pipeline([
-        ("impute", SimpleImputer(strategy="median")),
-        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
-    ]), [column])
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train, test = survey.iloc[train_rows], survey.iloc[test_rows]
 
-curve_recipe = ColumnTransformer([
-    squared("depth_m"),
-    squared("temperature_c"),
-    ("numeric", SimpleImputer(strategy="median"),
-     ["chlorophyll_mg_m3", "salinity_psu"]),
-    ("categorical",
-     OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
-     categorical),
+# ten folds of training sites
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=123)
+
+# scikit-learn's trees need numbers, so the recipe also makes 0/1 columns.
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(sparse_output=False), categorical),
 ])
 
-prepared = curve_recipe.fit(train[predictors])
-design = sm.add_constant(pd.DataFrame(
-    prepared.transform(train[predictors]),
-    columns=prepared.get_feature_names_out(), index=train.index))
+def pipeline(model):
+    return Pipeline([("recipe", tree_recipe), ("model", model)])
 
-poisson_fit = sm.GLM(train["abundance"], design,
-                     family=sm.families.Poisson()).fit()
-nb_fit = sm.NegativeBinomial(train["abundance"], design).fit(
-    method="newton", disp=0)
-```
-
-:::
-
-### Poisson regression makes far too few empty stations
-
-Each model's expected count at every training station is the starting point. The
-negative binomial also needs its $\theta$. Five hundred surveys are drawn from each
-model, and each is reduced to its number of empty stations and its largest catch.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: simulate
-poisson_mean <- predict(poisson_fit, train)$.pred
-nb_mean <- fitted(nb_fit)
-
-simulate <- function(draw, times = 500) {
-  map(seq_len(times), \(i) {
-    counts <- draw()
-    tibble(empty = sum(counts == 0), largest = max(counts))
-  }) |>
-    list_rbind()
-}
-
-sims <- bind_rows(
-  "Poisson regression" =
-    simulate(\() rpois(nrow(train), poisson_mean)),
-  "Negative binomial model" =
-    simulate(\() rnbinom(nrow(train), mu = nb_mean, size = nb_fit$theta)),
-  .id = "model"
-)
-
-real <- tibble(feature = c("empty", "largest"),
-               real = c(sum(train$abundance == 0), max(train$abundance)))
-
-# the middle 95% of the simulated surveys, beside the real one
-checks <- sims |>
-  pivot_longer(c(empty, largest), names_to = "feature") |>
-  summarise(low = quantile(value, 0.025), high = quantile(value, 0.975),
-            .by = c(feature, model)) |>
-  left_join(real, by = "feature")
-checks |> mutate(across(c(low, high), round))
-```
-
-## Python
-
-```{python}
-rng = np.random.default_rng(1)
-counts = train["abundance"].to_numpy()
-poisson_mean = poisson_fit.fittedvalues.to_numpy()
-nb_mean = nb_fit.predict(design).to_numpy()
-theta = 1 / nb_fit.params["alpha"]
-
-def simulate(draw, times=500):
-    surveys = [draw() for _ in range(times)]
-    return pd.DataFrame({"empty": [(s == 0).sum() for s in surveys],
-                         "largest": [s.max() for s in surveys]})
-
-sims = pd.concat({
-    "Poisson regression": simulate(lambda: rng.poisson(poisson_mean)),
-    "Negative binomial model": simulate(
-        lambda: rng.negative_binomial(theta, theta / (theta + nb_mean))),
-}, names=["model"]).reset_index(level="model")
-
-real = {"empty": (counts == 0).sum(), "largest": counts.max()}
-
-# the middle 95% of the simulated surveys, beside the real one
-checks = (sims.melt(id_vars="model", var_name="feature")
-          .groupby(["feature", "model"], sort=False)["value"]
-          .quantile([0.025, 0.975]).unstack()
-          .set_axis(["low", "high"], axis=1).reset_index())
-checks["real"] = checks["feature"].map(real)
-checks.round()
+counts = train["abundance"]
+pd.DataFrame({"stations": [len(train)], "empty": [(counts == 0).sum()],
+              "median": [counts.median()], "average": [round(counts.mean(), 1)],
+              "largest": [counts.max()]})
 ```
 
 :::
 
 ```{r}
-#| label: check-numbers
+#| label: count-numbers
 #| include: false
-check <- \(f, m) filter(checks, feature == f, model == m)
-poisson_empty <- check("empty", "Poisson regression")
-nb_empty <- check("empty", "Negative binomial model")
-poisson_largest <- check("largest", "Poisson regression")
-nb_largest <- check("largest", "Negative binomial model")
-range_of <- \(row) paste0(round(row$low), "–", round(row$high))
+one <- \(x) format(round(x, 1), nsmall = 1)
+percent <- \(x) paste0(round(100 * x), "%")
 ```
 
-The training stations include `r poisson_empty$real` empty ones out of
-`r nrow(train)`. Surveys simulated from Poisson regression have
-`r range_of(poisson_empty)`. Their largest catch runs from
-`r range_of(poisson_largest)` animals, where the real survey's was
-`r poisson_largest$real`. @fig-check shows the whole spread.
+The counts are far from a bell curve. `r sum(train$abundance == 0)` of the
+`r nrow(train)` training stations caught nothing, the median station caught
+`r median(train$abundance)` animals and the largest `r max(train$abundance)`, and the
+long tail lifts the average to `r one(mean(train$abundance))`.
+
+### The forest's errors are skewed and widen with its predictions
+
+A model's errors are the place to check both assumptions, and they must be errors on
+sites the model did not see. Cross-validation gives one for every training station:
+each fold's stations are predicted by a forest fitted to the other nine folds. The
+forest is that of [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
+here with 500 trees, fitted with squared error. The errors are then split into fifths by
+the size of the prediction.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: fig-check
-#| fig-cap: "The number of empty stations and the largest catch in 500 surveys simulated from each fitted model, against the real survey (dashed). Poisson regression's surveys have far fewer empty stations and smaller largest catches than the real one. The negative binomial model's surveys contain the real values."
-#| fig-alt: !expr 'glue::glue("Two panels of overlapping histograms, one colour for surveys simulated from Poisson regression and one for the negative binomial model, with a dashed vertical line for the real survey. Left, empty stations: the Poisson histogram lies between about {round(poisson_empty$low)} and {round(poisson_empty$high)}, far to the left of the real value of {poisson_empty$real}; the negative binomial histogram spreads from about {round(nb_empty$low)} to {round(nb_empty$high)} and contains it. Right, the largest catch: the Poisson histogram is narrow, ending near {round(poisson_largest$high)}, with the real value of {poisson_largest$real} at or beyond its edge; the negative binomial histogram is wide, with a long tail to the right, and contains the real value.")'
-#| fig-width: 8
-#| fig-height: 3.8
-check_plot <- function(which, x_label) {
-  ggplot(sims, aes(.data[[which]], fill = model)) +
-    geom_histogram(bins = 40, alpha = 0.7, position = "identity") +
-    geom_vline(xintercept = real$real[real$feature == which],
-               linetype = "dashed", linewidth = 0.8) +
-    scale_fill_manual(values = c(
-      "Poisson regression" = ml_palette[["vermilion"]],
-      "Negative binomial model" = ml_palette[["blue"]])) +
-    labs(x = x_label, y = "Simulated surveys", fill = NULL)
-}
+#| label: errors
+forest_model <- rand_forest(mode = "regression", trees = 500) |>
+  set_engine("ranger", seed = 123)
+forest <- workflow(tree_recipe, forest_model)
 
-check_plot("empty", "Empty stations") +
-  check_plot("largest", "Largest catch") +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
-```
+# every training station, predicted by a forest that never saw its site
+errors <- fit_resamples(forest, folds,
+                        control = control_resamples(save_pred = TRUE)) |>
+  collect_predictions() |>
+  arrange(.row) |>
+  transmute(caught = abundance, predicted = .pred, error = caught - predicted,
+            fifth = ntile(predicted, 5))
 
-:::
-
-Poisson regression fails both checks. Its distribution allows too little scatter, so
-the counts stay near their expected values: few stations come up empty and none comes
-up very large. The real survey has both, because animals gather in groups. The
-negative binomial model passes: its surveys have `r range_of(nb_empty)` empty stations
-and a largest catch of `r range_of(nb_largest)`, and the real survey sits inside both
-ranges.
-
-Both models predict much the same expected counts, as
-[Count regression](../03-supervised-learning/count-regression.qmd) found. The check
-tells them apart by their scatter, which the predictions alone never show.
-
-## Poisson regression is sure of a summer effect the data do not support
-
-A distribution that allows too little scatter makes the model too sure of everything it
-estimates. The table below shows each seabed and season multiplier with its 95%
-confidence interval, as on
-[Count regression](../03-supervised-learning/count-regression.qmd). An interval that
-stays on one side of 1 says the data can tell that level from the baseline; this is
-the same as a *p*-value below 0.05.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: multipliers
-multipliers <- function(fitted) {
-  tidy(fitted, conf.int = TRUE, exponentiate = TRUE) |>
-    filter(str_detect(term, "substrate|season")) |>
-    transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
-              multiplier = estimate,
-              conf_low = conf.low, conf_high = conf.high)
-}
-
-intervals <- bind_rows("Poisson regression" = multipliers(poisson_fit),
-                       "Negative binomial model" = multipliers(nb_fit),
-                       .id = "model") |>
-  arrange(term) |>
-  relocate(term)
-intervals |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+spread <- errors |>
+  summarise(predicted_from = min(predicted), predicted_to = max(predicted),
+            error_sd = sd(error), .by = fifth) |>
+  arrange(fifth)
+spread |> mutate(across(-fifth, \(x) round(x, 1)))
 ```
 
 ## Python
 
 ```{python}
-def multipliers(fitted):
-    interval = np.exp(fitted.conf_int())
-    table = pd.DataFrame({
-        "term": fitted.params.index.str.replace(
-            r"^categorical__(substrate|season)_", r"\1: ", regex=True),
-        "multiplier": np.exp(fitted.params).to_numpy(),
-        "conf_low": interval[0].to_numpy(),
-        "conf_high": interval[1].to_numpy(),
-    })
-    keep = table["term"].str.contains("substrate|season")
-    return table[keep].reset_index(drop=True)
+forest = pipeline(RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                                        min_samples_leaf=5, random_state=123))
 
-intervals = (pd.concat({"Poisson regression": multipliers(poisson_fit),
-                        "Negative binomial model": multipliers(nb_fit)},
-                       names=["model"])
-             .reset_index(level="model")
-             .sort_values("term", kind="stable")
-             .reset_index(drop=True))
-intervals[["term", "model", "multiplier", "conf_low", "conf_high"]].round(2)
+# every training station, predicted by a forest that never saw its site
+predicted = cross_val_predict(forest, train[predictors], counts,
+                              groups=train["site_id"], cv=folds)
+errors = pd.DataFrame({"caught": counts.to_numpy(), "predicted": predicted})
+errors["error"] = errors["caught"] - errors["predicted"]
+errors["fifth"] = pd.qcut(errors["predicted"].rank(method="first"), 5,
+                          labels=False) + 1
+
+spread = (errors.groupby("fifth")
+          .agg(predicted_from=("predicted", "min"),
+               predicted_to=("predicted", "max"),
+               error_sd=("error", "std"))
+          .reset_index())
+spread.round(1)
+```
+
+:::
+
+```{r}
+#| label: error-numbers
+#| include: false
+below <- mean(errors$error < 0)
+sd_ratio <- last(spread$error_sd) / first(spread$error_sd)
+```
+
+@fig-errors shows both checks. The errors are not Normal: `r percent(below)` of the
+stations caught fewer animals than predicted, the middle station
+`r one(-median(errors$error))` fewer, while a few caught far more, up to
+`r round(max(errors$error))` above the prediction. The spread is not equal either.
+In the fifth of stations with the smallest predictions the errors have a standard
+deviation of `r one(first(spread$error_sd))` animals, and in the fifth with the
+largest, `r one(last(spread$error_sd))`: `r one(sd_ratio)` times as wide.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-errors
+#| fig-cap: "The random forest's errors on sites it did not see, one for each training station. Left: their histogram, against a Normal curve with the same mean and spread; the errors bunch below zero and trail far above it. Right: each error against the prediction, with the middle 90% of the errors in each fifth of the predictions shaded; the errors spread wider as the prediction grows."
+#| fig-alt: !expr 'glue::glue("Two panels. Left, a histogram of the errors in animals, with a Normal curve of the same mean and standard deviation drawn over it: the histogram peaks just below zero, where {percent(below)} of the errors lie, and has a long tail to the right reaching {round(max(errors$error))}, which the symmetric Normal curve does not follow. Right, the errors against the predicted count, with five shaded boxes, one for each fifth of the predictions, covering the middle 90% of the errors: the box for the smallest predictions is narrow and the boxes grow taller to the right, where the standard deviation reaches {one(last(spread$error_sd))} animals against {one(first(spread$error_sd))} on the left.")'
+#| fig-width: 8.5
+#| fig-height: 3.8
+middle_90 <- errors |>
+  summarise(from = min(predicted), to = max(predicted),
+            low = quantile(error, 0.05), high = quantile(error, 0.95), .by = fifth)
+
+shape_plot <- ggplot(errors, aes(error)) +
+  geom_histogram(binwidth = 1, fill = ml_palette[["blue"]], alpha = 0.7) +
+  geom_function(fun = \(x) nrow(errors) * dnorm(x, mean(errors$error), sd(errors$error)),
+                colour = ml_palette[["vermilion"]], linewidth = 1) +
+  labs(x = "Error (animals caught − predicted)", y = "Stations",
+       title = "Skewed, not bell-shaped")
+
+spread_plot <- ggplot(errors, aes(predicted, error)) +
+  geom_rect(data = middle_90, aes(xmin = from, xmax = to, ymin = low, ymax = high),
+            inherit.aes = FALSE, fill = ml_palette[["blue"]], alpha = 0.15) +
+  geom_hline(yintercept = 0, colour = "grey50") +
+  geom_point(alpha = 0.4, size = 1.2) +
+  labs(x = "Predicted count", y = "Error (animals)",
+       title = "Wider where more is predicted")
+
+shape_plot + spread_plot
+```
+
+:::
+
+Neither stops the forest. Its predictions are averages of the catches at similar
+stations, and an average needs no particular shape and no equal spread. What the shape
+changes is what a prediction means, and how sure the forest can be.
+
+### Training on log counts predicts far fewer animals than were caught
+
+A common recipe for skewed data is to make it more Normal first: fit the model to the
+log of the count, plus 1 so that empty stations stay at zero, and turn each prediction
+back with the exponential, minus 1. The second forest does exactly that, and both are
+scored on the same cross-validated stations: by RMSE, and by the total number of animals
+they predict across the `r nrow(train)` stations against the total caught.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: log-counts
+log_recipe <- recipe(
+  log_abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
+) |>
+  step_impute_median(all_numeric_predictors())
+
+log_predicted <- fit_resamples(workflow(log_recipe, forest_model), folds,
+                               control = control_resamples(save_pred = TRUE)) |>
+  collect_predictions() |>
+  arrange(.row) |>
+  pull(.pred)
+
+errors <- errors |>
+  mutate(log_predicted = exp(log_predicted) - 1)   # back to animals
+
+totals <- tibble(
+  model = c("Random forest", "Random forest on log counts"),
+  rmse = c(rmse_vec(errors$caught, errors$predicted),
+           rmse_vec(errors$caught, errors$log_predicted)),
+  predicted_total = c(sum(errors$predicted), sum(errors$log_predicted)),
+  caught_total = sum(errors$caught)
+)
+totals |> mutate(rmse = round(rmse, 2), predicted_total = round(predicted_total))
+```
+
+## Python
+
+```{python}
+log_predicted = cross_val_predict(forest, train[predictors], np.log(counts + 1),
+                                  groups=train["site_id"], cv=folds)
+errors["log_predicted"] = np.exp(log_predicted) - 1   # back to animals
+
+totals = pd.DataFrame({
+    "model": ["Random forest", "Random forest on log counts"],
+    "rmse": [root_mean_squared_error(errors["caught"], errors[column])
+             for column in ["predicted", "log_predicted"]],
+    "predicted_total": [errors["predicted"].sum(), errors["log_predicted"].sum()],
+    "caught_total": errors["caught"].sum(),
+})
+totals.round({"rmse": 2, "predicted_total": 0})
+```
+
+:::
+
+```{r}
+#| label: log-numbers
+#| include: false
+plain <- filter(totals, model == "Random forest")
+logged <- filter(totals, model == "Random forest on log counts")
+shortfall <- 1 - logged$predicted_total / logged$caught_total
+by_fifth <- errors |>
+  summarise(Caught = mean(caught), "Random forest" = mean(predicted),
+            "Random forest on log counts" = mean(log_predicted), .by = fifth) |>
+  arrange(fifth)
+log_series <- by_fifth[["Random forest on log counts"]]
+```
+
+The two forests score almost the same: an RMSE of
+`r format(round(plain$rmse, 2), nsmall = 2)` on raw counts and
+`r format(round(logged$rmse, 2), nsmall = 2)` on log counts. Their totals do not. The
+stations caught `r plain$caught_total` animals; the forest on raw counts predicts
+`r round(plain$predicted_total)`, and the forest on log counts
+`r round(logged$predicted_total)`, `r percent(shortfall)` short. @fig-log shows that
+the shortfall runs through every fifth of the stations, not just the largest.
+
+On the log scale, squared error aims at the average log count. Turned back into
+animals, that is close to the median, the typical catch, and for skewed counts the
+typical catch sits below the average. The forest on log counts answers a different
+question, and the RMSE does not show it. A survey that sums its predictions into a
+stock estimate, a biomass or a map total would come out `r percent(shortfall)` short
+with no warning.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-log
+#| fig-cap: "The average catch per station in each fifth of the forest's predictions, against the average each forest predicts there. The forest on raw counts follows the catch; the forest on log counts falls short in every fifth."
+#| fig-alt: !expr 'glue::glue("Points joined by lines for five groups of training stations, ordered by the forest prediction, with the average animals per station on the vertical axis. The caught averages, in grey, rise from {one(by_fifth$Caught[1])} to {one(by_fifth$Caught[5])}. The forest on raw counts, in blue, lies close to them. The forest on log counts, in vermilion, lies below them in every group, from {one(log_series[1])} to {one(log_series[5])}.")'
+#| fig-width: 7
+#| fig-height: 3.8
+by_fifth |>
+  pivot_longer(-fifth, names_to = "series", values_to = "animals") |>
+  mutate(series = fct_inorder(series)) |>
+  ggplot(aes(fifth, animals, colour = series)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.5) +
+  scale_colour_manual(values = c("Caught" = "grey40",
+                                 "Random forest" = ml_palette[["blue"]],
+                                 "Random forest on log counts" = ml_palette[["vermilion"]])) +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(x = "Fifth of the stations, by the forest's prediction",
+       y = "Animals per station", colour = NULL)
+```
+
+:::
+
+Keep the counts as they are when the totals matter. For a skewed outcome, a loss built
+for it, such as the Poisson deviance of
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd), changes the weights
+without changing what the prediction aims at.
+
+### A quantile forest gives intervals that follow the errors
+
+A prediction says how many animals to expect. A **prediction interval** says how far
+the catch may land from it: a 90% interval should contain 9 catches in 10. The textbook
+interval makes both assumptions: it is symmetric, as a bell curve is, and it has one
+width, 1.64 standard deviations of the errors either side of every prediction.
+
+A **quantile forest** makes neither. It grows the same trees as the forest, but keeps
+every training catch in each leaf instead of only their average, and reads the 5% and
+95% points off the catches that land with a new station. Both intervals are built from
+a forest fitted on all the training stations, and checked on the test sites.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: intervals
+half_width <- qnorm(0.95) * sd(errors$error)   # 1.64 standard deviations
+
+quantile_fit <- workflow(
+  tree_recipe,
+  rand_forest(mode = "regression", trees = 500) |>
+    set_engine("ranger", seed = 123, quantreg = TRUE)
+) |>
+  fit(train)
+
+# ranger reads the quantiles off the recipe's output
+ends <- predict(extract_fit_engine(quantile_fit),
+                bake(extract_recipe(quantile_fit), new_data = test),
+                type = "quantiles", quantiles = c(0.05, 0.95))$predictions
+
+covered <- tibble(predicted = predict(quantile_fit, test)$.pred,
+                  caught = test$abundance) |>
+  mutate(fifth = ntile(predicted, 5),
+         order = rank(predicted, ties.method = "first"))
+
+intervals <- bind_rows(
+  "Normal" = mutate(covered, low = predicted - half_width,
+                    high = predicted + half_width),
+  "Quantile forest" = mutate(covered, low = ends[, 1], high = ends[, 2]),
+  .id = "interval"
+) |>
+  mutate(inside = caught >= low & caught <= high)
+
+intervals |>
+  summarise(inside = mean(inside), width = mean(high - low),
+            below_zero = mean(low < 0), .by = c(interval, fifth)) |>
+  arrange(interval, fifth) |>
+  mutate(across(c(inside, width, below_zero), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+from scipy.stats import norm
+
+half_width = norm.ppf(0.95) * errors["error"].std()   # 1.64 standard deviations
+
+forest_fit = forest.fit(train[predictors], counts)
+covered = pd.DataFrame({"predicted": forest_fit.predict(test[predictors]),
+                        "caught": test["abundance"].to_numpy()})
+covered["fifth"] = pd.qcut(covered["predicted"].rank(method="first"), 5,
+                           labels=False) + 1
+
+# scikit-learn has no quantile forest, so boosting with a quantile loss gives
+# the two ends, one model for each.
+def end(quantile):
+    model = pipeline(HistGradientBoostingRegressor(
+        loss="quantile", quantile=quantile, random_state=123))
+    fitted = model.fit(train[predictors], counts)
+    return fitted.predict(test[predictors])
+
+intervals = pd.concat({
+    "Normal": covered.assign(low=covered["predicted"] - half_width,
+                             high=covered["predicted"] + half_width),
+    "Quantile boosting": covered.assign(low=end(0.05), high=end(0.95)),
+}, names=["interval"]).reset_index(level="interval")
+intervals["inside"] = intervals["caught"].between(intervals["low"], intervals["high"])
+
+(intervals
+ .assign(width=intervals["high"] - intervals["low"],
+         below_zero=intervals["low"] < 0)
+ .groupby(["interval", "fifth"])
+ .agg(inside=("inside", "mean"), width=("width", "mean"),
+      below_zero=("below_zero", "mean"))
+ .reset_index().round(2))
 ```
 
 :::
@@ -348,93 +475,94 @@ intervals[["term", "model", "multiplier", "conf_low", "conf_high"]].round(2)
 ```{r}
 #| label: interval-numbers
 #| include: false
-two <- \(x) format(round(x, 2), nsmall = 2)
-interval_of <- \(low, high) paste0(two(low), " to ", two(high))
-row_of <- \(t, m) filter(intervals, term == t, model == m)
-summer <- row_of("season: summer", "Poisson regression")
-summer_nb <- row_of("season: summer", "Negative binomial model")
-rock <- row_of("substrate: rock", "Poisson regression")
-rock_nb <- row_of("substrate: rock", "Negative binomial model")
-se_ratio <- mean(summary(nb_fit)$coefficients[, 2] /
-                   summary(extract_fit_engine(poisson_fit))$coefficients[, 2])
+summary_of <- function(which) {
+  rows <- filter(intervals, interval == which)
+  list(inside = mean(rows$inside),
+       above = sum(rows$caught > rows$high), below = sum(rows$caught < rows$low),
+       below_zero = mean(rows$low < 0),
+       by_fifth = summarise(rows, inside = mean(inside), width = mean(high - low),
+                            .by = fifth) |> arrange(fifth))
+}
+normal <- summary_of("Normal")
+quantile <- summary_of("Quantile forest")
+smallest <- filter(covered, fifth == 1)
 ```
 
-Under Poisson regression, summer stations hold `r two(summer$multiplier)` times
-the count of spring ones, with an interval from
-`r interval_of(summer$conf_low, summer$conf_high)`. Taken at face value,
-the data show a summer effect beyond what temperature and chlorophyll explain. The
-negative binomial model's estimate is close, `r two(summer_nb$multiplier)`, but its
-interval runs from `r interval_of(summer_nb$conf_low, summer_nb$conf_high)` and
-includes 1: allowing for the real scatter, the data cannot tell summer from spring.
-Averaged over the coefficients, its standard errors are
-`r format(round(se_ratio, 1), nsmall = 1)` times Poisson regression's.
+The Normal interval runs `r one(half_width)` animals either side of every prediction
+and holds `r percent(normal$inside)` of the test catches, against the 90% it promises.
+Both assumptions show in where it goes wrong (@fig-intervals). It is symmetric, but
+the errors are not: for `r percent(normal$below_zero)` of the stations its lower end is
+below zero, a catch no survey can make, and `r normal$above` of the
+`r normal$above + normal$below` catches outside it lie above it. It has one width, but
+the spread does not: where the forest predicts least it is `r round(2 * half_width)`
+animals wide, though `r percent(mean(smallest$caught <= 1))` of the catches there were
+0 or 1.
 
-The negative binomial model has it right. The simulation gave season no effect of its
-own: season changes the water's temperature and chlorophyll, and both are already in
-the model. A report built on Poisson regression would have described a seasonal effect
-that is not there, and nothing in its predictions or its coefficients would have
-warned of it.
+The quantile forest's intervals
+`r if (quantile$below_zero == 0) "never reach below zero" else paste("reach below zero for", percent(quantile$below_zero), "of the stations")`.
+They widen from
+`r one(first(quantile$by_fifth$width))` animals in the fifth with the smallest
+predictions to `r one(last(quantile$by_fifth$width))` in the fifth with the largest,
+and hold between `r percent(min(quantile$by_fifth$inside))` and
+`r percent(max(quantile$by_fifth$inside))` of the catches in every fifth. They are a
+little wider than they need to be, but they are wide in the right places.
 
-Honest intervals have a price. The simulation did make rocky ground poorer for the
-species, and Poisson regression's interval for rock,
-`r interval_of(rock$conf_low, rock$conf_high)`, stays below 1. The
-negative binomial model's,
-`r interval_of(rock_nb$conf_low, rock_nb$conf_high)`, does not, as
-[Count regression](../03-supervised-learning/count-regression.qmd) found. Gravel, which
-the simulation made a little richer, goes the same way. Allowing for the scatter, this
-many stations cannot pin these effects down; that is what the data support.
+::: {.panel-tabset group="language"}
 
-## A passed check is not a correct model
+## R
 
-The negative binomial model passed both checks, but a check only tests the features it
-counts. Three limits follow.
+```{r}
+#| label: fig-intervals
+#| fig-cap: "The 90% prediction intervals for the test stations, ordered by the forest's prediction. Left: the Normal interval, one width everywhere, reaching below zero wherever little is predicted. Right: the quantile forest's, narrow and above zero where little is predicted, widening where more is. Catches outside their interval are in vermilion."
+#| fig-alt: !expr 'glue::glue("Two panels, one for each kind of interval, each showing every test station as a vertical line from its interval low end to its high end, in order of its forest prediction from left to right, with the caught count as a point; a shaded strip marks values below zero. Left, the Normal interval: every line is {round(2 * half_width)} animals long, and for {percent(normal$below_zero)} of the stations it reaches into the shaded strip; {normal$above + normal$below} catches lie outside, {normal$above} of them above. Right, the quantile forest: the lines start short and above zero at small predictions and grow longer to the right, from about {one(first(quantile$by_fifth$width))} to {one(last(quantile$by_fifth$width))} animals; {quantile$above + quantile$below} catches lie outside.")'
+#| fig-width: 8.5
+#| fig-height: 4
+ggplot(intervals, aes(order)) +
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0,
+           fill = "grey85") +
+  geom_linerange(aes(ymin = low, ymax = high), colour = ml_palette[["blue"]],
+                 alpha = 0.5, linewidth = 0.6) +
+  geom_point(aes(y = caught, colour = inside), size = 1.2) +
+  facet_wrap(~interval) +
+  scale_colour_manual(values = c("TRUE" = "grey40",
+                                 "FALSE" = ml_palette[["vermilion"]]),
+                      labels = c("TRUE" = "Inside", "FALSE" = "Outside")) +
+  labs(x = "Test stations, from the smallest prediction to the largest",
+       y = "Animals caught", colour = "Catch")
+```
 
-- **Choose features that matter to the question.** Empty stations matter for where a
-  species occurs, the largest catch for how much it can aggregate. A species absent
-  from part of the shelf can have more empty stations than even a negative binomial
-  makes; models with a separate part for presence and absence exist for that case.
-- **The simulation treats every station as independent.** Each count is drawn on its
-  own, yet stations at the same site share their water and seabed. The negative
-  binomial's intervals rest on that independence too, so they may still be too
-  narrow; [Independence of observations](independence-of-observations.qmd) measures by
-  how much.
-- **Extra scatter can be missing structure.** A missing input, or a curve the model
-  cannot bend to, leaves scatter that the negative binomial will absorb into $\theta$.
-  [Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) asked its
-  readers to add temperature and watch $\theta$ change. Improve the expected counts
-  first, then judge the scatter that remains.
+:::
 
-## Models without a distribution still assume a spread
-
-A random forest or a boosted model states no distribution, so it cannot be simulated
-from and gives no confidence intervals. The assumption has not gone; it has moved into
-the loss. Squared error is the loss that the Normal distribution gives, as
-[Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) showed, and it
-treats a miss of 10 animals at a station expecting 30 as just as bad as one at a station
-expecting 2. For counts whose spread grows with their size, a Poisson loss, which tree
-ensembles such as `xgboost` also offer, matches the data better.
+For a statistical model the same assumptions set its confidence intervals:
+[Count regression](../03-supervised-learning/count-regression.qmd) found Poisson
+regression's too narrow for counts this spread out. Every check on this page also
+treats the stations as independent, which
+[Independence of observations](independence-of-observations.qmd) tests.
 
 ## Key points
 
 ::: {.key-points}
-- A distribution says how widely real values scatter around the expected value. Poisson
-  says the variance equals the expected count; animals that gather in groups vary more.
-- **Simulating from the fitted model** tests that claim: draw many surveys from the
-  model and see whether the real one looks like them.
-- Surveys from Poisson regression had `r range_of(poisson_empty)` empty stations against
-  `r poisson_empty$real` in the real one. The negative binomial model's contained the
-  real survey's empty stations and largest catch.
-- Poisson regression was sure of a summer effect that the simulation never put there;
-  the negative binomial model's wider intervals were not. They could no longer tell
-  rock from sand either, which is what the data support.
-- A passed check tests only the features it counts, and the simulation assumes every
-  station is independent.
+- Most machine-learning models predict without Normal data or equal spread. The
+  distribution still decides what a prediction means and how sure it can be.
+- Squared error aims at the **average**, absolute error at the **median**, and a
+  **quantile loss** at any chosen point. For skewed counts they differ.
+- The random forest's errors on unseen sites were skewed, and `r one(sd_ratio)` times
+  as spread out at the largest predictions as at the smallest. Its predictions did not
+  need either assumption.
+- Trained on log counts, the forest scored about the same RMSE but predicted
+  `r percent(shortfall)` fewer animals than were caught: it aimed at the typical catch,
+  not the average.
+- A Normal **prediction interval** reached below zero for `r percent(normal$below_zero)`
+  of the test stations and missed mostly large catches. A **quantile forest** gave
+  intervals that widened where the catches did.
 :::
 
 ## Try it yourself
 
-1. Add a third feature to `simulate()`: the number of stations catching exactly one
-   animal. Does the negative binomial model pass that check too?
-2. Fit `linear_reg()` with `curve_recipe` and simulate from it with `rnorm()`, using
-   its predictions as the mean and `sigma()` of its fitted engine as the standard
-   deviation. How many stations per simulated survey get a count below zero?
+1. Fit the forest on log counts to all the training stations and predict the test
+   sites. Ask the quantile forest for its 50% point, the median, at the same stations.
+   How close are the two?
+2. Fit the boosted model of
+   [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) to the raw
+   counts with Poisson deviance, `set_engine("xgboost", objective = "count:poisson")`,
+   and compare its total with the forest's.
