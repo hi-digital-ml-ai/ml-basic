@@ -1,6 +1,6 @@
 ---
 title: "Linearity and nonlinearity"
-description: "Linear models assume a straight-line effect for each input; trees and forests do not. Dropping the assumption lets a random forest fit the survey far more closely, yet it predicts new sites barely better, and its depth curve is wrong: flexibility cannot undo confounding."
+description: "Linear models assume a straight-line effect for each input; trees and forests do not. A linear model's errors, plotted along each input, show where a straight line fails, and a random forest or a GAM can then find the curve. Fitting the stations more closely does not predict new sites better, and a curve that predicts well can still be wrong."
 order: 1
 categories: [assumptions]
 ---
@@ -26,9 +26,8 @@ levels off when food is plentiful, and oxygen has a level below which little sur
 Linearity is an assumption of one family of models: linear, polynomial, Poisson and
 logistic regression from
 [Supervised learning](../03-supervised-learning/index.qmd). Decision trees, random
-forests and boosting do not make it. This page shows what dropping the assumption buys
-on the survey, and the limit it leaves: a flexible model can draw any curve, but it
-cannot tell which input the curve belongs to.
+forests and boosting do not make it. This page checks the assumption on the survey,
+shows what dropping it buys, and where a flexible curve still misleads.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -217,6 +216,101 @@ models = {
 
 :::
 
+### The straight-line model's errors show the curve it missed
+
+If the straight-line assumption holds, a linear model's errors show no pattern along
+any input. Where the true effect bends, the line misses in a regular way: too high on
+one stretch of the input, too low on another. The check needs nothing but the fitted
+model. Poisson regression with straight lines is fitted to the training stations; for
+each input, the stations are sorted into ten groups of equal size, and in each group
+the animals caught are divided by the number the model predicted, as the error map in
+[Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) does for sites.
+A ratio of 1 means the line is right on average there.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: error-check
+straight_fit <- fit(models[["Poisson with straight lines"]], train)
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu")
+
+checks <- train |>
+  mutate(predicted = predict(straight_fit, train)$.pred) |>
+  pivot_longer(all_of(inputs), names_to = "input", values_to = "value") |>
+  drop_na(value) |>
+  mutate(group = ntile(value, 10), .by = input) |>
+  summarise(value = median(value),
+            ratio = sum(abundance) / sum(predicted),
+            .by = c(input, group))
+
+# one row for each input, from its lowest tenth of stations to its highest
+checks |>
+  select(input, group, ratio) |>
+  pivot_wider(names_from = group, values_from = ratio) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+straight_fit = clone(models["Poisson with straight lines"]).fit(
+    train[predictors], train["abundance"])
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+predicted = straight_fit.predict(train[predictors])
+
+rows = []
+for column in inputs:
+    known = train[column].notna()
+    groups = pd.qcut(train.loc[known, column].rank(method="first"), 10,
+                     labels=range(1, 11))
+    caught = train.loc[known, "abundance"].groupby(groups).sum()
+    expected = pd.Series(predicted[known.to_numpy()]).groupby(groups.values).sum()
+    rows.append((caught / expected.values).round(2).rename(column))
+
+pd.DataFrame(rows)
+```
+
+:::
+
+```{r}
+#| label: fig-errors
+#| fig-cap: "Animals caught divided by the number Poisson regression with straight lines predicted, for ten equal groups of training stations along each input. A ratio of 1 (dashed) means the line is right on average. Temperature shows a hump: the line predicts too many in the coldest and warmest water and too few in between. The other inputs scatter around 1."
+#| fig-alt: "Four small panels of the ratio of caught to predicted, each with ten points joined by a line and a dashed line at 1. Depth, chlorophyll and salinity: the points wander between about 0.75 and 1.35 with no trend. Temperature: the ratio is about 0.35 in the coldest group, rises above 1 through the middle temperatures, peaking near 1.6, and falls to about 0.5 in the warmest group."
+#| fig-width: 8
+#| fig-height: 5
+input_names <- c(depth_m = "Depth (m)", temperature_c = "Temperature (°C)",
+                 chlorophyll_mg_m3 = "Chlorophyll (mg/m³)",
+                 salinity_psu = "Salinity (PSU)")
+
+checks |>
+  mutate(input = factor(input_names[input], levels = input_names)) |>
+  ggplot(aes(value, ratio)) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_line(colour = ml_palette[["blue"]], linewidth = 0.9) +
+  geom_point(colour = ml_palette[["blue"]], size = 2.4) +
+  facet_wrap(~ input, scales = "free_x") +
+  labs(x = NULL, y = "Caught ÷ predicted")
+```
+
+```{r}
+#| label: error-numbers
+#| include: false
+two <- \(x) format(round(x, 2), nsmall = 2)
+temperature_check <- filter(checks, input == "temperature_c") |> arrange(group)
+others <- filter(checks, input != "temperature_c")
+```
+
+In @fig-errors, temperature fails the check. The line predicts too many animals in the
+coldest tenth of stations, where the ratio is `r two(first(temperature_check$ratio))`,
+and in the warmest, at `r two(last(temperature_check$ratio))`, and too few in between,
+up to `r two(max(temperature_check$ratio))`: the species has a temperature it prefers,
+and a straight line cannot draw that. The other three inputs stay between
+`r two(min(others$ratio))` and `r two(max(others$ratio))` with no trend, the scatter
+that a few dozen noisy counts in each group give. For them, a straight line is as good
+as the data can tell.
+
 ### The random forest fits its own stations far better and new sites barely better
 
 Each model is scored twice: on the training stations it was fitted to, and on new sites,
@@ -278,7 +372,6 @@ forest   <- filter(scores, model == "Random forest")
 gam_fit <- fit(models[["GAM"]], train)
 squared_fit <- fit(models[["Poisson with squared terms"]], train)
 forest_fit <- fit(models[["Random forest"]], train)
-two <- \(x) format(round(x, 2), nsmall = 2)
 # the gap between the best and worst score on new sites, against the smallest
 # standard error
 new_gap <- diff(range(scores$new))
@@ -297,7 +390,7 @@ stations, the memorising that
 [Training error and the error on new data](../05-generalisation/training-versus-new-data.qmd)
 warned of.
 
-### Every model's depth curve peaks in shallow water
+### The flexible models find the temperature hump
 
 What do the models say about depth and temperature? @fig-curves shows each model's
 prediction across each input, with the other inputs held at typical values. For the
@@ -365,16 +458,15 @@ depth_range <- range(train$depth_m, na.rm = TRUE)
 one <- \(x) format(round(x, 1), nsmall = 1)
 ```
 
-The models agree on temperature: the count rises to a peak near
-`r one(peak$temperature_c[["GAM"]])` °C (GAM),
+On temperature the models draw the hump that the error check found: the count rises to
+a peak near `r one(peak$temperature_c[["GAM"]])` °C (GAM),
 `r one(peak$temperature_c[["Random forest"]])` °C (random forest) or
-`r one(peak$temperature_c[["Poisson with squared terms"]])` °C (squared terms)
-and falls on either side. On depth the two flexible models find a shape that squared
-terms cannot: a peak at `r round(peak$depth_m[["GAM"]])` m (GAM) or
-`r round(peak$depth_m[["Random forest"]])` m (random forest), then a long decline
-offshore. The squared terms fall all the way from the shallowest station, at
-`r round(depth_range[1])` m. Read at face value, all three say the species does best in
-shallow water.
+`r one(peak$temperature_c[["Poisson with squared terms"]])` °C (squared terms) and
+falls on either side. On depth they differ in detail: the GAM peaks at
+`r round(peak$depth_m[["GAM"]])` m and the forest at
+`r round(peak$depth_m[["Random forest"]])` m, while the squared terms fall all the way
+from the shallowest station, at `r round(depth_range[1])` m. All three put the most
+animals in shallow water.
 
 ## The flexible models recover the temperature curve but not the depth curve
 
@@ -434,61 +526,22 @@ shape_plot("depth_m", "Depth (m)") +
 
 :::
 
-```{r}
-#| label: truth-numbers
-#| include: false
-middle <- mean(between(train$depth_m, peak$depth_m[["GAM"]], 80), na.rm = TRUE)
-```
-
 Temperature comes back close to the truth for both models in the middle of its range,
-where most stations lie, their peaks a little cool.
-Depth does not. Between the GAM's peak at `r round(peak$depth_m[["GAM"]])` m and the
-true one at 80 m, where `r round(100 * middle)`% of the training stations lie, both
-models' curves stay level or fall while the true one rises. A manager reading the depth
-panel would send effort to the shallowest water, which the simulation made among the
-poorer places for this species.
+where most stations lie, their peaks a little cool. Where the straight line failed, the
+flexible models found the curve.
 
-Nothing in the scores warned of this. The random forest fitted its stations best and
-predicted new sites as well as any model here.
-
-## Confounding with position gives depth the wrong curve
-
-The method was the same for both inputs. The difference is in the data.
-
-```{r}
-#| label: confounding
-#| include: false
-complete <- drop_na(train, depth_m, temperature_c)
-depth_temperature <- cor(complete$depth_m, complete$temperature_c)
-depth_longitude <- cor(complete$depth_m, complete$longitude)
-within_band <- complete |>
-  group_by(band = cut(depth_m, seq(0, 200, 50))) |>
-  summarise(sd = sd(temperature_c))
-```
-
-- **Temperature changes for reasons other than depth.** Season and latitude move it, so
-  within any 50 m band of depth it still varies, with a standard deviation of
-  `r round(min(within_band$sd), 1)`–`r round(max(within_band$sd), 1)` °C. Stations at the
-  same depth but different temperatures let the model separate temperature's effect
-  from the rest.
-- **Depth has no such independent variation.** It follows position closely: its
-  correlation with longitude is `r two(depth_longitude)`, because the shelf
-  deepens offshore. It also moves with temperature
-  (`r two(depth_temperature)`) and with chlorophyll. Anything that differs between
-  inshore and offshore water, measured or not, can end up in depth's curve.
-
-This is **confounding**, met in
-[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd): a
-variable tied to both an input and the outcome lends the input an effect that is not
-its own. Here the culprit is something about position that none of the inputs
-measures; [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) looks
-for it. Flexibility does not help. A random forest or a GAM can draw any shape, but
-neither can tell which input a shape belongs to, and a flexible wrong curve looks more convincing than a rigid
-wrong one.
-
-The new-site scores could not catch it either. Depth stands in for position, so a
-curve that is wrong about depth can still predict well, as long as depth and position
-keep their link at the new sites.
+Depth does not come back. Both models put the most animals in shallow water, while the
+simulation's count peaks at 80 m. Nothing warned of it: the error check showed no
+pattern along depth, and the models predicted new sites as well as any here. The
+reason is not the shape. Depth follows position, because the shelf deepens offshore,
+so the models gave depth an effect that belongs to something about position that no
+input measures. This is **confounding**, from
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd), and
+no choice between straight lines and curves removes it.
+[Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) finds that
+pattern on the map, and
+[Partial effects](../10-interpretation/partial-effects.qmd) returns to this case. A
+curve that predicts well can still be wrong.
 
 ## Additive curves cannot show interactions
 
@@ -496,8 +549,8 @@ A GAM's curves add up, which is what makes each one readable. If the species' pr
 temperature shifted with depth, which is common in benthic species, no set of separate
 curves could show it. A random forest can, since a split inside a split lets one input
 change the effect of another, but then no single curve describes depth: the slice in
-@fig-curves is one of many. Each model gives up something; neither gives up the
-confounding.
+@fig-curves is one of many. Each gives up something to drop the straight lines: the GAM
+the interactions, the forest the single readable curve.
 
 ## Key points
 
@@ -506,21 +559,21 @@ confounding.
   and let the effects add up. Trees, random forests and boosting assume neither.
 - A **GAM** drops the straight lines but keeps the adding up, so each input keeps one
   curve that can be drawn and read.
-- On the survey the random forest fitted its own stations far better than any other
-  model, and predicted new sites about as well as Poisson regression with squared
-  terms.
-- Checked against the simulation, the GAM and the forest both got temperature about
-  right and put depth's peak in shallow water, far from the true 80 m.
-- The cause was **confounding**: depth follows position, which carries an effect no
-  input measures. Dropping an assumption about shape does not remove the limits of the
-  data, and a good score on new sites does not show that a curve is right.
+- To check the assumption, divide what was caught by what a linear model predicted
+  along each input. On the survey temperature showed a hump the straight line missed;
+  the other inputs showed none.
+- The random forest fitted its own stations far better than any other model, and
+  predicted new sites about as well as Poisson regression with squared terms.
+- Checked against the simulation, the GAM and the forest both recovered the
+  temperature hump. Their depth curves were wrong, through **confounding** with
+  position, which no choice of shape removes: a curve that predicts well can still be
+  wrong.
 :::
 
 ## Try it yourself
 
-1. Build a recipe like `straight_recipe` with `longitude` and `latitude` added, refit
-   the random forest with it, and redraw its depth curve. Does the curve move towards
-   the simulation's once position is an input of its own?
+1. Run the error check on Poisson regression with squared terms instead of straight
+   lines. Does the hump along temperature disappear?
 2. In `across_input()`, hold temperature at its lower quartile instead of its median,
    then at its upper quartile, and redraw the depth curves. Does the forest's curve
    change shape? Does the GAM's?
