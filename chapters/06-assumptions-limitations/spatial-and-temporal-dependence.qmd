@@ -1,6 +1,6 @@
 ---
 title: "Spatial and temporal dependence"
-description: "Nearby stations are not independent, which makes ordinary cross-validation flattering, and makes adding coordinates to a model look better than it is."
+description: "A held-out site can have a neighbour a few kilometres away in the training data, and a model can score well by knowing the neighbourhood. Holding out whole areas of the map measures what it knows without them."
 order: 4
 categories: [assumptions, spatial-temporal]
 ---
@@ -11,313 +11,527 @@ categories: [assumptions, spatial-temporal]
 library(tidymodels)
 library(tidyverse)
 library(ranger)
-library(sf)
-library(spatialsample)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(604)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Structure that breaks the workflow
+## Neighbouring sites share what a model misses
 
-Everything within a few kilometres of a station tends to resemble it. That is not a nuisance;
-it is the structure of the ocean, and it is why oceanography works at all. It is also why the
-standard machine-learning workflow quietly breaks on marine data.
+[Independence of observations](independence-of-observations.qmd) found that visits to
+one site repeat each other, and that resampling or splitting by site deals with it.
+Sites are not independent of each other either. Two sites a few kilometres apart share
+a water mass, a current and a stretch of seabed, and whatever a model's inputs miss
+there, both sites miss it too.
 
-Ordinary cross-validation puts a station in the held-out fold and its neighbours in the training
-fold. The model does not need to have learned anything transferable to predict it; it needs only
-to have memorised the neighbourhood. The resulting score describes performance at *unsampled
-stations between sampled ones*, which is a genuine use case, but it is almost never the one the
-paper claims: mapping to unsurveyed areas, or forecasting a future year.
-
-[The independence page](independence-of-observations.qmd) dealt with repeat visits. This is the
-harder version: even if every row were a different site, the sites are not independent of one
-another.
+That matters when a model is scored. Cross-validation by site holds out scattered
+sites, so most held-out sites still have a neighbour among the sites the model was
+fitted to. A model can then predict a held-out site well by knowing its neighbourhood,
+without having learnt anything that would carry to an area nobody has surveyed. This
+page shows how much of a score that can be, and how to measure what a model knows
+without the neighbours.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-Tobler's first law, that near things are more related than distant things, is the working
-assumption of every marine survey design, and the exact opposite of the independence
-assumption the models make.
+## Spatial blocks hold out whole areas of the map
 
-Two diagnostics measure it, both applied to a **fitted model's residuals** rather than to
-the raw response. Structure in the response is expected, since the covariates are
-themselves spatially structured. Structure left over *after* the covariates have done
-their work is what violates the assumption.
+**Spatial blocks** cut the map into squares and hold out every site in a square
+together. A held-out site's neighbours in the same square are held out with it, so
+fewer fitted sites lie around it and its position gives less away. Cross-validation by
+blocks deals the squares into folds as cross-validation by site deals out sites, and
+scores the model on each fold in turn.
 
-- **Moran's I** gives one number: positive means nearby residuals resemble each other, zero means
-  no spatial pattern.
-- The **variogram** shows how residual dissimilarity grows with separation. Its shape gives you
-  the *nugget* (variation at zero distance, which is pure noise), the *sill* (total variation), and the
-  **range**, the distance beyond which points are effectively independent. The range is the number
-  that should set your block size.
+::: {.diagram}
+![Cross-validation by site holds out scattered sites, each with fitted sites close by. Spatial blocks cut the map into squares and hold out every site in a square, so a held-out site's neighbours are held out with it and its nearest fitted site is further away. Blocks test what a model knows about areas it has not seen.](img/spatial-blocks.svg){fig-alt="Two cards showing the same map of 44 sites. Cross-validation by site, hold out scattered sites: seven held-out sites are scattered across the map, each joined by a short dashed line to the nearest site used for fitting, so a held-out site's position alone says a lot about it. Spatial blocks, hold out whole areas: the map is cut into six squares and every site in the top middle square is held out; their neighbours are held out with them and their dashed lines to the nearest fitted site are longer, so position says less about them. A note says blocks test what a model knows about areas it has not seen."}
+:::
 
 ## Worked example
+
+The data, the split by site and the negative binomial model are those of
+[Distributional assumptions](distributional-assumptions.qmd). Each training site is
+also given a **block**: the square of half a degree, about 40 by 55 km, that holds the
+centre of its stations. Ten-fold cross-validation by site and by block, each repeated
+three times with different folds, scores the models below.
+
+### Preparing the data
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(site_id, longitude, latitude, abundance, depth_m, temperature_c,
-         chlorophyll_mg_m3, salinity_psu, substrate, season) |>
-  drop_na()
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split) |>
+  # the half-degree square holding the centre of each site's stations
+  mutate(block = paste(floor(mean(longitude) / 0.5),
+                       floor(mean(latitude) / 0.5)),
+         .by = site_id)
 
-environmental <- glm(
-  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
-    log1p(chlorophyll_mg_m3) + substrate,
-  data = d, family = poisson
-)
+by_site <- group_vfold_cv(train, group = site_id, v = 10, repeats = 3)
+by_block <- group_vfold_cv(train, group = block, v = 10, repeats = 3)
 
-d$residual <- residuals(environmental, "pearson")
+curve_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
+) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand") |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+
+prepared <- bake(prep(curve_recipe), new_data = NULL)
+nb_fit <- MASS::glm.nb(abundance ~ ., data = prepared)
 ```
 
-### Testing for leftover spatial structure
+## Python
 
-```{r}
-#| label: moran
-coords <- as.matrix(d[, c("longitude", "latitude")])
-distances <- as.matrix(dist(coords))
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
 
-# Inverse-distance weights among stations within 0.3 degrees of each other.
-weights <- 1 / distances
-diag(weights) <- 0
-weights[distances > 0.3] <- 0
+from mlbasic_data import load_coastal_survey_clean
 
-morans_i <- function(x) {
-  z <- x - mean(x)
-  (length(x) / sum(weights)) * sum(weights * outer(z, z)) / sum(z^2)
-}
+survey = load_coastal_survey_clean()
 
-observed_i <- morans_i(d$residual)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows].reset_index(drop=True)
 
-set.seed(2)
-permuted <- map_dbl(1:499, \(i) morans_i(sample(d$residual)))
+# the half-degree square holding the centre of each site's stations
+centre = train.groupby("site_id")[["longitude", "latitude"]].transform("mean")
+train["block"] = (np.floor(centre["longitude"] / 0.5).astype(int).astype(str)
+                  + " "
+                  + np.floor(centre["latitude"] / 0.5).astype(int).astype(str))
 
-c(`Moran's I`            = observed_i,
-  `expected under no structure` = -1 / (nrow(d) - 1),
-  `permutation p`        = (sum(permuted >= observed_i) + 1) / 500) |>
-  round(4)
+def folds(groups):
+    return [fold for r in range(3)
+            for fold in GroupKFold(n_splits=10, shuffle=True, random_state=r)
+            .split(train, groups=groups)]
+
+by_site = folds(train["site_id"])
+by_block = folds(train["block"])
+
+categorical = ["substrate", "season"]
+predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
+              "salinity_psu"] + categorical
+
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical",
+     OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+     categorical),
+])
+
+fitted_recipe = curve_recipe.fit(train[predictors])
+design = sm.add_constant(pd.DataFrame(
+    fitted_recipe.transform(train[predictors]),
+    columns=fitted_recipe.get_feature_names_out()))
+nb_fit = sm.NegativeBinomial(train["abundance"], design).fit(
+    method="newton", disp=0)
 ```
 
-Positive, and far outside what reshuffling the same residuals produces: the permutation
-standard deviation is 0.016, so the observed value sits about six standard deviations
-above chance. The environmental covariates have not absorbed the spatial structure, which
-is exactly right, because the simulation adds a smooth spatial field that no covariate
-represents.
-
-```{r}
-#| label: fig-map
-#| fig-cap: "Mean Pearson residual at each site visited three or more times. Orange is where the environmental model under-predicts, blue where it over-predicts; the scale is clipped at ±1.5 so the middle of the range is visible. There is a mild tendency for like colours to sit together, orange along the western edge and blue through the south, but it is not obvious, and that is the point of the figure: a Moran's I of 0.093 is real, matters for cross-validation, and is not something you can reliably see."
-#| fig-alt: "A map with longitude from 140 to 142.5 on the horizontal axis and latitude from 41 to 43 on the vertical, showing 137 points sized by number of visits and coloured on a blue-to-orange diverging scale by mean residual, with most points pale. The points are spread evenly across the rectangle and the colours look close to randomly mixed at first glance; on inspection there is a concentration of orange along the left-hand edge around longitude 140 to 140.6, and a group of blue points across the southern strip below latitude 41.5."
-#| fig-width: 6.5
-#| fig-height: 5
-site_residuals <- d |>
-  summarise(longitude = mean(longitude), latitude = mean(latitude),
-            residual = mean(residual), visits = n(), .by = site_id) |>
-  filter(visits >= 3)
-
-ggplot(site_residuals, aes(longitude, latitude, colour = residual, size = visits)) +
-  geom_point(alpha = 0.85) +
-  scale_colour_gradient2(low = ml_palette[["blue"]], mid = "grey88",
-                         high = ml_palette[["orange"]], midpoint = 0,
-                         limits = c(-1.5, 1.5), oob = scales::squish,
-                         breaks = c(-1.5, 0, 1.5)) +
-  scale_size_continuous(range = c(1.5, 4.5), guide = "none") +
-  coord_quickmap() +
-  labs(x = "Longitude", y = "Latitude", colour = "Mean\nresidual",
-       title = "Leftover error, placed on the shelf",
-       subtitle = "Sites with three or more visits; point size is number of visits")
-```
-
-```{r}
-#| label: fig-variogram
-#| fig-cap: "Empirical variogram of the site-level residuals. Semivariance rises from 0.66 at the shortest separations to about 0.81 beyond one degree, against a total residual variance of 0.79. Roughly a fifth of the residual variation is therefore spatially structured, and it flattens out, reaching its range, at about 0.8 degrees."
-#| fig-alt: "A scatter of eleven points with distance between sites in degrees from 0.16 to 1.15 on the horizontal axis and semivariance from 0.55 to 0.9 on the vertical. The points rise from about 0.66 at the left, with some scatter, to about 0.81 at the right, flattening out beyond 0.8 degrees. A dashed horizontal line at 0.79 marks the total variance of the site residuals, which the points approach at the largest separations."
-#| fig-width: 7
-#| fig-height: 4
-site_dist <- as.matrix(dist(as.matrix(site_residuals[, c("longitude", "latitude")])))
-r <- site_residuals$residual
-edges <- seq(0, 1.2, by = 0.1)
-
-variogram <- map_dfr(seq_len(length(edges) - 1), \(k) {
-  chosen <- site_dist > edges[k] & site_dist <= edges[k + 1] & upper.tri(site_dist)
-  pairs <- which(chosen, arr.ind = TRUE)
-  if (nrow(pairs) < 30) return(NULL)
-  tibble(distance = mean(site_dist[chosen]),
-         semivariance = 0.5 * mean((r[pairs[, 1]] - r[pairs[, 2]])^2),
-         pairs = nrow(pairs))
-})
-
-ggplot(variogram, aes(distance, semivariance)) +
-  geom_hline(yintercept = var(r), linetype = "dashed", colour = ml_palette[["grey"]]) +
-  geom_point(size = 2.6, colour = ml_palette[["blue"]]) +
-  geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
-              colour = ml_palette[["blue"]], linewidth = 0.6, alpha = 0.5) +
-  labs(x = "Distance between sites (degrees)", y = "Semivariance",
-       title = "How far does a residual's influence reach?",
-       subtitle = "Dashed: total variance of the site residuals")
-```
-
-### The effect on cross-validation
-
-Now the question that matters. We score three models under two resampling schemes: ordinary
-10-fold, and `spatial_block_cv()`, which divides the shelf into a 3 × 3 grid and holds out whole
-blocks.
-
-```{r}
-#| label: cv-comparison
-d_sf <- st_as_sf(d, coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
-
-make_workflow <- function(formula) {
-  workflow() |>
-    add_recipe(recipe(formula, data = d) |> step_impute_median(all_numeric_predictors())) |>
-    add_model(rand_forest(trees = 400, min_n = 5) |>
-                set_engine("ranger") |> set_mode("regression"))
-}
-
-candidates <- list(
-  "Coordinates only" = abundance ~ longitude + latitude,
-  "Environment only" = abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-    salinity_psu + substrate + season,
-  "Environment + coordinates" = abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-    salinity_psu + substrate + season + longitude + latitude
-)
-
-comparison <- map_dfr(names(candidates), \(name) {
-  wf <- make_workflow(candidates[[name]])
-  set.seed(604)
-  random <- fit_resamples(wf, vfold_cv(d, v = 10), metrics = metric_set(rsq, rmse))
-  set.seed(604)
-  blocked <- fit_resamples(wf, spatial_block_cv(d_sf, v = 9, n = c(3, 3)),
-                           metrics = metric_set(rsq, rmse))
-  bind_rows(
-    collect_metrics(random)  |> mutate(scheme = "Random 10-fold"),
-    collect_metrics(blocked) |> mutate(scheme = "Spatial block")
-  ) |>
-    mutate(model = name)
-})
-
-comparison |>
-  filter(.metric == "rsq") |>
-  select(model, scheme, R2 = mean, std_err) |>
-  pivot_wider(names_from = scheme, values_from = c(R2, std_err)) |>
-  mutate(`% of apparent R² that survives` =
-           100 * `R2_Spatial block` / `R2_Random 10-fold`) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
-```
-
-```{r}
-#| label: fig-cv
-#| fig-cap: "Cross-validated R² under random and spatially blocked resampling, for three models. A model built only from position loses 85% of its apparent explanatory power when the folds are blocked. A model built only from environment loses nothing. Adding coordinates to the environmental model raises random-fold R² by 29% and blocked R² by 11%, so most of that apparent gain is not real."
-#| fig-alt: "A grouped dot plot with three models on the vertical axis and R-squared from zero to 0.22 on the horizontal. Each model has two points joined by a line, one for random 10-fold and one for spatial block. For coordinates only, the points are at 0.075 and 0.011, a long line pointing left. For environment only, the points are at 0.147 and 0.152, essentially on top of each other. For environment plus coordinates, they are at 0.190 and 0.169, a short line pointing left."
-#| fig-width: 7
-#| fig-height: 3.6
-comparison |>
-  filter(.metric == "rsq") |>
-  mutate(model = factor(model, levels = rev(names(candidates)))) |>
-  ggplot(aes(mean, model, colour = scheme)) +
-  geom_line(aes(group = model), colour = ml_palette[["grey"]], linewidth = 0.6) +
-  geom_point(size = 3.4) +
-  labs(x = "Cross-validated R²", y = NULL, colour = NULL,
-       title = "How much of the apparent performance survives honest resampling") +
-  theme(panel.grid.major.y = element_blank())
-```
-
-## The share of the gain that was the scheme
-
-**A model made of nothing but position looks like it works.** Under random 10-fold,
-`abundance ~ longitude + latitude` reaches an R² of 0.075. Under spatially blocked folds it
-reaches **0.011**, 15% of what it claimed. The first number is not a measurement of ecological
-knowledge; it is a measurement of how densely the shelf was sampled. Held-out stations had
-training stations a few kilometres away, and the forest simply looked them up.
-
-**A model made of environment loses nothing.** R² 0.147 random, 0.152 blocked. Spatial blocking
-costs it nothing because it never had a spatial shortcut to take: depth, temperature and
-chlorophyll transfer to a new block, so being asked about a new block is no harder.
-
-**The combined model is the trap.** Adding coordinates to the environmental model raises
-random-fold R² from 0.147 to 0.190, a 29% improvement and exactly the kind of result that
-gets coordinates written into a species-distribution model. Under honest resampling the
-same addition takes 0.152 to 0.169, an 11% improvement. In absolute terms the random folds
-credit coordinates with 0.043 of R² and the blocked folds with 0.017: **about 60% of the
-apparent benefit of adding position was the validation scheme flattering itself.**
-
-::: {.callout-warning}
-Compare **R²**, not RMSE, across resampling schemes. The spatially blocked folds have
-lower RMSE than the random folds for all three models here, which does not mean blocking
-is easier; it means the blocks contain different distributions of abundance, so their
-RMSEs are not on a common scale. [Section 2 hit the same
-trap](../02-marine-data/information-leakage.qmd) comparing grouped and random splits, and
-the resolution is the same: a scale-free metric, or the same test set for both.
 :::
 
-### The temporal version
+The `r n_distinct(train$site_id)` training sites fall into
+`r n_distinct(train$block)` blocks.
 
-Everything above has a time analogue, and it is usually worse because the intended use is
-explicitly forecasting.
+### The negative binomial model's errors form patches on the map
 
-| | Spatial | Temporal |
+For each training site, the animals caught over all its visits are divided by the
+number the negative binomial model predicted for those visits. A ratio of 2 means the
+site gave twice what its depth, temperature, seabed and the rest led the model to
+expect; a ratio of ½ means half.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: site-errors
+site_error <- train |>
+  mutate(predicted = fitted(nb_fit)) |>
+  summarise(longitude = mean(longitude), latitude = mean(latitude),
+            caught = sum(abundance), predicted = sum(predicted),
+            .by = site_id) |>
+  mutate(ratio = caught / predicted)
+```
+
+## Python
+
+```{python}
+train["predicted"] = nb_fit.predict(design)
+site_error = train.groupby("site_id").agg(
+    longitude=("longitude", "mean"), latitude=("latitude", "mean"),
+    caught=("abundance", "sum"), predicted=("predicted", "sum"))
+site_error["ratio"] = site_error["caught"] / site_error["predicted"]
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-errors
+#| fig-cap: "Each training site's catch divided by the catch the negative binomial model predicted for its visits. Vermilion sites gave more than predicted, blue sites less. Each site's ratio is noisy, but sites of one colour gather in patches: more than predicted along the western edge, less through the middle."
+#| fig-alt: !expr 'glue::glue("A map with longitude from 140 to 142.5 degrees on the horizontal axis and latitude from 41 to 43 degrees on the vertical, showing {nrow(site_error)} training sites as points coloured on a scale from blue, a quarter of the predicted catch, through grey, as predicted, to vermilion, four times the predicted catch. Colours are mixed across the map, but vermilion points gather along the western edge between about 42 and 43 degrees north, and blue points gather in the middle of the map around 141 to 141.7 degrees east and 42 to 42.3 degrees north.")'
+#| fig-width: 6.5
+#| fig-height: 5
+ggplot(site_error, aes(longitude, latitude, colour = ratio)) +
+  geom_point(size = 3) +
+  scale_colour_gradient2(
+    transform = "log2", midpoint = 1, limits = c(1 / 4, 4),
+    oob = \(x, range) scales::squish(x, range, only.finite = FALSE),
+    breaks = c(1 / 4, 1 / 2, 1, 2, 4), labels = c("¼", "½", "1", "2", "4"),
+    low = ml_palette[["blue"]], mid = "grey88",
+    high = ml_palette[["vermilion"]]
+  ) +
+  coord_quickmap() +
+  labs(x = "Longitude", y = "Latitude",
+       colour = "Caught ÷\npredicted")
+```
+
+:::
+
+Each site's ratio rests on a handful of noisy counts, so the map is speckled. Even so,
+@fig-errors shows patches: sites along the western edge gave more than the model
+predicted, and sites through the middle gave less. Errors that gather by area mean
+the model is missing something that neighbouring sites share.
+
+The survey is simulated, so the cause is known. The simulation added a smooth pattern
+over the map that no input measures: some areas hold more of the species than their
+depth, temperature and seabed explain, and others less.
+[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) found the same pattern
+bending the GAM's depth curve. In real data, a patch of errors is a pointer to a
+missing input, such as a front, a sediment type or a fishing closure, and is worth
+explaining before it is treated as noise.
+
+### Position alone predicts new sites from their neighbours
+
+A model given only a station's longitude and latitude can predict a new site only by
+what the sites around it caught. The negative binomial model's straight lines cannot
+carve the map into patches, but the random forest of
+[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) can. Three
+forests are scored, one on position, one on the environmental inputs, and one on
+both, under cross-validation by site and by block.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: forest-scores
+input_sets <- list(
+  "Position" = c("longitude", "latitude"),
+  "Environment" = c("depth_m", "temperature_c", "chlorophyll_mg_m3",
+                    "salinity_psu", "substrate", "season"),
+  "Both" = c("depth_m", "temperature_c", "chlorophyll_mg_m3",
+             "salinity_psu", "substrate", "season", "longitude", "latitude")
+)
+
+forest_on <- \(columns) {
+  workflow(
+    recipe(reformulate(columns, "abundance"), data = train) |>
+      step_impute_median(all_numeric_predictors()),
+    rand_forest(trees = 500) |>
+      set_engine("ranger") |>
+      set_mode("regression")
+  )
+}
+
+schemes <- list("by site" = by_site, "by block" = by_block)
+
+forest_scores <- expand_grid(inputs = names(input_sets),
+                             scheme = names(schemes)) |>
+  mutate(score = map2(inputs, scheme, \(i, s) {
+    fit_resamples(forest_on(input_sets[[i]]), schemes[[s]],
+                  metrics = metric_set(rsq, rmse)) |>
+      collect_metrics()
+  })) |>
+  unnest(score) |>
+  mutate(.metric = if_else(.metric == "rsq", "R²", "RMSE"))
+
+forest_scores |>
+  pivot_wider(id_cols = inputs, names_from = c(.metric, scheme),
+              names_sep = " ", values_from = mean) |>
+  select(inputs, starts_with("R²"), starts_with("RMSE")) |>
+  mutate(across(starts_with("R²"), \(x) round(x, 3)),
+         across(starts_with("RMSE"), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+input_sets = {
+    "Position": ["longitude", "latitude"],
+    "Environment": predictors,
+    "Both": predictors + ["longitude", "latitude"],
+}
+
+def forest_on(columns):
+    numeric = [c for c in columns if c not in categorical]
+    steps = [("numeric", SimpleImputer(strategy="median"), numeric)]
+    if any(c in categorical for c in columns):
+        steps.append(("categorical", OneHotEncoder(handle_unknown="ignore"),
+                      [c for c in columns if c in categorical]))
+    return Pipeline([
+        ("recipe", ColumnTransformer(steps)),
+        ("model", RandomForestRegressor(n_estimators=500, random_state=1,
+                                        n_jobs=-1)),
+    ])
+
+def score(columns, splits):
+    rows = []
+    for fit_rows, held_rows in splits:
+        fitted = forest_on(columns).fit(train.loc[fit_rows, columns],
+                                        train.loc[fit_rows, "abundance"])
+        predicted = fitted.predict(train.loc[held_rows, columns])
+        truth = train.loc[held_rows, "abundance"]
+        rows.append({"R²": np.corrcoef(predicted, truth)[0, 1] ** 2,
+                     "RMSE": root_mean_squared_error(truth, predicted)})
+    return pd.DataFrame(rows).mean()
+
+schemes = {"by site": by_site, "by block": by_block}
+forest_scores = pd.DataFrame({
+    name: pd.concat({scheme: score(columns, splits)
+                     for scheme, splits in schemes.items()})
+    for name, columns in input_sets.items()
+}).T
+forest_scores.columns = [f"{m} {s}" for s, m in forest_scores.columns]
+forest_scores = forest_scores[["R² by site", "R² by block",
+                               "RMSE by site", "RMSE by block"]]
+forest_scores.round(3).reset_index(names="inputs")
+```
+
+:::
+
+```{r}
+#| label: score-numbers
+#| include: false
+r2 <- forest_scores |>
+  filter(.metric == "R²") |>
+  select(inputs, scheme, mean) |>
+  pivot_wider(names_from = scheme, values_from = mean)
+r2_of <- \(i, s) r2[[s]][r2$inputs == i]
+three <- \(x) format(round(x, 3), nsmall = 3)
+gain_site <- r2_of("Both", "by site") - r2_of("Environment", "by site")
+gain_block <- r2_of("Both", "by block") - r2_of("Environment", "by block")
+rmse_lower <- forest_scores |>
+  filter(.metric == "RMSE") |>
+  select(inputs, scheme, mean) |>
+  pivot_wider(names_from = scheme, values_from = mean) |>
+  summarise(all(`by block` < `by site`)) |>
+  pull()
+```
+
+The forest on position alone reaches an R² of
+`r three(r2_of("Position", "by site"))` under cross-validation by site. It knows
+nothing about the species' surroundings, only which sites lie nearby, so this score is
+evidence that neighbouring sites share their catch. Under blocks it falls to
+`r three(r2_of("Position", "by block"))`, because a held-out site's neighbours now
+mostly sit in the same held-out block.
+
+The forest on the environment falls too, from
+`r three(r2_of("Environment", "by site"))` to
+`r three(r2_of("Environment", "by block"))`. Depth follows position, as
+[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) found, so part of what
+looked like knowledge of depth was knowledge of the area. A block also tends to hold
+conditions that the rest of the map covers thinly, which
+[Sampling and extrapolation](sampling-and-extrapolation.qmd) takes up.
+
+Adding position to the environmental inputs raises R² by `r three(gain_site)` under
+cross-validation by site, but by only `r three(gain_block)` under blocks. About
+`r round(100 * (1 - gain_block / gain_site), -1)`% of what coordinates seemed to add
+was knowledge of the neighbours, which an unsurveyed area would not have.
+
+`r if (rmse_lower) "Every RMSE is lower under blocks, although every R² is lower too." else "The RMSEs do not move with the R²s."`
+The blocks' folds hold different mixes of rich and poor sites from the sites' folds, so
+their RMSEs are on different scales, the trap
+[Information leakage](../02-marine-data/information-leakage.qmd) met when it compared
+a random split with a split by site. R², which measures each fold against its own
+spread, can be compared across the two schemes.
+
+### Blocks leave fewer fitted sites nearby
+
+A forest predicts a held-out site from the fitted sites around it, so the difference
+between the two schemes is how many fitted sites are left near each held-out site. For
+each held-out site in the first round of ten folds, the fitted sites within 30 km are
+counted, measuring between the centres of the sites' stations at about 83 km to a
+degree of longitude and 111 km to a degree of latitude.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: nearby
+centres <- train |>
+  summarise(x = mean(longitude) * 83, y = mean(latitude) * 111,
+            .by = site_id)
+
+fitted_nearby <- \(folds) {
+  folds |>
+    filter(id == "Repeat1") |>
+    pull(splits) |>
+    map(\(s) {
+      held <- filter(centres, site_id %in% assessment(s)$site_id)
+      fitted <- filter(centres, site_id %in% analysis(s)$site_id)
+      km <- sqrt(outer(held$x, fitted$x, "-")^2 +
+                 outer(held$y, fitted$y, "-")^2)
+      tibble(site_id = held$site_id, nearby = rowSums(km < 30))
+    }) |>
+    list_rbind()
+}
+
+nearby <- bind_rows(
+  fitted_nearby(by_site) |> mutate(scheme = "By site"),
+  fitted_nearby(by_block) |> mutate(scheme = "By block")
+)
+nearby |> summarise(median_nearby = median(nearby), .by = scheme)
+```
+
+## Python
+
+```{python}
+centres = train.groupby("site_id").agg(x=("longitude", "mean"),
+                                       y=("latitude", "mean"))
+centres["x"] *= 83
+centres["y"] *= 111
+
+def fitted_nearby(splits):
+    nearby = []
+    for fit_rows, held_rows in splits[:10]:
+        held = centres.loc[train.loc[held_rows, "site_id"].unique()]
+        fitted = centres.loc[train.loc[fit_rows, "site_id"].unique()]
+        km = np.hypot(
+            held["x"].to_numpy()[:, None] - fitted["x"].to_numpy(),
+            held["y"].to_numpy()[:, None] - fitted["y"].to_numpy())
+        nearby.extend((km < 30).sum(axis=1))
+    return np.median(nearby)
+
+pd.DataFrame({"scheme": ["By site", "By block"],
+              "median_nearby": [fitted_nearby(by_site),
+                                fitted_nearby(by_block)]})
+```
+
+:::
+
+```{r}
+#| label: nearby-numbers
+#| include: false
+median_nearby <- nearby |>
+  summarise(n = median(nearby), .by = scheme) |>
+  deframe()
+none_nearby <- nearby |>
+  summarise(n = mean(nearby == 0), .by = scheme) |>
+  deframe()
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-nearby
+#| fig-cap: "Number of fitted sites within 30 km of each held-out site, in the first round of ten folds. Under cross-validation by site most held-out sites keep several fitted neighbours; under blocks most keep one or two, and some none."
+#| fig-alt: !expr 'glue::glue("Two bar charts, one above the other, counting held-out sites by how many fitted sites lie within 30 km of them. By site: the bars spread widely, with a median of {median_nearby[[\"By site\"]]} fitted sites. By block: the bars pile up at the left, with a median of {median_nearby[[\"By block\"]]} and a tall bar at none.")'
+#| fig-width: 7
+#| fig-height: 4.4
+nearby |>
+  mutate(scheme = fct_relevel(scheme, "By site")) |>
+  ggplot(aes(nearby)) +
+  geom_bar(fill = ml_palette[["blue"]]) +
+  facet_wrap(~scheme, ncol = 1) +
+  scale_x_continuous(breaks = 0:12) +
+  labs(x = "Fitted sites within 30 km", y = "Held-out sites")
+```
+
+:::
+
+@fig-nearby shows the difference. Under cross-validation by site, a held-out site
+typically keeps `r median_nearby[["By site"]]` fitted sites within 30 km. Under blocks
+it typically keeps `r median_nearby[["By block"]]`, and
+`r round(100 * none_nearby[["By block"]])`% of held-out sites keep none at all. The blocks
+do not remove every neighbour: a site near the edge of its block can still sit close to
+fitted sites across the line. How large to make the blocks is a choice of its own,
+which [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+makes.
+
+## Each resampling scheme answers its own question
+
+Neither score is the right one in general. Cross-validation by site measures how well a
+model predicts a new site among those already surveyed, such as an unsampled site
+between two monitored ones. Blocks measure how well it predicts an area nobody has
+surveyed, which is what a habitat map of a new region needs. Report the scheme that
+matches the use, and say which it was.
+
+## Time adds a direction to the same problem
+
+Samples close in time resemble each other as samples close in space do: one year's
+cold winter, or one month's bloom, touches every station sampled then. The same
+remedy applies, with one difference.
+
+| | In space | In time |
 | --- | --- | --- |
-| The dependence | Nearby stations resemble each other | Nearby times resemble each other |
-| What random CV leaks | The neighbourhood | **The future** |
-| Diagnostic | Moran's I, variogram | Autocorrelation function of residuals |
-| Honest scheme | `spatial_block_cv()` | `rolling_origin()`, `sliding_period()` |
+| What is shared | Neighbouring sites' water and seabed | A season's or a year's conditions |
+| What a split by site leaks | The neighbourhood | The future, when later years train the model |
+| The honest split | Hold out whole areas | Fit to earlier years, test on later ones |
 
-The temporal case has a strict asymmetry the spatial one does not: predicting 2021 from
-2022 is not merely optimistic, it is impossible in deployment. Any scheme that lets a
-model train on data later than what it predicts is answering a question that cannot be
-asked in practice. This survey cannot demonstrate it, since `survey_year` has no effect at
-all by construction, but the principle does not depend on a demonstration.
+Predicting 2021 from a model fitted to 2022 is not merely optimistic; it can never
+happen in use. A forecast is scored only by holding out the years after the ones the
+model was fitted to.
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+builds both kinds of split.
 
-## Limits of blocking
-
-**Blocking can be too aggressive.** If the blocks are much larger than the range of dependence,
-blocked CV measures extrapolation to genuinely different regions, and that will understate
-performance for the intended use. The variogram is the guide: blocks should be at least as large
-as the range, about 0.8° here, and not enormously larger. A buffer between training and test, as
-in `spatial_leave_location_out_cv()`, is the finer-grained option.
-
-**The honest number depends on what you will do with the model.** Interpolating between surveyed
-stations really is the random-CV problem, and for that use the random-CV number is correct.
-Mapping to an unsurveyed bank is the blocked-CV problem. Neither number is universally right;
-what is always wrong is reporting one and describing the other.
-
-**Coordinates are not automatically illegitimate.** A smooth spatial term is often the
-honest way to represent processes you did not measure, and `s(longitude, latitude)` in a
-GAM is standard practice. The requirement is that its contribution be assessed under
-blocked resampling, where this one earned 11% rather than 29%.
-
-**Spatial structure in residuals may mean a missing covariate.** Patches of consistent
-error are what an unmeasured driver looks like: a front, a sediment type, a fishing
-closure. Before treating it as autocorrelation to be resampled around, ask what is
-physically there. Here it is a spatial field with no physical cause, because we put one
-in; in real data it is usually information.
-
-::: {.callout-tip}
 ## Key points
 
-- Test for leftover spatial structure in **residuals**, not the response. Here Moran's I was 0.093
-  with a permutation *p* of 0.002, and the site-level variogram showed a range of about 0.8°.
-- Random cross-validation on spatial data measures interpolation between sampled points. Say so,
-  or block the folds.
-- A forest using **only longitude and latitude** scored R² 0.075 under random folds and **0.011**
-  under blocked folds.
-- Adding coordinates to an environmental model looked worth 29% under random folds and 11% under
-  blocked ones. Most of the apparent gain was the scheme.
-- Compare **R²** across resampling schemes, never RMSE, because different folds hold different
-  distributions of the response.
-
+::: {.key-points}
+- Neighbouring sites share water and seabed, so a model's errors gather in patches on
+  the map. A patch points to something the inputs miss.
+- Cross-validation by site leaves most held-out sites with a fitted neighbour close by,
+  so a model can score well by knowing the area.
+- A random forest on longitude and latitude alone scored an R² of
+  `r three(r2_of("Position", "by site"))` by site and
+  `r three(r2_of("Position", "by block"))` by block. Adding position to the
+  environment looked worth `r three(gain_site)` by site and `r three(gain_block)` by
+  block.
+- **Spatial blocks** hold out whole areas and measure what a model knows about places
+  nobody surveyed. Choose the scheme that matches the model's use.
+- Compare R², not RMSE, across resampling schemes. In time, test only on years after
+  those the model was fitted to.
 :::
 
 ## Try it yourself
 
-1. Re-run the comparison with `n = c(6, 6)` so the blocks are smaller than the variogram range.
-   Predict first whether the coordinates-only model's blocked R² should rise or fall, then check.
-2. Fit the environmental GAM from
-   [the linearity page](linearity-and-nonlinearity.qmd) with `s(longitude, latitude)` added, and
-   recompute Moran's I on its residuals. How much of the 0.093 does an explicit spatial term
-   absorb?
+1. Change the blocks from half a degree to a quarter, `/ 0.25` in both places, and
+   rerun. Predict first whether the forest on position should score higher or lower
+   under the smaller blocks, then count the fitted sites nearby again.
+2. Score the forest on position with `vfold_cv(train, v = 10)`, which deals single
+   stations into folds and so lets a site's other visits train the model. How much
+   higher does position score when a held-out station's own site is in the training
+   data?
