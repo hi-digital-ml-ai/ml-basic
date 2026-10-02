@@ -191,7 +191,7 @@ models = {
 
 :::
 
-### The GAM fits its own stations best and new sites no better
+### The GAM fits its own stations best and new sites no better than squared terms
 
 Each model is scored twice: on the training stations it was fitted to, and on new sites,
 as the average over the ten folds. The last column is the standard error of that
@@ -404,7 +404,7 @@ shallowest water, which the simulation made among the poorer places for this spe
 Nothing in the scores warned of this. The GAM fitted its stations best and predicted new
 sites as well as any model here.
 
-## Confounding gives depth a curve that belongs to other inputs
+## Confounding with position gives depth the wrong curve
 
 The method was the same for both inputs. The difference is in the data.
 

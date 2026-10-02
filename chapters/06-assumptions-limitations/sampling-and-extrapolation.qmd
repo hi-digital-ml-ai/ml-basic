@@ -153,7 +153,7 @@ The survey has `r n_distinct(shallow$site_id)` of the `r n_distinct(survey$site_
 sites. The other `r n_distinct(deep$site_id)` sites, down to
 `r round(max(deep$depth_m, na.rm = TRUE))` m, are the area to map.
 
-### The three methods part company below the survey's depths
+### Methods that agree within the survey's depths disagree below them
 
 Each of the ten surveys fits all three methods, which then predict every station at
 the left-out shallow sites and at the deep sites.
@@ -324,7 +324,7 @@ survey, while the true mean count keeps falling. The lines of polynomial regress
 and the negative binomial model fan out instead: some fits follow the truth down,
 others level off or turn back up.
 
-### The forest is too high on every survey and the curves only on some
+### The random forest is too high on every survey and the curved models only on some
 
 For each survey, each method's mean prediction is divided by the mean true count,
 once over the left-out shallow sites and once over the stations deeper than 140 m,
@@ -547,7 +547,7 @@ ggplot(mapping = aes(depth_m, temperature_c)) +
 
 :::
 
-### The forest's error grows with distance from the survey
+### The random forest's error grows with distance from the survey
 
 A random forest fitted to the summer and autumn survey predicts the spring and winter
 stations. Season itself is left out of its inputs, as the survey has none of the
@@ -626,7 +626,7 @@ factor of `r round(off_near, 1)`. At the furthest quarter it is typically off by
 `r round(off_far, 1)`. The forest reports nothing different at the far stations; the
 distance is the only sign that its predictions there deserve less trust.
 
-## A prediction map needs its distance from the survey
+## The distance to the nearest station belongs on a prediction map
 
 The distance to the nearest surveyed station can be mapped alongside any prediction,
 so that a reader sees where the map rests on the survey and where it is extrapolating.

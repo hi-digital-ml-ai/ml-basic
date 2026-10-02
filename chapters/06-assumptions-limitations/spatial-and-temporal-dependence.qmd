@@ -231,7 +231,7 @@ bending the GAM's depth curve. In real data, a patch of errors is a pointer to a
 missing input, such as a front, a sediment type or a fishing closure, and is worth
 explaining before it is treated as noise.
 
-### Position alone predicts new sites from their neighbours
+### Blocks remove most of what position alone predicts
 
 A model given only a station's longitude and latitude can predict a new site only by
 what the sites around it caught. The negative binomial model's straight lines cannot
@@ -362,7 +362,7 @@ The forest on the environment falls too, from
 [Linearity and nonlinearity](linearity-and-nonlinearity.qmd) found, so part of what
 looked like knowledge of depth was knowledge of the area. A block also tends to hold
 conditions that the rest of the map covers thinly, which
-[Sampling and extrapolation](sampling-and-extrapolation.qmd) takes up.
+[Uneven sampling and extrapolation](sampling-and-extrapolation.qmd) takes up.
 
 Adding position to the environmental inputs raises R² by `r three(gain_site)` under
 cross-validation by site, but by only `r three(gain_block)` under blocks. About
@@ -482,7 +482,7 @@ fitted sites across the line. How large to make the blocks is a choice of its ow
 which [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
 makes.
 
-## Each resampling scheme answers its own question
+## Cross-validation by site and spatial blocks answer different questions
 
 Neither score is the right one in general. Cross-validation by site measures how well a
 model predicts a new site among those already surveyed, such as an unsampled site
@@ -490,7 +490,7 @@ between two monitored ones. Blocks measure how well it predicts an area nobody h
 surveyed, which is what a habitat map of a new region needs. Report the scheme that
 matches the use, and say which it was.
 
-## Time adds a direction to the same problem
+## A forecast is tested only on years after its training data
 
 Samples close in time resemble each other as samples close in space do: one year's
 cold winter, or one month's bloom, touches every station sampled then. The same

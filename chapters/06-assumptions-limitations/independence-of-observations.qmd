@@ -38,7 +38,7 @@ The same problem appears wherever one unit is sampled several times:
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Resampling whole sites measures what the visits are worth
+## Resampling whole sites measures the effective sample size
 
 [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) grew each
 tree on a **bootstrap sample**: rows drawn at random with replacement, as many as the
@@ -219,7 +219,7 @@ The visits repeat each other because a site's depth, temperature and seabed stay
 same from one visit to the next. A deep muddy site is rich every time it is sampled,
 and a shallow rocky one is poor every time.
 
-### The model's inputs explain most of what visits share
+### The negative binomial model's inputs explain most of what visits share
 
 The negative binomial model knows each station's depth, temperature and seabed. Once
 those are in the model, what remains to be shared between a site's visits is only what
