@@ -149,6 +149,19 @@ screenshots, so look at the rendered page yourself first.
 - **Titles and headings:** short and declarative, no commas, no "X, grouped by Y".
   Headings can be renamed whenever a better one exists; "Worked example" is fine as a
   section heading when its subsections carry the specific names.
+- **A heading says what the section shows,** so the table of contents alone tells the
+  story (section 5, 2026-10-02). Name the subject and the result; say what is compared,
+  not how many ("Three trees on one input" became "Node size sets how closely a tree
+  follows temperature"); no "the X" pointing back at something the heading has not named
+  ("The ranking turns over" became "The best fits to their own stations do worst on new
+  sites"); no teasers ("A model's report on itself") and no process words ("Reading the
+  two ends"). A number is fine when a list of that length follows ("Four kinds of
+  leakage"). The fixed labels stay.
+- **A term the video stresses is named on a page, in bold and in a heading.** The
+  section 5 video promised "the U-shaped error curve", which no page had named, and used
+  the lasso, which only two sentences of section 4 had mentioned and no section 5
+  heading showed. Underfitting and overfitting now names the curve, and Regularisation's
+  headings name ridge regression and the lasso.
 - **Say what a vague phrase means.** "The typical size of a prediction error" needed
   spelling out (the RMSE: roughly how far a prediction usually lands from the truth, in
   the outcome's units). "Without driving it" became plain words. If a reader could ask
@@ -275,6 +288,11 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
   course comes back to these ideas" worked.
 - **No section numbers** anywhere in the video, and no bare "the next section": say
   "the next section of the course" or "later in the course", or name the section.
+- **Explain a method briefly before its result.** The section 5 video first showed the
+  lasso's error curve with only a line on what the lasso is; the user asked for a short
+  explanation. Two schematic scenes now come first: what a penalty does and what λ sets,
+  then ridge regression against the lasso (squared against absolute size, shrinking
+  against removing).
 - **Define a term in its own scene before using it.** Section 3 used "false alarms"
   and "misses" straight away, and the user found them confusing; a schematic scene
   now defines each (said present, truly absent; said absent, truly present) before the
@@ -338,7 +356,7 @@ with seven pages to cover, is 35 scenes, about 950 words, 7:13. Use
 | 2 Marine data | `feature/improve-marine-data` | Done; merged into `develop` 2026-09-30 |
 | 3 Supervised learning | `feature/improve-supervised-learning` | Done; merged into `develop` 2026-09-30 (video narrated with Gemini, 44 requests, about $0.14) |
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
-| 5 Generalisation | `feature/improve-generalisation` | In progress: pages and overview rewritten; video next |
+| 5 Generalisation | `feature/improve-generalisation` | Pages, overview, headings and video done (video narrated with Gemini, 34 requests, about $0.10); not yet merged |
 | 6–10 | | Not started |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
