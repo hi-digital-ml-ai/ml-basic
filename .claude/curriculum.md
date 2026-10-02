@@ -172,9 +172,13 @@ it does not.
 - Material earlier sections now teach is cut, not repeated: pseudo-replication and the
   split by site (§2), overdispersion and the negative binomial (§3), Poisson standard
   errors that are too small (§4), random against grouped cross-validation (§5).
-- *Linearity and nonlinearity* introduces the GAM (smooth bumps with a penalty on
-  bending, tied to §5's ridge penalty); the fitted curves are read before the truth is
-  shown. *Distributional assumptions* centres on simulating from the fitted model.
+- *Linearity and nonlinearity* is framed for a machine-learning course: linearity is an
+  assumption of linear models, which trees and forests drop. It compares two Poisson
+  models with a random forest and a GAM, which drops the straight lines but keeps one
+  readable curve per input (smooth bumps with a penalty on bending, tied to §5's
+  penalty; no effective degrees of freedom). The fitted curves are read before the
+  truth is shown. §10's GAM pages still use effective degrees of freedom, so §10's
+  revision must explain them where it uses them, or drop them. *Distributional assumptions* centres on simulating from the fitted model.
   *Independence* shrinks to effective sample size and its cost to standard errors.
   *Spatial and temporal dependence* compares cross-validation by site against spatial
   blocks and diagnoses with a residual map, not Moran's I. *Extrapolation* replaces
@@ -193,8 +197,9 @@ Use R², or the same test set for both. §2's leakage page found it first;
 with spatial blocks, says so in the prose and repeats it in its Key points.
 
 **A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
-the GAM fits its own stations best of three Poisson models, predicts new sites no worse,
-and has the most wrong depth response, because depth is confounded with position, which
+the random forest fits its own stations far better than the other three models, all four
+predict new sites within a standard error of each other, and both the forest and the GAM
+put depth's peak in shallow water, because depth is confounded with position, which
 carries an unmodelled spatial field. Flexibility buys shape, not identifiability.
 
 ### Uses of `coastal-survey-truth.csv`

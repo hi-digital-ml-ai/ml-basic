@@ -227,7 +227,7 @@ The survey is simulated, so the cause is known. The simulation added a smooth pa
 over the map that no input measures: some areas hold more of the species than their
 depth, temperature and seabed explain, and others less.
 [Linearity and nonlinearity](linearity-and-nonlinearity.qmd) found the same pattern
-bending the GAM's depth curve. In real data, a patch of errors is a pointer to a
+bending the depth curves of the random forest and the GAM. In real data, a patch of errors is a pointer to a
 missing input, such as a front, a sediment type or a fishing closure, and is worth
 explaining before it is treated as noise.
 

@@ -20,8 +20,9 @@ takes each assumption in turn, on the same simulated survey as the rest of the c
 The first two pages cover what a model assumes about shape and spread, which machine
 learning relaxes:
 
-- **linearity and nonlinearity**: a generalised additive model gives each input its own
-  smooth curve, fits the stations best, and still gets one curve wrong;
+- **linearity and nonlinearity**: linear models assume straight lines and trees and
+  forests do not, yet a random forest and a generalised additive model fitted to the
+  survey both get the depth curve wrong;
 - **distributional assumptions**: simulating surveys from a fitted count model shows
   whether it could have produced the real one.
 

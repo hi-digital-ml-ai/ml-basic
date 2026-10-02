@@ -1,6 +1,6 @@
 ---
 title: "Linearity and nonlinearity"
-description: "A generalised additive model lets each input find its own smooth curve. It fits its own stations better than straight lines or squared terms, yet one of its curves is wrong: a better fit is not a more correct model."
+description: "Linear models assume a straight-line effect for each input; trees and forests do not. Dropping the assumption lets a random forest fit the survey far more closely, yet it predicts new sites barely better, and its depth curve is wrong: flexibility cannot undo confounding."
 order: 1
 categories: [assumptions]
 ---
@@ -19,15 +19,16 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## A flexible curve can fit well and still be wrong
+## Only linear models assume straight lines
 
 Few marine responses are straight lines. A species has a temperature it prefers, growth
 levels off when food is plentiful, and oxygen has a level below which little survives.
-[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-bent a straight line with a squared term. This page introduces a more flexible tool, the
-**generalised additive model (GAM)**, which lets each input find its own curve. It fits
-its own stations better than the squared terms do, yet one of its curves is wrong. The
-reason, confounding, is the page's main lesson: a better fit is not a more correct model.
+Linearity is an assumption of one family of models: linear, polynomial, Poisson and
+logistic regression from
+[Supervised learning](../03-supervised-learning/index.qmd). Decision trees, random
+forests and boosting do not make it. This page shows what dropping the assumption buys
+on the survey, and the limit it leaves: a flexible model can draw any curve, but it
+cannot tell which input the curve belongs to.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -49,35 +50,51 @@ A squared term relaxes the first. The curve then has one peak and falls the same
 both sides, whatever the data say. A response that rises steeply and tails off slowly,
 or levels off, does not fit that shape.
 
-## A GAM fits a smooth curve to each input
+## Trees and forests make neither assumption
 
-A GAM replaces each input's straight line with a smooth curve, and adds the curves up
-as a linear model adds its terms. The curve is built from short, smooth bumps spread
-along the input's range. Each bump gets a weight, as a column does in linear regression,
-and the weighted bumps add up to a curve of almost any shape.
+A [decision tree](../03-supervised-learning/decision-trees.qmd) splits the stations by
+one input at a time, so its prediction can rise and fall with depth however the data
+say. A split inside another split lets the effect of depth differ between cold water and
+warm, so interactions come built in. A
+[random forest](../03-supervised-learning/forests-and-boosting.qmd) averages many such
+trees. This is what machine learning gains over a linear model: no shape has to be
+chosen in advance.
 
-With enough bumps the curve could pass through every station and follow the noise as
-well as the signal. A GAM therefore adds a **penalty** on bending, as ridge regression
-in [Regularisation](../05-generalisation/regularisation.qmd) adds a penalty on the size
-of the coefficients. The penalty's weight is chosen from the data, so a curve bends only
-as much as the data support. The **effective degrees of freedom** report how much
-bending is left: 1 is a straight line, and each extra unit is roughly one more bend.
+The cost is that the model holds no single curve for depth. Its prediction across
+depth depends on the values the other inputs are held at, because those can change the
+effect of depth. Reading a forest's effects is the subject of
+[Interpretation](../10-interpretation/index.qmd).
+
+## A GAM keeps one readable curve for each input
+
+A **generalised additive model (GAM)** sits between the two. It replaces each input's
+straight line with a smooth curve, and adds the curves up as a linear model adds its
+terms. The shape is free, as in a forest, but each input keeps one curve, the same
+whatever the other inputs are. That makes the GAM a useful check beside a forest: its
+curves can be drawn and compared with what is known about the species.
+
+Each curve is built from short, smooth bumps spread along the input's range, each with
+a weight, and the weighted bumps add up to a curve of almost any shape. A **penalty** on
+bending, like the penalty in [Regularisation](../05-generalisation/regularisation.qmd),
+stops the curve chasing the noise; its weight is chosen from the data.
 
 ::: {.diagram}
-![A GAM covers the input's range with short smooth bumps, weights them, and adds them up into a curve. A penalty on bending stops the curve chasing the noise; with bending made very costly the curve becomes a straight line.](img/gam.svg){fig-alt="Three cards. Pieces, short smooth bumps: seven bell-shaped curves overlap along the input's range. Added up, a weight for each bump: the bumps, each scaled by its weight, are drawn dashed, and their sum is a solid curve that rises and falls with the data points. Penalty, each bend costs: three curves through the same points; a dashed curve with bends made cheap chases the noise, a dotted straight line is what bends made dear give, and the solid curve between them follows the rise and fall. The text says fitting chooses the weights and pays for every bend, and the data set the price. A note says the effective degrees of freedom count the bends the penalty leaves, and 1 is a straight line."}
+![A GAM covers the input's range with short smooth bumps, weights them, and adds them up into a curve. A penalty on bending stops the curve chasing the noise; with bending made very costly the curve becomes a straight line.](img/gam.svg){fig-alt="Three cards. Pieces, short smooth bumps: seven bell-shaped curves overlap along the input's range. Added up, a weight for each bump: the bumps, each scaled by its weight, are drawn dashed, and their sum is a solid curve that rises and falls with the data points. Penalty, each bend costs: three curves through the same points; a dashed curve with bends made cheap chases the noise, a dotted straight line is what bends made dear give, and the solid curve between them follows the rise and fall. The text says fitting chooses the weights and pays for every bend, and the data set the price. A note says the curves add up, so each input keeps one curve that can be drawn and read."}
 :::
 
-A GAM keeps the rest of the model. Here it is a Poisson model on the log scale, so a
-count never falls below zero, and its inputs without a curve (chlorophyll, salinity,
-substrate and season) keep a straight line or a level each.
+Here the GAM counts on the log scale, as Poisson regression does, and gives depth and
+temperature a curve each; chlorophyll, salinity, substrate and season keep a straight
+line or a level.
 
 ## Worked example
 
-Three Poisson models are fitted to the survey with the inputs of
-[Count regression](../03-supervised-learning/count-regression.qmd): one with a straight
-line for every input, one with squared terms for depth and temperature, as that page
-used, and a GAM with a smooth curve for each. They are scored with ten-fold
-cross-validation by site, from
+Four models are fitted to the survey with the inputs of
+[Count regression](../03-supervised-learning/count-regression.qmd). Two are linear
+models: Poisson regression with a straight line for every input, and with squared terms
+for depth and temperature, as that page used. Two drop the straight lines: the GAM, and
+a random forest of 500 trees, as in
+[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). All four
+are scored with ten-fold cross-validation by site, from
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd), on the
 training sites.
 
@@ -117,7 +134,11 @@ models <- list(
   "Poisson with straight lines" = workflow(straight_recipe, poisson_reg()),
   "Poisson with squared terms" = workflow(squared_recipe, poisson_reg()),
   "GAM" = workflow(straight_recipe) |>
-    add_model(gam_model, formula = smooth_terms)
+    add_model(gam_model, formula = smooth_terms),
+  "Random forest" = workflow(straight_recipe,
+                             rand_forest(trees = 500) |>
+                               set_engine("ranger", seed = 123) |>
+                               set_mode("regression"))
 )
 ```
 
@@ -128,6 +149,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import PoissonRegressor
 from sklearn.metrics import root_mean_squared_error
@@ -186,12 +208,16 @@ models = {
     "Poisson with squared terms":
         poisson(PolynomialFeatures(2, include_bias=False)),
     "GAM": gam,
+    # the forest needs no scaling, but the recipe's imputing and encoding
+    "Random forest": Pipeline([
+        ("recipe", recipe("passthrough")),
+        ("model", RandomForestRegressor(n_estimators=500, random_state=123))]),
 }
 ```
 
 :::
 
-### The GAM fits its own stations best and new sites no better than squared terms
+### The random forest fits its own stations far better and new sites barely better
 
 Each model is scored twice: on the training stations it was fitted to, and on new sites,
 as the average over the ten folds. The last column is the standard error of that
@@ -248,26 +274,34 @@ pd.DataFrame([score(name, model) for name, model in models.items()])
 straight <- filter(scores, model == "Poisson with straight lines")
 squared  <- filter(scores, model == "Poisson with squared terms")
 smooth   <- filter(scores, model == "GAM")
+forest   <- filter(scores, model == "Random forest")
 gam_fit <- fit(models[["GAM"]], train)
 squared_fit <- fit(models[["Poisson with squared terms"]], train)
-edf <- summary(extract_fit_engine(gam_fit))$s.table[, "edf"]
+forest_fit <- fit(models[["Random forest"]], train)
 two <- \(x) format(round(x, 2), nsmall = 2)
+# the gap between the best and worst score on new sites, against the smallest
+# standard error
+new_gap <- diff(range(scores$new))
+within_one_se <- new_gap < min(scores$std_err)
 ```
 
-The GAM uses its freedom: `r round(edf[["s(depth_m)"]], 1)` effective degrees of
-freedom for depth and `r round(edf[["s(temperature_c)"]], 1)` for temperature, far
-from a straight line's 1. On the stations it was fitted to, its error is the lowest,
-`r two(smooth$fitting)` against `r two(squared$fitting)`
-for squared terms and `r two(straight$fitting)` for straight
-lines. On new sites the gain is gone: `r two(smooth$new)` against
-`r two(squared$new)`, a difference far smaller than one standard error. Both curved
-models do a little better than straight lines, at `r two(straight$new)`; the GAM's
-extra bends add nothing to the predictions.
+On the stations it was fitted to, the random forest's error is `r two(forest$fitting)`,
+far below the GAM's `r two(smooth$fitting)` and Poisson regression's
+`r two(squared$fitting)` with squared terms and `r two(straight$fitting)` with straight
+lines. On new sites the four come close together: `r two(forest$new)` for the forest,
+`r two(smooth$new)` for the GAM, and `r two(squared$new)` and `r two(straight$new)` for
+Poisson regression`r if (within_one_se) ", all within one standard error of each other" else ""`.
+Curves of any kind, from squared terms, a GAM or a forest, helped the predictions a
+little over straight lines. Most of the forest's extra freedom went into its own
+stations, the memorising that
+[Training error and the error on new data](../05-generalisation/training-versus-new-data.qmd)
+warned of.
 
-### The GAM puts the most animals in shallow water
+### Every model's depth curve peaks in shallow water
 
-What do the curves say? @fig-curves shows each model's prediction across depth and
-across temperature, with the other inputs held at typical values.
+What do the models say about depth and temperature? @fig-curves shows each model's
+prediction across each input, with the other inputs held at typical values. For the
+random forest this is one slice: held at other values, its curve could change shape.
 
 ::: {.panel-tabset group="language"}
 
@@ -275,8 +309,8 @@ across temperature, with the other inputs held at typical values.
 
 ```{r}
 #| label: fig-curves
-#| fig-cap: "Predicted count across the survey's depths and temperatures, with the other inputs held at typical values (sand, summer, the median of the rest). The ticks along the bottom are the training stations. Both models put a temperature peak in mid-range. For depth, the squared terms fall from the shallowest station and the GAM peaks in shallow water and falls offshore."
-#| fig-alt: "Two panels of predicted count. Left, against depth from 5 to about 195 metres: Poisson with squared terms is highest at the shallowest depth and falls steadily; the GAM rises to a peak at a shallow depth, falls with a small second bump, and is low beyond 150 metres. Right, against temperature from about 2 to 16 degrees: both curves rise to a peak in mid-range and fall again, the GAM's peak a little sharper. Ticks along the bottom of each panel mark the training stations."
+#| fig-cap: "Predicted count across the survey's depths and temperatures, with the other inputs held at typical values (sand, summer, the median of the rest). The ticks along the bottom are the training stations. All three models put a temperature peak in mid-range. For depth, the squared terms fall from the shallowest station, and the GAM and the random forest both peak in shallow water and fall offshore. The forest's curve moves in steps, as its trees' splits do."
+#| fig-alt: "Two panels of predicted count. Left, against depth from 5 to about 195 metres: Poisson with squared terms is highest at the shallowest depth and falls steadily; the GAM rises to a peak at a shallow depth, falls with a small second bump, and is low beyond 150 metres; the random forest's stepped line is highest in shallow water and falls in steps offshore. Right, against temperature from about 2 to 16 degrees: all three curves rise to a peak in mid-range and fall again, the forest's in steps. Ticks along the bottom of each panel mark the training stations."
 #| fig-width: 8
 #| fig-height: 4
 typical <- train |>
@@ -294,7 +328,8 @@ across_input <- function(input) {
   bind_rows(
     augment(squared_fit, grid) |>
       mutate(model = "Poisson with squared terms"),
-    augment(gam_fit, grid) |> mutate(model = "GAM")
+    augment(gam_fit, grid) |> mutate(model = "GAM"),
+    augment(forest_fit, grid) |> mutate(model = "Random forest")
   ) |>
     transmute(model, value = .data[[input]], .pred)
 }
@@ -309,7 +344,8 @@ curve_plot <- function(input, x_label) {
     geom_line(linewidth = 1.1) +
     scale_colour_manual(values = c(
       "Poisson with squared terms" = ml_palette[["orange"]],
-      "GAM" = ml_palette[["blue"]])) +
+      "GAM" = ml_palette[["blue"]],
+      "Random forest" = ml_palette[["green"]])) +
     labs(x = x_label, y = "Predicted count", colour = NULL)
 }
 
@@ -326,18 +362,21 @@ curve_plot("depth_m", "Depth (m)") +
 peak <- curves |>
   map(\(d) d |> group_by(model) |> slice_max(.pred, n = 1) |> select(model, value) |> deframe())
 depth_range <- range(train$depth_m, na.rm = TRUE)
+one <- \(x) format(round(x, 1), nsmall = 1)
 ```
 
-The two models agree on temperature: the count rises to a peak near
-`r round(peak$temperature_c[["GAM"]], 1)` °C (GAM) or
-`r round(peak$temperature_c[["Poisson with squared terms"]], 1)` °C (squared terms)
-and falls on either side. On depth the GAM has found something squared terms could not
-show: a peak at `r round(peak$depth_m[["GAM"]])` m, then a long decline offshore. The
-squared terms fall all the way from the shallowest station, at
-`r round(depth_range[1])` m. Read at face value, both say the species does best in
+The models agree on temperature: the count rises to a peak near
+`r one(peak$temperature_c[["GAM"]])` °C (GAM),
+`r one(peak$temperature_c[["Random forest"]])` °C (random forest) or
+`r one(peak$temperature_c[["Poisson with squared terms"]])` °C (squared terms)
+and falls on either side. On depth the two flexible models find a shape that squared
+terms cannot: a peak at `r round(peak$depth_m[["GAM"]])` m (GAM) or
+`r round(peak$depth_m[["Random forest"]])` m (random forest), then a long decline
+offshore. The squared terms fall all the way from the shallowest station, at
+`r round(depth_range[1])` m. Read at face value, all three say the species does best in
 shallow water.
 
-## The GAM recovers the temperature curve but not the depth curve
+## The flexible models recover the temperature curve but not the depth curve
 
 The survey is simulated, so the curves can be checked against the ones the simulation
 used. For depth, the simulated count peaks at 80 m and falls away on either side; for
@@ -352,8 +391,8 @@ Each curve in @fig-truth is divided by its own peak, so only its shape is compar
 
 ```{r}
 #| label: fig-truth
-#| fig-cap: "The GAM's curves (solid) against the curves the simulation used (dashed), each divided by its own peak. Temperature is close to the truth. Depth is not: between the GAM's shallow peak and the true peak at 80 m, the GAM's curve falls while the true one rises."
-#| fig-alt: "Two panels, each with a solid GAM curve and a dashed true curve, scaled so each peaks at 1. Left, depth: the true curve is an arch peaking at 80 metres; the GAM's curve peaks in shallow water and is falling where the true curve peaks, the two agreeing only beyond about 150 metres. Right, temperature: the true curve is an arch peaking at 9 degrees and the GAM's curve lies close to it across the range, peaking a little cooler."
+#| fig-cap: "The curves of the GAM and the random forest against the curves the simulation used (dashed), each divided by its own peak. Temperature is close to the truth for both through the middle of its range. Depth is not: between the models' shallow peaks and the true peak at 80 m, their curves stay level or fall while the true one rises."
+#| fig-alt: "Two panels, each with a GAM curve, a stepped random forest curve and a dashed true curve, scaled so each peaks at 1. Left, depth: the true curve is an arch peaking at 80 metres; both models' curves peak in shallow water and are level or falling where the true curve peaks; beyond about 150 metres the GAM's curve falls with the true one and the forest's levels off. Right, temperature: the true curve is an arch peaking at 9 degrees and both models' curves follow it through the middle of the range, peaking a little cooler; the forest's moves in steps and levels off at both ends."
 #| fig-width: 8
 #| fig-height: 4
 # the curves R/make-example-data.R used, on the log scale
@@ -364,22 +403,28 @@ true_curve <- list(
 
 shapes <- map(names(curves), \(name) {
   truth <- true_curve[[name]]
-  curves[[name]] |>
-    filter(model == "GAM") |>
-    transmute(input = name, value, GAM = .pred / max(.pred),
-              Simulation = exp(truth(value)) / max(exp(truth(value))))
+  fitted <- curves[[name]] |>
+    filter(model %in% c("GAM", "Random forest")) |>
+    mutate(relative = .pred / max(.pred), .by = model)
+  simulated <- distinct(fitted, value) |>
+    mutate(model = "Simulation",
+           relative = exp(truth(value)) / max(exp(truth(value))))
+  bind_rows(fitted, simulated) |>
+    transmute(input = name, value, curve = model, relative)
 }) |>
-  list_rbind() |>
-  pivot_longer(c(GAM, Simulation), names_to = "curve",
-               values_to = "relative")
+  list_rbind()
 
 shape_plot <- function(which, x_label) {
   ggplot(filter(shapes, input == which),
-         aes(value, relative, linetype = curve)) +
-    geom_line(linewidth = 1.1, colour = ml_palette[["blue"]]) +
-    scale_linetype_manual(values = c(GAM = "solid",
+         aes(value, relative, colour = curve, linetype = curve)) +
+    geom_line(linewidth = 1.1) +
+    scale_colour_manual(values = c(GAM = ml_palette[["blue"]],
+                                   "Random forest" = ml_palette[["green"]],
+                                   Simulation = ml_palette[["grey"]])) +
+    scale_linetype_manual(values = c(GAM = "solid", "Random forest" = "solid",
                                      Simulation = "dashed")) +
-    labs(x = x_label, y = "Count relative to its peak", linetype = NULL)
+    labs(x = x_label, y = "Count relative to its peak", colour = NULL,
+         linetype = NULL)
 }
 
 shape_plot("depth_m", "Depth (m)") +
@@ -395,14 +440,16 @@ shape_plot("depth_m", "Depth (m)") +
 middle <- mean(between(train$depth_m, peak$depth_m[["GAM"]], 80), na.rm = TRUE)
 ```
 
-Temperature comes back close to the truth, its peak a little cool. Depth does not. Between the GAM's peak at
-`r round(peak$depth_m[["GAM"]])` m and the true one at 80 m, where
-`r round(100 * middle)`% of the training stations lie, the GAM's curve falls while the
-true one rises. A manager reading the depth panel would send effort to the
-shallowest water, which the simulation made among the poorer places for this species.
+Temperature comes back close to the truth for both models in the middle of its range,
+where most stations lie, their peaks a little cool.
+Depth does not. Between the GAM's peak at `r round(peak$depth_m[["GAM"]])` m and the
+true one at 80 m, where `r round(100 * middle)`% of the training stations lie, both
+models' curves stay level or fall while the true one rises. A manager reading the depth
+panel would send effort to the shallowest water, which the simulation made among the
+poorer places for this species.
 
-Nothing in the scores warned of this. The GAM fitted its stations best and predicted new
-sites as well as any model here.
+Nothing in the scores warned of this. The random forest fitted its stations best and
+predicted new sites as well as any model here.
 
 ## Confounding with position gives depth the wrong curve
 
@@ -435,8 +482,8 @@ This is **confounding**, met in
 variable tied to both an input and the outcome lends the input an effect that is not
 its own. Here the culprit is something about position that none of the inputs
 measures; [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd) looks
-for it. Flexibility does not help. A GAM can draw any shape, but it cannot tell which
-input a shape belongs to, and a flexible wrong curve looks more convincing than a rigid
+for it. Flexibility does not help. A random forest or a GAM can draw any shape, but
+neither can tell which input a shape belongs to, and a flexible wrong curve looks more convincing than a rigid
 wrong one.
 
 The new-site scores could not catch it either. Depth stands in for position, so a
@@ -445,34 +492,35 @@ keep their link at the new sites.
 
 ## Additive curves cannot show interactions
 
-A GAM's curves add up. If the species' preferred temperature shifted with depth, which
-is common in benthic species, no set of separate curves could show it. That needs a
-curve over two inputs at once, `te(depth_m, temperature_c)` in mgcv, or a tree-based
-model: a [decision tree](../03-supervised-learning/decision-trees.qmd) splits on one
-input inside a split on another, so interactions come built in.
+A GAM's curves add up, which is what makes each one readable. If the species' preferred
+temperature shifted with depth, which is common in benthic species, no set of separate
+curves could show it. A random forest can, since a split inside a split lets one input
+change the effect of another, but then no single curve describes depth: the slice in
+@fig-curves is one of many. Each model gives up something; neither gives up the
+confounding.
 
 ## Key points
 
 ::: {.key-points}
-- A linear model gives each input one fixed effect and lets the effects add up. A
-  squared term allows one peak, the same shape on both sides.
-- A **GAM** builds a smooth curve for each input from weighted bumps, with a penalty on
-  bending. The **effective degrees of freedom** report how much it bent: 1 is a
-  straight line.
-- On the survey the GAM fitted its own stations best and predicted new sites about as
-  well as squared terms.
-- Checked against the simulation, its temperature curve was close and its depth curve
-  was wrong where most stations lie.
+- Linear, polynomial, Poisson and logistic regression give each input one fixed effect
+  and let the effects add up. Trees, random forests and boosting assume neither.
+- A **GAM** drops the straight lines but keeps the adding up, so each input keeps one
+  curve that can be drawn and read.
+- On the survey the random forest fitted its own stations far better than any other
+  model, and predicted new sites about as well as Poisson regression with squared
+  terms.
+- Checked against the simulation, the GAM and the forest both got temperature about
+  right and put depth's peak in shallow water, far from the true 80 m.
 - The cause was **confounding**: depth follows position, which carries an effect no
-  input measures. A better fit is not a more correct model, and a good score on new
-  sites does not show that a curve is right.
+  input measures. Dropping an assumption about shape does not remove the limits of the
+  data, and a good score on new sites does not show that a curve is right.
 :::
 
 ## Try it yourself
 
-1. Add `s(longitude, latitude)` to `smooth_terms`, a smooth surface over position, and
-   redraw @fig-truth. Does depth's curve come closer to the simulation's once position
-   has a curve of its own?
-2. Replace `s(depth_m) + s(temperature_c)` with `te(depth_m, temperature_c)` and score
-   the model with the same folds. Does a curve over both inputs at once predict new
-   sites better?
+1. Build a recipe like `straight_recipe` with `longitude` and `latitude` added, refit
+   the random forest with it, and redraw its depth curve. Does the curve move towards
+   the simulation's once position is an input of its own?
+2. In `across_input()`, hold temperature at its lower quartile instead of its median,
+   then at its upper quartile, and redraw the depth curves. Does the forest's curve
+   change shape? Does the GAM's?
