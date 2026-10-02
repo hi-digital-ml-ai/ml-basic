@@ -17,7 +17,7 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## The axis of flexibility
+## One setting moves each method from rigid to flexible
 
 [Underfitting and overfitting](underfitting-and-overfitting.qmd) placed models along an
 axis of flexibility, from too rigid to too flexible, and moved a decision tree along it
@@ -29,7 +29,7 @@ measures it.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Freedom to fit any data
+## Complexity is how many datasets a model could fit
 
 A model's **complexity**, or flexibility, is how freely it can bend to the data it is
 given. One way to picture it is to count the different sets of data the model could fit
@@ -138,7 +138,7 @@ noise_columns = pd.concat([train[["station_id"]], noise], axis=1)
 
 :::
 
-### Adding columns of random numbers
+### Random columns added to a linear regression
 
 For each split, the regression is fitted with no random columns, then with 5, 10 and on
 up to 400. The last setting adds as many as the fitting stations allow: one coefficient
@@ -269,7 +269,7 @@ fit_panel / new_panel
 
 :::
 
-### A better fit with every useless column
+### Random columns raise R² and the error on new sites
 
 **The fit only improves.** With no random columns, the regression's $R^2$ on the fitting
 stations is `r sprintf("%.3f", none$r_squared)`. Every column added raises it, and with

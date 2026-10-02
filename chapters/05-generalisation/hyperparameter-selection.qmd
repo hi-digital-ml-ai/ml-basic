@@ -44,7 +44,7 @@ the setting that scores best. The test sites are kept for one final score of the
 model. But one set of validation sites is a small sample, and a different set could
 favour a different setting.
 
-## Cross-validation by site
+## Cross-validation gives every site a turn as new data
 
 **k-fold cross-validation** lets the training data take turns as the validation data. It
 cuts the training sites into *k* groups, called **folds**. In each of *k* rounds, one fold
@@ -171,7 +171,7 @@ The `r n_sites` training sites make ten folds of
 `r n_distinct(held_out[[1]]$site_id)`. The folds hold different numbers of stations,
 because some sites were visited more often than others.
 
-### Tuning the node size
+### Every node size scored in every fold
 
 `tune()` marks the setting to be filled in later, and `tune_grid()` fits and scores the
 workflow at every candidate value in every fold: 12 values in ten folds, 120 trees. Each
@@ -285,7 +285,7 @@ ggplot(cv, aes(leaves, mean)) +
 
 :::
 
-### Choosing the node size
+### Many node sizes tie and the simplest is chosen
 
 The lowest cross-validated error is `r f2(best_row$mean)`, for a node size of
 `r best$min_n` and trees of about `r round(best_row$leaves)` leaves, the same setting
@@ -330,7 +330,7 @@ pd.DataFrame({"rule": ["lowest error", "one-standard-error rule"],
 makes a smaller tree. The rule trades a little of the error for a simpler model, on the
 grounds that the more flexible model's lead is within the noise.
 
-### One validation split against cross-validation
+### One validation split gives a noisy verdict
 
 The choice above rests on one cutting of the sites into folds. To see how much a choice
 depends on the sites that happen to be held out, the whole selection is repeated 40 times,

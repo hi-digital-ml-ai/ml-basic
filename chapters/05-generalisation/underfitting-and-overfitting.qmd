@@ -30,7 +30,7 @@ have.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Too rigid and too flexible
+## The U-shaped error curve and its two failures
 
 Before it sees any data, a model is limited to a family of shapes. A straight line can only
 be a straight line; a tree with four leaves can only give four different predictions. How
@@ -45,8 +45,9 @@ wide that family is, is the model's **flexibility**.
 
 As flexibility grows, the training error keeps falling. The error on new data falls while
 the model is still picking up the pattern, reaches a lowest point, then rises as the model
-fits more and more noise. The best setting lies between the two failures, and only the
-error on new data shows where.
+fits more and more noise. Plotted against flexibility, it makes a U, called the
+**U-shaped error curve**. The best setting lies at its lowest point, between the two
+failures, and only the error on new data shows where.
 
 ::: {.diagram}
 ![An underfitted model is too rigid to follow the pattern, so both its errors are high and close together. An overfitted model bends through every point, so its training error is low but its error on new data is high. The training error falls all the way; the error on new data has a lowest point in between.](img/underfitting-and-overfitting.svg){fig-alt="Three small panels show the same eleven points with a hump-shaped pattern. Too rigid, underfitting: a straight line that misses the hump. In between: a smooth curve that follows the hump. Too flexible, overfitting: a zigzag through every point. Below, a wide panel plots two errors against flexibility. The training error falls steadily to zero. The error on new data falls a little, reaches its lowest point, then rises. On the left, the underfitting zone, both errors are high and close together. On the right, the overfitting zone, the training error is low and the error on new data high, with a wide gap between them."}
@@ -141,7 +142,7 @@ def tree_model(min_n):
 
 :::
 
-### Three trees on one input
+### Node size sets how closely a tree follows temperature
 
 To see what the setting does, three trees are fitted to all the training stations with
 temperature as their only input, so that each tree's predictions can be drawn as a line.
@@ -224,7 +225,7 @@ of temperature: it can show only the coarsest rise and fall. The second, with
 and jumps up to meet nearly every large catch. Those catches are mostly luck, and a new
 station at the same temperature is unlikely to repeat them.
 
-### A tree swept from rigid to flexible
+### Sweeping the node size draws the U-shaped curve
 
 Now the trees use all six inputs, as in [Decision trees](../03-supervised-learning/decision-trees.qmd).
 For each split, trees with 12 minimum node sizes, from 300 down to 2, are fitted to the
@@ -341,7 +342,7 @@ sweep |>
 
 :::
 
-### Reading the two ends
+### Too much flexibility costs more than too little
 
 **The rigid end.** With a node size of `r max(sizes)`, the largest here, the tree has
 about `r round(stiff$leaves)` leaves. Its training error is `r f2(stiff$training)` and its
@@ -379,8 +380,8 @@ method, cross-validation, and shows why a single split is not enough.
 - Underfitting shows as two errors that are both high and close together. Overfitting shows
   as a low training error and a much higher error on new data.
 - The training error falls with every gain in flexibility, so it cannot locate the best
-  setting. The error on new data has a lowest point in between, and that point is the
-  target.
+  setting. The error on new data traces the **U-shaped error curve**, and its lowest point,
+  in between, is the target.
 - On the survey, a tree with a station in every leaf did worse on new sites than predicting
   the average, and the cost of too much flexibility was several times the cost of too
   little.

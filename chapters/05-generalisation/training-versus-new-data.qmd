@@ -18,7 +18,7 @@ options(knitr.kable.NA = "")
 set.seed(123)
 ```
 
-## A model's report on itself
+## Training error flatters a model
 
 Every fitted model can report its error on the data it was fitted to. That number comes
 free, and it is easy to read as a measure of how good the model is. This page shows that
@@ -30,7 +30,7 @@ ranked by that number, come out nearly upside down.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Two errors from one model
+## Training error and the error on new data
 
 The **training error** is a model's error on the examples it was fitted to. The **error on
 new data** is its error on examples it has never seen, and it is the one that matters: a
@@ -135,7 +135,7 @@ splits = list(splitter.split(train, groups=train["site_id"]))
 
 :::
 
-### Five models scored twice
+### Each model scored on its own stations and on new sites
 
 The five models run from rigid to flexible: linear regression; a decision tree three
 questions deep; a decision tree grown out until each leaf holds a single station; a random
@@ -286,7 +286,7 @@ results |>
 
 :::
 
-### The ranking turns over
+### The best fits to their own stations do worst on new sites
 
 By training error, the grown-out tree comes first with an RMSE of exactly
 zero, and boosting second at
@@ -304,7 +304,7 @@ A tree with one station in each leaf predicts every fitting station as that stat
 count, so its training error is zero. It has stored the data rather than learned a
 relationship from it, and the stored counts are mostly noise.
 
-### The forest's out-of-bag error
+### The out-of-bag error estimates a forest's error on new sites
 
 A random forest has a third error to offer. Each of its trees is grown on a bootstrap sample
 of the fitting stations, which leaves out about a third of them. Predicting each station
@@ -338,7 +338,7 @@ out-of-bag error is `r f2(at("Random forest", "oob"))`, much closer to its
 from the same site share a tree's sample, but it costs nothing: when a forest is fitted, its
 out-of-bag error is the one to quote, not its training error.
 
-### The gap and the number of sites
+### More sites shrink the gap for regression but not for a forest
 
 The optimism depends on the amount of data as well as on the model. To see this, each split's
 fitting sites are cut down to a few at random, from 5 sites to 80, and two models are fitted

@@ -21,15 +21,16 @@ set.seed(123)
 [The bias–variance trade-off](bias-variance.qmd) found that a random forest cuts variance
 by averaging many trees. Regularisation cuts it another way. It charges the model for
 large coefficients, so the model fits its own data a little worse, and new data better.
-This page introduces the two penalties in common use, ridge regression and the lasso, and
-shows that they can rescue a regression swamped by useless inputs. It also shows what the
-lasso's choice of inputs can and cannot tell you.
+This page sets out the two penalties in common use: ridge regression, met in
+[Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd), and the
+lasso, which that page only mentioned. It shows that they can rescue a regression swamped
+by useless inputs, and what the lasso's choice of inputs can and cannot tell you.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## A penalty on the size of the coefficients
+## Ridge regression shrinks coefficients and the lasso removes them
 
 Least squares chooses the coefficients that make the squared error on the data as small
 as possible, and looks at nothing else. Regularisation adds a second term, a **penalty**
@@ -49,8 +50,8 @@ Two penalties are in common use:
   [Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd) derived it
   from a Normal prior. A squared penalty is heavy on large coefficients and light on
   small ones, so it shrinks every coefficient but sets none to exactly zero.
-- **The lasso** charges the sum of their absolute values, which the same page derived
-  from a Laplace prior. The price of each unit is the same all the way down to zero, so a small
+- **The lasso** charges the sum of their absolute values. The same page noted that it
+  comes from a Laplace prior, which has a sharp peak at zero. The price of each unit is the same all the way down to zero, so a small
   coefficient that does little for the fit is cheaper to drop than to keep. The lasso sets
   such coefficients to exactly zero, and the input is gone from the model.
 
@@ -149,7 +150,7 @@ def inputs_pipeline(model):
 
 :::
 
-### Sweeping the penalty
+### Ridge regression and the lasso against 200 random columns
 
 For each split, ridge regression, the lasso and an elastic net with `mixture = 0.5` are
 fitted to all 204 inputs, and each is scored on the new sites at 61 values of λ. Three
@@ -310,7 +311,7 @@ sweep |>
 
 :::
 
-### Two penalties against no penalty
+### The lasso predicts as well as knowing the real inputs
 
 **Unchecked, the random columns cost dearly.** The regression on all 204 inputs has an
 error on new sites of `r f2(all_inputs)`, worse than predicting the average,
@@ -339,7 +340,7 @@ The best λ was chosen by the same errors the table reports, which flatters it a
 [Hyperparameter selection](hyperparameter-selection.qmd) shows how to choose a setting such
 as λ and still get an honest error.
 
-### The inputs the lasso kept
+### The lasso's list of inputs is not evidence of what matters
 
 It is tempting to read the inputs the lasso keeps as the ones that matter. Here we know
 which columns are random, so we can check. The lasso is fitted to each split's fitting
