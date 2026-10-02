@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="How simulating from a fitted model tests its distribution. Fitted model: the model gives each station an expected count, drawn as bars, and says how counts scatter around it. Simulated surveys: each station gets a random count from that distribution, and this is repeated to make many surveys, shown as a grid of counts with the empty stations shaded. Compare: a feature such as the number of empty stations is counted in each simulated survey, giving a histogram, and the real survey's value is a dashed line far to its right, so the model fails. A note says a model that could have produced the survey makes surveys that look like it.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .cell { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Simulating from a fitted model</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Fitted model</text>
+<text class="lab" x="22" y="114" fill="#0072B2">AN EXPECTED COUNT PER STATION</text>
+<text class="body" x="22" y="348">The model gives each</text>
+<text class="body" x="22" y="372">station an expected count,</text>
+<text class="body" x="22" y="396">and says how counts scatter.</text>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Simulated surveys</text>
+<text class="lab" x="345" y="114" fill="#D55E00">DRAW NEW COUNTS, MANY TIMES</text>
+<text class="body" x="345" y="348">Each station gets a random</text>
+<text class="body" x="345" y="372">count from that distribution;</text>
+<text class="body" x="345" y="396">repeat for many surveys.</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Compare</text>
+<text class="lab" x="668" y="114" fill="#009E73">THE REAL SURVEY AMONG THEM</text>
+<text class="body" x="668" y="348">Count a feature in each,</text>
+<text class="body" x="668" y="372">here the empty stations. Far</text>
+<text class="body" x="668" y="396">outside: the model fails.</text>
+<path class="ax" d="M34 150 V295 H266"/>
+<rect x="40.0" y="285.5" width="17.0" height="9.5" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="69.0" y="256.9" width="17.0" height="38.1" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="98.0" y="214.0" width="17.0" height="81.0" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="127.0" y="275.9" width="17.0" height="19.1" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="156.0" y="167.9" width="17.0" height="127.1" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="185.0" y="288.6" width="17.0" height="6.4" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="214.0" y="244.2" width="17.0" height="50.8" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="243.0" y="268.0" width="17.0" height="27.0" fill="#0072B2" fill-opacity="0.75"/>
+<text class="sm" x="266" y="315" text-anchor="end">stations</text>
+<text class="sm" x="26" y="154" text-anchor="end" transform="rotate(-90 26 154)"></text>
+<text class="sm" x="383" y="160" text-anchor="end">survey 1</text>
+<rect x="393" y="138" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="403.5" y="158" text-anchor="middle">0</text>
+<rect x="417" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="427.5" y="158" text-anchor="middle">2</text>
+<rect x="441" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="451.5" y="158" text-anchor="middle">3</text>
+<rect x="465" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="475.5" y="158" text-anchor="middle">2</text>
+<rect x="489" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="499.5" y="158" text-anchor="middle">10</text>
+<rect x="513" y="138" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="523.5" y="158" text-anchor="middle">0</text>
+<rect x="537" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="547.5" y="158" text-anchor="middle">3</text>
+<rect x="561" y="138" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="571.5" y="158" text-anchor="middle">2</text>
+<text class="sm" x="383" y="194" text-anchor="end">survey 2</text>
+<rect x="393" y="172" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="403.5" y="192" text-anchor="middle">0</text>
+<rect x="417" y="172" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="427.5" y="192" text-anchor="middle">1</text>
+<rect x="441" y="172" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="451.5" y="192" text-anchor="middle">6</text>
+<rect x="465" y="172" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="475.5" y="192" text-anchor="middle">0</text>
+<rect x="489" y="172" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="499.5" y="192" text-anchor="middle">6</text>
+<rect x="513" y="172" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="523.5" y="192" text-anchor="middle">0</text>
+<rect x="537" y="172" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="547.5" y="192" text-anchor="middle">3</text>
+<rect x="561" y="172" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="571.5" y="192" text-anchor="middle">0</text>
+<text class="sm" x="383" y="228" text-anchor="end">survey 3</text>
+<rect x="393" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="403.5" y="226" text-anchor="middle">1</text>
+<rect x="417" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="427.5" y="226" text-anchor="middle">2</text>
+<rect x="441" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="451.5" y="226" text-anchor="middle">1</text>
+<rect x="465" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="475.5" y="226" text-anchor="middle">2</text>
+<rect x="489" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="499.5" y="226" text-anchor="middle">5</text>
+<rect x="513" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="523.5" y="226" text-anchor="middle">1</text>
+<rect x="537" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="547.5" y="226" text-anchor="middle">1</text>
+<rect x="561" y="206" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="571.5" y="226" text-anchor="middle">2</text>
+<text class="sm" x="383" y="262" text-anchor="end">survey 4</text>
+<rect x="393" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="403.5" y="260" text-anchor="middle">1</text>
+<rect x="417" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="427.5" y="260" text-anchor="middle">1</text>
+<rect x="441" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="451.5" y="260" text-anchor="middle">6</text>
+<rect x="465" y="240" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="475.5" y="260" text-anchor="middle">0</text>
+<rect x="489" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="499.5" y="260" text-anchor="middle">11</text>
+<rect x="513" y="240" width="21" height="29" rx="3" fill="#D55E00" fill-opacity="0.25" stroke="#c9d3da"/>
+<text class="cell" x="523.5" y="260" text-anchor="middle">0</text>
+<rect x="537" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="547.5" y="260" text-anchor="middle">3</text>
+<rect x="561" y="240" width="21" height="29" rx="3" fill="#ffffff" fill-opacity="1" stroke="#c9d3da"/>
+<text class="cell" x="571.5" y="260" text-anchor="middle">1</text>
+<text class="sm" x="489" y="288" text-anchor="middle">… and so on, 500 times</text>
+<path class="ax" d="M680 150 V295 H912"/>
+<rect x="692" y="285.5" width="12" height="9.5" fill="#009E73" fill-opacity="0.7"/>
+<rect x="705" y="266.4" width="12" height="28.6" fill="#009E73" fill-opacity="0.7"/>
+<rect x="718" y="233.1" width="12" height="61.9" fill="#009E73" fill-opacity="0.7"/>
+<rect x="731" y="195.0" width="12" height="100.0" fill="#009E73" fill-opacity="0.7"/>
+<rect x="744" y="176.0" width="12" height="119.0" fill="#009E73" fill-opacity="0.7"/>
+<rect x="757" y="199.8" width="12" height="95.2" fill="#009E73" fill-opacity="0.7"/>
+<rect x="770" y="237.9" width="12" height="57.1" fill="#009E73" fill-opacity="0.7"/>
+<rect x="783" y="266.4" width="12" height="28.6" fill="#009E73" fill-opacity="0.7"/>
+<rect x="796" y="285.5" width="12" height="9.5" fill="#009E73" fill-opacity="0.7"/>
+<line x1="882" y1="154" x2="882" y2="295" stroke="#1f2933" stroke-width="2.4" stroke-dasharray="6 4"/>
+<text class="sm" x="876" y="162" text-anchor="end">real survey</text>
+<text class="sm" x="750.5" y="162" text-anchor="middle">simulated</text>
+<text class="sm" x="912" y="315" text-anchor="end">empty stations</text>
+<text class="note" x="470" y="452" text-anchor="middle">A model that could have produced the survey makes surveys that look like it.</text>
+</svg>

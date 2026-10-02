@@ -1,6 +1,6 @@
 ---
 title: "Distributional assumptions"
-description: "What your model believes about the spread of the data, and what it costs when that belief is wrong by a factor of four."
+description: "A count model assumes how widely counts scatter around its predictions. Simulating surveys from the fitted model shows whether it could have produced the real one, and a model that could not is sure of effects the data do not support."
 order: 2
 categories: [assumptions]
 ---
@@ -10,309 +10,431 @@ categories: [assumptions]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(MASS, include.only = "glm.nb")
+library(poissonreg)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(603)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## A technical detail that is a scientific claim
+## Every count model claims how widely counts scatter
 
-Choosing `family = poisson` looks like a technical detail. It is a scientific claim: that at any
-station with expected count $\mu$, the variance of what you actually catch is also $\mu$. For a
-station expecting 4 individuals, that says the counts you would get on repeat visits have a
-standard deviation of 2.
-
-Catch data almost never behaves that way. Animals aggregate, so the spread is far wider than the
-mean implies. When it is, the model still fits, still reports coefficients, and still prints
-standard errors, which are too small by a factor this page measures.
-
-[Section 4](../04-how-algorithms-learn/maximum-likelihood.qmd) established that the distribution
-*is* the loss function. This page is what happens when you get it wrong.
+[Count regression](../03-supervised-learning/count-regression.qmd) fitted Poisson
+regression to the survey and found the counts varying more than Poisson allows.
+[Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) showed why that
+matters: the distribution a model assumes is what its fit is built on, and its standard
+errors come from it. This page adds a check that works for any model with a
+distribution, **simulating from the fitted model**, and shows what the wrong
+distribution costs: a model that is sure of an effect the data do not support.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-Every likelihood-based model states a relationship between the mean and the variance. That
-relationship is the assumption; everything else follows from it.
+## Each distribution ties the spread to the mean
 
-| Family | Variance at mean μ | Suits | Fails when |
-| --- | --- | --- | --- |
-| Normal | $\sigma^2$, the same everywhere | Lengths, temperatures, log-ratios | Spread grows with the mean; response bounded |
-| Poisson | $\mu$ | Counts of independent, unclustered events | Animals aggregate, nearly always |
-| Negative binomial | $\mu + \mu^2/\theta$ | Overdispersed counts | Excess zeros beyond even this |
-| Binomial | $\mu(1-\mu)$ | Presence/absence, proportions | Trials not independent |
-| Gamma | $\mu^2 / k$ | Positive continuous: biomass, concentration | Exact zeros present |
+A model predicts an expected value at each station. Its distribution says how far the
+real values scatter around it, and for most distributions that scatter depends on the
+expected value itself.
 
-The negative binomial is the workhorse for marine counts because its extra parameter $\theta$
-controls exactly the thing that goes wrong: as $\theta \to \infty$ it becomes Poisson, and as
-$\theta$ falls the variance grows quadratically with the mean, which is what aggregation looks
-like.
+| Distribution | Variance at expected value μ | Used for |
+| --- | --- | --- |
+| Normal | The same everywhere | Linear regression |
+| Poisson | μ, the expected value itself | Poisson regression |
+| Negative binomial | μ + μ²/θ, more than Poisson | Counts of animals that gather in groups |
+| Bernoulli | μ(1 − μ), with μ a probability | Logistic regression, presence and absence |
 
-::: {.callout-note}
-Machine-learning models mostly make no distributional assumption; a random forest states
-no probability model for the response. That is a genuine freedom, and it is why they
-produce no standard errors, no AIC and no confidence intervals. The assumption has not
-disappeared, though: it has moved into the [loss
-function](../04-how-algorithms-learn/loss-functions.qmd). Fitting a forest under squared
-error is assuming constant variance just as surely as `lm()` does; it simply never says
-so.
+The choice is a claim about the animals. Poisson says that at a station expecting 4
+animals, repeat hauls would vary with a standard deviation of 2. Animals that school or
+gather on patches of food vary far more than that, and the negative binomial's $\theta$
+(theta) allows for it: the smaller $\theta$, the wider the scatter.
+
+## Simulated surveys test a fitted model's distribution
+
+A fitted count model gives each station an expected count and a distribution around
+it. Drawing one random count for each station from that distribution gives a survey the
+model could have produced. Repeat that many times, and each simulated survey can be
+compared with the real one.
+
+The comparison needs a feature to count. Two are easy to read and matter to a
+biologist: the number of empty stations, and the largest catch. If the real survey's
+value sits far outside the range of the simulated ones, the model could not have
+produced the survey, whatever its predictions look like.
+
+::: {.diagram}
+![A fitted model gives each station an expected count and a distribution around it. Drawing a random count for every station, many times over, gives simulated surveys. A feature such as the number of empty stations is counted in each, and the real survey's value is compared with the range of simulated ones.](img/simulate.svg){fig-alt="Three cards. Fitted model, an expected count per station: bars of different heights for eight stations; the model gives each station an expected count and says how counts scatter. Simulated surveys, draw new counts many times: a grid of counts, one row for each of four surveys and one column for each station, with the zeros shaded, and the words and so on, 500 times. Compare, the real survey among them: a histogram of the number of empty stations in the simulated surveys, with a dashed line for the real survey far to its right; far outside means the model fails. A note says a model that could have produced the survey makes surveys that look like it."}
 :::
 
 ## Worked example
+
+The data, the split by site and the recipe are those of
+[Count regression](../03-supervised-learning/count-regression.qmd): the survey's inputs,
+with squared depth and temperature, sand as the baseline seabed and spring as the
+baseline season. Poisson regression and the negative binomial model are fitted to the
+training stations.
+
+### Preparing the data
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, substrate, season) |>
-  drop_na()
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
 
-model_formula <- abundance ~ poly(depth_m, 2, raw = TRUE) +
-  poly(temperature_c, 2, raw = TRUE) + log1p(chlorophyll_mg_m3) + substrate
-
-gaussian_fit <- lm(model_formula, data = d)
-poisson_fit  <- glm(model_formula, data = d, family = poisson)
-nb_fit       <- MASS::glm.nb(model_formula, data = d)
-```
-
-### Testing the Poisson assumption
-
-```{r}
-#| label: dispersion
-c(`deviance / df`      = poisson_fit$deviance / poisson_fit$df.residual,
-  `Pearson chi2 / df`  = sum(residuals(poisson_fit, "pearson")^2) / poisson_fit$df.residual,
-  `NB theta`           = nb_fit$theta,
-  `NB theta SE`        = nb_fit$SE.theta) |>
-  round(3)
-```
-
-Both dispersion statistics should be near 1 if the Poisson assumption holds. They are 3.5 and
-3.7. The variance in these counts is nearly four times what Poisson allows.
-
-The negative binomial's $\theta$ comes back as **1.43 ± 0.115** against the simulated
-truth of **1.5**, a good recovery and a direct check on a claim made in [section
-4](../04-how-algorithms-learn/maximum-likelihood.qmd). There, a reduced model with only
-chlorophyll and a depth quadratic estimated $\theta = 1.06$, and the page argued that part
-of the apparent overdispersion was really missing mean structure. Adding temperature and
-substrate moved the estimate from 1.06 to 1.43. The argument holds.
-
-```{r}
-#| label: fig-mean-variance
-#| fig-cap: "Observed mean and variance of abundance within twelve bins of fitted value, against what each family assumes. Normal assumes a flat line; Poisson assumes the diagonal; the negative binomial curve bends upward. The observed points follow the negative-binomial curve and sit far above the Poisson line at every mean."
-#| fig-alt: "A log-log scatter of within-bin variance against within-bin mean count, with twelve points rising from bottom left to top right, from a mean near 0.5 up to a mean near 12. Three reference curves are drawn: a flat horizontal line for the Normal assumption at about 20, a straight diagonal for Poisson where variance equals mean, and a curve for the negative binomial that starts on the diagonal at low means and bends above it, reaching about 110 at a mean of 12. The observed points lie close to the negative-binomial curve and well above the Poisson diagonal everywhere, by roughly a factor of three at the left and eight at the right."
-#| fig-width: 7
-#| fig-height: 4.4
-binned <- tibble(fitted = fitted(poisson_fit), observed = d$abundance) |>
-  mutate(bin = ntile(fitted, 12)) |>
-  summarise(mean_count = mean(observed), variance = var(observed), .by = bin)
-
-curves <- tibble(mu = seq(0.3, 14, length.out = 200)) |>
-  mutate(
-    Normal             = var(residuals(gaussian_fit)),
-    Poisson            = mu,
-    `Negative binomial` = mu + mu^2 / nb_fit$theta
-  ) |>
-  pivot_longer(-mu, names_to = "assumption", values_to = "variance")
-
-ggplot(binned, aes(mean_count, variance)) +
-  geom_line(data = curves, aes(mu, variance, colour = assumption), linewidth = 1) +
-  geom_point(size = 2.6, colour = "grey15") +
-  scale_x_log10() +
-  scale_y_log10() +
-  labs(x = "Mean count within bin (log scale)",
-       y = "Variance within bin (log scale)", colour = "Assumed",
-       title = "What each family believes about spread",
-       subtitle = "Points: twelve bins of the coastal survey, by fitted value")
-```
-
-### Simulating from the fitted model
-
-The most direct test of a distributional assumption is to simulate from the fitted model and
-compare what comes out to what you actually caught. Two features are easy to check and hard to
-fake: how many empty stations, and how big the biggest catch is.
-
-```{r}
-#| label: predictive-check
-set.seed(1)
-replicates <- 500
-
-simulate_from <- function(draw) {
-  map_dfr(seq_len(replicates), \(i) {
-    y <- draw()
-    tibble(zeros = sum(y == 0), largest = max(y))
-  })
-}
-
-poisson_sims <- simulate_from(\() rpois(nrow(d), fitted(poisson_fit)))
-nb_sims      <- simulate_from(\() rnbinom(nrow(d), mu = fitted(nb_fit),
-                                          size = nb_fit$theta))
-
-bind_rows(
-  tibble(model = "Observed survey", zeros = sum(d$abundance == 0),
-         zeros_lo = NA, zeros_hi = NA,
-         largest = max(d$abundance), largest_lo = NA, largest_hi = NA),
-  tibble(model = "Poisson", zeros = mean(poisson_sims$zeros),
-         zeros_lo = quantile(poisson_sims$zeros, 0.025),
-         zeros_hi = quantile(poisson_sims$zeros, 0.975),
-         largest = mean(poisson_sims$largest),
-         largest_lo = quantile(poisson_sims$largest, 0.025),
-         largest_hi = quantile(poisson_sims$largest, 0.975)),
-  tibble(model = "Negative binomial", zeros = mean(nb_sims$zeros),
-         zeros_lo = quantile(nb_sims$zeros, 0.025),
-         zeros_hi = quantile(nb_sims$zeros, 0.975),
-         largest = mean(nb_sims$largest),
-         largest_lo = quantile(nb_sims$largest, 0.025),
-         largest_hi = quantile(nb_sims$largest, 0.975))
+curve_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = train
 ) |>
-  mutate(across(where(is.numeric), \(x) round(x, 1)))
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand") |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+
+poisson_fit <- workflow(curve_recipe, poisson_reg()) |> fit(train)
+
+prepared <- prep(curve_recipe)
+nb_fit <- MASS::glm.nb(abundance ~ ., data = bake(prepared, new_data = NULL))
 ```
 
-```{r}
-#| label: fig-ppc
-#| fig-cap: "Number of empty stations, and size of the largest catch, in 500 datasets simulated from each fitted model. The vertical line is the survey's actual value. The Poisson model cannot produce either: it expects about 68 empty stations where 159 were observed, and its largest catch never exceeds 24 where the survey caught 40."
-#| fig-alt: "Two panels of overlaid histograms, one for empty stations and one for the largest catch, each with a Poisson distribution in one colour and a negative binomial in another, plus a dashed vertical line at the observed value. In the left panel the Poisson histogram sits between 55 and 82 empty stations while the observed line stands at 159, far to the right of it; the negative binomial histogram is centred near 155 and contains the line. In the right panel the Poisson histogram spans 16 to 24 individuals with the observed line at 40 well outside it; the negative binomial histogram spans about 27 to 65 and contains the line."
-#| fig-width: 8
-#| fig-height: 3.6
-sims <- bind_rows(
-  poisson_sims |> mutate(model = "Poisson"),
-  nb_sims      |> mutate(model = "Negative binomial")
-)
+## Python
 
-p1 <- ggplot(sims, aes(zeros, fill = model)) +
-  geom_histogram(bins = 40, alpha = 0.7, position = "identity") +
-  geom_vline(xintercept = sum(d$abundance == 0), linetype = "dashed") +
-  labs(x = "Stations with zero catch", y = NULL, fill = NULL,
-       title = "Empty stations", subtitle = "Dashed: 159 observed")
+```{python}
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
 
-p2 <- ggplot(sims, aes(largest, fill = model)) +
-  geom_histogram(bins = 40, alpha = 0.7, position = "identity") +
-  geom_vline(xintercept = max(d$abundance), linetype = "dashed") +
-  labs(x = "Largest catch in the survey", y = NULL, fill = NULL,
-       title = "Biggest catch", subtitle = "Dashed: 40 observed")
+from mlbasic_data import load_coastal_survey_clean
 
-p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+survey = load_coastal_survey_clean()
+
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows]
+
+categorical = ["substrate", "season"]
+predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
+              "salinity_psu"] + categorical
+
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical",
+     OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+     categorical),
+])
+
+prepared = curve_recipe.fit(train[predictors])
+design = sm.add_constant(pd.DataFrame(
+    prepared.transform(train[predictors]),
+    columns=prepared.get_feature_names_out(), index=train.index))
+
+poisson_fit = sm.GLM(train["abundance"], design,
+                     family=sm.families.Poisson()).fit()
+nb_fit = sm.NegativeBinomial(train["abundance"], design).fit(
+    method="newton", disp=0)
 ```
 
-### The cost to the conclusions
-
-```{r}
-#| label: se-comparison
-poisson_coefs <- summary(poisson_fit)$coefficients
-nb_coefs      <- summary(nb_fit)$coefficients
-
-tibble(
-  term            = rownames(poisson_coefs),
-  `Poisson SE`    = poisson_coefs[, 2],
-  `NB SE`         = nb_coefs[, 2],
-  `SE ratio`      = nb_coefs[, 2] / poisson_coefs[, 2],
-  `Poisson p`     = poisson_coefs[, 4],
-  `NB p`          = nb_coefs[, 4]
-) |>
-  mutate(across(where(is.numeric), \(x) round(x, 4)))
-```
-
-## A process that could not have produced the data
-
-**The Poisson model cannot have generated this survey.** It expects 68 empty stations,
-with a 95% range of 55 to 82. The survey has **159**. Its largest simulated catch falls
-between 16 and 24; the survey caught **40**. These are not marginal discrepancies to weigh
-against a *p*-value; they are a demonstration that the assumed process could not have
-produced the data.
-
-The negative binomial passes both checks: 137–175 empty stations against 159 observed, and a
-largest catch of 27–65 against 40.
-
-**The standard errors were too small by about a factor of two.** Averaged across terms, the
-negative binomial's standard errors are **1.90 times** the Poisson's, against a theoretical
-$\sqrt{3.73} = 1.93$. The match is close enough to treat as exact: under overdispersion, Poisson
-standard errors are too small by roughly the square root of the dispersion ratio.
-
-**Which changes the findings, not just the intervals.** Three terms cross from convincing to
-unconvincing:
-
-| Term | Poisson *p* | NB *p* |
-| --- | --- | --- |
-| Depth (linear) | 0.0001 | 0.166 |
-| Mud substrate | 0.0003 | 0.129 |
-| Sand substrate | 0.0026 | 0.068 |
-
-Under the wrong distribution, "depth matters (*p* = 0.0001)" is a sentence you could write
-in good faith. It is wrong. The point estimates barely moved, since the coefficients are
-similar in both models, so a reader comparing effect sizes would see nothing amiss.
-
-**And the Normal model predicts impossible catches.**
-
-```{r}
-#| label: gaussian-failure
-c(`negative predictions from lm()` = sum(fitted(gaussian_fit) < 0),
-  stations = nrow(d),
-  `AIC, Poisson` = AIC(poisson_fit),
-  `AIC, negative binomial` = AIC(nb_fit)) |>
-  round(1)
-```
-
-`lm()` on these counts gives negative predictions at **29 of 741 stations**, because the
-Normal distribution it assumes runs to −∞ and the loss built from it cannot object. This
-is the same failure [section
-3](../03-supervised-learning/linear-and-polynomial-regression.qmd) opened with, now with a
-name attached to it.
-
-::: {.callout-warning}
-Do not compare a Gaussian AIC with a Poisson or negative-binomial AIC. The Gaussian
-likelihood is a probability *density* and the count likelihoods are probability *masses*;
-the numbers are on different scales and the comparison is meaningless even though R will
-happily print it. Poisson against negative binomial is a fair comparison, here 4411
-against 3475, because both are likelihoods for the same counts.
 :::
 
-## Limits of a dispersion statistic
+### The Poisson model makes far too few empty stations
 
-**Overdispersion is not the only way counts misbehave.** Zero inflation is a separate
-problem: two processes, one deciding whether the species is present at all and one
-deciding how many. A negative binomial absorbs *some* excess zeros through its variance,
-and passed the check here, but where a species is genuinely absent from half the shelf a
-hurdle or zero-inflated model is the right structure, and its two parts answer different
-ecological questions.
+Each model's expected count at every training station is the starting point. The
+negative binomial also needs its $\theta$. Five hundred surveys are drawn from each
+model, and each is reduced to its number of empty stations and its largest catch.
 
-**A dispersion statistic does not tell you what is wrong.** Overdispersion has many
-causes: aggregation, a missing covariate, unmodelled spatial structure, mis-specified
-nonlinearity, and the same ratio of 3.7 arises from all of them. This page's own numbers
-show it: the estimate of $\theta$ moved from 1.06 to 1.43 purely by improving the mean
-model. Fix the mean structure first, then decide what dispersion remains.
+::: {.panel-tabset group="language"}
 
-**Quasi-Poisson is not a distribution.** `family = quasipoisson` scales the standard
-errors by the dispersion without specifying a probability model. It is a reasonable quick
-correction and it gives you no likelihood, so no AIC, no simulation, and none of the
-predictive checks on this page.
+## R
 
-**None of this applies to tree-based models, and that is not a reprieve.** A random forest
-has no distributional assumption to violate, so no diagnostic here will fire. It will
-still predict the conditional mean under squared error, still be pulled about by the
-largest catches, and still give you nothing to use for an interval.
+```{r}
+#| label: simulate
+poisson_mean <- predict(poisson_fit, train)$.pred
+nb_mean <- fitted(nb_fit)
 
-::: {.callout-tip}
+simulate <- function(draw, times = 500) {
+  map(seq_len(times), \(i) {
+    counts <- draw()
+    tibble(empty = sum(counts == 0), largest = max(counts))
+  }) |>
+    list_rbind()
+}
+
+sims <- bind_rows(
+  "Poisson regression" =
+    simulate(\() rpois(nrow(train), poisson_mean)),
+  "Negative binomial model" =
+    simulate(\() rnbinom(nrow(train), mu = nb_mean, size = nb_fit$theta)),
+  .id = "model"
+)
+
+real <- tibble(feature = c("empty", "largest"),
+               real = c(sum(train$abundance == 0), max(train$abundance)))
+
+# the middle 95% of the simulated surveys, beside the real one
+checks <- sims |>
+  pivot_longer(c(empty, largest), names_to = "feature") |>
+  summarise(low = quantile(value, 0.025), high = quantile(value, 0.975),
+            .by = c(feature, model)) |>
+  left_join(real, by = "feature")
+checks |> mutate(across(c(low, high), round))
+```
+
+## Python
+
+```{python}
+rng = np.random.default_rng(1)
+counts = train["abundance"].to_numpy()
+poisson_mean = poisson_fit.fittedvalues.to_numpy()
+nb_mean = nb_fit.predict(design).to_numpy()
+theta = 1 / nb_fit.params["alpha"]
+
+def simulate(draw, times=500):
+    surveys = [draw() for _ in range(times)]
+    return pd.DataFrame({"empty": [(s == 0).sum() for s in surveys],
+                         "largest": [s.max() for s in surveys]})
+
+sims = pd.concat({
+    "Poisson regression": simulate(lambda: rng.poisson(poisson_mean)),
+    "Negative binomial model": simulate(
+        lambda: rng.negative_binomial(theta, theta / (theta + nb_mean))),
+}, names=["model"]).reset_index(level="model")
+
+real = {"empty": (counts == 0).sum(), "largest": counts.max()}
+
+# the middle 95% of the simulated surveys, beside the real one
+checks = (sims.melt(id_vars="model", var_name="feature")
+          .groupby(["feature", "model"], sort=False)["value"]
+          .quantile([0.025, 0.975]).unstack()
+          .set_axis(["low", "high"], axis=1).reset_index())
+checks["real"] = checks["feature"].map(real)
+checks.round()
+```
+
+:::
+
+```{r}
+#| label: check-numbers
+#| include: false
+check <- \(f, m) filter(checks, feature == f, model == m)
+poisson_empty <- check("empty", "Poisson regression")
+nb_empty <- check("empty", "Negative binomial model")
+poisson_largest <- check("largest", "Poisson regression")
+nb_largest <- check("largest", "Negative binomial model")
+range_of <- \(row) paste0(round(row$low), "–", round(row$high))
+```
+
+The training stations include `r poisson_empty$real` empty ones out of
+`r nrow(train)`. Surveys simulated from the Poisson model have
+`r range_of(poisson_empty)`. Their largest catch runs from
+`r range_of(poisson_largest)` animals, where the real survey's was
+`r poisson_largest$real`. @fig-check shows the whole spread.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-check
+#| fig-cap: "The number of empty stations and the largest catch in 500 surveys simulated from each fitted model, against the real survey (dashed). The Poisson model's surveys have far fewer empty stations and smaller largest catches than the real one. The negative binomial model's surveys contain the real values."
+#| fig-alt: !expr 'glue::glue("Two panels of overlapping histograms, one colour for surveys simulated from Poisson regression and one for the negative binomial model, with a dashed vertical line for the real survey. Left, empty stations: the Poisson histogram lies between about {round(poisson_empty$low)} and {round(poisson_empty$high)}, far to the left of the real value of {poisson_empty$real}; the negative binomial histogram spreads from about {round(nb_empty$low)} to {round(nb_empty$high)} and contains it. Right, the largest catch: the Poisson histogram is narrow, ending near {round(poisson_largest$high)}, with the real value of {poisson_largest$real} at or beyond its edge; the negative binomial histogram is wide, with a long tail to the right, and contains the real value.")'
+#| fig-width: 8
+#| fig-height: 3.8
+check_plot <- function(which, x_label) {
+  ggplot(sims, aes(.data[[which]], fill = model)) +
+    geom_histogram(bins = 40, alpha = 0.7, position = "identity") +
+    geom_vline(xintercept = real$real[real$feature == which],
+               linetype = "dashed", linewidth = 0.8) +
+    scale_fill_manual(values = c(
+      "Poisson regression" = ml_palette[["vermilion"]],
+      "Negative binomial model" = ml_palette[["blue"]])) +
+    labs(x = x_label, y = "Simulated surveys", fill = NULL)
+}
+
+check_plot("empty", "Empty stations") +
+  check_plot("largest", "Largest catch") +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+:::
+
+The Poisson model fails both checks. Its distribution allows too little scatter, so
+the counts stay near their expected values: few stations come up empty and none comes
+up very large. The real survey has both, because animals gather in groups. The
+negative binomial model passes: its surveys have `r range_of(nb_empty)` empty stations
+and a largest catch of `r range_of(nb_largest)`, and the real survey sits inside both
+ranges.
+
+Both models predict much the same expected counts, as
+[Count regression](../03-supervised-learning/count-regression.qmd) found. The check
+tells them apart by their scatter, which the predictions alone never show.
+
+## The Poisson model is sure of a summer effect the data do not support
+
+A distribution that allows too little scatter makes the model too sure of everything it
+estimates. The table below shows each seabed and season multiplier with its 95%
+confidence interval, as on
+[Count regression](../03-supervised-learning/count-regression.qmd). An interval that
+stays on one side of 1 says the data can tell that level from the baseline; this is
+the same as a *p*-value below 0.05.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: multipliers
+multipliers <- function(fitted) {
+  tidy(fitted, conf.int = TRUE, exponentiate = TRUE) |>
+    filter(str_detect(term, "substrate|season")) |>
+    transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
+              multiplier = estimate,
+              conf_low = conf.low, conf_high = conf.high)
+}
+
+intervals <- bind_rows("Poisson regression" = multipliers(poisson_fit),
+                       "Negative binomial model" = multipliers(nb_fit),
+                       .id = "model") |>
+  arrange(term) |>
+  relocate(term)
+intervals |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+def multipliers(fitted):
+    interval = np.exp(fitted.conf_int())
+    table = pd.DataFrame({
+        "term": fitted.params.index.str.replace(
+            r"^categorical__(substrate|season)_", r"\1: ", regex=True),
+        "multiplier": np.exp(fitted.params).to_numpy(),
+        "conf_low": interval[0].to_numpy(),
+        "conf_high": interval[1].to_numpy(),
+    })
+    keep = table["term"].str.contains("substrate|season")
+    return table[keep].reset_index(drop=True)
+
+intervals = (pd.concat({"Poisson regression": multipliers(poisson_fit),
+                        "Negative binomial model": multipliers(nb_fit)},
+                       names=["model"])
+             .reset_index(level="model")
+             .sort_values("term", kind="stable")
+             .reset_index(drop=True))
+intervals[["term", "model", "multiplier", "conf_low", "conf_high"]].round(2)
+```
+
+:::
+
+```{r}
+#| label: interval-numbers
+#| include: false
+two <- \(x) format(round(x, 2), nsmall = 2)
+interval_of <- \(low, high) paste0(two(low), " to ", two(high))
+row_of <- \(t, m) filter(intervals, term == t, model == m)
+summer <- row_of("season: summer", "Poisson regression")
+summer_nb <- row_of("season: summer", "Negative binomial model")
+rock <- row_of("substrate: rock", "Poisson regression")
+rock_nb <- row_of("substrate: rock", "Negative binomial model")
+se_ratio <- mean(summary(nb_fit)$coefficients[, 2] /
+                   summary(extract_fit_engine(poisson_fit))$coefficients[, 2])
+```
+
+Under the Poisson model, summer stations hold `r two(summer$multiplier)` times
+the count of spring ones, with an interval from
+`r interval_of(summer$conf_low, summer$conf_high)`. Taken at face value,
+the data show a summer effect beyond what temperature and chlorophyll explain. The
+negative binomial model's estimate is close, `r two(summer_nb$multiplier)`, but its
+interval runs from `r interval_of(summer_nb$conf_low, summer_nb$conf_high)` and
+includes 1: allowing for the real scatter, the data cannot tell summer from spring.
+Averaged over the coefficients, its standard errors are
+`r format(round(se_ratio, 1), nsmall = 1)` times the Poisson model's.
+
+The negative binomial model has it right. The simulation gave season no effect of its
+own: season changes the water's temperature and chlorophyll, and both are already in
+the model. A report built on the Poisson model would have described a seasonal effect
+that is not there, and nothing in its predictions or its coefficients would have
+warned of it.
+
+Honest intervals have a price. The simulation did make rocky ground poorer for the
+species, and the Poisson model's interval for rock,
+`r interval_of(rock$conf_low, rock$conf_high)`, stays below 1. The
+negative binomial model's,
+`r interval_of(rock_nb$conf_low, rock_nb$conf_high)`, does not, as
+[Count regression](../03-supervised-learning/count-regression.qmd) found. Gravel, which
+the simulation made a little richer, goes the same way. Allowing for the scatter, this
+many stations cannot pin these effects down; that is what the data support.
+
+## A passed check is not a correct model
+
+The negative binomial model passed both checks, but a check only tests the features it
+counts. Three limits follow.
+
+- **Choose features that matter to the question.** Empty stations matter for where a
+  species occurs, the largest catch for how much it can aggregate. A species absent
+  from part of the shelf can have more empty stations than even a negative binomial
+  makes; models with a separate part for presence and absence exist for that case.
+- **The simulation treats every station as independent.** Each count is drawn on its
+  own, yet stations at the same site share their water and seabed. The negative
+  binomial's intervals rest on that independence too, so they may still be too
+  narrow; [Independence of observations](independence-of-observations.qmd) measures by
+  how much.
+- **Extra scatter can be missing structure.** A missing input, or a curve the model
+  cannot bend to, leaves scatter that the negative binomial will absorb into $\theta$.
+  [Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) asked its
+  readers to add temperature and watch $\theta$ change. Improve the expected counts
+  first, then judge the scatter that remains.
+
+## Models without a distribution still assume a spread
+
+A random forest or a boosted model states no distribution, so it cannot be simulated
+from and gives no confidence intervals. The assumption has not gone; it has moved into
+the loss. Squared error is the loss that the Normal distribution gives, as
+[Maximum likelihood](../04-how-algorithms-learn/maximum-likelihood.qmd) showed, and it
+treats a miss of 10 animals at a station expecting 30 as just as bad as one at a station
+expecting 2. For counts whose spread grows with their size, a Poisson loss, which tree
+ensembles such as `xgboost` also offer, matches the data better.
+
 ## Key points
 
-- A distribution family is a claim about how spread relates to mean. `family = poisson` asserts
-  that variance equals the mean; on this survey the ratio is **3.7**.
-- The most convincing check is **simulating from the fitted model**. Poisson produced 55–82 empty
-  stations against 159 observed and never a catch near 40; the negative binomial contained both.
-- Overdispersion shrinks standard errors by roughly $\sqrt{\text{dispersion}}$, here **1.90×**
-  observed against 1.93 predicted, and that moved three terms from *p* < 0.01 to *p* > 0.05.
-- Point estimates barely change, so nothing in the coefficient table reveals the problem.
-- Machine-learning models make no distributional assumption and therefore give no distributional
-  diagnostics. The assumption has moved into the loss, not disappeared.
-
+::: {.key-points}
+- A distribution says how widely real values scatter around the expected value. Poisson
+  says the variance equals the expected count; animals that gather in groups vary more.
+- **Simulating from the fitted model** tests that claim: draw many surveys from the
+  model and see whether the real one looks like them.
+- Surveys from the Poisson model had `r range_of(poisson_empty)` empty stations against
+  `r poisson_empty$real` in the real one. The negative binomial model's contained the
+  real survey's empty stations and largest catch.
+- The Poisson model was sure of a summer effect that the simulation never put there;
+  the negative binomial model's wider intervals were not. They could no longer tell
+  rock from sand either, which is what the data support.
+- A passed check tests only the features it counts, and the simulation assumes every
+  station is independent.
 :::
 
 ## Try it yourself
 
-1. Fit `family = quasipoisson` and compare its standard errors to the negative binomial's. They
-   should be close. Then try to compute an AIC and explain why you cannot.
-2. Run the predictive check on the *proportion of stations catching exactly one individual*.
-   Negative binomial passed the two checks used here: does it pass that one, and what would it
-   mean for this species if it did not?
+1. Add a third feature to `simulate()`: the number of stations catching exactly one
+   animal. Does the negative binomial model pass that check too?
+2. Fit `linear_reg()` with `curve_recipe` and simulate from it with `rnorm()`, using
+   its predictions as the mean and `sigma()` of its fitted engine as the standard
+   deviation. How many stations per simulated survey get a count below zero?
