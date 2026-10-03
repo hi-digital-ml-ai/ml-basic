@@ -776,3 +776,42 @@ voice. Narrated with Gemini on 2026-10-03 (29 requests, no retries, about $0.10)
 
 Settled on 2026-09-28: billing (200 NOK of prepaid credit in AI Studio, about $18–20;
 the paid tier hit no rate limits in the first runs), the voice and the style.
+
+## §7 Validation rebuilt (2026-10-03; a short version tried 2026-10-04)
+
+Rebuilt from the revised pages (`feature/improve-validation`) on three points: a score
+is only as honest as its folds, the measure must follow the use, and a score needs an
+interval. 34 scenes, about 980 words, 7:32 on the draft voice. Not yet narrated with
+Gemini. **This is the current version**; the user will go through the section's pages
+on 2026-10-05 and then decide how to improve the video.
+
+- Examples, all through `exports.R` from five pages (the classification page is not
+  knitted): the forest's pooled RMSE growing with the distance to the nearest fitted
+  station (4.23 with folds of stations, 4.41 with half-degree blocks); a search over 100
+  candidates with 20 noise columns, won at 4.50 by a model with two noise columns, and
+  nested cross-validation (claimed 4.42, scored 4.86, the eight measured inputs with no
+  search 4.37); RMSE and MAE picking different forests, the forest on log counts
+  predicting 69% of the catch yet finding 847 animals on a shortlist of 100, 2.1 times
+  random; false alarms and misses, and a threshold set by their costs; a bootstrap of
+  the 160 sites giving overlapping intervals (the forest 3.75 to 4.94), and the paired
+  comparison (the forest lower than predicting the average in 99% of resamples, than
+  Poisson regression in 79%, its interval covering zero). Quiz: a false alarm costs
+  three misses; the threshold is 0.75, where logistic regression's calls were cheapest.
+- **A short version** is kept in `_videos/07-validation/short-version/` (`script.md`,
+  `scenes.py`, `exports.R`, and `rough-cut-short.mp4`, which git ignores): 26 scenes,
+  584 words, 4:19, for readers from any marine field, on what is new in the section
+  (keep a score honest, choose a score that fits your goal, compare models in pairs),
+  with no spatial folds and no RMSE against MAE. The user had said the 7:32 version
+  leans on spatial cross-validation and skewed-count issues covered in earlier
+  sections, holds too much, and that the videos dwell on limitations instead of giving
+  a broad audience easy messages; the short version answered that but, in the user's
+  words, "we have trimmed too much". To use it, copy its three files over the video's
+  and run `figures-for-video.R` (or keep the CSVs), the drafts, Manim and the cut.
+- Knitting the five pages takes 13 minutes, the cross-validation page most of it. To
+  remake a few CSVs, a scratch folder with a `script.md` holding only the front matter
+  and an `exports.R` naming only the pages needed can be knitted instead, and its
+  `visuals/data/` copied across (three pages: under 3 minutes).
+- The site maps are drawn from the survey's site positions (`load_coastal_survey_clean`),
+  which are data rather than results, so the schematic scenes may use them.
+- In a wait loop, `pgrep -f "manim -qh"` matches the loop's own command line and never
+  ends; wait on the background task instead.

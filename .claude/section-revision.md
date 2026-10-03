@@ -436,7 +436,7 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
 | 5 Generalisation | `feature/improve-generalisation` | Done; merged into `develop` 2026-10-02 (video narrated with Gemini, 34 requests, about $0.10) |
 | 6 Assumptions and limitations | `feature/improve-assumptions-limitations` | Done; merged into `develop` 2026-10-03 (video narrated with Gemini, 29 requests, about $0.10) |
-| 7 Validation | `feature/improve-validation` | Pages and overview revised; consistency and headings passes, video to come |
+| 7 Validation | `feature/improve-validation` | Pages, overview, consistency and headings passes done; video rebuilt to a rough cut on the draft voice |
 | 8–10 | | Not started |
 
 Loose ends from section 7, for later sections' revisions: §7's *Uncertainty and
