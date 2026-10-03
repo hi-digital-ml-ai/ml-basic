@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 590" width="100%" role="img" aria-label="Two ways of holding out years, over six years of a survey. Expanding window, in four rounds: round 1 is fitted to years 1 and 2 and tests year 3; round 2 is fitted to years 1 to 3 and tests year 4; round 3 is fitted to years 1 to 4 and tests year 5; round 4 is fitted to years 1 to 5 and tests year 6. Later years are never used. The tested years' predictions are pooled into one score, and every tested year comes after the years its model was fitted to, as in use. Below, leave one year out, for contrast: year 3 is tested by a model fitted to years 1, 2, 4, 5 and 6, so years 4 to 6, which a forecast would not have, help to predict it.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Holding out years for a forecast</text>
+<rect x="300" y="52" width="26" height="18" rx="3" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<text class="sm" x="334" y="67">fitted to</text>
+<rect x="490" y="52" width="26" height="18" rx="3" fill="#D55E00"/>
+<text class="sm" x="524" y="67">tested</text>
+<rect x="680" y="52" width="26" height="18" rx="3" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="sm" x="714" y="67">not used</text>
+<rect class="box" x="0" y="92" width="960" height="318" rx="8"/><rect x="0" y="92" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="132">Expanding window</text>
+<text class="lab" x="222" y="166" text-anchor="middle">YEAR 1</text>
+<text class="lab" x="346" y="166" text-anchor="middle">YEAR 2</text>
+<text class="lab" x="470" y="166" text-anchor="middle">YEAR 3</text>
+<text class="lab" x="594" y="166" text-anchor="middle">YEAR 4</text>
+<text class="lab" x="718" y="166" text-anchor="middle">YEAR 5</text>
+<text class="lab" x="842" y="166" text-anchor="middle">YEAR 6</text>
+<text class="body" x="22" y="203">Round 1</text>
+<rect x="170" y="180" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="294" y="180" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="418" y="180" width="104" height="34" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<rect x="542" y="180" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<rect x="666" y="180" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<rect x="790" y="180" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="body" x="22" y="249">Round 2</text>
+<rect x="170" y="226" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="294" y="226" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="418" y="226" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="542" y="226" width="104" height="34" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<rect x="666" y="226" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<rect x="790" y="226" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="body" x="22" y="295">Round 3</text>
+<rect x="170" y="272" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="294" y="272" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="418" y="272" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="542" y="272" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="666" y="272" width="104" height="34" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<rect x="790" y="272" width="104" height="34" rx="4" fill="#ffffff" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="body" x="22" y="341">Round 4</text>
+<rect x="170" y="318" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="294" y="318" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="418" y="318" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="542" y="318" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="666" y="318" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="790" y="318" width="104" height="34" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<text class="body" x="470" y="388" text-anchor="middle">Each round is fitted only to the years before the year it tests. Pool the tested years into one score.</text>
+<rect class="box" x="0" y="434" width="960" height="116" rx="8"/><rect x="0" y="434" width="960" height="6" rx="3" fill="#8a949c"/>
+<text class="head" x="22" y="474">For contrast: leave one year out</text>
+<text class="body" x="22" y="517">Year 3 tested</text>
+<rect x="170" y="494" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="294" y="494" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="418" y="494" width="104" height="34" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<rect x="542" y="494" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="666" y="494" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="790" y="494" width="104" height="34" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<path d="M542 490 V484 H894 V490" fill="none" stroke="#D55E00" stroke-width="1.6"/>
+<text class="sm" x="718.0" y="478" text-anchor="middle" style="fill:#D55E00; font-weight:bold">later years, which a forecast would not have</text>
+</svg>
