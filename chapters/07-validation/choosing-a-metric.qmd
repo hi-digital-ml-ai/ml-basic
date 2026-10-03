@@ -17,7 +17,7 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## The use of the predictions decides the measure
+## The measure is chosen before any model is fitted
 
 [Regression performance measures](regression-metrics.qmd) and
 [Classification performance measures](classification-metrics.qmd) showed that measures can

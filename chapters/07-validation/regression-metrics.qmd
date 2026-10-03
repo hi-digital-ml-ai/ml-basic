@@ -440,7 +440,7 @@ close to where they are. MAE is lowest at `r f2(best_scaling("MAE"))`, close to 
 predicts the catch. MAE preferred that forest because it predicts low, not because it
 follows the catch better.
 
-## Choose the measure for the use
+## A total needs a measure aimed at the average
 
 When predictions are summed into a total, such as a stock estimate, a map of abundance or
 a bycatch figure, score them with a measure aimed at the average: the RMSE, or the

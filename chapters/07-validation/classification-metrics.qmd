@@ -468,7 +468,7 @@ that lowers its log loss is the same that gave it the higher ROC AUC.
 Here the three kinds of measure agree on the order of the models. The diagram above shows
 that they need not.
 
-## The use decides which kind of measure to report
+## Balanced accuracy scores calls, ROC AUC rankings and log loss chances
 
 When the calls drive the work, at a threshold already chosen from what each mistake costs,
 report measures of the calls, and choose balanced accuracy or MCC unless the true absences
