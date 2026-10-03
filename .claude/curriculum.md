@@ -242,37 +242,50 @@ and "confusion matrix, precision, recall" are the same material and read badly a
 are one page, `classification-metrics.qmd`, organised around the matrix as the object and every
 threshold-dependent measure as a ratio of its four cells.
 
-### Two conventions that hold the section together
+**Revision decisions, 2026-10-03** (`feature/improve-validation`): the same six pages,
+in three pairs: the folds (cross-validation, spatial and temporal), the measures
+(regression, classification), and what to report (uncertainty, choosing a measure).
 
-Both were adopted to fix problems §6 ran into, and editing either page must keep them.
+- Every page uses the same ten folds of sites (`set.seed(61)`, `group_vfold_cv(survey,
+  group = site_id, v = 10)`; Python `GroupKFold(n_splits=10, shuffle=True,
+  random_state=61)`) and scores the pooled out-of-fold predictions. Pages 3 to 6 share
+  their models: predicting the average, Poisson regression, a random forest and the
+  forest on log counts for counts; logistic regression and the forest for presence.
+- Each worked example runs in about a minute per tab, with no caching (user, 2026-10-03:
+  a Python tab that took 30 minutes was an analysis, not an example). Repeated schemes
+  and large grids were cut to fit.
+- *Cross-validation*: five or ten folds are enough; the pooled score, not the average of
+  the folds'; selection optimism from a search over 100 sets of inputs with noise
+  columns, and nested cross-validation to score the search.
+- *Spatial and temporal cross-validation*: the score depends on the distance to the
+  nearest fitted station; a correlogram of the errors sets the block width (half-degree
+  blocks); an expanding window for forecasts. Schemes are compared over ten runs, since
+  single runs overlap.
+- *Regression performance measures*: RMSE, MAE, Poisson deviance and R², what each is
+  lowest at; the squared correlation (`rsq()`) against the textbook R² (`rsq_trad()`);
+  MAE would scale the forest's predictions down. MAPE is dismissed for counts.
+- *Classification performance measures*: calls at one threshold, the ranking (ROC AUC)
+  and the probabilities (log loss, with a calibration plot). F1 cannot tell the models
+  from calling every station present. Sensitivity, specificity and precision come from
+  §6's *Class imbalance* and are not taught again.
+- *Uncertainty and stability*: a bootstrap of the sites over the pooled out-of-fold
+  predictions, without refitting, and a paired comparison on the same draws.
+- *Choosing measures that match the objective*: a table of uses and their measures; a
+  shortlist scored on the animals it finds against a perfect and a random one (the
+  forest on log counts predicts 69% of the catch yet finds as many as the others); the
+  expected cost of the calls, with the cheapest threshold at k/(1+k) for calibrated
+  probabilities. The mean-only total argument is on page 3 and is not repeated.
+
+### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
 each row exactly once, so pooling gives one metric over identical rows for every scheme. This is
 the proper answer to §6's "RMSE is not comparable across resampling schemes" thread, and
-`spatial-and-temporal-cv.qmd` depends on it; without pooling, its five-scheme table would not
-be a comparison.
+`spatial-and-temporal-cv.qmd` depends on it.
 
-**Use the same resamples object for every model compared.** `uncertainty-and-stability.qmd`
-quantifies why: unpaired, the GLM-versus-forest interval is 1.54 wide and covers zero; paired on
-identical folds it is 0.33 wide.
-
-### Three findings the pages are built on
-
-- **Selection optimism.** `cross-validation.qmd` searches 100 candidate predictor sets drawn
-  from 8 real and 20 pure-noise columns. The winner contains three noise columns; nested CV puts
-  the honest RMSE 0.38 above what the search reported, and a fixed no-search model beats the
-  searched one on all five outer folds. About 0.04 of that gap is bookkeeping (five large folds
-  rather than ten small ones), and the page says so.
-- **The score is a function of fold separation.** `spatial-and-temporal-cv.qmd` measures the
-  median distance from each held-out station to its nearest training station and plots R²
-  against it. Blocked CV is not "more correct"; it is a harder question, chosen deliberately.
-  Leave-one-year-out sits off the trend because it separates in time, and `survey_year` has no
-  effect in the generator, so the diagnostic correctly reports nothing there.
-- **Measures disagree, informatively.** `regression-metrics.qmd` and `choosing-a-metric.qmd` are
-  a pair: the first shows MAE and RMSE picking different winners because the log-transformed
-  model under-predicts the survey total by 31%, the second shows that same model *winning* the
-  fifty-station shortlist. Keep both, and keep the mean-only row: it scores a perfect 1.000 on
-  the total and has no skill, which is the argument against aggregate-only validation.
+**Use the same folds for every model compared.** `uncertainty-and-stability.qmd` shows why:
+paired on the same draws, the difference between two models has a much narrower interval than
+either model's own score.
 
 ### Aimed at §10
 
