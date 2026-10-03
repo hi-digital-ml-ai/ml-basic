@@ -146,8 +146,9 @@ Rules for what goes in it:
 - Load shared helpers with `source(here::here("R/theme.R"))`; paths are always
   `here::here()`, never relative or absolute.
 - Long-running fits: keep under ~30 s per page where possible and rely on
-  `freeze: auto`. If a fit is genuinely slow, cache its result into `data/` with a
-  script in `R/` rather than letting the page grind on every render.
+  `freeze: auto`. A reader runs the page's code too, so cut repeats and schemes until
+  each tab runs in about a minute. If a fit is genuinely slow, cache its result into
+  `data/` with a script in `R/` rather than letting the page grind on every render.
 
 ### Python tabs
 

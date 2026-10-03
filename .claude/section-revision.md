@@ -74,12 +74,23 @@ Checking a page: `quarto render <page>`, then a headless Chrome screenshot of
 `_site/...` (a static server on port 4321 from `_site/` works). The user reviews
 screenshots, so look at the rendered page yourself first.
 
-Rendering: with `freeze: auto`, render a changed page **twice** (the first run executes,
-the second writes the cache that matches the source), then check that no
-`chapters/*/*.rmarkdown` intermediate is left behind. Any edit to a `.qmd`, even to a
-heading, changes its `_freeze` file, which is committed with the page. Heavy pages take
-minutes (section 5's hyperparameter page refits 40 selections), so render in the
-background and check for "Output created" on each.
+Rendering: render a changed page **once**, check for "Output created", and check that
+the `"hash"` at the top of its `_freeze/.../execute-results/html.json` equals
+`md5sum` of the `.qmd`. Rendering a single page always runs every chunk, whatever
+`_freeze/` holds, so a second render only repeats the work. Check that no
+`chapters/*/*.rmarkdown` intermediate is left behind (stopping a render leaves one).
+Any edit to a `.qmd`, even to a heading, changes its `_freeze` file, which is committed
+with the page. Heavy pages take minutes, so render in the background.
+
+Keep each page quick to run: a reader who copies the worked example should have its
+results in about a minute per tab. Many repeats over many schemes belong in a
+prototype, not on the page; the page shows the few that make its point. Section 7's
+*Spatial and temporal cross-validation* first compared six fold schemes over 20 runs
+(600 forests per tab, half an hour per render) and was cut to three schemes over 10
+runs of 100-tree forests. If the Python tab is much slower than R, check that it fits
+the same model: a `RandomForestRegressor` needs `max_features="sqrt"` and
+`min_samples_leaf=5` to match ranger, as on *Forests and boosting*, and `n_jobs=-1`
+costs more than it saves on the survey's 800 stations.
 
 Committing: one commit per page, each with its own `_freeze/` and `img/` files. A
 `git rm` of an old figure stays staged, so the first commit takes every staged deletion
