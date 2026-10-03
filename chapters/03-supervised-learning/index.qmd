@@ -35,7 +35,7 @@ It ends on choosing between them. The aim, the kind of outcome, the range the mo
 must predict over, the amount of data and the people who must accept the result all
 narrow the choice before any model is fitted. Comparing the section's models on the
 same new sites then shows why one test split cannot settle a close contest, which
-[7 · Validation](../07-validation/index.qmd) takes up.
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) takes up.
 
 ## Pages in this section
 

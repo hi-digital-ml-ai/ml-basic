@@ -453,9 +453,12 @@ miss leaves a protected species unprotected, work far up the curve and accept th
 alarms; if every station called present sends out a dive team, work lower down. At a
 sensitivity of about `r round(same$sensitivity, 1)` here, each presence found comes with
 about `r round(same$false_alarms / (same$called_present - same$false_alarms))` false
-alarms. [Classification metrics](../07-validation/classification-metrics.qmd)
+alarms.
+[Classification performance measures](../07-validation/classification-metrics.qmd)
 summarises a whole curve in one number, so that models can be compared before a
-threshold is chosen.
+threshold is chosen, and
+[Choosing measures that match the objective](../07-validation/choosing-a-metric.qmd)
+turns the costs of the two mistakes into a threshold.
 
 ## Key points
 

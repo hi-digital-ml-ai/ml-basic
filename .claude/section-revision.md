@@ -439,5 +439,11 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 7 Validation | `feature/improve-validation` | Pages and overview revised; consistency and headings passes, video to come |
 | 8–10 | | Not started |
 
+Loose ends from section 7, for later sections' revisions: §7's *Uncertainty and
+stability* bootstraps sites over the pooled out-of-fold predictions without refitting.
+§9's `training-a-network.qmd` (about line 270) says that page means "fit it several
+times and report the spread", and §8's `interpreting-patterns.qmd` (about line 91)
+calls drawing 800 stations "the bootstrap from §7". Reword both to match.
+
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".

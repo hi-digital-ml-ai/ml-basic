@@ -416,7 +416,8 @@ validation error of `r round(at_depth(best_depth)$validation, 2)`, and its $R^2$
 [Regression for counts](count-regression.qmd), scored `r round(poisson_rmse, 2)` and
 `r round(poisson_rsq, 2)` on the same sites. Two things are at work. A few validation
 sites are a noisy guide to the best depth, and
-[Section 7](../07-validation/index.qmd) averages over several splits instead. And a
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chooses it
+by cross-validation instead. And a
 single tree is unstable: a small change in the training data can change the first
 question, and everything below it changes too. The
 [next page](forests-and-boosting.qmd) averages many trees to steady them.

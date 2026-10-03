@@ -141,7 +141,7 @@ every time would score 0.775 too. The logistic model did exactly that: its confu
 matrix has an empty absence row. Accuracy equal to the majority-class rate almost always
 means the model is doing nothing, which is why the score above is reported next to ROC
 AUC rather than alone. See
-[classification measures](../chapters/07-validation/classification-metrics.qmd).
+[Classification performance measures](../chapters/07-validation/classification-metrics.qmd).
 :::
 
 ## Limits of this tour
