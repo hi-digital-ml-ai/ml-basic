@@ -23,15 +23,17 @@ class Title(TitleScene):
     pass
 
 
-PROMISES = ["Why every method always finds something",
-            "Why a principal component is not a gradient",
-            "How to tell a group from a gradient"]
-ANSWERS = ["Compare what it found\nwith the same data,\nshuffled",
-           "Check what it lines\nup with; let the task\nchoose how many",
-           "Check against what\nit never saw; a slope\nis not a set of groups"]
-RECAP = ["Every method finds something",
-         "A component is not a gradient",
-         "Stable is not the same as real"]
+PROMISES = ["How clustering finds groups without labels",
+            "How PCA turns many columns into one map",
+            "How to check a pattern before reporting it"]
+ANSWERS = ["Compare the groups\nwith the same data,\nshuffled",
+           "Read the axes from\ntheir loadings; keep\nwhat the use needs",
+           "Does it come back?\nIs there a gap?\nDoes it match a record?"]
+RECAP = ["Clustering: compare with shuffled data",
+         "PCA: read the axes from their loadings",
+         "Check a pattern before reporting it"]
+
+HARD, SOFT = ORANGE, BLUE     # hard and soft bottom, in every scene
 
 
 class Scene01(LearnScene):
@@ -55,7 +57,11 @@ def polyline(axes, xs, ys, colour, width=6, dashed=False):
 
 def chart(x_range, y_range, x_length, y_length, x_ticks, y_ticks, x_name, y_name,
           x_fmt="{:g}", y_fmt="{:g}", size=24):
-    """Axes with tick labels and names, in the series style; returns the axes and all of it."""
+    """Axes with tick labels and names, in the series style; returns the axes and all of it.
+
+    Ranges must start at zero or the axes cross mid-chart (Manim draws each axis through
+    the other's zero); every chart here does.
+    """
     axes = plain_axes(x_range, y_range, x_length, y_length)
     tx = VGroup(*[label(x_fmt.format(v), size, SUBDUED).next_to(axes.c2p(v, y_range[0]), DOWN, 0.15)
                   for v in x_ticks])
@@ -78,6 +84,11 @@ def number_line(lo, hi, x0, x1, y, ticks, digits=2, size=26):
     return VGroup(line, marks), to_x
 
 
+def wait_until(scene, fraction):
+    """Hold until this share of the narration, where the next words are spoken."""
+    scene.wait(max(scene.share(fraction) - scene.time, 0.01))
+
+
 # Viridis, as the pages shade depth: dark purple for shallow, yellow for deep.
 VIRIDIS = ["#440154", "#3B528B", "#21908C", "#5DC863", "#FDE725"]
 
@@ -97,176 +108,94 @@ def depth_key(width=2.6, lo="shallow", hi="deep"):
 
 
 def marker(point, colour, hard, size=0.075):
-    """A station: a dot for hard seabed, a small triangle for soft, as on the pages."""
+    """A station: a dot for hard bottom, a small triangle for soft, as on the pages."""
     if hard:
         return Dot(point, radius=size, color=colour, fill_opacity=0.9)
     return Triangle(stroke_width=0, fill_color=colour, fill_opacity=0.9).scale(size * 1.5).move_to(point)
 
 
-def strike(mobject, colour=VERMILION):
-    return Line(mobject.get_left() + 0.1 * LEFT, mobject.get_right() + 0.1 * RIGHT, color=colour,
-                stroke_width=6)
+def kmeans(points, centres, steps=20):
+    """Plain k-means on schematic points: returns each point's group."""
+    for _ in range(steps):
+        nearest = np.argmin(((points[:, None, :] - centres[None]) ** 2).sum(-1), axis=1)
+        centres = np.array([points[nearest == j].mean(0) for j in range(len(centres))])
+    return nearest
 
 
-# The puzzle: a split of the soft bottom that always comes back (scenes 2–5, page results) --
+# Opening (scenes 2 and 3) -----------------------------------------------------------------
+
+def cell_grid(rows, cols, size, seed, colour=BLUE):
+    rng = np.random.default_rng(seed)
+    cells = VGroup(*[Square(size, stroke_width=0, fill_color=colour,
+                            fill_opacity=float(rng.choice([0.08, 0.3, 0.6, 0.9], p=[0.5, 0.2, 0.2, 0.1])))
+                     for _ in range(rows * cols)])
+    return cells.arrange_in_grid(rows, cols, buff=0.04)
+
 
 class Scene02(VideoScene):
     number = 2
 
     def construct(self):
-        rng = np.random.default_rng(2)
-        rows, cols = 16, 24
-        cells = VGroup(*[Square(0.2, stroke_width=0, fill_color=BLUE,
-                                fill_opacity=float(rng.choice([0.08, 0.3, 0.6, 0.9], p=[0.5, 0.2, 0.2, 0.1])))
-                         for _ in range(rows * cols)])
-        cells.arrange_in_grid(rows, cols, buff=0.04).move_to([-0.8, -0.3, 0])
-        taxa = label("24 kinds of animal: counts", 30, BLUE, weight=BOLD).next_to(cells, UP, 0.3)
-        brace = Brace(cells, LEFT, color=SUBDUED)
-        stations = label("800 stations", 30, SUBDUED, weight=BOLD).next_to(brace, LEFT, 0.2)
-        missing = DashedVMobject(Rectangle(width=0.9, height=cells.height, color=GREY, stroke_width=3),
-                                 num_dashes=40).next_to(cells, RIGHT, 0.4)
-        missing_name = VGroup(label("labels", 30, VERMILION, weight=BOLD), label("none", 30, VERMILION)
-                              ).arrange(DOWN, buff=0.1).next_to(missing, RIGHT, 0.3)
-        # "Here is a survey of 800 seabed stations, ..."
-        self.play(FadeIn(cells, lag_ratio=0.002), GrowFromCenter(brace), FadeIn(stations),
-                  run_time=self.share(0.35))
-        # "... with counts of 24 kinds of animal, ..."
-        self.play(FadeIn(taxa, shift=0.2 * DOWN), run_time=self.share(0.2))
-        # "... and no labels at all."
-        self.wait(max(self.share(0.65) - self.time, 0.01))
-        self.play(Create(missing), FadeIn(missing_name), run_time=self.share(0.2))
+        # Schematic: a table of counts, shaded by size, and an answer column left empty.
+        cells = cell_grid(14, 18, 0.22, 2).move_to([-1.2, -0.4, 0])
+        top = label("animals counted at each station", 30, BLUE, weight=BOLD).next_to(cells, UP, 0.3).align_to(cells, LEFT)
+        answer = DashedVMobject(Rectangle(width=1.3, height=cells.height, color=GREY, stroke_width=3),
+                                num_dashes=50).next_to(cells, RIGHT, 0.4)
+        answer_name = label("habitat", 30, VERMILION, weight=BOLD).next_to(answer, DOWN, 0.2)
+        marks = VGroup(*[label("?", 30, VERMILION, weight=BOLD).move_to([answer.get_x(), y, 0])
+                         for y in np.linspace(answer.get_top()[1] - 0.5, answer.get_bottom()[1] + 0.5, 6)])
+        idea = label("structure from the data itself", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.35)
+        # "Many marine datasets have no answer column. A benthic survey counts the animals ..."
+        self.play(FadeIn(cells, lag_ratio=0.002), FadeIn(top), run_time=self.share(0.3))
+        # "... but nobody has said which habitat each station belongs to."
+        wait_until(self, 0.42)
+        self.play(Create(answer), FadeIn(answer_name), run_time=self.share(0.12))
+        self.play(LaggedStart(*[FadeIn(m) for m in marks], lag_ratio=0.2), run_time=self.share(0.15))
+        # "Unsupervised learning finds structure in the data itself."
+        wait_until(self, 0.75)
+        self.play(FadeIn(idea, shift=0.2 * UP), run_time=self.share(0.15))
         self.finish()
-
-
-def soft_layout(scene):
-    stations = scene.data("soft-stations")
-    medians = scene.data("soft-medians").set_index("cluster")
-    deep = medians["median_depth"].idxmax()
-    axis, to_x = number_line(0, 200, -5.6, 5.6, 0.3, [0, 50, 100, 150, 200], 0)
-    axis_name = label("depth (m)", 26, SUBDUED).next_to(axis, DOWN, 0.05).shift(4.6 * RIGHT)
-    rng = np.random.default_rng(3)
-    colours = {c: (BLUE if c == deep else ORANGE) for c in medians.index}
-    dots = VGroup(*[Dot([to_x(d), 1.55 + rng.uniform(-0.8, 0.8), 0], radius=0.05,
-                        color=colours[c], fill_opacity=0.8)
-                    for d, c in zip(stations["depth_m"], stations["cluster"])])
-    head = label(f"The {len(stations)} soft-bottom stations, asked for two groups", 32, SUBDUED
-                 ).to_edge(UP, buff=0.3)
-    notes = VGroup()
-    for c, m in medians["median_depth"].items():
-        tag = "deep" if c == deep else "shallow"
-        mark = Line([to_x(m), 0.6, 0], [to_x(m), 2.5, 0], color=colours[c], stroke_width=5)
-        text = label(f"{tag}: median {m:.0f} m", 30, colours[c], weight=BOLD).next_to(mark, UP, 0.1)
-        # The two medians are close: set each label off to its own side of its line.
-        text.align_to(mark, LEFT if c == deep else RIGHT)
-        notes.add(VGroup(mark, text))
-    return head, VGroup(axis, axis_name), dots, notes
-
-
-def stability_axis(y=-2.6):
-    axis, to_x = number_line(0, 1, -4.8, 5.6, y, [0, 0.25, 0.5, 0.75, 1], 2)
-    name = label("agreement with the original split (1 = identical)", 26, SUBDUED
-                 ).next_to(axis, DOWN, 0.05).set_x(0.4)
-    return VGroup(axis, name), to_x
 
 
 class Scene03(VideoScene):
     number = 3
 
     def construct(self):
-        head, axis, dots, notes = soft_layout(self)
-        # "Take the soft-bottom stations, and ask for two groups."
-        self.play(FadeIn(head), FadeIn(axis), run_time=self.share(0.15))
-        self.play(FadeIn(dots, lag_ratio=0.002), run_time=self.share(0.3))
-        # "You get a shallow group, at a median depth of 60 metres, and a deep one at 124."
-        shallow, deep = sorted(notes, key=lambda n: n[0].get_x())
-        self.play(Create(shallow[0]), FadeIn(shallow[1]), run_time=self.share(0.2))
-        self.wait(max(self.share(0.75) - self.time, 0.01))
-        self.play(Create(deep[0]), FadeIn(deep[1]), run_time=self.share(0.15))
+        matrix = self.data("matrix")
+        cols = list(matrix.columns)
+        w, h = 1.05, 0.62
+        x0, y0 = -3.7, 1.7
+        heads = VGroup(*[label(c, 28, BLUE, weight=BOLD).move_to([x0 + i * w, y0, 0]) for i, c in enumerate(cols)])
+        heads.add(label("…  tax24", 28, BLUE, weight=BOLD).move_to([x0 + len(cols) * w + 0.35, y0, 0]))
+        rows = VGroup()
+        for r, (_, row) in enumerate(matrix.iterrows()):
+            y = y0 - (r + 1) * h
+            cells = VGroup(*[label(f"{int(v)}", 30).move_to([x0 + i * w, y, 0]) for i, v in enumerate(row)])
+            cells.add(label("…", 30, SUBDUED).move_to([x0 + len(cols) * w, y, 0]))
+            rows.add(cells)
+        more = label("⋮", 34, SUBDUED).move_to([x0 + 3 * w, y0 - (len(matrix) + 1) * h, 0])
+        table = VGroup(heads, rows, more)
+        brace = Brace(VGroup(rows, more), LEFT, color=SUBDUED)
+        n_rows = label("800\nstations", 30, SUBDUED, weight=BOLD).next_to(brace, LEFT, 0.2)
+        top = Brace(heads, UP, color=SUBDUED)
+        n_cols = label("24 taxa", 30, SUBDUED, weight=BOLD).next_to(top, UP, 0.1)
+        name = label("a community matrix", 40, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
+        # "Here, each of the course's 800 simulated survey stations ..."
+        self.play(FadeIn(heads), LaggedStart(*[FadeIn(r) for r in rows], lag_ratio=0.2), FadeIn(more),
+                  run_time=self.share(0.3))
+        self.play(GrowFromCenter(brace), FadeIn(n_rows), run_time=self.share(0.1))
+        # "... has counts of 24 taxa."
+        self.play(GrowFromCenter(top), FadeIn(n_cols), run_time=self.share(0.12))
+        # "One row per station, one column per taxon: ecologists call this a community matrix."
+        wait_until(self, 0.72)
+        self.play(FadeIn(name, shift=0.2 * UP), run_time=self.share(0.15))
         self.finish()
 
 
-def soft_stability_dots(scene, to_x, y):
-    values = scene.data("soft-stability")["agreement"].to_numpy()
-    rng = np.random.default_rng(4)
-    dots = VGroup(*[Dot([to_x(v), y + rng.uniform(-0.3, 0.3), 0], radius=0.08, color=BLUE, fill_opacity=0.8)
-                    for v in values])
-    return values, dots
-
+# Clustering (scenes 4–12) ----------------------------------------------------------------
 
 class Scene04(VideoScene):
     number = 4
-
-    def construct(self):
-        head, axis, dots, notes = soft_layout(self)
-        self.add(head, axis, dots, notes)
-        stab, to_x = stability_axis()
-        values, drops = soft_stability_dots(self, to_x, -1.7)
-        # "Resample the stations sixty times. The same split comes back every time: ..."
-        self.play(FadeIn(stab), run_time=self.share(0.1))
-        self.play(LaggedStart(*[FadeIn(d, shift=0.6 * DOWN) for d in drops], lag_ratio=0.05),
-                  run_time=self.share(0.4))
-        # "... an agreement of 0.89 on average, and never below 0.71."
-        span = Line([to_x(values.min()), -1.1, 0], [to_x(1), -1.1, 0], color=BLUE, stroke_width=4)
-        text = label(f"average {values.mean():.2f}, never below {values.min():.2f}", 30, BLUE, weight=BOLD
-                     ).next_to(span, LEFT, 0.3)
-        self.play(Create(span), FadeIn(text), run_time=self.share(0.25))
-        self.finish()
-
-
-class Scene05(VideoScene):
-    number = 5
-
-    def construct(self):
-        head, axis, dots, notes = soft_layout(self)
-        stab, to_x = stability_axis()
-        values, drops = soft_stability_dots(self, to_x, -1.7)
-        span = Line([to_x(values.min()), -1.1, 0], [to_x(1), -1.1, 0], color=BLUE, stroke_width=4)
-        text = label(f"average {values.mean():.2f}, never below {values.min():.2f}", 30, BLUE, weight=BOLD
-                     ).next_to(span, LEFT, 0.3)
-        self.add(head, axis, dots, notes, stab, drops, span, text)
-        question = label("two kinds of soft seabed community?", 40, PURPLE, weight=BOLD)
-        box = SurroundingRectangle(question, color=PURPLE, buff=0.3, corner_radius=0.15, fill_color=BACKGROUND,
-                                   fill_opacity=0.95)
-        card = VGroup(box, question).move_to([0, 1.55, 0])
-        # "So are there two kinds of soft seabed community?"
-        self.play(FadeIn(card, scale=0.9), run_time=self.share(0.4))
-        self.play(Wiggle(question), run_time=self.share(0.45))
-        self.finish()
-
-
-# Simulated survey (scene 6, schematic) ----------------------------------------------------
-
-class Scene06(VideoScene):
-    number = 6
-
-    def construct(self):
-        box = RoundedRectangle(width=4.2, height=2.2, corner_radius=0.2, stroke_color=BLUE,
-                               stroke_width=5, fill_color="#EAF2F8", fill_opacity=1)
-        box_text = VGroup(label("the process", 36, BLUE, weight=BOLD),
-                          label("we wrote", 36, BLUE, weight=BOLD)).arrange(DOWN, buff=0.15)
-        source = VGroup(box, box_text.move_to(box)).move_to(3.8 * LEFT)
-        rng = np.random.default_rng(6)
-        field = VGroup(*[Dot([x, y, 0], radius=0.08, color=GREY)
-                         for x, y in zip(rng.uniform(1.6, 5.8, 36), rng.uniform(-1.8, 1.8, 36))])
-        field_name = label("simulated survey", 32, SUBDUED).next_to(field, DOWN, 0.4)
-        arrow = Arrow(source.get_right(), [1.3, 0, 0], color=INK, stroke_width=5, buff=0.2)
-        known = label("every answer checkable", 32, GREEN, weight=BOLD).next_to(source, DOWN, 0.4)
-
-        # "A note first: this survey is simulated."
-        self.play(FadeIn(source, scale=0.9), run_time=self.share(0.12))
-        self.play(GrowArrow(arrow), run_time=self.share(0.08))
-        self.play(LaggedStart(*[FadeIn(d, shift=0.4 * RIGHT) for d in field], lag_ratio=0.04),
-                  FadeIn(field_name), run_time=self.share(0.25))
-        # "... so we can check every answer against the truth."
-        self.play(FadeIn(known, shift=0.2 * UP), run_time=self.share(0.1))
-        self.play(Indicate(known, color=GREEN), run_time=self.share(0.15))
-        self.finish()
-
-
-# Groups from counts alone (scenes 7–12) ----------------------------------------------------
-
-class Scene07(VideoScene):
-    number = 7
 
     def construct(self):
         # Schematic: two made-up blobs, and k-means run on them step by step.
@@ -278,306 +207,192 @@ class Scene07(VideoScene):
         colours = [ORANGE, BLUE]
         stars = VGroup(*[Star(5, outer_radius=0.28, color=c, fill_opacity=1, stroke_width=0).move_to([*p, 0])
                          for c, p in zip(colours, centres)])
-        head = label("k-means, asked for two groups", 34, SUBDUED).to_edge(UP, buff=0.3)
-        # "k-means places as many centres as you ask for, ..."
-        self.play(FadeIn(head), FadeIn(dots, lag_ratio=0.02), run_time=self.share(0.2))
-        self.play(FadeIn(stars, scale=2), run_time=self.share(0.1))
-        # "... and moves each to the middle of the stations nearest it, until nothing moves."
+        head = label("k-means, with k = 2", 34, SUBDUED).to_edge(UP, buff=0.3)
+        # "Clustering sorts stations into groups of similar stations."
+        self.play(FadeIn(dots, lag_ratio=0.02), run_time=self.share(0.15))
+        # "The most widely used method is k-means. You choose the number of groups, k."
+        wait_until(self, 0.25)
+        self.play(FadeIn(head), run_time=self.share(0.08))
+        wait_until(self, 0.4)
+        self.play(FadeIn(stars, scale=2), run_time=self.share(0.08))
+        # "Each station joins its nearest centre, each centre moves to the average ..."
         steps = 4
         for _ in range(steps):
             nearest = np.argmin(((points[:, None, :] - centres[None]) ** 2).sum(-1), axis=1)
             self.play(*[d.animate.set_color(colours[n]) for d, n in zip(dots, nearest)],
-                      run_time=self.share(0.55 / (2 * steps)))
+                      run_time=self.share(0.45 / (2 * steps)))
             centres = np.array([points[nearest == j].mean(0) for j in range(2)])
             self.play(*[s.animate.move_to([*p, 0]) for s, p in zip(stars, centres)],
-                      run_time=self.share(0.55 / (2 * steps)))
+                      run_time=self.share(0.45 / (2 * steps)))
         self.finish()
 
 
-VARIABLE_NAMES = {"depth_m": "depth (m)", "temperature_c": "temperature (°C)",
-                  "salinity_psu": "salinity", "chlorophyll_mg_m3": "chlorophyll"}
+def waffle(n_first, n_second, colour_first, colour_second, cols, size=0.17, gap=0.045):
+    """n_first + n_second squares in rows of `cols`: the second kind last, at the bottom."""
+    squares = VGroup(*[Square(size, stroke_width=0, fill_color=colour_first, fill_opacity=1)
+                       for _ in range(n_first)],
+                     *[Square(size, stroke_width=0, fill_color=colour_second, fill_opacity=1)
+                       for _ in range(n_second)])
+    rows = int(np.ceil(len(squares) / cols))
+    for i, s in enumerate(squares):
+        s.move_to([(i % cols) * (size + gap), -(i // cols) * (size + gap), 0])
+    return squares, rows
+
+
+class Scene05(VideoScene):
+    number = 5
+
+    def construct(self):
+        seabed = self.data("seabed").pivot(index="cluster", columns="bottom", values="n")
+        hard_c = seabed["hard"].idxmax()
+        soft_c = [c for c in seabed.index if c != hard_c][0]
+        # Each cluster's own kind first, the stations of the other kind last.
+        hard_sq, _ = waffle(seabed.loc[hard_c, "hard"], seabed.loc[hard_c, "soft"], HARD, SOFT, 12)
+        soft_sq, _ = waffle(seabed.loc[soft_c, "soft"], seabed.loc[soft_c, "hard"], SOFT, HARD, 30)
+        hard_sq.move_to([-4.3, -0.55, 0]).align_to(soft_sq, UP)
+        soft_sq.move_to([1.9, -0.55, 0])
+        hard_sq.align_to(soft_sq, UP)
+        grey = VGroup(*[s.copy().set_fill(GREY) for s in [*hard_sq, *soft_sq]])
+        names = VGroup(label(f"cluster 1: {seabed.loc[hard_c].sum()} stations", 30, INK, weight=BOLD
+                             ).next_to(hard_sq, UP, 0.3),
+                       label(f"cluster 2: {seabed.loc[soft_c].sum()} stations", 30, INK, weight=BOLD
+                             ).next_to(soft_sq, UP, 0.3))
+        key = VGroup(VGroup(Square(0.25, stroke_width=0, fill_color=HARD, fill_opacity=1),
+                            label("hard bottom: rock, gravel", 28, SUBDUED)).arrange(RIGHT, buff=0.2),
+                     VGroup(Square(0.25, stroke_width=0, fill_color=SOFT, fill_opacity=1),
+                            label("soft bottom: sand, mud", 28, SUBDUED)).arrange(RIGHT, buff=0.2)
+                     ).arrange(RIGHT, buff=0.8).to_edge(DOWN, buff=0.3)
+        out_hard = hard_sq[seabed.loc[hard_c, "hard"]:]
+        out_soft = soft_sq[seabed.loc[soft_c, "soft"]:]
+        out = VGroup(*out_hard, *out_soft)
+        rings = VGroup(*[Circle(0.16, color=VERMILION, stroke_width=4).move_to(s) for s in out])
+        n_out = len(out)
+        note = label(f"{n_out} of {int(seabed.values.sum())} in the other kind's cluster", 32, VERMILION,
+                     weight=BOLD).to_edge(UP, buff=0.25)
+        # "k-means was given only the counts, logged and on a common scale, and asked for two groups."
+        self.play(FadeIn(grey, lag_ratio=0.001), FadeIn(names), run_time=self.share(0.3))
+        # "One cluster is the hard bottom, rock and gravel; the other, the soft bottom."
+        wait_until(self, 0.4)
+        self.play(*[Transform(g, s) for g, s in zip(grey, [*hard_sq, *soft_sq])], FadeIn(key),
+                  run_time=self.share(0.2))
+        # "Only 15 of the 800 stations sit in the other kind's cluster."
+        wait_until(self, 0.72)
+        self.play(Create(rings), FadeIn(note), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene06(VideoScene):
+    number = 6
+
+    def construct(self):
+        # Schematic: random points in a square, cut into four groups by k-means.
+        rng = np.random.default_rng(66)
+        points = rng.uniform(-2.6, 2.6, (160, 2))
+        groups = kmeans(points, points[:4].copy())
+        colours = [BLUE, ORANGE, GREEN, PURPLE]
+        centre = np.array([-2.6, -0.3, 0])
+        frame = Square(5.6, color=GRID, stroke_width=3).move_to(centre)
+        dots = VGroup(*[Dot(centre + np.array([x, y, 0]), radius=0.06, color=GREY) for x, y in points])
+        name = label("random numbers", 30, SUBDUED).next_to(frame, UP, 0.25)
+        ask = label("asked for four groups", 36, INK, weight=BOLD).move_to([3.6, 1.0, 0])
+        get = label("four tidy groups", 36, BLUE, weight=BOLD).move_to([3.6, -0.2, 0])
+        question = label("so how many are real?", 36, VERMILION, weight=BOLD).move_to([3.6, -1.6, 0])
+        # "But k-means returns as many groups as you ask for, even from random numbers."
+        self.play(Create(frame), FadeIn(dots, lag_ratio=0.005), FadeIn(name), FadeIn(ask),
+                  run_time=self.share(0.3))
+        self.play(*[d.animate.set_color(colours[g]) for d, g in zip(dots, groups)], FadeIn(get),
+                  run_time=self.share(0.2))
+        # "So how many groups does the survey really hold?"
+        wait_until(self, 0.62)
+        self.play(FadeIn(question, shift=0.2 * UP), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene07(VideoScene):
+    number = 7
+
+    def construct(self):
+        # Schematic: two groups, one station, and its distances to each.
+        rng = np.random.default_rng(8)
+        own = rng.normal([-2.0, -0.4], 0.55, (12, 2))
+        other = rng.normal([2.4, -0.2], 0.55, (12, 2))
+        station = np.array([-1.3, -0.1])
+        own_dots = VGroup(*[Dot([x, y, 0], radius=0.09, color=BLUE) for x, y in own])
+        other_dots = VGroup(*[Dot([x, y, 0], radius=0.09, color=ORANGE) for x, y in other])
+        star = Dot([*station, 0], radius=0.15, color=INK)
+        near = VGroup(*[Line([*station, 0], [x, y, 0], color=BLUE, stroke_width=2.5) for x, y in own])
+        far = VGroup(*[Line([*station, 0], [x, y, 0], color=ORANGE, stroke_width=2.5) for x, y in other])
+        a = label("own cluster: close", 32, BLUE, weight=BOLD).move_to([-2.0, 1.6, 0])
+        b = label("nearest other cluster: far", 32, ORANGE, weight=BOLD).move_to([2.4, 1.6, 0])
+        rule = label("silhouette width: near 1 when its own cluster is far closer", 28, INK, weight=BOLD
+                     ).to_edge(DOWN, buff=0.6)
+        average = label("averaged over every station: higher is better separated", 28, SUBDUED
+                        ).next_to(rule, DOWN, 0.2)
+        # "The silhouette width compares each station's distance to its own cluster ..."
+        self.play(FadeIn(own_dots), FadeIn(other_dots), FadeIn(star, scale=2), run_time=self.share(0.15))
+        self.play(Create(near), FadeIn(a), run_time=self.share(0.2))
+        # "... with its distance to the nearest other one."
+        self.play(Create(far), FadeIn(b), run_time=self.share(0.2))
+        self.play(FadeIn(rule), run_time=self.share(0.1))
+        # "Averaged over the stations, higher means better separated groups."
+        wait_until(self, 0.68)
+        self.play(FadeIn(average), run_time=self.share(0.12))
+        self.finish()
+
+
+def silhouette_layout(scene):
+    sil = scene.data("silhouette").sort_values("k")
+    axes, frame = chart([0, 8.5, 1], [0, 0.3, 0.05], 9.0, 4.8, range(2, 9), [0, 0.1, 0.2, 0.3],
+                        "number of clusters (k)", "average silhouette width", y_fmt="{:.1f}")
+    # The chart starts at zero (see chart()); hide the empty stretch below k = 2.
+    VGroup(frame).move_to([0.4, -0.4, 0])
+
+    def curve(column, colour):
+        line = polyline(axes, sil["k"], sil[column], colour)
+        dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.1, color=colour) for a, b in zip(sil["k"], sil[column])])
+        return VGroup(line, dots)
+
+    obs, base = curve("silhouette", BLUE), curve("silhouette_mean", GREY)
+    band = Polygon(*[axes.c2p(k, v) for k, v in zip(sil["k"], sil["silhouette_high"])],
+                   *[axes.c2p(k, v) for k, v in zip(sil["k"][::-1], sil["silhouette_low"][::-1])],
+                   stroke_width=0, fill_color=GREY, fill_opacity=0.25)
+    two = sil[sil["k"] == 2].iloc[0]
+    peak_name = label(f"{two['silhouette']:.3f}", 32, BLUE, weight=BOLD).next_to(obs[1][0], UR, 0.15)
+    rule = DashedLine(axes.c2p(2, 0.25), axes.c2p(8, 0.25), color=VERMILION, stroke_width=4)
+    rule_name = label("rule of thumb: below 0.25, \"no substantial structure\"", 28, VERMILION
+                      ).next_to(rule, UP, 0.12).align_to(rule, RIGHT)
+    return sil, axes, frame, obs, base, band, peak_name, VGroup(rule, rule_name), two
+
+
+def axis_mask(axes, frame, upto):
+    """A white strip over the x axis from zero to `upto`, so a chart can start at k = 2."""
+    left, right = axes.c2p(0, 0), axes.c2p(upto, 0)
+    return Rectangle(width=right[0] - left[0] + 0.05, height=0.12, stroke_width=0, fill_color=BACKGROUND,
+                     fill_opacity=1).move_to((left + right) / 2)
 
 
 class Scene08(VideoScene):
     number = 8
 
     def construct(self):
-        share = self.data("env-share").sort_values("share", ascending=False).reset_index(drop=True)
-        head = label("Share of the variance, in measured units", 34, SUBDUED).to_edge(UP, buff=0.6)
-        rows = VGroup()
-        for i, r in share.iterrows():
-            y = 1.6 - 1.2 * i
-            name = label(VARIABLE_NAMES[r["variable"]], 32).move_to([-2.4, y, 0], aligned_edge=RIGHT)
-            bar = Rectangle(width=max(7.0 * r["share"], 0.03), height=0.6, stroke_width=0,
-                            fill_color=BLUE if i == 0 else GREY, fill_opacity=1).move_to([-2.1, y, 0],
-                                                                                       aligned_edge=LEFT)
-            value = label(percent(r["share"], 1), 32, INK, weight=BOLD).next_to(bar, RIGHT, 0.2)
-            rows.add(VGroup(name, bar, value))
-        # "Nearest means distance, in whatever units your columns happen to be in."
-        self.play(FadeIn(head), LaggedStart(*[FadeIn(r[0]) for r in rows], lag_ratio=0.2),
-                  run_time=self.share(0.35))
-        # "In metres, depth carries 99.4% of the variance."
-        self.wait(max(self.share(0.5) - self.time, 0.01))
-        self.play(*[GrowFromEdge(r[1], LEFT) for r in rows], run_time=self.share(0.25))
-        self.play(*[FadeIn(r[2]) for r in rows], run_time=self.share(0.1))
+        sil, axes, frame, obs, _, _, peak_name, rule, _ = silhouette_layout(self)
+        mask = axis_mask(axes, frame, 1.6)
+        # "Across two to eight clusters, the silhouette is highest at two, at 0.179."
+        self.play(FadeIn(frame), FadeIn(mask), run_time=self.share(0.1))
+        self.play(Create(obs[0]), FadeIn(obs[1], lag_ratio=0.2), run_time=self.share(0.3))
+        self.play(FadeIn(peak_name), Indicate(obs[1][0], scale_factor=1.6), run_time=self.share(0.15))
+        # "That sounds low: a popular rule of thumb calls it no real structure."
+        wait_until(self, 0.6)
+        self.play(Create(rule[0]), FadeIn(rule[1]), run_time=self.share(0.2))
         self.finish()
-
-
-def env_panel(env, column, x, title_text, bloom=None):
-    axes, frame = chart([0, 200, 50], [0, env["chlorophyll_mg_m3"].max() * 1.05, 2], 5.6, 4.2,
-                        [0, 50, 100, 150, 200], [], "depth (m)", "chlorophyll")
-    group = VGroup(frame)
-    # Colour the clusters by their mean depth, so the colours read shallow to deep.
-    order = env.groupby(column)["depth_m"].mean().sort_values().index
-    colours = dict(zip(order, [ORANGE, GREEN, BLUE]))
-    if bloom is not None:   # the bloom group in a colour of its own, the others shallow to deep
-        colours = dict(zip([k for k in order if k != bloom], [GREEN, BLUE]))
-        colours[bloom] = PURPLE
-    dots = VGroup(*[Dot(axes.c2p(d, c), radius=0.045, color=colours[k], fill_opacity=0.75)
-                    for d, c, k in zip(env["depth_m"], env["chlorophyll_mg_m3"], env[column])])
-    group.add(dots)
-    group.move_to([x, -0.5, 0])
-    name = label(title_text, 32, INK, weight=BOLD).next_to(group, UP, 0.35)
-    return axes, frame, dots, name, colours
 
 
 class Scene09(VideoScene):
     number = 9
 
     def construct(self):
-        env = self.data("env-clusters")
-        _, raw_frame, raw_dots, raw_name, _ = env_panel(env, "raw", -3.5, "measured units: depth bands")
-        # The bloom group: the standardised cluster with the highest chlorophyll.
-        bloom = env.groupby("scaled")["chlorophyll_mg_m3"].mean().idxmax()
-        axes, scaled_frame, scaled_dots, scaled_name, colours = env_panel(env, "scaled", 3.6, "standardised",
-                                                                          bloom)
-        members = env[env["scaled"] == bloom]
-        bloom_name = label("spring blooms", 32, colours[bloom], weight=BOLD).move_to(
-            axes.c2p(members["depth_m"].median() + 45, members["chlorophyll_mg_m3"].quantile(0.9)))
-        # "So clustering those columns as they stand is clustering depth."
-        self.play(FadeIn(raw_frame), FadeIn(raw_name), run_time=self.share(0.1))
-        self.play(FadeIn(raw_dots, lag_ratio=0.002), run_time=self.share(0.3))
-        # "Standardise them first, and a group of spring blooms appears."
-        self.play(FadeIn(scaled_frame), FadeIn(scaled_name), run_time=self.share(0.1))
-        self.play(FadeIn(scaled_dots, lag_ratio=0.002), run_time=self.share(0.25))
-        self.play(FadeIn(bloom_name, shift=0.2 * DOWN), run_time=self.share(0.1))
-        self.finish()
-
-
-def habitat_layout(scene):
-    table = scene.data("habitat").pivot(index="cluster", columns="bottom", values="n")
-    # Name each cluster after the seabed most of its stations are on.
-    hard_cluster = table["hard"].idxmax()
-    order = [hard_cluster] + [c for c in table.index if c != hard_cluster]
-    cols = {"hard": 0.4, "soft": 3.6}
-    rows_y = [0.6, -1.4]
-    heads = VGroup(label("hard seabed", 32, SUBDUED, weight=BOLD).move_to([cols["hard"], 2.1, 0]),
-                   label("soft seabed", 32, SUBDUED, weight=BOLD).move_to([cols["soft"], 2.1, 0]))
-    cells, names = VGroup(), VGroup()
-    wrong = VGroup()
-    for i, c in enumerate(order):
-        y = rows_y[i]
-        names.add(label(f"group {i + 1}: {table.loc[c].sum()} stations", 32, INK, weight=BOLD
-                        ).move_to([-2.0, y, 0], aligned_edge=RIGHT))
-        for bottom, x in cols.items():
-            right = (i == 0) == (bottom == "hard")
-            box = RoundedRectangle(width=2.8, height=1.6, corner_radius=0.12, stroke_width=4,
-                                   stroke_color=GREEN if right else VERMILION,
-                                   fill_color=GREEN if right else VERMILION, fill_opacity=0.08).move_to([x, y, 0])
-            value = label(f"{table.loc[c, bottom]}", 60, INK, weight=BOLD).move_to(box)
-            cells.add(VGroup(box, value))
-            if not right:
-                wrong.add(value)
-    total = int(table.loc[order[0], "soft"] + table.loc[order[1], "hard"])
-    wrong_name = label(f"{total} of {int(table.values.sum())} on the wrong side", 34, VERMILION, weight=BOLD
-                       ).to_edge(DOWN, buff=0.5)
-    return heads, names, cells, wrong, wrong_name
-
-
-class Scene10(VideoScene):
-    number = 10
-
-    def construct(self):
-        heads, names, cells, wrong, wrong_name = habitat_layout(self)
-        head = label("k-means on the counts, two groups", 32, SUBDUED).to_edge(UP, buff=0.3)
-        # "On the counts, two groups find the hard and soft seabed, ..."
-        self.play(FadeIn(head), FadeIn(names), run_time=self.share(0.25))
-        self.play(FadeIn(heads), LaggedStart(*[FadeIn(c) for c in cells], lag_ratio=0.2),
-                  run_time=self.share(0.3))
-        # "... with 15 stations out of 800 on the wrong side."
-        self.play(*[Indicate(w, color=VERMILION, scale_factor=1.3) for w in wrong], FadeIn(wrong_name),
-                  run_time=self.share(0.25))
-        self.finish()
-
-
-class Scene11(VideoScene):
-    number = 11
-
-    def construct(self):
-        heads, names, cells, wrong, wrong_name = habitat_layout(self)
-        head = label("k-means on the counts, two groups", 32, SUBDUED).to_edge(UP, buff=0.3)
-        self.add(head, heads, names, cells, wrong_name)
-        never = label("never shown to k-means", 30, VERMILION, weight=BOLD).next_to(heads, UP, 0.25)
-        box, mark = tick(0.7)
-        found = label("found from counts alone", 34, GREEN, weight=BOLD)
-        row = VGroup(box, found).arrange(RIGHT, buff=0.3).move_to(wrong_name)
-        mark.move_to(box)
-        # "It was never told the seabed type."
-        self.play(Indicate(heads, color=VERMILION), FadeIn(never), run_time=self.share(0.4))
-        # "That is what clustering is for."
-        self.play(FadeOut(wrong_name), FadeIn(row), Create(mark), run_time=self.share(0.3))
-        self.finish()
-
-
-def noise_layout(scene):
-    noise = scene.data("noise")
-    side = 5.6
-    frame = Square(side, color=GRID, stroke_width=3).move_to([-2.6, -0.3, 0])
-    corner = frame.get_corner(DL)
-    colours = [BLUE, ORANGE, GREEN, PURPLE]
-    dots = VGroup(*[Dot(corner + np.array([x * side, y * side, 0]), radius=0.045,
-                        color=colours[int(c) - 1], fill_opacity=0.85)
-                    for x, y, c in zip(noise["x"], noise["y"], noise["cluster"])])
-    grey = VGroup(*[d.copy().set_color(GREY) for d in dots])
-    name = label(f"{len(noise)} points of uniform noise", 30, SUBDUED).next_to(frame, UP, 0.25)
-    return frame, dots, grey, name
-
-
-class Scene12(VideoScene):
-    number = 12
-
-    def construct(self):
-        frame, dots, grey, name = noise_layout(self)
-        ask = label("asked for four groups", 36, INK, weight=BOLD).move_to([3.6, 1.0, 0])
-        get = label("four tidy groups", 36, BLUE, weight=BOLD).move_to([3.6, -0.2, 0])
-        # "But give it pure noise, ..."
-        self.play(Create(frame), FadeIn(grey, lag_ratio=0.002), FadeIn(name), run_time=self.share(0.3))
-        # "... and ask for four groups."
-        self.play(FadeIn(ask), run_time=self.share(0.15))
-        # "You get four tidy groups, from nothing."
-        self.play(Transform(grey, dots), FadeIn(get), run_time=self.share(0.2))
-        # "k-means never says it found nothing."
-        never = label("\"no structure found\"", 36, SUBDUED).move_to([3.6, -1.6, 0])
-        self.wait(max(self.share(0.62) - self.time, 0.01))
-        self.play(FadeIn(never), run_time=self.share(0.12))
-        self.play(Create(strike(never)), run_time=self.share(0.15))
-        self.finish()
-
-
-# How many groups? (scenes 13–20) -----------------------------------------------------------
-
-class Scene13(VideoScene):
-    number = 13
-
-    def construct(self):
-        options = VGroup(*[VGroup(RoundedRectangle(width=1.1, height=1.1, corner_radius=0.15, stroke_color=GRID,
-                                                   stroke_width=4),
-                                  label(str(k), 44, INK, weight=BOLD)) for k in range(2, 9)])
-        for o in options:
-            o[1].move_to(o[0])
-        options.arrange(RIGHT, buff=0.3).move_to(0.4 * UP)
-        head = label("How many groups?", 44, INK, weight=BOLD).to_edge(UP, buff=1.0)
-        yours = label("you choose it; k-means obeys", 34, BLUE, weight=BOLD).next_to(options, DOWN, 0.8)
-        pick = SurroundingRectangle(options[0], color=BLUE, stroke_width=6, buff=0.08, corner_radius=0.15)
-        # "The number of groups is your choice."
-        self.play(FadeIn(head), FadeIn(options, lag_ratio=0.1), run_time=self.share(0.25))
-        self.play(Create(pick), run_time=self.share(0.1))
-        for i in (3, 1, 5, 0):
-            self.play(pick.animate.move_to(options[i]), run_time=self.share(0.06))
-        self.play(FadeIn(yours), run_time=self.share(0.1))
-        # "So how do you choose it?"
-        self.play(Wiggle(head), run_time=self.share(0.2))
-        self.finish()
-
-
-def sweep(scene):
-    k = scene.data("k-sweep")
-    return k[k["data"] == "observed"].sort_values("k"), k[k["data"] == "shuffled"].sort_values("k")
-
-
-class Scene14(VideoScene):
-    number = 14
-
-    def construct(self):
-        observed, _ = sweep(self)
-        axes, frame = chart([2, 8, 1], [0.6, 1.0, 0.1], 9.0, 4.6, range(2, 9), [0.6, 0.7, 0.8, 0.9, 1.0],
-                            "number of groups", "error left within groups", y_fmt="{:.1f}")
-        VGroup(frame).move_to([0.4, -0.4, 0])
-        line = polyline(axes, observed["k"], observed["sse_ratio"], BLUE)
-        points = VGroup(*[Dot(axes.c2p(a, b), radius=0.1, color=BLUE) for a, b in zip(observed["k"], observed["sse_ratio"])])
-        first, last = observed.iloc[0], observed.iloc[-1]
-        ends = VGroup(label(f"{first['sse_ratio']:.3f}", 30, BLUE, weight=BOLD).next_to(points[0], RIGHT, 0.25),
-                      label(f"{last['sse_ratio']:.3f}", 30, BLUE, weight=BOLD).next_to(points[-1], UP, 0.2))
-        verdict = label("no elbow", 44, VERMILION, weight=BOLD).move_to(axes.c2p(6.2, 0.93))
-        # "The textbook looks for an elbow in the error."
-        self.play(FadeIn(frame), run_time=self.share(0.2))
-        self.wait(max(self.share(0.4) - self.time, 0.01))
-        # "Here it falls smoothly, from 0.878 to 0.661: ..."
-        self.play(Create(line), FadeIn(points, lag_ratio=0.2), FadeIn(ends[0]), run_time=self.share(0.3))
-        self.play(FadeIn(ends[1]), run_time=self.share(0.05))
-        # "... no elbow."
-        self.play(FadeIn(verdict, scale=1.3), run_time=self.share(0.1))
-        self.finish()
-
-
-def silhouette_layout(scene):
-    observed, shuffled = sweep(scene)
-    axes, frame = chart([2, 8, 1], [0, 0.3, 0.05], 9.0, 4.8, range(2, 9), [0, 0.1, 0.2, 0.3],
-                        "number of groups", "average silhouette width", y_fmt="{:.1f}")
-    VGroup(frame).move_to([0.4, -0.4, 0])
-
-    def curve(table, colour):
-        line = polyline(axes, table["k"], table["silhouette"], colour)
-        dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.1, color=colour) for a, b in zip(table["k"], table["silhouette"])])
-        return VGroup(line, dots)
-
-    obs, shuf = curve(observed, BLUE), curve(shuffled, GREY)
-    peak = observed.iloc[0]
-    peak_name = label(f"{peak['silhouette']:.3f}", 32, BLUE, weight=BOLD).next_to(obs[1][0], UR, 0.15)
-    rule = DashedLine(axes.c2p(2, 0.25), axes.c2p(8, 0.25), color=VERMILION, stroke_width=4)
-    rule_name = label("rule of thumb: below 0.25, \"no structure\"", 28, VERMILION
-                      ).next_to(rule, UP, 0.12).align_to(rule, RIGHT)
-    floor_name = label(f"shuffled: {shuffled['silhouette'].min():.3f} to {shuffled['silhouette'].max():.3f}",
-                       30, SUBDUED, weight=BOLD).next_to(axes.c2p(5, 0.035), DOWN, 0.1)
-    return axes, frame, obs, shuf, peak_name, VGroup(rule, rule_name), floor_name, observed, shuffled
-
-
-class Scene15(VideoScene):
-    number = 15
-
-    def construct(self):
-        axes, frame, obs, _, peak_name, rule, *_ = silhouette_layout(self)
-        # "The silhouette peaks at two groups, at 0.179."
-        self.play(FadeIn(frame), run_time=self.share(0.1))
-        self.play(Create(obs[0]), FadeIn(obs[1], lag_ratio=0.2), run_time=self.share(0.3))
-        self.play(FadeIn(peak_name), Indicate(obs[1][0], scale_factor=1.6), run_time=self.share(0.15))
-        # "A common rule of thumb says anything under 0.25 means no structure."
-        self.play(Create(rule[0]), FadeIn(rule[1]), run_time=self.share(0.25))
-        self.finish()
-
-
-class Scene16(VideoScene):
-    number = 16
-
-    def construct(self):
-        axes, frame, obs, _, peak_name, rule, *_ = silhouette_layout(self)
-        self.add(frame, obs, peak_name, rule)
-        box, mark = tick(0.6)
-        seabed = label("the seabed split", 32, GREEN, weight=BOLD)
-        note = VGroup(box, seabed).arrange(RIGHT, buff=0.25).move_to(axes.c2p(4.6, 0.205))
-        mark.move_to(box)
-        # "Yet that split was the seabed, almost exactly."
-        self.play(FadeIn(note, shift=0.2 * RIGHT), run_time=self.share(0.35))
-        self.play(Create(mark), run_time=self.share(0.2))
-        self.finish()
-
-
-class Scene17(VideoScene):
-    number = 17
-
-    def construct(self):
-        # Schematic: six rows and five columns; rows 1–3 hold the first three kinds of
-        # animal together, rows 4–6 the last two. Shuffling each column breaks that.
+        # Schematic: six rows and five columns; rows 1–3 hold the first three taxa
+        # together, rows 4–6 the last two. Shuffling each column breaks that.
         rows, cols = 6, 5
         high = [[(r < 3) == (c < 3) for c in range(cols)] for r in range(rows)]
         size, gap = 0.8, 0.12
@@ -586,12 +401,13 @@ class Scene17(VideoScene):
                          ).move_to([x0 + c * (size + gap), y0 - r * (size + gap), 0])
                   for c in range(cols)] for r in range(rows)]
         grid = VGroup(*[s for row in cells for s in row])
-        head = label("stations × kinds of animal", 30, SUBDUED).next_to(grid, UP, 0.3)
-        keeps = label("each column keeps its counts", 32, INK, weight=BOLD).move_to([3.4, 0.9, 0])
-        gone = label("who lives with whom: gone", 32, VERMILION, weight=BOLD).move_to([3.4, -0.3, 0])
-        none = label("no groups left to find", 32, SUBDUED, weight=BOLD).move_to([3.4, -1.5, 0])
-        # "So shuffle each column on its own."
-        self.play(FadeIn(grid, lag_ratio=0.02), FadeIn(head), run_time=self.share(0.15))
+        head = label("stations × taxa", 30, SUBDUED).next_to(grid, UP, 0.3)
+        keeps = label("each column keeps its values", 32, INK, weight=BOLD).move_to([3.4, 0.6, 0])
+        gone = label("any groups: gone", 32, VERMILION, weight=BOLD).move_to([3.4, -0.6, 0])
+        # "So run the same clustering on a shuffled copy."
+        self.play(FadeIn(grid, lag_ratio=0.02), FadeIn(head), run_time=self.share(0.2))
+        # "Shuffle each taxon's counts across the stations: ..."
+        wait_until(self, 0.3)
         rng = np.random.default_rng(18)
         moves = []
         for c in range(cols):
@@ -601,116 +417,135 @@ class Scene17(VideoScene):
             for r in range(rows):
                 moves.append(cells[r][c].animate.move_to(cells[order[r]][c].get_center()))
         self.play(*moves, run_time=self.share(0.25))
-        # "Each animal keeps its counts, ..."
-        self.play(FadeIn(keeps), run_time=self.share(0.12))
-        # "... but who lives with whom is gone."
-        self.play(FadeIn(gone), run_time=self.share(0.12))
-        self.play(FadeIn(none), run_time=self.share(0.1))
+        # "... every column keeps its values, but any groups are gone."
+        wait_until(self, 0.62)
+        self.play(FadeIn(keeps), run_time=self.share(0.1))
+        self.play(FadeIn(gone), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
-        axes, frame, obs, shuf, peak_name, rule, floor_name, observed, shuffled = silhouette_layout(self)
-        self.add(frame, obs, peak_name, rule)
-        times = observed["silhouette"].iloc[0] / shuffled["silhouette"].iloc[0]
-        ratio = label(f"{times:.1f} × the floor", 32, BLUE, weight=BOLD).next_to(peak_name, RIGHT, 0.4)
-        # "On shuffled data, the silhouette stays between 0.037 and 0.055."
-        self.play(FadeOut(rule), Create(shuf[0]), FadeIn(shuf[1], lag_ratio=0.2), run_time=self.share(0.35))
-        self.play(FadeIn(floor_name), run_time=self.share(0.15))
-        # "Against that floor, 0.179 is nearly five times as high."
-        self.wait(max(self.share(0.6) - self.time, 0.01))
-        self.play(FadeIn(ratio), Indicate(peak_name), run_time=self.share(0.25))
+        sil, axes, frame, obs, base, band, peak_name, rule, two = silhouette_layout(self)
+        mask = axis_mask(axes, frame, 1.6)
+        self.add(frame, mask, obs, peak_name, rule)
+        base_name = label("shuffled counts: about 0.05", 30, SUBDUED, weight=BOLD
+                          ).next_to(axes.c2p(5, 0.03), DOWN, 0.05)
+        top, bottom = axes.c2p(2, two["silhouette"]), axes.c2p(2, two["silhouette_mean"])
+        bracket = VGroup(Line(bottom + 0.35 * LEFT, top + 0.35 * LEFT, color=BLUE, stroke_width=5),
+                         Line(bottom + 0.45 * LEFT, bottom + 0.25 * LEFT, color=BLUE, stroke_width=5),
+                         Line(top + 0.45 * LEFT, top + 0.25 * LEFT, color=BLUE, stroke_width=5))
+        times = label(f"{two['times']:.1f} times\nthe baseline", 32, BLUE, weight=BOLD
+                      ).move_to(axes.c2p(4.6, 0.22), aligned_edge=LEFT)
+        # "On shuffled counts, the silhouette stays near 0.05 for every number of clusters."
+        self.play(FadeOut(rule), FadeIn(band), Create(base[0]), FadeIn(base[1], lag_ratio=0.2),
+                  run_time=self.share(0.3))
+        self.play(FadeIn(base_name), run_time=self.share(0.1))
+        # "At two, the survey scores three and a half times that, the clearest lead of any."
+        wait_until(self, 0.52)
+        self.play(Create(bracket), FadeIn(times), run_time=self.share(0.2))
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+# A schematic tree: ten leaves joined pair by pair. Each join is (left, right, height);
+# nodes 10 onwards are the joins in order.
+LEAVES = 10
+JOINS = [(0, 1, 0.6), (5, 6, 0.5), (2, 3, 0.8), (7, 8, 0.7), (4, 11, 1.2), (13, 9, 1.4),
+         (10, 12, 1.6), (14, 15, 2.4), (16, 17, 3.6)]
+
+
+def tree_layout():
+    base, unit = -2.3, 1.15
+    x = {i: -4.5 + i for i in range(LEAVES)}
+    y = {i: base for i in range(LEAVES)}
+    links = []
+    for n, (a, b, h) in enumerate(JOINS, start=LEAVES):
+        x[n], y[n] = (x[a] + x[b]) / 2, base + h * unit
+        links.append(VMobject(color=INK, stroke_width=5).set_points_as_corners(
+            [[x[a], y[a], 0], [x[a], y[n], 0], [x[b], y[n], 0], [x[b], y[b], 0]]))
+    leaves = VGroup(*[Dot([x[i], base, 0], radius=0.14, color=GREY) for i in range(LEAVES)])
+    return leaves, links, (lambda h: base + h * unit)
+
+
+def leaves_under(node):
+    if node < LEAVES:
+        return [node]
+    a, b, _ = JOINS[node - LEAVES]
+    return leaves_under(a) + leaves_under(b)
+
+
+class Scene11(VideoScene):
+    number = 11
 
     def construct(self):
-        criteria = self.data("criteria").set_index("criterion")["k"]
-        cards = [("the elbow", "no answer", SUBDUED),
-                 ("silhouette, against shuffled", f"{criteria['silhouette against shuffled']}", INK),
-                 ("gap statistic, default reference", f"{criteria['gap statistic']}", INK),
-                 ("mixture model, by BIC", f"{criteria['mixture BIC']}", INK)]
-        group = VGroup()
-        for name, answer, colour in cards:
-            box = RoundedRectangle(width=3.1, height=2.6, corner_radius=0.15, stroke_color=GRID, stroke_width=4)
-            text = VGroup(*[label(t, 26, SUBDUED) for t in name.split(", ")]).arrange(DOWN, buff=0.08)
-            value = label(answer, 72 if answer.isdigit() else 36, colour, weight=BOLD)
-            inner = VGroup(text, value).arrange(DOWN, buff=0.3).move_to(box)
-            group.add(VGroup(box, inner))
-        group.arrange(RIGHT, buff=0.3).move_to(0.6 * UP)
-        truth = label("the truth built into the data: 2", 40, GREEN, weight=BOLD).next_to(group, DOWN, 0.8)
-        # "Other criteria disagree."
-        self.play(FadeIn(group[0]), FadeIn(group[1]), run_time=self.share(0.2))
-        # "The gap statistic, with its default reference, says six."
-        self.play(FadeIn(group[2], shift=0.2 * UP), run_time=self.share(0.2))
-        # "A mixture model says three."
-        self.wait(max(self.share(0.55) - self.time, 0.01))
-        self.play(FadeIn(group[3], shift=0.2 * UP), run_time=self.share(0.15))
-        # "The truth is two."
-        self.wait(max(self.share(0.8) - self.time, 0.01))
-        self.play(FadeIn(truth), group[1][0].animate.set_stroke(GREEN, 6), run_time=self.share(0.12))
+        leaves, links, height = tree_layout()
+        name = label("a dendrogram", 36, INK, weight=BOLD).to_edge(UP, buff=0.35)
+        # "Hierarchical clustering gives every number of groups at once. It joins the two
+        # closest groups again and again, ..."
+        self.play(FadeIn(leaves, lag_ratio=0.1), run_time=self.share(0.1))
+        for link in links:
+            self.play(Create(link), run_time=self.share(0.4 / len(links)))
+        # "... and records the joins as a tree, a dendrogram."
+        self.play(FadeIn(name), run_time=self.share(0.08))
+        # "Cut it high for a few groups, lower for more."
+        wait_until(self, 0.66)
+        cut = DashedLine([-5.2, height(3.0), 0], [5.2, height(3.0), 0], color=VERMILION, stroke_width=5)
+        colours = [BLUE, ORANGE, GREEN]
+        self.play(Create(cut), *[leaves[i].animate.set_color(colours[g])
+                                 for g, node in enumerate((16, 17)) for i in leaves_under(node)],
+                  run_time=self.share(0.12))
+        self.play(cut.animate.set_y(height(2.0)),
+                  *[leaves[i].animate.set_color(colours[g])
+                    for g, node in enumerate((16, 14, 15)) for i in leaves_under(node)],
+                  run_time=self.share(0.12))
         self.finish()
 
 
-LINKAGE_NAMES = {"single": ("single", VERMILION), "average": ("average", ORANGE),
-                 "complete": ("complete", PURPLE), "ward.D2": ("Ward", BLUE)}
-
-
-class Scene20(VideoScene):
-    number = 20
+class Scene12(VideoScene):
+    number = 12
 
     def construct(self):
         linkages = self.data("linkages")
-        axes, frame = chart([2, 6, 1], [0, 1, 0.25], 8.4, 4.8, range(2, 7), [0, 0.25, 0.5, 0.75, 1],
-                            "number of groups", "agreement with the true split", y_fmt="{:.2f}")
-        VGroup(frame).move_to([-0.6, -0.5, 0])
-        head = label("One distance matrix, four ways to build the tree", 32, SUBDUED).to_edge(UP, buff=0.3)
-        lines = VGroup()
-        for key, (name, colour) in LINKAGE_NAMES.items():
+        axes, frame = chart([0, 6.5, 1], [0, 1, 0.25], 8.4, 4.6, range(2, 7), [0, 0.25, 0.5, 0.75, 1],
+                            "number of groups", "share of stations in the largest group", y_fmt="{:.0%}")
+        VGroup(frame).move_to([-0.9, -0.5, 0])
+        mask = axis_mask(axes, frame, 1.6)
+        head = label("One table, two linkages", 32, SUBDUED).to_edge(UP, buff=0.3)
+        lines = {}
+        for key, name, colour in (("Ward", "Ward", BLUE), ("single", "single", VERMILION)):
             rows = linkages[linkages["linkage"] == key].sort_values("k")
-            line = polyline(axes, rows["k"], rows["agreement_with_substrate"], colour)
-            dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.08, color=colour)
-                            for a, b in zip(rows["k"], rows["agreement_with_substrate"])])
-            tag = label(name, 30, colour, weight=BOLD).next_to(dots[-1], RIGHT, 0.25)
-            lines.add(VGroup(line, dots, tag))
-        # Keep the end labels apart where lines end close together.
-        tags = sorted([l[2] for l in lines], key=lambda t: t.get_y())
-        for below, above in zip(tags, tags[1:]):
-            if above.get_y() - below.get_y() < 0.45:
-                above.set_y(below.get_y() + 0.45)
-        lo = linkages.loc[linkages["agreement_with_substrate"].idxmin()]
-        hi = linkages.loc[linkages["agreement_with_substrate"].idxmax()]
-        # In the clear space between the single and average lines, pointing at its point.
-        lo_name = label(f"{lo['agreement_with_substrate']:.3f}", 32, VERMILION, weight=BOLD
-                        ).move_to(axes.c2p(3.5, 0.13))
-        lo_name = VGroup(lo_name, Arrow(lo_name.get_left(), axes.c2p(lo["k"], lo["agreement_with_substrate"]),
-                                        buff=0.15, color=VERMILION, stroke_width=4))
-        hi_name = label(f"{hi['agreement_with_substrate']:.3f}", 32, BLUE, weight=BOLD
-                        ).next_to(axes.c2p(hi["k"], hi["agreement_with_substrate"]), RIGHT, 0.25)
-        # "Settings decide too: ..."
-        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.15))
-        # "... four ways of building a cluster tree match the true split ..."
-        self.play(LaggedStart(*[AnimationGroup(Create(l[0]), FadeIn(l[1]), FadeIn(l[2])) for l in lines],
-                              lag_ratio=0.3), run_time=self.share(0.45))
-        # "... anywhere from 0.005 to 0.889."
-        self.play(FadeIn(lo_name), run_time=self.share(0.1))
-        self.play(FadeIn(hi_name), run_time=self.share(0.1))
+            line = polyline(axes, rows["k"], rows["largest_share"], colour)
+            dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.09, color=colour)
+                            for a, b in zip(rows["k"], rows["largest_share"])])
+            lines[key] = VGroup(line, dots)
+        single = linkages[linkages["linkage"] == "single"]["largest_share"].min()
+        ward_note = label("Ward: nearly k-means' two groups", 30, BLUE, weight=BOLD
+                          ).move_to(axes.c2p(2.2, 0.1), aligned_edge=LEFT)
+        chain_note = label(f"single: more than {np.floor(100 * single):.0f}% in one group", 30, VERMILION,
+                           weight=BOLD).move_to(axes.c2p(2.2, 0.88), aligned_edge=LEFT)
+        # "How the tree measures the distance between groups, its linkage, decides what it finds."
+        self.play(FadeIn(head), FadeIn(frame), FadeIn(mask), run_time=self.share(0.2))
+        # "Ward's linkage finds nearly the same two groups as k-means."
+        wait_until(self, 0.4)
+        self.play(Create(lines["Ward"][0]), FadeIn(lines["Ward"][1:]), FadeIn(ward_note),
+                  run_time=self.share(0.2))
+        # "Single linkage chains more than 99 per cent of stations into one group."
+        wait_until(self, 0.7)
+        self.play(Create(lines["single"][0]), FadeIn(lines["single"][1:]), FadeIn(chain_note),
+                  run_time=self.share(0.2))
         self.finish()
 
 
-class Scene21(KeyPointScene):
-    number, point = 21, 1
+class Scene13(KeyPointScene):
+    number, point = 13, 1
 
 
-# A map of the stations (scenes 22–32) ------------------------------------------------------
+# PCA (scenes 14–19) ----------------------------------------------------------------------
 
-class Scene22(VideoScene):
-    number = 22
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         # Schematic: a tilted cloud, and new axes turning to its longest spread.
@@ -724,17 +559,277 @@ class Scene22(VideoScene):
         old = VGroup(Line(centre + 5 * LEFT, centre + 5 * RIGHT, color=GRID, stroke_width=4),
                      Line(centre + 3 * DOWN, centre + 3 * UP, color=GRID, stroke_width=4))
         new = old.copy().set_color(BLUE)
-        names = VGroup(label("first component", 30, BLUE, weight=BOLD), label("second", 30, BLUE, weight=BOLD))
-        head = label("New axes: weighted sums of the columns", 34, SUBDUED).to_edge(UP, buff=0.3)
-        # "Principal component analysis ..."
-        self.play(FadeIn(dots, lag_ratio=0.02), FadeIn(old), run_time=self.share(0.2))
-        # "... builds new axes from the columns, ..."
-        self.play(FadeIn(head), run_time=self.share(0.1))
-        self.play(Rotate(new, angle, about_point=centre), run_time=self.share(0.3))
-        # "... ordered by how much of the spread they hold."
-        names[0].next_to(new[0].get_end(), UP, 0.1).shift(0.6 * LEFT)
+        many = label("24 columns: no single picture", 34, SUBDUED).to_edge(UP, buff=0.3)
+        head = label("Principal component analysis (PCA)", 34, INK, weight=BOLD).to_edge(UP, buff=0.3)
+        names = VGroup(label("PC1: most spread", 30, BLUE, weight=BOLD),
+                       label("PC2: next, at right angles", 30, BLUE, weight=BOLD))
+        # "Twenty-four columns cannot be drawn in one picture."
+        self.play(FadeIn(many), run_time=self.share(0.1))
+        # "Principal component analysis, or PCA, finds the direction along which the stations
+        # spread out most: ..."
+        wait_until(self, 0.2)
+        self.play(FadeIn(dots, lag_ratio=0.02), FadeIn(old), FadeOut(many), FadeIn(head), run_time=self.share(0.15))
+        self.play(Rotate(new, angle, about_point=centre), run_time=self.share(0.25))
+        names[0].next_to(new[0].get_end(), UP, 0.1).shift(1.2 * LEFT)
+        self.play(FadeIn(names[0]), run_time=self.share(0.08))
+        # "The second is the next most, at right angles."
+        wait_until(self, 0.78)
         names[1].next_to(new[1].get_end(), LEFT, 0.15)
-        self.play(FadeIn(names), run_time=self.share(0.15))
+        self.play(FadeIn(names[1]), Indicate(new[1], color=BLUE), run_time=self.share(0.12))
+        self.finish()
+
+
+def ordination_layout(scene):
+    stations = scene.data("ordination")
+    hard = stations["hard_bottom"].astype(str).str.upper() == "TRUE"
+    x_lo, x_hi = np.floor(stations["PC1"].min()), np.ceil(stations["PC1"].max())
+    y_lo, y_hi = np.floor(stations["PC2"].min()), np.ceil(stations["PC2"].max())
+    height = 6.0
+    width = min(height * (x_hi - x_lo) / (y_hi - y_lo), 8.4)
+    axes = plain_axes([x_lo, x_hi, 1], [y_lo, y_hi, 1], width, height).move_to([-1.6, -0.35, 0])
+    axes.set_stroke(opacity=0.5, width=2)       # faint lines through zero; the box is the frame
+    box = Rectangle(width=width, height=height, color=GRID, stroke_width=3).move_to(
+        (axes.c2p(x_lo, y_lo) + axes.c2p(x_hi, y_hi)) / 2)
+    lo, hi = stations["depth_m"].min(), stations["depth_m"].max()
+    dots = VGroup(*[marker(axes.c2p(a, b), viridis((d - lo) / (hi - lo)), h, 0.06)
+                    for a, b, d, h in zip(stations["PC1"], stations["PC2"], stations["depth_m"], hard)])
+    x_name = label("PC1", 28, SUBDUED).next_to(box, DOWN, 0.15)
+    y_name = label("PC2", 28, SUBDUED).rotate(PI / 2).next_to(box, LEFT, 0.15)
+    key = VGroup(depth_key(2.2),
+                 VGroup(marker(ORIGIN, INK, True, 0.1), label("hard bottom", 26, SUBDUED)).arrange(RIGHT, buff=0.2),
+                 VGroup(marker(ORIGIN, INK, False, 0.1), label("soft bottom", 26, SUBDUED)).arrange(RIGHT, buff=0.2)
+                 ).arrange(DOWN, buff=0.3, aligned_edge=LEFT).to_corner(UR, buff=0.4)
+    return axes, dots, VGroup(axes, box, x_name, y_name), key
+
+
+SIDE_X = 4.7    # right of the map, under the key: where the map's notes go
+
+
+class Scene15(VideoScene):
+    number = 15
+
+    def construct(self):
+        axes, dots, frame, key = ordination_layout(self)
+        variance = self.data("variance")
+        two = variance["cumulative percent variance"].iloc[1]
+        name = label("an ordination", 34, INK, weight=BOLD).move_to([SIDE_X, 0.2, 0])
+        held = label(f"PC1 and PC2:\n{two:.1f}% of\nthe variance", 32, BLUE, weight=BOLD).move_to([SIDE_X, -1.6, 0])
+        # "Plotted on those two, the stations form a map, an ordination, ..."
+        self.play(FadeIn(frame), FadeIn(key), run_time=self.share(0.12))
+        self.play(FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.3))
+        self.play(FadeIn(name), run_time=self.share(0.08))
+        # "The two components hold 29.4 per cent of the variance, usual for species counts."
+        wait_until(self, 0.62)
+        self.play(FadeIn(held), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene16(VideoScene):
+    number = 16
+
+    def construct(self):
+        taxa = self.data("loadings")
+        lim = np.ceil(10 * max(taxa["PC1"].abs().max(), taxa["PC2"].abs().max())) / 10
+        size = 5.6
+        axes = plain_axes([-lim, lim, 0.1], [-lim, lim, 0.1], size, size).move_to([-1.6, -0.4, 0])
+        axes.set_stroke(opacity=0.6, width=2)
+        box = Square(size, color=GRID, stroke_width=3).move_to(axes)
+        names = VGroup(label("loading on PC1", 26, SUBDUED).next_to(box, DOWN, 0.15),
+                       label("loading on PC2", 26, SUBDUED).rotate(PI / 2).next_to(box, LEFT, 0.15))
+        hard = taxa[taxa["hard_share"] > 0.5]
+        soft = taxa[taxa["hard_share"] <= 0.5].sort_values("mean_depth")
+        lo, hi = soft["mean_depth"].min(), soft["mean_depth"].max()
+        hard_dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.13, color=HARD) for a, b in zip(hard["PC1"], hard["PC2"])])
+        soft_dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.13, color=viridis((d - lo) / (hi - lo)))
+                             for a, b, d in zip(soft["PC1"], soft["PC2"], soft["mean_depth"])])
+        head = label("Each taxon placed at its loadings", 32, SUBDUED).to_edge(UP, buff=0.3)
+        hard_name = label("hard-bottom taxa", 32, HARD, weight=BOLD).move_to([SIDE_X, 1.2, 0])
+        soft_name = label("the rest, in order\nof depth", 32, INK, weight=BOLD).move_to([SIDE_X, -0.6, 0])
+        key = depth_key(2.0, "shallow", "deep").next_to(soft_name, DOWN, 0.3)
+        # "To read the axes, look at the loadings: the weight of each taxon in a component."
+        self.play(FadeIn(head), FadeIn(VGroup(axes, box, names)), run_time=self.share(0.15))
+        self.play(FadeIn(VGroup(*[d.copy().set_color(GREY) for d in [*hard_dots, *soft_dots]]), lag_ratio=0.05),
+                  run_time=self.share(0.25))
+        # "The hard-bottom taxa sit together, ..."
+        wait_until(self, 0.5)
+        self.play(FadeIn(hard_dots, scale=1.4), FadeIn(hard_name), run_time=self.share(0.15))
+        # "... and the rest line up in order of depth."
+        wait_until(self, 0.7)
+        self.play(FadeIn(soft_dots), FadeIn(soft_name), FadeIn(key), run_time=self.share(0.2))
+        self.finish()
+
+
+def direction_arrows(scene, axes):
+    directions = scene.data("directions").set_index("variable")
+    arrows = VGroup()
+    origin = axes.c2p(0, 0)
+    for name in ("depth", "hard bottom"):
+        r = directions.loc[name]
+        unit = np.array([r["PC1"], r["PC2"]]) / np.hypot(r["PC1"], r["PC2"])
+        tip = axes.c2p(*(3.6 * unit))
+        off = abs(r["angle_from_PC1"]) % 90
+        off = min(off, 90 - off)
+        arrow = Arrow(origin, tip, buff=0, color=VERMILION, stroke_width=8, max_tip_length_to_length_ratio=0.12)
+        text = label(f"{name}: {off:.0f}°", 32, VERMILION, weight=BOLD).next_to(tip, UP if unit[1] > 0 else DOWN, 0.12)
+        arrows.add(VGroup(arrow, text))
+    return arrows
+
+
+class Scene17(VideoScene):
+    number = 17
+
+    def construct(self):
+        axes, dots, frame, key = ordination_layout(self)
+        self.add(frame, key, dots.set_opacity(0.35))
+        arrows = direction_arrows(self, axes)
+        note = label("degrees from\nthe nearest axis", 26, SUBDUED).move_to([SIDE_X, 0.0, 0])
+        verdict = label("each component\nmixes the two", 34, INK, weight=BOLD).move_to([SIDE_X, -1.6, 0])
+        # "So depth and seabed both run diagonally, about 39 degrees from the axes: ..."
+        self.play(GrowArrow(arrows[0][0]), FadeIn(arrows[0][1]), run_time=self.share(0.2))
+        self.play(GrowArrow(arrows[1][0]), FadeIn(arrows[1][1]), FadeIn(note), run_time=self.share(0.2))
+        # "... each component mixes the two. Read an axis from its loadings, not from its name."
+        wait_until(self, 0.5)
+        self.play(FadeIn(verdict), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene18(VideoScene):
+    number = 18
+
+    def construct(self):
+        shares = self.data("shares").sort_values("component")
+        top = np.ceil(shares["observed"].max() / 5) * 5
+        axes, frame = chart([0, 25, 1], [0, top, 5], 10.4, 4.4, [1, 4, 8, 12, 16, 20, 24],
+                            list(range(0, int(top) + 1, 5)), "component", "share of the variance (%)")
+        VGroup(frame).move_to([0.3, -0.7, 0])
+        width = axes.x_axis.get_unit_size() * 0.7
+        unit = axes.y_axis.get_unit_size()
+        bars = VGroup(*[Rectangle(width=width, height=max(unit * p, 0.01), stroke_width=0, fill_color=GREY,
+                                  fill_opacity=1).move_to(axes.c2p(c, 0), aligned_edge=DOWN)
+                        for c, p in zip(shares["component"], shares["observed"])])
+        n_80 = int(shares.loc[shares["cumulative"] >= 80, "component"].iloc[0])
+        kept = int(np.cumprod(shares["above"].astype(str).str.upper() == "TRUE").sum())
+        line80 = DashedLine(axes.c2p(n_80 + 0.5, 0), axes.c2p(n_80 + 0.5, top), color=SUBDUED, stroke_width=4)
+        name80 = label(f"80% of the variance: {n_80} components", 30, SUBDUED, weight=BOLD
+                       ).next_to(line80, UP, 0.1).align_to(line80, RIGHT)
+        shuffled = polyline(axes, shares["component"], shares["shuffled"], VERMILION, width=5, dashed=True)
+        shuffled_name = label("shuffled tables", 28, VERMILION, weight=BOLD).next_to(
+            axes.c2p(14, shares["shuffled"].iloc[13]), UP, 0.45)
+        pa_name = label(f"parallel analysis: {kept}", 34, BLUE, weight=BOLD).move_to(axes.c2p(5, top * 0.8),
+                                                                                    aligned_edge=LEFT)
+        # "Components can also be a model's inputs. How many to keep?"
+        self.play(FadeIn(frame), LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.05),
+                  run_time=self.share(0.25))
+        # "Keeping 80 per cent of the variance keeps 16 of the 24."
+        wait_until(self, 0.3)
+        self.play(*[bars[i].animate.set_fill(SKY) for i in range(n_80)], Create(line80), FadeIn(name80),
+                  run_time=self.share(0.2))
+        # "Parallel analysis keeps only those that beat their shuffled counterparts: three."
+        wait_until(self, 0.58)
+        self.play(Create(shuffled), FadeIn(shuffled_name), *[bars[i].animate.set_fill(GREY) for i in range(n_80)],
+                  FadeOut(line80), FadeOut(name80), run_time=self.share(0.2))
+        self.play(*[bars[i].animate.set_fill(BLUE) for i in range(kept)], FadeIn(pa_name), run_time=self.share(0.12))
+        self.finish()
+
+
+class Scene19(VideoScene):
+    number = 19
+
+    def construct(self):
+        cv = self.data("components-cv").sort_values("num_comp")
+        y_top = np.ceil(cv["mean"].max() / 5) * 5 + 5
+        y_ticks = list(range(0, int(y_top) + 1, 10))
+        x_top = cv["num_comp"].max()
+        axes, frame = chart([0, x_top + 0.5, 1], [0, y_top, 5], 9.6, 4.6, sorted(set([1, 2, 4, 8, x_top])), y_ticks,
+                            "components kept", "error predicting depth (m)")
+        VGroup(frame).move_to([-0.4, -0.5, 0])
+        head = label("Predicting depth from the components", 32, SUBDUED).to_edge(UP, buff=0.3)
+        line = polyline(axes, cv["num_comp"], cv["mean"], BLUE)
+        dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.09, color=BLUE) for a, b in zip(cv["num_comp"], cv["mean"])])
+        two = cv[cv["num_comp"] == 2].iloc[0]
+        pointer_text = label("two are enough", 32, BLUE, weight=BOLD).move_to(
+            axes.c2p(3.5, two["mean"] + 0.35 * y_top), aligned_edge=LEFT)
+        pointer = Arrow(pointer_text.get_left(), axes.c2p(2, two["mean"]), buff=0.15, color=BLUE, stroke_width=4)
+        pc3 = label("PC3: rock against gravel,\nnot needed for depth", 28, INK, weight=BOLD).move_to(
+            axes.c2p(10, 0.3 * y_top), aligned_edge=LEFT)
+        # "When the components feed a model, cross-validate the number."
+        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.2))
+        self.play(Create(line), FadeIn(dots, lag_ratio=0.05), run_time=self.share(0.25))
+        # "To predict depth, two are enough."
+        self.play(GrowArrow(pointer), FadeIn(pointer_text), run_time=self.share(0.12))
+        # "The third holds real structure, rock against gravel, that depth does not need."
+        wait_until(self, 0.62)
+        self.play(FadeIn(pc3), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene20(KeyPointScene):
+    number, point = 20, 2
+
+
+# Checking a pattern (scenes 21–27) -------------------------------------------------------
+
+CHECKS = ["Does it come back?", "Is there a gap?", "Does it match a record?"]
+
+
+class Scene21(VideoScene):
+    number = 21
+
+    def construct(self):
+        sup = VGroup(label("supervised model", 32, INK, weight=BOLD),
+                     label("checked against held-out answers", 28, GREEN)).arrange(DOWN, buff=0.15)
+        uns = VGroup(label("clustering", 32, INK, weight=BOLD),
+                     label("no answers to hold out", 28, VERMILION)).arrange(DOWN, buff=0.15)
+        VGroup(sup, uns).arrange(RIGHT, buff=2.0).to_edge(UP, buff=0.8)
+        cards = VGroup()
+        for i, text in enumerate(CHECKS, 1):
+            box = RoundedRectangle(width=4.1, height=1.9, corner_radius=0.15, stroke_color=BLUE, stroke_width=4)
+            inner = VGroup(badge(i), label(text, 28, INK, weight=BOLD)).arrange(DOWN, buff=0.25).move_to(box)
+            cards.add(VGroup(box, inner))
+        cards.arrange(RIGHT, buff=0.35).move_to(1.2 * DOWN)
+        # "A supervised model can be checked against held-out answers."
+        self.play(FadeIn(sup), run_time=self.share(0.2))
+        # "A clustering has none, ..."
+        wait_until(self, 0.42)
+        self.play(FadeIn(uns), run_time=self.share(0.15))
+        # "... so three checks take their place."
+        wait_until(self, 0.62)
+        self.play(LaggedStart(*[FadeIn(c, shift=0.2 * UP) for c in cards], lag_ratio=0.3), run_time=self.share(0.3))
+        self.finish()
+
+
+class Scene22(VideoScene):
+    number = 22
+
+    def construct(self):
+        # Schematic: eight sites, each a box of stations, drawn again with replacement.
+        letters = "ABCDEFGH"
+        rng = np.random.default_rng(22)
+        sizes = rng.integers(2, 5, len(letters))
+
+        def site(i, colour=BLUE):
+            box = RoundedRectangle(width=1.2, height=1.2, corner_radius=0.12, stroke_color=colour, stroke_width=4)
+            dots = VGroup(*[Dot(radius=0.09, color=colour) for _ in range(sizes[i])]).arrange_in_grid(2, 2, buff=0.18)
+            name = label(letters[i], 28, colour, weight=BOLD).next_to(box, UP, 0.1)
+            return VGroup(box, dots.move_to(box), name)
+
+        survey = VGroup(*[site(i) for i in range(len(letters))]).arrange(RIGHT, buff=0.3).move_to(1.6 * UP)
+        survey_name = label("the survey's sites", 28, SUBDUED).next_to(survey, LEFT, 0.3)
+        draw = [1, 1, 3, 0, 5, 5, 7, 2]
+        sample = VGroup(*[site(i, ORANGE) for i in draw]).arrange(RIGHT, buff=0.3).move_to(1.2 * DOWN)
+        sample_name = label("one bootstrap sample", 28, ORANGE, weight=BOLD).next_to(sample, DOWN, 0.3)
+        note = label("some twice, some not at all", 30, INK, weight=BOLD).to_edge(DOWN, buff=0.35)
+        sixty = label("k-means refitted on 60 samples", 32, BLUE, weight=BOLD).to_edge(DOWN, buff=0.35)
+        # "First, does the pattern come back? A bootstrap sample draws the survey's sites again ..."
+        self.play(FadeIn(survey, lag_ratio=0.1), run_time=self.share(0.2))
+        wait_until(self, 0.3)
+        # "... at random, with replacement, each with all its stations."
+        self.play(LaggedStart(*[TransformFromCopy(survey[i], s) for i, s in zip(draw, sample)], lag_ratio=0.15),
+                  FadeIn(sample_name), run_time=self.share(0.35))
+        self.play(FadeIn(note), run_time=self.share(0.1))
+        # "k-means is refitted on sixty."
+        wait_until(self, 0.84)
+        self.play(FadeOut(note), FadeIn(sixty), run_time=self.share(0.1))
         self.finish()
 
 
@@ -742,660 +837,272 @@ class Scene23(VideoScene):
     number = 23
 
     def construct(self):
-        variance = self.data("variance").sort_values("component")
-        axes, frame = chart([0, len(variance) + 1, 1], [0, 0.2, 0.05], 10.0, 4.4, [1, 2, 6, 12, 18, 24],
-                            [0, 0.05, 0.1, 0.15, 0.2], "component", "share of the variance",
-                            y_fmt="{:.0%}")
-        VGroup(frame).move_to([0.2, -0.6, 0])
-        width = axes.x_axis.get_unit_size() * 0.7
-        bars = VGroup()
-        for c, p in zip(variance["component"], variance["proportion"]):
-            base = axes.c2p(c, 0)
-            bars.add(Rectangle(width=width, height=axes.y_axis.get_unit_size() * p, stroke_width=0,
-                               fill_color=BLUE if c <= 2 else GREY, fill_opacity=1).move_to(base, aligned_edge=DOWN))
-        two = variance["proportion"].iloc[:2]
-        tags = VGroup()
-        together = label(f"the first two: {percent(two.iloc[0], 1)} + {percent(two.iloc[1], 1)} = "
-                         f"{percent(two.sum(), 1)}", 34, BLUE, weight=BOLD).move_to(axes.c2p(5, 0.17), aligned_edge=LEFT)
-        rest = label("the rest: mostly sampling noise", 32, SUBDUED, weight=BOLD
-                     ).move_to(axes.c2p(5, 0.1), aligned_edge=LEFT)
-        # "The first two hold 29.4% of the variance."
-        self.play(FadeIn(frame), GrowFromEdge(bars[:2], DOWN), run_time=self.share(0.2))
-        self.play(FadeIn(tags), FadeIn(together), run_time=self.share(0.15))
-        # "That sounds poor, but most of the rest is sampling noise, and here we know it is."
-        self.wait(max(self.share(0.45) - self.time, 0.01))
-        self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars[2:]], lag_ratio=0.05), FadeIn(rest),
-                  run_time=self.share(0.3))
-        self.finish()
+        # Schematic: six stations under two groupings, and three pairs judged.
+        first = [0, 0, 0, 1, 1, 1]
+        second = [0, 0, 1, 1, 1, 1]
+        colours = [BLUE, ORANGE]
+        xs = np.linspace(-3.0, 3.0, 6)
 
+        def row(groups, y, name):
+            dots = VGroup(*[Dot([x, y, 0], radius=0.2, color=colours[g]) for x, g in zip(xs, groups)])
+            return VGroup(dots, label(name, 28, SUBDUED).next_to(dots, LEFT, 0.5))
 
-def ordination_layout(scene):
-    stations = scene.data("ordination")
-    x_lo, x_hi = np.floor(stations["PC1"].min()), np.ceil(stations["PC1"].max())
-    y_lo, y_hi = np.floor(stations["PC2"].min()), np.ceil(stations["PC2"].max())
-    height = 6.0
-    width = height * (x_hi - x_lo) / (y_hi - y_lo)
-    axes = plain_axes([x_lo, x_hi, 1], [y_lo, y_hi, 1], width, height).move_to([-1.6, -0.35, 0])
-    axes.set_stroke(opacity=0.5, width=2)       # faint lines through zero; the box is the frame
-    box = Rectangle(width=width, height=height, color=GRID, stroke_width=3).move_to(
-        (axes.c2p(x_lo, y_lo) + axes.c2p(x_hi, y_hi)) / 2)
-    lo, hi = stations["depth_m"].min(), stations["depth_m"].max()
-    dots = VGroup(*[marker(axes.c2p(a, b), viridis((d - lo) / (hi - lo)), bottom == "hard", 0.06)
-                    for a, b, d, bottom in zip(stations["PC1"], stations["PC2"], stations["depth_m"],
-                                               stations["bottom"])])
-    x_name = label("first component", 28, SUBDUED).next_to(box, DOWN, 0.15)
-    y_name = label("second component", 28, SUBDUED).next_to(box, UP, 0.15)
-    key = VGroup(depth_key(2.2),
-                 VGroup(marker(ORIGIN, INK, True, 0.1), label("hard seabed", 26, SUBDUED)).arrange(RIGHT, buff=0.2),
-                 VGroup(marker(ORIGIN, INK, False, 0.1), label("soft seabed", 26, SUBDUED)).arrange(RIGHT, buff=0.2)
-                 ).arrange(DOWN, buff=0.3, aligned_edge=LEFT).to_corner(UR, buff=0.4)
-    return stations, axes, dots, VGroup(axes, box, x_name, y_name), key, x_name
-
-
-SIDE_X = 4.7    # right of the map, under the key: where the map's notes go
-
-
-class Scene24(VideoScene):
-    number = 24
-
-    def construct(self):
-        stations, axes, dots, frame, key, _ = ordination_layout(self)
-        # "The map shows both structures."
-        self.play(FadeIn(frame), FadeIn(key), run_time=self.share(0.15))
-        self.play(FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.3))
-        # "The hard seabed sticks out as its own arm, and depth runs smoothly up each arm, ..."
-        hard = VGroup(*[d for d, b in zip(dots, stations["bottom"]) if b == "hard"])
-        self.play(Indicate(hard, color=None, scale_factor=1.3), run_time=self.share(0.25))
-        self.play(Indicate(key[0], color=None), run_time=self.share(0.15))
-        self.finish()
-
-
-def ordination_notes(stations, axes):
-    hard = stations[stations["bottom"] == "hard"]
-    soft = stations[stations["bottom"] == "soft"]
-    arm = axes.c2p(hard["PC1"].quantile(0.8), hard["PC2"].quantile(0.8))
-    ramp = axes.c2p(soft["PC1"].quantile(0.15), soft["PC2"].median())
-    arm_note = label("a separate arm:\na boundary", 30, VERMILION, weight=BOLD).move_to([SIDE_X, 0.6, 0])
-    ramp_note = label("a smooth ramp:\na gradient", 28, VERMILION, weight=BOLD).move_to([-5.75, -2.2, 0])
-    return VGroup(Arrow(arm_note.get_left(), arm, color=VERMILION, buff=0.15, stroke_width=4), arm_note), \
-        VGroup(Arrow(ramp_note.get_top(), ramp, color=VERMILION, buff=0.15, stroke_width=4), ramp_note)
-
-
-class Scene25(VideoScene):
-    number = 25
-
-    def construct(self):
-        stations, axes, dots, frame, key, _ = ordination_layout(self)
-        self.add(frame, key, dots)
-        arm, ramp = ordination_notes(stations, axes)
-        # "A separate arm is a boundary."
-        self.play(FadeIn(arm[1]), GrowArrow(arm[0]), run_time=self.share(0.3))
-        # "A smooth ramp is a gradient."
-        self.wait(max(self.share(0.5) - self.time, 0.01))
-        self.play(FadeIn(ramp[1]), GrowArrow(ramp[0]), run_time=self.share(0.3))
-        self.finish()
-
-
-class Scene26(VideoScene):
-    number = 26
-
-    def construct(self):
-        stations, axes, dots, frame, key, x_name = ordination_layout(self)
-        self.add(frame, key, dots)
-        guess = label("= depth?", 36, VERMILION, weight=BOLD).next_to(x_name, LEFT, 0.25)
-        # "Now name the axes. Is the first one depth?"
-        self.play(Indicate(axes.x_axis, color=VERMILION), run_time=self.share(0.3))
-        self.play(FadeIn(guess, shift=0.2 * LEFT), run_time=self.share(0.3))
-        self.finish()
-
-
-def direction_arrows(scene, axes):
-    directions = scene.data("directions").set_index("gradient")
-    arrows = VGroup()
-    origin = axes.c2p(0, 0)
-    for name, colour in (("depth", VERMILION), ("hard bottom", VERMILION)):
-        r = directions.loc[name]
-        unit = np.array([r["x"], r["y"]]) / np.hypot(r["x"], r["y"])
-        tip = axes.c2p(*(4.2 * unit))
-        arrow = Arrow(origin, tip, buff=0, color=colour, stroke_width=8, max_tip_length_to_length_ratio=0.12)
-        text = label(f"{name}: {r['angle']:.0f}°", 32, colour, weight=BOLD).next_to(tip, UP, 0.12)
-        arrows.add(VGroup(arrow, text))
-    return arrows
-
-
-class Scene27(VideoScene):
-    number = 27
-
-    def construct(self):
-        stations, axes, dots, frame, key, x_name = ordination_layout(self)
-        self.add(frame, key, dots.set_opacity(0.35))
-        guess = label("= depth?", 36, VERMILION, weight=BOLD).next_to(x_name, LEFT, 0.25)
-        self.add(guess)
-        arrows = direction_arrows(self, axes)
-        verdict = label("both at about 45°\nto the axes", 34, INK, weight=BOLD).move_to([SIDE_X, -0.6, 0])
-        # "No. Depth increases at 139 degrees from the first axis, ..."
-        self.play(Create(strike(guess)), run_time=self.share(0.1))
-        self.play(GrowArrow(arrows[0][0]), FadeIn(arrows[0][1]), run_time=self.share(0.25))
-        # "... and hard bottom at 41."
-        self.play(GrowArrow(arrows[1][0]), FadeIn(arrows[1][1]), run_time=self.share(0.2))
-        # "Both lie at about 45 degrees to the axes."
-        self.play(FadeIn(verdict), run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene28(VideoScene):
-    number = 28
-
-    def construct(self):
-        stations, axes, dots, frame, key, _ = ordination_layout(self)
-        arrows = direction_arrows(self, axes)
-        self.add(frame, key, dots.set_opacity(0.35), arrows)
-        origin = axes.c2p(0, 0)
-        cross = VGroup(DashedLine(origin + 2.3 * LEFT, origin + 2.3 * RIGHT, color=BLUE, stroke_width=5),
-                       DashedLine(origin + 2.3 * DOWN, origin + 2.3 * UP, color=BLUE, stroke_width=5))
-        note = label("any turn fits\nalmost as well", 32, BLUE, weight=BOLD).move_to([SIDE_X, -0.2, 0])
-        verdict = label("PCA finds the plane,\nnot the gradients", 34, INK, weight=BOLD).move_to([SIDE_X, -2.0, 0])
-        # "The two carry almost the same variance, so nothing tells PCA which way to turn its axes."
-        self.play(Create(cross), FadeIn(note), run_time=self.share(0.15))
-        self.play(Rotate(cross, PI / 4, about_point=origin), run_time=self.share(0.2))
-        self.play(Rotate(cross, -PI / 3, about_point=origin), run_time=self.share(0.2))
-        self.play(Rotate(cross, PI / 12, about_point=origin), run_time=self.share(0.1))
-        # "It finds the plane, not the gradients."
-        self.play(FadeIn(verdict), run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene29(VideoScene):
-    number = 29
-
-    def construct(self):
-        rules = self.data("rules").set_index("rule")["components"]
-        names = [("80% of the variance", "80% of variance"), ("eigenvalue above 1", "Kaiser"),
-                 ("beat shuffled data", "parallel analysis")]
-        group = VGroup()
-        for text, key in names:
-            box = RoundedRectangle(width=3.8, height=2.8, corner_radius=0.15, stroke_color=GRID, stroke_width=4)
-            inner = VGroup(label(text, 30, SUBDUED), label(f"{rules[key]}", 90, INK, weight=BOLD),
-                           label("components", 26, SUBDUED)).arrange(DOWN, buff=0.2).move_to(box)
-            group.add(VGroup(box, inner))
-        group.arrange(RIGHT, buff=0.4).move_to(0.2 * DOWN)
-        head = label("How many of the 24 components to keep?", 36, INK, weight=BOLD).to_edge(UP, buff=0.9)
-        # "How many components should you keep?"
-        self.play(FadeIn(head), run_time=self.share(0.3))
-        # "Three common rules say sixteen, seven, and three."
-        self.play(LaggedStart(*[FadeIn(g, shift=0.2 * UP) for g in group], lag_ratio=0.5), run_time=self.share(0.5))
-        self.finish()
-
-
-class Scene30(VideoScene):
-    number = 30
-
-    def construct(self):
-        cv = self.data("components-cv").sort_values("num_comp")
-        axes, frame = chart([0, 25, 1], [18, 32, 2], 9.6, 4.6, [1, 2, 4, 8, 14, 18, 24], [20, 24, 28, 32],
-                            "components kept", "error predicting depth (m)")
-        VGroup(frame).move_to([0.3, -0.5, 0])
-        head = label("Predicting depth from the components", 32, SUBDUED).to_edge(UP, buff=0.3)
-        line = polyline(axes, cv["num_comp"], cv["mean"], BLUE)
-        dots = VGroup(*[Dot(axes.c2p(a, b), radius=0.09, color=BLUE) for a, b in zip(cv["num_comp"], cv["mean"])])
-        one, two, last = cv.iloc[0], cv.iloc[1], cv.iloc[-1]
-        tags = [label(f"one: {one['mean']:.1f} m", 30, INK, weight=BOLD).next_to(dots[0], RIGHT, 0.3),
-                label(f"two: {two['mean']:.1f} m", 32, BLUE, weight=BOLD).move_to(axes.c2p(6, 25), aligned_edge=LEFT),
-                label(f"all {last['num_comp']:.0f}: {last['mean']:.1f} m", 30, INK, weight=BOLD
-                      ).next_to(dots[-1], UP, 0.35).shift(0.5 * LEFT)]
-        mark = Arrow(tags[1].get_left(), dots[1].get_center(), buff=0.15, color=BLUE, stroke_width=4)
-        # "Let the task decide. Predict depth from the components: ..."
-        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.2))
-        # "... one gives an error of 30.4 metres, ..."
-        self.wait(max(self.share(0.35) - self.time, 0.01))
-        self.play(FadeIn(dots[0], scale=2), FadeIn(tags[0]), run_time=self.share(0.1))
-        # "... two give 21.2, ..."
-        self.play(Create(line), FadeIn(dots[1:], lag_ratio=0.1), GrowArrow(mark), FadeIn(tags[1]),
-                  run_time=self.share(0.2))
-        # "... and all 24 do no better than two."
-        self.play(FadeIn(tags[2]), Indicate(dots[-1], scale_factor=1.8), run_time=self.share(0.15))
-        self.finish()
-
-
-def umap_panel(umap, xcol, ycol, centre, title_text):
-    xs, ys = umap[xcol], umap[ycol]
-    size = 5.0
-    span = max(xs.max() - xs.min(), ys.max() - ys.min())
-    to = lambda x, y: np.array([centre[0] + (x - (xs.max() + xs.min()) / 2) / span * size,  # noqa: E731
-                                centre[1] + (y - (ys.max() + ys.min()) / 2) / span * size, 0])
-    lo, hi = umap["depth_m"].min(), umap["depth_m"].max()
-    dots = VGroup(*[Dot(to(x, y), radius=0.045, color=viridis((d - lo) / (hi - lo)), fill_opacity=0.9)
-                    for x, y, d in zip(xs, ys, umap["depth_m"])])
-    frame = RoundedRectangle(width=size + 0.6, height=size + 0.6, corner_radius=0.15, stroke_color=GRID,
-                             stroke_width=3).move_to([*centre, 0])
-    name = label(title_text, 32, INK, weight=BOLD).next_to(frame, UP, 0.2)
-    return dots, VGroup(frame, name), to
-
-
-class Scene31(VideoScene):
-    number = 31
-
-    def construct(self):
-        umap = self.data("umap")
-        dots, frame, to = umap_panel(umap, "x", "y", (-3.4, -0.5), "the survey")
-        key = depth_key(2.2).to_edge(DOWN, buff=0.2).set_x(-3.4)
-        hard = umap[umap["bottom"] == "hard"]
-        arm = to(hard["x"].median(), hard["y"].median())
-        note = label("hard seabed", 30, VERMILION, weight=BOLD).move_to(arm + np.array([0.1, 1.9, 0]))
-        pointer = Arrow(note.get_bottom(), arm, buff=0.15, color=VERMILION, stroke_width=4)
-        # "UMAP draws a prettier map."
-        self.play(FadeIn(frame), FadeIn(key), FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.3))
-        # "The hard seabed pulls out as its own arm, ..."
-        self.play(FadeIn(note), GrowArrow(pointer), run_time=self.share(0.2))
-        # "... and depth runs smoothly along both."
-        self.play(Indicate(key, color=None), run_time=self.share(0.25))
-        self.finish()
-
-
-class Scene32(VideoScene):
-    number = 32
-
-    def construct(self):
-        umap = self.data("umap")
-        dots, frame, to = umap_panel(umap, "x", "y", (-3.4, -0.5), "the survey")
-        key = depth_key(2.2).to_edge(DOWN, buff=0.2).set_x(-3.4)
-        hard = umap[umap["bottom"] == "hard"]
-        arm = to(hard["x"].median(), hard["y"].median())
-        note = label("hard seabed", 30, VERMILION, weight=BOLD).move_to(arm + np.array([0.1, 1.9, 0]))
-        pointer = Arrow(note.get_bottom(), arm, buff=0.15, color=VERMILION, stroke_width=4)
-        self.add(frame, key, dots, note, pointer)
-        null_dots, null_frame, _ = umap_panel(umap, "null_x", "null_y", (3.4, -0.5), "shuffled: nothing in it")
-        verdict = label("a shape, but no colour pattern", 30, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.2).set_x(3.4)
-        # "But shuffled data, with nothing in it, still makes a shape."
-        self.play(FadeIn(null_frame), FadeIn(null_dots, lag_ratio=0.001), run_time=self.share(0.4))
-        # "Only the colours give it away."
-        self.wait(max(self.share(0.6) - self.time, 0.01))
-        self.play(FadeIn(verdict), run_time=self.share(0.2))
-        self.finish()
-
-
-class Scene33(KeyPointScene):
-    number, point = 33, 2
-
-
-# Is it real? (scenes 34–38) ----------------------------------------------------------------
-
-QUESTIONS = ["Does it replicate?", "Is it a group, or a cut through a gradient?",
-             "Does it match something it never saw?"]
-
-
-class Scene34(VideoScene):
-    number = 34
-
-    def construct(self):
-        head = title("Three questions for any pattern", 52).to_edge(UP, buff=1.0)
-        rows = VGroup(*[VGroup(badge(i), label(q, 40)).arrange(RIGHT, buff=0.45) for i, q in enumerate(QUESTIONS, 1)])
-        rows.arrange(DOWN, buff=0.7, aligned_edge=LEFT).next_to(head, DOWN, 0.9).set_x(0)
-        # "With nothing held out to check against, ..."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.2))
-        # "... ask three questions of any pattern."
-        self.wait(max(self.share(0.45) - self.time, 0.01))
-        self.play(LaggedStart(*[FadeIn(r, shift=0.3 * RIGHT) for r in rows], lag_ratio=0.4), run_time=self.share(0.4))
+        top, bottom = row(first, 2.0, "original"), row(second, 0.9, "refit")
+        head = label("adjusted Rand index", 34, INK, weight=BOLD).to_edge(UP, buff=0.3)
+        pairs = [(0, 1), (0, 4), (1, 2)]
+        texts = [label("together in both: agree", 28, GREEN, weight=BOLD),
+                 label("apart in both: agree", 28, GREEN, weight=BOLD),
+                 label("together, then apart: disagree", 28, VERMILION, weight=BOLD)]
+        for t in texts:
+            t.move_to([0, -0.3, 0])
+        scale, to_x = number_line(0, 1, -3.5, 3.5, -2.2, [0, 1], 0)
+        ends = VGroup(label("chance", 28, SUBDUED).move_to([to_x(0), -3.0, 0]),
+                      label("identical", 28, SUBDUED).move_to([to_x(1), -3.0, 0]))
+        # "The adjusted Rand index compares each refit with the original."
+        self.play(FadeIn(head), FadeIn(top), FadeIn(bottom), run_time=self.share(0.2))
+        # "For every pair of stations: together in both, or apart in both?"
+        wait_until(self, 0.3)
+        shown = None
+        for (i, j), text in zip(pairs, texts):
+            rings = VGroup(*[Circle(0.3, color=INK, stroke_width=4).move_to(r[0][k]) for r in (top, bottom) for k in (i, j)])
+            anims = [Create(rings), FadeIn(text)]
+            if shown is not None:
+                anims += [FadeOut(shown[0]), FadeOut(shown[1])]
+            self.play(*anims, run_time=self.share(0.1))
+            shown = (rings, text)
+        # "One means identical, zero no better than chance."
+        wait_until(self, 0.68)
+        self.play(FadeOut(shown[0]), FadeOut(shown[1]), FadeIn(scale), FadeIn(ends), run_time=self.share(0.15))
         self.finish()
 
 
 BIN = 0.05
 
 
-def dot_stack(values, to_x, base, colour=BLUE, radius=0.05, step=0.105):
+def dot_stack(values, to_x, base, colours, height=4.2):
     """A dot plot: each value a dot, stacked in bins of BIN, as the page's histogram."""
+    bins = np.minimum((np.asarray(values) / BIN).astype(int), int(1 / BIN) - 1)
+    step = min(0.13, height / np.bincount(bins).max())
+    radius = min(0.06, 0.45 * step)
     counts = {}
     dots = VGroup()
     for v in sorted(values):
         b = min(int(v / BIN), int(1 / BIN) - 1)
         n = counts.get(b, 0)
         counts[b] = n + 1
-        dots.add(Dot([to_x((b + 0.5) * BIN), base + radius + step * n, 0], radius=radius, color=colour))
+        dots.add(Dot([to_x((b + 0.5) * BIN), base + radius + step * n, 0], radius=radius,
+                     color=colours(v)))
     return dots
 
 
-def bootstrap_layout(scene):
-    reps = scene.data("replicates")
-    axis, to_x = number_line(0, 1, -5.6, 5.6, -2.9, [0, 0.25, 0.5, 0.75, 1], 2)
-    name = label("agreement with the original split", 26, SUBDUED).next_to(axis, DOWN, 0.05)
-    values = reps["agreement"].to_numpy()
-    dots = dot_stack(values, to_x, -2.9)
-    mean = values.mean()
-    mean_line = DashedLine([to_x(mean), -2.9, 0], [to_x(mean), 2.4, 0], color=VERMILION, stroke_width=4)
-    mean_name = label(f"average {mean:.3f}", 32, VERMILION, weight=BOLD).next_to(mean_line, LEFT, 0.2).shift(1.8 * UP)
-    head = label(f"{len(reps)} resamples of the whole survey, clustered again", 32, SUBDUED).to_edge(UP, buff=0.3)
-    return reps, to_x, VGroup(axis, name), dots, VGroup(mean_line, mean_name), head
-
-
-class Scene35(VideoScene):
-    number = 35
-
-    def construct(self):
-        reps, to_x, axis, dots, mean, head = bootstrap_layout(self)
-        # "First, does it replicate? Cluster sixty resamples of the whole survey."
-        self.play(FadeIn(head), FadeIn(axis), run_time=self.share(0.15))
-        self.play(LaggedStart(*[FadeIn(d, shift=0.5 * DOWN) for d in dots], lag_ratio=0.05),
-                  run_time=self.share(0.4))
-        # "Their average agreement with the original split is 0.881."
-        self.play(Create(mean[0]), FadeIn(mean[1]), run_time=self.share(0.2))
-        self.finish()
-
-
-class Scene36(VideoScene):
-    number = 36
-
-    def construct(self):
-        reps, to_x, axis, dots, mean, head = bootstrap_layout(self)
-        self.add(head, axis, dots, mean)
-        same = (reps["agreement"] > 0.5).sum()
-        other = len(reps) - same
-        top = max(d.get_y() for d in dots)
-        same_name = label(f"{same}: the same split", 32, BLUE, weight=BOLD).move_to([to_x(0.97), top + 0.4, 0],
-                                                                                   aligned_edge=RIGHT)
-        other_name = label(f"{other}: something else", 32, ORANGE, weight=BOLD).move_to([to_x(0.02), -1.6, 0],
-                                                                                        aligned_edge=LEFT)
-        low = VGroup(*[d for d in dots if d.get_x() < to_x(0.5)])
-        gap = Rectangle(width=to_x(0.88) - to_x(0.18), height=0.9, stroke_width=0, fill_color=GREY, fill_opacity=0.15
-                        ).move_to([(to_x(0.18) + to_x(0.88)) / 2, -2.4, 0])
-        gap_name = label("no resample here", 28, SUBDUED).move_to(gap)
-        # "But fifty-three resamples found that split almost exactly, ..."
-        self.play(FadeIn(same_name), run_time=self.share(0.2))
-        # "... and seven found something else entirely."
-        self.play(low.animate.set_color(ORANGE), FadeIn(other_name), run_time=self.share(0.2))
-        # "The average describes no resample that happened."
-        self.wait(max(self.share(0.6) - self.time, 0.01))
-        self.play(FadeIn(gap), FadeIn(gap_name), Indicate(mean[1], color=VERMILION), run_time=self.share(0.25))
-        self.finish()
-
-
-class Scene37(VideoScene):
-    number = 37
-
-    def construct(self):
-        reps, to_x, axis, dots, mean, head = bootstrap_layout(self)
-        top = max(d.get_y() for d in dots)
-        low = VGroup(*[d for d in dots if d.get_x() < to_x(0.5)]).set_color(ORANGE)
-        self.add(head, axis, dots, mean)
-        minority = reps[reps["agreement"] <= 0.5]
-        depth_name = VGroup(label("a depth split", 34, ORANGE, weight=BOLD),
-                            label(f"correlation with depth {minority['depth_correlation'].mean():.2f}", 26, ORANGE)
-                            ).arrange(DOWN, buff=0.1, aligned_edge=LEFT).move_to([to_x(0.02), -1.3, 0], aligned_edge=LEFT)
-        seabed_name = label("the seabed split", 34, BLUE, weight=BOLD).move_to([to_x(0.97), top + 0.4, 0],
-                                                                              aligned_edge=RIGHT)
-        report = label("two answers: report the spread, not its average", 34, INK, weight=BOLD
-                       ).move_to([-0.8, 0.1, 0])
-        # "The seven had cut the survey by depth."
-        self.play(FadeIn(depth_name), Indicate(low, color=ORANGE), run_time=self.share(0.3))
-        self.play(FadeIn(seabed_name), run_time=self.share(0.1))
-        # "That is two answers, not one noisy one. Report the spread, not its average."
-        self.play(FadeIn(report, shift=0.2 * UP), mean.animate.set_opacity(0.3), run_time=self.share(0.3))
-        self.finish()
-
-
-class Scene38(VideoScene):
-    number = 38
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         reps = self.data("replicates")["agreement"].to_numpy()
-        soft = self.data("soft-stability")["agreement"].to_numpy()
-        axis, to_x = number_line(0, 1, -3.6, 6.0, -2.6, [0, 0.25, 0.5, 0.75, 1], 2)
-        name = label("agreement across 60 resamples", 26, SUBDUED).next_to(axis, DOWN, 0.05).set_x(1.2)
-        rng = np.random.default_rng(40)
-        rows = {}
-        for key, values, y, colour, text in (("whole", reps, 0.9, ORANGE, "the seabed split"),
-                                             ("soft", soft, -1.1, BLUE, "the puzzle's split")):
-            dots = VGroup(*[Dot([to_x(v), y + rng.uniform(-0.35, 0.35), 0], radius=0.08, color=colour,
-                                fill_opacity=0.8) for v in values])
-            tag = label(text, 30, colour, weight=BOLD).move_to([-6.8, y, 0], aligned_edge=LEFT)
-            low = label(f"lowest {values.min():.3f}" if values.min() < 0.5 else f"never below {values.min():.2f}",
-                        28, colour, weight=BOLD).next_to([to_x(values.min()), y + 0.4, 0], UP, 0.1)
-            rows[key] = VGroup(tag, dots, low)
-        head = label("Is it a group, or a cut through a gradient?", 38, INK, weight=BOLD).to_edge(UP, buff=0.4)
-        # "Second: is it a group, or a cut through a gradient?"
-        self.play(FadeIn(head), FadeIn(VGroup(axis, name)), run_time=self.share(0.2))
-        # "The puzzle's split was even more stable than the seabed split: ..."
-        self.play(FadeIn(rows["whole"][0]), FadeIn(rows["whole"][1]), run_time=self.share(0.15))
-        self.play(FadeIn(rows["soft"][0]), FadeIn(rows["soft"][1]), run_time=self.share(0.15))
-        # "... never below 0.71, where the seabed split fell to 0.095."
-        self.wait(max(self.share(0.6) - self.time, 0.01))
-        self.play(FadeIn(rows["soft"][2]), run_time=self.share(0.12))
-        self.play(FadeIn(rows["whole"][2]), run_time=self.share(0.12))
+        axis, to_x = number_line(0, 1, -5.6, 5.6, -2.6, [0, 0.25, 0.5, 0.75, 1], 2)
+        name = label("agreement with the original (adjusted Rand index)", 26, SUBDUED).next_to(axis, DOWN, 0.05)
+        dots = dot_stack(reps, to_x, -2.6, lambda v: BLUE if v > 0.5 else ORANGE)
+        same, other = int((reps > 0.5).sum()), int((reps <= 0.5).sum())
+        top = max(d.get_y() for d in dots)
+        same_name = label(f"{same}: the seabed split", 32, BLUE, weight=BOLD).move_to([to_x(0.97), top + 0.45, 0],
+                                                                                    aligned_edge=RIGHT)
+        low_top = max(d.get_y() for d in dots if d.get_x() < to_x(0.5))
+        other_name = label(f"{other}: shallow against deep", 32, ORANGE, weight=BOLD).move_to(
+            [to_x(0.02), low_top + 0.5, 0], aligned_edge=LEFT)
+        report = label("report how often each came back", 34, INK, weight=BOLD).to_edge(UP, buff=0.4)
+        head = label(f"{len(reps)} bootstrap samples, k-means refitted", 30, SUBDUED).to_edge(UP, buff=0.4)
+        # "In 52 of the 60 samples, the seabed split came back almost exactly."
+        self.play(FadeIn(head), FadeIn(VGroup(axis, name)), run_time=self.share(0.1))
+        self.play(LaggedStart(*[FadeIn(d, shift=0.4 * DOWN) for d in dots], lag_ratio=0.03), run_time=self.share(0.25))
+        self.play(FadeIn(same_name), run_time=self.share(0.08))
+        # "In the other 8, a split into shallow and deep took its place."
+        wait_until(self, 0.45)
+        self.play(FadeIn(other_name), run_time=self.share(0.12))
+        # "Report how often each came back."
+        wait_until(self, 0.78)
+        self.play(FadeOut(head), FadeIn(report), run_time=self.share(0.12))
         self.finish()
 
 
-# The puzzle, solved (scenes 39–45) ---------------------------------------------------------
-
-def continuum_layout(scene):
-    curves = scene.data("continuum")
-    curves["count"] = curves["count"].clip(lower=0)
-    medians = scene.data("soft-medians")
-    top = np.ceil(curves["count"].max())
-    axes, frame = chart([0, 200, 20], [0, top, 1], 10.0, 4.6, [0, 50, 100, 150, 200], [], "depth (m)",
-                        "animals per station")
-    VGroup(frame).move_to([-0.2, -0.6, 0])
-    lo, hi = curves["depth_optimum_m"].min(), curves["depth_optimum_m"].max()
-    lines = VGroup()
-    for _, c in curves.groupby("depth_optimum_m"):
-        c = c.sort_values("depth_m")
-        colour = viridis((c["depth_optimum_m"].iloc[0] - lo) / (hi - lo))
-        lines.add(polyline(axes, c["depth_m"], c["count"], colour, width=6))
-    boundary = medians["boundary"].iloc[0]
-    cut = DashedLine(axes.c2p(boundary, 0), axes.c2p(boundary, top), color=VERMILION, stroke_width=5)
-    cut_name = label(f"k-means' cut: about {boundary:.0f} m", 32, VERMILION, weight=BOLD
-                     ).next_to(cut, UP, 0.1)
-    head = label("Eight soft-bottom animals along depth", 32, SUBDUED).to_edge(UP, buff=0.3)
-    return axes, frame, lines, VGroup(cut, cut_name), head
+def position_axis(x0, x1, y, size=24, names=("centre 1", "boundary", "centre 2")):
+    """Where a station sits between the two centres: 0 at the first, 1 at the second."""
+    lo, hi = -1.0, 2.0
+    to_x = lambda v: x0 + (v - lo) / (hi - lo) * (x1 - x0)  # noqa: E731
+    line = Line([x0, y, 0], [x1, y, 0], color=GRID, stroke_width=3)
+    marks = VGroup(*[VGroup(Line([to_x(v), y - 0.08, 0], [to_x(v), y + 0.08, 0], color=GRID, stroke_width=3),
+                            label(t, size, SUBDUED).move_to([to_x(v), y - 0.3, 0]))
+                     for v, t in zip((0, 0.5, 1), names) if t])
+    return VGroup(line, marks), to_x, (lo, hi)
 
 
-class Scene39(VideoScene):
-    number = 39
+def histogram(values, to_x, span, base, height, colour, width_bin=0.05):
+    lo, hi = span
+    edges = np.arange(lo, hi + 1e-9, width_bin)
+    counts, _ = np.histogram(np.clip(values, lo, hi - 1e-9), bins=edges)
+    share = counts / counts.sum()
+    bars = VGroup()
+    scale = height / share.max()
+    for left, s in zip(edges[:-1], share):
+        if s == 0:
+            continue
+        x0, x1 = to_x(left), to_x(left + width_bin)
+        bars.add(Rectangle(width=(x1 - x0) * 0.92, height=s * scale, stroke_width=0, fill_color=colour,
+                           fill_opacity=1).move_to([(x0 + x1) / 2, base, 0], aligned_edge=DOWN))
+    return bars
+
+
+def boundary_band(to_x, base, height):
+    return Rectangle(width=to_x(0.6) - to_x(0.4), height=height, stroke_width=0, fill_color=VERMILION,
+                     fill_opacity=0.12).move_to([(to_x(0.4) + to_x(0.6)) / 2, base, 0], aligned_edge=DOWN)
+
+
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
-        axes, frame, lines, cut, head = continuum_layout(self)
-        note = label("favourite depths spread evenly, 20 to 160 m", 30, INK, weight=BOLD
-                     ).next_to(frame, UP, 0.25)
-        # "But every kind of animal here was given a favourite depth, ..."
-        self.play(FadeIn(frame), run_time=self.share(0.15))
-        self.play(LaggedStart(*[Create(l) for l in lines], lag_ratio=0.3), run_time=self.share(0.5))
-        # "... spread evenly from 20 to 160 metres."
-        self.play(FadeIn(note), run_time=self.share(0.15))
+        # Schematic: made-up positions, two humps against a flat spread.
+        rng = np.random.default_rng(25)
+        humps = np.concatenate([rng.normal(0, 0.12, 400), rng.normal(1, 0.12, 400)])
+        flat = rng.uniform(-0.1, 1.1, 800)
+        rows = VGroup()
+        for values, y, colour, text in ((humps, 0.6, GREEN, "groups: a gap"), (flat, -2.5, ORANGE, "gradient: no gap")):
+            axis, to_x, span = position_axis(-4.6, 4.6, y)
+            bars = histogram(values, to_x, span, y, 1.7, colour)
+            name = label(text, 32, colour, weight=BOLD).move_to([5.3, y + 0.8, 0])
+            rows.add(VGroup(axis, bars, name, boundary_band(to_x, y, 1.9)))
+        head = label("Where each station sits between the two centres", 30, SUBDUED).to_edge(UP, buff=0.3)
+        # "Second, is there a gap? Place each station on the line between the two cluster centres."
+        self.play(FadeIn(head), FadeIn(rows[0][0]), FadeIn(rows[1][0]), run_time=self.share(0.3))
+        # "Real groups leave few stations near the boundary; ..."
+        wait_until(self, 0.45)
+        self.play(FadeIn(rows[0][3]), GrowFromEdge(rows[0][1], DOWN), FadeIn(rows[0][2]), run_time=self.share(0.2))
+        # "... a gradient leaves as many there as anywhere."
+        wait_until(self, 0.72)
+        self.play(FadeIn(rows[1][3]), GrowFromEdge(rows[1][1], DOWN), FadeIn(rows[1][2]), run_time=self.share(0.2))
         self.finish()
 
 
-def continuum_note(frame):
-    return label("favourite depths spread evenly, 20 to 160 m", 30, INK, weight=BOLD).next_to(frame, UP, 0.25)
+def positions_panel(scene, split, x0, x1, y, height, colour, names=("centre 1", "boundary", "centre 2")):
+    positions = scene.data("positions")
+    values = positions.loc[positions["split"] == split, "position"].to_numpy()
+    axis, to_x, span = position_axis(x0, x1, y, names=names)
+    bars = histogram(values, to_x, span, y, height, colour)
+    near = np.mean(np.abs(values - 0.5) < 0.1)
+    return VGroup(axis, bars, boundary_band(to_x, y, height + 0.2)), near, to_x
 
 
-class Scene40(VideoScene):
-    number = 40
+SEABED_SPLIT, SOFT_SPLIT = "All stations, two clusters", "Soft bottom only, two clusters"
+
+
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
-        axes, frame, lines, cut, head = continuum_layout(self)
-        note = continuum_note(frame)
-        self.add(frame, lines, note)
-        overlap = label("no gap anywhere", 34, BLUE, weight=BOLD).move_to(axes.c2p(100, axes.y_range[1] * 0.97))
-        # "Each peaks a little deeper than the last, and neighbours overlap: ..."
-        for l in lines:
-            self.play(l.animate.set_stroke(width=12), run_time=self.share(0.06))
-            self.play(l.animate.set_stroke(width=6), run_time=self.share(0.02))
-        # "... there is no depth where one set hands over to another."
-        self.play(FadeIn(overlap), run_time=self.share(0.15))
+        panel, near, to_x = positions_panel(self, SEABED_SPLIT, -5.0, 5.0, -2.2, 3.6, GREEN)
+        head = label("The seabed split: where each station sits", 30, SUBDUED).to_edge(UP, buff=0.3)
+        note = label(f"{percent(near)} of stations\nnear the boundary", 32, VERMILION, weight=BOLD
+                     ).move_to([to_x(0.5), 2.0, 0])
+        # "The seabed split has a clear gap: ..."
+        self.play(FadeIn(head), FadeIn(panel[0]), run_time=self.share(0.15))
+        self.play(GrowFromEdge(panel[1], DOWN), run_time=self.share(0.3))
+        # "... only 2 per cent of stations lie close to its boundary."
+        wait_until(self, 0.5)
+        self.play(FadeIn(panel[2]), FadeIn(note), run_time=self.share(0.2))
         self.finish()
 
 
-class Scene41(VideoScene):
-    number = 41
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
-        axes, frame, lines, cut, head = continuum_layout(self)
-        self.add(frame, lines)
-        y = cut[0].get_top()[1] - 0.25
-        sides = VGroup(label("shallow group", 30, ORANGE, weight=BOLD).move_to([cut[0].get_x() - 0.2, y, 0],
-                                                                                aligned_edge=RIGHT),
-                       label("deep group", 30, BLUE, weight=BOLD).move_to([cut[0].get_x() + 0.2, y, 0],
-                                                                          aligned_edge=LEFT))
-        stable = label("a stable cut through a stable gradient", 32, INK, weight=BOLD).to_edge(DOWN, buff=0.15)
-        # "k-means cut that slope at about 92 metres, in the same place every time."
-        self.play(Create(cut[0]), FadeIn(cut[1]), run_time=self.share(0.3))
-        self.play(FadeIn(sides), run_time=self.share(0.15))
-        # "A stable method cuts a stable gradient in a stable place."
-        self.wait(max(self.share(0.55) - self.time, 0.01))
-        self.play(FadeIn(stable), run_time=self.share(0.2))
+        record = self.data("record").pivot(index="cluster", columns="bottom", values="n").fillna(0).astype(int)
+        external = self.data("external")
+        ari = external["ARI with recorded seabed"].iloc[0]
+        hard_c = record["hard"].idxmax()
+        order = [hard_c] + [c for c in record.index if c != hard_c]
+        cols = {"hard": (0.6, HARD), "soft": (3.8, SOFT)}
+        heads = VGroup(*[label(f"{b} bottom", 30, colour, weight=BOLD).move_to([x, 2.0, 0])
+                         for b, (x, colour) in cols.items()])
+        never = label("recorded seabed, never shown to k-means", 28, SUBDUED).next_to(heads, UP, 0.25)
+        names = VGroup()
+        cells = VGroup()
+        for i, c in enumerate(order):
+            y = 0.6 - 2.0 * i
+            names.add(label(f"cluster {i + 1}", 32, INK, weight=BOLD).move_to([-2.0, y, 0], aligned_edge=RIGHT))
+            for b, (x, colour) in cols.items():
+                main = (i == 0) == (b == "hard")
+                box = RoundedRectangle(width=2.8, height=1.6, corner_radius=0.12, stroke_width=4,
+                                       stroke_color=colour if main else GRID,
+                                       fill_color=colour, fill_opacity=0.12 if main else 0).move_to([x, y, 0])
+                cells.add(VGroup(box, label(f"{record.loc[c, b]}", 56, INK, weight=BOLD).move_to(box)))
+        score = label(f"adjusted Rand index: {ari:.2f}", 38, GREEN, weight=BOLD).to_edge(DOWN, buff=0.4)
+        # "Third, does it match a record? The split matches the recorded seabed, which k-means never saw, ..."
+        self.play(FadeIn(names), FadeIn(heads), run_time=self.share(0.2))
+        self.play(FadeIn(never), LaggedStart(*[FadeIn(c) for c in cells], lag_ratio=0.2), run_time=self.share(0.3))
+        # "... at an adjusted Rand index of 0.92: the strongest evidence there is."
+        wait_until(self, 0.62)
+        self.play(FadeIn(score, shift=0.2 * UP), run_time=self.share(0.15))
         self.finish()
 
 
-class Scene42(VideoScene):
-    number = 42
+class Scene28(KeyPointScene):
+    number, point = 28, 3
+
+
+# Quiz (scenes 29 and 30) -----------------------------------------------------------------
+
+class Scene29(QuizScene):
+    number = 29
+    question = ("Within the soft bottom, k-means splits", "the stations into shallow and deep.",
+                "The split comes back in every sample.", "Are they two groups?")
+
+
+class Scene30(VideoScene):
+    number = 30
 
     def construct(self):
-        wrong = label("two soft-bottom communities", 44, SUBDUED, weight=BOLD).move_to(1.2 * UP)
-        right = label("one continuous turnover with depth", 44, GREEN, weight=BOLD).move_to(0.8 * DOWN)
-        box, mark = tick(0.8)
-        box.next_to(right, LEFT, 0.4)
-        mark.move_to(box)
-        # "So there are no two soft-bottom communities."
-        self.play(FadeIn(wrong), run_time=self.share(0.2))
-        self.play(Create(strike(wrong)), run_time=self.share(0.2))
-        # "Just one continuous turnover with depth."
-        self.play(FadeIn(right, shift=0.2 * UP), FadeIn(box), run_time=self.share(0.25))
-        self.play(Create(mark), run_time=self.share(0.1))
-        self.finish()
-
-
-def external_layout(scene):
-    external = scene.data("external").set_index("clustering")
-    cols = {"substrate": (0.6, "seabed type", "a category"), "depth_band": (4.4, "depth bands", "a measurement, cut")}
-    rows = {"all stations": (0.8, "whole-survey split"), "soft stations only": (-1.4, "soft-bottom split")}
-    heads = VGroup(*[VGroup(label(name, 32, INK, weight=BOLD), label(kind, 26, SUBDUED)).arrange(DOWN, buff=0.1
-                                                                                                  ).move_to([x, 2.5, 0])
-                     for x, name, kind in cols.values()])
-    names = VGroup(*[label(name, 32, INK, weight=BOLD).move_to([-2.2, y, 0], aligned_edge=RIGHT)
-                     for y, name in rows.values()])
-    cells = {}
-    for r, (y, _) in rows.items():
-        for c, (x, _, _) in cols.items():
-            v = external.loc[r, c]
-            box = RoundedRectangle(width=3.2, height=1.6, corner_radius=0.12, stroke_color=GRID, stroke_width=4
-                                   ).move_to([x, y, 0])
-            text = label(f"{v:.3f}" if c == "substrate" or v < 0.1 else f"{v:.2f}", 56, INK, weight=BOLD).move_to(box)
-            cells[(r, c)] = VGroup(box, text)
-    head = label("agreement with something the clustering never saw", 30, SUBDUED).to_edge(UP, buff=0.2)
-    return heads, names, cells, head
-
-
-class Scene43(VideoScene):
-    number = 43
-
-    def construct(self):
-        heads, names, cells, head = external_layout(self)
-        key = cells[("all stations", "substrate")]
-        # "Third: does it match something the method never saw?"
-        self.play(FadeIn(head), FadeIn(heads), run_time=self.share(0.3))
-        # "The whole-survey split matches the seabed type at 0.920."
-        self.wait(max(self.share(0.45) - self.time, 0.01))
-        self.play(FadeIn(names[0]), FadeIn(cells[("all stations", "substrate")]),
-                  FadeIn(cells[("all stations", "depth_band")]), run_time=self.share(0.2))
-        self.play(key[0].animate.set_stroke(GREEN, 6), key[1].animate.set_color(GREEN), run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene44(VideoScene):
-    number = 44
-
-    def construct(self):
-        heads, names, cells, head = external_layout(self)
-        key = cells[("all stations", "substrate")]
-        key[0].set_stroke(GREEN, 6)
-        key[1].set_color(GREEN)
-        self.add(head, heads, names[0], cells[("all stations", "substrate")], cells[("all stations", "depth_band")])
-        soft = cells[("soft stations only", "depth_band")]
-        groups = label("evidence of groups", 30, GREEN, weight=BOLD).next_to(soft, DOWN, 0.35).set_x(heads[0].get_x())
-        gradient = label("only ever a gradient", 30, ORANGE, weight=BOLD).next_to(soft, DOWN, 0.35)
-        # "The soft-bottom split matches depth bands at 0.40, as any cut through a slope would."
-        self.play(FadeIn(names[1]), FadeIn(soft), FadeIn(cells[("soft stations only", "substrate")]),
-                  run_time=self.share(0.2))
-        self.play(soft[0].animate.set_stroke(ORANGE, 6), soft[1].animate.set_color(ORANGE), run_time=self.share(0.15))
-        # "Matching a category is evidence of groups."
-        self.wait(max(self.share(0.5) - self.time, 0.01))
-        self.play(FadeIn(groups), run_time=self.share(0.15))
-        # "Matching a measurement cut into bands is not."
-        self.wait(max(self.share(0.75) - self.time, 0.01))
-        self.play(FadeIn(gradient), run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene45(VideoScene):
-    number = 45
-
-    def construct(self):
-        head = label("A gradient is a finding too", 44, INK, weight=BOLD).to_edge(UP, buff=1.2)
-        quote = label("\"Composition turns over\ncontinuously with depth.\"", 48, BLUE, weight=BOLD)
-        card = VGroup(SurroundingRectangle(quote, color=BLUE, buff=0.5, corner_radius=0.2), quote).move_to(0.3 * DOWN)
-        honest = label("the honest sentence for this survey", 30, SUBDUED).next_to(card, DOWN, 0.4)
+        seabed, seabed_near, seabed_x = positions_panel(self, SEABED_SPLIT, -6.4, -0.6, -1.4, 2.4, GREEN, ("", "boundary", ""))
+        soft, soft_near, soft_x = positions_panel(self, SOFT_SPLIT, 0.6, 6.4, -1.4, 2.4, ORANGE, ("", "boundary", ""))
+        names = VGroup(label("the seabed split", 30, GREEN, weight=BOLD).move_to([-3.5, 1.6, 0]),
+                       label("the soft-bottom split", 30, ORANGE, weight=BOLD).move_to([3.5, 1.6, 0]))
+        notes = VGroup(label(f"{percent(seabed_near)} near the boundary", 28, GREEN, weight=BOLD
+                             ).next_to(names[0], DOWN, 0.15),
+                       label(f"{percent(soft_near)} near the boundary", 28, ORANGE, weight=BOLD
+                             ).next_to(names[1], DOWN, 0.15))
+        answer = label("Not yet: no gap", 44, INK, weight=BOLD).to_edge(UP, buff=0.35)
+        finding = label("a steady depth gradient, cut in the same place every time", 30, INK, weight=BOLD
+                        ).to_edge(DOWN, buff=0.25)
+        too = label("a gradient is a finding too", 34, GREEN, weight=BOLD).to_edge(DOWN, buff=0.25)
+        # "Not yet."
+        self.play(FadeIn(answer), run_time=self.share(0.08))
+        # "Eleven per cent of its stations sit near the boundary, ..."
+        self.play(FadeIn(soft), FadeIn(names[1]), FadeIn(notes[1]), run_time=self.share(0.2))
+        # "... against 2 per cent for the seabed split."
+        wait_until(self, 0.3)
+        self.play(FadeIn(seabed), FadeIn(names[0]), FadeIn(notes[0]), run_time=self.share(0.15))
+        # "No gap: k-means cut a steady depth gradient in the same place every time."
+        wait_until(self, 0.5)
+        self.play(FadeIn(finding), Indicate(soft[2], color=VERMILION), run_time=self.share(0.15))
         # "And a gradient is a finding too."
-        self.play(FadeIn(head), run_time=self.share(0.25))
-        # "\"Composition turns over with depth\" is the honest sentence here."
-        self.play(FadeIn(card, scale=0.95), run_time=self.share(0.3))
-        self.play(FadeIn(honest), run_time=self.share(0.15))
+        wait_until(self, 0.84)
+        self.play(FadeOut(finding), FadeIn(too), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene46(KeyPointScene):
-    number, point = 46, 3
+# Key points and end card (scenes 31–34) ----------------------------------------------------
+
+class Scene31(RecapScene):
+    number, point = 31, 1
 
 
-# Quiz (scenes 47–48) -----------------------------------------------------------------------
-
-class Scene47(QuizScene):
-    number = 47
-    question = ("In a UMAP picture, two islands sit", "twice as far apart as two others.",
-                "Are they twice as different?")
+class Scene32(RecapScene):
+    number, point = 32, 2
 
 
-class Scene48(VideoScene):
-    number = 48
-
-    def construct(self):
-        # Schematic: three islands, each point joined to its nearest neighbours. Moving the
-        # islands apart changes nothing UMAP was asked to keep.
-        rng = np.random.default_rng(50)
-        centres = [np.array([-4.0, -0.6]), np.array([-1.6, -0.6]), np.array([3.6, -0.6])]
-        islands = VGroup()
-        for c, colour in zip(centres, (BLUE, ORANGE, GREEN)):
-            pts = c + rng.normal(0, 0.45, (14, 2))
-            dots = VGroup(*[Dot([x, y, 0], radius=0.08, color=colour) for x, y in pts])
-            links = VGroup()
-            for i, p in enumerate(pts):
-                d = ((pts - p) ** 2).sum(1)
-                for j in np.argsort(d)[1:3]:
-                    links.add(Line([*p, 0], [*pts[j], 0], color=colour, stroke_width=2, stroke_opacity=0.6))
-            islands.add(VGroup(links, dots))
-        answer = label("No", 56, VERMILION, weight=BOLD).to_edge(UP, buff=0.6)
-        kept = label("kept: each station's nearest neighbours", 32, INK, weight=BOLD).next_to(answer, DOWN, 0.3)
-        free = label("the space between islands means nothing", 32, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.6)
-        # "No. UMAP keeps each station's nearest neighbours."
-        self.play(FadeIn(answer), FadeIn(islands), run_time=self.share(0.25))
-        self.play(FadeIn(kept), *[Indicate(i[0], color=None) for i in islands], run_time=self.share(0.2))
-        # "The space between the islands means nothing."
-        self.play(islands[0].animate.shift(1.2 * RIGHT), islands[1].animate.shift(2.8 * RIGHT),
-                  islands[2].animate.shift(1.8 * RIGHT), FadeIn(free),
-                  run_time=self.share(0.3))
-        self.finish()
+class Scene33(RecapScene):
+    number, point = 33, 3
 
 
-# The recap (scenes 49–51) and the end card (scene 52) --------------------------------------
-
-class Scene49(RecapScene):
-    number, point = 49, 1
-
-
-class Scene50(RecapScene):
-    number, point = 50, 2
-
-
-class Scene51(RecapScene):
-    number, point = 51, 3
-
-
-class Scene52(EndCardScene):
-    number = 52
+class Scene34(EndCardScene):
+    number = 34

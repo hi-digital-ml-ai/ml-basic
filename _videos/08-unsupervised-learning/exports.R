@@ -7,92 +7,52 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scene 20: agreement with the seabed for every linkage and k. Knitted first: it
-  # attaches mclust with adjustedRandIndex, and the pages after it that attach mclust
-  # with fewer functions leave the attached package as it is.
+  # Scene 12: the share of stations in the largest group for every linkage and k.
+  # Knitted first: it attaches mclust with adjustedRandIndex, and the pages after it
+  # that attach mclust with fewer functions leave the attached package as it is.
   "beyond-k-means.qmd" = function(env, dir) {
     write(with(env, linkages), dir, "linkages")
   },
 
-  # Scenes 8–12: each variable's share of the raw variance, the raw and standardised
-  # clusterings, the clusters against the seabed, and k-means on uniform noise.
+  # Scenes 3 and 5: a corner of the community matrix, and the clusters against the
+  # recorded seabed.
   "clustering.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(variable = names(env),
-                                   share = purrr::map_dbl(env, var) / sum(purrr::map_dbl(env, var)))),
-          dir, "env-share")
-    write(with(env, dplyr::mutate(dplyr::select(env, depth_m, chlorophyll_mg_m3),
-                                  raw = raw_clusters$cluster, scaled = scaled_clusters$cluster)),
-          dir, "env-clusters")
-    write(with(env, dplyr::count(stations, cluster, bottom)), dir, "habitat")
-    write(with(env, noise), dir, "noise")
+    write(with(env, dplyr::slice_head(dplyr::select(taxa_only, 1:8), n = 6)), dir, "matrix")
+    write(with(env, dplyr::select(seabed, cluster, bottom, n, majority)), dir, "seabed")
   },
 
-  # Scenes 14–19: the k sweep on the observed and shuffled matrices, and the number of
-  # clusters each criterion chose.
+  # Scenes 8 and 10: the average silhouette on the observed and shuffled counts.
   "choosing-the-number-of-clusters.qmd" = function(env, dir) {
-    write(with(env, comparison), dir, "k-sweep")
-    write(with(env, tibble::tibble(
-      criterion = c("silhouette against shuffled", "gap statistic", "mixture BIC"),
-      k = c(observed$k[which.max(observed$silhouette - reference$silhouette)],
-            gap_table$k[maxSE(gap_table$gap, gap_table$SE.sim, method = "firstSEmax")],
-            mixture$G))), dir, "criteria")
+    write(with(env, dplyr::select(lift, k, silhouette, silhouette_mean, silhouette_low,
+                                  silhouette_high, times)), dir, "silhouette")
   },
 
-  # Scenes 23–27: the variance table, the station map, and the directions in which
-  # depth and hard bottom increase.
+  # Scenes 15–17: the variance table, the station map, the taxa's loadings, and the
+  # directions in which depth and hard bottom increase.
   "principal-component-analysis.qmd" = function(env, dir) {
     write(with(env, variance), dir, "variance")
-    write(with(env, dplyr::select(stations, PC1, PC2, depth_m, bottom)), dir, "ordination")
-    write(with(env, tibble::tibble(
-      gradient = c("depth", "hard bottom"),
-      x = c(depth_direction[1], bottom_direction[1]),
-      y = c(depth_direction[2], bottom_direction[2]),
-      angle = round(atan2(y, x) * 180 / pi))), dir, "directions")
+    write(with(env, dplyr::select(stations, PC1, PC2, depth_m, hard_bottom)), dir, "ordination")
+    write(with(env, dplyr::select(taxon_habitat, taxon, PC1, PC2, hard_share, mean_depth)),
+          dir, "loadings")
+    write(with(env, directions), dir, "directions")
   },
 
-  # Scenes 28–31: the three rules, the cross-validated depth error, and the two UMAPs.
+  # Scenes 18 and 19: each component's share against the shuffled tables, and the
+  # cross-validated error of predicting depth.
   "dimensionality-reduction.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(
-      rule = c("80% of variance", "Kaiser", "parallel analysis"),
-      components = c(which(cumsum(proportion) >= 0.8)[1], sum(eigenvalues > 1),
-                     sum(proportion > null_threshold)))), dir, "rules")
-    write(with(env, dplyr::filter(collect_metrics(tuned), .metric == "rmse") |>
-                 dplyr::select(num_comp, mean, std_err)), dir, "components-cv")
-    write(with(env, tibble::tibble(x = embedding[, 1], y = embedding[, 2],
-                                   null_x = null_embedding[, 1], null_y = null_embedding[, 2],
-                                   depth_m = stations$depth_m, bottom = stations$bottom)),
-          dir, "umap")
+    write(with(env, dplyr::select(shares, component, observed, cumulative, shuffled, above)),
+          dir, "shares")
+    write(with(env, dplyr::select(dplyr::filter(cv, .metric == "rmse"), num_comp, mean, std_err)),
+          dir, "components-cv")
   },
 
-  # Scenes 3–5 and 35–43: the bootstrap replicates, the soft-bottom split and its
-  # stability, the continuum of soft-substrate taxa, and the external checks.
+  # Scenes 24, 26, 27 and 30: the bootstrap refits, each station's position between
+  # the centres, and the clusters against the recorded seabed.
   "interpreting-patterns.qmd" = function(env, dir) {
     write(with(env, replicates), dir, "replicates")
-    write(with(env, tibble::tibble(agreement = soft_agreement)), dir, "soft-stability")
-    write(with(env, tibble::tibble(depth_m = stations$depth_m[soft], cluster = soft_reference)),
-          dir, "soft-stations")
-    write(with(env, tibble::tibble(
-      cluster = 1:2, median_depth = as.numeric(tapply(stations$depth_m[soft], soft_reference, median)),
-      boundary = boundary)), dir, "soft-medians")
-    # The curves of fig-continuum: geom_smooth's loess (span 0.6) for each taxon.
-    write(with(env, {
-      long <- community |>
-        dplyr::inner_join(dplyr::select(stations, station_id, depth_m, bottom), by = "station_id") |>
-        dplyr::filter(bottom == "soft") |>
-        tidyr::pivot_longer(tidyselect::all_of(soft_taxa$taxon), names_to = "taxon",
-                            values_to = "count")
-      grid <- seq(min(long$depth_m), max(long$depth_m), length.out = 80)
-      purrr::map_dfr(soft_taxa$taxon, \(t) {
-        fit <- loess(count ~ depth_m, data = dplyr::filter(long, taxon == t), span = 0.6)
-        tibble::tibble(taxon = t, depth_m = grid, count = predict(fit, data.frame(depth_m = grid)))
-      }) |>
-        dplyr::left_join(dplyr::select(soft_taxa, taxon, depth_optimum_m), by = "taxon")
-    }), dir, "continuum")
-    write(with(env, tibble::tibble(
-      clustering = c("all stations", "soft stations only"),
-      substrate = c(adjustedRandIndex(reference, stations$bottom),
-                    adjustedRandIndex(soft_reference, stations$bottom[soft])),
-      depth_band = c(adjustedRandIndex(reference, depth_band),
-                     adjustedRandIndex(soft_reference, depth_band[soft])))), dir, "external")
+    write(with(env, dplyr::select(positions, split, position)), dir, "positions")
+    write(with(env, external), dir, "external")
+    write(with(env, dplyr::count(tibble::tibble(cluster = original, bottom = stations$bottom),
+                                 cluster, bottom)), dir, "record")
   }
 )
