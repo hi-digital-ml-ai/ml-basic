@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 860" width="100%" role="img" aria-label="Hierarchical clustering in two steps and four linkage rules. 1 Join: six points, a to f, in two loose groups; dashed outlines numbered 1 to 4 show the order of joins, a with b first, then d with e, then c joins a and b, then f joins d and e. 2 Cut: the same joins drawn as a tree over the leaves a to f, each join at the height of the distance between the two groups; a dashed line high on the tree cuts it into 2 groups, a lower one into 4. Below, four small cards show how each linkage rule measures the distance between a blue and an orange group: single uses the two nearest members, complete the two furthest, average all pairs, and Ward how much the sum of squares rises if the groups are joined.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .small{ font: bold 19px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .num  { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #ffffff; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
+      .hull { fill: none; stroke: #8a949c; stroke-width: 1.5; stroke-dasharray: 5 4; }
+      .cut  { stroke: #1f2933; stroke-width: 1.6; stroke-dasharray: 7 5; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Hierarchical clustering: join the closest groups, then cut the tree</text>
+
+<!-- 1 Join -->
+<rect class="box" x="0" y="60" width="440" height="440" rx="8"/><rect x="0" y="60" width="440" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="20" y="100">1  Join</text>
+<ellipse class="hull" cx="122" cy="181" rx="42" ry="25" transform="rotate(-22 122 181)"/>
+<ellipse class="hull" cx="312" cy="321" rx="42" ry="25" transform="rotate(22 312 321)"/>
+<ellipse class="hull" cx="128" cy="216" rx="76" ry="82"/>
+<ellipse class="hull" cx="322" cy="290" rx="74" ry="84"/>
+<circle cx="100" cy="190" r="9" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="114" y="182">a</text>
+<circle cx="145" cy="172" r="9" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="159" y="164">b</text>
+<circle cx="150" cy="262" r="9" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="164" y="254">c</text>
+<circle cx="290" cy="312" r="9" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="304" y="304">d</text>
+<circle cx="334" cy="330" r="9" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="348" y="322">e</text>
+<circle cx="350" cy="238" r="9" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="lab" x="364" y="230">f</text>
+<circle cx="84" cy="160" r="11" fill="#55606a"/><text class="num" x="84" y="165" text-anchor="middle">1</text>
+<circle cx="352" cy="352" r="11" fill="#55606a"/><text class="num" x="352" y="357" text-anchor="middle">2</text>
+<circle cx="60" cy="270" r="11" fill="#55606a"/><text class="num" x="60" y="275" text-anchor="middle">3</text>
+<circle cx="390" cy="226" r="11" fill="#55606a"/><text class="num" x="390" y="231" text-anchor="middle">4</text>
+<text class="body" x="220" y="450" text-anchor="middle">join the two closest groups,</text>
+<text class="body" x="220" y="474" text-anchor="middle">again and again, until one is left</text>
+
+<!-- 2 Cut -->
+<rect class="box" x="500" y="60" width="440" height="440" rx="8"/><rect x="500" y="60" width="440" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="520" y="100">2  Cut</text>
+<path d="M 590 390 L 590 345.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 640 390 L 640 345.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 590 345.0 L 640 345.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 770 390 L 770 336.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 820 390 L 820 336.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 770 336.0 L 820 336.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 615.0 345.0 L 615.0 273.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 690 390 L 690 273.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 615.0 273.0 L 690 273.0" stroke="#0072B2" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 795.0 336.0 L 795.0 255.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 870 390 L 870 255.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 795.0 255.0 L 870 255.0" stroke="#E69F00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 652.5 273.0 L 652.5 138.00000000000003" stroke="#8a949c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 832.5 255.0 L 832.5 138.00000000000003" stroke="#8a949c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 652.5 138.00000000000003 L 832.5 138.00000000000003" stroke="#8a949c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M 742.5 138.00000000000003 L 742.5 128.00000000000003" stroke="#8a949c" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<text class="lab" x="590" y="412" text-anchor="middle">a</text>
+<text class="lab" x="640" y="412" text-anchor="middle">b</text>
+<text class="lab" x="690" y="412" text-anchor="middle">c</text>
+<text class="lab" x="770" y="412" text-anchor="middle">d</text>
+<text class="lab" x="820" y="412" text-anchor="middle">e</text>
+<text class="lab" x="870" y="412" text-anchor="middle">f</text>
+<line class="cut" x1="530" y1="190" x2="910" y2="190"/>
+<line class="cut" x1="530" y1="305" x2="910" y2="305"/>
+<text class="lab" x="742.5" y="182" text-anchor="middle">2 groups</text>
+<text class="lab" x="742.5" y="297" text-anchor="middle">4 groups</text>
+<text class="body" x="720" y="450" text-anchor="middle">each join sits at the distance it bridged;</text>
+<text class="body" x="720" y="474" text-anchor="middle">cut at any height to get groups</text>
+<line class="ln" x1="446" y1="280.0" x2="494" y2="280.0" marker-end="url(#arr)"/>
+
+<!-- linkage rules -->
+<text class="head" x="470" y="560" text-anchor="middle">How far apart are two groups? The linkage rule decides</text>
+<rect class="box" x="0" y="580" width="220" height="236" rx="8"/><rect x="0" y="580" width="220" height="6" rx="3" fill="#55606a"/>
+<text class="small" x="20" y="614">Single</text>
+<path d="M 70 724 L 150 704" stroke="#1f2933" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<circle cx="50" cy="692" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="80" cy="670" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="70" cy="724" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="150" cy="704" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="188" cy="682" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="176" cy="740" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="body" x="110" y="772" text-anchor="middle">distance between the</text>
+<text class="body" x="110" y="794" text-anchor="middle">two nearest members</text>
+<rect class="box" x="240" y="580" width="220" height="236" rx="8"/><rect x="240" y="580" width="220" height="6" rx="3" fill="#55606a"/>
+<text class="small" x="260" y="614">Complete</text>
+<path d="M 290 692 L 428 682" stroke="#1f2933" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<circle cx="290" cy="692" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="320" cy="670" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="310" cy="724" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="390" cy="704" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="428" cy="682" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="416" cy="740" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="body" x="350" y="772" text-anchor="middle">distance between the</text>
+<text class="body" x="350" y="794" text-anchor="middle">two furthest members</text>
+<rect class="box" x="480" y="580" width="220" height="236" rx="8"/><rect x="480" y="580" width="220" height="6" rx="3" fill="#55606a"/>
+<text class="small" x="500" y="614">Average</text>
+<path d="M 530 692 L 630 704" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 530 692 L 668 682" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 530 692 L 656 740" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 560 670 L 630 704" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 560 670 L 668 682" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 560 670 L 656 740" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 550 724 L 630 704" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 550 724 L 668 682" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 550 724 L 656 740" stroke="#1f2933" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<circle cx="530" cy="692" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="560" cy="670" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="550" cy="724" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="630" cy="704" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="668" cy="682" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="656" cy="740" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="body" x="590" y="772" text-anchor="middle">average distance</text>
+<text class="body" x="590" y="794" text-anchor="middle">over all pairs</text>
+<rect class="box" x="720" y="580" width="220" height="236" rx="8"/><rect x="720" y="580" width="220" height="6" rx="3" fill="#55606a"/>
+<text class="small" x="740" y="614">Ward</text>
+<path d="M 770 692 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 800 670 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 790 724 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 870 704 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 908 682 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 896 740 L 839.0 702.0" stroke="#1f2933" stroke-width="1.1" stroke-dasharray="4 3" fill="none"/>
+<path d="M 780.7 689.3 L 792.7 701.3 M 780.7 701.3 L 792.7 689.3" stroke="#0072B2" stroke-width="3"/>
+<path d="M 885.3 702.7 L 897.3 714.7 M 885.3 714.7 L 897.3 702.7" stroke="#E69F00" stroke-width="3"/>
+<path d="M 832.0 695.0 L 846.0 709.0 M 832.0 709.0 L 846.0 695.0" stroke="#1f2933" stroke-width="3"/>
+<circle cx="770" cy="692" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="800" cy="670" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="790" cy="724" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="870" cy="704" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="908" cy="682" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="896" cy="740" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="body" x="830" y="772" text-anchor="middle">how much the sum of</text>
+<text class="body" x="830" y="794" text-anchor="middle">squares rises if joined</text>
+</svg>
