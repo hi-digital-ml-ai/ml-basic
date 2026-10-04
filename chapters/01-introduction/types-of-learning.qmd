@@ -253,8 +253,8 @@ p_space + p_abund + plot_layout(widths = c(1.25, 1))
 So the groups do differ in the species, although k-means never saw a single catch. This
 is unsupervised learning at its most useful and its most tempting. Ask for six groups and
 you get six, each just as confidently defined.
-[Section 8](../08-unsupervised-learning/index.qmd) covers the checks that tell a real
-structure from an artefact of the method.
+[Checking a pattern before reporting it](../08-unsupervised-learning/interpreting-patterns.qmd)
+covers the checks that tell a real structure from an artefact of the method.
 
 ## Labels and groups both need care
 
