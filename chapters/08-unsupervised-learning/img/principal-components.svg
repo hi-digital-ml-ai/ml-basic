@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 680" width="100%" role="img" aria-label="Principal component analysis in two steps. 1 Find the directions: a cloud of points plotted on column A against column B stretches diagonally; an arrow labelled PC1 runs along the longest spread and a shorter arrow labelled PC2 runs at a right angle to it. 2 Read the points on the new axes: the same cloud turned so that PC1 is horizontal and PC2 vertical; one point is marked, with its score on PC1 read off the horizontal axis. Below, a strip defines the terms: loadings are the weights that build a component from the columns, for example PC1 equals 0.8 times A plus 0.6 times B; a score is a point's value on a component; components are ordered by the share of the variance they hold, PC1 most.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<marker id="av" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#D55E00"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0072B2"/></marker>
+<marker id="ax" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .bodyb{ font: bold 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .labv { font: bold 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #D55E00; }
+      .labb { font: bold 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #0072B2; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
+      .axis { stroke: #8a949c; stroke-width: 1.5; }
+      .guide{ stroke: #1f2933; stroke-width: 1.4; stroke-dasharray: 5 4; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Principal component analysis: new axes along the spread</text>
+<rect class="box" x="0" y="60" width="440" height="400" rx="8"/><rect x="0" y="60" width="440" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="20" y="100">1  Find the directions</text>
+<line class="axis" x1="60" y1="390" x2="410" y2="390" marker-end="url(#ax)"/>
+<line class="axis" x1="60" y1="390" x2="60" y2="130" marker-end="url(#ax)"/>
+<text class="lab" x="400" y="412" text-anchor="end">column A</text>
+<text class="lab" x="70" y="142">column B</text>
+<circle cx="232.1" cy="255.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="189.5" cy="293.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="231.1" cy="286.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="321.9" cy="210.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="231.1" cy="267.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="289.8" cy="238.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="275.2" cy="268.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="228.1" cy="292.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="196.0" cy="338.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="170.8" cy="331.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="235.5" cy="284.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="255.9" cy="289.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="234.2" cy="274.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="281.1" cy="261.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="167.0" cy="307.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="257.4" cy="268.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="255.1" cy="253.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="288.1" cy="243.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="219.8" cy="302.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="197.1" cy="308.2" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="195.2" cy="287.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="168.4" cy="350.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="232.6" cy="291.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="331.9" cy="245.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="294.1" cy="248.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="239.6" cy="288.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="279.1" cy="268.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="233.1" cy="273.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="215.8" cy="287.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="203.7" cy="269.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="251.3" cy="270.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="231.9" cy="285.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="240.7" cy="292.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="348.8" cy="231.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="230.0" cy="275.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="232.4" cy="283.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="245.3" cy="251.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="223.9" cy="294.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="320.1" cy="204.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="279.8" cy="256.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="185.5" cy="310.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="213.6" cy="316.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="187.9" cy="324.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="292.8" cy="243.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="295.3" cy="212.1" r="7" fill="#1f2933" fill-opacity="1" stroke="#ffffff" stroke-width="1"/>
+<line x1="240" y1="275" x2="359.8" y2="184.7" stroke="#D55E00" stroke-width="3.2" marker-end="url(#av)"/>
+<line x1="240" y1="275" x2="203.9" y2="227.1" stroke="#0072B2" stroke-width="3.2" marker-end="url(#ag)"/>
+<text class="labv" x="367.8" y="180.7">PC1</text>
+<text class="labb" x="159.9" y="221.1">PC2</text>
+<text class="body" x="220" y="446" text-anchor="middle">PC1 along the most spread, PC2 at right angles</text>
+<rect class="box" x="500" y="60" width="440" height="400" rx="8"/><rect x="500" y="60" width="440" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="520" y="100">2  Read the points on them</text>
+<line x1="540" y1="245" x2="905" y2="245" stroke="#D55E00" stroke-width="2" marker-end="url(#av)"/>
+<line x1="720" y1="325" x2="720" y2="150" stroke="#0072B2" stroke-width="2" marker-end="url(#ag)"/>
+<text class="labv" x="905" y="233" text-anchor="end">PC1</text>
+<text class="labb" x="730" y="163">PC2</text>
+<circle cx="726.8" cy="219.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="653.4" cy="224.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="701.5" cy="250.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="855.8" cy="241.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="716.9" cy="229.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="800.6" cy="245.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="762.0" cy="265.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="693.8" cy="254.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="624.7" cy="276.4" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="603.7" cy="250.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="707.7" cy="251.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="724.9" cy="272.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="714.3" cy="240.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="773.7" cy="262.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="618.5" cy="222.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="743.4" cy="251.5" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="752.8" cy="234.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="794.7" cy="249.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="677.7" cy="257.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="649.5" cy="245.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="663.8" cy="222.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="586.3" cy="267.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="699.7" cy="255.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="838.4" cy="286.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="796.6" cy="260.2" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="708.9" cy="259.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="765.8" cy="268.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="714.4" cy="237.6" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="685.4" cy="238.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="686.7" cy="210.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="735.0" cy="249.5" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="703.7" cy="249.2" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="707.4" cy="263.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="867.2" cy="284.7" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="709.5" cy="237.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="705.4" cy="248.1" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="743.8" cy="224.9" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="688.0" cy="252.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="858.7" cy="234.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="775.5" cy="257.3" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="636.0" cy="238.8" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="660.5" cy="267.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="627.3" cy="255.5" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<circle cx="799.2" cy="254.0" r="5.5" fill="#8a949c" fill-opacity="0.9" stroke="#ffffff" stroke-width="1"/>
+<line class="guide" x1="826.6" y1="222.9" x2="826.6" y2="307"/>
+<circle cx="826.6" cy="245" r="4.5" fill="#1f2933"/>
+<circle cx="826.6" cy="222.9" r="7" fill="#1f2933" fill-opacity="1" stroke="#ffffff" stroke-width="1"/>
+<text class="lab" x="826.6" y="327" text-anchor="middle">its score on PC1</text>
+<text class="body" x="720" y="446" text-anchor="middle">each point gets a score on each component</text>
+<line class="ln" x1="446" y1="260.0" x2="494" y2="260.0" marker-end="url(#arr)"/>
+<rect class="box" x="0" y="490" width="940" height="134" rx="8"/><rect x="0" y="490" width="940" height="6" rx="3" fill="#55606a"/>
+<text class="bodyb" x="24" y="532">Loadings</text><text class="body" x="130" y="532">the weights that build a component from the columns, e.g. PC1 = 0.8 × A + 0.6 × B</text>
+<text class="bodyb" x="24" y="566">Score</text><text class="body" x="130" y="566">a point's value on a component: where it sits along that new axis</text>
+<text class="bodyb" x="24" y="600">Variance</text><text class="body" x="130" y="600">components are ordered by the share of the spread they hold, PC1 the most</text>
+</svg>
