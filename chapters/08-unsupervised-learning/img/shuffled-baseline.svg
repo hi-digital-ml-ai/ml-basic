@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 600" width="100%" role="img" aria-label="A baseline with no groups. Left, the observed table: six rows and five columns, shaded by value; the first three rows are high in columns A and B, the last three high in D and E, so the rows fall into two groups. An arrow labelled shuffle each column on its own leads to the right, the shuffled table: every column holds the same values as before, in a new random order, so no rows share a pattern. A note says cluster both tables the same way; only what the observed table shows beyond the shuffled one counts as structure.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .col  { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
+      .cell { stroke: #8a949c; stroke-width: 1; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">A baseline with no groups: shuffle each column on its own</text>
+
+<!-- Observed -->
+<rect class="box" x="0" y="60" width="400" height="440" rx="8"/><rect x="0" y="60" width="400" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="20" y="100">Observed</text>
+<text class="col" x="116" y="144" text-anchor="middle">A</text>
+<text class="col" x="158" y="144" text-anchor="middle">B</text>
+<text class="col" x="200" y="144" text-anchor="middle">C</text>
+<text class="col" x="242" y="144" text-anchor="middle">D</text>
+<text class="col" x="284" y="144" text-anchor="middle">E</text>
+<rect class="cell" x="95" y="156" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="137" y="156" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="179" y="156" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="221" y="156" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="263" y="156" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="95" y="198" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="137" y="198" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="179" y="198" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="221" y="198" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="263" y="198" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="95" y="240" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="137" y="240" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="179" y="240" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="221" y="240" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="263" y="240" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="95" y="282" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="137" y="282" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="179" y="282" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="221" y="282" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="263" y="282" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="95" y="324" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="137" y="324" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="179" y="324" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="221" y="324" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="263" y="324" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="95" y="366" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="137" y="366" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="179" y="366" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="221" y="366" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="263" y="366" width="42" height="42" fill="#0072B2"/>
+<path d="M 317 160 L 325 160 L 325 278 L 317 278" fill="none" stroke="#0072B2" stroke-width="3"/>
+<path d="M 317 286 L 325 286 L 325 404 L 317 404" fill="none" stroke="#E69F00" stroke-width="3"/>
+<text class="body" x="200" y="454" text-anchor="middle">rows 1 to 3 are high in A and B,</text>
+<text class="body" x="200" y="478" text-anchor="middle">rows 4 to 6 in D and E: two groups</text>
+
+<!-- Shuffled -->
+<rect class="box" x="540" y="60" width="400" height="440" rx="8"/><rect x="540" y="60" width="400" height="6" rx="3" fill="#55606a"/>
+<text class="head" x="560" y="100">Shuffled</text>
+<text class="col" x="656" y="144" text-anchor="middle">A</text>
+<text class="col" x="698" y="144" text-anchor="middle">B</text>
+<text class="col" x="740" y="144" text-anchor="middle">C</text>
+<text class="col" x="782" y="144" text-anchor="middle">D</text>
+<text class="col" x="824" y="144" text-anchor="middle">E</text>
+<rect class="cell" x="635" y="156" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="677" y="156" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="719" y="156" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="761" y="156" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="803" y="156" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="635" y="198" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="677" y="198" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="719" y="198" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="761" y="198" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="803" y="198" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="635" y="240" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="677" y="240" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="719" y="240" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="761" y="240" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="803" y="240" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="635" y="282" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="677" y="282" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="719" y="282" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="761" y="282" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="803" y="282" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="635" y="324" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="677" y="324" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="719" y="324" width="42" height="42" fill="#cfe3ef"/>
+<rect class="cell" x="761" y="324" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="803" y="324" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="635" y="366" width="42" height="42" fill="#0072B2"/>
+<rect class="cell" x="677" y="366" width="42" height="42" fill="#7fb3d5"/>
+<rect class="cell" x="719" y="366" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="761" y="366" width="42" height="42" fill="#ffffff"/>
+<rect class="cell" x="803" y="366" width="42" height="42" fill="#cfe3ef"/>
+<text class="body" x="740" y="454" text-anchor="middle">each column keeps its own values;</text>
+<text class="body" x="740" y="478" text-anchor="middle">which values occur together is lost</text>
+
+<line class="ln" x1="406" y1="280.0" x2="534" y2="280.0" marker-end="url(#arr)"/>
+<text class="body" x="470" y="240.0" text-anchor="middle">shuffle</text>
+<text class="body" x="470" y="264.0" text-anchor="middle">each column</text>
+
+<text class="note" x="470" y="544" text-anchor="middle">Cluster both tables the same way. Only what the observed table shows</text>
+<text class="note" x="470" y="568" text-anchor="middle">beyond the shuffled one counts as structure.</text>
+</svg>
