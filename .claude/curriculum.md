@@ -289,11 +289,14 @@ reproduces the bias, and no validation scheme detects it. That is the handover t
 - Interpretation and limitations of unsupervised methods
 
 **Written as six pages, splitting one subtopic and merging two.** "Clustering" became three
-pages, because the method, the choice of *k* and the choice of algorithm are three separate
-decisions and a single page could only gesture at two of them. "Pattern detection in marine
-datasets" and "interpretation and limitations" became one page, `interpreting-patterns.qmd`,
-because the honest way to teach pattern detection is to detect a pattern and then interrogate
-it; separating them would have produced one credulous page and one abstract one.
+pages: k-means (`clustering.qmd`), the number of clusters (`choosing-the-number-of-clusters.qmd`)
+and hierarchical clustering (`beyond-k-means.qmd`, which also introduces the adjusted Rand
+index the later pages use). PCA is `principal-component-analysis.qmd`; "dimensionality
+reduction" is `dimensionality-reduction.qmd`, on how many components to keep, ending with
+UMAP briefly. "Pattern detection in marine datasets" and "interpretation and limitations"
+became one page, `interpreting-patterns.qmd` ("Checking a pattern before reporting it"),
+because a pattern is best taught by detecting one and then checking it. Gaussian mixtures
+were dropped in the 2026 revision: they added a method without adding a lesson.
 
 ### A second dataset
 
@@ -308,44 +311,38 @@ Two things are built into it and every page depends on the contrast:
 - **Substrate is a genuine split.** Six taxa are effectively hard-bottom only, eight
   soft-bottom only. The one real grouping of stations is hard versus soft: two groups.
 
-Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They load at
-zero on both principal components, which is how `principal-component-analysis.qmd` shows PCA
-ignoring noise columns unprompted.
+Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They sit at the
+centre of the loadings plot in `principal-component-analysis.qmd`, which is how that page shows
+PCA giving noise columns almost no weight unprompted. The pages never state these facts as
+given; they find them, and refer to the simulation only to check a result.
 
 ### Two conventions that hold the section together
 
-**Run the identical pipeline on a structure-free null.** Shuffle each column independently:
-every variable keeps its own distribution, all co-occurrence is destroyed. Almost no
-unsupervised statistic can be read on an absolute scale, and this is what supplies the scale.
-It is used for cluster-count selection, for parallel analysis, and for UMAP. `clusGap()`'s
-default uniform-bounding-box reference chose six clusters against the permutation null's two.
-Keep that example, it is the argument for choosing your own null.
+**Run the same steps on a shuffled copy of the data.** Shuffle each column on its own: every
+column keeps its values, and which values occur together is lost. Silhouette widths and shares
+of the variance have no fixed scale, and this supplies one. It is used for the number of
+clusters (silhouette 0.179 at *k* = 2, 3.5 times the shuffled value), for parallel analysis
+(three components) and for UMAP.
 
-**Validate against a variable the method never saw, and mind its type.** Agreement with a
-*categorical* external variable is evidence of groups; agreement with a *binned continuous* one
-is evidence only of a gradient. This asymmetry is the whole of `interpreting-patterns.qmd`.
+**Check against a variable the method never saw, and mind its type.** Agreement with a
+recorded *category* is evidence of groups; agreement with a continuous variable cut into bands
+shows only a gradient. `interpreting-patterns.qmd` makes this its third check.
 
 ### Three findings the pages are built on
 
-- **Stability is necessary, not sufficient.** The most stable result in the section
-  corresponds to nothing: splitting the soft-bottom stations by depth reproduces at ARI 0.890,
-  never below 0.71, and the generator contains no soft-sediment assemblages. A stable algorithm
-  cuts a stable gradient in a stable place. This is the section's headline and the reason the
-  community data was built with a continuum in it.
-- **Bimodal stability.** The whole-survey bootstrap at *k* = 2 returns 53 replicates recovering
-  the substrate split (ARI > 0.9) and 7 recovering a depth split (ARI < 0.15), with nothing in
-  between; the mean of 0.881 describes neither. Keep the histogram: it is the argument for
-  reporting distributions rather than averages, and it echoes §7's stability page.
-- **Defaults decide the answer.** Depth is 99.4% of the raw environmental table's variance;
-  `hclust()`'s default complete linkage scores 0.332 at *k* = 2 where Ward scores 0.889; the
-  "80% of variance" rule keeps 16 of 24 components where cross-validated prediction needs 2.
-  Every page names a default and shows what it costs.
-
-### Aimed at §9 and §10
-
-`interpreting-patterns.qmd` hands two things forward. To §9: an autoencoder is PCA without the
-linearity and inherits every interpretation problem on that page. To §10: a single number from
-a single run, reported without its distribution, is how a plausible result becomes a wrong one.
+- **Coming back is not enough.** Splitting the soft-bottom stations comes back in every
+  site bootstrap (lowest ARI 0.69), yet the generator has no soft-bottom assemblages.
+  `interpreting-patterns.qmd` tells it apart from the seabed split without revealing the
+  truth: projected onto the line between the two centres, 11% of soft-bottom stations sit
+  within 0.1 of the boundary against 2% for the seabed split, and the position correlates
+  0.87 with depth.
+- **Two answers, not one average.** The bootstrap by site (`group_bootstraps()`, as in §6)
+  at *k* = 2 gives 52 refits with the seabed split and 8 with a depth split; the average ARI
+  of 0.87 describes neither. Keep the histogram: it is the argument for reporting how often
+  each answer came back.
+- **Settings decide the answer.** The linkage rule alone moves agreement with the seabed from
+  0.005 (single) to 0.89 (Ward), and tidyclust and scikit-learn have different defaults; the
+  80% rule keeps 16 components, the shuffled baseline 3, cross-validation for depth 2.
 
 ## 9. Introduction to neural networks
 `chapters/09-neural-networks/` · categories: `neural-networks`
@@ -360,7 +357,7 @@ a single run, reported without its distribution, is how a plausible result becom
 gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the four
 decisions (learning rate, input scale, when to stop, which seed) that §4 did not have to
 face because its loss surfaces were convex. The added page is `autoencoders.qmd`, which
-§8's `interpreting-patterns.qmd` explicitly promised; it is also the only unsupervised
+follows on from §8's `principal-component-analysis.qmd`; it is also the only unsupervised
 network, and the easiest network to check, because a linear one has a closed-form answer.
 
 ### The engine decision
