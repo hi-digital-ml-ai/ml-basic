@@ -114,7 +114,9 @@ Five runs from identical starting weights, differing only in the multiplier.
 
 At 0.01 the steps are so small that after 1,500 of them the network has barely beaten the
 straight line. At 0.05 and 0.2 it descends cleanly, and 0.2 gets furthest. At 0.5 something
-new happens: the run reaches 0.5842 and then ends at 0.5956, because it is bouncing around the
+new happens: the run reaches
+`r sprintf("%.4f", min(sweeps$mse[sweeps$learning_rate == 0.5]))` and then ends at
+`r sprintf("%.4f", last(sweeps$mse[sweeps$learning_rate == 0.5]))`, because it is bouncing around the
 valley floor rather than settling into it, so its *final* answer is worse than its own
 best. At 2 the run destroys itself: the loss is 3.1 by step three, 2.2 × 10^12^ by step twelve
 and has overflowed to `NaN` by step 147. The weights grew, which made the gradients grow,
@@ -261,15 +263,24 @@ seed_runs |>
   mutate(across(everything(), \(x) round(x, 4)))
 ```
 
-Ten runs on identical data with an identical recipe. Training MSE spans 0.018 and
-validation MSE spans 0.046, so the best seed looks eight per cent better than the worst on
-held-out data, and the difference is entirely the random number generator.
+```{r}
+#| label: seed-numbers
+#| include: false
+spread <- \(x) max(x) - min(x)
+seed_spread <- sprintf("%.3f", spread(seed_runs$validation))
+seed_gain <- round(100 * spread(seed_runs$validation) / max(seed_runs$validation))
+```
+
+Ten runs on identical data with an identical recipe. Training MSE spans
+`r sprintf("%.3f", spread(seed_runs$training))` and validation MSE spans `r seed_spread`,
+so the best seed looks `r xfun::numbers_to_words(seed_gain)` per cent better than the
+worst on held-out data, and the difference is entirely the random number generator.
 
 That has a direct consequence for how you report results. A single network's score is a
 draw from this distribution, not a property of the method, and §7's
 [uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) page applies in
 full: fit it several times and report the spread. If a comparison between a network and
-another model is smaller than 0.046 on this data, the comparison has not been made.
+another model is smaller than `r seed_spread` on this data, the comparison has not been made.
 
 ## The tidymodels version
 
@@ -331,7 +342,7 @@ nothing in the training procedure fixes that.
   producing a single warning.
 - **Epochs are a hyperparameter.** A 40-unit network's validation error bottomed at step
   1,937 of 8,000 and was 4% worse by the end. Early stopping is regularisation.
-- **Report the spread across seeds.** Ten identical runs varied by 0.046 in validation MSE.
+- **Report the spread across seeds.** Ten identical runs varied by `r seed_spread` in validation MSE.
   A single run's score is a draw, not a property of the method.
 :::
 
