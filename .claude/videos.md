@@ -773,7 +773,7 @@ voice. Narrated with Gemini on 2026-10-03 (29 requests, no retries, about $0.10)
 
 Rebuilt from the revised pages (`feature/improve-unsupervised-learning`) on three points:
 clustering finds groups nobody labelled, PCA turns many columns into one map, and a
-pattern is checked before it is reported. 34 scenes, 7:35 on the draft voice; not yet
+pattern is checked before it is reported. 35 scenes, 7:48 on the draft voice; not yet
 narrated. The old 52-scene puzzle (the soft-bottom split) became the quiz.
 
 - Examples, all through `exports.R` from the six pages: k-means recovering the seabed
@@ -784,9 +784,11 @@ narrated. The old 52-scene puzzle (the soft-bottom split) became the quiz.
   the 80% rule, 3 by parallel analysis, 2 by cross-validation for depth (PC3 is rock
   against gravel); 52 of 60 bootstrap samples giving the seabed split; 2% of stations
   near its boundary against 11% for the soft-bottom split; the recorded seabed at an
-  ARI of 0.92. UMAP, the other linkages and the horseshoe effect are on the end card.
+  ARI of 0.92; UMAP's observed map beside the shuffled one (scene 20). The other
+  linkages, UMAP's settings and the horseshoe effect are on the end card.
 - The first draft of the script ran about 9 minutes on the draft voice (38 scenes,
-  1,146 words); merging four pairs of scenes and dropping UMAP brought it to 7:35.
+  1,146 words); merging four pairs of scenes and dropping UMAP brought it to 7:35. The
+  user asked for UMAP back, as one scene: 7:48.
 - The page names its linkages `Ward`, `single`, `average`, `complete` (`trees` in
   `beyond-k-means.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
 - A chart whose x axis starts at k = 2 keeps Manim's zero-based axes and hides the

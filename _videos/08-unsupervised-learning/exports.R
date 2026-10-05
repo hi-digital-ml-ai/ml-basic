@@ -37,16 +37,17 @@ exports <- list(
     write(with(env, directions), dir, "directions")
   },
 
-  # Scenes 18 and 19: each component's share against the shuffled tables, and the
-  # cross-validated error of predicting depth.
+  # Scenes 18–20: each component's share against the shuffled tables, the
+  # cross-validated error of predicting depth, and the observed and shuffled UMAP maps.
   "dimensionality-reduction.qmd" = function(env, dir) {
     write(with(env, dplyr::select(shares, component, observed, cumulative, shuffled, above)),
           dir, "shares")
     write(with(env, dplyr::select(dplyr::filter(cv, .metric == "rmse"), num_comp, mean, std_err)),
           dir, "components-cv")
+    write(with(env, dplyr::select(maps, data, UMAP1, UMAP2, depth_m, seabed)), dir, "umap")
   },
 
-  # Scenes 24, 26, 27 and 30: the bootstrap refits, each station's position between
+  # Scenes 25, 27, 28 and 31: the bootstrap refits, each station's position between
   # the centres, and the clusters against the recorded seabed.
   "interpreting-patterns.qmd" = function(env, dir) {
     write(with(env, replicates), dir, "replicates")

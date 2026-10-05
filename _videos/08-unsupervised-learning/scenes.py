@@ -542,7 +542,7 @@ class Scene13(KeyPointScene):
     number, point = 13, 1
 
 
-# PCA (scenes 14–19) ----------------------------------------------------------------------
+# PCA (scenes 14–20) ----------------------------------------------------------------------
 
 class Scene14(VideoScene):
     number = 14
@@ -763,17 +763,67 @@ class Scene19(VideoScene):
         self.finish()
 
 
-class Scene20(KeyPointScene):
-    number, point = 20, 2
+def umap_panel(umap, data, centre, title_text, size=4.8):
+    rows = umap[umap["data"] == data]
+    xs, ys = rows["UMAP1"], rows["UMAP2"]
+    span = max(xs.max() - xs.min(), ys.max() - ys.min())
+    to = lambda x, y: np.array([centre[0] + (x - (xs.max() + xs.min()) / 2) / span * size,  # noqa: E731
+                                centre[1] + (y - (ys.max() + ys.min()) / 2) / span * size, 0])
+    lo, hi = umap["depth_m"].min(), umap["depth_m"].max()
+    dots = VGroup(*[marker(to(x, y), viridis((d - lo) / (hi - lo)), s == "Hard bottom", 0.05)
+                    for x, y, d, s in zip(xs, ys, rows["depth_m"], rows["seabed"])])
+    frame = RoundedRectangle(width=size + 0.6, height=size + 0.6, corner_radius=0.15, stroke_color=GRID,
+                             stroke_width=3).move_to([*centre, 0])
+    name = label(title_text, 32, INK, weight=BOLD).next_to(frame, UP, 0.2)
+    return rows, dots, VGroup(frame, name), to
 
 
-# Checking a pattern (scenes 21–27) -------------------------------------------------------
+class Scene20(VideoScene):
+    number = 20
+
+    def construct(self):
+        umap = self.data("umap")
+        rows, dots, frame, to = umap_panel(umap, "Observed", (-3.4, -0.3), "UMAP: observed")
+        _, null_dots, null_frame, _ = umap_panel(umap, "Shuffled", (3.4, -0.3), "UMAP: shuffled")
+        key = VGroup(depth_key(2.2),
+                     VGroup(marker(ORIGIN, INK, True, 0.1), label("hard bottom", 24, SUBDUED)).arrange(RIGHT, buff=0.15),
+                     VGroup(marker(ORIGIN, INK, False, 0.1), label("soft bottom", 24, SUBDUED)).arrange(RIGHT, buff=0.15)
+                     ).arrange(RIGHT, buff=0.6).to_edge(DOWN, buff=0.15)
+        # The hard-bottom group: an outline around the middle 90% of its stations.
+        hard = rows[rows["seabed"] == "Hard bottom"]
+        lo_x, hi_x = (to(hard["UMAP1"].quantile(q), 0)[0] for q in (0.05, 0.95))
+        lo_y, hi_y = (to(0, hard["UMAP2"].quantile(q))[1] for q in (0.05, 0.95))
+        ring = Ellipse(width=hi_x - lo_x + 0.6, height=hi_y - lo_y + 0.6, color=VERMILION,
+                       stroke_width=5).move_to([(lo_x + hi_x) / 2, (lo_y + hi_y) / 2, 0])
+        group = label("hard bottom:\na group of its own", 28, VERMILION, weight=BOLD
+                      ).next_to(ring, DOWN, 0.2).align_to(ring, LEFT)
+        group.add_background_rectangle(color=BACKGROUND, opacity=0.9, buff=0.1)
+        one = label("one cloud", 32, VERMILION, weight=BOLD).move_to([3.4, -0.3, 0])
+        one.add_background_rectangle(color=BACKGROUND, opacity=0.9, buff=0.15)
+        # "UMAP draws a map another way, keeping each station's nearest neighbours close."
+        self.play(FadeIn(frame), FadeIn(key), FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.3))
+        # "The hard-bottom stations form their own group, with depth running smoothly through each."
+        wait_until(self, 0.38)
+        self.play(Create(ring), FadeIn(group), run_time=self.share(0.12))
+        self.play(Indicate(key[0], color=None), run_time=self.share(0.15))
+        # "Shuffled counts give one cloud."
+        wait_until(self, 0.78)
+        self.play(FadeIn(null_frame), FadeIn(null_dots, lag_ratio=0.001), run_time=self.share(0.15))
+        self.play(FadeIn(one), run_time=self.share(0.05))
+        self.finish()
+
+
+class Scene21(KeyPointScene):
+    number, point = 21, 2
+
+
+# Checking a pattern (scenes 22–28) -------------------------------------------------------
 
 CHECKS = ["Does it come back?", "Is there a gap?", "Does it match a record?"]
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         sup = VGroup(label("supervised model", 32, INK, weight=BOLD),
@@ -798,8 +848,8 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         # Schematic: eight sites, each a box of stations, drawn again with replacement.
@@ -833,8 +883,8 @@ class Scene22(VideoScene):
         self.finish()
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         # Schematic: six stations under two groupings, and three pairs judged.
@@ -895,8 +945,8 @@ def dot_stack(values, to_x, base, colours, height=4.2):
     return dots
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         reps = self.data("replicates")["agreement"].to_numpy()
@@ -957,8 +1007,8 @@ def boundary_band(to_x, base, height):
                      fill_opacity=0.12).move_to([(to_x(0.4) + to_x(0.6)) / 2, base, 0], aligned_edge=DOWN)
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         # Schematic: made-up positions, two humps against a flat spread.
@@ -995,8 +1045,8 @@ def positions_panel(scene, split, x0, x1, y, height, colour, names=("centre 1", 
 SEABED_SPLIT, SOFT_SPLIT = "All stations, two clusters", "Soft bottom only, two clusters"
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
         panel, near, to_x = positions_panel(self, SEABED_SPLIT, -5.0, 5.0, -2.2, 3.6, GREEN)
@@ -1012,8 +1062,8 @@ class Scene26(VideoScene):
         self.finish()
 
 
-class Scene27(VideoScene):
-    number = 27
+class Scene28(VideoScene):
+    number = 28
 
     def construct(self):
         record = self.data("record").pivot(index="cluster", columns="bottom", values="n").fillna(0).astype(int)
@@ -1046,20 +1096,20 @@ class Scene27(VideoScene):
         self.finish()
 
 
-class Scene28(KeyPointScene):
-    number, point = 28, 3
+class Scene29(KeyPointScene):
+    number, point = 29, 3
 
 
-# Quiz (scenes 29 and 30) -----------------------------------------------------------------
+# Quiz (scenes 30 and 31) -----------------------------------------------------------------
 
-class Scene29(QuizScene):
-    number = 29
+class Scene30(QuizScene):
+    number = 30
     question = ("Within the soft bottom, k-means splits", "the stations into shallow and deep.",
                 "The split comes back in every sample.", "Are they two groups?")
 
 
-class Scene30(VideoScene):
-    number = 30
+class Scene31(VideoScene):
+    number = 31
 
     def construct(self):
         seabed, seabed_near, seabed_x = positions_panel(self, SEABED_SPLIT, -6.4, -0.6, -1.4, 2.4, GREEN, ("", "boundary", ""))
@@ -1090,19 +1140,19 @@ class Scene30(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 31–34) ----------------------------------------------------
-
-class Scene31(RecapScene):
-    number, point = 31, 1
-
+# Key points and end card (scenes 32–35) ----------------------------------------------------
 
 class Scene32(RecapScene):
-    number, point = 32, 2
+    number, point = 32, 1
 
 
 class Scene33(RecapScene):
-    number, point = 33, 3
+    number, point = 33, 2
 
 
-class Scene34(EndCardScene):
-    number = 34
+class Scene34(RecapScene):
+    number, point = 34, 3
+
+
+class Scene35(EndCardScene):
+    number = 35

@@ -17,10 +17,10 @@ This video is an overview built on three ideas, each with one or two examples:
 clustering finds groups nobody labelled (k-means recovers the seabed from the counts;
 a shuffled copy says how many groups stand out; a tree gives every number at once),
 PCA turns many columns into a map (the ordination, its loadings, and choosing the
-number of components by its use), and a pattern is checked before it is reported
-(bootstrap samples, a gap, a recorded category). The quiz applies the second check to
-the soft-bottom split on the checking page. UMAP, the other linkage rules and the
-horseshoe effect are left to the pages; the end card names them.
+number of components by its use; UMAP briefly), and a pattern is checked before it is
+reported (bootstrap samples, a gap, a recorded category). The quiz applies the second
+check to the soft-bottom split on the checking page. The other linkage rules, UMAP's
+settings and the horseshoe effect are left to the pages; the end card names them.
 -->
 
 # In this video
@@ -157,6 +157,13 @@ are enough. The third holds real structure, rock against gravel, that depth does
 need.
 
 ## Scene 20
+visual: manim UMAP: the observed map, hard bottom apart and depth running smoothly, beside the shuffled single cloud (page results, dimensionality-reduction.qmd#fig-umap)
+
+UMAP draws a map another way, keeping each station's nearest neighbours close. The
+hard-bottom stations form their own group, with depth running smoothly through each.
+Shuffled counts give one cloud.
+
+## Scene 21
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -165,50 +172,50 @@ and keep as many components as the use needs.
 
 # Check a pattern before reporting it
 
-## Scene 21
+## Scene 22
 visual: manim Checks: a supervised model checked against held-out answers; a clustering with none; three cards appear (schematic)
 
 A supervised model can be checked against held-out answers. A clustering has none,
 so three checks take their place.
 
-## Scene 22
+## Scene 23
 visual: manim Bootstrap: the survey's sites drawn again at random, some twice and some not at all, each with all its stations (schematic)
 
 First, does the pattern come back? A bootstrap sample draws the survey's sites again
 at random, with replacement, each with all its stations. k-means is refitted on sixty.
 
-## Scene 23
+## Scene 24
 visual: manim Agreement: pairs of stations, together or apart in two groupings; the adjusted Rand index from zero to one (schematic)
 
 The adjusted Rand index compares each refit with the original. For every pair of
 stations: together in both, or apart in both? One means identical, zero no better than
 chance.
 
-## Scene 24
+## Scene 25
 visual: manim Replicates: sixty dots by agreement with the original, 52 near one, 8 near zero (page results, interpreting-patterns.qmd#fig-bootstrap)
 
 In 52 of the 60 samples, the seabed split came back almost exactly. In the other 8,
 a split into shallow and deep took its place. Report how often each came back.
 
-## Scene 25
+## Scene 26
 visual: manim Gap: stations placed on the line between two cluster centres; groups give two humps with a gap, a gradient gives a flat spread (schematic)
 
 Second, is there a gap? Place each station on the line between the two cluster
 centres. Real groups leave few stations near the boundary; a gradient leaves as many
 there as anywhere.
 
-## Scene 26
+## Scene 27
 visual: manim Positions: the seabed split's histogram of positions, two humps, 2% within 0.1 of the boundary (page results, interpreting-patterns.qmd#fig-positions)
 
 The seabed split has a clear gap: only 2 per cent of stations lie close to its boundary.
 
-## Scene 27
+## Scene 28
 visual: manim Record: the two clusters beside the recorded seabed; the adjusted Rand index 0.92 (page results, interpreting-patterns.qmd)
 
 Third, does it match a record? The split matches the recorded seabed, which k-means
 never saw, at an adjusted Rand index of 0.92: the strongest evidence there is.
 
-## Scene 28
+## Scene 29
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -217,14 +224,14 @@ and does it match a record?
 
 # Quiz
 
-## Scene 29
+## Scene 30
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. Within the soft bottom, k-means splits the stations into shallow and
 deep, and the split comes back in every bootstrap sample. Are they two groups?
 
-## Scene 30
+## Scene 31
 visual: manim QuizAnswer: "not yet"; the soft-bottom split's flat histogram beside the seabed split's two humps, 11% against 2% near the boundary (page results, interpreting-patterns.qmd#fig-positions)
 
 Not yet. Eleven per cent of its stations sit near the boundary, against 2 per cent
@@ -233,24 +240,24 @@ time. And a gradient is a finding too.
 
 # Key points
 
-## Scene 31
+## Scene 32
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up the three key points. <short pause> One: clustering finds groups nobody
 labelled; compare them with shuffled data.
 
-## Scene 32
+## Scene 33
 visual: manim KeyPoints: the second ticked
 
 Two: PCA turns many columns into a map; read its axes from their loadings.
 
-## Scene 33
+## Scene 34
 visual: manim KeyPoints: the third ticked
 
 Three: check a pattern before reporting it.
 
-## Scene 34
+## Scene 35
 visual: manim EndCard: the site's address and a thank-you
 
-The pages also cover UMAP maps, the other linkage rules and the horseshoe effect in
-PCA, with all the code. They are linked below. Thanks for watching.
+The pages also cover how to read a UMAP map, the other linkage rules and the
+horseshoe effect in PCA, with all the code. They are linked below. Thanks for watching.
