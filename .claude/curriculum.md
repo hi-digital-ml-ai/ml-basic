@@ -413,7 +413,7 @@ Both cost a rewrite and both should survive editing.
 ### Aimed at §10
 
 Three handovers. Network weights are not reportable quantities, so §10's importance and
-partial-effect tools are the *only* route to an effect. Ten identical runs varied by 0.046
+partial-effect tools are the *only* route to an effect. Ten identical runs varied by 0.055
 in validation MSE, which is §10's reproducibility case made in numbers. And
 `when-to-use-one.qmd` ends on a network that ranks almost perfectly (AUC 0.998) while never
 predicting a probability outside 0.27–0.73, a good score and an uncalibrated model, which

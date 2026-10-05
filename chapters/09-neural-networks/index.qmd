@@ -47,7 +47,7 @@ reason for the difference turns out to be a single property of the problem.
   and degrees scored 0.763 where standardised it scored 0.570, and a straight line scored
   0.680. It lost to a linear model without producing a single warning.
 - A 40-unit network's validation error bottomed at **step 1,937 of 8,000** and was 4% worse
-  by the end. Ten identical runs differing only in seed varied by **0.046** in validation
+  by the end. Ten identical runs differing only in seed varied by **0.055** in validation
   MSE.
 - On the survey, the mean-only baseline scores 4.402 and an oracle that knows every true
   expected count scores 3.701, so **everything any method can learn is a 0.70 window**. A
