@@ -1,7 +1,7 @@
 ---
 title: "Exploring and cleaning the data"
-description: "A check order for a new dataset that finds sentinel values, impossible depths, messy categories, patterned gaps and a faulty instrument in the raw survey, and how to fix each one by first asking why the value is missing or strange."
-order: 4
+description: "A fixed order of checks for a new dataset, what they find in the raw survey, and why each fix starts by asking why a value is missing or strange."
+order: 3
 categories: [eda, data-preparation]
 ---
 
@@ -140,7 +140,7 @@ p_missing <- raw |>
 p_sentinel + p_missing
 ```
 
-## Counts and groups find the rest
+## Counts find the spellings, groups find the faulty instrument
 
 Count every level of every category, not a sample of them, and compare the groups the
 data were collected in, here the two vessels, with the sentinel values left out:
