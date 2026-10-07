@@ -102,7 +102,7 @@ three stages apart:
 :::
 
 The worked example starts from the cleaned survey (the decisions from
-[Missing values and outliers](missing-values-and-outliers.qmd)) and sets a quarter of
+[Exploring and cleaning the data](exploring-and-cleaning.qmd)) and sets a quarter of
 the stations aside for testing, before anything else.
 [Splitting the data](splitting-data.qmd) explains the split itself.
 

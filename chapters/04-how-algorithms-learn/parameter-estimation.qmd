@@ -54,7 +54,7 @@ has in mind.
 
 - **Oceanography and water-quality monitoring** call the measured variables
   parameters: temperature, salinity, oxygen and nutrients are "hydrographic
-  parameters". In this course those are [features](../02-marine-data/observations-and-features.qmd)
+  parameters". In this course those are [inputs](../01-introduction/types-of-learning.qmd)
   or the outcome, never parameters.
 - **Population and stock-assessment models** call any constant in the model a
   parameter, including ones fixed from the literature, such as natural mortality,

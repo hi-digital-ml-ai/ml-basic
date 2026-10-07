@@ -53,7 +53,7 @@ far more.
 
 ## A random split is the starting point
 
-The cleaned survey (see [Missing values and outliers](missing-values-and-outliers.qmd)),
+The cleaned survey (see [Exploring and cleaning the data](exploring-and-cleaning.qmd)),
 split at random, three quarters for training:
 
 ::: {.panel-tabset group="language"}
@@ -177,7 +177,7 @@ by looking at the result rather than the code.
 ## Random is not independent
 
 A random split treats rows as interchangeable. Survey rows are not: visits to the same
-site are alike ([Observations and features](observations-and-features.qmd)). If one
+site are alike ([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)). If one
 visit lands in training and another in test, the model has, in effect, already seen
 the test station. A **grouped split** keeps each site whole:
 
@@ -246,7 +246,7 @@ uncertain.
 
 A rare outcome causes two problems beyond the split. **Accuracy misleads**: a model
 that always answers "absent" is right `r round(100 - rare_pct)`% of the time here, as
-[Exploring the data first](exploratory-analysis.qmd) found, so a model must be judged
+[Exploring and cleaning the data](exploring-and-cleaning.qmd) found, so a model must be judged
 by how well it finds the rare class. And the **fitting is pulled towards the common
 class**, because getting that right is where the easy gains are.
 

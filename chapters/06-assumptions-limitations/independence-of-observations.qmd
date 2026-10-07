@@ -18,7 +18,7 @@ set.seed(123)
 
 ## Repeat visits are not separate evidence
 
-[Observations and features](../02-marine-data/observations-and-features.qmd) found that
+[The coastal survey](../02-marine-data/the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites) found that
 the survey's rows come from a much smaller number of monitoring sites, and called
 treating repeat visits as separate observations **pseudo-replication**. That is why
 [Splitting the data](../02-marine-data/splitting-data.qmd) keeps each site's rows

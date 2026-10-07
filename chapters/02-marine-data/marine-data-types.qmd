@@ -186,7 +186,7 @@ Every date parsed, and `day_of_year` is ready for the sine and cosine above.
 Time and position can be features, but they matter more as **structure**: they say
 which observations are close to each other, and so likely to be alike. Samples a day
 apart, or a few kilometres apart, share information, as repeat visits to a site do
-([Observations and features](observations-and-features.qmd)). That limits how the data
+([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)). That limits how the data
 can be split to test a model, which [Splitting the data](splitting-data.qmd) takes up.
 
 Used as features, longitude and latitude often improve predictions while explaining
