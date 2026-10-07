@@ -177,8 +177,8 @@ it does not.
   dividing caught by predicted along each input (temperature shows a hump), then
   draws the curves of a random forest and a GAM, which drops the straight lines but keeps one
   readable curve per input (smooth bumps with a penalty on bending, tied to §5's
-  penalty; no effective degrees of freedom), against the simulation's curves. §10's GAM pages still use effective degrees of freedom, so §10's
-  revision must explain them where it uses them, or drop them. *Distributional
+  penalty; no effective degrees of freedom), against the simulation's curves. §10's revision dropped
+  effective degrees of freedom too. *Distributional
   assumptions* is framed the same way: most machine-learning models predict without
   Normal errors or equal spread, but the distribution decides what a prediction means
   and how sure it can be. One random forest throughout: its cross-validated errors fail
@@ -435,53 +435,71 @@ are different objects with different failure modes and one page could only do th
 takes the survey through the whole course and ends in the two paragraphs you would actually
 write, so the exercises are then attached to something concrete rather than free-floating.
 
-### The section's organising move
+**Revision decisions, 2026-10-07** (`feature/improve-interpretation`): the same six pages,
+with *Communicating uncertainty* moved before *Reproducibility*. The first two read a black
+box from outside, the next two read a model from its parts and say how sure its predictions
+are, and the last two turn the analysis into a report.
 
-Every page checks its interpretation against `data/coastal-survey-truth.csv` and the generator
-in `R/make-example-data.R`. `partial-effects.qmd` goes furthest: it recovers the unexplained
-spatial term by subtraction (`log(true_mean)` minus every known term, exact to 7e-15) and can
-therefore compute the *true* partial-dependence function to compare against. That is only
-possible because the data is simulated, and every page that uses it says so in a callout.
+- **One method per page, introduced before it is used.** *Feature importance* introduces
+  permutation importance on test sites against the forest's impurity importance;
+  *Partial effects* introduces partial dependence and ICE curves; *Black boxes and
+  interpretable models* reads a GAM from its parts; *Communicating uncertainty* introduces
+  confidence and prediction intervals, coverage and conformal prediction; *Reproducibility*
+  measures what a seed, a split and cross-validation each move.
+- **Every page uses the course's own methods:** the split by site (§2), cross-validation by
+  site (§5), the random forest and boosting (§3), the negative binomial model (§3), the GAM
+  and the quantile forest (§6). ALE plots, effective degrees of freedom and p-values were cut,
+  and the old GLM given the generator's exact form went with them.
+- **The truth is revealed only to check a model**, never as a page's starting point.
+  *Partial effects* and *From a model to a claim* compare the curves with
+  `R/make-example-data.R`; the other pages read the model alone. The old spatial-term
+  recovery by subtraction was cut.
+- **One to three worked-example parts per page,** each running in about a minute per tab.
+  Feature importance keeps three random columns and ten splits; *Black boxes* scores the
+  average, boosting, the forest and the GAM on the same ten folds; *From a model to a claim*
+  writes its Methods and Results paragraphs entirely in inline R.
+- **The overview has no numbers.** Its "Findings from this section" list (GAM 4.08, 29%
+  coverage, rock 38% → 69%) was cut with the pages that computed them.
+- Running Python tabs on every page. scikit-learn has no GAM or intervals: the tabs use
+  `SplineTransformer` with a ridge penalty, statsmodels' negative binomial for intervals,
+  and boosting with a quantile loss for the quantile forest.
 
 ### Three findings the pages are built on
 
-- **No interpretation method recovers an effect the design confounded.** The true depth
-  response peaks at 80 m. A forest's partial dependence declines monotonically, ALE agrees,
-  and a negative-binomial GLM given the generator's *exact* functional form estimates the
-  depth quadratic at a fourteenth of its true value with $p = 0.63$. Depth and temperature are
-  correlated at −0.45 and temperature is generated from depth. This is the section's headline
-  and it is why the page does not stop at "blame the black box".
-- **The most accurate model was also the second most interpretable.** On identical folds with
-  pooled out-of-fold predictions, the GAM scored 4.08 against the random forest's 4.28 and
-  untuned boosted trees' 4.74, and closed 83% of the baseline-to-oracle gap. The real
-  trade-off is knowing the functional form (4.25) against not knowing it (4.38), not accuracy
-  against interpretability. Keep the untuned boosted trees: default-against-default is the
-  comparison people actually run.
-- **Observation bias defeats every safeguard in the course.** Halving the recorded catch on
-  rock more than doubles the estimated rock effect *and improves* the cross-validated RMSE and
-  R². This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
-  course says.
+- **No curve separates what the design confounds.** The simulation's depth peak is at 80 m;
+  the forest's partial dependence and the GAM's curve both stay highest in shallow water,
+  even with position as an input, because depth follows distance offshore. The temperature
+  hump is recovered at nearly every station. *From a model to a claim* turns this into the
+  sentence a study can write: the temperature curve is supported, a depth peak is not.
+- **Reading cost no accuracy on the survey.** On the same folds of sites the GAM predicted
+  new sites as well as the random forest and better than untuned boosting, and its curves
+  match the forest's. A black box earns its place where inputs work in combination, inputs
+  are raw, or prediction is the whole job.
+- **Observation bias defeats validation.** A gear that keeps half the animals on rock turns
+  "cannot tell" into a confident rock multiplier while the cross-validated RMSE improves.
+  This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
+  course says: checks on the records come from outside the model.
 
 ### Two conventions that hold the section together
 
-**Every importance table needs a null column and a repeat.** Three `rnorm()` columns give the
-scale (impurity importance ranks them sixth to eighth of sixteen, above every substrate term).
-Eight splits give the stability: chlorophyll runs from rank 1 to rank 11, while salinity and
-`survey_year`, the two true nulls, clear the noise ceiling zero times out of eight. The
-reportable quantity is the *count of splits above the ceiling*, not the ranking. This is §8's
-structure-free null and §7's baseline arriving in a third form.
+**Every importance score needs a null and a repeat.** Three columns of random numbers show
+what an unused input scores (impurity importance ranks them above the seabed); ten splits
+show which inputs beat them again and again. Report how often an input beats the random
+columns, not its rank.
 
-**Name which interval you are quoting and measure its coverage.** A 95% confidence band on the
-mean covered 29% of observed counts; an interval from a forest's in-sample RMSE covered 77%;
-conformal covered 96.5% at constant width with a lower bound of −9.1 animals. Coverage on
-held-out data is one line of code and is the only evidence an interval works.
+**Name which interval you are quoting and measure its coverage.** An interval for the
+average holds few catches at new sites, an interval for a new catch about nine in ten, and
+conformal prediction holds its promise only at stations like the calibration sites (the
+stations with the most chlorophyll fall short at the same width). Coverage on held-out
+sites is the evidence an interval works.
 
 ### A trap that caught this section twice
 
 `summarise()` and `tibble()` evaluate arguments in order, so
 `summarise(rmse = mean(rmse), lower = quantile(rmse, 0.1))` computes the quantile of the
 *new scalar*, silently collapsing every ribbon to its line. The same shadowing bit §7 and §8.
-Put derived columns before the column they are derived from, or rename.
+Put derived columns before the column they are derived from, or rename. The revision
+met it again in `from-model-to-claim.qmd`, where a column `rock` shadowed a local `rock`.
 
 ---
 
