@@ -441,10 +441,5 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 9 Neural networks | `feature/improve-neural-networks` | Pages rebuilt; merged into `develop` 2026-10-07. Video not yet rebuilt |
 | 10 Interpretation | `feature/improve-interpretation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; script awaiting approval before narration |
 
-Loose end from section 7: its *Uncertainty and stability* bootstraps sites over the
-pooled out-of-fold predictions without refitting, but §9's `training-a-network.qmd`
-(about line 280) says that page means "fit it several times from different seeds and
-report the spread". Reword it to match.
-
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".
