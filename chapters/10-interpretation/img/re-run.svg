@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 650" width="100%" role="img" aria-label="What a re-run needs: four cards. The raw data, kept as collected: the file as it came in, never edited by hand. Every step in code, in scripts: from the raw file to the score, cleaning, fitting and scoring. A seed above each draw: set just before the random draw it is for, so each step gets the same draws on every run; two runs from seed 1 give the same numbers. The software versions, in a lockfile: each package and its version, so a reader can install the same ones. A note says that with all four anyone can re-run the analysis and get the same numbers, but a seed does not say how far those numbers would move with other data.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .mono { font: 15px "Source Code Pro", Menlo, Consolas, monospace; fill: #1f2933; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">What a re-run needs</text>
+<rect class="box" x="0" y="50" width="455" height="236" rx="8"/><rect x="0" y="50" width="455" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="94">The raw data</text>
+<text class="lab" x="22" y="120" fill="#0072B2">KEPT AS COLLECTED</text>
+<text class="body" x="22" y="162">The file as it came in,</text>
+<text class="body" x="22" y="188">never edited by hand.</text>
+<rect class="box" x="485" y="50" width="455" height="236" rx="8"/><rect x="485" y="50" width="455" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="507" y="94">Every step in code</text>
+<text class="lab" x="507" y="120" fill="#E69F00">IN SCRIPTS</text>
+<text class="body" x="507" y="162">From the raw file to the</text>
+<text class="body" x="507" y="188">score: cleaning, fitting</text>
+<text class="body" x="507" y="214">and scoring.</text>
+<rect class="box" x="0" y="312" width="455" height="236" rx="8"/><rect x="0" y="312" width="455" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="22" y="356">A seed above each draw</text>
+<text class="lab" x="22" y="382" fill="#009E73">RANDOM CHOICES</text>
+<text class="body" x="22" y="424">Set just before the draw</text>
+<text class="body" x="22" y="450">it is for, so each step gets</text>
+<text class="body" x="22" y="476">the same draws every run.</text>
+<rect class="box" x="485" y="312" width="455" height="236" rx="8"/><rect x="485" y="312" width="455" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="507" y="356">The software versions</text>
+<text class="lab" x="507" y="382" fill="#D55E00">A LOCKFILE</text>
+<text class="body" x="507" y="424">Each package and its</text>
+<text class="body" x="507" y="450">version, so a reader can</text>
+<text class="body" x="507" y="476">install the same ones.</text>
+<rect x="300" y="130" width="120" height="130" rx="4" fill="#ffffff" stroke="#0072B2" stroke-width="1.6"/>
+<rect x="300" y="130" width="120" height="22" rx="4" fill="#0072B2" opacity="0.25"/>
+<line x1="300" y1="152" x2="420" y2="152" stroke="#8a949c" stroke-width="1"/>
+<line x1="300" y1="174" x2="420" y2="174" stroke="#8a949c" stroke-width="1"/>
+<line x1="300" y1="196" x2="420" y2="196" stroke="#8a949c" stroke-width="1"/>
+<line x1="300" y1="218" x2="420" y2="218" stroke="#8a949c" stroke-width="1"/>
+<line x1="300" y1="240" x2="420" y2="240" stroke="#8a949c" stroke-width="1"/>
+<line x1="340" y1="130" x2="340" y2="260" stroke="#8a949c" stroke-width="1"/>
+<line x1="380" y1="130" x2="380" y2="260" stroke="#8a949c" stroke-width="1"/>
+<text class="sm" x="360" y="146" text-anchor="middle" font-weight="bold">raw</text>
+<path d="M 391 230 v -9 a 9 9 0 0 1 18 0 v 9" fill="none" stroke="#1f2933" stroke-width="2.4"/>
+<rect x="386" y="230" width="28" height="22" rx="3" fill="#1f2933"/>
+<rect x="785" y="82" width="120" height="32" rx="5" fill="#ffffff" stroke="#E69F00" stroke-width="1.6"/>
+<text class="sm" x="845" y="103" text-anchor="middle">raw</text>
+<line class="ln" x1="845" y1="115" x2="845" y2="130" marker-end="url(#arr)"/>
+<rect x="785" y="132" width="120" height="32" rx="5" fill="#ffffff" stroke="#E69F00" stroke-width="1.6"/>
+<text class="sm" x="845" y="153" text-anchor="middle">clean</text>
+<line class="ln" x1="845" y1="165" x2="845" y2="180" marker-end="url(#arr)"/>
+<rect x="785" y="182" width="120" height="32" rx="5" fill="#ffffff" stroke="#E69F00" stroke-width="1.6"/>
+<text class="sm" x="845" y="203" text-anchor="middle">model</text>
+<line class="ln" x1="845" y1="215" x2="845" y2="230" marker-end="url(#arr)"/>
+<rect x="785" y="232" width="120" height="32" rx="5" fill="#ffffff" stroke="#E69F00" stroke-width="1.6"/>
+<text class="sm" x="845" y="253" text-anchor="middle">score</text>
+<text class="sm" x="272" y="402" fill="#55606a">run 1, seed 1</text>
+<rect x="272" y="412" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="295" y="431" text-anchor="middle">0.27</text>
+<rect x="324" y="412" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="347" y="431" text-anchor="middle">0.37</text>
+<rect x="376" y="412" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="399" y="431" text-anchor="middle">0.57</text>
+<text class="sm" x="272" y="464" fill="#55606a">run 2, seed 1</text>
+<rect x="272" y="474" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="295" y="493" text-anchor="middle">0.27</text>
+<rect x="324" y="474" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="347" y="493" text-anchor="middle">0.37</text>
+<rect x="376" y="474" width="46" height="28" rx="4" fill="#009E73" fill-opacity="0.15" stroke="#009E73" stroke-width="1.2"/>
+<text class="sm" x="399" y="493" text-anchor="middle">0.57</text>
+<text class="lab" x="346" y="530" fill="#009E73" text-anchor="middle">THE SAME DRAWS</text>
+<rect x="775" y="404" width="140" height="122" rx="4" fill="#ffffff" stroke="#D55E00" stroke-width="1.6"/>
+<text class="sm" x="787" y="426" font-weight="bold">package</text>
+<text class="sm" x="903" y="426" font-weight="bold" text-anchor="end">version</text>
+<line x1="775" y1="436" x2="915" y2="436" stroke="#8a949c" stroke-width="1"/>
+<text class="sm" x="787" y="460">A</text>
+<text class="sm" x="903" y="460" text-anchor="end">1.2.0</text>
+<text class="sm" x="787" y="486">B</text>
+<text class="sm" x="903" y="486" text-anchor="end">0.9.4</text>
+<text class="sm" x="787" y="512">C</text>
+<text class="sm" x="903" y="512" text-anchor="end">3.1.1</text>
+<text class="note" x="470" y="582" text-anchor="middle">With all four, anyone can re-run the analysis and get the same numbers.</text>
+<text class="note" x="470" y="606" text-anchor="middle">A seed does not say how far those numbers would move with other data.</text>
+</svg>
