@@ -83,10 +83,10 @@ Four models predict the survey's counts:
 - **Predicting the average**: every station gets the average count of the fitted
   stations. It has no skill, and the other three should beat it.
 - **Poisson regression**, from
-  [Count regression](../03-supervised-learning/count-regression.qmd), with each input
+  [Regression for counts](../03-supervised-learning/count-regression.qmd), with each input
   entered as a straight line.
 - **Random forest**, from
-  [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+  [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 - **Random forest on log counts**, the same forest fitted to the log of the count plus 1,
   each prediction turned back into animals, as in
   [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#training-on-log-counts-predicts-far-fewer-animals-than-were-caught).

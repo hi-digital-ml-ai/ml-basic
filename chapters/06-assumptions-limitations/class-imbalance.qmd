@@ -488,5 +488,5 @@ turns the costs of the two mistakes into a threshold.
    presence. Add it as a fourth recipe: where does its point land on @fig-curve?
 2. Replace `logistic_reg()` with
    `rand_forest(trees = 500) |> set_engine("ranger") |> set_mode("classification")`, as
-   in [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), and
+   in [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), and
    redraw @fig-curve. Does upsampling still land on the forest's own curve?

@@ -276,10 +276,10 @@ predictions scores `r f3(averaged_mse)`, better than
 many trees of [Random forests and
 boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
-Fit a network several times from different seeds and report the spread, as
-[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) does for any
-model. On this survey, a difference between two networks smaller than `r seed_spread`
-could be the seed alone.
+Fit a network several times from different seeds and report the spread. It comes on top
+of the spread that [Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd)
+measures by drawing the sites again. On this survey, a difference between two networks
+smaller than `r seed_spread` could be the seed alone.
 
 ## Large datasets are trained in mini-batches
 

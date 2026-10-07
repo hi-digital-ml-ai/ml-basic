@@ -56,7 +56,7 @@ the inputs of [Regression for counts](../03-supervised-learning/count-regression
 Two are interpretable: Poisson regression, with a straight line for each input on the
 log scale, and a GAM, with a curve for depth and temperature. Two are black boxes: the
 random forest of [Partial effects](partial-effects.qmd), and boosting with the
-settings of [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+settings of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 Predicting the average is the baseline. The GAM is then fitted to every station and
 read.
 

@@ -84,7 +84,7 @@ model as it would be used.
 ## Worked example
 
 The model is the random forest of
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). As on
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). As on
 [Cross-validation](cross-validation.qmd), it uses all the survey's sites, and every
 scheme has five folds. Each forest has 100 trees, so that the many refits stay quick.
 

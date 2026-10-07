@@ -56,7 +56,7 @@ than 100 m deep. The deeper sites are the area the model is asked to map. Two me
 from earlier pages are fitted with the same inputs: polynomial regression from
 [Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
 with squared terms for depth and temperature, and the random forest from
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
 One survey could be lucky or unlucky, so the fit is repeated on ten surveys, each
 made of a different three quarters of the shallow sites. The quarter left out each

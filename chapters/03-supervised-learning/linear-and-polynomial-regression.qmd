@@ -288,7 +288,7 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
 ### The two compared on new sites
 
 Both models are scored on the test sites with the two measures from
-[Information leakage](../02-marine-data/information-leakage.qmd): the **RMSE**, roughly
+[Avoiding information leakage](../02-marine-data/information-leakage.qmd): the **RMSE**, roughly
 how far a prediction usually lands from the true count, and **$R^2$**, the share of the
 variation in the test counts that the predictions follow. The last two columns give
 the lowest prediction and the number below zero.
@@ -350,7 +350,7 @@ On sites the models have never seen, polynomial regression does better: $R^2$ ri
 `r round(line_score$rsq, 2)` to `r round(curve_score$rsq, 2)`, and the RMSE falls from
 `r round(line_score$rmse, 2)` to `r round(curve_score$rmse, 2)` animals. Neither is
 high; predicting a new site is hard, as
-[Information leakage](../02-marine-data/information-leakage.qmd) found.
+[Avoiding information leakage](../02-marine-data/information-leakage.qmd) found.
 
 ## Fewer than zero animals
 

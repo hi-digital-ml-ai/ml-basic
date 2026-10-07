@@ -58,7 +58,7 @@ common one.
 ## Worked example
 
 The data, the split by site and the recipe are those of
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), with missing
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), with missing
 values filled with the median. The training sites are dealt into ten folds for
 cross-validation by site, as in
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
@@ -157,7 +157,7 @@ long tail lifts the average to `r one(mean(train$abundance))`.
 A model's errors are the place to check both assumptions, and they must be errors on
 sites the model did not see. Cross-validation gives one for every training station:
 each fold's stations are predicted by a forest fitted to the other nine folds. The
-forest is that of [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
+forest is that of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
 here with 500 trees, fitted with squared error. The errors are then split into fifths by
 the size of the prediction.
 
@@ -534,7 +534,7 @@ ggplot(intervals, aes(order)) +
 :::
 
 For a statistical model the same assumptions set its confidence intervals:
-[Count regression](../03-supervised-learning/count-regression.qmd) found Poisson
+[Regression for counts](../03-supervised-learning/count-regression.qmd) found Poisson
 regression's too narrow for counts this spread out. Every check on this page also
 treats the stations as independent, which
 [Independence of observations](independence-of-observations.qmd) tests.
@@ -563,6 +563,6 @@ treats the stations as independent, which
    sites. Ask the quantile forest for its 50% point, the median, at the same stations.
    How close are the two?
 2. Fit the boosted model of
-   [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) to the raw
+   [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) to the raw
    counts with Poisson deviance, `set_engine("xgboost", objective = "count:poisson")`,
    and compare its total with the forest's.

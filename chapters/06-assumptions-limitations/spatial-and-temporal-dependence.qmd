@@ -51,7 +51,7 @@ scores the model on each fold in turn.
 ## Worked example
 
 The data, the split by site and the negative binomial model are those of
-[Count regression](../03-supervised-learning/count-regression.qmd). Each training site is
+[Regression for counts](../03-supervised-learning/count-regression.qmd). Each training site is
 also given a **block**: the square of half a degree, about 40 by 55 km, that holds the
 centre of its stations. Ten-fold cross-validation by site and by block, each repeated
 three times with different folds, scores the models below.
@@ -236,7 +236,7 @@ explaining before it is treated as noise.
 A model given only a station's longitude and latitude can predict a new site only by
 what the sites around it caught. The negative binomial model's straight lines cannot
 carve the map into patches, but the random forest of
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) can. Three
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) can. Three
 forests are scored, one on position, one on the environmental inputs, and one on
 both, under cross-validation by site and by block.
 
@@ -373,7 +373,7 @@ was knowledge of the neighbours, which an unsurveyed area would not have.
 `r if (rmse_lower) "Every RMSE is lower under blocks, although every R² is lower too." else "The RMSEs do not move with the R²s."`
 The blocks' folds hold different mixes of rich and poor sites from the sites' folds, so
 their RMSEs are on different scales, the trap
-[Information leakage](../02-marine-data/information-leakage.qmd) met when it compared
+[Avoiding information leakage](../02-marine-data/information-leakage.qmd) met when it compared
 a random split with a split by site. R², which measures each fold against its own
 spread, can be compared across the two schemes.
 
