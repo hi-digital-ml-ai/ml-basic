@@ -1,7 +1,7 @@
 ---
 title: "Reproducibility and transparent reporting"
-description: "Which random choice actually moves your result, measured, and the small set of habits that make an analysis someone else can re-run."
-order: 4
+description: "A seed lets anyone re-run an analysis and get the same numbers, but on the survey the split of sites moved a forest's score far more than its seed did. Cross-validation steadies the score, and a short list of what to report lets a reader re-run the whole analysis."
+order: 5
 categories: [reproducibility, interpretation]
 ---
 
@@ -12,303 +12,402 @@ library(tidymodels)
 library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Beyond the principled argument
+## A re-run should give the same numbers
 
-An analysis that cannot be re-run is not a method, it is an anecdote. That is the principled
-argument and everyone agrees with it, which is why it changes nobody's behaviour.
-
-The practical argument is sharper. Machine-learning pipelines contain several independent
-sources of randomness, they are not equally important, and if you do not know which one
-dominates you will spend your effort on the wrong one. This page measures them, and the
-answer is not the one the `set.seed()` habit implies.
+An analysis is **reproducible** when someone else, given the same data and the same code,
+gets the same numbers. A reader can then check a result, and you can return to your own
+analysis a year later and pick up where you left off. Most of this comes from a few working
+habits, set out at the end of this page. Machine learning adds one more thing to handle:
+the random numbers it draws along the way. This page measures which random choice moves a
+score most, and lists what a report needs for a reader to re-run the analysis.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Two experiments
+## An analysis draws random numbers in several places
 
-The same analysis, splitting the survey 75/25, fitting a random forest and reporting the
-test RMSE and the three most important predictors, run sixteen times. First varying only
-the forest's internal randomness, then varying only the split.
+A machine-learning analysis draws random numbers at several steps:
+
+- the **split**, which sites are held out to test the model;
+- the **folds** of cross-validation, which sites go into each fold;
+- the **model's own random choices**: a random forest draws stations and inputs for each
+  tree, and a neural network starts from random weights;
+- the shuffles that measure each input's score in
+  [Feature importance](feature-importance.qmd).
+
+All of them come from a random number generator, which gives the same sequence of numbers
+whenever it starts from the same **seed**. Setting a seed makes the whole analysis repeat
+exactly. [Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) fitted a forest ten
+times without one and found that the score moved a little from run to run: a seed hides
+that spread rather than removing it. The random choices do not all move a score by the
+same amount, and the worked example compares them.
+
+## Worked example
+
+A random forest is scored on the survey in three ways: on one split of the sites, grown
+with ten different seeds; on ten different splits, with one seed; and by five-fold
+cross-validation by site, with ten different seeds for the folds. Then one seed is broken
+by an extra random draw.
+
+### Preparing the data
+
+The forest predicts abundance from depth, temperature, chlorophyll, salinity, the seabed
+and the season, with the gaps in chlorophyll filled by the median. `test_rmse()` fits it
+to one split's training sites and scores it on the test sites.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: experiments
+#| label: prepare
 survey <- load_coastal_survey_clean()
 
-modelling <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-         substrate, season, longitude, latitude) |>
-  drop_na()
+forest_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = survey
+) |>
+  step_impute_median(all_numeric_predictors())
 
-one_analysis <- function(split_seed, forest_seed) {
-  set.seed(split_seed)
-  split <- initial_split(modelling, prop = 0.75)
-  held  <- testing(split)
-
-  set.seed(forest_seed)
-  fitted <- workflow() |>
-    add_recipe(recipe(abundance ~ ., data = training(split)) |>
-                 step_dummy(all_nominal_predictors())) |>
-    add_model(rand_forest(trees = 500) |>
-                set_engine("ranger", seed = forest_seed) |> set_mode("regression")) |>
-    fit(training(split))
-
-  baseline <- rmse_vec(held$abundance, predict(fitted, held)$.pred)
-
-  set.seed(forest_seed + 1)
-  importance <- map_dbl(setdiff(names(held), "abundance"), \(variable) {
-    mean(map_dbl(1:20, \(i) {
-      shuffled <- held
-      shuffled[[variable]] <- sample(shuffled[[variable]])
-      rmse_vec(held$abundance, predict(fitted, shuffled)$.pred) - baseline
-    }))
-  })
-  names(importance) <- setdiff(names(held), "abundance")
-
-  tibble(rmse = baseline,
-         top_three = paste(names(sort(importance, decreasing = TRUE))[1:3], collapse = " > "))
+# a random forest whose own random choices start from `seed`
+forest <- function(seed) {
+  rand_forest(mode = "regression", trees = 300) |>
+    set_engine("ranger", seed = seed)
 }
 
-model_randomness <- map_dfr(1:8, \(s) one_analysis(split_seed = 100, forest_seed = s))
-split_randomness <- map_dfr(1:8, \(s) one_analysis(split_seed = s,   forest_seed = 1))
+# fit to a split's training sites, score on its test sites
+test_rmse <- function(split, seed) {
+  fitted <- workflow(forest_recipe, forest(seed)) |> fit(training(split))
+  rmse_vec(testing(split)$abundance, predict(fitted, testing(split))$.pred)
+}
 
-bind_rows(
-  mutate(model_randomness, varying = "the forest's own randomness"),
-  mutate(split_randomness, varying = "which rows land in the test set")
-) |>
-  summarise(`lowest RMSE` = round(min(rmse), 3), `highest RMSE` = round(max(rmse), 3),
-            `RMSE range` = round(max(rmse) - min(rmse), 3),
-            `distinct top-three orders` = n_distinct(top_three),
-            .by = varying)
+# the lowest, highest and range of each set of scores
+spread <- function(...) {
+  list(...) |>
+    map(\(rmse) tibble(`Lowest RMSE` = min(rmse), `Highest RMSE` = max(rmse),
+                       Range = max(rmse) - min(rmse))) |>
+    list_rbind(names_to = "Varied") |>
+    mutate(across(where(is.double), \(x) round(x, 2)))
+}
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.inspection import permutation_importance
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import root_mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import (GroupKFold, GroupShuffleSplit,
+                                     cross_val_predict)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-modelling = survey[columns].dropna().reset_index(drop=True)
-encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+X, y = survey[numeric + categorical], survey["abundance"]
+sites = survey["site_id"]
 
-def one_analysis(split_seed, forest_seed):
-    rows, held = train_test_split(np.arange(len(modelling)), train_size=0.75,
-                                  random_state=split_seed)
-    fitted = RandomForestRegressor(n_estimators=500, random_state=forest_seed
-                                   ).fit(encoded.iloc[rows],
-                                         modelling["abundance"].iloc[rows])
-
-    X_held, y_held = encoded.iloc[held], modelling["abundance"].iloc[held]
-    scored = permutation_importance(
-        fitted, X_held, y_held, n_repeats=20, random_state=forest_seed + 1,
-        scoring="neg_root_mean_squared_error")
-
-    order = np.argsort(scored.importances_mean)[::-1][:3]
-    return {"rmse": root_mean_squared_error(y_held, fitted.predict(X_held)),
-            "top_three": " > ".join(encoded.columns[order])}
-
-model_randomness = pd.DataFrame(
-    [one_analysis(split_seed=100, forest_seed=s) for s in range(1, 9)])
-split_randomness = pd.DataFrame(
-    [one_analysis(split_seed=s, forest_seed=1) for s in range(1, 9)])
-
-both = pd.concat([
-    model_randomness.assign(varying="the forest's own randomness"),
-    split_randomness.assign(varying="which rows land in the test set"),
+forest_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(sparse_output=False), categorical),
 ])
 
-(both.groupby("varying", sort=False)
-    .apply(lambda g: pd.Series({
-        "lowest RMSE": round(g["rmse"].min(), 3),
-        "highest RMSE": round(g["rmse"].max(), 3),
-        "RMSE range": round(g["rmse"].max() - g["rmse"].min(), 3),
-        "distinct top-three orders": g["top_three"].nunique(),
-    }), include_groups=False)
-    .reset_index())
+# a random forest whose own random choices start from `seed`;
+# max_features="sqrt" and min_samples_leaf=5 are ranger's defaults
+def forest(seed):
+    model = RandomForestRegressor(n_estimators=300, max_features="sqrt",
+                                  min_samples_leaf=5, random_state=seed,
+                                  n_jobs=-1)
+    return Pipeline([("recipe", forest_recipe), ("model", model)])
+
+# a quarter of the sites held out for testing
+def site_split(seed):
+    grouper = GroupShuffleSplit(n_splits=1, train_size=0.75,
+                                random_state=seed)
+    return next(grouper.split(X, groups=sites))
+
+# fit to a split's training sites, score on its test sites
+def test_rmse(split, seed):
+    rows, held = split
+    fitted = forest(seed).fit(X.iloc[rows], y.iloc[rows])
+    return root_mean_squared_error(y.iloc[held], fitted.predict(X.iloc[held]))
+
+# the lowest, highest and range of each set of scores
+def spread(scores):
+    return pd.DataFrame([
+        {"Varied": name, "Lowest RMSE": rmse.min(),
+         "Highest RMSE": rmse.max(), "Range": np.ptp(rmse)}
+        for name, rmse in scores.items()]).round(2)
 ```
 
 :::
 
-The forest's own randomness is close to irrelevant: across eight seeds the RMSE moves by
-**0.016**. Which rows landed in the test set moves it by **1.50**, nearly a hundred times
-as much, and more than twice the entire spread between the best and worst model in
-[the previous page's comparison](black-box-or-not.qmd).
+### The split of sites moves the score more than the forest's seed
 
-```{r}
-#| label: fig-seeds
-#| fig-cap: "Test RMSE from sixteen runs of the same analysis. Varying the forest's random seed (left) moves the answer by 0.016. Varying which rows are held out (right) moves it by 1.50. The dashed line is the mean-only baseline for scale."
-#| fig-alt: "A strip plot with two rows of points on a shared horizontal RMSE axis from about 3.7 to 5.3. The upper row, labelled the forest's own randomness, is eight points piled almost exactly on top of each other near 4.58. The lower row, labelled which rows land in the test set, is eight points spread widely across the axis from 3.75 to 5.25. A dashed vertical line sits at 4.82."
-#| fig-width: 7.5
-#| fig-height: 3
-bind_rows(mutate(model_randomness, varying = "the forest's own\nrandomness"),
-          mutate(split_randomness, varying = "which rows land in\nthe test set")) |>
-  ggplot(aes(rmse, varying)) +
-  geom_vline(xintercept = rmse_vec(modelling$abundance, rep(mean(modelling$abundance),
-                                                            nrow(modelling))),
-             linetype = "dashed", colour = "#9aa5ad") +
-  geom_point(size = 2.6, alpha = 0.65, colour = ml_palette[["blue"]]) +
-  labs(x = "test RMSE", y = NULL)
-```
-
-And the importance ranking is unstable under both. Eight runs that differ only in the
-forest's seed produced **three** different top-three orderings; eight runs that differ only
-in the split produced **six**.
-
-## The consequences
-
-**Seeding is necessary and nowhere near sufficient.** `set.seed()` makes your run repeatable
-by you. It does nothing about the fact that a different quarter of your stations would have
-given a different number.
-
-**Report a distribution, not a split.** This is §7's argument arriving from a new direction.
-A single 75/25 split gives you one draw from a spread of 1.5 RMSE; ten-fold cross-validation
-gives you a mean and a standard error over the same data. The reproducible thing to publish
-is the resampling estimate and its spread, and the seed is then about repeating the
-*procedure*, not about pinning the answer.
-
-**Importance rankings need repeating explicitly.** As
-[page 1](feature-importance.qmd) showed, the count of splits in which a variable beats a
-noise column is stable where the ranking is not.
-
-## The mechanics
-
-Everything below is what this site itself does, and the details are in
-`.claude/workflow.md`.
-
-**Seed immediately before the random thing, in the same chunk.** A `set.seed()` at the top of
-a document is worthless the moment anyone runs a chunk out of order, and notebooks get run out
-of order. Every chunk that resamples, bootstraps, initialises or tunes carries its own seed on
-the line above.
-
-**Know which engine takes its own seed.** `ranger` has a `seed` argument that makes it
-reproducible independently of `num.threads`, which is worth checking rather than assuming.
+The forest is first grown ten times on one split, with a different seed each time, then
+once on each of ten different splits, with the same seed.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: thread-check
-predictors <- model.matrix(abundance ~ . - 1, modelling) |> as.data.frame()
-predictors$abundance <- modelling$abundance
+#| label: seed-and-split
+# one split of the sites, the forest grown with ten different seeds
+set.seed(1)
+one_split <- group_initial_split(survey, group = site_id, prop = 0.75)
+by_seed <- map_dbl(1:10, \(seed) test_rmse(one_split, seed))
 
-map_dbl(c(1, 2, 4), \(threads) {
-  set.seed(7)
-  ranger::ranger(abundance ~ ., data = predictors, num.trees = 300,
-                 seed = 1, num.threads = threads)$prediction.error
-}) |>
-  (\(x) tibble(threads = c(1, 2, 4), `out-of-bag MSE` = format(x, digits = 15)))()
+# ten different splits, the forest grown with one seed
+by_split <- map_dbl(1:10, \(s) {
+  set.seed(s)
+  test_rmse(group_initial_split(survey, group = site_id, prop = 0.75), 1)
+})
+
+spread(`Forest's seed` = by_seed, `Split of sites` = by_split)
 ```
 
 ## Python
 
-```python
-# n_jobs is scikit-learn's num.threads. Each tree is grown from its own seeded
-# stream, so splitting the work across cores changes the timing and not the
-# forest, but it is worth checking rather than assuming.
-def out_of_bag_mse(n_jobs):
-    forest = RandomForestRegressor(n_estimators=300, random_state=7,
-                                   oob_score=True, n_jobs=n_jobs).fit(
-        encoded, modelling["abundance"])
-    return root_mean_squared_error(modelling["abundance"],
-                                   forest.oob_prediction_) ** 2
+```{python}
+# one split of the sites, the forest grown with ten different seeds
+one_split = site_split(1)
+by_seed = np.array([test_rmse(one_split, seed) for seed in range(1, 11)])
+
+# ten different splits, the forest grown with one seed
+by_split = np.array([test_rmse(site_split(s), 1) for s in range(1, 11)])
+
+spread({"Forest's seed": by_seed, "Split of sites": by_split})
+```
+
+:::
+
+```{r}
+#| label: split-numbers
+#| include: false
+two <- \(x) format(round(x, 2), nsmall = 2)
+range_of <- \(x) max(x) - min(x)
+```
+
+On one split, the ten seeds gave test RMSEs from `r two(min(by_seed))` to
+`r two(max(by_seed))` animals, a range of `r two(range_of(by_seed))`. With one seed, the
+ten splits gave `r two(min(by_split))` to `r two(max(by_split))`, a range of
+`r two(range_of(by_split))`, about `r round(range_of(by_split) / range_of(by_seed))`
+times as much. Which sites happened to be held out decides the score far more than the
+forest's seed does. A seeded split repeats its number exactly, but another split could
+have put that number anywhere in this range.
+[Feature importance](feature-importance.qmd) found the same for the inputs' scores, which
+moved from one split to the next.
+
+### Cross-validation steadies the score
+
+Cross-validation scores every site once, while its fold is held out, and pools the
+out-of-fold predictions into one score, as on
+[Cross-validation](../07-validation/cross-validation.qmd). A new seed puts the sites into
+different folds, but every site is still scored.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: folds
+# five folds of sites, with ten different seeds for the folds
+by_folds <- map_dbl(1:10, \(s) {
+  set.seed(s)
+  folds <- group_vfold_cv(survey, group = site_id, v = 5)
+  scored <- workflow(forest_recipe, forest(1)) |>
+    fit_resamples(folds, control = control_resamples(save_pred = TRUE))
+  pooled <- collect_predictions(scored)
+  rmse_vec(pooled$abundance, pooled$.pred)
+})
+
+spread(`Forest's seed` = by_seed, `Split of sites` = by_split,
+       `Folds of sites` = by_folds)
+```
+
+## Python
+
+```{python}
+# five folds of sites, with ten different seeds for the folds
+def pooled_rmse(seed):
+    folds = GroupKFold(n_splits=5, shuffle=True, random_state=seed)
+    pooled = cross_val_predict(forest(1), X, y, groups=sites, cv=folds)
+    return root_mean_squared_error(y, pooled)
+
+by_folds = np.array([pooled_rmse(s) for s in range(1, 11)])
+
+spread({"Forest's seed": by_seed, "Split of sites": by_split,
+        "Folds of sites": by_folds})
+```
+
+:::
+
+The ten seeds for the folds gave scores from `r two(min(by_folds))` to
+`r two(max(by_folds))`, a range of `r two(range_of(by_folds))`, much narrower than the
+splits' (@fig-spread). The cross-validated score still depends on its seed, but far less.
+It is the score to report, with the interval that
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) puts on it by
+drawing the sites again.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-spread
+#| fig-cap: "The forest's RMSE in ten runs of each kind. Growing the forest with another seed barely moves it; holding out other sites moves it widely; five-fold cross-validation, with other seeds for the folds, moves it much less."
+#| fig-alt: !expr 'glue::glue("A strip plot with three rows of ten points on a shared horizontal axis of RMSE on new sites, in individuals. The top row, the forest seed, is a tight cluster about {two(range_of(by_seed))} wide near {two(mean(by_seed))}. The middle row, the split of sites, is spread from {two(min(by_split))} to {two(max(by_split))}. The bottom row, the folds of sites, is a short cluster from {two(min(by_folds))} to {two(max(by_folds))}.")'
+#| fig-width: 7.5
+#| fig-height: 3
+list(`Forest's seed` = by_seed, `Split of sites` = by_split,
+     `Folds of sites` = by_folds) |>
+  map(\(rmse) tibble(rmse)) |>
+  list_rbind(names_to = "varied") |>
+  ggplot(aes(rmse, fct_rev(fct_inorder(varied)))) +
+  geom_point(size = 2.6, alpha = 0.6, colour = ml_palette[["blue"]]) +
+  labs(x = "RMSE on new sites (individuals)", y = NULL)
+```
+
+:::
+
+### A seed repeats a run only when the draws come in the same order
+
+A seed fixes where the sequence of random numbers starts, not which step gets which
+number. An extra draw before the split, even one hidden inside another function, shifts
+every draw after it. In R, `recipe()` and each `step_*()` draw a random ID, so a recipe
+built between `set.seed()` and the split changes the split.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: order
+set.seed(1)
+first <- group_initial_split(survey, group = site_id, prop = 0.75)
+
+set.seed(1)
+depth_recipe <- recipe(abundance ~ depth_m, data = survey) |>
+  step_impute_median(all_numeric_predictors())   # draws a random ID
+second <- group_initial_split(survey, group = site_id, prop = 0.75)
+
+test_sites <- \(split) unique(testing(split)$site_id)
+shared <- length(intersect(test_sites(first), test_sites(second)))
+
+order_rmse <- c(test_rmse(first, 1), test_rmse(second, 1))
+
+tibble(Run = c("Seed, then split", "Seed, recipe, then split"),
+       `Test sites` = c(length(test_sites(first)), length(test_sites(second))),
+       `Shared with the first run` = c(length(test_sites(first)), shared),
+       `Test RMSE` = round(order_rmse, 2))
+```
+
+## Python
+
+```{python}
+# without its own random_state, a function draws from numpy's global
+# generator, which np.random.seed() sets as set.seed() does in R
+def unseeded_split():
+    grouper = GroupShuffleSplit(n_splits=1, train_size=0.75)
+    return next(grouper.split(X, groups=sites))
+
+np.random.seed(1)
+first = unseeded_split()
+
+np.random.seed(1)
+extra = np.random.permutation(10)   # one extra draw, as in another function
+second = unseeded_split()
+
+def test_sites(split):
+    return set(sites.iloc[split[1]])
 
 pd.DataFrame({
-    "threads": [1, 2, 4],
-    "out-of-bag MSE": [f"{out_of_bag_mse(n):.15g}" for n in (1, 2, 4)],
+    "Run": ["Seed, then split", "Seed, extra draw, then split"],
+    "Test sites": [len(test_sites(first)), len(test_sites(second))],
+    "Shared with the first run": [
+        len(test_sites(first)),
+        len(test_sites(first) & test_sites(second))],
+    "Test RMSE": [round(test_rmse(split, 1), 2) for split in (first, second)],
 })
 ```
 
 :::
 
-Identical to fifteen digits. Not every engine is; check yours once and write down the answer.
+Both runs set the same seed, yet only `r shared` of the
+`r length(test_sites(first))` test sites are the same, and the score moved from
+`r two(order_rmse[1])` to `r two(order_rmse[2])`. Nothing warned. Setting the
+seed on the line above the draw it is for, as every chunk on this page does, keeps each
+draw where it was. In scikit-learn, give each function its own `random_state`; its draws
+then do not depend on anything that ran before it.
 
-**Pin the package versions.** `renv` records every package and version in `renv.lock`, and
-`renv::restore()` rebuilds that library. Without it, "I re-ran your code and got a different
-answer" is usually a package that changed its default two releases ago. Commit the lockfile in
-the same commit as the analysis that needs it.
+## A re-runnable analysis keeps four things
 
-**Cache the computed results, not just the code.** This site commits `_freeze/`, so the
-numbers in every page are the ones that were checked, and a rebuild does not silently
-re-estimate them. A results cache is a record of what was actually run.
+::: {.diagram}
+![Four things a re-run needs: the raw data, kept as collected; every step in code, from the raw file to the score; a seed above each random draw; and the versions of the software. With all four, anyone can re-run the analysis and get the same numbers.](img/re-run.svg){fig-alt="Four cards. The raw data, kept as collected: the file as it came in, never edited by hand, drawn as a locked table. Every step in code, in scripts: from the raw file to the score, cleaning, fitting and scoring, drawn as four boxes, raw, clean, model and score, joined by arrows. A seed above each draw, for random choices: set just before the draw it is for, so each step gets the same draws every run, drawn as two runs from seed 1 giving the same three numbers. The software versions, in a lockfile: each package and its version, so a reader can install the same ones, drawn as a table of packages A, B and C with their versions. A note says that with all four anyone can re-run the analysis and get the same numbers, but a seed does not say how far those numbers would move with other data."}
+:::
 
-**Document the path from raw to analysed.** This project keeps `data/coastal-survey-raw.csv`
-as it came off the ship and applies each cleaning decision in a named function, so the
-transformation from raw to clean is code rather than a description of code. Every decision
-§2 argued for is one line you can read.
+This course keeps all four. The survey's raw file, `data/coastal-survey-raw.csv`, is
+never edited; `load_coastal_survey_clean()` turns it into the clean survey in code,
+dropping duplicate rows, turning missing-value codes into gaps, correcting depth errors
+and merging the spellings of the seabed. `renv.lock` records the version of every R
+package, and `renv::restore()` installs the same versions; in Python,
+`pip freeze > requirements.txt` records them. And every number in the text of these
+pages is computed by the page's own code, not typed, so the text cannot quote a number
+the code no longer gives. A report written as a Quarto or R Markdown document works the
+same way.
 
-**Record the environment with the output.** `sessionInfo()` in an appendix costs nothing and
-answers most "why don't I get your numbers" questions immediately.
+## A report lets a reader re-run the analysis
 
-## A reporting checklist
+A methods section should let a reader re-run the analysis, or say exactly what they
+would need to.
 
-Enough to let a competent reader reproduce your result, or say precisely why they cannot.
+| Report | For example | Covered in |
+| --- | --- | --- |
+| The data | Where they come from, how many sites and stations, which were removed and why | [Missing values and outliers](../02-marine-data/missing-values-and-outliers.qmd) |
+| The split | How the sites were split and folded, and why that suits the predictions' use | [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |
+| The model | The method, its package and version, and every setting, defaults included | [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) |
+| The tuning | What was searched, and that the search ran inside the folds | [Cross-validation](../07-validation/cross-validation.qmd) |
+| The score | The measure, its interval, and the score of predicting the average | [Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) |
+| Seeds and software | The seeds, and a lockfile or `sessionInfo()` | This page |
+| What did not work | The models and inputs tried and dropped | |
 
-| | |
-| --- | --- |
-| **Data** | Source, date of extraction, how many rows, how many dropped and why |
-| **Cleaning** | Every filter and transformation, as code, not prose |
-| **Split** | The resampling scheme, why it suits the dependence structure (§6, §7) |
-| **Model** | Family, engine, package version, every hyperparameter, including the ones you left at default |
-| **Tuning** | The grid searched, and whether the search sat inside the resampling |
-| **Metric** | Which one, why it matches the objective (§7), and the no-skill baseline |
-| **Uncertainty** | Spread across folds, not a single number |
-| **Seeds** | Stated, and the code arranged so they are actually used |
-| **Environment** | Lockfile or `sessionInfo()` |
-| **Negative results** | What you tried that did not work: the most commonly omitted item and often the most useful |
+A reproducible analysis gives the same numbers on every run, right or wrong. Whether
+those numbers support a claim about the coast is the subject of
+[From a model to a claim](from-model-to-claim.qmd).
 
-## Limits of reproducibility
-
-**Reproducible is not correct.** Everything on this page makes your number repeatable. Nothing
-on it makes the number right. The depth effect in
-[page 2](partial-effects.qmd) reproduces perfectly and is still not identified by the survey
-design.
-
-**Seeds do not survive everything.** A new version of a package can change a default, a
-sampling routine, or the order in which random numbers are drawn, and your seeded code will
-then give a different answer with no error. That is what the lockfile is for, and it is why
-`renv::restore()` matters more than `set.seed()`.
-
-**Computational reproducibility is the easy half.** Re-running the same code on the same data
-is a solved problem. Getting the same *conclusion* from a new survey is the one that matters,
-and it depends on the sampling design, the transferability of the model (§6) and the size of
-the effect, none of which a lockfile addresses.
-
-::: {.callout-tip}
 ## Key points
 
-- **The split dominates.** Across eight runs, changing the forest's random seed moved the test
-  RMSE by 0.016; changing which rows were held out moved it by **1.50**.
-- Variable-importance rankings are unstable under both: eight runs gave three different
-  top-three orders from the model's seed alone, and six from the split.
-- So **report the resampling distribution**, not a single split's number. The seed makes your
-  procedure repeatable; it does not make one draw representative.
-- Seed in the same chunk as the random operation; pin versions with `renv`; commit the
-  computed results; keep raw-to-clean as code.
-- **Reproducible is not correct.** A wrong answer reproduces exactly as well as a right one.
+::: {.key-points}
+- A **seed** makes an analysis repeat exactly. It does not show how far its numbers
+  would move with other data.
+- On the survey, ten splits of the sites moved a forest's test RMSE over a range of
+  `r two(range_of(by_split))` animals; ten seeds for the forest moved it by
+  `r two(range_of(by_seed))`.
+- Five-fold cross-validation by site moved it by `r two(range_of(by_folds))` across ten
+  seeds for the folds. Report the cross-validated score, with its interval.
+- A seed repeats a run only when the draws come in the same order. Set it on the line
+  above the draw, or give each function its own `random_state`.
+- Keep the raw data, every step in code, the seeds and the software versions, and report
+  each with the score.
 :::
 
 ## Try it yourself
 
-1. Replace the single 75/25 split with `vfold_cv(v = 10)` and repeat the experiment over
-   eight different fold seeds. How much smaller is the spread, and is it smaller than the gap
-   between the models on the previous page?
-2. Run `one_analysis()` twice with identical arguments in a fresh R session. Do you get
-   bit-identical results? Now delete one `set.seed()` line and try again.
+1. Grow the forest with 20 trees instead of 300 and repeat the first comparison. How
+   does the range across the forest's seeds compare with the range across splits now?
+2. Repeat the cross-validation with ten folds instead of five (`v = 10`). Does the range
+   across seeds for the folds narrow further?

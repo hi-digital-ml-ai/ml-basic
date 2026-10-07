@@ -481,9 +481,9 @@ the ensembles. [Choosing a method](choosing-a-method.qmd) compares the section's
 models together.
 
 A forest or a boosted model cannot be printed and read like a single tree: its answer
-is the sum of hundreds of trees. [Section 10](../10-interpretation/index.qmd) covers
-ways to see which inputs such a model relies on and how its predictions change with
-each.
+is the sum of hundreds of trees. [Feature importance](../10-interpretation/feature-importance.qmd) shows which inputs
+such a model relies on, and [Partial effects](../10-interpretation/partial-effects.qmd)
+how its predictions change with each.
 
 ## Key points
 

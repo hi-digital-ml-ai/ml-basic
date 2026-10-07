@@ -846,3 +846,25 @@ on 2026-10-05 and then decide how to improve the video.
   which are data rather than results, so the schematic scenes may use them.
 - In a wait loop, `pgrep -f "manim -qh"` matches the loop's own command line and never
   ends; wait on the background task instead.
+
+## §10 Interpretation rebuilt (2026-10-07)
+
+Rebuilt from the revised pages (`feature/improve-interpretation`) on three points: test
+what a model relies on against random numbers and on more than one split, name the
+interval you quote and check its coverage at new sites, and a score compares the model
+with the records, never the records with the sea. 33 scenes, 978 words, 7:27 on the
+draft voice. Not yet narrated with Gemini; the script waits for the user's approval.
+
+- Examples, all through `exports.R` from six pages: impurity importance ranking the three
+  random columns above salinity, the seabed and the season; permutation importance on one
+  split's 39 test sites (only temperature and the seabed beat the random columns), then
+  ten splits (temperature 10 of 10, salinity 1); the forest's partial dependence on
+  temperature peaking at 7.7 °C, with the 598 station curves; the GAM against the forest
+  on the same folds (4.34 against 4.43); the GAM's two intervals (2.5 wide covering 20%,
+  11.6 wide covering 96%); a conformal interval holding 90% at 12.6 wide, and 73% where
+  chlorophyll is highest when calibrated where it is low; the rock gear bias taking rock's
+  multiplier from 0.80 (0.59 to 1.09) to 0.45 (0.32 to 0.63) while the RMSE improves from
+  4.34 to 4.27. Quiz: ten seeds move the forest's RMSE by 0.07, ten splits by 1.84.
+- The depth curve that follows position is left to the pages: the assumptions video
+  already tells that story. The simulation's truth is never shown; every check is one a
+  real study can make.

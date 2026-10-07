@@ -1,6 +1,6 @@
 ---
 title: "Black boxes and interpretable models"
-description: "Seven models on the same folds. The most interpretable flexible model is also the most accurate, which means the usual trade-off is not the one being made."
+description: "An interpretable model can be read from its parts; a black box is read from outside. On the survey a GAM, read curve by curve, predicts new sites as well as a random forest, and the two draw the same shapes. A black box earns its place where inputs work in combination, inputs are raw, or prediction is the whole job."
 order: 3
 categories: [interpretation, metrics]
 ---
@@ -10,435 +10,542 @@ categories: [interpretation, metrics]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(mgcv)
 library(patchwork)
+library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The trade-off as usually framed
+## Some models can be read from their parts
 
-The standard framing is a trade-off: interpretable models are transparent but weak, black
-boxes are accurate but opaque, and you choose according to whether you need to explain or to
-predict. Reviewers ask for it in those terms. Talks are built around it.
+An **interpretable model** is one whose fitted parts can be read directly. Poisson
+regression gives each input a multiplier; a GAM, from
+[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd),
+gives each input a curve; a small tree gives a few questions. A **black box**, such as a
+random forest of 500 trees, boosting or a neural network, predicts well but has no part
+that means anything alone. It is read from outside instead, with
+[Feature importance](feature-importance.qmd) and [Partial effects](partial-effects.qmd).
 
-On tabular ecological data the trade-off is usually smaller than advertised, and sometimes it
-runs the other way. This page measures it on the coastal survey, with all seven models scored
-on identical folds.
+It is often said that readable models predict worse, so that a study must choose
+between understanding and accuracy. This page tests that on the survey, then reads the
+readable model's parts in plain words.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Scoring them fairly
+## Scoring models on the same folds measures what reading costs
 
-Two conventions from §7 do the work here. Every model sees **the same resamples**, so the
-comparison is paired rather than seven independent estimates. And we **pool the out-of-fold
-predictions** before computing a metric, so every model is scored on exactly the same 720
-rows.
+Whether a readable model costs accuracy is a question for the data, and cross-validation
+answers it. Every model is scored on the same folds, built from whole sites as in
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd),
+so a hard fold is hard for all of them and the scores can be compared fold by fold,
+the **paired comparison** of
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd).
+
+::: {.diagram}
+![Two ways to read a model, and one way to score it. An interpretable model is read from its parts, curves and levels that add up to the prediction. A black box is probed from outside by changing its inputs and watching the prediction. Both are scored on the same held-out sites.](img/reading-a-model.svg){fig-alt="Three cards. Read the parts, an interpretable model: three small plots, a humped curve for input A, a falling line for input B and three bars for the levels of input C, joined by plus signs, equal the prediction. Probe from outside, a black box: a dark box labelled 500 trees with inputs A, B and C as arrows going in; the arrow for A is orange and marked change, and an orange arrow coming out is marked watch; the text says importance and partial dependence do this. Score both, the same held-out sites: a row of ten blocks with one green block marked held-out sites, and below it two bars of nearly equal length for the interpretable model and the black box, marked error on new sites. A note says that however a model is read, it shows what the model learned, and the data decide how far that describes the species."}
+:::
+
+## Worked example
+
+Four models are scored by ten-fold cross-validation by site on the whole survey, with
+the inputs of [Regression for counts](../03-supervised-learning/count-regression.qmd).
+Two are interpretable: Poisson regression, with a straight line for each input on the
+log scale, and a GAM, with a curve for depth and temperature. Two are black boxes: the
+random forest of [Partial effects](partial-effects.qmd), and boosting with the
+settings of [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+Predicting the average is the baseline. The GAM is then fitted to every station and
+read.
+
+### Preparing the data
+
+The GAM here uses the negative binomial, which
+[Regression for counts](../03-supervised-learning/count-regression.qmd) showed gives
+honest intervals when counts spread more than Poisson expects.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: setup-folds
+#| label: prepare
 survey <- load_coastal_survey_clean()
 
-modelling <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-         substrate, season, longitude, latitude) |>
-  drop_na()
+folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
-set.seed(9)
-folds <- vfold_cv(modelling, v = 10)
+count_recipe <- recipe(
+  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
+    substrate + season,
+  data = survey
+) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_relevel(substrate, ref_level = "sand")
 
-out_of_fold <- function(fit_one, predict_one) {
-  map_dfr(folds$splits, \(split) {
-    fitted <- fit_one(analysis(split))
-    held   <- assessment(split)
-    tibble(truth = held$abundance, prediction = predict_one(fitted, held))
-  })
-}
+# boosting and the average take numbers only
+number_recipe <- count_recipe |> step_dummy(all_nominal_predictors())
+
+# s() asks mgcv for a smooth curve; nb() is the negative binomial
+smooth_terms <- abundance ~ s(depth_m) + s(temperature_c) +
+  chlorophyll_mg_m3 + salinity_psu + substrate + season
+gam_model <- gen_additive_mod() |>
+  set_engine("mgcv", family = mgcv::nb(), method = "REML") |>
+  set_mode("regression")
+
+models <- list(
+  "Predicting the average" =
+    workflow(number_recipe, null_model(mode = "regression")),
+  "Poisson regression" = workflow(count_recipe, poisson_reg()),
+  "GAM" = workflow(count_recipe) |>
+    add_model(gam_model, formula = smooth_terms),
+  "Random forest" = workflow(count_recipe,
+                             rand_forest(trees = 500) |>
+                               set_engine("ranger", seed = 123) |>
+                               set_mode("regression")),
+  "Boosting" = workflow(number_recipe,
+                        boost_tree(trees = 300, tree_depth = 3,
+                                   learn_rate = 0.05) |>
+                          set_mode("regression"))
+)
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, root_mean_squared_error
-from sklearn.model_selection import KFold
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import (GradientBoostingRegressor,
+                              RandomForestRegressor)
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import partial_dependence
+from sklearn.linear_model import PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GridSearchCV, GroupKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (OneHotEncoder, SplineTransformer,
+                                   StandardScaler)
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-modelling = survey[columns].dropna().reset_index(drop=True)
-encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+folds = list(GroupKFold(n_splits=10, shuffle=True, random_state=123)
+             .split(survey, groups=survey["site_id"]))
 
-folds = list(KFold(n_splits=10, shuffle=True, random_state=9).split(modelling))
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-def out_of_fold(predict_one):
-    truth, prediction = [], []
-    for rows, held in folds:
-        truth.append(modelling["abundance"].to_numpy()[held])
-        prediction.append(np.asarray(predict_one(rows, held)))
-    return pd.DataFrame({"truth": np.concatenate(truth),
-                         "prediction": np.concatenate(prediction)})
+# shape() turns depth and temperature into columns: themselves, or a set of
+# spline bumps
+def recipe(shape):
+    def curved(column):
+        steps = Pipeline([("impute", SimpleImputer(strategy="median")),
+                          ("shape", shape),
+                          ("scale", StandardScaler())])
+        return (column, steps, [column])
+    return ColumnTransformer([
+        curved("depth_m"),
+        curved("temperature_c"),
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]),
+         ["chlorophyll_mg_m3", "salinity_psu"]),
+        ("categorical",
+         OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+         categorical),
+    ])
+
+def with_recipe(model, shape="passthrough"):
+    return Pipeline([("recipe", recipe(shape)), ("model", model)])
+
+# scikit-learn has no GAM. Spline bumps with a ridge penalty come close; the
+# penalty's weight is chosen by five-fold cross-validation by site.
+gam = GridSearchCV(
+    with_recipe(PoissonRegressor(max_iter=1000), SplineTransformer(n_knots=8)),
+    {"model__alpha": 10.0 ** np.arange(-4, 1)},
+    cv=GroupKFold(n_splits=5), scoring="neg_root_mean_squared_error")
+
+models = {
+    "Predicting the average": with_recipe(DummyRegressor()),
+    "Poisson regression": with_recipe(PoissonRegressor(alpha=0,
+                                                       max_iter=1000)),
+    "GAM": gam,
+    # max_features and min_samples_leaf match ranger's defaults
+    "Random forest": with_recipe(RandomForestRegressor(
+        n_estimators=500, max_features="sqrt", min_samples_leaf=5,
+        random_state=123)),
+    "Boosting": with_recipe(GradientBoostingRegressor(
+        n_estimators=300, max_depth=3, learning_rate=0.05,
+        random_state=123)),
+}
+
+def fit(model, data):
+    # only the GAM's search over its penalty needs the sites
+    extra = {"groups": data["site_id"]} if model is gam else {}
+    return clone(model).fit(data[predictors], data["abundance"], **extra)
 ```
 
 :::
 
-The seven span the range from "no model at all" to "no interpretation at all".
+### On new sites the GAM predicts as well as the black boxes
+
+Each model is fitted ten times, each time leaving out one fold of sites, and scored on
+the sites it left out.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: fit-all
-tree_spec <- function(spec) {
-  list(fit = \(data) fit(workflow() |>
-                           add_recipe(recipe(abundance ~ ., data = data) |>
-                                        step_dummy(all_nominal_predictors())) |>
-                           add_model(spec), data),
-       predict = \(m, x) predict(m, x)$.pred)
-}
-
-forest  <- tree_spec(rand_forest(trees = 800) |>
-                       set_engine("ranger", seed = 1) |> set_mode("regression"))
-boosted <- tree_spec(boost_tree(trees = 400, learn_rate = 0.05, tree_depth = 4) |>
-                       set_engine("xgboost") |> set_mode("regression"))
-
-gam_formula <- abundance ~ s(depth_m, k = 8) + s(temperature_c, k = 8) +
-  s(chlorophyll_mg_m3, k = 8) + s(longitude, latitude, k = 30) +
-  substrate + season + salinity_psu
-
-glm_formula <- abundance ~ poly(depth_m, 2, raw = TRUE) +
-  poly(temperature_c, 2, raw = TRUE) + log1p(chlorophyll_mg_m3) +
-  substrate + season + salinity_psu
-
-results <- list(
-  `mean only` =
-    out_of_fold(\(a) mean(a$abundance), \(m, x) rep(m, nrow(x))),
-  `linear regression` =
-    out_of_fold(\(a) lm(abundance ~ ., data = a), \(m, x) predict(m, x)),
-  `negative binomial GLM, linear terms` =
-    out_of_fold(\(a) MASS::glm.nb(abundance ~ ., data = a),
-                \(m, x) predict(m, x, type = "response")),
-  `negative binomial GLM, correct form` =
-    out_of_fold(\(a) MASS::glm.nb(glm_formula, data = a),
-                \(m, x) predict(m, x, type = "response")),
-  `GAM with smooth terms` =
-    out_of_fold(\(a) gam(gam_formula, family = nb(), data = a),
-                \(m, x) as.numeric(predict(m, x, type = "response"))),
-  `random forest`  = out_of_fold(forest$fit, forest$predict),
-  `boosted trees`  = out_of_fold(boosted$fit, boosted$predict)
-)
-
-imap_dfr(results, \(scored, name) {
-  tibble(model = name,
-         RMSE = rmse_vec(scored$truth, scored$prediction),
-         MAE  = mae_vec(scored$truth, scored$prediction),
-         `survey total, % error` =
-           100 * (sum(scored$prediction) - sum(scored$truth)) / sum(scored$truth))
+#| label: compare
+scores <- imap(models, \(model, name) {
+  fit_resamples(model, folds, metrics = metric_set(rmse)) |>
+    collect_metrics(summarize = FALSE) |>
+    transmute(fold = id, model = name, rmse = .estimate)
 }) |>
-  arrange(RMSE) |>
-  mutate(across(where(is.double), \(x) round(x, 2)))
+  list_rbind()
+
+kind <- c("Predicting the average" = "Baseline",
+          "Poisson regression" = "Interpretable", "GAM" = "Interpretable",
+          "Random forest" = "Black box", "Boosting" = "Black box")
+
+# each fold's RMSE beside the average's and the GAM's on the same fold
+by_fold <- scores |>
+  left_join(scores |> filter(model == "Predicting the average") |>
+              select(fold, average = rmse), by = "fold") |>
+  left_join(scores |> filter(model == "GAM") |>
+              select(fold, gam = rmse), by = "fold")
+
+comparison <- by_fold |>
+  summarise(RMSE = mean(rmse),
+            `Folds better than the average` = sum(rmse < average),
+            `Folds better than the GAM` = sum(rmse < gam),
+            .by = model) |>
+  mutate(Kind = kind[model], .after = model) |>
+  rename(Model = model)
+
+comparison |> mutate(RMSE = round(RMSE, 2))
 ```
 
 ## Python
 
-```python
-def tree_model(make_model):
-    def predict_one(rows, held):
-        fitted = make_model().fit(encoded.iloc[rows],
-                                  modelling["abundance"].iloc[rows])
-        return fitted.predict(encoded.iloc[held])
-    return predict_one
+```{python}
+rows = []
+for fold, (fit_rows, held_rows) in enumerate(folds, start=1):
+    fitting, held = survey.iloc[fit_rows], survey.iloc[held_rows]
+    for name, model in models.items():
+        predicted = fit(model, fitting).predict(held[predictors])
+        rows.append({"fold": fold, "model": name,
+                     "rmse": root_mean_squared_error(held["abundance"],
+                                                     predicted)})
 
-def formula_model(formula, family=None, negative_binomial=False):
-    def predict_one(rows, held):
-        train, test = modelling.iloc[rows], modelling.iloc[held]
-        if negative_binomial:
-            fitted = smf.negativebinomial(formula, train).fit(
-                method="bfgs", maxiter=2000, disp=0)
-        else:
-            fitted = smf.glm(formula, train, family=family).fit()
-        return fitted.predict(test)
-    return predict_one
+# one row per fold, one column per model
+by_fold = pd.DataFrame(rows).pivot(index="fold", columns="model",
+                                   values="rmse")[list(models)]
 
-linear_terms = ("abundance ~ depth_m + temperature_c + chlorophyll_mg_m3"
-                " + salinity_psu + C(substrate) + C(season)"
-                " + longitude + latitude")
-glm_formula = ("abundance ~ depth_m + I(depth_m**2)"
-               " + temperature_c + I(temperature_c**2)"
-               " + np.log1p(chlorophyll_mg_m3) + C(substrate) + C(season)"
-               " + salinity_psu")
-# There is no mgcv in Python. A spline basis on each smooth term, fed to the
-# same negative binomial, is the closest honest equivalent: the wiggliness is
-# chosen by the number of knots here rather than estimated by the fit.
-def spline(column, df):
-    # The knots must span the whole dataset, not one fold: patsy refuses to
-    # extrapolate, so a fold holding the deepest station could not be scored.
-    return (f"bs({column}, df={df}, lower_bound={modelling[column].min()},"
-            f" upper_bound={modelling[column].max()})")
-
-spline_formula = "abundance ~ " + " + ".join([
-    spline("depth_m", 8), spline("temperature_c", 8),
-    spline("chlorophyll_mg_m3", 8), spline("longitude", 5),
-    spline("latitude", 5),
-    "C(substrate)", "C(season)", "salinity_psu",
-])
-
-results = {
-    "mean only": lambda rows, held: np.repeat(
-        modelling["abundance"].iloc[rows].mean(), len(held)),
-    "linear regression": formula_model(linear_terms, sm.families.Gaussian()),
-    "negative binomial GLM, linear terms":
-        formula_model(linear_terms, negative_binomial=True),
-    "negative binomial GLM, correct form":
-        formula_model(glm_formula, negative_binomial=True),
-    "negative binomial with spline terms":
-        formula_model(spline_formula, negative_binomial=True),
-    "random forest": tree_model(
-        lambda: RandomForestRegressor(n_estimators=800, random_state=1)),
-    "boosted trees": tree_model(
-        lambda: GradientBoostingRegressor(n_estimators=400, learning_rate=0.05,
-                                          max_depth=4, random_state=1)),
-}
-
-scored = pd.DataFrame([
-    {"model": name,
-     "RMSE": root_mean_squared_error(s["truth"], s["prediction"]),
-     "MAE": mean_absolute_error(s["truth"], s["prediction"]),
-     "survey total, % error":
-         100 * (s["prediction"].sum() - s["truth"].sum()) / s["truth"].sum()}
-    for name, s in ((name, out_of_fold(f)) for name, f in results.items())
-])
-
-scored.sort_values("RMSE").round(2)
-```
-
-:::
-
-## The trade-off did not happen
-
-The **GAM wins**, on RMSE and on MAE, and it is the second most interpretable model in the
-list. The random forest is third, behind a negative-binomial GLM given the right functional
-form. The boosted trees come sixth of seven on RMSE, above only predicting the mean.
-
-For scale: an oracle that knows every station's true expected count scores 3.93 on these
-rows, and the mean-only baseline scores 4.82. The GAM at 4.08 closes about **83%** of that
-gap; the random forest closes about 60%.
-
-This is not a surprising result if you know what is in the generator. The truth is two
-smooth humped responses, a saturating effect, four substrate levels and a smooth spatial
-field. That is precisely the class of model a GAM is: smooth additive terms and a spatial
-smoother. The GAM won because it was right about the shape of the world.
-
-::: {.callout-note collapse="true"}
-## The boosted trees' poor showing
-`boost_tree()` with 400 rounds and no tuning overfits a noisy count response, and unlike a
-random forest it has no averaging to protect it. §5's
-[hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) would fix most
-of that. It is included untuned deliberately: the comparison people actually run is default
-against default, and this is what that looks like.
-:::
-
-## The return on interpretability
-
-It is not just the ranking. Here is the GAM's own summary, which comes free with the fit.
-
-```{r}
-#| label: gam-summary
-full_gam <- gam(gam_formula, family = nb(), data = modelling)
-
-summary(full_gam)$s.table |>
-  as_tibble(rownames = "smooth term") |>
-  mutate(across(where(is.numeric), \(x) signif(x, 3)))
-```
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: gam-parametric
-summary(full_gam)$p.table |>
-  as_tibble(rownames = "term") |>
-  filter(str_starts(term, "substrate") | term == "salinity_psu") |>
-  mutate(`true value (vs gravel)` = c(0.20, -0.80, -0.20, 0),
-         across(where(is.numeric), \(x) round(x, 3)))
-```
-
-## Python
-
-```python
-full_model = smf.negativebinomial(spline_formula, modelling).fit(
-    method="bfgs", maxiter=2000, disp=0)
-
-terms = [t for t in full_model.params.index
-         if t.startswith("C(substrate)") or t == "salinity_psu"]
+kind = {"Predicting the average": "Baseline",
+        "Poisson regression": "Interpretable", "GAM": "Interpretable",
+        "Random forest": "Black box", "Boosting": "Black box"}
 
 pd.DataFrame({
-    "term": terms,
-    "Estimate": full_model.params[terms].to_numpy(),
-    "Std. Error": full_model.bse[terms].to_numpy(),
-    "p-value": full_model.pvalues[terms].to_numpy(),
-    "true value (vs gravel)": [0.20, -0.80, -0.20, 0],
-}).round(3)
+    "Kind": kind,
+    "RMSE": by_fold.mean().round(2),
+    "Folds better than the average":
+        by_fold.lt(by_fold["Predicting the average"], axis=0).sum(),
+    "Folds better than the GAM": by_fold.lt(by_fold["GAM"], axis=0).sum(),
+}).rename_axis("Model").reset_index()
 ```
 
 :::
 
-Every line of that is a scientific statement with an uncertainty attached.
-
-- **Temperature** has 4.6 effective degrees of freedom and a $\chi^2$ of 116: strongly
-  nonlinear and the dominant term.
-- **Chlorophyll** has 1.0 effective degrees of freedom, since the GAM has decided the effect
-  is linear on the link scale, and $p = 0.011$. Recall that
-  [permutation importance put chlorophyll inside the noise band](feature-importance.qmd). A
-  model that *estimates an effect* and a measure that *quantifies reliance* are answering
-  different questions, and here they disagree completely.
-- **The spatial smoother** takes 10.7 degrees of freedom and is significant, which is the
-  correct detection of a field no covariate explains.
-- **Substrate** comes back as mud > gravel > sand > rock, with estimates of 0.17, 0, −0.24
-  and −0.48 against true values of 0.20, 0, −0.20 and −0.80. The ordering is exactly right.
-  Recall that [impurity importance ranked substrate below three columns of random
-  numbers](feature-importance.qmd).
-- **Salinity** is 0.064 ± 0.122, $p = 0.60$, correctly identified as nothing, which is the
-  truth.
-
-You can also read the shapes straight off, with intervals.
-
 ```{r}
-#| label: fig-smooths
-#| fig-cap: "The GAM's fitted smooth terms with 95% intervals, against the true curves from the generator (both centred, so only the shape is compared). Temperature is recovered with the right amplitude and its peak one degree early. The depth smooth is flatter than the truth and peaks at 52 m rather than 80, but its interval contains the true curve at 197 of 200 grid points, and is wide enough to contain a flat line everywhere shallower than 155 m."
-#| fig-alt: "Two panels on the link scale, each with a solid fitted line, a shaded 95% interval and a dashed true curve. In the temperature panel the fitted smooth rises from about minus 2.5 at two degrees to a maximum just above zero near eight, then falls to about minus 2 at sixteen; the dashed true curve runs very close to it throughout, peaking one degree later. The interval is narrow in the middle and widens sharply at both ends. In the depth panel the fitted smooth is a broad flat-topped hump, rising gently from about minus 0.1 at five metres to a shallow maximum near fifty, staying level to about a hundred and ten, then declining to about minus 1.2 at the deepest stations; the dashed true curve is a more pronounced hump peaking at eighty metres and dropping lower at both ends, and it lies inside the shaded interval almost everywhere."
-#| fig-width: 9.5
-#| fig-height: 4.2
-smooth_frame <- function(variable, true_function) {
-  grid <- seq(min(modelling[[variable]]), max(modelling[[variable]]), length.out = 200)
-  newdata <- modelling[rep(1, 200), ]
-  newdata[[variable]] <- grid
-
-  terms <- predict(full_gam, newdata, type = "terms", se.fit = TRUE)
-  column <- paste0("s(", variable, ")")
-
-  truth <- true_function(grid)
-  tibble(x = grid,
-         fit = terms$fit[, column], se = terms$se.fit[, column],
-         truth = truth - mean(true_function(modelling[[variable]])))
-}
-
-smooth_panel <- function(frame, label, marker) {
-  ggplot(frame, aes(x, fit)) +
-    geom_vline(xintercept = marker, linetype = "dashed", colour = "#e6eaed") +
-    geom_ribbon(aes(ymin = fit - 1.96 * se, ymax = fit + 1.96 * se),
-                fill = ml_palette[["blue"]], alpha = 0.18) +
-    geom_line(colour = ml_palette[["blue"]], linewidth = 0.9) +
-    geom_line(aes(y = truth), linetype = "dashed", colour = ml_palette[["vermilion"]],
-              linewidth = 0.8) +
-    labs(x = label, y = "effect on log expected count")
-}
-
-(smooth_panel(smooth_frame("temperature_c", \(t) -0.60 * ((t - 9) / 3)^2),
-              "temperature (°C)", 9) |
- smooth_panel(smooth_frame("depth_m", \(d) -0.55 * ((d - 80) / 60)^2),
-              "depth (m)", 80))
+#| label: compare-numbers
+#| include: false
+score_of <- \(m) comparison |> filter(Model == m)
+average_score <- score_of("Predicting the average")
+gam_score <- score_of("GAM")
+forest_score <- score_of("Random forest")
+boost_score <- score_of("Boosting")
+fold_range <- range(scores$rmse[scores$model == "GAM"])
+two <- \(x) format(round(x, 2), nsmall = 2)
 ```
 
-## Reading the depth panel
+The GAM, an interpretable model, has the lowest RMSE on new sites,
+`r two(gam_score$RMSE)` individuals against `r two(forest_score$RMSE)` for the random
+forest and `r two(average_score$RMSE)` for predicting the average. Fold by fold the
+forest beats it on only `r forest_score[["Folds better than the GAM"]]` of the 10
+folds, and boosting on `r boost_score[["Folds better than the GAM"]]`. Boosting is
+the weakest of the four, at `r two(boost_score$RMSE)`; it is untuned here, and
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) would
+narrow the gap.
 
-Look at depth before concluding either that the interpretable model solved the problem or
-that it failed. Its smooth peaks at 52 m rather than 80, it is flatter than the truth, and
-$p = 0.061$. Read that as a failure and you would be missing the point.
+Every model is only a little better than the average. The GAM's error moves from
+`r two(fold_range[1])` to `r two(fold_range[2])` between folds, far more than it
+differs between models: which sites are left out matters more than which model is
+used. The counts are noisy, and no model predicts one catch closely.
 
-The interval covers the true curve at **197 of 200 grid points**. What the GAM has produced
-is not a wrong answer; it is a *wide* one. And it is specific about where the width is: zero
-is excluded only beyond 155 m, so the model is confident there is a decline at the deep end
-and openly unsure about everything shallower.
+The readable model costs nothing here because the survey's effects are of the kind a
+GAM assumes: smooth curves, one for each input, that add up. Where the effects are like
+that, a GAM loses nothing to a forest and can be read.
 
-Compare that with [the previous page](partial-effects.qmd), where the same confounding made
-the forest's partial dependence a confident-looking monotone decline with no uncertainty
-attached at all, and the quadratic GLM's an even steeper one. Same data, same
-non-identifiability, three presentations: one silently wrong, one silently wrong, one
-visibly uncertain.
+### The GAM's curves read as a habitat description
 
-**That is what interpretability buys, and it is not correctness.** It is the ability of a
-model to tell you that the data cannot answer your question. A partial-dependence plot has no
-mechanism for saying so.
+A GAM's parts are curves and multipliers, and each can be put in words. The curves for
+depth and temperature are drawn with their 95% intervals, each relative to its peak,
+over the middle 90% of each input as in [Partial effects](partial-effects.qmd). The
+forest's partial dependence is drawn beside them, the same shape read from outside a
+black box.
 
-## The measured case for a black box
+::: {.panel-tabset group="language"}
 
-The measured case for one, from this course:
+## R
 
-- **When the structure is not additive and not smooth.** §9's
-  [water-mass band](../09-neural-networks/when-to-use-one.qmd) is a diagonal interaction
-  where 17 network weights beat a 500-tree forest and logistic regression never exceeded
-  AUC 0.72. A GAM with additive smooths would fail there too.
-- **When you have no idea what the form is.** The GAM won here because smooth-additive is
-  the right family. Choose it wrongly, as with the linear-terms GLM at 4.38, and you give up the
-  accuracy you thought interpretability was costing you. A forest is insurance against not
-  knowing.
-- **When the inputs are raw.** Pixels, spectra and waveforms have no interpretable
-  coefficients to give up, so there is no trade-off to make.
-- **When prediction is genuinely the product.** A survey-design tool or an operational
-  forecast is judged on its predictions. §1's
-  [prediction versus explanation](../01-introduction/prediction-and-explanation.qmd)
-  distinction decides which column of the table above you should be reading.
+```{r}
+#| label: fig-gam-curves
+#| fig-cap: "The GAM's curves for depth and temperature with their 95% intervals, against the random forest's partial dependence, each relative to its peak. Temperature: both peak in cool water and fall on either side, the GAM's more steeply. Depth: both are highest in the shallowest water and fall with depth."
+#| fig-alt: "Two panels, depth on the left and temperature on the right, each with a blue GAM curve inside a shaded blue interval and an orange random forest curve, scaled so each peaks at 1. Depth: both curves are highest at the shallowest depth drawn and fall towards the deepest; the GAM's falls further, and its interval is widest in the shallowest water. Temperature: both curves are humps that peak in cool water, the GAM's narrower and falling lower at both ends than the forest's, with an interval that widens towards both ends."
+#| fig-width: 9.5
+#| fig-height: 4.4
+gam_fit <- fit(models[["GAM"]], survey)
+forest_fit <- fit(models[["Random forest"]], survey)
 
-And the case against: every method in §10 for getting an effect out of a black box,
-whether importance, partial dependence or ALE, is an *approximation* of a quantity a GAM reports
-directly, with an interval, for free.
+gam_engine <- extract_fit_engine(gam_fit)
+prepared <- extract_recipe(gam_fit)
 
-## Limits of this comparison
+along <- function(input) {
+  values <- quantile(survey[[input]], c(0.05, 0.95), na.rm = TRUE)
+  levels <- seq(values[1], values[2], length.out = 40)
 
-**One dataset, one generating process.** This survey was built from smooth additive effects,
-so a smooth additive model was always going to do well. On data with strong interactions the
-ordering would change, and the way to find out is to run the comparison rather than assume
-either answer.
+  # the GAM's own curve for the input and its interval; on the log scale it
+  # adds the same amount at every station, so its shape is the same at all
+  grid <- survey[rep(1, 40), ]
+  grid[[input]] <- levels
+  term <- predict(gam_engine, bake(prepared, grid), type = "terms",
+                  se.fit = TRUE)
+  curve <- term$fit[, paste0("s(", input, ")")]
+  spread <- 1.96 * term$se.fit[, paste0("s(", input, ")")]
+  gam_curve <- tibble(value = levels,
+                      .pred = exp(curve - max(curve)),
+                      lower = exp(curve - spread - max(curve)),
+                      upper = exp(curve + spread - max(curve)))
 
-**The GAM was given a good formula.** `s(longitude, latitude)` is there because §6 showed
-spatial structure, and `k = 8` is a choice. An interpretable model is only as good as the
-specification, and the specification is where the domain knowledge goes.
+  forest_curve <- map(levels, \(level) {
+    swept <- survey
+    swept[[input]] <- level
+    tibble(value = level, .pred = mean(predict(forest_fit, swept)$.pred))
+  }) |>
+    list_rbind() |>
+    mutate(.pred = .pred / max(.pred))
 
-**None of these intervals account for model selection.** We compared seven models and then
-reported the winner's confidence bands as though we had fitted only it. §7's
-[selection optimism](../07-validation/cross-validation.qmd) applies: the honest interval
-after a search is wider than the one the software prints.
+  bind_rows(GAM = gam_curve, "Random forest" = forest_curve, .id = "model")
+}
 
-::: {.callout-tip}
+curves <- map(c(depth_m = "depth_m", temperature_c = "temperature_c"), along)
+
+curve_plot <- function(input, x_label) {
+  ggplot(curves[[input]], aes(value, .pred, colour = model)) +
+    # only the GAM has an interval
+    geom_ribbon(aes(ymin = lower, ymax = upper),
+                data = \(d) filter(d, model == "GAM"),
+                fill = ml_palette[["blue"]], alpha = 0.15, colour = NA) +
+    geom_line(linewidth = 1) +
+    scale_colour_manual(values = c(GAM = ml_palette[["blue"]],
+                                   "Random forest" = ml_palette[["orange"]])) +
+    labs(x = x_label, y = "Count relative to its peak", colour = NULL)
+}
+
+curve_plot("depth_m", "Depth (m)") +
+  curve_plot("temperature_c", "Temperature (°C)") +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+## Python
+
+```{python}
+gam_fit = fit(gam, survey)
+forest_fit = fit(models["Random forest"], survey)
+
+# a GAM's curve has the same shape at every station, so one station shows it
+typical = survey[numeric].median()
+
+def along(column):
+    swept = partial_dependence(forest_fit, survey[predictors], [column],
+                               percentiles=(0.05, 0.95), grid_resolution=40)
+    levels = swept["grid_values"][0]
+    grid = pd.DataFrame({c: [typical[c]] * len(levels) for c in numeric})
+    grid[column] = levels
+    grid["substrate"], grid["season"] = "sand", "summer"
+    gam_curve = gam_fit.predict(grid[predictors])
+    forest_curve = swept["average"][0]
+    return pd.DataFrame({"value": levels,
+                         "GAM": gam_curve / gam_curve.max(),
+                         "Random forest": forest_curve / forest_curve.max()})
+
+curves = {column: along(column) for column in ["depth_m", "temperature_c"]}
+
+# where each curve peaks, and how low it falls at either end
+pd.DataFrame([
+    {"Input": column, "Model": model,
+     "Peak": curve.loc[curve[model].idxmax(), "value"],
+     "At the low end": curve[model].iloc[0],
+     "At the high end": curve[model].iloc[-1]}
+    for column, curve in curves.items()
+    for model in ["GAM", "Random forest"]
+]).round(2)
+```
+
+:::
+
+```{r}
+#| label: curve-numbers
+#| include: false
+peak_of <- \(input, m) curves[[input]] |> filter(model == m) |>
+  slice_max(.pred, n = 1) |> pull(value)
+end_of <- \(input, m, end) curves[[input]] |> filter(model == m) |>
+  slice(if (end == "low") 1 else n()) |> pull(.pred)
+one <- \(x) format(round(x, 1), nsmall = 1)
+pct <- \(x) scales::percent(x, accuracy = 1)
+gam_cold <- curves$temperature_c |> filter(model == "GAM") |> slice(1)
+gam_warm <- curves$temperature_c |> filter(model == "GAM") |> slice(n())
+gam_deep <- curves$depth_m |> filter(model == "GAM") |> slice(n())
+```
+
+In words, from the GAM:
+
+- **Temperature.** The count peaks near `r one(peak_of("temperature_c", "GAM"))` °C.
+  It falls to `r pct(gam_cold$.pred)` of the peak at `r one(gam_cold$value)` °C and to
+  `r pct(gam_warm$.pred)` at `r one(gam_warm$value)` °C, the coldest and warmest water
+  drawn. The interval is narrow through the middle and widens at the ends, where there
+  are fewer stations.
+- **Depth.** The count is highest at the shallowest stations and falls to
+  `r pct(gam_deep$.pred)` of that by `r round(gam_deep$value)` m.
+  [Partial effects](partial-effects.qmd) showed that this curve follows position,
+  since the shelf deepens offshore, and the GAM inherits the same confounding. Its
+  interval shows how closely the data pin the curve down, not whether it is the
+  species' response to depth.
+
+The forest, read from outside, draws the same shapes: its temperature curve peaks near
+`r one(peak_of("temperature_c", "Random forest"))` °C and its depth curve is also
+highest in the shallowest water. It is flatter at the ends, as forests are where
+stations thin out. Two models that work in different ways agree, which says the shapes
+are in the data.
+
+The other inputs have one multiplier each, read as in
+[Regression for counts](../03-supervised-learning/count-regression.qmd).
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: multipliers
+multipliers <- tidy(extract_fit_engine(gam_fit), parametric = TRUE,
+                    conf.int = TRUE, exponentiate = TRUE) |>
+  filter(term != "(Intercept)") |>
+  transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
+            multiplier = estimate, conf_low = conf.low, conf_high = conf.high)
+
+multipliers |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+# scikit-learn gives no intervals. Its chlorophyll and salinity were scaled,
+# so their coefficients are divided by the scale to give one unit's change.
+best = gam_fit.best_estimator_
+names = best["recipe"].get_feature_names_out()
+coefficients = pd.Series(best["model"].coef_, index=names)
+scale = best["recipe"].named_transformers_["numeric"]["scale"].scale_
+coefficients[["numeric__chlorophyll_mg_m3", "numeric__salinity_psu"]] /= scale
+
+kept = coefficients[~coefficients.index.str.contains("depth|temperature")]
+pd.DataFrame({
+    "term": kept.index.str.replace(r"^numeric__", "", regex=True)
+                .str.replace(r"^categorical__(substrate|season)_", r"\1: ",
+                             regex=True),
+    "multiplier": np.exp(kept).round(2).to_numpy(),
+})
+```
+
+:::
+
+```{r}
+#| label: multiplier-numbers
+#| include: false
+term_of <- \(t) multipliers |> filter(term == t)
+mud <- term_of("substrate: mud")
+rock <- term_of("substrate: rock")
+summer <- term_of("season: summer")
+chlorophyll <- term_of("chlorophyll_mg_m3")
+salinity <- term_of("salinity_psu")
+```
+
+- **Substrate.** A muddy station is expected to hold `r two(mud$multiplier)` times
+  the count of a sandy one, with an interval from `r two(mud$conf_low)` to
+  `r two(mud$conf_high)`. Rock's interval, `r two(rock$conf_low)` to
+  `r two(rock$conf_high)`, includes 1: the data cannot tell rock from sand.
+- **Season.** Summer holds `r two(summer$multiplier)` times the count of spring.
+- **Chlorophyll.** Each extra mg/m³ multiplies the count by
+  `r two(chlorophyll$multiplier)`.
+- **Salinity.** Its interval, `r two(salinity$conf_low)` to
+  `r two(salinity$conf_high)`, includes 1, so the survey cannot say whether salinity
+  raises or lowers the count.
+
+Each multiplier comes with its interval, and an interval that includes 1 says plainly
+that the data cannot answer. Getting the same from a forest takes a partial dependence
+plot for every input, with no interval attached.
+
+## A black box earns its place where inputs work in combination
+
+A GAM's curves add up, so it cannot show an effect of one input that depends on
+another. A black box can, and it earns its place in three kinds of work.
+
+- **Inputs that work in combination.** A water mass is a diagonal band in temperature
+  and salinity. In
+  [When a network is the right tool](../09-neural-networks/when-to-use-one.qmd) a
+  network draws it from a few stations, while logistic regression matches it only once
+  the combination is named as an input. A black box well ahead of a GAM is a sign of
+  such a combination, worth finding and naming.
+- **Raw inputs.** Images, sound and spectra have no input whose curve means anything
+  alone, so there is nothing to give up by using a black box.
+- **Prediction as the whole job.** An operational forecast or a tool to plan survey
+  effort is judged by its predictions. A readable model fitted beside it remains a
+  useful check.
+
+Fitting both and scoring them on the same folds, as here, shows which case a study is
+in. Where the readable model is close, report it and read it; where the black box is
+well ahead, it has found structure the readable one is missing.
+
 ## Key points
 
-- **The most accurate model here was also the second most interpretable.** The GAM scored
-  RMSE 4.08, ahead of the random forest's 4.28 and the boosted trees' 4.74, and it closed
-  83% of the gap between the mean-only baseline and an oracle.
-- The real trade-off is not accuracy against interpretability. It is **knowing the functional
-  form against not knowing it.** The same GLM family scored 4.25 with the right form and 4.38
-  with linear terms.
-- An interpretable fit reports **effects with uncertainty**. The GAM recovered the substrate
-  ordering, the temperature optimum to within a degree, and salinity's null effect:
-  all things the importance measures on the previous pages got wrong or could not say.
-- **On depth, where the survey is confounded, the GAM produced a wide answer rather than a
-  wrong one**: its interval covers the truth at 197 of 200 grid points and excludes zero
-  only beyond 155 m. The forest's partial dependence, on the same data, drew a confident
-  monotone decline with no interval at all.
-- Reach for a black box when the structure is not additive, when the inputs are raw, or when
-  you do not know the form, not because you assume it will predict better.
+::: {.key-points}
+- An **interpretable model** is read from its parts: a GAM's curves, a Poisson
+  regression's multipliers. A **black box** is read from outside, with feature
+  importance and partial dependence.
+- Scored on the same folds of sites, the GAM predicted new sites as well as the
+  random forest and better than boosting: on the survey, reading cost no accuracy.
+- The GAM's parts read as a habitat description, each with an interval: a
+  temperature peak in cool water, more animals on mud than on sand, and no answer on
+  salinity.
+- The GAM and the forest drew the same shapes. Agreement says the shape is in the data,
+  not that it is the species' response: both depth curves follow position.
+- A black box earns its place where inputs work in combination, where inputs are raw,
+  or where prediction is the whole job. A black box well ahead of a readable model
+  points to structure worth naming.
 :::
 
 ## Try it yourself
 
-1. Tune the boosted trees with `tune_grid()` over `trees`, `learn_rate` and `tree_depth`.
-   How much of the gap to the GAM does tuning close, and how long did it take you?
-2. Replace `s(longitude, latitude)` with nothing and refit the GAM. How much accuracy is in
-   the spatial smoother alone, and what happens to the depth smooth?
+1. Give chlorophyll a curve as well, with `s(chlorophyll_mg_m3)` in `smooth_terms`,
+   and score the GAM again. Does its RMSE change, and what shape does the new curve
+   have?
+2. Tune boosting's `trees`, `tree_depth` and `learn_rate` with `tune_grid()` on the
+   same folds, as in
+   [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). Does
+   it overtake the GAM?

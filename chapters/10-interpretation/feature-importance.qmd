@@ -1,6 +1,6 @@
 ---
 title: "Feature importance"
-description: "Two standard importance measures on the same model, disagreeing, and a noise column that outranks half the real predictors, which is why every importance table needs a null reference."
+description: "A random forest has no coefficients to read, but shuffling one input at a time shows how much its predictions rely on each. Columns of random numbers show what an unused input scores, and repeating the measure on new splits shows which scores hold."
 order: 1
 categories: [interpretation]
 ---
@@ -10,132 +10,156 @@ categories: [interpretation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(DALEXtra)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The question after the fit
+## Importance scores say which inputs a model relies on
 
-You have fitted a random forest that predicts abundance reasonably well, and the next
-question, from a supervisor or a reviewer or yourself, is "so what drives it?". The
-conventional answer is a variable-importance plot, and it takes one line of code.
-
-That plot is the most over-interpreted object in applied machine learning. It is routinely
-read as a ranking of ecological drivers when it is nothing of the kind: it is a description
-of one fitted model's internal arithmetic, it depends on which measure you asked for, and it
-has no zero. This page puts two standard measures on the same model and shows them
-disagreeing, then fixes the missing zero.
+A linear model shows how much each input matters through its coefficients: one number
+for each input, in the outcome's units. A random forest averages hundreds of trees and
+has no such numbers. **Feature importance** gives every input a score for how much a
+fitted model relies on it, and works for any model. This page measures it in two ways,
+adds columns of random numbers to show what an unused input scores, and repeats the
+measurement to find the scores that hold.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The effects in the data
+## Permutation importance shuffles an input and measures the rise in error
 
-Because the survey is simulated, we know the answer before we start. From
-`R/make-example-data.R`:
+**Permutation importance** works on any fitted model. Predict the test data and
+measure the error, here the
+[RMSE](../01-introduction/what-is-machine-learning.qmd). Then shuffle one input: mix up
+its values, so each row gets another row's value. The input's values are all still
+there, but they no longer belong to their rows. If the model relied on that input, its
+predictions get worse and the error rises; if it did not, the error stays about the
+same. The rise is the input's importance.
 
-| Predictor | True role |
-| --- | --- |
-| `depth_m` | real, humped, peak at 80 m |
-| `temperature_c` | real, humped, peak at 9 °C |
-| `chlorophyll_mg_m3` | real, positive, saturating |
-| `substrate` | real: mud > gravel > sand > rock |
-| `longitude`, `latitude` | proxies for a smooth spatial field no covariate explains |
-| `salinity_psu` | **no effect** |
-| `survey_year` | **no effect** |
-| `season` | no direct effect; drives temperature and chlorophyll |
+::: {.diagram}
+![Permutation importance in three steps: score the test data as it is, shuffle one input so its values change rows, and score again. The rise in error is the input's importance.](img/permutation-importance.svg){fig-alt="Three cards. Score, the test data as it is: a small table with inputs A, B and C and an outcome column, each cell shaded, and the text predict the test data and measure the error. Shuffle one input, its values change rows: the same table with column B outlined in orange and its shades in a different order, labelled shuffled, and the text mix up the input's values, so they no longer belong to their rows. Score again, the rise is the importance: two error bars, before and after, with the after bar taller and the extra part marked as the rise. A note says repeat for each input, several times over, on data the model was not fitted to."}
+:::
 
-And we add three columns of our own, drawn from `rnorm()`, which have no effect by
-construction and no relationship to anything.
+Shuffling is random, so it is repeated several times and the rises are averaged. It
+is done on test data, so the score is about predicting new sites. A category such as
+substrate is shuffled as one column, so it gets one score.
+
+## Impurity importance scores inputs by a forest's own splits
+
+A random forest has a quicker measure built in. Each split in a tree is chosen to lower
+the squared errors on the training data, as in
+[Decision trees](../03-supervised-learning/decision-trees.qmd). **Impurity importance**
+adds up how much each input's splits lowered them, over every tree in the forest. It
+comes free with the fit, but it is measured on the training data, which the trees have
+already fitted, so it also credits splits that only fitted noise.
+
+## Random columns show what an unused input scores
+
+An importance score has no natural zero, and every input gets some score. Columns of
+random numbers, unrelated to anything in the data, give a reference: they are added as
+extra inputs, and an input that scores no higher than they do is used no more than
+noise. [Choosing the number of clusters](../08-unsupervised-learning/choosing-the-number-of-clusters.qmd)
+made the same move, shuffling the data to see what no groups would score.
+
+## Worked example
+
+A random forest of 500 trees, as in
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
+predicts abundance from the six inputs of
+[Regression for counts](../03-supervised-learning/count-regression.qmd) and three
+columns of random numbers. The two measures are compared on one split by site, then
+permutation importance is repeated on ten.
+
+### Preparing the data
+
+The random columns are drawn before the split, and the ten extra splits straight after
+it.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: data
+#| label: prepare
 survey <- load_coastal_survey_clean()
 
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season")
+
+# three columns of random numbers, unrelated to anything in the survey
 modelling <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-         substrate, season, survey_year, longitude, latitude) |>
-  drop_na()
+  select(site_id, abundance, all_of(inputs)) |>
+  mutate(random_1 = rnorm(n()), random_2 = rnorm(n()), random_3 = rnorm(n()))
 
-set.seed(20)
-modelling <- modelling |>
-  mutate(noise_1 = rnorm(n()), noise_2 = rnorm(n()), noise_3 = rnorm(n()))
+split <- group_initial_split(modelling, group = site_id, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+splits <- group_mc_cv(modelling, group = site_id, prop = 0.75, times = 10)
 
-set.seed(4)
-split <- initial_split(modelling, prop = 0.5)
-train_set <- training(split)
-test_set  <- testing(split)
-
-forest_recipe <- recipe(abundance ~ ., data = train_set) |>
+forest_recipe <- recipe(abundance ~ ., data = train) |>
+  update_role(site_id, new_role = "site") |>
+  step_impute_median(all_numeric_predictors()) |>
   step_dummy(all_nominal_predictors())
 
-set.seed(2)
-forest <- workflow() |>
-  add_recipe(forest_recipe) |>
-  add_model(rand_forest(trees = 800) |>
-              set_engine("ranger", seed = 1, importance = "impurity") |>
-              set_mode("regression")) |>
-  fit(train_set)
-
-c(train = nrow(train_set), test = nrow(test_set))
+forest_model <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 123, importance = "impurity") |>
+  set_mode("regression")
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import root_mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "survey_year",
-           "longitude", "latitude"]
-modelling = survey[columns].dropna().reset_index(drop=True)
-
-rng = np.random.default_rng(20)
+# three columns of random numbers, unrelated to anything in the survey
+rng = np.random.default_rng(123)
 for i in (1, 2, 3):
-    modelling[f"noise_{i}"] = rng.standard_normal(len(modelling))
+    survey[f"random_{i}"] = rng.standard_normal(len(survey))
 
-# The dummies are made once, so that shuffling a column below shuffles the
-# whole factor rather than one of its indicator columns.
-encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+           "random_1", "random_2", "random_3"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-train_rows, test_rows = train_test_split(np.arange(len(modelling)),
-                                         train_size=0.5, random_state=4)
+grouper = GroupShuffleSplit(n_splits=11, train_size=0.75, random_state=123)
+first, *ten = grouper.split(survey, groups=survey["site_id"])
+train = survey.iloc[first[0]]
+test = survey.iloc[first[1]]
 
-forest = RandomForestRegressor(n_estimators=800, random_state=1).fit(
-    encoded.iloc[train_rows], modelling["abundance"].iloc[train_rows])
-
-pd.Series({"train": len(train_rows), "test": len(test_rows)})
+def new_forest():
+    recipe = ColumnTransformer(
+        [("numeric", SimpleImputer(strategy="median"), numeric),
+         ("categorical", OneHotEncoder(drop="first", sparse_output=False),
+          categorical)],
+        verbose_feature_names_out=False)
+    # max_features and min_samples_leaf match ranger's defaults
+    model = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                                  min_samples_leaf=5, random_state=123)
+    return Pipeline([("recipe", recipe), ("model", model)])
 ```
 
 :::
 
-The three noise columns are the point of the page. They are the **null reference**: whatever
-number an importance measure assigns to a column that cannot possibly matter is the number
-that measure gives to nothing at all. It is the same habit
-[§8 used for clustering](../08-unsupervised-learning/choosing-the-number-of-clusters.qmd)
-and [§7 used for model scores](../07-validation/regression-metrics.qmd): find out what
-no-skill looks like before reading the result.
+### Impurity importance ranks random numbers above the seabed
 
-## Measure one: impurity importance
-
-This is the default for trees and forests and the one you get if you ask for importance
-without specifying. Every time a tree splits on a variable it reduces the impurity of the node
-it split, which for regression is the within-node variance. Impurity importance adds
-those reductions up across the whole forest.
+The forest is fitted to the training sites, and its impurity importance is divided by
+the largest, so the top input scores 1. The recipe turns substrate and season into one
+column for each level but the first, so each level gets its own score.
 
 ::: {.panel-tabset group="language"}
 
@@ -143,333 +167,260 @@ those reductions up across the whole forest.
 
 ```{r}
 #| label: impurity
-impurity <- extract_fit_engine(forest)$variable.importance
+forest <- workflow(forest_recipe, forest_model) |> fit(train)
 
-tibble(term = names(impurity), importance = impurity / max(impurity)) |>
-  arrange(desc(importance)) |>
-  mutate(importance = round(importance, 3))
+impurity <- extract_fit_engine(forest)$variable.importance
+impurity_table <- tibble(input = names(impurity),
+                         importance = impurity / max(impurity)) |>
+  mutate(input = str_replace(input, "^(substrate|season)_", "\\1: ")) |>
+  arrange(desc(importance))
+
+impurity_table |> mutate(importance = round(importance, 2))
 ```
 
 ## Python
 
-```python
-# ranger's importance = "impurity" is feature_importances_: the total drop in
-# node impurity each column gave, measured on the training data.
-impurity = pd.Series(forest.feature_importances_, index=encoded.columns)
+```{python}
+forest = new_forest().fit(train[predictors], train["abundance"])
+
+# feature_importances_ is impurity importance, scaled to sum to 1
+impurity = pd.Series(forest["model"].feature_importances_,
+                     index=forest["recipe"].get_feature_names_out())
+impurity.index = impurity.index.str.replace(r"^(substrate|season)_", r"\1: ",
+                                            regex=True)
 
 (impurity.div(impurity.max())
     .sort_values(ascending=False)
-    .round(3)
-    .reset_index(name="importance")
-    .rename(columns={"index": "term"}))
+    .round(2)
+    .rename_axis("input")
+    .reset_index(name="importance"))
 ```
 
 :::
 
-Read down to rank six. `noise_3`, `noise_1` and `noise_2` sit in positions **six, seven and
-eight of sixteen**: above salinity, above `survey_year`, and above *every* substrate and
-season term. Substrate, which has a genuine effect in the generator, appears at ranks 12, 13
-and 16, below all three columns of random numbers. Repeat this on eight different splits of
-the data and the picture does not change: the noise columns land between ranks three and
-nine every time, and every substrate dummy is below all three of them every time.
+```{r}
+#| label: impurity-numbers
+#| include: false
+impurity_rank <- impurity_table |> mutate(rank = row_number())
+random_rank <- impurity_rank |>
+  filter(str_starts(input, "random")) |>
+  pull(rank)
+below_random <- impurity_rank |>
+  filter(!str_starts(input, "random"), rank > max(random_rank))
+```
 
-This is not a fluke; it is what the measure does. A continuous variable offers hundreds of
-distinct split points, so a tree searching for the best split will, by chance alone, find one
-that reduces impurity a little. A two-level dummy offers exactly one. Impurity importance
-therefore rewards **variables with many possible split points**, regardless of whether they
-carry information.
+The three random columns rank `r min(random_rank)` to `r max(random_rank)` of
+`r nrow(impurity_table)`. Below them come `r nrow(below_random)` real columns:
+salinity and every level of substrate and season. A column of numbers drawn at random
+looks more useful to the forest than the seabed.
 
-::: {.callout-warning}
-Impurity importance (Gini importance, `importance = "impurity"`, the `randomForest` default)
-is biased towards continuous and high-cardinality predictors. On this data it ranked pure
-`rnorm()` noise above a real categorical effect. Do not use it to rank predictors of
-different types against each other.
-:::
+This follows from how trees choose splits. A random column has a different value at
+every station, so a tree can try hundreds of places to split it, and on the training
+data some of them lower the error by chance. A level of substrate offers a single
+split. Impurity importance favours inputs with many values, and the random columns
+show by how much.
 
-## Measure two: permutation importance
+### On one split's test sites only temperature and the seabed beat the random columns
 
-The permutation measure asks a question with an operational meaning: **how much worse does
-this model predict if I destroy the information in this column?** Shuffle the column, score
-the model again, and record the increase in error. Do it on data the model has not seen, and
-do it many times, because the shuffle is random.
-
-It is short enough to write out, which is worth doing once.
+Each input is shuffled 20 times on the test sites, and its importance is the average
+rise in RMSE. Substrate and season are shuffled as whole columns, before the recipe
+turns them into levels.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: permutation
-baseline_rmse <- rmse_vec(test_set$abundance, predict(forest, test_set)$.pred)
-
-permutation_importance <- function(model, data, outcome, repeats = 50) {
-  baseline <- rmse_vec(data[[outcome]], predict(model, data)$.pred)
-  map_dfr(setdiff(names(data), outcome), \(variable) {
-    increases <- map_dbl(seq_len(repeats), \(i) {
+#| label: shuffle
+# the rise in test RMSE when an input is shuffled, averaged over the shuffles
+shuffle_importance <- function(fitted, data, repeats = 10) {
+  error <- \(d) rmse_vec(d$abundance, predict(fitted, d)$.pred)
+  before <- error(data)
+  columns <- setdiff(names(data), c("site_id", "abundance"))
+  map(columns, \(input) {
+    rises <- map_dbl(seq_len(repeats), \(i) {
       shuffled <- data
-      shuffled[[variable]] <- sample(shuffled[[variable]])
-      rmse_vec(data[[outcome]], predict(model, shuffled)$.pred) - baseline
+      shuffled[[input]] <- sample(shuffled[[input]])
+      error(shuffled) - before
     })
-    tibble(variable = variable, increase = mean(increases),
-           se = sd(increases) / sqrt(repeats))
-  })
+    tibble(input, rise = mean(rises))
+  }) |>
+    list_rbind()
 }
 
-set.seed(3)
-importance <- permutation_importance(forest, test_set, "abundance")
-
-importance |>
-  arrange(desc(increase)) |>
-  mutate(across(where(is.double), \(x) round(x, 4)))
+one_split <- shuffle_importance(forest, test, repeats = 20)
+one_split |> arrange(desc(rise)) |> mutate(rise = round(rise, 3))
 ```
 
 ## Python
 
-```python
-from sklearn.inspection import permutation_importance
+```{python}
+# permutation_importance shuffles each column of test[predictors], so
+# substrate and season are shuffled whole, before the recipe. Its score is
+# minus the RMSE, so a rise in error is a positive importance.
+def shuffle_importance(fitted, data, repeats=10):
+    result = permutation_importance(
+        fitted, data[predictors], data["abundance"], n_repeats=repeats,
+        random_state=123, scoring="neg_root_mean_squared_error")
+    return pd.DataFrame({"input": predictors,
+                         "rise": result.importances_mean})
 
-X_test = encoded.iloc[test_rows]
-y_test = modelling["abundance"].iloc[test_rows]
-
-baseline_rmse = root_mean_squared_error(y_test, forest.predict(X_test))
-
-# permutation_importance does exactly the loop the R tab spells out: shuffle
-# one column, re-score, repeat. The scorer is negated RMSE, so an increase in
-# error is a positive importance.
-scored = permutation_importance(
-    forest, X_test, y_test, n_repeats=50, random_state=3,
-    scoring="neg_root_mean_squared_error")
-
-importance = pd.DataFrame({
-    "variable": encoded.columns,
-    "increase": scored.importances_mean,
-    "se": scored.importances_std / np.sqrt(scored.importances.shape[1]),
-})
-
-importance.sort_values("increase", ascending=False).round(4)
+one_split = shuffle_importance(forest, test, repeats=20)
+(one_split.sort_values("rise", ascending=False)
+    .round(3)
+    .reset_index(drop=True))
 ```
 
 :::
 
-Note what changed. Substrate is now a single number rather than three dummies, because we
-permuted the original column and let the recipe re-encode it. Splitting a categorical
-variable's importance across its levels is a second, entirely avoidable way to make a real
-effect look unimportant, and permuting before the recipe rather than after fixes it.
-
-## Drawing the line
-
-The three noise columns give us the scale the table was missing.
-
 ```{r}
-#| label: fig-importance
-#| fig-cap: "Permutation importance on 360 held-out stations, fifty shuffles each, with standard errors. The shaded band spans the three pure-noise columns: anything inside it is indistinguishable from a variable that cannot matter."
-#| fig-alt: "A horizontal dot-and-error-bar plot of variables ordered by importance. Temperature is far out on its own at 0.185. Latitude, longitude, substrate and depth follow between 0.039 and 0.072, all clearly to the right of a grey shaded band. The band itself runs from about minus 0.015 to 0.029. Inside or touching it, in descending order, sit salinity, chlorophyll, survey year and season, together with the three noise columns which are drawn in a different colour."
-#| fig-width: 7.5
-#| fig-height: 5
-noise_band <- importance |> filter(str_starts(variable, "noise_"))
-
-importance |>
-  mutate(kind = if_else(str_starts(variable, "noise_"), "pure noise", "measured"),
-         variable = fct_reorder(variable, increase)) |>
-  ggplot(aes(increase, variable, colour = kind)) +
-  annotate("rect", xmin = min(noise_band$increase), xmax = max(noise_band$increase),
-           ymin = -Inf, ymax = Inf, fill = "#9aa5ad", alpha = 0.18) +
-  geom_vline(xintercept = 0, colour = "#c9d1d7", linewidth = 0.4) +
-  geom_errorbarh(aes(xmin = increase - 2 * se, xmax = increase + 2 * se),
-                 height = 0, linewidth = 0.6) +
-  geom_point(size = 2.4) +
-  labs(x = "increase in test RMSE when shuffled", y = NULL, colour = NULL)
+#| label: shuffle-numbers
+#| include: false
+three <- \(x) format(round(x, 3), nsmall = 3)
+single <- deframe(one_split)
+single_random <- max(single[str_starts(names(single), "random")])
+input_names <- c(depth_m = "depth", temperature_c = "temperature",
+                 chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
+                 substrate = "substrate", season = "season")
+real <- single[names(input_names)]
+below_zero <- input_names[names(real)[real < 0]]
 ```
 
-Five variables sit clearly outside the noise band: temperature, latitude, longitude,
-substrate and depth. Four do not: salinity, chlorophyll, `survey_year` and season. The
-correct sentence about the second group is not "these do not matter"; it is **"this model's
-predictions do not depend on them any more than on a column of random numbers"**.
+Shuffling temperature raises the RMSE by `r three(single[["temperature_c"]])`
+individuals and shuffling substrate by `r three(single[["substrate"]])`. Every other
+input scores less than the best of the random columns, `r three(single_random)`, and
+`r knitr::combine_words(below_zero, oxford_comma = FALSE)` score below zero: on these test sites, the
+forest predicted slightly better with them shuffled. This split held back
+`r n_distinct(test$site_id)` sites, and on so few, chance can outweigh what the
+forest learned from an input. Repeating the whole measurement on other splits shows
+which scores hold.
 
-That reading is right for salinity and `survey_year`, which genuinely have no effect. It is
-wrong for chlorophyll, which has a real, positive, saturating effect that we put there
-ourselves. And before explaining chlorophyll, there is a more urgent question: how much of
-this table is a property of the data, and how much is a property of the split we happened to
-draw?
+### Ten splits show which inputs beat the random columns again and again
 
-## One split is not a result
-
-Everything above came from one 50/50 split. Repeat the whole procedure on eight different
-splits and count how often each variable clears the highest of the three noise columns.
+The forest is refitted on each of the ten splits, and each input is shuffled 10 times
+on its test sites. On each split, an input either beats all three random columns or
+it does not.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: across-splits
-importance_for_split <- function(split_seed) {
-  set.seed(split_seed)
-  split <- initial_split(modelling, prop = 0.5)
-  set.seed(2)
-  fitted <- workflow() |>
-    add_recipe(recipe(abundance ~ ., data = training(split)) |>
-                 step_dummy(all_nominal_predictors())) |>
-    add_model(rand_forest(trees = 500) |>
-                set_engine("ranger", seed = 1) |> set_mode("regression")) |>
-    fit(training(split))
-
-  set.seed(3)
-  scored <- permutation_importance(fitted, testing(split), "abundance", repeats = 15)
-  ceiling <- max(scored$increase[str_starts(scored$variable, "noise_")])
-  scored |> mutate(split = split_seed, rank = rank(-increase), noise_ceiling = ceiling)
+#| label: ten-splits
+importance_on_split <- function(one) {
+  fitted <- workflow(forest_recipe, forest_model) |> fit(training(one))
+  shuffle_importance(fitted, testing(one))
 }
 
-repeated <- map_dfr(101:108, importance_for_split)
+repeated <- map(splits$splits, importance_on_split) |>
+  list_rbind(names_to = "split") |>
+  mutate(random_top = max(rise[str_starts(input, "random")]), .by = split)
 
-repeated |>
-  filter(!str_starts(variable, "noise_")) |>
-  summarise(`best rank` = min(rank), `worst rank` = max(rank),
-            `splits above the noise ceiling` = sum(increase > noise_ceiling),
-            `median increase` = round(median(increase), 3),
-            .by = variable) |>
-  arrange(`best rank`)
+beats <- repeated |>
+  filter(!str_starts(input, "random")) |>
+  summarise(splits_above_random = sum(rise > random_top),
+            median_rise = median(rise), .by = input) |>
+  arrange(desc(median_rise))
+
+beats |> mutate(median_rise = round(median_rise, 3))
 ```
 
 ## Python
 
-```python
-def importance_for_split(split_seed):
-    rows, held = train_test_split(np.arange(len(modelling)), train_size=0.5,
-                                  random_state=split_seed)
-    fitted = RandomForestRegressor(n_estimators=500, random_state=1).fit(
-        encoded.iloc[rows], modelling["abundance"].iloc[rows])
-    scored = permutation_importance(
-        fitted, encoded.iloc[held], modelling["abundance"].iloc[held],
-        n_repeats=15, random_state=3, scoring="neg_root_mean_squared_error")
+```{python}
+rows = []
+for number, (train_rows, test_rows) in enumerate(ten, start=1):
+    part = survey.iloc[train_rows]
+    fitted = new_forest().fit(part[predictors], part["abundance"])
+    scores = shuffle_importance(fitted, survey.iloc[test_rows])
+    random = scores["input"].str.startswith("random")
+    scores["random_top"] = scores.loc[random, "rise"].max()
+    rows.append(scores.assign(split=number))
+repeated = pd.concat(rows, ignore_index=True)
 
-    result = pd.DataFrame({"variable": encoded.columns,
-                           "increase": scored.importances_mean,
-                           "split": split_seed})
-    result["rank"] = result["increase"].rank(ascending=False)
-    result["noise_ceiling"] = result.loc[
-        result["variable"].str.startswith("noise_"), "increase"].max()
-    return result
-
-repeated = pd.concat([importance_for_split(seed) for seed in range(101, 109)])
-
-(repeated[~repeated["variable"].str.startswith("noise_")]
-    .groupby("variable")
-    .apply(lambda g: pd.Series({
-        "best rank": g["rank"].min(),
-        "worst rank": g["rank"].max(),
-        "splits above the noise ceiling":
-            int((g["increase"] > g["noise_ceiling"]).sum()),
-        "median increase": round(g["increase"].median(), 3),
-    }), include_groups=False)
-    .sort_values("best rank")
+real = repeated[~repeated["input"].str.startswith("random")]
+(real.assign(above=real["rise"] > real["random_top"])
+    .groupby("input")
+    .agg(splits_above_random=("above", "sum"),
+         median_rise=("rise", "median"))
+    .sort_values("median_rise", ascending=False)
+    .round(3)
     .reset_index())
 ```
 
 :::
 
-Chlorophyll comes first in one split and **eleventh in another**. Depth ranges from fifth to
-twelfth. Season, longitude and latitude all move by five or six places. A variable-importance
-figure built on a single split, which is what almost every one of them is, is reporting a
-number with that much play in it and no indication of the fact.
-
-One thing in the table is completely stable, and it is the thing that matters most:
-**salinity and `survey_year` clear the noise ceiling in zero splits out of eight.** They are
-the only two variables that never do, and they are exactly the two with no effect in the
-generator. Every variable with a real effect clears it at least four times.
-
-So the reliable output of this procedure is not a ranking. It is a **count**: how often does
-this variable beat a column of random numbers? That is the number to put in a paper.
-
-## The reason chlorophyll is unstable
-
-Chlorophyll in this simulation is generated from depth and season:
-`exp(0.3 - 0.010 * depth + season_effect + noise)`. So almost everything chlorophyll knows
-about abundance, depth and season also know. When we shuffle chlorophyll, the forest can
-route the same information through the columns that are still intact, and whether it does
-depends on which splits the trees happened to make on this particular training half.
-
-Permutation importance measures **how much this model needs a column**, given the others. It
-does not measure how much the variable matters in nature. With correlated predictors those
-are different quantities, and the gap between them is not a defect of the method; it is the
-question the method actually asks. Redundant variables sit near the boundary, which is
-precisely why they are the ones whose rank swings.
-
-Three practical consequences:
-
-- A low importance means *redundant or unused*, never *unimportant*. Two columns carrying
-  the same information will each score near zero, and which of them scores lower is
-  arbitrary.
-- A high importance means the model leans on that column. It says nothing about direction,
-  shape, or causation; [the next page](partial-effects.qmd) is about recovering those.
-- Importances are not comparable across models. Fit a linear model to the same data and the
-  ranking changes, because a different model needs different columns.
-
-::: {.callout-note collapse="true"}
-## The same thing from a maintained package
-`vip::vi()` is the usual one-liner, but `vip` was archived from CRAN in 2026 and is no
-longer maintained. `DALEX` with `DALEXtra`'s tidymodels adapter does model-agnostic
-permutation importance and is actively developed.
-
 ```{r}
-#| label: dalex
-explainer <- explain_tidymodels(forest, data = select(test_set, -abundance),
-                                y = test_set$abundance, verbose = FALSE)
+#| label: fig-ten-splits
+#| fig-cap: "Permutation importance on the test sites of ten splits by site, one point for each split. The random columns (grey) score close to zero; temperature scores well above them on every split, and the other inputs spread from below zero to well above the random columns."
+#| fig-alt: "A dot plot with one row for each input and ten points per row, the rise in test RMSE on the horizontal axis. Temperature's points lie far to the right of all others. Chlorophyll, depth, substrate and season have points spread from around zero to well right of the random columns. Salinity's points sit among the three rows of random columns, which cluster around zero."
+#| fig-width: 7.5
+#| fig-height: 4.5
+labels <- c(input_names, random_1 = "random 1", random_2 = "random 2",
+            random_3 = "random 3")
 
-set.seed(3)
-parts <- model_parts(explainer, loss_function = loss_root_mean_square,
-                     B = 25, type = "difference")
-
-as_tibble(parts) |>
-  filter(!variable %in% c("_full_model_", "_baseline_")) |>
-  summarise(increase = round(mean(dropout_loss), 4), .by = variable) |>
-  arrange(desc(increase)) |>
-  slice_head(n = 6)
+repeated |>
+  mutate(kind = if_else(str_starts(input, "random"), "Random column", "Input"),
+         input = str_to_sentence(labels[input]),
+         input = fct_reorder(input, rise, .fun = median)) |>
+  ggplot(aes(rise, input, colour = kind)) +
+  geom_vline(xintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.4) +
+  geom_point(size = 2.4, alpha = 0.7) +
+  scale_colour_manual(values = c(Input = ml_palette[["blue"]],
+                                 "Random column" = ml_palette[["grey"]])) +
+  labs(x = "Rise in test RMSE when shuffled (individuals)", y = NULL,
+       colour = NULL)
 ```
 
-The same five variables, in the same order, at the same magnitudes, with `noise_3` sixth
-in both.
-:::
+```{r}
+#| label: ten-numbers
+#| include: false
+above <- deframe(select(beats, input, splits_above_random))
+n_splits <- nrow(splits)
+every <- \(k) {
+  if (k == n_splits) paste("all", k) else paste(k, "of the", n_splits)
+}
+often <- above[names(above) %in% c("depth_m", "chlorophyll_mg_m3", "substrate")]
+```
 
-## Limits of an importance table
+Temperature beats the random columns on `r every(above[["temperature_c"]])`
+splits. Chlorophyll, depth and substrate beat them on
+`r min(often)` to `r max(often)`, season on `r above[["season"]]` and salinity on
+`r above[["salinity_psu"]]`. The split above was an unlucky one for chlorophyll and
+depth, which most splits put clearly above the random columns, as @fig-ten-splits
+shows.
 
-**Importance is computed on a dataset, so it inherits that dataset's sampling.** If your
-survey never visited water below 5 °C, temperature's importance describes the range you
-sampled. §6's [extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
-warning applies unchanged.
+A ranking from one split moves around; the count of splits on which an input beats the
+random columns is steadier, and it is the number worth reporting.
 
-**Longitude and latitude ranked second and third.** They are not ecological drivers; they
-are stand-ins for a smooth spatial field that no measured covariate explains. A model that
-leans on coordinates is telling you there is structure you have not measured, which is
-useful, and is not the same as "location matters".
+## Importance shows what a model uses, not what the species needs
 
-**Shuffling creates impossible rows.** Permuting depth independently of temperature produces
-20 m stations at 4 °C, which do not exist on this shelf, and the model is scored on its
-predictions there. Accumulated local effects, on the next page, avoid this; conditional
-permutation schemes exist too and are more work.
+A high score means the fitted model leans on that input to predict. A low score means
+the model managed without it, which can happen because another input carries the same
+information: on the survey, deeper water is colder, saltier and lower in chlorophyll,
+so a forest that has one of them can do without much of the others. Scores also say nothing about
+the direction or shape of an effect, whether abundance rises or falls with depth.
+[Partial effects](partial-effects.qmd) draws that shape.
 
-::: {.callout-tip}
 ## Key points
 
-- **Always include a null column.** Three `rnorm()` columns ranked sixth, seventh and eighth
-  of sixteen on impurity importance, above a real categorical effect, on every split we
-  tried.
-- **Impurity importance is biased towards continuous and many-levelled predictors.** It is
-  the default. Do not use it for ranking.
-- **Permutation importance on held-out data** answers a well-posed question and comes with a
-  standard error. Permute the original column, before the recipe, so categorical variables
-  are not split across dummies.
-- **A single split is not a result.** Across eight splits chlorophyll's rank ran from first
-  to eleventh and depth's from fifth to twelfth. Report the **count of splits in which a
-  variable beats the noise ceiling**: the two predictors with no effect scored zero out of
-  eight, and every real effect scored at least four.
-- Write "the model relies on X", never "X drives Y".
+::: {.key-points}
+- **Feature importance** scores how much a fitted model relies on each input, for any
+  model.
+- **Permutation importance** shuffles one input on test data and measures the rise in
+  error. A forest's built-in **impurity importance** is measured on the training data
+  and favours inputs with many values: on the survey it ranked three columns of random
+  numbers above the seabed.
+- **Columns of random numbers** show what an unused input scores. An input that does
+  not beat them is used no more than noise.
+- One split's test sites can mislead. **Repeat on several splits** and report how
+  often each input beats the random columns.
+- A score says what the model uses, not the direction of an effect or its cause.
 :::
 
 ## Try it yourself
 
-1. Refit with a boosted tree instead of a forest and recompute the permutation importance.
-   Which variables change rank, and does the noise band move?
-2. Drop `depth_m` from the recipe entirely and refit. Does chlorophyll's permutation
-   importance rise, and by how much?
+1. Swap the random forest for boosted trees (`boost_tree()` with the `xgboost`
+   engine) and repeat the ten splits. Do the same inputs beat the random columns?
+2. Leave `depth_m` out of the inputs and repeat the ten splits. Does chlorophyll or
+   temperature score higher without it?

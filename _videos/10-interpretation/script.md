@@ -1,5 +1,5 @@
 ---
-title: "Interpretation: what can a model honestly tell you?"
+title: "Interpretation: what a model can honestly tell you"
 section: chapters/10-interpretation/index.qmd
 voice: Sadaltager
 style: "friendly British English, speaking at a natural, conversational pace"
@@ -12,6 +12,15 @@ lists the directive lines. In short: "# " starts a YouTube chapter, "## Scene N"
 scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
+
+This video is an overview built on three ideas, each with one example: test what a
+model relies on against random numbers and on more than one split (feature importance,
+with partial dependence and the GAM for the shape), name an interval and check its
+coverage (the GAM's two intervals, then a conformal interval that lapses at new kinds
+of station), and a score cannot check the records (the gear that misses animals on
+rock). The quiz is the reproducibility page's seed against split. The depth curve that
+follows position is left to the pages: the assumptions video already tells it. The
+truth of the simulation is never shown; every check here is one a real study can make.
 -->
 
 # In this video
@@ -20,271 +29,225 @@ section's pages. No section numbers anywhere in the video: other sections are na
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-In this video, you will learn three things. How to tell which predictors a model
-really relies on. Why even the right model can draw the wrong shape. And what no model
-can warn you about.
-
-# The puzzle
+In this video, you will learn three things. Which inputs a model relies on, and how to
+test the answer. Which interval to quote with a prediction. And what a good score
+cannot check.
 
 ## Scene 2
-visual: manim Truth: the true depth effect, a hump peaking at 80 m (page results, partial-effects.qmd)
+visual: manim Questions: a score card, then three questions beside it: what did it find, how sure is it, can the records be trusted (schematic)
 
-Here is a survey of 720 stations. It is simulated, so we know the truth: abundance
-peaks at 80 metres depth.
+A score says how well a model predicts new sites. A study has to say more: what the
+model found, how sure it is, and whether the records behind it can be trusted.
 
 ## Scene 3
-visual: manim Truth: the random forest's partial dependence added, falling from 5.04 to 3.77
+visual: manim Survey: a map of stations, each with its depth, temperature, seabed and season appearing as named (schematic)
 
-Fit a random forest and ask it about depth. It says abundance falls with depth, from
-5.04 to 3.77.
+As throughout the course, the data are one simulated survey: counts of one species at
+coastal stations, with the depth, the water temperature, the seabed and the season at
+each.
+
+# What a model relies on
 
 ## Scene 4
-visual: manim Truth: "the generator's own formula" card over the chart (schematic)
+visual: manim Coefficients: a linear model's coefficients beside a forest of many trees with a question mark (schematic)
 
-So blame the black box. Fit the exactly right model instead: a regression given the
-formula that made the data.
+A linear model shows what it relies on through its coefficients. A random forest
+averages hundreds of trees, and has no such numbers to read.
 
 ## Scene 5
-visual: manim Truth: the GLM's curve added, falling from 8.19 to 1.80, and a question mark
-pause-after: 1.5
+visual: manim Shuffle: a small table scored, one column shuffled so its values change rows, scored again; the rise in error marked (schematic)
 
-It tells the same story, only steeper: 8.19 falling to 1.80. Two models, one wrong
-shape. Why?
-
-# What the model relies on
+Permutation importance asks from outside. Score the model on test sites. Then shuffle
+one input, so its values land on the wrong stations, and score again. The more the
+error rises, the more the model relied on that input.
 
 ## Scene 6
-visual: manim Importance: a schematic bar chart titled "so what drives it?" (schematic)
+visual: manim Shuffle: three columns of random numbers join the table as extra inputs (schematic)
 
-Start with the question everyone asks: so what drives it? The usual answer is an
-importance plot.
+But every input gets some score. To see what an unused input scores, add columns of
+random numbers as extra inputs. An input that cannot beat them is used no more than
+noise.
 
 ## Scene 7
-visual: manim Noise: three columns of random numbers added to the table (schematic)
+visual: manim Impurity: the forest's own importance, thirteen bars, the three random columns in orange above salinity, the seabed and the season (page results, feature-importance.qmd#fig-impurity)
 
-First, we add three columns of random numbers. They cannot possibly matter.
+A forest also has a quicker score built in, from its own splits on the training data.
+It ranked the three random columns above salinity, the seabed and the season. A
+random column offers a tree hundreds of places to split, and some of them fit noise by
+chance.
 
 ## Scene 8
-visual: manim Impurity: the default importance for sixteen terms, the three noise columns at six, seven and eight (page results, feature-importance.qmd)
+visual: manim Permutation: permutation importance on one split's test sites, the best random column marked; only temperature and the seabed above it (page results, feature-importance.qmd#fig-permutation)
 
-The default importance ranks them sixth, seventh and eighth of sixteen.
+Permutation importance on test sites does better. But one split holds back only 39
+sites, and on it, only temperature and the seabed beat the random columns.
 
 ## Scene 9
-visual: manim Impurity: salinity and every substrate term highlighted below them
+visual: manim TenSplits: for each input, ten dots, one per split, filled where it beat the random columns; the counts at the right (page results, feature-importance.qmd#fig-ten-splits)
 
-Above salinity, and above every substrate term. And substrate has a real effect.
+So repeat it on ten splits. Temperature beats the random columns on all ten; depth,
+chlorophyll and the seabed on most; salinity on one. That count is the number worth
+reporting, not a rank from one split.
 
 ## Scene 10
-visual: manim Splits: a measured column with hundreds of split points, a yes-or-no column with one (schematic)
+visual: manim Sweep: one input set to each value in turn at every station, the predictions averaged into one curve (schematic)
 
-A measured column offers hundreds of places to split. A yes-or-no column offers one.
-Among hundreds, chance alone finds one that helps a little.
+Importance says how much, but not in which direction. A partial dependence plot shows
+the shape: set temperature to one value at every station, predict, average, and repeat
+along its range.
 
 ## Scene 11
-visual: manim Shuffle: one column shuffled, the error rising (schematic)
+visual: manim Hump: the forest's partial dependence on temperature, then thin curves for many stations behind it, each rising and falling (page results, partial-effects.qmd#fig-ice)
 
-Permutation importance asks a better question. Shuffle one column: how much worse does
-the model predict?
+The forest predicts the most animals in cool water, near 7.7 degrees. Drawn station by
+station, the curve rises and falls at nearly every one of the 598.
 
 ## Scene 12
-visual: manim Permutation: the increase in error for each variable, the noise columns' band shaded (page results, feature-importance.qmd#fig-importance)
+visual: manim Readable: the GAM's temperature curve with its interval; then RMSE bars on the same folds, the GAM, the forest and the average (page results, black-box-or-not.qmd)
 
-Now the random columns mark a band: what nothing looks like. Temperature, latitude,
-longitude, substrate and depth clear it.
+A GAM draws the same hump from its own parts, with an interval. Scored on the same
+folds of sites, it predicted new sites as well as the forest: an RMSE of 4.34 against
+4.43. On this survey, reading the model cost no accuracy.
 
 ## Scene 13
-visual: manim Ranks: each variable's best and worst rank over eight splits, chlorophyll from 1 to 11 (page results)
-
-But one split is not a result. Over eight splits, chlorophyll ranked first in one and
-eleventh in another.
-
-## Scene 14
-visual: manim Seeds: test error over eight forest seeds, piled together, and over eight splits, spread out (page results, reproducibility.qmd#fig-seeds)
-
-Even the forest's random seed matters little next to the split. Changing the seed moved
-the test error by 0.016. Changing the split moved it by 1.50.
-
-## Scene 15
-visual: manim Counts: how many of eight splits each variable beats the random columns, salinity and survey year at zero
-
-What stays steady is a count. Salinity and survey year beat the random columns in none
-of the eight splits. They are the two with no effect.
-
-## Scene 16
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point one. Always add a null. Report how often each variable beats random numbers,
-not its rank.
+Key point one. Test what a model relies on against random numbers, and on more than
+one split.
 
-# The puzzle, solved
+# How sure a prediction is
+
+## Scene 14
+visual: manim TwoIntervals: one station's prediction; a narrow interval for the average and a wide one for a new catch (schematic)
+
+A prediction needs a range, and there are two. They answer different questions.
+
+## Scene 15
+visual: manim TwoIntervals: the narrow one labelled "where the average lies", the wide one "where one new catch may land", catches scattering around (schematic)
+
+A confidence interval says where the average catch lies, at stations like this one. A
+prediction interval says where one new catch may land, so it adds the scatter of
+single catches.
+
+## Scene 16
+visual: manim Coverage: catches at new sites dropping onto an interval, counted inside and outside (schematic)
+
+To check an interval, count how many catches at new sites fall inside it. That share
+is its coverage.
 
 ## Scene 17
-visual: manim Sweep: every station set to one depth, the predictions averaged, then the next depth (schematic)
+visual: manim CoverageBars: the GAM's two intervals, width and coverage at the test sites (page results, communicating-uncertainty.qmd#fig-gam-intervals)
 
-Back to depth. A partial dependence plot sets every station to one depth, averages the
-predictions, and moves along.
+The GAM's interval for the average, 2.5 animals wide, held 20 per cent of the catches
+at the test sites. Its interval for a new catch, 11.6 wide, held 96 per cent. Quote
+the narrow one as a range for the next catch, and it is wrong four times in five.
 
 ## Scene 18
-visual: manim Temperature: the true curve and the forest's, peaks at 9 and 7.75 °C (page results, partial-effects.qmd)
+visual: manim Conformal: a forest's errors on calibration sites, sorted; the ninth in ten marked and turned into a half-width either side of a prediction (schematic)
 
-For temperature, it works. The forest's peak is at 7.75 degrees, against a true 9.
+A random forest gives no interval of its own. Conformal prediction makes one: measure
+its errors on calibration sites, held back from fitting, and reach as far either side
+as nine errors in ten.
 
 ## Scene 19
-visual: manim Stations: every station's depth against temperature, the empty corners marked (page results)
+visual: manim Conformal: "held 90% at the test sites", 12.6 animals wide (page results, communicating-uncertainty.qmd)
 
-Depth fails because of how the survey was taken. There are almost no cold shallow
-stations, and almost no warm deep ones.
+At the test sites, the forest's interval held 90 per cent of the catches, just as
+promised, from a model with no distribution at all.
 
 ## Scene 20
-visual: manim Stations: "depth" and "temperature" arrows pointing the same way, "cannot be separated"
+visual: manim Shift: calibrated on stations with little chlorophyll, used where it is highest; coverage 90% there, 73% here, the same label and width (page results, communicating-uncertainty.qmd#fig-shift)
 
-So the data cannot separate the two humps. Temperature takes the shared part, and depth
-is left with a decline.
+Now calibrate it on stations with little chlorophyll, and use it where chlorophyll is
+highest. It holds only 73 per cent, under the same label and at the same width.
+Nothing in the interval says its promise has lapsed.
 
 ## Scene 21
-visual: manim Terms: the GLM's depth term against its true size, a fourteenth, p = 0.63 (page results)
-
-The right formula cannot help. Its depth term came back at a fourteenth of its true
-size, with a p value of 0.63.
-
-## Scene 22
-visual: manim Fix: "a different plot" struck out, "a different survey" ticked
-pause-after: 0.5
-
-No plot can fix that. The fix is a different survey.
-
-## Scene 23
-visual: manim Scores: seven models' cross-validated error on the same folds, the GAM best (page results, black-box-or-not.qmd)
-
-Now try a GAM, a model of smooth curves you can read. On the same folds, it was the
-most accurate of seven: 4.08, against the forest's 4.28.
-
-## Scene 24
-visual: manim GAM: its depth curve, peaking at 52 m, with its interval, against the truth (page results, black-box-or-not.qmd#fig-smooths)
-
-Its depth curve is wrong too, peaking at 52 metres. But it comes with an interval.
-
-## Scene 25
-visual: manim GAM: "covers the truth at 197 of 200 points", "a wide answer, not a wrong one"
-
-That interval covers the true curve at 197 of 200 points. It is not a wrong answer. It
-is a wide one.
-
-## Scene 26
-visual: manim GAM: "I don't know" beside the GAM, nothing beside the partial dependence plot
-pause-after: 0.5
-
-The GAM says it does not know. A partial dependence plot has no way to say that.
-
-## Scene 27
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point two. No method recovers an effect the data cannot separate. Report the
-confounding instead.
+Key point two. Name the interval you quote, and check its coverage at new sites.
 
-# What no model can warn you about
+# What a good score cannot check
 
-## Scene 28
-visual: manim Intervals: observed counts against the GAM's expected count (page results, communicating-uncertainty.qmd#fig-intervals)
+## Scene 22
+visual: manim Gear: a grab on sand and on rock; on rock, half the animals slip past it (schematic)
 
-Every prediction needs an interval. But there are two kinds, and they answer different
-questions.
+A model learns from the records, and the records come from a gear. Grabs and dredges
+often catch fewer animals on hard ground.
 
-## Scene 29
-visual: manim Intervals: the confidence band on the mean, covering 29%
+## Scene 23
+visual: manim Gear: the survey's records on rock halved, everything else unchanged; "the same analysis, the same folds" (schematic)
 
-The band a GAM gives you is for the average count. It covers 29% of the observed
-counts.
+Suppose the survey's gear missed half the animals on rock, and run the whole analysis
+again, on the same folds.
 
-## Scene 30
-visual: manim Intervals: the prediction interval for a new count, covering 99%
+## Scene 24
+visual: manim Multiplier: rock's multiplier against sand with its interval, as recorded across 1, then with the biased records well below it (page results, from-model-to-claim.qmd)
 
-The interval for a new count is three times wider, and covers 99%.
+As recorded, the GAM could not tell rock from sand: its multiplier of 0.80 had an
+interval from 0.59 to 1.09, which includes one. With the biased records it is 0.45,
+from 0.32 to 0.63, and a study would report half as many animals on rock. The change
+is the gear's, not the species'.
 
-## Scene 31
-visual: manim Coverage: the forest's interval from its training error, 77%, and the two errors, 2.11 and 4.17 (page results)
+## Scene 25
+visual: manim Multiplier: the cross-validated RMSE as recorded and with the biased records, the second lower (page results, from-model-to-claim.qmd)
 
-A forest has no distribution. Build its interval from the training error, and it covers
-77%: that error is 2.11, against an honest 4.17.
+The score did not warn. The cross-validated RMSE improved, from 4.34 to 4.27. Every
+fold carries the same bias, so the model matches the records as well as ever.
 
-## Scene 32
-visual: manim Coverage: conformal prediction, 96.5%, the nominal 95% line
+## Scene 26
+visual: manim Outside: three cards, two gears on the same ground, another way of counting (video, divers), the gear and effort reported (schematic)
 
-Conformal prediction sizes the interval on stations the model never saw. It covers
-96.5%, whatever the model.
+Checks on the records come from outside the model: fishing the same ground with two
+gears, counting the animals another way, with video or divers, and reporting the gear
+and the effort.
 
-## Scene 33
-visual: manim Shift: calibrated on low chlorophyll, used on high, coverage 86%, the same width (page results)
-
-But only for stations like those. Calibrate it on low chlorophyll, use it on high, and
-it covers 86%. Same width. No warning.
-
-## Scene 34
-visual: manim Gear: a grab on rock bringing up half the animals (schematic)
-
-One last error. Suppose the gear catches only half the animals on rock.
-
-## Scene 35
-visual: manim Rock: the estimated rock effect, 38% fewer than gravel, then 69% fewer (page results, from-model-to-claim.qmd)
-
-The estimated rock effect more than doubles: from 38% fewer animals than gravel to 69%
-fewer.
-
-## Scene 36
-visual: manim Rock: cross-validated error, 4.079 as recorded, 4.008 with the biased gear
-
-And the cross-validated error improves, from 4.079 to 4.008.
-
-## Scene 37
-visual: manim Defences: "every check passes", then the defences outside the model
-pause-after: 0.5
-
-Validation compares the model with the data. When the data are biased, every check
-passes. The defences are outside the model: calibrate the gear, and use an independent
-method.
-
-## Scene 38
+## Scene 27
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point three. A model cannot see what its data do not contain. Measure each
-interval's coverage, and know how your data were collected.
+Key point three. A score compares the model with the records, never the records with
+the sea.
 
 # Quiz
 
-## Scene 39
+## Scene 28
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. Two columns carry exactly the same information: depth, recorded twice.
-What does permutation importance say about each?
+Quick quiz. A random forest is scored on held-out sites. Which moves its score more:
+the seed it is grown with, or which sites happen to be held out?
 
-## Scene 40
-visual: manim QuizAnswer: two depth columns, each shuffled while the other stands in (schematic)
+## Scene 29
+visual: manim QuizAnswer: "The sites"; ten RMSEs from ten seeds in a tight cluster, ten from ten splits spread wide, each range marked (page results, reproducibility.qmd#fig-spread)
 
-Both near zero. Shuffle one, and the model reads the other. Low importance means
-redundant, not unimportant.
+The sites. Ten seeds moved the forest's RMSE by 0.07; ten splits of the sites moved
+it by 1.84, about 27 times as much. A seed makes a run repeat exactly, but it cannot
+show how far the score would move with other sites. Cross-validation steadies it.
 
 # Key points
 
-## Scene 41
+## Scene 30
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: importance needs a null.
+To sum up the three key points. <short pause> One: test what a model relies on
+against random numbers.
 
-## Scene 42
+## Scene 31
 visual: manim KeyPoints: the second ticked
 
-Two: the data must separate the effects.
+Two: name the interval, and check its coverage.
 
-## Scene 43
+## Scene 32
 visual: manim KeyPoints: the third ticked
 
-Three: a model cannot see what its data lack.
+Three: a good score cannot check the records.
 
-## Scene 44
+## Scene 33
 visual: manim EndCard: the site's address and a thank-you
 
-The pages for this section, with all the code, are linked below. Thanks for watching.
+This is the last section of the course. Its pages also cover reading a GAM in words,
+making an analysis re-runnable, and writing up the findings, with all the code. They
+are linked below. Thanks for watching.
