@@ -436,10 +436,10 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
 | 5 Generalisation | `feature/improve-generalisation` | Done; merged into `develop` 2026-10-02 (video narrated with Gemini, 34 requests, about $0.10) |
 | 6 Assumptions and limitations | `feature/improve-assumptions-limitations` | Done; merged into `develop` 2026-10-03 (video narrated with Gemini, 29 requests, about $0.10) |
-| 7 Validation | `feature/improve-validation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice, waiting for the user's page review |
-| 8 Unsupervised learning | `feature/improve-unsupervised-learning` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; script awaiting approval before narration |
-| 9 Neural networks | `feature/improve-neural-networks` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; script awaiting approval before narration |
-| 10 Interpretation | `feature/improve-interpretation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; script awaiting approval before narration |
+| 7 Validation | `feature/improve-validation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
+| 8 Unsupervised learning | `feature/improve-unsupervised-learning` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
+| 9 Neural networks | `feature/improve-neural-networks` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
+| 10 Interpretation | `feature/improve-interpretation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".
