@@ -108,23 +108,29 @@ use only temperature, salinity and depth, and each method is explained before it
 ## 2. Understanding and preparing marine data
 `chapters/02-marine-data/` · categories: `data-preparation`, `marine-data`
 
-- The coastal survey: the simulated dataset the course uses, its columns and files
-- Observations and features (with outcomes and labels)
+- The coastal survey: the simulated dataset the course uses, its columns and files,
+  observations and features (with outcomes and labels)
 - Kinds of marine data: continuous, categorical, circular, temporal, spatial, profile
   and compositional
-- Exploring the data first
-- Missing values and outliers (with measurement errors)
+- Exploring and cleaning the data: exploratory analysis, missing values and outliers
+  (with measurement errors)
 - Scaling and encoding
-- Splitting the data: training, validation and test data, and class imbalance
+- Splitting the data: training, validation and test data; class imbalance is a link to
+  *Class imbalance* in §6
 - Avoiding information leakage
 
 **Revised 2026-09-30** (`feature/improve-marine-data`). A first page introduces the
-survey formally; class imbalance moved from the missing-values page to the splitting
-page; every page is shorter and has one diagram. Exploratory analysis still comes
-*before* missing values and outliers: the problems are found by looking, so the looking
-comes first. The pages use only linear regression as a model, since later sections
-introduce the others. The survey's true effects are deliberately not listed; later
-pages reveal them when checking a model.
+survey formally; every page is shorter and has one diagram. The pages use only linear
+regression as a model, since later sections introduce the others. The survey's true
+effects are deliberately not listed; later pages reveal them when checking a model.
+
+**Second pass 2026-10-08** (`feature/revise-marine-data`): six pages, as in the target
+table above. *Observations and features* merged into *The coastal survey*; *Exploring
+the data first* and *Missing values and outliers* merged into *Exploring and cleaning
+the data*, which still finds the problems by looking before it fixes them; *Splitting
+the data* links to *Class imbalance* instead of teaching rebalancing. Every term is
+defined at first use, with glossary entries. *Avoiding information leakage* names the
+term in the overview, since every later section depends on it.
 
 ## 3. Supervised learning
 `chapters/03-supervised-learning/` · categories: `supervised`, `regression`,
