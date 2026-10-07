@@ -9,6 +9,51 @@
 
 terms:
 
+  # 1 · Introduction: Types of learning
+  - term: "Supervised learning"
+    definition: "Learning from examples whose answer is known, in order to predict the answer for new examples."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Input (feature)"
+    definition: "A measurement a model uses to make its prediction, such as temperature or depth."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Outcome"
+    definition: "The answer a supervised model learns to predict, such as whether a species is present."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Label"
+    definition: "A known outcome, especially one a person assigned, such as a species named from an image."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Regression"
+    definition: "A supervised task whose outcome is a quantity, such as a number of animals; not only linear regression."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Classification"
+    definition: "A supervised task whose outcome is a category, such as present or absent."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Unsupervised learning"
+    definition: "Looking for structure, such as groups of similar examples, in measurements that come with no answer."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Reinforcement learning"
+    definition: "Learning which actions to take from the rewards they bring; not covered in this course."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "k-nearest neighbours"
+    definition: "A supervised method that predicts for a new case from the k most similar cases in the data: the share of each category, or the average of a quantity."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Scaling"
+    definition: "Putting inputs on a common scale, for example by subtracting each one's mean and dividing by its standard deviation, so that no input dominates a distance."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Recipe"
+    definition: "In tidymodels, the list of a model's outcome and inputs together with the steps that prepare the data, such as scaling."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "k-means clustering"
+    definition: "An unsupervised method that sorts cases into k groups, moving each group's centre to the average of its members until no case changes group."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Cluster"
+    definition: "A group of similar cases found by an unsupervised method."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+
   # 1 · Introduction: Prediction and explanation
   - term: "Machine learning"
     definition: "Fitting models to data with the aim of predicting cases the model has not seen, usually letting the method find the shape of the relationship."
@@ -30,6 +75,10 @@ terms:
     definition: "The cases a model learns from."
     page: chapters/01-introduction/prediction-and-explanation.qmd
     more: chapters/02-marine-data/splitting-data.qmd
+  - term: "Linear regression"
+    definition: "A model that predicts the outcome by adding up a fixed amount for each input, so its prediction is a straight line in each input."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
   - term: "Slope (coefficient)"
     definition: "In a linear regression, the change in the prediction for one unit more of an input, with the other inputs held fixed."
     page: chapters/01-introduction/prediction-and-explanation.qmd
