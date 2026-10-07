@@ -1,6 +1,6 @@
 ---
 title: "Forward propagation and backpropagation"
-description: "Building a two-layer network from scratch in base R, deriving its gradients by the chain rule, and checking them numerically, so that 'the network trains' stops being a black box."
+description: "A network learns its weights by the same walk downhill as any model fitted by gradient descent. Backpropagation finds the slope for every weight at once."
 order: 2
 categories: [neural-networks, optimisation]
 ---
@@ -10,54 +10,53 @@ categories: [neural-networks, optimisation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(nnet)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
-## The case for looking at the machinery
+## A network learns by walking downhill
 
-You will almost certainly never write backpropagation yourself. Every framework does it
-for you, and does it better. So why look?
-
-Because the failures you will actually meet are failures of this machinery, and they are
-unreadable without it. A network that trains to a flat line, a loss that goes to `NaN` on
-the third epoch, a "deep" model that performs exactly like a shallow one: each of those
-has a specific cause in the arithmetic below, and none of them is diagnosable from the
-outside. Forty lines of base R buys you the vocabulary.
+A network finds its weights the way
+[Gradient descent](../04-how-algorithms-learn/gradient-descent.qmd) found the slopes of
+a straight line: measure the loss, find which way is downhill for every weight, take a
+small step, and repeat. The new part is finding the slopes, because a weight in the
+hidden layer reaches the prediction only through other weights. **Backpropagation**
+solves this by passing the error back through the network, layer by layer. This page
+writes a small network out in base R, checks its slopes, and trains it until it beats
+linear regression.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+## Backpropagation passes the error back layer by layer
 
-Training a network means finding weights that make its predictions close to the observed
-values. That is the same problem §4 set up in
-[loss functions](../04-how-algorithms-learn/loss-functions.qmd) and solved in
-[gradient descent](../04-how-algorithms-learn/gradient-descent.qmd): write down a loss,
-find the slope of the loss with respect to each parameter, step downhill, repeat.
+Each training step has three parts.
 
-The only new difficulty is that a weight in the first layer affects the loss *indirectly*,
-through a hidden unit, through the output weight, through the prediction. So its slope
-is a product of several slopes. That product is the chain rule, and applying it
-systematically from the output backwards is all **backpropagation** is.
+- **Forward propagation** pushes the inputs through the network, as on
+  [Neurons, layers and activations](what-a-network-is.qmd), and keeps every value on
+  the way: each hidden unit's weighted sum and its value after the bend. It ends in a
+  prediction, and the loss compares the prediction with the observed value.
+- **Backpropagation** walks the same arrows in reverse. It starts with how far off each
+  prediction was and asks, for each layer in turn, how much the loss would change if
+  that layer's values changed. Each answer gives the slopes of the weights feeding that
+  layer, and is passed one layer further back.
+- **The step** moves every weight a little way against its slope, as in gradient
+  descent.
 
-It has two halves.
+::: {.diagram}
+![One training step: a forward pass computes the prediction and the loss, a backward pass gives every weight its slope, and gradient descent moves every weight a little way downhill.](img/training-step.svg){fig-alt="Three cards. Forward pass, predict: a small network with two inputs, three hidden units and an output feeds a box comparing the prediction with the observed value, the loss; an arrow runs from the inputs to the loss; push the inputs through and keep every value on the way; it ends in a prediction and a loss. Backward pass, backpropagation: the same network, with an arrow running from the loss back to the weights; pass the error back along the same arrows to each weight; it gives every weight its slope. Step downhill, gradient descent: a U-shaped curve of the loss against one weight, with dots stepping from a start point down to the bottom; move every weight a little way against its slope; repeat until the loss levels off."}
+:::
 
-**Forward propagation** pushes the data through the network and keeps the intermediate
-values. **Backward propagation** walks the same path in reverse, carrying one quantity per
-layer: how much the loss would change if that layer's output changed. At each step it
-turns that into the gradient for the layer's weights, then passes a modified version
-further back.
+The backward pass is quick because the forward pass has already computed everything it
+needs. Both passes together cost about twice a forward pass, however many weights the
+network has, which is what makes networks with millions of weights trainable.
 
-The reason it is fast is that the forward pass already computed everything the backward
-pass needs. Both passes together cost about twice one forward pass, *regardless of how
-many weights there are*.
+## Worked example
 
-## The network
+We predict abundance on a log scale from depth, temperature and chlorophyll, each
+standardised, with one hidden layer of four units. The hidden units use **tanh**, the
+S-shaped activation from minus one to one.
 
-Three standardised inputs, one hidden layer of four `tanh` units, one linear output. We
-hold the parameters in a list of four pieces: `W1` and `b1` for the hidden layer, `w2` and
-`b2` for the output.
+### Both passes fit in a few lines of base R
 
 ```{r}
 #| label: data
@@ -67,13 +66,16 @@ model_data <- survey |>
   select(abundance, depth_m, temperature_c, chlorophyll_mg_m3) |>
   drop_na()
 
-X <- cbind(depth = as.numeric(scale(model_data$depth_m)),
-           temp  = as.numeric(scale(model_data$temperature_c)),
-           chl   = as.numeric(scale(log1p(model_data$chlorophyll_mg_m3))))
+X <- cbind(depth       = as.numeric(scale(model_data$depth_m)),
+           temperature = as.numeric(scale(model_data$temperature_c)),
+           chlorophyll = as.numeric(scale(log1p(model_data$chlorophyll_mg_m3))))
 y <- log1p(model_data$abundance)
 
 n_hidden <- 4
 
+# Small random weights, so the hidden units start different from one another.
+# The output bias starts at the mean, so the untrained network predicts the
+# average.
 initialise <- function(seed) {
   set.seed(seed)
   list(W1 = matrix(rnorm(ncol(X) * n_hidden, 0, 0.5), ncol(X), n_hidden),
@@ -81,55 +83,29 @@ initialise <- function(seed) {
        w2 = rnorm(n_hidden, 0, 0.5),
        b2 = mean(y))
 }
-
-dim(X)
 ```
 
-Weights start small and random; biases start at zero, except the output bias, which starts
-at the mean of the response so the untrained network at least predicts the right average.
-Why random rather than all zero: if every hidden unit starts identical, they receive
-identical gradients and stay identical forever. The randomness is what lets four units
-learn four different things.
+`W1` and `b1` are the hidden layer's weights and biases, `w2` and `b2` the output's.
+The weights start random because hidden units that start the same receive the same
+slopes and stay the same; randomness lets four units learn four different bends.
 
-## Forward propagation
+The forward pass is two matrix multiplications and a bend. The loss is the mean squared
+error from [Loss functions](../04-how-algorithms-learn/loss-functions.qmd).
 
 ```{r}
 #| label: forward
 forward <- function(par, X) {
-  Z1 <- sweep(X %*% par$W1, 2, par$b1, "+")   # weighted sums entering the hidden layer
-  A1 <- tanh(Z1)                              # hidden activations
+  Z1 <- sweep(X %*% par$W1, 2, par$b1, "+")  # weighted sums into the units
+  A1 <- tanh(Z1)                             # the units' values after the bend
   list(Z1 = Z1, A1 = A1,
        prediction = as.numeric(A1 %*% par$w2 + par$b2))
 }
 
 loss <- function(par, X, y) mean((y - forward(par, X)$prediction)^2)
-
-par <- initialise(3)
-round(loss(par, X, y), 4)
 ```
 
-Two matrix multiplications and one `tanh`. `Z1` is 741 × 4, one weighted sum per station
-per hidden unit, and `A1` is the same shape after the bend. The loss is mean squared
-error, so this is the regression case; for classification you would swap in a logistic
-output and cross-entropy, and everything below changes only in one line.
-
-We keep `Z1` and `A1` because the backward pass needs them. That is the whole reason a
-framework's forward pass is memory-hungry: it is storing the activations of every layer
-for every row so that backpropagation can reuse them.
-
-## Backward propagation
-
-Start at the output and work left. Write $\hat y$ for the prediction and $L$ for the loss.
-
-1. $\partial L / \partial \hat y = -2(y - \hat y)/n$, which is how the loss responds to the prediction.
-2. The output weights see the hidden activations directly, so their gradient is
-   $A_1^{\top}(\partial L/\partial \hat y)$.
-3. The hidden activations feed the output through $w_2$, so
-   $\partial L/\partial A_1 = (\partial L/\partial \hat y)\, w_2^{\top}$.
-4. `tanh` has derivative $1 - \tanh^2$, and we already stored $\tanh(Z_1)$ as `A1`, so
-   $\partial L/\partial Z_1 = \partial L/\partial A_1 \odot (1 - A_1^2)$.
-5. The input weights see `X` directly:
-   $\partial L / \partial W_1 = X^{\top}(\partial L/\partial Z_1)$.
+The backward pass starts from the error and works towards the inputs, reusing `A1` from
+the forward pass at every step.
 
 ```{r}
 #| label: backward
@@ -137,30 +113,31 @@ backward <- function(par, X, y) {
   f <- forward(par, X)
   n <- nrow(X)
 
-  d_prediction <- -2 * (y - f$prediction) / n          # step 1
-  d_A1 <- outer(d_prediction, par$w2)                  # step 3
-  d_Z1 <- d_A1 * (1 - f$A1^2)                          # step 4: tanh'
+  # How the loss responds to each prediction, passed back through the output
+  # weights, then through the bend (tanh's slope).
+  d_prediction <- -2 * (y - f$prediction) / n
+  d_A1 <- outer(d_prediction, par$w2)
+  d_Z1 <- d_A1 * (1 - f$A1^2)
 
-  list(W1 = t(X) %*% d_Z1,                             # step 5
+  list(W1 = t(X) %*% d_Z1,
        b1 = colSums(d_Z1),
-       w2 = as.numeric(t(f$A1) %*% d_prediction),      # step 2
+       w2 = as.numeric(t(f$A1) %*% d_prediction),
        b2 = sum(d_prediction))
 }
 
+par <- initialise(3)
 gradients <- backward(par, X, y)
-round(gradients$w2, 5)
 ```
 
-Five lines. Every symbol in them came out of the forward pass. Note that step 4 is where
-the `tanh` derivative enters, and that it is the only place the choice of activation
-function appears: swapping `tanh` for ReLU changes `1 - A1^2` to `Z1 > 0` and nothing
-else.
+Each weight's slope is the error arriving at its layer times the value entering it: the
+output weights' slopes use the hidden units' values, the hidden weights' slopes use the
+inputs. The activation appears in one line only, as its slope, `1 - A1^2` for tanh.
 
-## Checking that it is right
+### Nudging each weight confirms the slopes
 
-If you ever write a gradient yourself, for a custom loss or an unusual link, check it against
-finite differences before you trust it. Nudge one weight up and down by a tiny amount, see
-how the loss moves, and compare with what the analytic gradient predicted.
+A slope worked out by hand can be checked by arithmetic: nudge one weight up and down
+by a tiny amount and see how much the loss moves. If the backward pass is right, the two
+agree.
 
 ```{r}
 #| label: gradient-check
@@ -177,27 +154,34 @@ numerical_gradient <- function(par, X, y, eps = 1e-6) {
   })
 }
 
-numeric <- numerical_gradient(par, X, y)
+nudged <- numerical_gradient(par, X, y)
 
-tibble(parameter = names(par),
-       `largest disagreement` = map_chr(names(par), \(nm)
-         sprintf("%.1e", max(abs(as.numeric(gradients[[nm]]) - as.numeric(numeric[[nm]]))))))
+check <- tibble(Weights = c("Hidden weights (W1)", "Hidden biases (b1)",
+                            "Output weights (w2)", "Output bias (b2)"),
+                `Largest difference` = map_dbl(names(par), \(nm) {
+                  max(abs(as.numeric(gradients[[nm]]) -
+                            as.numeric(nudged[[nm]])))
+                }))
+check |> mutate(`Largest difference` = sprintf("%.1e", `Largest difference`))
 ```
 
-Agreement to about eleven decimal places, and the disagreement is smaller than the rounding
-error in the finite difference itself. This check is the single most useful thing on the page:
-it is cheap on a small network, it is unambiguous, and a hand-derived gradient that is
-subtly wrong will still *train*, just to the wrong place, slowly, with no error message.
+```{r}
+#| label: check-numbers
+#| include: false
+n_weights    <- sum(lengths(par))
+check_places <- floor(-log10(max(check$`Largest difference`)))
+```
 
-::: {.callout-warning}
-The numerical gradient costs two forward passes **per weight**. For the 21 weights here
-that is 42 passes; for a network with a million weights it is two million. Use it to
-validate a small version of your model, never as a training method.
-:::
+All `r n_weights` slopes agree to `r check_places` decimal places. The nudges cost two
+forward passes per weight, which is cheap for `r n_weights` weights and far too slow for
+training a large network; the backward pass gets every slope from one pass. Run this
+check whenever you write a gradient yourself: a wrong one still trains, only to the
+wrong place.
 
-## Training
+### The hand-written network overtakes linear regression
 
-Now the loop: forward, backward, step every parameter a little way downhill, repeat.
+The training loop runs a forward pass, a backward pass and a step, again and again. Each
+step here uses all `r nrow(X)` stations.
 
 ```{r}
 #| label: train
@@ -205,131 +189,106 @@ train <- function(par, X, y, learning_rate = 0.2, steps = 3000) {
   history <- numeric(steps)
   for (step in seq_len(steps)) {
     gradient <- backward(par, X, y)
-    for (nm in names(par)) par[[nm]] <- par[[nm]] - learning_rate * gradient[[nm]]
+    for (nm in names(par)) {
+      par[[nm]] <- par[[nm]] - learning_rate * gradient[[nm]]
+    }
     history[step] <- loss(par, X, y)
   }
   list(par = par, history = history)
 }
 
 fitted_net <- train(initialise(3), X, y)
-
-tibble(step = c(1, 10, 100, 500, 1000, 3000),
-       `training MSE` = round(fitted_net$history[step], 4))
+linear_mse <- mean(resid(lm(y ~ X))^2)
 ```
 
 ```{r}
 #| label: fig-descent
-#| fig-cap: "Training loss over 3,000 gradient-descent steps, against the mean squared error of a linear model on the same three predictors. The descent is not smooth: a fast drop, a plateau, a second drop, and then a long slow crawl."
-#| fig-alt: "A line falling steeply from about 0.76 at the first step to about 0.69 by step fifty, where it flattens into a near-horizontal plateau lasting until about step one hundred. It then falls again to about 0.59 by step three hundred before flattening once more into a slow decline that ends near 0.558 at step three thousand. A narrow spike interrupts that flat tail near step two thousand two hundred and fifty, rising to about 0.567 before returning. A horizontal dashed reference line sits at 0.68, the linear model's error, which the training curve crosses at about step eighty."
+#| fig-cap: "Training loss over 3,000 gradient-descent steps, against linear regression on the same three inputs. The steps are on a log scale, so the early ones are spread out. After a quick first drop the loss pauses on a plateau, falls again, then improves slowly."
+#| fig-alt: "A line against gradient-descent steps on a log scale from one to three thousand. It falls from about 0.76 at the first step to about 0.69 by step fifty, flattens into a near-horizontal plateau until about step one hundred, falls again to about 0.575 by step three hundred, then declines slowly to about 0.558 at step three thousand, with one small brief spike near step two thousand two hundred. A horizontal dashed line at about 0.68 marks linear regression's error; the training curve crosses it at about step eighty."
 #| fig-width: 7
 #| fig-height: 4.2
-linear_mse <- mean(resid(lm(y ~ X))^2)
-
 tibble(step = seq_along(fitted_net$history), mse = fitted_net$history) |>
   ggplot(aes(step, mse)) +
   geom_hline(yintercept = linear_mse, linetype = "dashed", colour = "#9aa5ad") +
   geom_line(colour = ml_palette[["blue"]], linewidth = 0.8) +
-  annotate("text", x = 3000, y = linear_mse, label = "linear model  ", hjust = 1, vjust = -0.6,
-           size = 3.3, colour = "#77818a") +
-  labs(x = "gradient-descent step", y = "training mean squared error")
+  annotate("text", x = 3000, y = linear_mse, label = "Linear regression  ",
+           hjust = 1, vjust = -0.6, size = 3.3, colour = "#77818a") +
+  scale_x_log10(breaks = c(1, 10, 100, 1000, 3000),
+                labels = scales::label_comma()) +
+  labs(x = "Gradient-descent step (log scale)",
+       y = "Training mean squared error")
 ```
-
-The network passes the linear model at step 81 and then spends most of its remaining 2,900
-steps making small gains. Two things in that curve are worth naming. The long crawl after
-step 500 is typical, and it is why "train for longer" is rarely the answer to a
-disappointing model. The **plateau** between about step 50 and step 100 is typical too: the
-loss surface here has a nearly flat shelf, the gradient on it is tiny, and a run stopped at
-step 90 would have concluded the network was no better than a straight line.
-
-The narrow spike near step 2,250 is worth a sentence too. Gradient descent guarantees the
-loss will fall for a *small enough* step; it does not guarantee that your step is small
-enough. On 69 of these 3,000 steps the loss went up. That is harmless here, and it is the
-same mechanism that, at a larger learning rate, destroys a run outright, which is
-[the next page](training-a-network.qmd).
-
-## The source of the improvement
-
-The point is not the improvement. Three predictors and a genuine humped response in two of
-them is a case where a polynomial would do as well. The point is that the improvement came
-out of gradients we derived by hand and verified against arithmetic, with nothing hidden.
-
-It is worth seeing that a real engine agrees.
 
 ```{r}
-#| label: compare-nnet
-set.seed(4)
-engine_fit <- nnet(X, y, size = n_hidden, linout = TRUE, decay = 0,
-                   maxit = 1000, trace = FALSE)
-
-tibble(fit = c("hand-written, 3000 gradient steps", "nnet::nnet, BFGS"),
-       `training MSE` = round(c(tail(fitted_net$history, 1),
-                                mean((y - as.numeric(predict(engine_fit, X)))^2)), 4))
+#| label: descent-numbers
+#| include: false
+passes_at <- which(fitted_net$history < linear_mse)[1]
+final_mse <- tail(fitted_net$history, 1)
+spike_at  <- which.max(diff(fitted_net$history)) + 1
 ```
 
-The two land within 0.005 of each other, and our hand-written loop is marginally *ahead*,
-which says nothing about either method, because that gap is smaller than the spread between
-different starting weights that [the next page](training-a-network.qmd) measures.
+The network overtakes linear regression (mean squared error `r round(linear_mse, 3)`) at
+step `r passes_at` and ends at `r round(final_mse, 3)` after 3,000 steps. It was built
+from nothing but the two passes above, with every slope checked.
 
-What is worth noticing is that `nnet` got there without a learning rate, because it does
-not use plain gradient descent at all. It uses BFGS, a quasi-Newton method that estimates
-the curvature of the loss surface and takes a step tailored to it. Backpropagation is still
-how it obtains the gradient. **The gradient and what you do with it are separate choices**,
-and this page is about the first.
+Two features of the curve are common in network training. The **plateau** after the
+first drop is a nearly flat stretch of the loss, where the slopes are tiny and progress
+pauses; a run stopped there would have looked no better than a straight line. The slow
+crawl at the end is why training longer rarely rescues a disappointing network. The
+small spike at step `r format(spike_at, big.mark = ",")` is a step that overshot the
+valley; the loss rose for a moment and recovered.
+[Training a network](training-a-network.qmd) shows how to choose the learning rate and
+when to stop.
 
-## Limits of this machinery
+## Software works out the backward pass for you
 
-**Saturation kills the gradient.** Look at step 4: `d_Z1` is multiplied by `1 - A1^2`. If
-a hidden unit's input is large, `tanh` returns nearly ±1, that factor is nearly zero, and
-the unit's weights stop updating, and the unit is stuck wherever it happened to land.
+Real software works out the backward pass automatically from the forward pass, so you
+never write it. What an engine does with the slopes can differ. The `nnet` package used
+on these pages passes them to **BFGS**, a search that also tracks how the slopes change
+from step to step and chooses its own step size, so it needs no learning rate.
 
-```{r}
-#| label: saturation
-saturated <- initialise(3)
-saturated$W1 <- saturated$W1 * 20        # the same network, much larger initial weights
+The bend's slope matters too. Where a tanh or logistic unit's weighted sum is large, the
+curve is flat and its slope is near zero, so little error passes back through the unit
+and its weights barely move. In networks with many layers this shrinking compounds, the
+**vanishing gradient**; ReLU, whose slope is one wherever it is active, is the usual
+remedy.
 
-tibble(initialisation = c("small weights (sd 0.5)", "large weights (sd 10)"),
-       `mean |tanh| in hidden layer` = round(c(mean(abs(forward(par, X)$A1)),
-                                               mean(abs(forward(saturated, X)$A1))), 3),
-       `largest gradient into W1` = signif(c(max(abs(backward(par, X, y)$W1)),
-                                             max(abs(backward(saturated, X, y)$W1))), 3))
-```
+::: {.callout-note collapse="true"}
+## The maths, if you want it
 
-With weights twenty times larger the mean hidden activation moves from 0.479 to 0.962,
-because the units are pinned against the flat ends of the curve, and the largest gradient
-reaching the first layer shrinks from 0.143 to 0.0118, a factor of twelve. Multiply that
-shrinkage across ten layers and the first layer receives nothing at all. This is the
-**vanishing gradient** problem, it is the reason deep networks were impractical for
-decades, and ReLU, whose derivative is exactly 1 wherever the unit is active, is the main
-reason they stopped being impractical.
+Write $\hat y$ for the predictions, $L = \frac{1}{n}\sum (y - \hat y)^2$ for the loss,
+$Z_1 = XW_1 + b_1$ and $A_1 = \tanh(Z_1)$. The chain rule gives, from the output back:
 
-**Sensible initialisation is not optional.** The scale of the starting weights decides
-whether you begin in the useful part of the activation or on its flat shoulder. Real
-frameworks default to a scheme (Glorot, He) that sets it from the layer's width; `nnet`
-uses `rang = 0.7` by default and rescales your inputs' influence accordingly.
+1. $\partial L / \partial \hat y = -2(y - \hat y)/n$
+2. $\partial L / \partial w_2 = A_1^{\top}(\partial L/\partial \hat y)$
+3. $\partial L / \partial A_1 = (\partial L/\partial \hat y)\, w_2^{\top}$
+4. $\partial L / \partial Z_1 = \partial L/\partial A_1 \odot (1 - A_1^2)$, since
+   $\tanh'(z) = 1 - \tanh^2(z)$
+5. $\partial L / \partial W_1 = X^{\top}(\partial L/\partial Z_1)$
 
-**The loss surface is not convex.** Different starting weights reach different minima, and
-[the next page](training-a-network.qmd) measures how much different, so there is no
-"the" answer to report, only the one your seed found.
+The bias slopes are the column sums of the same quantities. Each line reuses the one
+above it, which is why the backward pass costs no more than a forward pass.
+:::
 
-::: {.callout-tip}
 ## Key points
 
-- **Forward propagation** computes the prediction and keeps every intermediate value.
-  **Backpropagation** walks back through the same values applying the chain rule.
-- The backward pass costs about as much as the forward pass, whatever the number of
-  weights. That is the whole reason training large networks is feasible.
-- **Check a hand-derived gradient numerically.** Ours agreed to about eleven decimal
-  places; a wrong gradient trains silently to the wrong answer.
-- The activation function enters the gradient in exactly one place, as its derivative.
-- **Saturated units have no gradient.** Large initial weights pushed `tanh` to its flat
-  ends and shrank the first-layer gradient twelvefold: the vanishing gradient problem in
-  one table, and it compounds with every extra layer.
+::: {.key-points}
+- A network is trained by **gradient descent**: forward pass, backward pass, a small
+  step for every weight, repeated.
+- **Forward propagation** computes the prediction and keeps every value on the way.
+  **Backpropagation** passes the error back through the same arrows and gives every
+  weight its slope in one pass.
+- The activation enters the backward pass only as its slope.
+- **Check a hand-written gradient** against small nudges of each weight; here all
+  `r n_weights` slopes agreed to `r check_places` decimal places.
+- The loss can pause on a **plateau** before falling again, so a run stopped early can
+  look no better than a straight line.
 :::
 
 ## Try it yourself
 
-1. Replace `tanh` with ReLU: `A1 <- pmax(Z1, 0)` in `forward()`, and `d_Z1 <- d_A1 * (Z1 > 0)`
-   in `backward()`. Re-run the numerical gradient check. Does it still agree, and what
-   happens at exactly zero?
-2. Set `par$W1[] <- 0` and train. How many of the four hidden units end up different from
-   each other, and why?
+1. Replace tanh with ReLU: `A1 <- pmax(Z1, 0)` in `forward()`, and
+   `d_Z1 <- d_A1 * (Z1 > 0)` in `backward()`. Run the check against small nudges again.
+   Does it still agree?
+2. Set `par$W1[] <- 0` before training. How many of the four hidden units end up
+   different from each other, and why?

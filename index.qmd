@@ -79,7 +79,7 @@ from different generators. The conclusions match; the digits do not.
 | 6 | [Assumptions & limitations](chapters/06-assumptions-limitations/index.qmd) | What is my model quietly assuming about the ocean? |
 | 7 | [Validation](chapters/07-validation/index.qmd) | How do I know how good it really is? |
 | 8 | [Unsupervised learning](chapters/08-unsupervised-learning/index.qmd) | What if I have no labels, only patterns? |
-| 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and do I need one? (Usually not.) |
+| 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and when do they help? |
 | 10 | [Interpretation & responsible use](chapters/10-interpretation/index.qmd) | What can I honestly claim from this model? |
 
 ## Work by participants

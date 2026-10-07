@@ -366,68 +366,84 @@ shows only a gradient. `interpreting-patterns.qmd` makes this its third check.
 - Strengths, limitations, and data requirements
 - When neural networks are, and are not, appropriate
 
-**Written as six pages, reframing one subtopic and adding one.** "Loss functions and
-gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the four
-decisions (learning rate, input scale, when to stop, which seed) that §4 did not have to
-face because its loss surfaces were convex. The added page is `autoencoders.qmd`, which
-follows on from §8's `principal-component-analysis.qmd`; it is also the only unsupervised
-network, and the easiest network to check, because a linear one has a closed-form answer.
+**Written as six pages, reframing one subtopic and splitting another.** "Loss functions and
+gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the
+settings (learning rate, when to stop, which seed) that §4 did not have to face because its
+loss surfaces were convex. "Strengths, limitations, and data requirements" and "when
+appropriate" became `how-much-data.qmd` and `when-to-use-one.qmd`, the first measuring a
+case where the network does not lead and the second one where it does. The added page is
+`autoencoders.qmd`, which follows on from §8's `principal-component-analysis.qmd`: the
+only unsupervised network, and the easiest to check, because a linear one gives PCA's
+answer.
+
+Revised in October 2026 (`feature/improve-neural-networks`). Page order and titles:
+Neurons, layers and activations; Forward propagation and backpropagation; Training a
+network; How much data a network needs; When a network is the right tool; Autoencoders.
+The section is R-only: no Python tabs.
 
 ### The engine decision
 
-**No `torch`, `brulee` or `keras`.** Everything here runs on `nnet` (already installed for
-§3) plus about forty lines of base R. That was a deliberate choice, not a constraint: a
-hand-written forward/backward pass whose gradients are checked against finite differences
-teaches backpropagation far better than a framework call, and it costs no system
-dependency. If §9 is ever extended to convolutional or recurrent architectures, that
-decision has to be revisited; see `.claude/workflow.md`.
+**No `torch`, `brulee` or `keras`.** Everything runs on `nnet` (already installed for §3),
+parsnip's `mlp()`, and short base-R networks. That was a deliberate choice, not a
+constraint: a hand-written forward and backward pass whose slopes are checked against
+small nudges of each weight teaches backpropagation better than a framework call, and it
+costs no system dependency. `forward-and-backward.qmd`, `training-a-network.qmd` and
+`autoencoders.qmd` each write their own gradient descent. If §9 is ever extended to
+convolutional or recurrent architectures, that decision has to be revisited; see
+`.claude/workflow.md`.
 
-One consequence must be kept if these pages are edited: `nnet` optimises with **BFGS, not
-gradient descent**, and parsnip maps `epochs` to `maxit` (quasi-Newton iterations). Both
-`forward-and-backward.qmd` and `training-a-network.qmd` say so explicitly. Do not let a
-later edit imply that `mlp(engine = "nnet")` takes a learning rate.
+Two consequences must be kept if these pages are edited:
+
+- `nnet` optimises with **BFGS, not gradient descent**, and parsnip maps `epochs` to
+  `maxit`. `forward-and-backward.qmd` and `training-a-network.qmd` both say so. Do not let
+  a later edit imply that `mlp(engine = "nnet")` takes a learning rate.
+- **parsnip squeezes two-class `nnet` probabilities into 0.269–0.731**, that is
+  1/(1 + e) to e/(1 + e): `parsnip:::nnet_softmax()` turns nnet's single output p into
+  the pair (1 − p, p) and then applies a softmax to it, as if they were scores. The ranking is untouched, so ROC AUC and predicted classes are right,
+  but the probabilities are not. `when-to-use-one.qmd` therefore reports AUC and draws
+  predicted classes, never probability maps or calibration. The old page's "a good score
+  and an uncalibrated model" lesson was this artefact, not a property of networks.
 
 ### Three findings the pages are built on
 
-- **The network was short of signal, not of rows.** `how-much-data.qmd` computes the
-  mean-only baseline (4.402) and an oracle that knows every true expected count (3.701), so
-  the whole learnable window is 0.70 RMSE. A default eight-unit network never enters it at
-  any training-set size, and on the *noise-free* target the same network beats linear
-  regression by 24%. It had learned the response surface; negative-binomial noise buried the
-  advantage. This is the section's headline and it is why the `coastal-survey-truth.csv`
-  diagnostic is worth the page space.
-- **A hidden unit is a rotated coordinate.** `when-to-use-one.qmd` builds a water-mass band
-  in T–S space, the one place this section steps outside `data/coastal-survey.csv`, and it
-  says so in a callout. A four-unit network (17 weights) reaches AUC 0.998 where a 500-tree
-  forest reaches 0.926 and logistic regression is capped at 0.72 at every sample size. That
-  single property, combinations of inputs rather than inputs, is the section's answer to "when
-  is a network the right tool", and it is what generalises to images and audio.
-- **A linear autoencoder is PCA, exactly.** Same reconstruction error to four decimals,
-  canonical correlation 1.000. The nonlinear version reconstructs slightly *worse* and gains
-  0.016 in depth R²: the mild arch §8 measured and declined to overstate. Every seed finds
-  the same plane and a different basis in it, which is §8's interpretation lesson with PCA's
-  guardrails (canonical rotation, variance ordering, determinism) removed.
+- **The network was short of signal, not of rows.** `how-much-data.qmd` draws learning
+  curves for linear regression, a random forest and an eight-unit network on the survey.
+  The forest leads at every size; cross-validation shrinks the network to one hidden unit
+  with the largest penalty. Scored against the simulated expected counts instead of the
+  observed ones, the network learned the response best (27% better than linear
+  regression): the count noise buried the gain. This is the section's headline; the page
+  says the expected counts are available only because the survey is simulated.
+- **A hidden unit bends along a tilted line.** `when-to-use-one.qmd` simulates a water-mass
+  band in T–S space, the one place this section steps outside the course datasets. A
+  two-unit network (9 weights) reaches ROC AUC 0.999 from 200 stations where a 500-tree
+  forest reaches 0.926 and logistic regression stays near 0.72 at every size; the forest
+  needs about 1,600 stations to come close. Adding the named combination as a column
+  (feature engineering) lets logistic regression match the network. Combinations of
+  inputs nobody has named is the section's answer to "when is a network the right tool",
+  and what carries over to images, spectra and sound.
+- **A linear autoencoder is PCA.** Same reconstruction error to four decimals, and its
+  code predicts both principal components with R² 1.000 (regression R², not canonical
+  correlation, which the course has not introduced). The tanh version predicts depth only
+  slightly better than PCA's two components (0.743 against 0.727), because the community
+  changes almost in straight lines. Every seed finds the same plane with different axes in
+  it, which is §8's interpretation lesson with PCA's ordering and determinism removed.
 
-### Two things that were measured rather than asserted
+### Measured on the pages, kept positive
 
-Both cost a rewrite and both should survive editing.
-
-- **The best straight line through a hump can have the wrong sign.** `what-a-network-is.qmd`
-  originally described the zero-unit fit as descending; it ascends, because the cold tail of
-  this survey is lower than the warm one. That is now the page's argument, not an erratum.
-- **Unscaled inputs make the network lose to a straight line.** 0.763 against 0.680, with no
-  warning of any kind. `training-a-network.qmd` measures it with plain gradient descent;
-  `nnet`'s BFGS suffers less (0.811 against 0.744) because it estimates curvature, which is
-  why the demonstration is hand-written.
+- `what-a-network-is.qmd`: two hidden units (7 weights) find the temperature optimum
+  without being told its shape; one is not enough and more add little.
+- `forward-and-backward.qmd`: all 21 hand-written slopes agree with the nudged ones to 10
+  decimal places, and a run can pause on a plateau before it beats a straight line.
+- `training-a-network.qmd`: learning rate 0.2 goes lowest, 0.5 bounces, 2 becomes NaN
+  without a warning; early stopping keeps step 1,937 of 8,000; ten seeds vary by 0.055 in
+  validation MSE. The old unscaled-inputs comparison was cut; the page now simply
+  standardises every input.
 
 ### Aimed at §10
 
-Three handovers. Network weights are not reportable quantities, so §10's importance and
-partial-effect tools are the *only* route to an effect. Ten identical runs varied by 0.055
-in validation MSE, which is §10's reproducibility case made in numbers. And
-`when-to-use-one.qmd` ends on a network that ranks almost perfectly (AUC 0.998) while never
-predicting a probability outside 0.27–0.73, a good score and an uncalibrated model, which
-is §10's "what can you honestly claim" in miniature.
+Network weights are not reportable quantities, so §10's importance and partial-effect
+tools are the route to an effect. Ten identical runs varying by 0.055 in validation MSE is
+§10's reproducibility case in numbers.
 
 ## 10. Interpretation and responsible application
 `chapters/10-interpretation/` · categories: `interpretation`, `reproducibility`

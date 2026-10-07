@@ -1,6 +1,6 @@
 ---
 title: "Training a network"
-description: "The four decisions that decide whether a network trains at all: the learning rate, the scale of the inputs, when to stop, and which random seed you happened to use."
+description: "Three settings decide how well a network trains: the learning rate, when to stop, and the random starting weights. Watching the loss on training and validation data shows how to choose each one."
 order: 3
 categories: [neural-networks, optimisation, tuning]
 ---
@@ -10,60 +10,77 @@ categories: [neural-networks, optimisation, tuning]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+f3 <- \(x) sprintf("%.3f", x)
 ```
 
-## Four decisions about the search
+## Three settings decide how well a network trains
 
-The previous page produced a gradient. Turning a gradient into a fitted model needs four
-more decisions, and unlike the choice of model family, they are decisions about the
-*search*, not about the science. That makes them easy to skip over, and they are the
-difference between a network that works and one that silently does not.
-
-Everything here is a specific case of something §4 and §5 already established. The
-learning rate is [gradient descent's step
-size](../04-how-algorithms-learn/gradient-descent.qmd). Stopping early is
-[regularisation](../05-generalisation/regularisation.qmd). What is new is how much more
-sharply each of them bites when the loss surface is not convex.
+Backpropagation gives every weight its slope, and gradient descent walks downhill. How
+well the walk ends depends on three settings the data cannot choose: how long each step
+is, how long to keep walking, and where the walk starts. This page shows what each one
+does to the same small network, and how to choose it by watching the loss.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The setup
+::: {.diagram}
+![Three training settings: the learning rate sets the length of each step, validation error says when to stop, and the random starting weights decide which valley the walk ends in.](img/training-settings.svg){fig-alt="Three cards. Learning rate, step size: a U-shaped loss curve with two walks down it, short steps that settle at the bottom and long steps that jump from side to side; too small crawls, too large overshoots. When to stop, early stopping: two curves of error against training steps, training error falling all the way and validation error falling then rising, with a dashed line at its lowest point; keep the weights where validation error is lowest. Random start, the seed: a wavy loss curve with two valleys and two starting points, each rolling into a different valley; different starts end in different valleys."}
+:::
 
-The same three-input, four-unit network as the previous page, with 200 stations held out
-so we can watch performance on data the network is not being fitted to.
+The learning rate and the number of steps are hyperparameters, chosen like the node size
+on [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). The
+starting weights are random, so they are not chosen at all; what matters is how much
+they change the result.
+
+All the inputs are standardised first. [Gradient
+descent](../04-how-algorithms-learn/gradient-descent.qmd) showed that inputs in their
+measured units make the walk many times longer, because the step has to suit the
+steepest direction. A network has one learning rate for all its weights, so it needs
+standardised inputs even more: put `step_normalize()` in every network's recipe.
+
+## Worked example
+
+The network is the one from [Forward propagation and
+backpropagation](forward-and-backward.qmd): depth, temperature and chlorophyll,
+standardised, predict abundance on a log scale through one hidden layer of tanh units.
+This time 200 stations are held back as validation data, so we can watch the network on
+stations it is not fitted to. `train()` now records the loss on both sets at every step.
 
 ```{r}
-#| label: setup-data
+#| label: network
 survey <- load_coastal_survey_clean()
 
 model_data <- survey |>
   select(abundance, depth_m, temperature_c, chlorophyll_mg_m3) |>
   drop_na()
 
-X <- cbind(depth = as.numeric(scale(model_data$depth_m)),
-           temp  = as.numeric(scale(model_data$temperature_c)),
-           chl   = as.numeric(scale(log1p(model_data$chlorophyll_mg_m3))))
+X <- cbind(depth       = as.numeric(scale(model_data$depth_m)),
+           temperature = as.numeric(scale(model_data$temperature_c)),
+           chlorophyll = as.numeric(scale(log1p(model_data$chlorophyll_mg_m3))))
 y <- log1p(model_data$abundance)
 
 set.seed(20)
-holdout <- sample(nrow(X), 200)
-X_train <- X[-holdout, ]; y_train <- y[-holdout]
-X_valid <- X[holdout, ];  y_valid <- y[holdout]
+validation <- sample(nrow(X), 200)
+X_train <- X[-validation, ]; y_train <- y[-validation]
+X_valid <- X[validation, ];  y_valid <- y[validation]
 
-start <- function(seed, units) {
+# The same network and passes as on Forward propagation and backpropagation
+initialise <- function(seed, n_hidden) {
   set.seed(seed)
-  list(W1 = matrix(rnorm(ncol(X_train) * units, 0, 0.5), ncol(X_train), units),
-       b1 = rep(0, units), w2 = rnorm(units, 0, 0.5), b2 = mean(y_train))
+  list(W1 = matrix(rnorm(ncol(X) * n_hidden, 0, 0.5), ncol(X), n_hidden),
+       b1 = rep(0, n_hidden),
+       w2 = rnorm(n_hidden, 0, 0.5),
+       b2 = mean(y_train))
 }
 
 forward <- function(par, X) {
   A1 <- tanh(sweep(X %*% par$W1, 2, par$b1, "+"))
   list(A1 = A1, prediction = as.numeric(A1 %*% par$w2 + par$b2))
 }
-mse <- function(par, X, y) mean((y - forward(par, X)$prediction)^2)
+
+loss <- function(par, X, y) mean((y - forward(par, X)$prediction)^2)
+
 backward <- function(par, X, y) {
   f <- forward(par, X)
   d_prediction <- -2 * (y - f$prediction) / nrow(X)
@@ -72,219 +89,213 @@ backward <- function(par, X, y) {
        w2 = as.numeric(t(f$A1) %*% d_prediction), b2 = sum(d_prediction))
 }
 
-run <- function(par, learning_rate, steps, X_fit = X_train, y_fit = y_train) {
+# Gradient descent on the training stations, scoring both sets after every step
+train <- function(par, learning_rate, steps) {
   training <- validation <- numeric(steps)
-  for (s in seq_len(steps)) {
-    g <- backward(par, X_fit, y_fit)
-    for (nm in names(par)) par[[nm]] <- par[[nm]] - learning_rate * g[[nm]]
-    training[s]   <- mse(par, X_fit, y_fit)
-    validation[s] <- mse(par, X_valid, y_valid)
+  for (step in seq_len(steps)) {
+    gradient <- backward(par, X_train, y_train)
+    for (nm in names(par)) {
+      par[[nm]] <- par[[nm]] - learning_rate * gradient[[nm]]
+    }
+    training[step]   <- loss(par, X_train, y_train)
+    validation[step] <- loss(par, X_valid, y_valid)
   }
   list(par = par, training = training, validation = validation)
 }
 
-c(training = nrow(X_train), validation = nrow(X_valid))
+linear_mse <- mean(resid(lm(y_train ~ X_train))^2)
 ```
 
-A straight line on these three predictors scores a training MSE of 0.680. Keep that number:
-it is the bar every run below has to clear.
+Linear regression on the same three inputs has a training mean squared error of
+`r f3(linear_mse)` on the `r nrow(X_train)` training stations, the mark every run below
+has to beat.
 
-## Decision 1: the learning rate
+### The learning rate trades speed for stability
 
-The learning rate multiplies the gradient to give the step. Too small and you never arrive;
-too large and you overshoot the valley and climb the other side.
+Five networks with four hidden units start from the same weights and differ only in the
+learning rate.
 
 ```{r}
 #| label: learning-rates
 rates <- c(0.01, 0.05, 0.2, 0.5, 2)
 
-sweeps <- map_dfr(rates, \(lr) {
-  r <- run(start(3, 4), lr, steps = 1500)
-  tibble(learning_rate = lr, step = seq_along(r$training), mse = r$training)
+sweeps <- map_dfr(rates, \(rate) {
+  run <- train(initialise(3, 4), rate, steps = 1500)
+  tibble(rate, step = seq_along(run$training), mse = run$training)
 })
 
-sweeps |>
-  summarise(`final MSE` = round(last(mse), 4),
-            `best MSE reached` = round(suppressWarnings(min(mse)), 4),
-            `stayed finite` = all(is.finite(mse)),
-            .by = learning_rate)
+rate_summary <- sweeps |>
+  summarise(`Passes linear regression at step` = which(mse < linear_mse)[1],
+            `Lowest training MSE` = round(min(mse, na.rm = TRUE), 3),
+            `Final training MSE`  = round(last(mse), 3),
+            .by = rate) |>
+  mutate(rate = as.character(rate)) |>
+  rename(`Learning rate` = rate)
+rate_summary
 ```
 
-Five runs from identical starting weights, differing only in the multiplier.
+```{r}
+#| label: rate-numbers
+#| include: false
+at_rate <- \(column, rate) {
+  rate_summary[[column]][rate_summary$`Learning rate` == rate]
+}
+passes  <- \(rate) {
+  format(at_rate("Passes linear regression at step", rate), big.mark = ",")
+}
+lowest  <- \(rate) f3(at_rate("Lowest training MSE", rate))
+final   <- \(rate) f3(at_rate("Final training MSE", rate))
 
-At 0.01 the steps are so small that after 1,500 of them the network has barely beaten the
-straight line. At 0.05 and 0.2 it descends cleanly, and 0.2 gets furthest. At 0.5 something
-new happens: the run reaches
-`r sprintf("%.4f", min(sweeps$mse[sweeps$learning_rate == 0.5]))` and then ends at
-`r sprintf("%.4f", last(sweeps$mse[sweeps$learning_rate == 0.5]))`, because it is bouncing around the
-valley floor rather than settling into it, so its *final* answer is worse than its own
-best. At 2 the run destroys itself: the loss is 3.1 by step three, 2.2 × 10^12^ by step twelve
-and has overflowed to `NaN` by step 147. The weights grew, which made the gradients grow,
-which made the weights grow faster. Nothing warned; the column of `NaN` is the only
-symptom.
+runaway   <- filter(sweeps, rate == 2)
+over_1000 <- which(runaway$mse > 1000)[1]
+nan_at    <- which(!is.finite(runaway$mse))[1]
+```
+
+The larger the rate, the sooner the network overtakes linear regression: at step
+`r passes(0.01)` with a rate of 0.01, and at step `r passes(0.5)` with 0.5. Speed is not
+everything, though. At 0.5 the steps are too long to settle: the run reaches
+`r lowest(0.5)`, then bounces around the valley floor and ends at `r final(0.5)`. A rate
+of 0.2 goes lowest, to `r final(0.2)`. At 2 every step overshoots further than the last:
+the loss passes 1,000 at step `r over_1000` and becomes `NaN`, R's "not a number", at
+step `r nan_at`, with no error or warning.
 
 ```{r}
 #| label: fig-rates
-#| fig-cap: "Training loss under five learning rates from identical starting weights. The vertical scale is clipped at 0.9; the rate-2 run leaves that range on its second step and never returns, so it is present in the legend and absent from the panel. The dashed line is a linear model on the same predictors."
-#| fig-alt: "Four visible curves of mean squared error against training step on a log-scaled horizontal axis. The rate 0.01 curve declines slowly and ends just below 0.68 at step 1500. The rate 0.05 curve declines a little faster and ends near 0.595. The rate 0.2 curve falls to about 0.57, the lowest of all. The rate 0.5 curve drops earliest, reaching 0.59 by about step 120, but then throws three tall narrow spikes near steps 300, 400 and 500, the first going off the top of the panel, before settling in a jagged band around 0.60. A fifth series, rate 2, appears in the legend but nowhere in the panel. A dashed horizontal line marks the linear model at 0.68."
+#| fig-cap: "Training loss at four learning rates from the same starting weights, with the steps on a log scale. The dashed line is linear regression. The run at a rate of 2 became NaN and is left out."
+#| fig-alt: !expr glue::glue("Four curves of training mean squared error against gradient-descent steps on a log scale from 1 to 1,500, all starting near 1.0. The rate 0.01 curve declines slowly and crosses the dashed linear-regression line at {linear_mse |> round(2)} only at step {passes(0.01)}. The rate 0.05 curve crosses it at step {passes(0.05)} and ends at {final(0.05)}. The rate 0.2 curve crosses at step {passes(0.2)} and ends lowest, at {final(0.2)}. The rate 0.5 curve drops earliest, crossing at step {passes(0.5)}, then throws tall narrow spikes and ends in a jagged band at {final(0.5)}.")
 #| fig-width: 7.5
 #| fig-height: 4.4
-linear_mse <- mean(resid(lm(y_train ~ X_train))^2)
-
 sweeps |>
-  mutate(learning_rate = factor(learning_rate)) |>
-  ggplot(aes(step, mse, colour = learning_rate)) +
+  filter(rate < 2) |>
+  mutate(rate = factor(rate)) |>
+  ggplot(aes(step, mse, colour = rate)) +
   geom_hline(yintercept = linear_mse, linetype = "dashed", colour = "#9aa5ad") +
   geom_line(linewidth = 0.8) +
-  scale_x_log10() +
+  annotate("text", x = 1, y = linear_mse, label = "Linear regression",
+           hjust = 0, vjust = 1.6, size = 3.3, colour = "#77818a") +
+  scale_x_log10(breaks = c(1, 10, 100, 1000),
+                labels = scales::label_comma()) +
   coord_cartesian(ylim = c(0.5, 0.9)) +
-  annotate("text", x = 1000, y = linear_mse, label = "linear model", vjust = -0.6,
-           size = 3.2, colour = "#77818a") +
-  labs(x = "gradient-descent step (log scale)", y = "training mean squared error",
-       colour = "learning rate")
+  labs(x = "Gradient-descent step (log scale)",
+       y = "Training mean squared error", colour = "Learning rate")
 ```
 
-There is no principled way to pick the rate in advance, and the usable range here spans a
-factor of about twenty. Tune it like any other hyperparameter, on a log scale, and look at
-the curve rather than only the final number: a jagged curve is telling you the rate is too
-high even when the final score looks acceptable.
+Choose the learning rate like any other hyperparameter, trying values a few times apart,
+and look at the curve as well as the final number: a jagged curve says the rate is too
+high even when the final score looks good.
 
-## Decision 2: the scale of the inputs
+### Early stopping keeps the weights with the lowest validation error
 
-§2 recommended standardising and [§4 justified
-it](../04-how-algorithms-learn/gradient-descent.qmd). Networks make the consequence
-starker than anything else in this course, because a single learning rate has to serve
-every weight at once.
+This network has 40 hidden units for `r nrow(X_train)` training stations, far more than
+it needs, and trains for 8,000 steps.
 
 ```{r}
-#| label: scaling
-X_measured <- cbind(depth = model_data$depth_m,
-                    temp  = model_data$temperature_c,
-                    chl   = log1p(model_data$chlorophyll_mg_m3))[-holdout, ]
-
-standardised <- run(start(3, 4), 0.2, steps = 3000)
-
-set.seed(3)
-par_measured <- list(W1 = matrix(rnorm(12, 0, 0.5), 3, 4), b1 = rep(0, 4),
-                     w2 = rnorm(4, 0, 0.5), b2 = mean(y_train))
-measured <- run(par_measured, 0.2, steps = 3000, X_fit = X_measured, y_fit = y_train)
-
-tibble(inputs = c("standardised", "measured units", "linear model, for reference"),
-       `training MSE after 3000 steps` =
-         round(c(last(standardised$training), last(measured$training), linear_mse), 4))
+#| label: long-run
+big <- train(initialise(5, 40), learning_rate = 0.05, steps = 8000)
+best_step <- which.min(big$validation)
 ```
 
-Same network, same learning rate, same number of steps, same starting weights. In metres,
-degrees and log-chlorophyll the network scores 0.763, **worse than a straight line**.
-
-The reason is in the gradient. Depth ranges over roughly 150 units and log-chlorophyll over
-about 4, so the derivative with respect to depth's weight is tens of times larger than the
-derivative with respect to chlorophyll's. One learning rate cannot be right for both: it is
-either too large for depth, which oscillates, or too small for chlorophyll, which never
-moves. Standardising makes them comparable, and then a single rate works for all of them.
-
-::: {.callout-important}
-An unscaled network does not error, warn, or look broken. It trains, reports a loss, and
-produces predictions. It is just quietly worse than the linear model you did not fit. Put
-`step_normalize()` in the recipe.
-:::
-
-## Decision 3: when to stop
-
-"Epochs", meaning how many times the optimiser sees the data, is a hyperparameter, not a
-setting. Here is a deliberately oversized network, 40 hidden units on 541 stations, run
-far past the point of usefulness.
+```{r}
+#| label: stop-numbers
+#| include: false
+last_step <- length(big$validation)
+fmt_step  <- \(s) format(s, big.mark = ",")
+worse_pct <- round(100 * (big$validation[last_step] /
+                            big$validation[best_step] - 1))
+saved_pct <- round(100 * (1 - best_step / last_step))
+```
 
 ```{r}
 #| label: fig-early-stopping
-#| fig-cap: "A 40-unit network trained for 8,000 steps. Training error falls throughout. Validation error bottoms out at step 1,937 and then climbs: everything after that point is the network memorising 541 stations."
-#| fig-alt: "Two curves against training step on a log-scaled horizontal axis. Both start high, validation at about 1.09 and training at about 1.00, and fall together, crossing near step 100 at about 0.61. From there to step 2000 the validation curve runs fractionally below the training curve. The training curve then continues falling to about 0.54 at step 8000, while the validation curve flattens, reaches its minimum of about 0.564 at step 1,937 where a vertical dashed line is drawn, and turns upward to about 0.589 by step 8000, leaving a widening gap."
+#| fig-cap: !expr glue::glue("A network with 40 hidden units trained for 8,000 steps. Training error falls throughout. Validation error is lowest at step {fmt_step(best_step)} and then rises.")
+#| fig-alt: !expr glue::glue("Two curves of mean squared error against gradient-descent steps on a log scale. Both start high, training at {f3(big$training[1])} and validation at {f3(big$validation[1])}, and fall together. The training curve keeps falling, to {f3(big$training[last_step])} at step 8,000. The validation curve reaches its lowest point, {f3(big$validation[best_step])}, at step {fmt_step(best_step)}, where a dashed vertical line is drawn, then turns upward to {f3(big$validation[last_step])}, leaving a widening gap.")
 #| fig-width: 7.5
 #| fig-height: 4.4
-big <- run(start(5, 40), 0.05, steps = 8000)
-best_step <- which.min(big$validation)
-
 tibble(step = seq_along(big$training),
-       training = big$training, validation = big$validation) |>
+       Training = big$training, Validation = big$validation) |>
   pivot_longer(-step, names_to = "set", values_to = "mse") |>
   ggplot(aes(step, mse, colour = set)) +
   geom_vline(xintercept = best_step, linetype = "dashed", colour = "#9aa5ad") +
   geom_line(linewidth = 0.8) +
-  scale_x_log10() +
-  annotate("text", x = best_step, y = 0.95, label = paste0("best validation: step ", best_step, "  "),
-           hjust = 1, size = 3.2, colour = "#77818a") +
-  labs(x = "gradient-descent step (log scale)", y = "mean squared error", colour = NULL)
+  annotate("text", x = best_step, y = 0.95, hjust = 1, size = 3.3,
+           colour = "#77818a",
+           label = paste0("Lowest validation error: step ",
+                          fmt_step(best_step), "  ")) +
+  scale_x_log10(breaks = c(1, 10, 100, 1000, 8000),
+                labels = scales::label_comma()) +
+  labs(x = "Gradient-descent step (log scale)", y = "Mean squared error",
+       colour = NULL)
 ```
 
-```{r}
-#| label: early-stopping-numbers
-tibble(point = c("step 1", paste("step", best_step, "(best validation)"), "step 8000"),
-       training   = round(big$training[c(1, best_step, 8000)], 4),
-       validation = round(big$validation[c(1, best_step, 8000)], 4))
-```
+Training error falls from `r f3(big$training[1])` to `r f3(big$training[last_step])` and
+is still falling at the end. Validation error is lowest at step `r fmt_step(best_step)`,
+at `r f3(big$validation[best_step])`, and rises to `r f3(big$validation[last_step])` by
+step 8,000, `r worse_pct`% worse. After step `r fmt_step(best_step)` the network is
+learning the training stations' noise. **Early stopping** keeps the weights from the step
+where validation error was lowest; here it also saves `r saved_pct`% of the steps.
 
-Training error falls from 1.001 to 0.540 and never stops falling. Validation error reaches
-0.564 at step 1,937 and is 0.589 by step 8,000, four per cent worse for four times the
-compute. This is **early stopping**: hold out a slice, watch it, and keep the weights from
-the step where it was best.
+Early stopping is a form of regularisation. The weights start small, and a network with
+small weights is close to linear; training grows them. Stopping early limits how far
+they grow, which is what the ridge penalty of
+[Regularisation](../05-generalisation/regularisation.qmd) does directly.
 
-It is worth seeing what early stopping actually is. Weights start small, and small weights
-make a nearly linear network; training grows them. Stopping early is therefore a cap on how
-large the weights get, which is exactly what an L2 penalty does directly. They are two
-routes to the same restraint, and `parsnip`'s `mlp()` exposes both, `epochs` and
-`penalty`.
+### The random start changes the score
 
-::: {.callout-note collapse="true"}
-## Batches, and the usual unit of an epoch
-Every run on this page computes the gradient from all 541 stations at once, in *full-batch*
-descent. Real training uses **mini-batches**: split the rows into groups of, say, 32,
-take one step per group, and call one pass over all groups an **epoch**. Each step then
-uses a noisy estimate of the gradient, which costs accuracy per step and buys two things:
-you can train on data that does not fit in memory, and the noise itself helps the run
-escape shallow local minima. On 541 rows neither benefit applies, which is why this page
-does not bother. On 541,000 rows there is no alternative.
-:::
-
-## Decision 4: the seed you happened to use
-
-The loss surface is not convex. Different starting weights reach different minima, and
-there is no way to know which one you got.
+Ten networks with eight hidden units are trained the same way, differing only in the
+seed that draws their starting weights. Averaging their predictions gives an eleventh
+model.
 
 ```{r}
 #| label: seeds
-seed_runs <- map_dfr(1:10, \(s) {
-  r <- run(start(s, 8), 0.2, steps = 3000)
-  tibble(seed = s, training = last(r$training), validation = last(r$validation))
-})
+seed_runs <- map(1:10, \(seed)
+  train(initialise(seed, 8), learning_rate = 0.2, steps = 3000))
+seed_mse  <- map_dbl(seed_runs, \(run) last(run$validation))
 
-seed_runs |>
-  summarise(across(c(training, validation),
-                   list(best = min, worst = max, spread = \(x) max(x) - min(x)))) |>
-  mutate(across(everything(), \(x) round(x, 4)))
+averaged <- map(seed_runs, \(run) forward(run$par, X_valid)$prediction) |>
+  reduce(`+`) / length(seed_runs)
+averaged_mse <- mean((y_valid - averaged)^2)
+
+tibble(Model = c("Best single network", "Worst single network",
+                 "Average of all ten"),
+       `Validation MSE` = round(c(min(seed_mse), max(seed_mse),
+                                  averaged_mse), 3))
 ```
 
 ```{r}
 #| label: seed-numbers
 #| include: false
-spread <- \(x) max(x) - min(x)
-seed_spread <- sprintf("%.3f", spread(seed_runs$validation))
-seed_gain <- round(100 * spread(seed_runs$validation) / max(seed_runs$validation))
+seed_spread <- f3(max(seed_mse) - min(seed_mse))
+n_beaten    <- sum(seed_mse > averaged_mse)
 ```
 
-Ten runs on identical data with an identical recipe. Training MSE spans
-`r sprintf("%.3f", spread(seed_runs$training))` and validation MSE spans `r seed_spread`,
-so the best seed looks `r xfun::numbers_to_words(seed_gain)` per cent better than the
-worst on held-out data, and the difference is entirely the random number generator.
+The ten networks share the data, the settings and the number of steps, yet their
+validation MSE spans `r seed_spread`. That is the seed alone: a network's loss has many
+valleys, and each start rolls into a different one. Averaging the ten networks'
+predictions scores `r f3(averaged_mse)`, better than
+`r xfun::numbers_to_words(n_beaten)` of the ten single networks, the same idea as the
+many trees of [Random forests and
+boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
-That has a direct consequence for how you report results. A single network's score is a
-draw from this distribution, not a property of the method, and §7's
-[uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) page applies in
-full: fit it several times and report the spread. If a comparison between a network and
-another model is smaller than `r seed_spread` on this data, the comparison has not been made.
+Fit a network several times from different seeds and report the spread, as
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) does for any
+model. On this survey, a difference between two networks smaller than `r seed_spread`
+could be the seed alone.
 
-## The tidymodels version
+## Large datasets are trained in mini-batches
 
-None of the four decisions disappear in `parsnip`; they become arguments.
+Every step on this page uses all `r nrow(X_train)` training stations to compute the
+slopes. With hundreds of thousands of rows that is slow, so large networks are trained on
+**mini-batches**: the rows are shuffled and split into small groups, say of 32, and each
+step uses one group. This is the **stochastic gradient descent** that [Gradient
+descent](../04-how-algorithms-learn/gradient-descent.qmd) named. Each step's slopes are
+then a noisy estimate, but they cost a fraction of the time, and the noise evens out over
+many steps. One pass through all the groups is an **epoch**, the usual unit for how long
+a network trains.
+
+## `mlp()` takes the settings as arguments
+
+In tidymodels a network is specified with `mlp()`, a multilayer perceptron, the usual
+name for the networks on these pages.
 
 ```{r}
 #| label: tidymodels-mlp
@@ -292,63 +303,66 @@ network <- mlp(hidden_units = 8, penalty = 0.01, epochs = 500) |>
   set_engine("nnet") |>
   set_mode("regression")
 
-recipe_nn <- recipe(abundance ~ depth_m + temperature_c + chlorophyll_mg_m3,
-                    data = model_data) |>
+network_data <- mutate(model_data, log_abundance = log1p(abundance))
+
+network_recipe <- recipe(
+    log_abundance ~ depth_m + temperature_c + chlorophyll_mg_m3,
+    data = network_data) |>
   step_log(chlorophyll_mg_m3, offset = 1) |>
   step_normalize(all_numeric_predictors())
 
 set.seed(6)
-fitted <- workflow() |> add_recipe(recipe_nn) |> add_model(network) |>
-  fit(data = model_data[-holdout, ])
+fitted_network <- workflow(network_recipe, network) |>
+  fit(data = network_data[-validation, ])
 
-augment(fitted, model_data[holdout, ]) |>
-  metrics(truth = abundance, estimate = .pred) |>
-  filter(.metric %in% c("rmse", "rsq"))
+mlp_predictions <- augment(fitted_network, network_data[validation, ])
+mlp_mse <- mean((mlp_predictions$log_abundance - mlp_predictions$.pred)^2)
+tibble(`Validation MSE` = round(mlp_mse, 3))
 ```
 
-`hidden_units` and `penalty` are the two worth tuning; both take `tune()` and go through
-`tune_grid()` exactly as in §5. `step_normalize()` is not optional, for the reason measured
-above.
+With a small penalty and no early stopping, this network scores `r f3(mlp_mse)`, behind
+the averaged networks above; the second exercise below tries other penalties.
 
-::: {.callout-warning}
-`epochs` means different things to different engines. The `nnet` engine optimises with BFGS
-rather than gradient descent, and passes `epochs` through as `maxit`, the number of
-quasi-Newton iterations. It is still "how long to search", so tuning it still works, but
-there is no learning rate to set and the early-stopping curve above is not literally what
-`nnet` is doing. A `torch`- or `keras`-backed engine would take a learning rate, and then
-everything on this page applies directly.
+`step_normalize()` standardises the inputs, and `penalty` is the ridge penalty on the
+weights. `hidden_units` and `penalty` take `tune()` and are chosen by cross-validation, as
+[How much data a network needs](how-much-data.qmd) does. `epochs` means something
+slightly different here: the `nnet` engine does not use gradient descent but BFGS, the
+search described on [Forward propagation and backpropagation](forward-and-backward.qmd),
+so it has no learning rate, and `epochs` sets its maximum number of iterations
+(`maxit`). It still says how long to search.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+
+Each step of gradient descent moves every weight $w$ against its slope,
+$w \leftarrow w - \eta \, \partial L / \partial w$, where $\eta$ is the learning rate.
+With mini-batches, $L$ is the loss on one batch $B$ of rows,
+$L_B = \frac{1}{|B|} \sum_{i \in B} (y_i - \hat y_i)^2$, so every step sees a different
+batch. A ridge penalty $\lambda$ adds $\lambda \sum w^2$ to the loss, and the step
+becomes $w \leftarrow w - \eta \, (\partial L / \partial w + 2 \lambda w)$: every step
+also pulls each weight a little towards zero. Early stopping limits the same growth by
+limiting the number of steps.
 :::
 
-## Limits of this tuning
-
-**Four coupled decisions is a large search.** The best learning rate depends on the network
-size, which depends on the penalty, which interacts with the number of epochs. That is a
-four-dimensional tuning problem for a model that, on this dataset,
-[does not beat a straight line](how-much-data.qmd), and the tuning itself must sit inside
-the resampling or you have leaked, exactly as §7 warned.
-
-**None of it rescues a small dataset.** Every symptom on this page, needing early
-stopping and sensitivity to the seed, is worse when there are few rows per weight, and
-nothing in the training procedure fixes that.
-
-::: {.callout-tip}
 ## Key points
 
-- **The learning rate spans a usable window of about twenty-fold.** Below it the run
-  crawls; above it the run oscillates; well above it the loss becomes `NaN` within ten
-  steps.
-- **Standardise, always.** The same network on measured units scored 0.763 against 0.570
-  standardised, and 0.680 for a straight line. Unscaled, it lost to a linear model without
-  producing a single warning.
-- **Epochs are a hyperparameter.** A 40-unit network's validation error bottomed at step
-  1,937 of 8,000 and was 4% worse by the end. Early stopping is regularisation.
-- **Report the spread across seeds.** Ten identical runs varied by `r seed_spread` in validation MSE.
-  A single run's score is a draw, not a property of the method.
+::: {.key-points}
+- Three settings decide how a network trains: the **learning rate**, the **number of
+  steps** and the **random starting weights**.
+- The learning rate trades speed for stability: here 0.2 went lowest, 0.5 bounced around
+  the valley floor and 2 became `NaN` without a warning. Look at the curve, not only the
+  final number.
+- **Early stopping** keeps the weights from the step where validation error is lowest,
+  here step `r fmt_step(best_step)` of 8,000. It restrains the weights as a penalty does.
+- Ten runs differing only in their seed varied by `r seed_spread` in validation MSE.
+  Report the spread across seeds, or average several networks.
+- Standardise the inputs, and train on large datasets in **mini-batches**; an **epoch**
+  is one pass through all of them.
 :::
 
 ## Try it yourself
 
-1. Re-run the learning-rate sweep with 16 hidden units instead of 4. Does the rate that
-   worked best for the small network still work, or does the larger one diverge sooner?
-2. Add `penalty = 0.1` to the `mlp()` specification and compare the held-out RMSE. Does the
-   penalty substitute for the early stopping the 8,000-step run needed?
+1. Re-run the learning-rate sweep with 16 hidden units instead of 4. Does 0.2 still go
+   lowest, or does the larger network need a smaller rate?
+2. Change `penalty` in `mlp()` to 0 and then to 1. Which gives the lowest validation MSE,
+   and how does it compare with the averaged networks?
