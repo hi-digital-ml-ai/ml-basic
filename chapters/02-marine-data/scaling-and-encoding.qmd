@@ -19,7 +19,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Units a model cannot see past
+## Different units give columns unequal weight
 
 Depth runs to 200 m, salinity sits near 34 and chlorophyll is mostly under 2. To you
 these are three measurements in three units; to many models they are just three
@@ -124,7 +124,7 @@ p_raw <- ggplot(chl, aes(chlorophyll_mg_m3)) +
 
 p_log <- ggplot(chl, aes(log(chlorophyll_mg_m3 + 0.01))) +
   geom_histogram(bins = 45, fill = ml_palette[["green"]]) +
-  labs(x = "log chlorophyll", y = NULL, title = "After a log transform")
+  labs(x = "Log chlorophyll", y = NULL, title = "After a log transform")
 
 p_raw + p_log
 ```
@@ -154,7 +154,7 @@ leakage described in [Avoiding information leakage](information-leakage.qmd). An
 ordinal category is coded 1, 2, 3 only if equal steps between its levels make sense
 ([Kinds of marine data](marine-data-types.qmd)).
 
-## A recipe specifies then estimates then applies
+## A recipe learns its numbers from the training set
 
 Standardising needs a mean and a standard deviation, and filling gaps needs a median.
 Compute those from every row and the rows set aside to test the model have shaped the
