@@ -270,7 +270,7 @@ drawing the sites again.
 ```{r}
 #| label: fig-spread
 #| fig-cap: "The forest's RMSE in ten runs of each kind. Growing the forest with another seed barely moves it; holding out other sites moves it widely; five-fold cross-validation, with other seeds for the folds, moves it much less."
-#| fig-alt: !expr 'glue::glue("A strip plot with three rows of ten points on a shared horizontal axis of RMSE in animals. The top row, the forest seed, is a tight cluster about {two(range_of(by_seed))} wide near {two(mean(by_seed))}. The middle row, the split of sites, is spread from {two(min(by_split))} to {two(max(by_split))}. The bottom row, the folds of sites, is a short cluster from {two(min(by_folds))} to {two(max(by_folds))}.")'
+#| fig-alt: !expr 'glue::glue("A strip plot with three rows of ten points on a shared horizontal axis of RMSE on new sites, in individuals. The top row, the forest seed, is a tight cluster about {two(range_of(by_seed))} wide near {two(mean(by_seed))}. The middle row, the split of sites, is spread from {two(min(by_split))} to {two(max(by_split))}. The bottom row, the folds of sites, is a short cluster from {two(min(by_folds))} to {two(max(by_folds))}.")'
 #| fig-width: 7.5
 #| fig-height: 3
 list(`Forest's seed` = by_seed, `Split of sites` = by_split,
@@ -279,7 +279,7 @@ list(`Forest's seed` = by_seed, `Split of sites` = by_split,
   list_rbind(names_to = "varied") |>
   ggplot(aes(rmse, fct_rev(fct_inorder(varied)))) +
   geom_point(size = 2.6, alpha = 0.6, colour = ml_palette[["blue"]]) +
-  labs(x = "RMSE (animals)", y = NULL)
+  labs(x = "RMSE on new sites (individuals)", y = NULL)
 ```
 
 :::
