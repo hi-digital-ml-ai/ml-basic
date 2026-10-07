@@ -193,3 +193,20 @@ terms:
   - term: "Imputation"
     definition: "Filling in missing values by predicting them from the columns that were recorded, done as part of the model so that the test data play no part."
     page: chapters/02-marine-data/exploring-and-cleaning.qmd
+
+  # 2 · Marine data: Scaling and encoding
+  - term: "Standardising"
+    definition: "Subtracting a column's mean and dividing by its standard deviation, so that every column has mean 0 and spread 1 whatever its units; the usual form of scaling."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Log transform"
+    definition: "Replacing each value by its logarithm, which pulls in a long right tail and turns effects that multiply into effects that add."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Dummy column"
+    definition: "A column of 0s and 1s that marks one level of a category; a category with k levels becomes k − 1 of them, and the remaining level is the baseline."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Target encoding"
+    definition: "Replacing each level of a category by a summary of the outcome for that level, which uses the outcome and so risks leakage."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Workflow"
+    definition: "In tidymodels, a recipe and a model joined so that they are fitted together and applied to new data together; scikit-learn's Pipeline does the same job."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
