@@ -868,3 +868,32 @@ draft voice. Not yet narrated with Gemini; the script waits for the user's appro
 - The depth curve that follows position is left to the pages: the assumptions video
   already tells that story. The simulation's truth is never shown; every check is one a
   real study can make.
+
+## §9 Neural networks rebuilt (2026-10-07)
+
+Rebuilt from the revised pages (`feature/improve-neural-networks`) on the old video's
+three points: a network is weighted sums with a bend, it can fail without a warning,
+and it pays off with signal to spare and a combination nobody has named. 44 scenes,
+about 900 words, 7:48 on the draft voice. Not yet narrated with Gemini.
+
+- Gone with the old pages: the opening puzzle (a network trained on 480 stations
+  scoring worse than the average), the oracle window, the unscaled-inputs comparison,
+  the 17-weight band and the "true optimum 9 °C". The hump's peak (8.7 °C) is now set
+  against the 8–9 °C bin of station means, as on the page.
+- Examples, all through `exports.R` from five pages (single numbers in
+  `<page>-numbers.csv`): one neuron and `lm()` agreeing to nine decimal places; the
+  two-unit hump with 7 weights; 21 weights for three inputs and four units, 241 for ten
+  and twenty; all 21 hand-written slopes agreeing to ten places; the learning rates
+  (0.01 passing a straight line at step 1,122, 0.2 lowest, 2 "not a number" at step
+  147); early stopping at step 1,937, 4% worse by step 8,000; ten seeds spanning 0.055,
+  their average beating seven; the learning curves (mean 4.72, forest 4.20, network
+  4.94, cross-validation choosing one unit with penalty 1); against the expected
+  counts, network 1.54, forest 1.63, linear regression 2.12, shown as a check only; the
+  water-mass band (0.715, 0.827, 0.926, and 0.999 with 9 weights; 0.997 from 100
+  stations; the named combination 1.000). Quiz: ten identity layers fit a straight line.
+- The band panels show predicted classes, not probabilities: parsnip squeezes nnet's
+  two-class probabilities (see `curriculum.md`). Autoencoders are left to the pages.
+- **Gemini narration was refused on 2026-10-07** with "403: Your project has been denied
+  access. Please contact support." after one scene (§10 scene 1, kept in its `audio/`).
+  The §7, §8, §9 and §10 videos all wait on that being resolved in the Google Cloud
+  project.
