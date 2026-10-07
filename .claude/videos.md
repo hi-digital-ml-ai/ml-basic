@@ -454,8 +454,12 @@ Built like §8, to a rough cut on the draft voice: `_videos/09-neural-networks/`
   says validation MSE spans 0.046 across ten seeds (its frozen output: best 0.5342);
   the laptop's knit gives 0.055 (seed 9 reaches 0.5256), while every other number on
   the page, training spread included, matches. Probably floating-point differences
-  between machines amplified by one run. The video says "about 0.05", true of both;
-  re-render the page to settle which the page should say.
+  between machines amplified by one run. The video says "about 0.05", true of both.
+  **Settled on 2026-10-05:** the page was re-rendered on the laptop and now gives
+  0.055 (nine per cent), with the spread in inline R so its prose follows its own
+  output; the section overview, `when-to-use-one.qmd` and `curriculum.md` say 0.055.
+  The re-render also moved the learning-rate sweep's best at 0.5 from 0.5842 to 0.5844,
+  now inline too.
 - Not yet narrated with Gemini.
 
 ## Sixth video: §10 Interpretation (2026-09-29)

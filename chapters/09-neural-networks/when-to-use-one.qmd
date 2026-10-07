@@ -228,7 +228,7 @@ Everything below is measured somewhere in this section or in §7.
   network's *predictions*, not to its parameters.
 - Someone has to reproduce it exactly. Networks are seed-dependent at a level that matters:
   ten identical runs on
-  [page 3](training-a-network.qmd) varied by 0.046 in validation MSE.
+  [page 3](training-a-network.qmd) varied by 0.055 in validation MSE.
 
 ## Limits of this demonstration
 
