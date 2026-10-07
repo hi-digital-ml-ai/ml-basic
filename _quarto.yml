@@ -196,6 +196,8 @@ website:
             text: "From a model to a claim"
       - section: "More"
         contents:
+          - href: glossary.qmd
+            text: Glossary
           - href: chapters/index.qmd
             text: All pages
           - href: contributed/index.qmd
@@ -227,6 +229,9 @@ format:
 # Adds the "Code from this page" line to every page that has code.
 filters:
   - tools/code-downloads.lua
+
+shortcodes:
+  - tools/glossary.lua
 
 execute:
   freeze: auto

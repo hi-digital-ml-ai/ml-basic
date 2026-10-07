@@ -1,0 +1,10 @@
+---
+title: "Glossary"
+description: "Every term the course introduces, in one plain sentence, with a link to the page that explains it."
+---
+
+Each term below links to the page that first explains it, and, where a later page
+covers it in full, to that page too. Every page also opens with a collapsed box
+listing the terms it introduces.
+
+{{< glossary >}}
