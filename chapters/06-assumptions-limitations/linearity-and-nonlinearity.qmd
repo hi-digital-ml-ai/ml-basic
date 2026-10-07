@@ -62,7 +62,7 @@ chosen in advance.
 The cost is that the model holds no single curve for depth. Its prediction across
 depth depends on the values the other inputs are held at, because those can change the
 effect of depth. Reading a forest's effects is the subject of
-[Interpretation](../10-interpretation/index.qmd).
+[Partial effects](../10-interpretation/partial-effects.qmd).
 
 ## A GAM keeps one readable curve for each input
 
