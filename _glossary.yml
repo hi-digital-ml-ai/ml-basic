@@ -104,3 +104,8 @@ terms:
   - term: "Confidence interval (95%)"
     definition: "A range around an estimate that shows how precisely the data pin it down: over many repeated surveys, 95 in 100 intervals built this way would contain the true value."
     page: chapters/01-introduction/prediction-and-explanation.qmd
+
+  # 1 · Introduction: Applications in marine science
+  - term: "Emulator"
+    definition: "A fast machine-learning copy of a slow simulation, such as an ocean model, trained on the simulation's own output and valid only within the conditions it was trained on."
+    page: chapters/01-introduction/applications-in-marine-science.qmd

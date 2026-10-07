@@ -1,9 +1,11 @@
 ---
 title: "Applications in marine science"
 description: "Machine learning in marine science grouped by the task the model performs. Most applications fall into six tasks, and each task has one typical way of going wrong."
-order: 4
+order: 3
 categories: [foundations, marine-data]
 ---
+
+{{< new-terms >}}
 
 ## Six tasks cover most applications
 
@@ -17,19 +19,19 @@ to a given problem.
 ![The six tasks. Each card shows what the model does, the kind of learning it uses, and typical marine examples.](img/six-tasks.svg){fig-alt="Six cards in two rows. Naming things, classification: an image of a fish and a sound recording, each with an arrow to a named label; the model puts each image or sound into a named class, as for plankton, fish and whale calls. Mapping across space, regression or classification: a gridded map shaded from light to dark blue with a few sampled cells marked by dots and the rest predicted; used for species distributions and habitats. Filling gaps, regression: a similar grid with a patch of missing cells outlined in orange and filled in by the model; used for cloud gaps in satellite images. Forecasting, regression: a line through the past up to a line marked now, continued as a dashed line with a widening band; used for algal blooms and recruitment. Finding groups, unsupervised: points in three coloured clusters, each in a dashed circle; similar examples are grouped with no answers given, as for water masses and marine regions. Standing in for a model, regression: an ocean model taking hours per run with an arrow to an emulator taking seconds, trained on the ocean model's own output."}
 :::
 
-Each task has a typical way of going wrong, and later sections deal with each one:
+Each task has a typical way of going wrong, and later pages deal with each one:
 
-| Task | Typical way of going wrong | Sections |
+| Task | Typical way of going wrong | Where the course deals with it |
 | --- | --- | --- |
-| Naming things | Most images are empty water, so a model that always says "nothing here" scores well and is useless | [§3](../03-supervised-learning/index.qmd), [§7](../07-validation/index.qmd), [§9](../09-neural-networks/index.qmd) |
-| Mapping across space | Nearby sites are alike, so the usual checks overstate accuracy in areas never sampled | [§6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd), [§7](../07-validation/index.qmd) |
-| Filling gaps | The gaps are not random: cloud comes with particular weather | [§2](../02-marine-data/index.qmd), [§6](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
-| Forecasting | A random split lets the model learn from the future; 40 years of annual data is only 40 observations | [§6](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd), [§7](../07-validation/index.qmd) |
-| Finding groups | The methods return groups whether or not real groups exist | [§8](../08-unsupervised-learning/index.qmd) |
-| Standing in for a model | The copy is valid only within the conditions it was trained on | [§6](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
+| Naming things | Most images are empty water, so a model that always says "nothing here" scores well and is useless | [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd); [Classification performance measures](../07-validation/classification-metrics.qmd); [When a network is the right tool](../09-neural-networks/when-to-use-one.qmd) |
+| Mapping across space | Nearby sites are alike, so the usual checks overstate accuracy in areas never sampled | [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd); [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |
+| Filling gaps | The gaps are not random: cloud comes with particular weather | [Missing values and outliers](../02-marine-data/missing-values-and-outliers.qmd); [Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
+| Forecasting | A random split lets the model learn from the future; 40 years of annual data is only 40 observations | [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd); [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |
+| Finding groups | The methods return groups whether or not real groups exist | [Checking a pattern before reporting it](../08-unsupervised-learning/interpreting-patterns.qmd) |
+| Standing in for a model | The fast copy, called an **emulator**, is valid only within the conditions it was trained on | [Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
 
 A question about cause, such as whether warming reduces a species, is left out of
-the six on purpose. As [the previous page](prediction-and-explanation.qmd) showed,
+the six on purpose. As [Prediction and explanation](prediction-and-explanation.qmd) showed,
 a model that predicts well may still answer it wrongly, and the answer often needs a
 statistical model and a good study design instead.
 
@@ -50,7 +52,9 @@ their gaps and applies them everywhere.
 
 For the same reason, more labelled examples that resemble the target data usually
 help more than a cleverer algorithm. Published accuracy is also often optimistic,
-mostly because of the checking problems covered in [section 7](../07-validation/index.qmd).
+mostly because nearby or repeated samples end up in both the training set and the
+test set; see
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd).
 
 ## Key points
 
