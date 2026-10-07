@@ -3,81 +3,85 @@
 #
 # Each table is built with with(env, ...), which looks names up in the page's
 # environment, and written outside it: inside, `dir` would find base R's dir().
+# Single numbers the narration speaks go into a "<page>-numbers" table of name and
+# value, so a scene can show the page's own value.
 
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
+numbers <- function(...) tibble::tibble(name = names(c(...)), value = unname(c(...)))
 
 exports <- list(
-  # One neuron against lm(), the hidden-unit sweep, the fitted humps, and the two
-  # S-curves the two-unit network adds up. nnet's hidden units are logistic.
+  # One neuron against lm(), the fitted humps over the binned means, the two bends the
+  # two-unit network adds up, and the weight counts. nnet's hidden units are logistic.
   "what-a-network-is.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(term = names(coef(linear)), lm = unname(coef(linear)),
                                    neuron = as.numeric(coef(one_neuron)))), dir, "one-neuron")
-    write(with(env, sweep), dir, "units-sweep")
-    write(with(env, dplyr::select(curves, temperature_c, y, units = `hidden units`)), dir, "hump")
+    write(with(env, dplyr::transmute(curves, temperature_c, y, units = as.integer(as.character(units)))),
+          dir, "hump")
     write(with(env, dplyr::select(binned, temperature_c, y, n)), dir, "hump-binned")
-    write(with(env, {
-      w <- coef(fit_units(2))
-      g <- grid$temp
-      tibble::tibble(temperature_c = g * temp_sd + temp_mean, bias = w[["b->o"]],
-                     unit1 = w[["h1->o"]] * plogis(w[["b->h1"]] + w[["i1->h1"]] * g),
-                     unit2 = w[["h2->o"]] * plogis(w[["b->h2"]] + w[["i1->h2"]] * g))
-    }), dir, "hump-parts")
+    write(with(env, dplyr::select(parts, temperature_c, unit1 = `Unit 1`, unit2 = `Unit 2`,
+                                  prediction = Prediction)), dir, "hump-parts")
+    write(with(env, numbers(places = floor(-log10(largest_gap)), peak_c = peak_c,
+                            top_low = top_low, two_unit_weights = length(coef(fit_units(2))),
+                            small_net = n_weights(3, 4), small_linear = 3 + 1,
+                            large_net = n_weights(10, 20))),
+          dir, "what-a-network-is-numbers")
   },
 
-  # The largest disagreement between backpropagation and finite differences.
+  # The largest difference between backpropagation and nudging, per group of weights.
   "forward-and-backward.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(
-      parameter = names(par),
-      disagreement = purrr::map_dbl(names(par), \(nm)
-        max(abs(as.numeric(gradients[[nm]]) - as.numeric(numeric[[nm]])))))), dir, "gradient-check")
+    write(with(env, tibble::tibble(group = names(par), difference = check$`Largest difference`)),
+          dir, "gradient-check")
+    write(with(env, numbers(n_weights = n_weights, places = check_places)),
+          dir, "forward-and-backward-numbers")
   },
 
-  # The learning-rate sweep, the unscaled run, the long run and the ten seeds.
+  # The learning-rate sweep, the long run and the ten seeds.
   "training-a-network.qmd" = function(env, dir) {
     write(with(env, sweeps), dir, "rates")
-    write(with(env, tibble::tibble(
-      inputs = c("standardised", "measured units", "linear model"),
-      mse = c(dplyr::last(standardised$training), dplyr::last(measured$training), linear_mse))),
-      dir, "scaling")
     write(with(env, tibble::tibble(step = seq_along(big$training), training = big$training,
-                                   validation = big$validation, best = step == best_step)),
-          dir, "early-stopping")
-    write(with(env, seed_runs), dir, "seeds")
+                                   validation = big$validation)), dir, "early-stopping")
+    write(with(env, tibble::tibble(seed = seq_along(seed_mse), validation = seed_mse)), dir, "seeds")
+    write(with(env, numbers(
+      linear_mse = linear_mse, n_train = nrow(X_train), n_valid = nrow(X_valid),
+      passes_001 = at_rate("Passes linear regression at step", "0.01"),
+      final_02 = at_rate("Final training MSE", "0.2"),
+      over_1000 = over_1000, nan_at = nan_at,
+      best_step = best_step, last_step = last_step, worse_pct = worse_pct,
+      seed_spread = max(seed_mse) - min(seed_mse), averaged_mse = averaged_mse,
+      n_beaten = n_beaten)),
+      dir, "training-a-network-numbers")
   },
 
-  # The baseline and the oracle, the learning curves, the tuned configuration and the
-  # noise-free diagnostic.
+  # The learning curves on the counts and on the expected counts, the baseline and the
+  # tuned network.
   "how-much-data.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(baseline = baseline, oracle = oracle)), dir, "references")
-    write(with(env, dplyr::summarise(curves, lower = quantile(rmse, 0.1), upper = quantile(rmse, 0.9),
-                                     rmse = mean(rmse), sd = sd(rmse), .by = c(n, model))),
+    write(with(env, dplyr::summarise(curves, lower = min(rmse), upper = max(rmse),
+                                     rmse = mean(rmse), .by = c(n, model))),
           dir, "learning-curves")
-    write(with(env, dplyr::select(show_best(searched, metric = "rmse", n = 1),
-                                  hidden_units, penalty, mean)), dir, "tuned")
-    write(with(env, dplyr::summarise(noise_free, rmse = mean(rmse), .by = c(n, model))),
-          dir, "noise-free")
+    write(with(env, dplyr::summarise(checked, rmse = mean(rmse), .by = c(n, model))),
+          dir, "expected-curves")
+    write(with(env, numbers(baseline = baseline, n_train = full,
+                            hidden_units = best$hidden_units, penalty = best$penalty,
+                            tuned_rmse = tuned_rmse, gain = gain, leads = leads)),
+          dir, "how-much-data-numbers")
   },
 
-  # The water-mass band: training stations, scores, each model's probability over the
-  # plane, the network's hidden units, and the sample sizes. The `sizes` chunk prints
-  # its table without keeping it, so it is re-run here with the page's own seeds.
+  # The water-mass band: training stations, scores, each model's predicted class over
+  # the plane (a coarser grid than the page's figure), the network's hidden units, the
+  # three sample sizes and the named combination.
   "when-to-use-one.qmd" = function(env, dir) {
     write(with(env, train), dir, "water-train")
-    write(with(env, purrr::imap_dfr(fits, \(fitted, nm) {
-      scored <- augment(fitted, test)
-      tibble::tibble(model = nm, auc = roc_auc_vec(test$water_mass, scored$.pred_core),
-                     weights = if (nm == "neural network") length(coef(extract_fit_engine(fitted))) else NA)
-    })), dir, "water-auc")
-    write(with(env, purrr::imap_dfr(fits, \(fitted, nm)
-      dplyr::mutate(plane, model = nm, p_core = predict(fitted, plane, type = "prob")$.pred_core))),
-      dir, "water-plane")
+    write(with(env, dplyr::transmute(scores, model = Model, auc = `Test ROC AUC`)), dir, "water-auc")
     write(with(env, {
-      p <- predict(fits$`neural network`, plane, type = "prob")$.pred_core
-      tibble::tibble(low = min(p), high = max(p))
-    }), dir, "water-range")
+      grid <- tidyr::expand_grid(
+        temperature_c = seq(2, 16, length.out = 120),
+        salinity_psu = seq(min(train$salinity_psu), max(train$salinity_psu), length.out = 120))
+      purrr::imap_dfr(fits, \(fitted, nm)
+        dplyr::mutate(grid, model = nm, core = predict(fitted, grid)$.pred_class == "core"))
+    }), dir, "water-plane")
     write(with(env, {
-      net <- extract_fit_engine(fits$`neural network`)
-      steps <- extract_recipe(fits$`neural network`)$steps[[1]]
+      net <- extract_fit_engine(fits$`Neural network`)
+      steps <- extract_recipe(fits$`Neural network`)$steps[[1]]
       w <- coef(net)
       units <- seq_len(net$n[2])
       tibble::tibble(unit = units,
@@ -86,14 +90,9 @@ exports <- list(
                      t_mean = steps$means[["temperature_c"]], t_sd = steps$sds[["temperature_c"]],
                      s_mean = steps$means[["salinity_psu"]], s_sd = steps$sds[["salinity_psu"]])
     }), dir, "water-units")
-    write(with(env, purrr::map_dfr(c(100, 400, 1600), \(n) {
-      training <- make_water_mass(n, seed = 10 + n)
-      purrr::imap_dfr(specs, \(spec, nm) {
-        set.seed(5)
-        fitted <- fit(workflow() |> add_recipe(water_recipe) |> add_model(spec), training)
-        tibble::tibble(n = n, model = nm,
-                       auc = roc_auc_vec(test$water_mass, augment(fitted, test)$.pred_core))
-      })
-    })), dir, "water-sizes")
+    write(with(env, dplyr::rename(by_size, n = `Training stations`)), dir, "water-sizes")
+    write(with(env, numbers(n_weights = n_weights, n_test = nrow(test), named_auc = named_auc,
+                            n_coefficients = nrow(tidy(named_fit)))),
+          dir, "when-to-use-one-numbers")
   }
 )
