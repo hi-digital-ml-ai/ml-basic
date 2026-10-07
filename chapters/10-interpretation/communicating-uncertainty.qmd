@@ -16,7 +16,7 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## A prediction is reported with an interval
+## Confidence and prediction intervals answer different questions
 
 A prediction is one number, and an **interval** says how far from it the truth may lie.
 Two intervals come from the same model and look alike on a plot, but they answer
@@ -399,7 +399,7 @@ end is below zero for `r pct(mean(conformal$low < 0))` of the stations, where it
 read as zero. The promise is for the stations as a whole, not for each kind of
 station.
 
-### The promise holds only at stations like the calibration sites
+### Conformal intervals hold only at stations like the calibration sites
 
 The sites a model is calibrated on are not always like the stations where it is used.
 Here the forest is fitted and calibrated again on the three quarters of stations with

@@ -36,7 +36,7 @@ readable model's parts in plain words.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Scoring both on the same folds measures what reading costs
+## Scoring models on the same folds measures what reading costs
 
 Whether a readable model costs accuracy is a question for the data, and cross-validation
 answers it. Every model is scored on the same folds, built from whole sites as in

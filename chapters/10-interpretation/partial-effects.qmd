@@ -144,7 +144,7 @@ forest = forest_on(numeric)
 
 :::
 
-### Averaged over every station, the curves tell the story of the one slice
+### Partial dependence misses the depth peak as the slice did
 
 Each input is set in turn to 40 values across the middle 90% of its range, and every
 training station is predicted at each. The partial dependence is the average at each

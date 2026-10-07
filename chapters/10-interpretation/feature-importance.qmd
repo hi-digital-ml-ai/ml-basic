@@ -29,7 +29,7 @@ measurement to find the scores that hold.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Shuffling an input shows how much the model relies on it
+## Permutation importance shuffles an input and measures the rise in error
 
 **Permutation importance** works on any fitted model. Predict the test data and
 measure the error, here the
@@ -47,7 +47,7 @@ Shuffling is random, so it is repeated several times and the rises are averaged.
 is done on test data, so the score is about predicting new sites. A category such as
 substrate is shuffled as one column, so it gets one score.
 
-## A forest also scores inputs by its own splits
+## Impurity importance scores inputs by a forest's own splits
 
 A random forest has a quicker measure built in. Each split in a tree is chosen to lower
 the squared errors on the training data, as in
@@ -155,7 +155,7 @@ def new_forest():
 
 :::
 
-### The forest's own measure ranks random numbers above the seabed
+### Impurity importance ranks random numbers above the seabed
 
 The forest is fitted to the training sites, and its impurity importance is divided by
 the largest, so the top input scores 1. The recipe turns substrate and season into one

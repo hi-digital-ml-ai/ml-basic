@@ -521,7 +521,7 @@ Checks on the records come from outside the model:
 by group, such as vessel or gear, and so finds a gear that differs from the rest. A
 bias shared by every haul shows up only against one of the checks above.
 
-## A claim says what was found, how sure, and how far it reaches
+## A claim reports a finding with its certainty and reach
 
 The two paragraphs on this page follow from the whole course. The score is given beside
 a baseline, on sites the model never saw. The effects are given as shapes and
