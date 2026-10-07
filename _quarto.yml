@@ -144,7 +144,7 @@ website:
           - href: chapters/07-validation/regression-metrics.qmd
             text: "Regression performance measures"
           - href: chapters/07-validation/classification-metrics.qmd
-            text: "Classification measures and the confusion matrix"
+            text: "Classification performance measures"
           - href: chapters/07-validation/uncertainty-and-stability.qmd
             text: "Uncertainty and stability"
           - href: chapters/07-validation/choosing-a-metric.qmd

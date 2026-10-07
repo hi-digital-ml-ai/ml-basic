@@ -347,9 +347,10 @@ to suit those same sites, so its validation score flatters it; the test sites we
 kept apart for exactly this reason. The rest is chance: `r n_val_sites` validation
 sites and `r n_test_sites` test sites are small samples, and close models can swap
 places on the next set. The two count models score almost the same on the test sites,
-far too close to rank with one split. The Python tab, with its own
-split, even puts polynomial regression and the forest ahead of the count models. [Section 7](../07-validation/index.qmd) scores models on
-many splits to see how far such differences can be trusted.
+far too close to rank with one split. The Python tab, with its own split, even puts
+polynomial regression and the forest ahead of the count models.
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) shows how far
+such differences can be trusted.
 
 What this survey does show is the pattern in the diagram: about 600 noisy stations are
 too few for the tree-based models to learn a shape that a curve with a few terms

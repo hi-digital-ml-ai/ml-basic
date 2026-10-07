@@ -472,7 +472,7 @@ the other way round: the tree scored `r round(min(depth_scores), 2)` and the for
 `r round(forest_val, 2)`. A single tree fitted to one set of sites can happen to suit
 another small set, and the next set of sites shows how fragile that was. This is one
 more reason to judge models on several splits, as
-[Section 7](../07-validation/index.qmd) does.
+[Cross-validation](../07-validation/cross-validation.qmd) does.
 
 Neither ensemble matches Poisson regression on this survey. About 600 noisy stations do
 not hold enough information for many trees to learn a shape that a smooth curve with

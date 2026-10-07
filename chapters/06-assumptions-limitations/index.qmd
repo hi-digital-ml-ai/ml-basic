@@ -56,7 +56,8 @@ compares it with spatial blocks, which
 [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
 develops. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
 [Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves
-whole-curve scores to [Classification metrics](../07-validation/classification-metrics.qmd).
+whole-curve scores to
+[Classification performance measures](../07-validation/classification-metrics.qmd).
 
 ## Pages in this section
 

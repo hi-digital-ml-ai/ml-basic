@@ -182,8 +182,8 @@ $$\text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}$$
 Squaring weighs a miss of 10 a hundred times a miss of 1, so the RMSE listens hardest
 to the largest misses. [How algorithms learn](../04-how-algorithms-learn/loss-functions.qmd)
 shows what that does to a fit, and
-[Validation](../07-validation/regression-metrics.qmd) compares the RMSE with other
-measures.
+[Regression performance measures](../07-validation/regression-metrics.qmd) compares the
+RMSE with other measures.
 :::
 
 Neither model is simply better. The tree found the shape but gives no single number for "the

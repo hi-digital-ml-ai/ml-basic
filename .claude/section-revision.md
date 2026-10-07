@@ -74,12 +74,23 @@ Checking a page: `quarto render <page>`, then a headless Chrome screenshot of
 `_site/...` (a static server on port 4321 from `_site/` works). The user reviews
 screenshots, so look at the rendered page yourself first.
 
-Rendering: with `freeze: auto`, render a changed page **twice** (the first run executes,
-the second writes the cache that matches the source), then check that no
-`chapters/*/*.rmarkdown` intermediate is left behind. Any edit to a `.qmd`, even to a
-heading, changes its `_freeze` file, which is committed with the page. Heavy pages take
-minutes (section 5's hyperparameter page refits 40 selections), so render in the
-background and check for "Output created" on each.
+Rendering: render a changed page **once**, check for "Output created", and check that
+the `"hash"` at the top of its `_freeze/.../execute-results/html.json` equals
+`md5sum` of the `.qmd`. Rendering a single page always runs every chunk, whatever
+`_freeze/` holds, so a second render only repeats the work. Check that no
+`chapters/*/*.rmarkdown` intermediate is left behind (stopping a render leaves one).
+Any edit to a `.qmd`, even to a heading, changes its `_freeze` file, which is committed
+with the page. Heavy pages take minutes, so render in the background.
+
+Keep each page quick to run: a reader who copies the worked example should have its
+results in about a minute per tab. Many repeats over many schemes belong in a
+prototype, not on the page; the page shows the few that make its point. Section 7's
+*Spatial and temporal cross-validation* first compared six fold schemes over 20 runs
+(600 forests per tab, half an hour per render) and was cut to three schemes over 10
+runs of 100-tree forests. If the Python tab is much slower than R, check that it fits
+the same model: a `RandomForestRegressor` needs `max_features="sqrt"` and
+`min_samples_leaf=5` to match ranger, as on *Forests and boosting*, and `n_jobs=-1`
+costs more than it saves on the survey's 800 stations.
 
 Committing: one commit per page, each with its own `_freeze/` and `img/` files. A
 `git rm` of an old figure stays staged, so the first commit takes every staged deletion
@@ -425,7 +436,14 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 4 How algorithms learn | `feature/improve-how-algorithms-learn` | Done; merged into `develop` 2026-10-01 |
 | 5 Generalisation | `feature/improve-generalisation` | Done; merged into `develop` 2026-10-02 (video narrated with Gemini, 34 requests, about $0.10) |
 | 6 Assumptions and limitations | `feature/improve-assumptions-limitations` | Done; merged into `develop` 2026-10-03 (video narrated with Gemini, 29 requests, about $0.10) |
-| 7–10 | | Not started |
+| 7 Validation | `feature/improve-validation` | Pages, overview, consistency and headings passes done; video rebuilt to a rough cut on the draft voice |
+| 8–10 | | Not started |
+
+Loose ends from section 7, for later sections' revisions: §7's *Uncertainty and
+stability* bootstraps sites over the pooled out-of-fold predictions without refitting.
+§9's `training-a-network.qmd` (about line 270) says that page means "fit it several
+times and report the spread", and §8's `interpreting-patterns.qmd` (about line 91)
+calls drawing 800 stations "the bootstrap from §7". Reword both to match.
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".

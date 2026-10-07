@@ -1,6 +1,6 @@
 ---
 title: "Choosing measures that match the objective"
-description: "Work backwards from the sentence you intend to write. Four models, three objectives, and a threshold chosen from costs rather than from a default."
+description: "The use the predictions are put to decides the measure. A shortlist of stations to revisit is scored on the animals it finds, which depend only on the order of the predictions, and a call at each station is scored on what its mistakes cost, which sets the threshold."
 order: 6
 categories: [validation, metrics]
 ---
@@ -10,48 +10,97 @@ categories: [validation, metrics]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
-library(MASS, include.only = "glm.nb")
+library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The objective hidden in a default
+## The measure is chosen before any model is fitted
 
-Every page in this section has compared models by a number. None of them has asked where the
-number came from, and the honest answer is usually "it was the default".
-
-Defaults encode an objective. RMSE assumes you care about squared error at every station
-equally. Accuracy assumes the two kinds of mistake cost the same. A 0.5 threshold assumes it
-even harder. If your actual objective is a stock total, or a shortlist of fifty stations to
-dive, those defaults will happily rank the models in the wrong order, and this page shows them
-doing it.
+[Regression performance measures](regression-metrics.qmd) and
+[Classification performance measures](classification-metrics.qmd) showed that measures can
+rank the same models in different orders. So the measure should be chosen before any model is
+fitted, from what the predictions will be used for. A map of abundance, a stock total, a list
+of stations to revisit and a decision at each station ask different things of a model, and a
+model that is best at one can be poor at another. This page sets out which measure suits
+which use, and adds two the earlier pages did not cover: the catch found by a shortlist, and
+the cost of the calls at a threshold chosen from what each mistake costs.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Each use has its own measure
 
-Write the sentence from the discussion section first, then choose the measure that would be
-false if the sentence were false.
-
-| The sentence you want to write | The measure that tests it |
+| The predictions are used for | Score them with |
 | --- | --- |
-| "We mapped predicted abundance across the shelf" | per-station error: RMSE or MAE |
-| "Total abundance in the survey area is about *N*" | bias in the sum, not per-station error |
-| "These fifty stations are where the species is densest" | what a ranked shortlist actually finds |
-| "Flag a station for follow-up if …" | expected cost at the chosen threshold |
-| "Abundance peaks at 80 m" | none of the above; see [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd) on confounding |
+| A map of abundance | the RMSE or the Poisson deviance, aimed at the average count |
+| A total, such as a stock estimate | the predicted total over the observed one, beside a per-station measure |
+| A shortlist of the most promising stations | the animals the shortlist finds, against a perfect and a random shortlist |
+| A map of the chance of presence | log loss, with a calibration plot |
+| Comparing models before a threshold is chosen | ROC AUC |
+| A call at each station | the expected cost of the calls, at a threshold chosen from the costs |
 
-The last row is a reminder rather than a recipe. No predictive measure tests whether a
-relationship is causal, and a model can be excellent at the first four while being wrong about
-the fifth.
+The two earlier pages covered the map, the total, the map of chances and the comparison
+before a threshold is chosen; this page adds the shortlist and the call at each station. A
+total alone is never enough: predicting the average gets the total right and says nothing about any
+station. None of these measures says whether an input causes what it predicts, which
+[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
+showed a good predictor need not do.
 
-## Worked example: four models, three objectives
+## A shortlist is scored on what it finds
 
-Same five models as the [regression measures page](regression-metrics.qmd), same folds, same
-pooled out-of-fold predictions.
+Suppose a ship has time to revisit a fixed number of stations, its **budget**, and goes to
+the ones a model predicts the most animals at. The measure is the number of animals caught
+at those stations. Two benchmarks make it readable: a **perfect shortlist**, the stations
+that really held the most, and a random one, which finds the budget times the average catch.
+
+The shortlist depends only on the **order** of the predictions. Halving every prediction
+changes the RMSE and leaves the shortlist exactly as it was, so a model whose predictions
+run low, which the RMSE and R² punish, loses nothing here as long as it puts the stations in
+the right order. This is the same property as ROC AUC for presence, applied to a fixed number
+of stations.
+
+## The costs of the two mistakes set the threshold
+
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#the-costs-of-the-two-mistakes-set-the-threshold)
+said that the threshold should come from what each mistake costs. This can be made exact.
+Call a **false alarm** a station called present where the species is absent, and a **miss** a
+station called absent where it is present. If a false alarm costs $k$ times as much as a
+miss, the **expected cost** of the calls is
+
+$$
+\text{expected cost} = \frac{\text{misses} + k \times \text{false alarms}}{\text{stations}},
+$$
+
+in units of one miss. A model that gives a station probability $p$ of presence expects a
+cost of $p$ from calling it absent and $k(1 - p)$ from calling it present. Calling it
+present is cheaper when $p$ is above $k/(1+k)$, so that is the threshold. When both mistakes
+cost the same, $k = 1$ and the threshold is the familiar 0.5; when a false alarm costs three
+times a miss, it is 0.75.
+
+::: {.diagram}
+![The threshold from the costs. Left, a false alarm costs three times a miss, and two stations are weighed: at a probability of presence of 0.6, calling it present expects a cost of 1.2 and calling it absent 0.6, so it is called absent; at 0.9, calling it present expects 0.3 and absent 0.9, so it is called present. Right, the threshold k over 1 plus k on the probability scale: 0.5 when the two mistakes cost the same, 0.75 when a false alarm costs three times a miss, 0.83 when it costs five times.](img/cost-threshold.svg){fig-alt="Two cards. Left, a false alarm costs 3 misses: for a station with probability 0.6, a bar for calling it present shows an expected cost of 3 times 0.4, which is 1.2, and a bar for calling it absent shows 0.6, so the cheaper call is absent. For a station with probability 0.9, calling it present costs 3 times 0.1, which is 0.3, and calling it absent costs 0.9, so the cheaper call is present. Right, the threshold is k over 1 plus k: an axis of probability of presence from 0 to 1, with three marks, 0.5 when k is 1, 0.75 when k is 3 and 0.83 when k is 5. Stations above the mark are called present. A note says the rule holds only when the probabilities are calibrated."}
+:::
+
+The rule needs **calibrated** probabilities, as
+[Classification performance measures](classification-metrics.qmd#log-loss-rewards-probabilities-that-are-spread-out-and-calibrated)
+checked with a calibration plot. If a model's 0.8 does not mean 8 in 10, the cheapest
+threshold has to be found by working out the expected cost at every threshold instead.
+
+## Worked example
+
+The shortlist is drawn from three of the models on
+[Regression performance measures](regression-metrics.qmd): **Poisson regression**, the
+**random forest**, and the **random forest on log counts**, whose predictions add up to well
+below the catch. The calls come from **logistic regression**, from
+[Classification performance measures](classification-metrics.qmd), whose probabilities were
+calibrated there. All four models are cross-validated on the same ten folds of sites as on
+those pages, so their out-of-fold predictions are the same.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -59,219 +108,209 @@ pooled out-of-fold predictions.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean()
-
-d <- survey |>
-  dplyr::select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-                substrate, season, longitude, latitude) |>
-  drop_na()
-
-formula_env <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
-  log1p(chlorophyll_mg_m3) + salinity_psu + substrate + season + longitude + latitude
-
-fitters <- list(
-  `mean only`          = \(tr, te) rep(mean(tr$abundance), nrow(te)),
-  `Poisson GLM`        = \(tr, te) predict(glm(formula_env, tr, family = poisson),
-                                           te, type = "response"),
-  `negative binomial`  = \(tr, te) predict(glm.nb(formula_env, tr), te, type = "response"),
-  `log-transformed lm` = \(tr, te) expm1(predict(lm(update(formula_env, log1p(abundance) ~ .),
-                                                    tr), te)),
-  `random forest`      = \(tr, te) predict(ranger(abundance ~ ., tr, num.trees = 500,
-                                                  seed = 1), te)$predictions
-)
+survey <- load_coastal_survey_clean() |>
+  mutate(log_abundance = log1p(abundance))
 
 set.seed(61)
-folds <- vfold_cv(d, v = 10)
+folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
-out_of_fold <- imap_dfr(fitters, \(f, name) {
-  map_dfr(folds$splits, \(s) {
-    tr <- analysis(s); te <- assessment(s)
-    tibble(model = name, obs = te$abundance, pred = f(tr, te))
-  })
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season", "longitude", "latitude")
+
+with_inputs <- function(outcome, model) {
+  recipe(reformulate(inputs, outcome), data = survey) |>
+    step_impute_median(all_numeric_predictors()) |>
+    step_dummy(all_nominal_predictors()) |>
+    workflow(model)
+}
+
+forest <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 1) |>
+  set_mode("regression")
+
+log_forest <- "Random forest on log counts"
+
+models <- list(
+  "Poisson regression"          = with_inputs("abundance", poisson_reg()),
+  "Random forest"               = with_inputs("abundance", forest),
+  "Random forest on log counts" = with_inputs("log_abundance", forest)
+)
+
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold <- map(models, \(model) {
+  fit_resamples(model, folds, metrics = metric_set(rmse),
+                control = control_resamples(save_pred = TRUE)) |>
+    collect_predictions() |>
+    arrange(.row) |>
+    pull(.pred)
 })
+# back from log counts to animals
+out_of_fold[[log_forest]] <- expm1(out_of_fold[[log_forest]])
+
+caught <- survey$abundance
+
+tibble(stations = nrow(survey),
+       `animals caught` = sum(caught),
+       `average catch` = round(mean(caught), 2))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import KFold
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression, PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
+caught = survey["abundance"].to_numpy()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-d = survey[columns].dropna().reset_index(drop=True)
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=61)
 
-# patsy has no poly(), so the squared terms are written out. C() is factor().
-formula_env = ("abundance ~ depth_m + I(depth_m**2)"
-               " + temperature_c + I(temperature_c**2)"
-               " + np.log1p(chlorophyll_mg_m3) + salinity_psu"
-               " + C(substrate) + C(season) + longitude + latitude")
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+          "substrate", "season", "longitude", "latitude"]
+categorical = ["substrate", "season"]
+numeric = [c for c in inputs if c not in categorical]
 
-forest_columns = pd.get_dummies(d.drop(columns="abundance"), drop_first=True)
+def with_inputs(model):
+    recipe = ColumnTransformer([
+        # scaling leaves an unpenalised fit unchanged and helps the solver
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]), numeric),
+        ("nominal", OneHotEncoder(drop="first", sparse_output=False), categorical),
+    ])
+    return Pipeline([("recipe", recipe), ("model", model)])
 
-def forest_predict(tr, te):
-    model = RandomForestRegressor(n_estimators=500, random_state=1).fit(
-        forest_columns.loc[tr.index], tr["abundance"])
-    return model.predict(forest_columns.loc[te.index])
+# max_features="sqrt" draws a few inputs at each question, as ranger does.
+forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                               min_samples_leaf=5, random_state=1)
 
-fitters = {
-    "mean only": lambda tr, te: np.repeat(tr["abundance"].mean(), len(te)),
-    "Poisson GLM": lambda tr, te: smf.glm(
-        formula_env, tr, family=sm.families.Poisson()).fit().predict(te),
-    # negativebinomial() estimates the dispersion with the coefficients, as
-    # MASS::glm.nb() does; statsmodels' GLM family wants it fixed in advance.
-    "negative binomial": lambda tr, te: smf.negativebinomial(
-        formula_env, tr).fit(method="bfgs", maxiter=2000, disp=0).predict(te),
-    "log-transformed lm": lambda tr, te: np.expm1(
-        smf.ols(formula_env.replace("abundance ~", "np.log1p(abundance) ~"), tr)
-        .fit().predict(te)),
-    "random forest": forest_predict,
+models = {
+    "Poisson regression": PoissonRegressor(alpha=0, max_iter=1000),
+    "Random forest": forest,
+    # fitted to log counts, each prediction turned back into animals
+    "Random forest on log counts": TransformedTargetRegressor(
+        forest, func=np.log1p, inverse_func=np.expm1),
 }
 
-import statsmodels.api as sm
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold = {name: cross_val_predict(with_inputs(model), survey[inputs], caught,
+                                       cv=folds, groups=survey["site_id"])
+               for name, model in models.items()}
 
-folds = KFold(n_splits=10, shuffle=True, random_state=61)
-
-out_of_fold = pd.concat([
-    pd.DataFrame({"model": name, "fold": i,
-                  "obs": d.iloc[held]["abundance"].to_numpy(),
-                  "pred": np.asarray(fit(d.iloc[rows], d.iloc[held]))})
-    for name, fit in fitters.items()
-    for i, (rows, held) in enumerate(folds.split(d), start=1)
-], ignore_index=True)
-
-len(out_of_fold)
+pd.DataFrame({"stations": [len(survey)], "animals caught": [caught.sum()],
+              "average catch": [round(caught.mean(), 2)]})
 ```
 
 :::
 
-The third objective needs a definition. Suppose the ship can revisit fifty stations. We send it
-to the fifty the model ranks highest, and count how many individuals are actually there.
+```{r}
+#| label: helpers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+f3 <- function(x) sprintf("%.3f", x)
+pct <- function(x) scales::percent(x, accuracy = 1)
+```
+
+### Predictions that run low lose nothing on a shortlist
+
+The ship has time for 100 of the `r nrow(survey)` stations. The table sets each model's
+shortlist beside its RMSE and its predicted total.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: objectives
-budget <- 50
-observed <- filter(out_of_fold, model == "mean only")$obs
-perfect  <- sum(sort(observed, decreasing = TRUE)[seq_len(budget)])
+#| label: shortlists
+budget <- 100
 
-objectives <- out_of_fold |>
-  summarise(
-    `mapping: RMSE`            = rmse_vec(obs, pred),
-    `stock total: pred / obs`  = sum(pred) / sum(obs),
-    `targeting: caught in 50`  = sum(obs[order(pred, decreasing = TRUE)][seq_len(budget)]),
-    .by = model) |>
-  mutate(`share of a perfect shortlist` = `targeting: caught in 50` / perfect)
+# the animals caught at the stations a set of predictions ranks highest
+found_by <- function(predicted) {
+  sum(caught[order(predicted, decreasing = TRUE)][seq_len(budget)])
+}
 
-objectives |> mutate(across(where(is.double), \(x) round(x, 3)))
+perfect <- sum(sort(caught, decreasing = TRUE)[seq_len(budget)])
+at_random <- budget * mean(caught)
+
+shortlists <- tibble(
+  model = names(out_of_fold),
+  RMSE = map_dbl(out_of_fold, \(predicted) rmse_vec(caught, predicted)),
+  `predicted / caught` = map_dbl(out_of_fold,
+                                 \(predicted) sum(predicted) / sum(caught)),
+  `animals found` = map_dbl(out_of_fold, found_by),
+  `share of a perfect shortlist` = `animals found` / perfect
+)
+
+shortlists |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-from sklearn.metrics import root_mean_squared_error
+```{python}
+budget = 100
 
-budget = 50
-observed = out_of_fold.loc[out_of_fold["model"] == "mean only", "obs"].to_numpy()
-perfect = np.sort(observed)[::-1][:budget].sum()
+# the animals caught at the stations a set of predictions ranks highest
+def found_by(predicted):
+    return caught[np.argsort(-predicted, kind="stable")][:budget].sum()
 
-def objective(group):
-    shortlist = group.sort_values("pred", ascending=False).head(budget)
-    return pd.Series({
-        "mapping: RMSE": root_mean_squared_error(group["obs"], group["pred"]),
-        "stock total: pred / obs": group["pred"].sum() / group["obs"].sum(),
-        "targeting: caught in 50": shortlist["obs"].sum(),
-    })
+perfect = np.sort(caught)[::-1][:budget].sum()
+at_random = budget * caught.mean()
 
-objectives = out_of_fold.groupby("model", sort=False).apply(
-    objective, include_groups=False).reset_index()
-objectives["share of a perfect shortlist"] = (
-    objectives["targeting: caught in 50"] / perfect)
+shortlists = pd.DataFrame([
+    {"model": name,
+     "RMSE": root_mean_squared_error(caught, predicted),
+     "predicted / caught": predicted.sum() / caught.sum(),
+     "animals found": found_by(predicted),
+     "share of a perfect shortlist": found_by(predicted) / perfect}
+    for name, predicted in out_of_fold.items()])
 
-objectives.round(3)
+shortlists.round(2)
 ```
 
 :::
-
-::: {.panel-tabset group="language"}
-
-## R
 
 ```{r}
-#| label: benchmarks
-c(`individuals in the whole survey`   = sum(observed),
-  `a perfect shortlist of 50 finds`   = perfect,
-  `50 stations chosen at random find` = budget * mean(observed)) |> round(0)
+#| label: shortlist-numbers
+#| include: false
+list_of <- function(name, measure) shortlists[[measure]][shortlists$model == name]
+found_ratio <- mean(shortlists[["animals found"]]) / at_random
 ```
 
-## Python
+A perfect shortlist of `r budget` stations would find `r perfect` animals, and
+`r budget` stations chosen at random about `r round(at_random)`. The forest on log counts
+has the highest RMSE of the three, `r f2(list_of(log_forest, "RMSE"))`, and predicts only
+`r pct(list_of(log_forest, "predicted / caught"))` of the animals caught. Its shortlist
+finds `r list_of(log_forest, "animals found")` animals, against
+`r list_of("Random forest", "animals found")` for the same forest fitted to the counts and
+`r list_of("Poisson regression", "animals found")` for Poisson regression. Its predictions
+run low, but in much the same order, and the order is all a shortlist uses.
 
-```python
-pd.Series({
-    "individuals in the whole survey": observed.sum(),
-    "a perfect shortlist of 50 finds": perfect,
-    "50 stations chosen at random find": budget * observed.mean(),
-}).round(0)
-```
+The gaps between the three are small. The Python tab, with its own folds and forests, puts
+them in another order, and
+[Uncertainty and stability](uncertainty-and-stability.qmd) showed that gaps this size need a
+paired comparison before they count as a ranking. The result shared by all three is plainer:
+each shortlist finds about `r pct(mean(shortlists[["share of a perfect shortlist"]]))` of
+what a perfect one would, and `r sprintf("%.1f", found_ratio)` times what a random one
+finds. A sentence such as "revisiting the `r budget` stations this model ranks highest
+should find about `r sprintf("%.1f", found_ratio)` times as many animals as `r budget`
+stations chosen at random" tells a survey planner more than an RMSE does.
 
-:::
+### The cheapest threshold follows the cost of a false alarm
 
-## Reading down each column
-
-Three objectives, and the table reads differently down each column.
-
-**The mean-only model is perfect at estimating the total.** Its predicted total is exactly the
-observed total, ratio 1.000, because that is what a mean is. It has no skill whatsoever: it
-gives the same answer at every station, has the worst RMSE in the table, and a shortlist built
-from its rankings finds 183 individuals, essentially what fifty stations picked at random would
-find. **A measure that checks only an aggregate can be satisfied by a model with no
-information in it.** If you report a total, report a per-station error beside it.
-
-**The ranking objective reverses two models.** The random forest beats the log-transformed
-linear model on RMSE, 4.363 to 4.461. Send the ship out on their rankings and the log
-model's fifty stations hold 481 individuals against the forest's 456, which is 5% more,
-from the model with the worse RMSE. Squared error punished the log model for its low
-predictions; the shortlist does not care what numbers it printed, only what order it put
-the stations in.
-
-**And no model is close to perfect.** The best shortlist here finds 499 of the 851 individuals
-a clairvoyant ranking would find, or 59%. That is the honest sentence for a survey plan: not
-"our model has R² 0.24", which means nothing to a ship's officer, but *"targeting the fifty
-stations this model ranks highest should find roughly two and a half times as many individuals
-as fifty stations chosen at random, and about three-fifths of the theoretical maximum."*
-
-::: {.callout-note collapse="true"}
-## The shortlist measure is not R² in disguise
-
-R² and RMSE are computed from the *values* the model predicts; the shortlist depends only on
-their *order*. Any monotone transformation of the predictions, halving them all or taking their
-square root, leaves the shortlist identical and changes RMSE completely. That is exactly the
-independence you want when the decision is "which stations", not "how many at each".
-
-It works the other way too. A model can order stations perfectly and be badly biased, which is
-why the log-transformed model does well here and disastrously on the total.
-:::
-
-## Worked example: a threshold from costs
-
-The [classification page](classification-metrics.qmd) showed that accuracy, F1, MCC and
-Youden's J each want a different cut-off. None of them is the right one, because none of them
-knows what a mistake costs you.
-
-Suppose the decision is whether to send a dive team to confirm presence. A **wasted dive**, a
-station flagged where nothing is there, costs ship time. A **missed station** costs a gap in
-the record. Let their relative cost be $k$ dives per missed station, and compute the expected
-cost per station across all thresholds.
+Suppose every station called present is visited by a dive team. A false alarm wastes a dive;
+a miss leaves a station with the species out of the record. The expected cost is worked out
+at every threshold from 0.01 to 0.99, for false alarms that cost one, three and five times as
+much as a miss. The last column is the cheaper of two rules that need no model: call every
+station present, or call none.
 
 ::: {.panel-tabset group="language"}
 
@@ -279,184 +318,166 @@ cost per station across all thresholds.
 
 ```{r}
 #| label: costs
-presence <- survey |>
-  select(present, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-         substrate, season, longitude, latitude) |>
-  drop_na()
+# logistic regression's out-of-fold probability of presence, in the survey's order
+probability <- fit_resamples(with_inputs("present", logistic_reg()), folds,
+                             metrics = metric_set(roc_auc),
+                             control = control_resamples(save_pred = TRUE)) |>
+  collect_predictions() |>
+  arrange(.row) |>
+  pull(.pred_yes)
 
-rec <- recipe(present ~ ., data = presence) |> step_dummy(all_nominal_predictors())
-
-set.seed(71)
-presence_folds <- vfold_cv(presence, v = 10, strata = present)
-
-probabilities <- map_dfr(presence_folds$splits, \(s) {
-  fitted <- fit(workflow() |> add_recipe(rec) |> add_model(logistic_reg()),
-                analysis(s))
-  held <- assessment(s)
-  tibble(truth = held$present,
-         .pred_yes = predict(fitted, held, type = "prob")$.pred_yes)
-})
+present <- survey$present == "yes"
 
 expected_cost <- function(threshold, k) {
-  flagged <- probabilities$.pred_yes >= threshold
-  missed  <- sum(!flagged & probabilities$truth == "yes")
-  wasted  <- sum( flagged & probabilities$truth == "no")
-  (missed + k * wasted) / nrow(probabilities)
+  called <- probability >= threshold
+  (sum(!called & present) + k * sum(called & !present)) / length(present)
 }
 
-cost_curves <- expand_grid(k = c(1, 3, 10, 30), cut_off = seq(0.01, 0.99, by = 0.005)) |>
-  mutate(cost = map2_dbl(cut_off, k, expected_cost))
+cost_curves <- expand_grid(k = c(1, 3, 5), threshold = seq(0.01, 0.99, by = 0.01)) |>
+  mutate(cost = map2_dbl(threshold, k, expected_cost))
 
-cost_table <- cost_curves |>
-  summarise(`cheapest threshold` = cut_off[which.min(cost)],
-            `cost there`         = min(cost),
-            `cost at 0.5`        = expected_cost(0.5, first(k)),
-            .by = k) |>
-  mutate(`theory: k/(1+k)`        = k / (1 + k),
-         `saved by not using 0.5` = 1 - `cost there` / `cost at 0.5`) |>
-  select(`a wasted dive costs` = k, `cheapest threshold`, `theory: k/(1+k)`,
-         `cost there`, `cost at 0.5`, `saved by not using 0.5`)
+cheapest <- cost_curves |>
+  slice_min(cost, by = k, with_ties = FALSE) |>
+  mutate(`k / (1 + k)` = k / (1 + k),
+         `stations called present` = map_int(threshold, \(t) sum(probability >= t)),
+         `cost at 0.5` = map_dbl(k, \(k) expected_cost(0.5, k)),
+         # calling every station present, or none
+         `cost without the model` = pmin(k * mean(!present), mean(present))) |>
+  select(k, `k / (1 + k)`, `cheapest threshold` = threshold,
+         `stations called present`, `cost there` = cost, `cost at 0.5`,
+         `cost without the model`)
 
-cost_table |> mutate(across(where(is.double), \(x) round(x, 3)))
+cheapest |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-presence_columns = ["present", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-                    "salinity_psu", "substrate", "season",
-                    "longitude", "latitude"]
-presence = pd.get_dummies(survey[presence_columns].dropna(),
-                          columns=["substrate", "season"], drop_first=True)
-
-X = presence.drop(columns="present")
-truth = presence["present"].astype(str).to_numpy()
-
-model = Pipeline([("normalise", StandardScaler()),
-                  ("model", LogisticRegression(C=np.inf, max_iter=2000))])
-probabilities = cross_val_predict(
-    model, X, truth,
-    cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=71),
-    method="predict_proba")[:, list(np.unique(truth)).index("yes")]
+```{python}
+# logistic regression's out-of-fold probability of presence, in the survey's order;
+# column 1 of predict_proba is the probability of True
+present = (survey["present"] == "yes").to_numpy()
+probability = cross_val_predict(
+    with_inputs(LogisticRegression(C=np.inf, max_iter=5000)), survey[inputs], present,
+    cv=folds, groups=survey["site_id"], method="predict_proba")[:, 1]
 
 def expected_cost(threshold, k):
-    flagged = probabilities >= threshold
-    missed = np.sum(~flagged & (truth == "yes"))
-    wasted = np.sum(flagged & (truth == "no"))
-    return (missed + k * wasted) / len(truth)
+    called = probability >= threshold
+    return (np.sum(~called & present) + k * np.sum(called & ~present)) / len(present)
 
-cut_offs = np.arange(0.01, 0.99 + 1e-9, 0.005)
+thresholds = np.round(np.arange(0.01, 0.995, 0.01), 2)
 
-def cheapest(k):
-    costs = np.array([expected_cost(cut, k) for cut in cut_offs])
-    best = int(np.argmin(costs))
-    return {
-        "a wasted dive costs": k,
-        "cheapest threshold": cut_offs[best],
-        "theory: k/(1+k)": k / (1 + k),
-        "cost there": costs[best],
-        "cost at 0.5": expected_cost(0.5, k),
-        "saved by not using 0.5": 1 - costs[best] / expected_cost(0.5, k),
-    }
+def cheapest_for(k):
+    costs = np.array([expected_cost(t, k) for t in thresholds])
+    best = thresholds[np.argmin(costs)]
+    return {"k": k, "k / (1 + k)": k / (1 + k), "cheapest threshold": best,
+            "stations called present": int(np.sum(probability >= best)),
+            "cost there": costs.min(), "cost at 0.5": expected_cost(0.5, k),
+            # calling every station present, or none
+            "cost without the model": min(k * np.mean(~present), np.mean(present))}
 
-cost_table = pd.DataFrame([cheapest(k) for k in (1, 3, 10, 30)])
+cheapest = pd.DataFrame([cheapest_for(k) for k in (1, 3, 5)])
 
-cost_table.round(3)
+cheapest.round(3)
 ```
 
 :::
 
 ```{r}
+#| label: cost-numbers
+#| include: false
+cost_of <- function(k, column) cheapest[[column]][cheapest$k == k]
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
 #| label: fig-cost
-#| fig-cap: "Expected cost per station against the decision threshold, for four exchange rates between a wasted dive and a missed station. Each curve is scaled to its own minimum, marked with a dot; the dashed line is 0.5. When both errors cost the same the cheapest threshold is 0.52. As wasted dives get more expensive the minimum slides right, to 0.75 and then 0.965, and the penalty for leaving the threshold at 0.5 grows from under 1% to 87%."
-#| fig-alt: "Four labelled curves on a shared horizontal axis of decision threshold from 0 to 1, with expected cost relative to each curve's own minimum on a logarithmic vertical axis from 1 to about 8, and a dashed vertical line at 0.5. Each curve is flat across the left of the plot, dips to a marked minimum, then climbs. The equal-cost curve is lowest on the left at about 1.05, has its minimum at 0.52 and rises to nearly 4 at the right-hand edge. The three-times curve starts near 1.15, bottoms at 0.75 and rises modestly. The ten-times and thirty-times curves start far higher, at about 2.8 and 7.8, and fall steadily across the middle of the plot and reach their minima together at 0.965, close to the right-hand edge. At the dashed line the four curves sit at roughly 1.0, 1.15, 2.6 and 7.8 times their best values."
-#| fig-width: 7
-#| fig-height: 4.6
-scaled_curves <- cost_curves |>
-  mutate(relative = cost / min(cost), .by = k) |>
-  mutate(label = paste0("a wasted dive costs ", k, "×"))
+#| fig-cap: !expr glue::glue("Expected cost of logistic regression's calls at every threshold, in units of one miss, when a false alarm costs one, three and five times as much as a miss. The point marks the cheapest threshold, named above each panel, the dashed line 0.5, and the dotted line the cost without the model. The cheapest threshold moves from {f2(cost_of(1, 'cheapest threshold'))} to {f2(cost_of(5, 'cheapest threshold'))} as false alarms get dearer, close to k/(1 + k) each time.")
+#| fig-alt: !expr glue::glue("Three panels side by side, for a false alarm costing 1, 3 and 5 misses, each with the threshold from 0 to 1 along the bottom and the expected cost per station up the side, a dashed vertical line at 0.5 and a dotted horizontal line for the cost without the model. Each curve has a marked lowest point, at {f2(cost_of(1, 'cheapest threshold'))} when the two mistakes cost the same, {f2(cost_of(3, 'cheapest threshold'))} when a false alarm costs 3 misses and {f2(cost_of(5, 'cheapest threshold'))} when it costs 5, each a little below the dotted line. In the five-times panel the curve at 0.5 is {f2(cost_of(5, 'cost at 0.5'))}, far above the dotted line at {f2(cost_of(5, 'cost without the model'))}.")
+#| fig-width: 8.5
+#| fig-height: 3.7
+panels <- transmute(cheapest, k, panel = sprintf(
+  "A false alarm costs %g %s\ncheapest at %.2f",
+  k, if_else(k == 1, "miss", "misses"), `cheapest threshold`))
+cost_curves <- cost_curves |>
+  left_join(panels, by = "k") |>
+  mutate(panel = fct_inorder(panel))
+at_cheapest <- semi_join(cost_curves, cheapest,
+                         by = c("k", "threshold" = "cheapest threshold"))
+without_model <- left_join(cheapest, panels, by = "k")
 
-cost_minima <- slice_min(scaled_curves, relative, by = k, with_ties = FALSE)
-
-ggplot(scaled_curves, aes(cut_off, relative, colour = factor(k))) +
-  geom_vline(xintercept = 0.5, linetype = "dashed",
-             colour = ml_palette[["grey"]], linewidth = 0.4) +
-  geom_line(linewidth = 0.9) +
-  geom_point(data = cost_minima, size = 3) +
-  ggrepel::geom_text_repel(data = cost_minima, aes(label = label), size = 3.1, seed = 3,
-                           direction = "y", nudge_y = 0.12, min.segment.length = 0.3) +
-  scale_y_log10() +
+ggplot(cost_curves, aes(threshold, cost, colour = panel)) +
+  geom_vline(xintercept = 0.5, colour = "grey70", linetype = "dashed") +
+  geom_hline(data = without_model, aes(yintercept = `cost without the model`),
+             colour = "grey45", linetype = "dotted", linewidth = 0.8) +
+  geom_line(linewidth = 1) +
+  geom_point(data = at_cheapest, size = 3) +
+  facet_wrap(~panel, nrow = 1, scales = "free_y") +
   scale_colour_ml() +
-  labs(x = "flag the station if the predicted probability exceeds this",
-       y = "expected cost, relative to that curve's best",
-       title = "Where the cheapest threshold sits depends on what a mistake costs") +
+  labs(x = "Threshold", y = "Expected cost\n(misses per station)") +
   theme(legend.position = "none")
 ```
 
-For a model whose probabilities are calibrated, and
-[the classification page](classification-metrics.qmd) showed this one roughly is, the
-cost-minimising threshold is $k/(1+k)$, where $k$ is the cost of a wasted dive in units of a
-missed station. The table shows the empirical optimum landing on it exactly at $k = 3$ and
-close at $k = 1$ and $k = 30$. At $k = 10$ the empirical best is 0.965 against a theoretical
-0.909, because the cost only changes when a station crosses the threshold, so the curve moves
-in steps and its floor is broad.
-
-The last column is the practical point. At $k = 10$, leaving the threshold at 0.5 costs 2.6
-times what the cheapest threshold costs. At $k = 30$ it costs nearly eight times as much. One
-line of code, and no change to the model at all.
-
-::: {.callout-important}
-## Say what you assumed
-
-You cannot avoid choosing an exchange rate. Using 0.5 is choosing one: it asserts that a
-wasted dive and a missed station cost exactly the same, which is almost never true and which
-nobody writes down.
-
-"We flagged stations above 0.75, on the assumption that a wasted dive costs about three times a
-missed record" is a methods sentence a reviewer can argue with, which is the point. It is also
-the sentence that lets someone with a different ship budget reuse your model.
 :::
 
-## Limits of these measures
+The cheapest thresholds are `r f2(cost_of(1, "cheapest threshold"))`,
+`r f2(cost_of(3, "cheapest threshold"))` and `r f2(cost_of(5, "cheapest threshold"))`,
+against `r f2(cost_of(1, "k / (1 + k)"))`, `r f2(cost_of(3, "k / (1 + k)"))` and
+`r f2(cost_of(5, "k / (1 + k)"))` from the rule: logistic regression's probabilities are
+calibrated well enough for the rule to work. When a false alarm costs five misses, the
+cheapest threshold calls `r cost_of(5, "stations called present")` of the
+`r nrow(survey)` stations present, and leaving the threshold at 0.5 costs
+`r f2(cost_of(5, "cost at 0.5") / cost_of(5, "cost there"))` times as much. The model
+is the same in every panel; only the threshold has changed.
 
-The shortlist measure here used a budget of fifty, and the ordering of models can change
-with the budget, since a model good at the extreme top of the ranking may be mediocre at
-200. Compute it at the budget you actually have.
+The rules without a model are hard to beat here, because the species was caught at
+`r pct(mean(present))` of the stations. At five to one, a threshold of 0.5 costs
+`r f2(cost_of(5, "cost at 0.5"))` per station, more than the
+`r f2(cost_of(5, "cost without the model"))` of calling no station present at all. The
+cheapest threshold costs `r f2(cost_of(5, "cost there"))`, a saving of
+`r pct(1 - cost_of(5, "cost there") / cost_of(5, "cost without the model"))` on that rule.
+A model is worth using only at a threshold that suits the costs, and only if it beats the
+rules that need none.
 
-Costs are rarely constant either. The cost of a missed station is not the same for a protected
-species as for a common one, and the cost of a wasted dive depends on where it is. The
-framework still works; the single number $k$ becomes a cost per station, and the threshold
-becomes a per-station threshold.
+## Say what the measure assumes
 
-And none of this touches the biggest risk. Every measure in this section scores predictions
-against observations. If the observations are biased by gear selectivity, observer effects or
-survey effort that follows ports, then a model that reproduces them perfectly reproduces the
-bias too, and no validation scheme will tell you.
+A measure carries assumptions, and the report should state them. A shortlist measure assumes
+a budget, and the order of the models can change with it, so compute it at the budget the
+survey really has. A threshold assumes a ratio of costs. Leaving it at 0.5 assumes that a
+false alarm and a miss cost the same, which is rarely true and rarely written down. "Stations
+above 0.75 were called present, as a wasted dive costs about three times a missed record" is
+a sentence a reader can check, and one that lets someone with other costs reuse the model.
 
-::: {.callout-tip}
+Every measure in this section compares predictions with what the survey recorded. If the
+records themselves are biased, by the gear, the observers or where the effort went, a model
+that matches them well matches the bias too, and no measure can show it.
+
 ## Key points
 
-- Choose the measure from the sentence you intend to write, before you fit anything.
-- An aggregate-only check is not a validation: the mean-only model estimated the survey total
-  exactly and had no skill at all.
-- Rankings and values are different objectives. The log-transformed model lost on RMSE and won
-  the fifty-station shortlist, 481 individuals against the forest's 456.
-- Report decision-shaped numbers: "two and a half times a random shortlist, three-fifths of the
-  theoretical maximum" travels further than "R² 0.24".
-- The cost-minimising threshold is $k/(1+k)$ for calibrated probabilities. Leaving it at 0.5
-  cost up to eight times more here than choosing it.
-- Say what exchange rate you assumed. Using the default is assuming 1:1 silently.
+::: {.key-points}
+- Choose the measure from the use of the predictions, before fitting: a map, a total, a
+  shortlist, a map of chances, or a call at each station.
+- A **shortlist** is scored on the animals it finds, against a perfect and a random one. It
+  depends only on the order of the predictions: the forest on log counts predicted
+  `r pct(list_of(log_forest, "predicted / caught"))` of the catch, yet its shortlist of
+  `r budget` stations found as many animals as the other models'.
+- The **expected cost** of the calls counts misses and false alarms by what each costs. If a
+  false alarm costs $k$ misses, calibrated probabilities are cheapest at a threshold of
+  $k/(1+k)$.
+- For logistic regression the cheapest thresholds fell at
+  `r f2(cost_of(1, "cheapest threshold"))`, `r f2(cost_of(3, "cheapest threshold"))` and
+  `r f2(cost_of(5, "cheapest threshold"))`. At five to one, a threshold of 0.5 cost more
+  than calling no station present at all.
+- State the budget and the cost ratio behind a measure. A threshold of 0.5 assumes the two
+  mistakes cost the same.
 :::
 
 ## Try it yourself
 
-1. Recompute the shortlist column for budgets of 20, 50, 100 and 200. Does the same model win
-   at every budget?
-2. Take the cost framework to the rare-species response from
-   [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) and find the threshold for
-   *k* = 0.1, a missed detection costing ten wasted dives. How many stations does that flag?
+1. Work out the shortlists for budgets of 50 and 200 stations. Does the same model find the
+   most animals at every budget?
+2. Use the random forest's probabilities of presence from
+   [Classification performance measures](classification-metrics.qmd) in place of logistic
+   regression's. Do the cheapest thresholds still fall at $k/(1+k)$?

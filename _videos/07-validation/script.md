@@ -1,5 +1,5 @@
 ---
-title: "Validation: which score should you believe?"
+title: "Validation: when to believe a score"
 section: chapters/07-validation/index.qmd
 voice: Sadaltager
 style: "friendly British English, speaking at a natural, conversational pace"
@@ -12,6 +12,15 @@ lists the directive lines. In short: "# " starts a YouTube chapter, "## Scene N"
 scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
+
+This video is an overview built on three ideas, each with one or two examples: a score
+is only as honest as its folds (the distance to the fitted data, and a search over
+noise caught by nested cross-validation), the measure must follow the use (RMSE and MAE
+pick different forests, a shortlist uses only the order, costs set the threshold), and
+a score needs an interval (a bootstrap of the sites, and a paired comparison). The quiz
+applies the second idea to the cost rule on the choosing-a-measure page. It does not
+tour every page: the number of folds, the correlogram, forecasts, R² and the measures
+for presence are left to the pages, and the end card names some of them.
 -->
 
 # In this video
@@ -20,319 +29,228 @@ section's pages. No section numbers anywhere in the video: other sections are na
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-In this video, you will learn three things. Why a single score is never enough. Why the
-way you split your data is a question. And why performance measures disagree.
-
-# The puzzle
+In this video, you will learn three things. Why a score is only as honest as its
+folds. Why the measure must follow the use of the predictions. And why a score needs an
+interval.
 
 ## Scene 2
-visual: manim Puzzle: two model cards, a random forest and a log model (page results, choosing-a-metric.qmd)
+visual: manim Claim: a model, a score card, and an arrow to sites not yet surveyed (schematic)
 
-Here are two models of the same survey: a random forest, and a simpler model of the log
-of the counts.
+Every model in this course has been given a score: roughly how far its predictions land
+from what new sites caught. A score is a claim about the future. This video asks when to
+believe it.
+
+# A score is only as honest as its folds
 
 ## Scene 3
-visual: manim Puzzle: their RMSE as two bars, the forest's lower
+visual: manim Folds: sites dealt into five folds; each fold held out in turn, its stations predicted by a model fitted to the rest (schematic)
 
-By the usual error measure, the forest wins: 4.36 against 4.46.
+Cross-validation deals the sites into folds. Each fold is held out in turn and predicted
+by a model fitted to the others. So every station gets one out-of-fold prediction, from a
+model that never saw its site.
 
 ## Scene 4
-visual: manim Puzzle: fifty ranked stations each, and the animals they hold
+visual: manim Reach: one held-out station and a line to the nearest fitted station, short for folds of stations, longer for folds of sites, longest for blocks (schematic)
 
-Now send a ship to the fifty stations each model ranks highest. The log model's
-stations hold 481 animals. The forest's hold 456.
+What a score claims depends on what the folds hold out. Folds of single stations often
+leave a station's own site in the fitted data. Folds of sites push the nearest fitted
+station out to the next site, and spatial blocks push it across the block.
 
 ## Scene 5
-visual: manim Puzzle: a question mark between the two results
-pause-after: 1.5
+visual: manim DistanceScore: pooled RMSE against the distance to the nearest fitted station, ten runs per scheme and their averages (page results, spatial-and-temporal-cv.qmd#fig-distance)
 
-So which model is better?
+A random forest was scored all three ways, ten times each. The further away its fitted
+data, the larger its error: from 4.23 with folds of stations to 4.41 with blocks.
 
 ## Scene 6
-visual: manim Simulated: a "true process" box sends dots to a map of stations (schematic)
+visual: manim Use: two uses side by side, gaps between monitored sites with folds of sites, an unsurveyed area with blocks (schematic)
 
-A note first: this survey is simulated. We wrote the process that made it, so we can
-check every answer against the truth.
-
-# One split is a noisy ruler
+No distance is right in general. To fill the gaps between monitored sites, use folds of
+sites; to map an area nobody has surveyed, use blocks. Report the distance with the
+score.
 
 ## Scene 7
-visual: manim OneSplit: 720 stations, a quarter held back, one R² dot (page results, cross-validation.qmd)
+visual: manim Search: eight measured columns and twenty columns of random numbers; a hundred candidates of five columns each (schematic)
 
-The simplest test holds back a quarter of the stations, and scores the model on them.
+Folds can also flatter a model they helped to choose. Add twenty columns of random
+numbers to the survey, try a hundred models, each Poisson regression on five columns,
+and keep the lowest cross-validated error.
 
 ## Scene 8
-visual: manim OneSplit: forty splits drop forty dots along the R² axis
+visual: manim Search: the hundred candidates' RMSEs as dots; the lowest picked out, its five columns below it, two of them noise (page results, cross-validation.qmd)
 
-Do that forty times, with forty different splits. The same model scores an R² anywhere
-from 0.079 to 0.346.
+The winner scores 4.50, the lowest of the hundred. Two of its five columns are pure
+noise. They just happen to suit these folds.
 
 ## Scene 9
-visual: manim OneSplit: the stations reshuffle while the model card stays fixed
+visual: manim Luck: each score drawn as skill plus a random nudge; the lowest of many has the biggest nudge (schematic)
 
-Nothing changed but where the line was drawn.
+Every score is partly luck, and the lowest of many scores has gathered the most. So the
+more models a search tries, the more its winner's score flatters it.
 
 ## Scene 10
-visual: manim Folds: the stations cut into ten folds, each held out in turn (schematic)
+visual: manim Nested: an outer fold of sites held out; the whole search runs on the rest, with folds of its own; its choice predicts the outer fold (schematic)
 
-Cross-validation cuts the data into ten folds. Each is held out once, and scored by a
-model that never saw it.
+Nested cross-validation measures what the search is worth. An outer fold of sites is
+held out, the whole search runs on the other sites, and its choice is scored on the
+outer fold, which played no part in choosing.
 
 ## Scene 11
-visual: manim OneSplit: forty cross-validations drop a tight row of dots under the first
+visual: manim NestedResult: three bars, the search's claim, its choices on the outer folds, and the eight measured inputs with no search (page results, cross-validation.qmd#fig-nested)
 
-Forty cross-validations agree far more closely: from 0.195 to 0.239.
-
-# The winner's score flatters
+Inside each round, the search claimed an error of 4.42. On the outer folds, its choices
+scored 4.86. Poisson regression on the eight measured inputs, with no search at all,
+scored 4.37.
 
 ## Scene 12
-visual: manim Search: a hundred candidate models, five columns each, some columns noise (page results)
-
-Now search for the best predictors. Add twenty columns of random noise, and try a
-hundred models of five columns each.
-
-## Scene 13
-visual: manim Search: the hundred scores as dots, the lowest one picked out
-
-The winner's cross-validated error is 4.485, the best of the hundred.
-
-## Scene 14
-visual: manim Search: the winner's five columns, three of them noise
-
-Three of its five columns are pure noise. The best of a hundred noisy scores is low
-partly by luck.
-
-## Scene 15
-visual: manim Nested: outer folds, each with the whole search running inside it (schematic)
-
-Nested cross-validation repeats the whole search inside each fold, and scores its choice
-on data the search never saw.
-
-## Scene 16
-visual: manim NestedBars: the reported error, then the honest one (page results)
-
-Inside the folds, the search reported 4.472. Its choice actually scored 4.851: about 8%
-worse.
-
-## Scene 17
-visual: manim NestedBars: five folds, the no-search model winning each one
-
-And a model with no search at all beat the searched one on all five folds.
-
-# A score needs an interval
-
-## Scene 18
-visual: manim Interval: the RMSE as a point, then its bootstrap interval (page results, uncertainty-and-stability.qmd)
-
-A score is an estimate, like an average catch. Resample the stations, and an error of
-4.14 could be anywhere from 3.70 to 4.58.
-
-## Scene 19
-visual: manim Paired: two models' scores on ten folds, overlapping, the unpaired interval across zero (page results, uncertainty-and-stability.qmd#fig-paired)
-
-Compare two models on ten folds, and their scores overlap almost completely. The
-interval on the difference is 1.54 wide, and covers zero.
-
-## Scene 20
-visual: manim Paired: lines join each fold's two scores, the paired interval shrinks
-
-Pair the scores fold by fold, and it is 0.33 wide: nearly five times sharper, from the
-same numbers.
-
-## Scene 21
-visual: manim Paired: the fold labels light up
-pause-after: 0.5
-
-Most of what makes a score high or low is the fold. So always compare models on the
-same folds.
-
-## Scene 22
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point one. A single score is never enough: use folds, nest any search, and give an
-interval.
+Key point one. A score is only as honest as its folds: hold out what the model will
+face, and keep the search out of the score.
 
-# The split is a question
+# The measure must follow the use
 
-## Scene 23
-visual: manim Schemes: the survey's stations, a random fold held out (page results, spatial-and-temporal-cv.qmd)
+## Scene 13
+visual: manim Misses: misses at a row of stations, turned into one number two ways, squared for the RMSE and as they are for MAE (schematic)
 
-Every way of splitting the data asks a question. Random folds ask how well a model fills
-the gaps between stations it has seen.
+A performance measure turns every miss into one number. The RMSE minds large misses
+most. The mean absolute error, or MAE, counts every animal missed the same.
 
-## Scene 24
-visual: manim Schemes: whole blocks of the shelf held out
+## Scene 14
+visual: manim Middle: the skewed catch per station, with the average and the median marked (page results, regression-metrics.qmd)
 
-Hold out whole blocks of the shelf, and you ask how well it maps ground never surveyed.
+On skewed counts, the two aim at different targets. The RMSE is lowest when a model
+predicts the average catch, 3.9 animals. MAE is lowest at the median, just 2.
 
-## Scene 25
-visual: manim Schemes: a whole year held out
+## Scene 15
+visual: manim Picks: the four models' RMSE and MAE as two rows of bars; the RMSE's lowest is the random forest, MAE's the random forest on log counts (page results, regression-metrics.qmd)
 
-Hold out a whole year, and you ask how well it forecasts.
+So the two measures pick different models. The RMSE picks the random forest. MAE picks
+the same forest fitted to log counts, which aims at the median.
 
-## Scene 26
-visual: manim Distance: each scheme as a point, R² against distance to the nearest training station (page results, spatial-and-temporal-cv.qmd#fig-distance)
+## Scene 16
+visual: manim Picks: a bar of the animals caught, and the forest on log counts' predicted total, 69 per cent of it (page results)
 
-Now line the schemes up by how far each held-out station is from its nearest training
-station.
+Add up that forest's predictions, and they reach only 69 per cent of the animals caught.
+For a stock estimate, MAE has picked a model that misses almost a third of them.
 
-## Scene 27
-visual: manim Distance: random folds and the largest blocks picked out
+## Scene 17
+visual: manim Shortlist: stations ranked by a model's prediction; a ship visits the top hundred (schematic)
 
-About four kilometres away, the forest scores an R² of 0.200. Twenty-five kilometres
-away, 0.114.
+Other uses ask other things. A ship has time to revisit 100 stations, and goes where a
+model predicts the most animals. Only the order of the predictions matters.
 
-## Scene 28
-visual: manim Distance: the trend line draws through the spatial schemes
+## Scene 18
+visual: manim ShortlistResult: animals found by each model's shortlist, between a random hundred and a perfect hundred (page results, choosing-a-metric.qmd)
 
-There is no single true score. Only the question you chose.
+The forest on log counts finds 847 animals, as many as the other models. Each shortlist
+finds 2.1 times what a hundred random stations would. Predictions that run low lose
+nothing here.
 
-## Scene 29
-visual: manim BlockSize: a block grows until it covers the reach of the residual pattern (schematic)
+## Scene 19
+visual: manim Mistakes: a two-by-two table of called and true presence; "false alarm" and "miss" placed in their cells (schematic)
 
-So set the block size from how far the spatial pattern reaches, before you look at the
-score.
+Calls of present or absent need something else. A false alarm is a station called
+present where the species is absent. A miss is a station called absent where it is
+present.
 
-## Scene 30
-visual: manim Forecast: forecasting R² against random years of the same size, about equal (page results)
+## Scene 20
+visual: manim Costs: a dive boat for a false alarm, a blank record for a miss, on a balance that tips; the threshold slides away from 0.5 (schematic)
 
-Here, forecasting cost nothing: the simulation gave the year no effect. Real surveys,
-with shifting seas and changing gear, are rarely so kind.
+If a false alarm wastes a dive, it may cost far more than a miss. Then the threshold for
+calling a station present should come from those costs, not sit at 0.5.
 
-## Scene 31
+## Scene 21
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point two. The way you split is a question: hold out what you will actually be asked
-to predict.
+Key point two. The measure must follow the use: decide what the predictions are for,
+then choose the measure.
 
-# Measures disagree
+# A score needs an interval
 
-## Scene 32
-visual: manim Mistakes: one big miss against ten small ones, weighed by RMSE and by MAE (schematic)
+## Scene 22
+visual: manim OneSurvey: the survey's sites, then other sites the survey might have drawn, the score moving with them (schematic)
 
-A performance measure says which mistakes you mind. RMSE minds one big miss more than
-many small ones. MAE minds them all the same.
+A score comes from one survey. Had other sites been sampled, it would have come out
+higher or lower, and two models might have swapped places.
 
-## Scene 33
-visual: manim WorstShare: every station's squared error, largest first, the worst 5% shaded (page results, regression-metrics.qmd)
+## Scene 23
+visual: manim Resample: the 160 sites drawn again with replacement, some twice, some not at all; each draw gives one error (schematic)
 
-On these counts, the worst 5% of stations carry half of all the squared error.
+To see how far, resample the sites. Draw the 160 sites again, with replacement, keep
+their stations' out-of-fold predictions, and work out the error. Do it a thousand times.
 
-## Scene 34
-visual: manim Mape: percentage error divides by the count; the empty stations fall out (page results)
+## Scene 24
+visual: manim Intervals: the three models' RMSEs with their 95% intervals, all overlapping (page results, uncertainty-and-stability.qmd)
 
-Percentage error divides by the count, and 157 stations caught nothing.
+The middle 95 per cent of those errors is an interval. For the random forest it runs
+from 3.75 to 4.94, and all three models' intervals overlap. Read alone, they cannot even
+say whether the forest beats predicting the average.
 
-## Scene 35
-visual: manim Mape: its curve as every prediction is scaled, lowest at 0.47 (page results, regression-metrics.qmd#fig-scaling)
+## Scene 25
+visual: manim Pairs: two models' errors over a few resamples, rising and falling together; their difference drawn below, nearly constant (schematic)
 
-On the rest, it is lowest if you shrink every prediction to 47% of what the model
-believes.
+But a hard sample is hard for every model, so their errors rise and fall together.
+Compare them in pairs: take the difference within each sample, and what they share
+cancels.
 
-## Scene 36
-visual: manim Confusion: the four boxes of the confusion matrix fill with counts (page results, classification-metrics.qmd)
+## Scene 26
+visual: manim PairScatter: the forest's RMSE against predicting the average's, one dot per sample, nearly all below the diagonal (page results, uncertainty-and-stability.qmd#fig-pairs)
 
-For presence or absence, every prediction lands in one of four boxes.
+In pairs, the forest beats predicting the average in 99 per cent of the samples.
 
-## Scene 37
-visual: manim Measures: ten measures from the same four numbers, as bars (page results)
+## Scene 27
+visual: manim PairScatter: the second panel, against Poisson regression, a narrow band along the diagonal (page results)
 
-Ten measures from those four numbers run from 0.058 to 0.995.
+Against Poisson regression, it wins in only 79 per cent, and the paired interval covers
+zero. On this survey, the RMSE cannot tell those two apart.
 
-## Scene 38
-visual: manim FlagAll: F1 for a rule that flags every station, against the model
-
-A rule that says "present" at every station scores an F1 of 0.878. The model scores
-0.882.
-
-## Scene 39
-visual: manim FlagAll: the empty-station box, which F1 never looks at
-
-A measure that ignores the empty stations cannot tell a model from a rule with no model
-in it.
-
-# The puzzle, solved
-
-## Scene 40
-visual: manim Sentence: a sentence for the paper, then the measure that could prove it false (schematic)
-
-So write the sentence you want to publish first. Then pick the measure that would prove
-it false.
-
-## Scene 41
-visual: manim Objectives: "mapping every station", the RMSE bars, the forest ticked (page results, choosing-a-metric.qmd)
-
-Mapping abundance at every station? That is per-station error, and the forest wins.
-
-## Scene 42
-visual: manim Objectives: "fifty stations to revisit", the shortlist bars, the log model ticked
-
-Choosing fifty stations to revisit? Only the order matters, and the log model wins.
-
-## Scene 43
-visual: manim Objectives: "the stock total", the log model at 69% of the animals, crossed
-
-Estimating the total stock? The log model predicts only 69% of the animals that are
-there.
-
-## Scene 44
-visual: manim Threshold: a cut-off of one half as a balance, a wasted dive against a missed station (schematic)
-
-Cut-offs work the same way. Using one half assumes a wasted dive costs the same as a
-missed station.
-
-## Scene 45
-visual: manim CostCurves: expected cost against the cut-off when a wasted dive costs three (page results, choosing-a-metric.qmd#fig-cost)
-
-If a wasted dive costs three times as much, the cheapest cut-off is 0.75.
-
-## Scene 46
-visual: manim CostCurves: the thirty-times curve, its value at one half against its minimum
-
-At thirty times, leaving it at one half costs nearly eight times as much.
-
-## Scene 47
+## Scene 28
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point three. Measures disagree because each minds different mistakes: choose one
-from the sentence you will write.
+Key point three. A score needs an interval: resample the sites, and compare models in
+pairs.
 
 # Quiz
 
-## Scene 48
+## Scene 29
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. A model predicts the same average at every station. Its survey total is
-exactly right. Is it a good model?
+Quick quiz. A false alarm wastes a dive, and costs three times as much as a missed
+record. The model's probabilities can be read as chances. Above what probability should
+a station be called present?
 
-## Scene 49
-visual: manim QuizAnswer: its shortlist against fifty random stations, about equal (page results)
+## Scene 30
+visual: manim QuizAnswer: "0.75"; the two expected costs against the probability, crossing at 0.75; logistic regression's cost curve with its lowest point (page results, choosing-a-metric.qmd#fig-cost)
 
-No. It has no skill at all. Its fifty stations hold 183 animals, about what fifty
-random stations would.
+0.75. At probability p, calling a station present risks a false alarm: three times one
+minus p. Calling it absent risks a miss: p. The two match at 0.75, where logistic
+regression's calls were cheapest on the survey.
 
 # Key points
 
-## Scene 50
+## Scene 31
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: a single score is never enough.
+To sum up the three key points. <short pause> One: a score is only as honest as its
+folds.
 
-## Scene 51
+## Scene 32
 visual: manim KeyPoints: the second ticked
 
-Two: the way you split the data is a question.
+Two: the measure must follow the use.
 
-## Scene 52
+## Scene 33
 visual: manim KeyPoints: the third ticked
 
-Three: choose the measure from the sentence you will write.
+Three: a score needs an interval.
 
-## Scene 53
+## Scene 34
 visual: manim EndCard: the site's address and a thank-you
 
-The pages for this section, with all the code, are linked below. Thanks for watching.
+The pages also cover how many folds to use, forecasts tested on later years, and the
+measures for presence, with all the code. They are linked below. Thanks for watching.

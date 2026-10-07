@@ -1,6 +1,6 @@
 ---
-title: "Classification measures and the confusion matrix"
-description: "Ten measures from one table of four numbers, why they disagree by a factor of seventeen, and the separate question of whether a probability means anything."
+title: "Classification performance measures"
+description: "Presence can be scored on the calls at one threshold, on how well the probabilities rank the stations, or on the probabilities themselves. F1 cannot tell a model from calling every station present, ROC AUC scores the ranking at every threshold, and log loss checks that the probabilities can be read as chances."
 order: 4
 categories: [validation, metrics, classification]
 ---
@@ -10,63 +10,95 @@ categories: [validation, metrics, classification]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## The most commonly mis-scored problem
+## Presence can be scored in three ways
 
-Presence/absence is the most common modelling problem in marine ecology, and the most commonly
-mis-scored. The reason is that classification has an unusually large vocabulary of performance
-measures (accuracy, sensitivity, specificity, precision, recall, F1, kappa, MCC, ROC AUC,
-PR AUC), and almost all of them are computed from the *same four numbers*.
-
-They disagree anyway, sometimes wildly, because each one throws away a different part of those
-four numbers. Once you can see which cells a measure uses, its behaviour stops being a matter
-of folklore.
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) scored its calls
+of present or absent by accuracy, and
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#three-measures-count-misses-and-false-alarms-apart)
+added sensitivity, specificity and precision. All four count the calls at one threshold.
+A model that predicts presence gives more than calls, though: it gives a probability for
+every station, which ranks the stations from most to least likely to hold the species. So
+there are three things to score: the **calls** at one threshold, the **ranking** the
+probabilities make, and the **probabilities** themselves. This page adds the measures most
+used in machine learning for each, and shows that a model can look good on one and poor
+on another.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Measures at one threshold count the calls
 
-Fix a threshold, say by calling it a predicted presence if the model's probability is 0.5 or
-more, and every prediction falls into one of four boxes. That table is the **confusion matrix**.
+Three summaries of the calls are common in machine learning. Each turns the four counts
+at a threshold into one number: true presences, false alarms, misses and true absences,
+often set out as a two-by-two table called the **confusion matrix**.
 
-|  | truly present | truly absent |
+| Measure | What it is | A rule that calls every station present scores |
 | --- | --- | --- |
-| **predicted present** | true positives (TP) | false positives (FP) |
-| **predicted absent** | false negatives (FN) | true negatives (TN) |
+| **Accuracy** | the share of calls that are right | the share of stations with the species |
+| **F1** | an average of precision and sensitivity, pulled towards the lower of the two | close to 1 when presence is common |
+| **Balanced accuracy** | the average of sensitivity and specificity | 0.5 |
+| **MCC**, the Matthews correlation coefficient | the correlation between the calls and the truth, from −1 to 1 | nothing: its calls never vary, so there is no correlation to work out |
 
-In survey terms: TP is a station you flagged and the species was there; FP is a wasted dive;
-FN is a population you missed; TN is correctly leaving a barren station alone.
+F1 is built from precision and sensitivity, and neither counts the **true absences**, the
+absent stations called absent. F1 suits a search for something rare, where the absences
+are many and uninteresting. Balanced accuracy and MCC count every cell, and treat
+presence and absence alike.
 
-Every threshold-dependent measure is a ratio of these four numbers.
+## ROC AUC scores the ranking at every threshold
 
-| Measure | Formula | Uses TN? |
-| --- | --- | --- |
-| Accuracy | $(TP+TN)/n$ | yes |
-| Sensitivity (recall) | $TP/(TP+FN)$ | no |
-| Specificity | $TN/(TN+FP)$ | yes |
-| Precision (PPV) | $TP/(TP+FP)$ | no |
-| F1 | harmonic mean of precision and recall | **no** |
-| Balanced accuracy | mean of sensitivity and specificity | yes |
-| Youden's J | sensitivity + specificity − 1 | yes |
-| MCC | correlation between prediction and truth | yes |
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#upsampling-gives-the-same-answers-as-a-lower-threshold)
+drew a model's sensitivity against its specificity at every threshold. That curve is the
+**ROC curve** (receiver operating characteristic, a name from radar). The area under it,
+the **ROC AUC**, sums up the whole curve in one number, so models can be compared before
+a threshold is chosen. It is also the share of pairs, one station with the species and
+one without, in which the station with the species gets the higher probability. A ROC
+AUC of 1 ranks every station with the species above every station without it; 0.5 is no
+better than ranking at random.
 
-The "Uses TN?" column does most of the explaining on this page.
+ROC AUC depends only on the order of the probabilities. Raising every probability, or
+squeezing them all towards 0.5, leaves the order and the ROC AUC unchanged.
 
-Two measures do not need a threshold, because they summarise the *ranking* the probabilities
-imply: **ROC AUC** (sensitivity against 1 − specificity, across all thresholds) and **PR AUC**
-(precision against recall). And one question is separate from all of them: when the model says
-0.8, does the species turn up 80% of the time? That is **calibration**.
+## Log loss scores the probabilities themselves
+
+**Log loss**, from
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd#counts-and-presence-have-their-own-losses),
+charges each station for the probability the model gave to what happened: little for a
+high probability of presence where the species was found, a lot for a confident call that
+turned out wrong. Lower is better. It rewards probabilities that are **spread out**, high
+where the species is and low where it is not, and **calibrated**: of the stations given
+0.8, about 8 in 10 hold the species. ROC AUC sees only the first of these.
+
+::: {.diagram}
+![ROC AUC and log loss on two sets of eight probabilities. Left, every station with the species is ranked above every station without it, but all eight probabilities are high: ROC AUC is perfect, and log loss charges heavily for the absent stations called likely. Right, one pair is in the wrong order, but the probabilities sit near the truth: ROC AUC is a little lower and log loss much lower. The two measures rank the two sets in opposite orders.](img/auc-and-log-loss.svg){fig-alt="Two cards, each with four stations where the species is present, drawn filled, and four where it is absent, drawn open, placed along an axis of predicted probability of presence from 0 to 1. Left, right order, too sure of presence: the present stations sit at 0.85 and above, the absent ones between 0.6 and 0.8; ROC AUC 1.00, log loss 0.66. Right, some order wrong, honest: the present stations sit between 0.4 and 0.9 and the absent ones between 0.1 and 0.6, so one absent station is ranked above one present station; ROC AUC 0.94, log loss 0.40. A note says ROC AUC is the share of present–absent pairs in which the present station has the higher probability, and log loss charges each station for the probability it gave to what happened, most for a confident miss."}
+:::
 
 ## Worked example
 
-We model whether the species was present at all, out of fold, with the same ten folds for both
-models.
+The outcome is `present`, whether the species was caught at a station at all. Three
+models predict it:
+
+- **Predicting the share present**: every station gets the share of the fitted stations
+  with the species. It has no skill, and the other two should beat it.
+- **Logistic regression**, from
+  [Logistic regression](../03-supervised-learning/logistic-regression.qmd), with each
+  input entered as a straight line in the log-odds.
+- **Random forest**, from
+  [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). For presence,
+  each tree gives the share of stations with the species in the leaf a station falls in,
+  and the forest averages those shares into a probability.
+
+As on [Regression performance measures](regression-metrics.qmd), every model is
+cross-validated on the same ten folds of sites, and each measure is worked out from the
+pooled out-of-fold probabilities.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -76,495 +108,400 @@ models.
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(present, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-         substrate, season, longitude, latitude) |>
-  drop_na()
+set.seed(61)
+folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
-rec <- recipe(present ~ ., data = d) |> step_dummy(all_nominal_predictors())
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season", "longitude", "latitude")
 
-set.seed(71)
-folds <- vfold_cv(d, v = 10, strata = present)
+presence_recipe <- recipe(reformulate(inputs, "present"), data = survey) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_dummy(all_nominal_predictors())
 
-out_of_fold <- function(model) {
-  wf <- workflow() |> add_recipe(rec) |> add_model(model)
-  map_dfr(folds$splits, \(s) {
-    fitted <- fit(wf, analysis(s))
-    held   <- assessment(s)
-    tibble(truth = held$present,
-           .pred_yes = predict(fitted, held, type = "prob")$.pred_yes)
-  })
-}
+forest <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 1) |>
+  set_mode("classification")
 
-logistic <- out_of_fold(logistic_reg() |> set_engine("glm"))
-forest   <- out_of_fold(rand_forest(trees = 500) |> set_engine("ranger", seed = 1) |>
-                          set_mode("classification"))
+models <- list(
+  "Predicting the share present" = null_model(mode = "classification"),
+  "Logistic regression"          = logistic_reg(),
+  "Random forest"                = forest
+)
 
-c(stations = nrow(d), `present at` = mean(d$present == "yes"))
+# every station's out-of-fold probability of presence, in the survey's order
+out_of_fold <- map(models, \(model) {
+  fit_resamples(workflow(presence_recipe, model), folds,
+                metrics = metric_set(roc_auc),
+                control = control_resamples(save_pred = TRUE)) |>
+    collect_predictions() |>
+    arrange(.row) |>
+    pull(.pred_yes)
+})
+
+predictions <- as_tibble(out_of_fold) |>
+  mutate(present = survey$present) |>
+  pivot_longer(-present, names_to = "model", values_to = "probability") |>
+  mutate(model = fct_inorder(model))
+
+tibble(stations = nrow(survey),
+       `share present` = mean(survey$present == "yes"),
+       `outcome levels` = str_flatten(levels(survey$present), ", "))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
+                             log_loss, matthews_corrcoef, roc_auc_score, roc_curve)
+from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
+present = (survey["present"] == "yes").to_numpy()
 
-columns = ["present", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-d = pd.get_dummies(survey[columns].dropna(), columns=["substrate", "season"],
-                   drop_first=True)
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=61)
 
-X = d.drop(columns="present")
-truth = d["present"].astype(str)
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+          "substrate", "season", "longitude", "latitude"]
+categorical = ["substrate", "season"]
+numeric = [c for c in inputs if c not in categorical]
 
-folds = StratifiedKFold(n_splits=10, shuffle=True, random_state=71)
+def with_inputs(model):
+    recipe = ColumnTransformer([
+        # scaling leaves an unpenalised fit unchanged and helps the solver
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]), numeric),
+        ("nominal", OneHotEncoder(drop="first", sparse_output=False), categorical),
+    ])
+    return Pipeline([("recipe", recipe), ("model", model)])
 
-def out_of_fold(model):
-    """cross_val_predict is fit_resamples(): every row scored by a model that
-    did not see it."""
-    probabilities = cross_val_predict(model, X, truth, cv=folds,
-                                      method="predict_proba")
-    yes = list(np.unique(truth)).index("yes")
-    return pd.DataFrame({"truth": truth.to_numpy(),
-                         "pred_yes": probabilities[:, yes]})
-
-logistic = out_of_fold(Pipeline([("normalise", StandardScaler()),
-                                 ("model", LogisticRegression(C=np.inf,
-                                                              max_iter=2000))]))
-forest = out_of_fold(RandomForestClassifier(n_estimators=500, random_state=1))
-
-pd.Series({"stations": len(d), "present at": (truth == "yes").mean()})
-```
-
-:::
-
-Note the prevalence: the species is present at 78% of stations. This is the *opposite*
-situation to [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd),
-and the measures behave in mirror image.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: confusion
-at_threshold <- function(p, threshold) {
-  mutate(p, estimate = factor(if_else(.pred_yes >= threshold, "yes", "no"),
-                              levels = c("yes", "no")))
+models = {
+    "Predicting the share present": DummyClassifier(strategy="prior"),
+    "Logistic regression": LogisticRegression(C=np.inf, max_iter=5000),
+    # as ranger does for probabilities: a few inputs at each question,
+    # and no split of a leaf with fewer than 10 stations
+    "Random forest": RandomForestClassifier(n_estimators=500, max_features="sqrt",
+                                            min_samples_split=10, random_state=1),
 }
 
-conf_mat(at_threshold(logistic, 0.5), truth, estimate)
-```
+# every station's out-of-fold probability of presence, in the survey's order;
+# column 1 of predict_proba is the probability of True
+out_of_fold = {name: cross_val_predict(with_inputs(model), survey[inputs], present,
+                                       cv=folds, groups=survey["site_id"],
+                                       method="predict_proba")[:, 1]
+               for name, model in models.items()}
 
-## Python
+predictions = (pd.DataFrame(out_of_fold).assign(present=present)
+               .melt(id_vars="present", var_name="model", value_name="probability"))
 
-```python
-from sklearn.metrics import confusion_matrix
-
-def at_threshold(p, threshold):
-    return np.where(p["pred_yes"] >= threshold, "yes", "no")
-
-pd.DataFrame(
-    confusion_matrix(logistic["truth"], at_threshold(logistic, 0.5),
-                     labels=["yes", "no"]),
-    index=["Truth: yes", "Truth: no"],
-    columns=["Predicted: yes", "Predicted: no"],
-)
+pd.DataFrame({"stations": [len(survey)], "share present": [present.mean()]})
 ```
 
 :::
 
-Four numbers: 560 correctly flagged, 147 wasted dives, 3 missed populations, and just 10
-stations correctly identified as empty. Now every measure, from that one table.
+```{r}
+#| label: helpers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+f3 <- function(x) sprintf("%.3f", x)
+pct <- function(x) scales::percent(x, accuracy = 1)
+share_present <- mean(survey$present == "yes")
+n_absent <- sum(survey$present == "no")
+```
+
+The species was caught at `r pct(share_present)` of the `r nrow(survey)` stations, so
+presence is the common answer here. yardstick treats the first level of the outcome as
+the event a measure is about, and `present` lists `yes` first, so every measure below is
+about presence. In scikit-learn the outcome is `True` for presence, which its measures
+take as the event by default.
+
+### F1 cannot tell the models from calling every station present
+
+At the default threshold of 0.5, predicting the share present calls every station
+present, since it gives every station a probability near `r f2(share_present)`.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: measures
-class_measures <- metric_set(accuracy, sensitivity, specificity, ppv, npv,
-                             f_meas, bal_accuracy, j_index, kap, mcc)
+#| label: calls
+calls <- predictions |>
+  mutate(called = factor(if_else(probability >= 0.5, "yes", "no"),
+                         levels = c("yes", "no")))
 
-class_measures(at_threshold(logistic, 0.5), truth = truth, estimate = estimate) |>
-  select(measure = .metric, value = .estimate) |>
-  mutate(value = round(value, 3)) |>
-  arrange(desc(value))
+at_threshold <- calls |>
+  summarise(`true absences` = sum(called == "no" & present == "no"),
+            accuracy = accuracy_vec(present, called),
+            F1 = f_meas_vec(present, called),
+            `balanced accuracy` = bal_accuracy_vec(present, called),
+            # NA where the calls never vary
+            MCC = suppressWarnings(mcc_vec(present, called)),
+            .by = model)
+
+at_threshold |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score,
-                             cohen_kappa_score, f1_score, matthews_corrcoef,
-                             precision_score, recall_score)
-
-def class_measures(truth, estimate):
-    """yardstick's metric_set, assembled by hand. Specificity is recall with
-    the other class as the event, and NPV is precision the same way."""
-    keep = dict(labels=["yes", "no"], zero_division=0)
-    sensitivity = recall_score(truth, estimate, pos_label="yes", **keep)
-    specificity = recall_score(truth, estimate, pos_label="no", **keep)
-    return pd.DataFrame({
-        "measure": ["accuracy", "sensitivity", "specificity", "ppv", "npv",
-                    "f_meas", "bal_accuracy", "j_index", "kap", "mcc"],
-        "value": [
-            accuracy_score(truth, estimate),
-            sensitivity,
-            specificity,
-            precision_score(truth, estimate, pos_label="yes", **keep),
-            precision_score(truth, estimate, pos_label="no", **keep),
-            f1_score(truth, estimate, pos_label="yes", **keep),
-            balanced_accuracy_score(truth, estimate),
-            sensitivity + specificity - 1,
-            cohen_kappa_score(truth, estimate),
-            matthews_corrcoef(truth, estimate),
-        ],
+```{python}
+def at_threshold(g, threshold=0.5):
+    called = g.probability >= threshold
+    return pd.Series({
+        "true absences": int((~called & ~g.present).sum()),
+        "accuracy": accuracy_score(g.present, called),
+        "F1": f1_score(g.present, called),
+        "balanced accuracy": balanced_accuracy_score(g.present, called),
+        # scikit-learn gives 0 where the calls never vary
+        "MCC": matthews_corrcoef(g.present, called),
     })
 
-(class_measures(logistic["truth"], at_threshold(logistic, 0.5))
-    .round(3)
-    .sort_values("value", ascending=False))
+calls = (predictions.groupby("model", sort=False)
+         .apply(at_threshold, include_groups=False).reset_index())
+
+calls.round(3)
 ```
 
 :::
 
-## A table that splits in half
+```{r}
+#| label: call-numbers
+#| include: false
+call_of <- function(name, measure) at_threshold[[measure]][at_threshold$model == name]
+rule <- "Predicting the share present"
+f1_gap <- max(abs(at_threshold$F1 - call_of(rule, "F1")))
+```
 
-One model, one confusion matrix, ten measures, running from **0.058 to 0.995**, a factor of
-seventeen. Sorted as above, the table splits cleanly in half.
+Accuracy and F1 barely move. The rule that calls every station present has an F1 of
+`r f3(call_of(rule, "F1"))`, and neither model is more than `r f3(f1_gap)` away from it.
+The models differ in the true absences: of the `r n_absent` stations without the species,
+logistic regression called `r call_of("Logistic regression", "true absences")` absent and
+the random forest `r call_of("Random forest", "true absences")`. F1 never counts those
+stations, so it cannot see the difference.
 
-The top half, with sensitivity 0.995, F1 0.882, precision 0.792 and accuracy 0.792, says
-the model is good. Every one of them either ignores true negatives entirely or is
-dominated by the large positive class.
+Balanced accuracy and MCC can. Balanced accuracy puts the rule at
+`r f3(call_of(rule, "balanced accuracy"))`, logistic regression at
+`r f3(call_of("Logistic regression", "balanced accuracy"))` and the forest at
+`r f3(call_of("Random forest", "balanced accuracy"))`, and MCC gives
+`r f3(call_of("Logistic regression", "MCC"))` and
+`r f3(call_of("Random forest", "MCC"))`. MCC cannot be worked out for the rule:
+yardstick reports it as missing, and scikit-learn as 0, the value for calls unrelated to
+the truth. Both models are only a little better than the rule at this threshold, and the
+forest is the better of the two.
 
-The bottom half, with balanced accuracy 0.529, MCC 0.181, kappa 0.087, Youden's J 0.058 and
-specificity 0.064, says the model is barely distinguishable from a rule that flags everything.
-Every one of them weights the two classes equally or corrects for chance agreement.
+### The forest ranks the stations better
 
-The bottom half is right, and the easiest way to see it is to score the rule that flags
-everything.
+Predicting the share present is left out here. Within a fold it gives every station the
+same probability, so it ranks nothing.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: always-yes
-always_present <- mutate(logistic, estimate = factor("yes", levels = c("yes", "no")))
+#| label: roc
+ranked <- filter(predictions, model != rule) |>
+  mutate(model = fct_drop(model))
 
-c(F1       = f_meas_vec(always_present$truth, always_present$estimate),
-  accuracy = accuracy_vec(always_present$truth, always_present$estimate),
-  kappa    = kap_vec(always_present$truth, always_present$estimate)) |> round(3)
+ranked |>
+  summarise(`ROC AUC` = round(roc_auc_vec(present, probability), 3), .by = model)
 ```
 
 ## Python
 
-```python
-always_present = np.repeat("yes", len(logistic))
+```{python}
+ranked = predictions[predictions["model"] != "Predicting the share present"]
 
-pd.Series({
-    "F1": f1_score(logistic["truth"], always_present, pos_label="yes",
-                   zero_division=0),
-    "accuracy": accuracy_score(logistic["truth"], always_present),
-    "kappa": cohen_kappa_score(logistic["truth"], always_present),
-}).round(3)
+(ranked.groupby("model", sort=False)
+ .apply(lambda g: pd.Series({"ROC AUC": roc_auc_score(g.present, g.probability)}),
+        include_groups=False)
+ .reset_index().round(3))
 ```
 
 :::
 
-A rule with no model in it at all scores F1 = 0.878, against the real model's 0.882. F1's
-denominator never contains TN, so a measure built for rare-event retrieval cannot tell a
-fitted model from a constant when the event is common. MCC for that rule is undefined,
-since it divides by zero because there is no variation in the prediction at all, and kappa
-is exactly 0, which is the honest answer.
-
-::: {.callout-warning}
-## The `event_level` trap
-
-`yardstick` treats the **first** factor level as the event. Here `present` has levels
-`yes`, `no`, so "yes" is the event, which is what we wanted. Read the levels of your response
-before you trust any of these numbers, because R orders factor levels alphabetically by
-default, which would have made `"no"` the event.
+```{r}
+#| label: roc-numbers
+#| include: false
+aucs <- ranked |>
+  summarise(auc = roc_auc_vec(present, probability), .by = model)
+auc_of <- function(name) aucs$auc[aucs$model == name]
+curves <- ranked |>
+  group_by(model) |>
+  roc_curve(present, probability) |>
+  ungroup()
+# the calls at 0.5 from the first part, as points on each curve
+default_calls <- calls |>
+  filter(model != rule) |>
+  summarise(sensitivity = sensitivity_vec(present, called),
+            specificity = specificity_vec(present, called), .by = model)
+```
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: event-level
-scored <- at_threshold(logistic, 0.5)
-
-c(`sensitivity, event = yes` = sensitivity_vec(scored$truth, scored$estimate),
-  `sensitivity, event = no`  = sensitivity_vec(scored$truth, scored$estimate,
-                                               event_level = "second"),
-  `ROC AUC, event = yes`     = roc_auc_vec(logistic$truth, logistic$.pred_yes),
-  `ROC AUC, event = no`      = roc_auc_vec(logistic$truth, logistic$.pred_yes,
-                                           event_level = "second")) |> round(3)
-```
-
-## Python
-
-```python
-from sklearn.metrics import roc_auc_score
-
-scored = at_threshold(logistic, 0.5)
-
-pd.Series({
-    "sensitivity, event = yes": recall_score(logistic["truth"], scored,
-                                             pos_label="yes"),
-    "sensitivity, event = no": recall_score(logistic["truth"], scored,
-                                            pos_label="no"),
-    # Swapping the event flips the score being ranked as well as the label,
-    # which is why the two AUCs agree where the two sensitivities do not.
-    "ROC AUC, event = yes": roc_auc_score(logistic["truth"] == "yes",
-                                          logistic["pred_yes"]),
-    "ROC AUC, event = no": roc_auc_score(logistic["truth"] == "no",
-                                         1 - logistic["pred_yes"]),
-}).round(3)
-```
-
-:::
-
-A sensitivity of 0.995 and one of 0.064 are the same model. And there is a free diagnostic in
-the last line: **a ROC AUC below 0.5 almost always means the event level is wrong**, not that
-your model is worse than chance. 0.350 is 1 − 0.650.
-:::
-
-### Different measures want different thresholds
-
-The threshold is not part of the model. It is a decision you make afterwards, and each measure
-has an opinion about it.
-
-```{r}
-#| label: fig-threshold
-#| fig-cap: "Five threshold-dependent measures across the full range of cut-offs, each computed from the logistic model's out-of-fold probabilities. Accuracy and F1 sit near their maxima across the whole left half and peak at 0.52. MCC, balanced accuracy and Youden's J peak at 0.78, the prevalence, and are pinned at their floor values (0 and 0.50) below about 0.45, where accuracy and F1 see nothing wrong at all."
-#| fig-alt: "A line plot with threshold from 0.05 to 0.99 on the horizontal axis and measure value from below 0 to about 0.9 on the vertical, with two vertical dashed lines at 0.52 and 0.78. F1 runs flat near 0.88 and accuracy flat near 0.78 across the left half; both have a marked peak at 0.52 and then decline, gently at first and steeply after about 0.85. Balanced accuracy runs flat at exactly 0.50 until about 0.45, then climbs to a marked peak of 0.62 at 0.78. MCC and Youden's J run flat at zero until about 0.45, then rise raggedly, with MCC showing a local bump of about 0.19 near 0.52, before both peak just under 0.25 at 0.78 and fall back to zero at the right-hand edge."
-#| fig-width: 7
-#| fig-height: 4.6
-sweep <- map_dfr(seq(0.05, 0.99, by = 0.01), \(t) {
-  z <- at_threshold(logistic, t)
-  tibble(threshold = t,
-         accuracy            = accuracy_vec(z$truth, z$estimate),
-         F1                  = f_meas_vec(z$truth, z$estimate),
-         MCC                 = mcc_vec(z$truth, z$estimate),
-         `balanced accuracy` = bal_accuracy_vec(z$truth, z$estimate),
-         `Youden's J`        = j_index_vec(z$truth, z$estimate))
-}) |>
-  pivot_longer(-threshold, names_to = "measure", values_to = "value")
-
-peaks <- slice_max(sweep, value, by = measure, n = 1)
-
-ggplot(sweep, aes(threshold, value, colour = measure)) +
-  geom_vline(xintercept = unique(peaks$threshold), linetype = "dashed",
-             colour = ml_palette[["grey"]], linewidth = 0.4) +
-  geom_line(linewidth = 0.9, na.rm = TRUE) +
-  geom_point(data = peaks, size = 2.6) +
-  ggrepel::geom_text_repel(data = peaks, aes(label = measure), size = 3.1, seed = 7,
-                           direction = "y", hjust = 0, nudge_x = 0.04,
-                           min.segment.length = 0.3) +
-  scale_x_continuous(breaks = c(0.05, 0.25, 0.52, 0.78, 0.99), limits = c(0.05, 1.22)) +
+#| label: fig-roc
+#| fig-cap: !expr glue::glue("ROC curves of the two models' out-of-fold probabilities, showing sensitivity against specificity at every threshold. The dashed diagonal is ranking at random. The points mark the default threshold of 0.5, high on sensitivity and low on specificity. The forest's curve, with a ROC AUC of {f3(auc_of('Random forest'))}, lies above logistic regression's, at {f3(auc_of('Logistic regression'))}.")
+#| fig-alt: !expr glue::glue("A plot of sensitivity from 0 to 1 against specificity running from 1 on the left to 0 on the right, with a dashed diagonal from the bottom left to the top right. Two curves rise from the bottom left corner to the top right corner, both above the diagonal. The orange curve, the random forest, lies above the blue one, logistic regression, along most of its length. A point on each curve marks the threshold of 0.5, both near the top right corner, logistic regression at specificity {f2(default_calls$specificity[default_calls$model == 'Logistic regression'])} and the forest at {f2(default_calls$specificity[default_calls$model == 'Random forest'])}.")
+#| fig-width: 5.6
+#| fig-height: 5
+ggplot(curves, aes(specificity, sensitivity, colour = model)) +
+  geom_abline(intercept = 1, slope = 1, colour = "grey70", linetype = "dashed") +
+  geom_path(linewidth = 1) +
+  geom_point(data = default_calls, size = 3.2) +
+  scale_x_reverse() +
   scale_colour_ml() +
-  labs(x = "probability threshold for calling the species present", y = NULL,
-       title = "Where each measure says the cut-off should be") +
-  theme(legend.position = "none")
+  coord_equal() +
+  labs(x = "Specificity", y = "Sensitivity", colour = NULL) +
+  theme(legend.position = "bottom")
 ```
 
-Accuracy and F1 are maximised at 0.52. MCC, balanced accuracy and Youden's J are all maximised
-at 0.78, which is exactly the prevalence. Those are two genuinely different surveys: the first
-flags almost everything and finds almost everything; the second flags about half the stations
-and gets a balanced accuracy of 0.625 instead of 0.529.
+:::
 
-### The two threshold-free measures, and their baselines
+The forest's ROC AUC is `r f3(auc_of("Random forest"))`, and logistic regression's
+`r f3(auc_of("Logistic regression"))`: in about `r round(100 * auc_of("Random forest"))`
+of 100 pairs of a station with the species and one without, the forest gives the station
+with the species the higher probability. Its curve lies above the other along most of its
+length, so whatever threshold is chosen, the forest can reach the same sensitivity with
+fewer false alarms. The points show why the first part made the two models look so alike:
+0.5 sits near the top right corner, where the curves are closest.
+
+### Log loss rewards probabilities that are spread out and calibrated
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: aucs
-set.seed(9)
-coin_flip <- runif(nrow(logistic))
+#| label: log-loss
+probability_scores <- predictions |>
+  summarise(`log loss` = mn_log_loss_vec(present, probability),
+            lowest = min(probability), highest = max(probability),
+            .by = model)
 
-tibble(
-  ranking = c("logistic regression", "random forest", "random numbers"),
-  `ROC AUC` = c(roc_auc_vec(logistic$truth, logistic$.pred_yes),
-                roc_auc_vec(forest$truth,   forest$.pred_yes),
-                roc_auc_vec(logistic$truth, coin_flip)),
-  `PR AUC`  = c(pr_auc_vec(logistic$truth, logistic$.pred_yes),
-                pr_auc_vec(forest$truth,   forest$.pred_yes),
-                pr_auc_vec(logistic$truth, coin_flip))
-) |> mutate(across(where(is.double), \(x) round(x, 3)))
+probability_scores |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-from sklearn.metrics import average_precision_score
+```{python}
+probability_scores = (predictions.groupby("model", sort=False)
+                      .apply(lambda g: pd.Series({
+                          "log loss": log_loss(g.present, g.probability),
+                          "lowest": g.probability.min(),
+                          "highest": g.probability.max(),
+                      }), include_groups=False)
+                      .reset_index())
 
-coin_flip = np.random.default_rng(9).random(len(logistic))
-
-def aucs(truth, score):
-    # average_precision_score is the step-wise PR area; yardstick's pr_auc
-    # interpolates, so the two differ slightly on the same numbers.
-    return (roc_auc_score(truth == "yes", score),
-            average_precision_score(truth == "yes", score))
-
-pd.DataFrame({
-    "ranking": ["logistic regression", "random forest", "random numbers"],
-    "ROC AUC": [aucs(logistic["truth"], logistic["pred_yes"])[0],
-                aucs(forest["truth"], forest["pred_yes"])[0],
-                aucs(logistic["truth"], coin_flip)[0]],
-    "PR AUC": [aucs(logistic["truth"], logistic["pred_yes"])[1],
-               aucs(forest["truth"], forest["pred_yes"])[1],
-               aucs(logistic["truth"], coin_flip)[1]],
-}).round(3)
+probability_scores.round(3)
 ```
 
 :::
 
-The last row is the point. **A ROC AUC is measured against 0.5; a PR AUC is measured against
-the prevalence.** Here the prevalence is 0.78, so the logistic model's PR AUC of 0.847 is
-0.07 above a coin flip, while its ROC AUC of 0.650 is 0.15 above one. Reported without its
-baseline, "PR AUC 0.85" sounds like a strong model and is not.
+```{r}
+#| label: log-loss-numbers
+#| include: false
+loss_of <- function(name) probability_scores$`log loss`[probability_scores$model == name]
+spread_of <- function(name, end) probability_scores[[end]][probability_scores$model == name]
+# eight groups of equal size by predicted probability, for the calibration plot
+calibration <- ranked |>
+  mutate(group = ntile(probability, 8), .by = model) |>
+  summarise(predicted = mean(probability), observed = mean(present == "yes"),
+            .by = c(model, group))
+range_of <- function(name) range(calibration$predicted[calibration$model == name])
+```
 
-[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) met the same arithmetic
-from the other end: with the species at about 5% of stations, a precision near 0.1 sounded
-poor and was about twice what calling every station present would give. Neither number
-means anything until you say what the prevalence was.
+A **calibration plot** checks the second half of what log loss rewards. It sorts each
+model's stations by their predicted probability into eight groups of
+`r nrow(survey) / 8`, and plots each group's average probability against the share of
+its stations where the species was caught.
 
-### Whether the probabilities mean what they say
+::: {.panel-tabset group="language"}
 
-Every measure so far depends only on the *order* of the probabilities, or on which side of a
-line they fall. None asks whether 0.8 means 80%. For that, bin the predictions and look.
+## R
 
 ```{r}
 #| label: fig-calibration
-#| fig-cap: "Calibration of the two models' out-of-fold probabilities, binned in tenths and sized by how many stations each bin holds. A perfectly calibrated model lies on the dashed diagonal. The large bins of both models sit on it. The small ones do not, in both directions: the logistic model's 13-station bin at 0.47 saw the species at only 23% of stations, and the forest's 6-station bin at 0.26 saw it at none. The forest spreads its probabilities from 0.16 to 0.94 where the logistic model only spans 0.47 to 0.92, which is why it discriminates better."
-#| fig-alt: "A scatter plot with mean predicted probability on the horizontal axis and observed proportion present on the vertical, both from 0 to 1, with a dashed grey diagonal reference line. Points are sized by how many stations each bin contains and joined by lines, one blue series for logistic regression and one orange for the random forest. The blue series occupies only the right-hand half, from 0.47 to 0.92; its four large points sit on or very near the diagonal, but its smallest point, at 0.47, drops far below to 0.23. The orange series stretches from 0.16 to 0.94; its large points also sit near the diagonal, while its small low-probability points scatter widely: two sit above the line at 0.34 and 0.46, and two below, one of them at 0.26 lying exactly on zero."
-#| fig-width: 7
-#| fig-height: 4.6
-calibration <- bind_rows(
-  mutate(logistic, model = "logistic regression"),
-  mutate(forest,   model = "random forest")
-) |>
-  mutate(bin = cut(.pred_yes, breaks = seq(0, 1, 0.1), include.lowest = TRUE)) |>
-  summarise(stations = n(), predicted = mean(.pred_yes),
-            observed = mean(truth == "yes"), .by = c(model, bin))
-
+#| fig-cap: !expr glue::glue("Calibration of the two models' out-of-fold probabilities, in eight groups of {nrow(survey) / 8} stations each. Points on the dashed diagonal mean the probabilities can be read as chances. The grey cross is predicting the share present, which gives every station the same probability. Both models stay close to the diagonal; the forest's groups spread from {f2(range_of('Random forest')[1])} to {f2(range_of('Random forest')[2])}, wider than logistic regression's.")
+#| fig-alt: !expr glue::glue("A plot of the share of stations with the species against the average predicted probability, both from 0.3 to 1, with a dashed diagonal. Eight blue points for logistic regression run from {f2(range_of('Logistic regression')[1])} to {f2(range_of('Logistic regression')[2])} along the diagonal, a little above or below it. Eight orange points for the random forest run further, from {f2(range_of('Random forest')[1])} to {f2(range_of('Random forest')[2])}, also close to the diagonal. A single grey cross for predicting the share present sits on the diagonal at {f2(share_present)}.")
+#| fig-width: 5.6
+#| fig-height: 5
 ggplot(calibration, aes(predicted, observed, colour = model)) +
-  geom_abline(linetype = "dashed", colour = ml_palette[["grey"]], linewidth = 0.4) +
-  geom_line(linewidth = 0.7) +
-  geom_point(aes(size = stations)) +
-  scale_size_area(max_size = 7) +
+  geom_abline(colour = "grey70", linetype = "dashed") +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2.8) +
+  annotate("point", x = share_present, y = share_present, shape = 4, size = 5,
+           stroke = 1.6, colour = "grey45") +
   scale_colour_ml() +
-  coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
-  labs(x = "mean predicted probability in bin", y = "proportion actually present",
-       title = "Do the probabilities mean what they say?") +
-  theme(legend.position = "right", legend.box = "vertical")
-```
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: brier
-c(`Brier score, logistic` = brier_class_vec(logistic$truth, logistic$.pred_yes),
-  `Brier score, forest`   = brier_class_vec(forest$truth,   forest$.pred_yes)) |> round(4)
-```
-
-## Python
-
-```python
-from sklearn.metrics import brier_score_loss
-
-pd.Series({
-    "Brier score, logistic": brier_score_loss(logistic["truth"],
-                                              logistic["pred_yes"],
-                                              pos_label="yes"),
-    "Brier score, forest": brier_score_loss(forest["truth"],
-                                            forest["pred_yes"],
-                                            pos_label="yes"),
-}).round(4)
+  coord_equal(xlim = c(0.3, 1), ylim = c(0.3, 1)) +
+  labs(x = "Average predicted probability", y = "Share with the species",
+       colour = NULL) +
+  theme(legend.position = "bottom")
 ```
 
 :::
 
-The **Brier score** is the mean squared error of the probabilities, so lower is better and it
-rewards being both well ordered and well calibrated. The forest wins on all three threshold-free
-measures: ROC AUC, PR AUC and Brier. At a 0.5 threshold that advantage mostly disappears:
+Both models' groups stay close to the diagonal, so their probabilities can be read as
+chances. Predicting the share present is calibrated too: it says
+`r f2(share_present)` everywhere, and the species was caught at `r pct(share_present)`
+of the stations. What it lacks is spread, and log loss charges it the most, at
+`r f3(loss_of(rule))`. Logistic regression lowers that to
+`r f3(loss_of("Logistic regression"))` and the forest to
+`r f3(loss_of("Random forest"))`, `r pct(1 - loss_of("Random forest") / loss_of(rule))`
+below the rule. The forest gains by spreading its probabilities further, from
+`r f2(spread_of("Random forest", "lowest"))` to `r f2(spread_of("Random forest", "highest"))`
+against logistic regression's `r f2(spread_of("Logistic regression", "lowest"))` to
+`r f2(spread_of("Logistic regression", "highest"))`, while staying calibrated. The spread
+that lowers its log loss is the same that gave it the higher ROC AUC.
+Here the three kinds of measure agree on the order of the models. The diagram above shows
+that they need not.
 
-::: {.panel-tabset group="language"}
+## Balanced accuracy scores calls, ROC AUC rankings and log loss chances
 
-## R
+When the calls drive the work, at a threshold already chosen from what each mistake costs,
+report measures of the calls, and choose balanced accuracy or MCC unless the true absences
+really do not matter. To compare models before the threshold is chosen, report ROC AUC.
+When the probabilities themselves are used, as on a map of the chance of finding the
+species or when they are added up into an expected number of occupied stations, report
+log loss and check a calibration plot. ROC AUC cannot tell whether a 0.8 means 8 in 10.
+[Choosing measures that match the objective](choosing-a-metric.qmd) takes this further.
 
-```{r}
-#| label: forest-confusion
-conf_mat(at_threshold(forest, 0.5), truth, estimate)
-```
-
-## Python
-
-```python
-pd.DataFrame(
-    confusion_matrix(forest["truth"], at_threshold(forest, 0.5),
-                     labels=["yes", "no"]),
-    index=["Truth: yes", "Truth: no"],
-    columns=["Predicted: yes", "Predicted: no"],
-)
-```
-
-:::
-
-It finds 30 of the 157 empty stations where the logistic model found 10, which is better
-but still a specificity of 0.19. A model can rank stations well and still be useless at
-the cut-off you happen to apply, because 0.5 is the wrong line for a response present 78%
-of the time.
-
-Discrimination, calibration and the threshold are three separate things. Report at least one
-measure of each.
-
-## Limits of these numbers
-
-Every number on this page was computed from 720 stations pooled across ten folds, and carries
-the fold-to-fold uncertainty [the next page](uncertainty-and-stability.qmd) quantifies. A
-difference of 0.02 in MCC between two models is not a result.
-
-Calibration bins are also arbitrary. Ten equal-width bins put six stations in one of the
-forest's and 223 in another, and the sparse bins bounce around. Equal-*count* bins, or a
-smoothed calibration curve, are steadier; the `probably` package has both.
-
-::: {.callout-tip}
 ## Key points
 
-- Accuracy, sensitivity, specificity, precision, F1, kappa, J and MCC are all ratios of the
-  same four numbers. They disagree because they use different cells.
-- On this model they ran from 0.058 to 0.995. The ones that ignore true negatives said it was
-  good; the ones that do not said it was barely better than flagging every station, and F1
-  scored a constant rule at 0.878 against the model's 0.882.
-- Check `event_level`. A ROC AUC below 0.5 is nearly always the wrong factor level, not a bad
-  model.
-- Accuracy and F1 wanted a threshold of 0.52; MCC, balanced accuracy and Youden's J wanted 0.78.
-  Pick the threshold from the costs, not from a measure.
-- PR AUC's baseline is the prevalence, not 0.5. Quote the prevalence next to it or the number
-  is unreadable.
-- Discrimination and calibration are different. The Brier score and a calibration plot cover
-  what the AUCs cannot.
+::: {.key-points}
+- Presence can be scored on the **calls** at one threshold, on the **ranking** the
+  probabilities make, or on the **probabilities** themselves. A model can do well on one
+  and poorly on another.
+- **F1** never counts the true absences. With the species at `r pct(share_present)` of
+  stations, calling every station present scored an F1 of `r f3(call_of(rule, "F1"))`,
+  within `r f3(f1_gap)` of both models. **Balanced accuracy** and **MCC** count every
+  cell and told the models apart.
+- **ROC AUC** is the area under the curve of sensitivity against specificity: the share
+  of pairs, one station with the species and one without, ranked the right way round.
+  It is 0.5 for ranking at random, and it ignores how high or low the probabilities are.
+- **Log loss** rewards probabilities that are both spread out and **calibrated**. A
+  calibration plot shows whether a predicted 0.8 means 8 in 10.
+- yardstick treats the first level of the outcome as the event. Check the levels before
+  trusting any of these measures.
 :::
 
 ## Try it yourself
 
-1. Recompute the whole measures table with the folds *grouped by site*. Which measures move
-   most?
-2. Fit the logistic model to `rare_species` instead and repeat the AUC table. Confirm that PR
-   AUC's baseline moves to that prevalence while ROC AUC's stays at 0.5.
+1. Add a fourth model: logistic regression with `step_upsample(present)` from the
+   `themis` package at the end of its recipe, as in
+   [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd). Predict first:
+   does its ROC AUC or its log loss move more?
+2. Score the three models on `rare_species` instead of `present`. How does the F1 of
+   predicting the share present change when the species is rare?

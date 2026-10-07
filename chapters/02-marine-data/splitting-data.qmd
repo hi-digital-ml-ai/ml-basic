@@ -283,5 +283,6 @@ provides them as recipe steps. Two conditions apply:
    species in each test set. How much does it move?
 2. Fit a linear regression of `abundance` on depth, temperature and salinity under
    `initial_split()` and under `group_initial_split()`, and compare the test RMSE. The
-   difference is what the random split was hiding, and it is the subject of
-   [section 7](../07-validation/index.qmd).
+   difference is what the random split was hiding.
+   [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+   measures it with folds of stations, sites and blocks.
