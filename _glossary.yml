@@ -126,3 +126,123 @@ terms:
   - term: "Bayes' rule"
     definition: "The rule a generative model uses to classify: weigh each group by how well its description fits the new case, times how common the group is."
     page: chapters/01-introduction/discriminative-and-generative-models.qmd
+
+  # 2 · Marine data: The coastal survey
+  - term: "Station"
+    definition: "One visit of the survey ship to one place, where the water is measured and the seabed sampled; one row of the survey."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Observation"
+    definition: "One row of a data table: one thing that was measured, such as one station; machine learning also calls it an example, instance or sample."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Correlation"
+    definition: "A number from −1 to 1 for how closely two columns follow a straight-line link: 1 if they always rise together, −1 if one always falls as the other rises, 0 for no straight-line link."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Pseudo-replication"
+    definition: "Treating rows that share a source, such as repeat visits to one site, as if they were independent observations, which makes the evidence look stronger than it is."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+
+  # 2 · Marine data: Kinds of marine data
+  - term: "Continuous variable"
+    definition: "A measured quantity, where a difference of one unit means the same everywhere on the scale, such as temperature or depth."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Categorical variable"
+    definition: "A variable that puts each row into one of a fixed set of groups, such as a seabed type or a vessel."
+    page: chapters/02-marine-data/marine-data-types.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Nominal"
+    definition: "A category with no order between its groups, such as sand, mud, gravel and rock."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Ordinal"
+    definition: "A category whose groups have an order but no known spacing, such as low, medium and high; coding them 1, 2, 3 assumes the spacing."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Circular variable"
+    definition: "A variable that returns to where it started, such as month, time of day or a bearing; encoded as its sine and cosine so that the ends of the cycle are neighbours."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Profile"
+    definition: "A series of measurements down the water at one place and time, such as a CTD cast; usually summarised into one row per cast."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Compositional data"
+    definition: "Shares of a whole that sum to one, such as the proportion of each species in a sample, so that one share can rise only if others fall."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Log-ratio"
+    definition: "The log of one share divided by another share, or by the average of the shares, which frees compositional data from summing to one."
+    page: chapters/02-marine-data/marine-data-types.qmd
+
+  # 2 · Marine data: Exploring and cleaning the data
+  - term: "Exploratory data analysis"
+    definition: "A first look at a dataset, by plots and counts, whose aim is to find what is wrong with it before any model is fitted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Sentinel value"
+    definition: "A number such as −999 written in place of a missing value, which a model or summary will treat as a real measurement unless it is converted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing value"
+    definition: "A value that was not recorded, written NA in R and NaN in Python, so that no summary mistakes it for a measurement."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Outlier"
+    definition: "A value far from the rest of the data: sometimes an error, often a genuine extreme that should be kept."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing completely at random"
+    definition: "Gaps that follow nothing at all, such as a dropped sample bottle; dropping those rows costs precision but adds no bias."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing at random"
+    definition: "Gaps that follow something that was recorded, such as the season, so the recorded columns can help fill them in."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing not at random"
+    definition: "Gaps that depend on the missing value itself, such as a sensor that fails in the conditions it should measure; no fix from the data alone can repair them."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Imputation"
+    definition: "Filling in missing values by predicting them from the columns that were recorded, done as part of the model so that the test data play no part."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+
+  # 2 · Marine data: Scaling and encoding
+  - term: "Standardising"
+    definition: "Subtracting a column's mean and dividing by its standard deviation, so that every column has mean 0 and spread 1 whatever its units; the usual form of scaling."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Log transform"
+    definition: "Replacing each value by its logarithm, which pulls in a long right tail and turns effects that multiply into effects that add."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Dummy column"
+    definition: "A column of 0s and 1s that marks one level of a category; a category with k levels becomes k − 1 of them, and the remaining level is the baseline."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Target encoding"
+    definition: "Replacing each level of a category by a summary of the outcome for that level, which uses the outcome and so risks leakage."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Workflow"
+    definition: "In tidymodels, a recipe and a model joined so that they are fitted together and applied to new data together; scikit-learn's Pipeline does the same job."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+
+  # 2 · Marine data: Splitting the data
+  - term: "Validation set"
+    definition: "Cases held back from fitting and used to choose between models or settings, so that the test set is left for the final report."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Cross-validation"
+    definition: "Taking the validation role inside the training set by letting parts of it take turns at being held back, so that every case is used for both fitting and checking."
+    page: chapters/02-marine-data/splitting-data.qmd
+    more: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Stratified split"
+    definition: "A split that draws each class separately, so that a rare class keeps the same share in the training and test sets."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Grouped split"
+    definition: "A split that assigns whole groups, such as all the visits to one site, to one side, so that the test set holds only groups the model has not seen."
+    page: chapters/02-marine-data/splitting-data.qmd
+
+  # 2 · Marine data: Avoiding information leakage
+  - term: "Information leakage"
+    definition: "Information from the test set reaching the model before it is tested, which makes the test score promise more than the model delivers on new data."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "R² (R squared)"
+    definition: "The share of the variation in the test outcomes that the predictions follow, from 0 (none) to 1 (all of it). Higher is better."
+    page: chapters/02-marine-data/information-leakage.qmd
+    more: chapters/07-validation/regression-metrics.qmd
+  - term: "Target leakage"
+    definition: "Leakage through an input made from the outcome, such as a catch weight when predicting the count of the same catch."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Group leakage"
+    definition: "Leakage through the same unit, such as a site, appearing in both the training set and the test set."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Selection leakage"
+    definition: "Leakage through choosing inputs or models by looking at every row, test rows included."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Preprocessing leakage"
+    definition: "Leakage through a preparation step, such as filling gaps with a median, that learns its numbers from every row instead of the training set alone."
+    page: chapters/02-marine-data/information-leakage.qmd

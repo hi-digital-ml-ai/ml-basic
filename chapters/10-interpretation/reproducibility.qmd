@@ -377,7 +377,7 @@ would need to.
 
 | Report | For example | Covered in |
 | --- | --- | --- |
-| The data | Where they come from, how many sites and stations, which were removed and why | [Missing values and outliers](../02-marine-data/missing-values-and-outliers.qmd) |
+| The data | Where they come from, how many sites and stations, which were removed and why | [Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) |
 | The split | How the sites were split and folded, and why that suits the predictions' use | [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |
 | The model | The method, its package and version, and every setting, defaults included | [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) |
 | The tuning | What was searched, and that the search ran inside the folds | [Cross-validation](../07-validation/cross-validation.qmd) |

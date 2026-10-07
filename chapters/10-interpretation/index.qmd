@@ -63,8 +63,8 @@ intervals on predictions by their coverage at new sites.
 [Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured how far a forest
 moves without a seed; [Reproducibility and transparent reporting](reproducibility.qmd)
 compares that with the split of sites.
-[Exploring the data first](../02-marine-data/exploratory-analysis.qmd) compared records
-by gear, and [From a model to a claim](from-model-to-claim.qmd) shows
+[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
+by vessel, and [From a model to a claim](from-model-to-claim.qmd) shows
 the bias that no comparison of a model with its records can find.
 
 ## Pages in this section

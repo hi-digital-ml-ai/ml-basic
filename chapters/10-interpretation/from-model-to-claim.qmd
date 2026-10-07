@@ -517,7 +517,7 @@ Checks on the records come from outside the model:
 - **Reporting the gear and the effort.** A reader who knows how the animals were
   caught can judge how far the records match the water.
 
-[Exploring the data first](../02-marine-data/exploratory-analysis.qmd) compared records
+[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
 by group, such as vessel or gear, and so finds a gear that differs from the rest. A
 bias shared by every haul shows up only against one of the checks above.
 

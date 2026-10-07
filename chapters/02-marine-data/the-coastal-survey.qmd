@@ -1,6 +1,6 @@
 ---
 title: "The coastal survey"
-description: "The simulated survey the course works on: what one station records, what each column means, how the columns relate, and the four files built from it."
+description: "The simulated survey the course works on: what one station records, and why its 800 rows are fewer independent observations than they look."
 order: 1
 categories: [marine-data, eda]
 ---
@@ -24,13 +24,15 @@ span <- function(x, digits = 0) {
 pct <- function(x) paste0(round(100 * mean(x)), "%")
 ```
 
+{{< new-terms >}}
+
 ## Most examples come from this survey
 
 Almost every example in this course comes from one dataset, a survey of the seabed
 along a stretch of coast. Once you know it well, later pages can spend your attention
-on the method instead of the data. By the end of this page you will be able to read
-any row of the survey, know which of its columns tend to move together, and know
-which file to load for which job.
+on the method instead of the data. This page shows what one row of the survey holds,
+names the parts of a data table, shows which columns move together, and counts how
+many independent observations the table really contains.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -88,11 +90,33 @@ survey.info()
 | `abundance` | The number of animals of the species counted in the sample | `r span(survey$abundance)` |
 | `present` | Whether the species was found at all | yes at `r pct(survey$present == "yes")` of stations |
 
-Most columns are **numbers**; `season`, `substrate` and `present` are **categories**,
-which a model has to handle differently (see
-[Scaling and encoding](scaling-and-encoding.qmd)). The last two columns describe the
-species, and most pages use one of them as the **outcome**, the thing a model
-predicts. The other columns are the candidate **inputs**.
+Most columns are numbers; `season`, `substrate` and `present` are categories, which a
+model has to handle differently (see [Kinds of marine data](marine-data-types.qmd)).
+
+## Each row is an observation
+
+A data table holds one **observation** in each row: one thing that was measured, here
+one station. Most pages use one of the two species columns, `abundance` or `present`,
+as the **outcome** a model predicts, and some of the other columns as its **inputs**.
+[Types of learning](../01-introduction/types-of-learning.qmd) introduced both terms.
+
+Machine learning grew up in computer science and in statistics separately, so each
+part of the table has several names, and the literature uses all of them:
+
+| In this course | Also called | What it is |
+| --- | --- | --- |
+| **Observation** | row, instance, example, sample, case | One thing that was measured |
+| **Input** | feature, predictor, covariate, independent variable, attribute | Something known about it |
+| **Outcome** | response, target, dependent variable, $y$ | What the model predicts |
+| **Label** | class, annotation, ground truth | A known outcome, often one a person assigned |
+
+Beware of "sample": in machine learning it means one observation, in field science
+the whole collection.
+
+What one row should be is a scientific choice. A survey that returns to the same
+sites could have one row per sample, per visit, or per site, and the right one follows
+from the question: a question about a site's character needs one row per site, not
+one per visit.
 
 ## The shelf deepens offshore
 
@@ -113,8 +137,8 @@ ggplot(survey, aes(longitude, latitude, colour = depth_m)) +
 
 The stations are spread evenly over the area rather than laid on a grid. Stations
 close together share more than their depth: they sit in the same patch of sea, so
-their counts tend to be alike. That matters when a page holds stations back to test a
-model, and [Splitting the data](splitting-data.qmd) comes back to it.
+their counts tend to be alike. That matters when stations are held back to test a
+model, as the count of sites further down shows.
 
 ## Depth shapes the water
 
@@ -148,8 +172,8 @@ r_dt <- cor(survey$depth_m, survey$temperature_c)
 A **correlation** puts a number on this, from −1 (one always falls as the other rises)
 through 0 (no straight-line link) to 1 (they always rise together). Depth and salinity
 have a correlation of `r round(r_ds, 2)`; depth and temperature
-`r sub("-", "−", round(r_dt, 2))`. Variables that move together like this are
-normal in marine data, and they are behind the warning in
+`r sub("-", "−", round(r_dt, 2))`. Columns that move together like this are normal in
+marine data, and they are behind the warning in
 [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd): a
 column can help a model predict simply because it travels with another one.
 
@@ -173,6 +197,67 @@ stations hold `r median(survey$abundance)` animals or fewer, and the largest cou
 tail, are typical of survey catches, and they are why the course treats abundance with
 some care.
 
+## The stations come from far fewer sites
+
+The survey returns to fixed sites, and each visit to a site is one station. The clean
+file leaves the site out, but the raw file, the survey as it came off the ship, keeps
+it in a column `site_id`:
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: sites
+raw <- load_coastal_survey_raw()
+
+tibble(
+  rows             = nrow(raw),
+  `unique rows`    = nrow(distinct(raw)),
+  `distinct sites` = n_distinct(raw$site_id)
+)
+```
+
+## Python
+
+```{python}
+import pandas as pd
+
+from mlbasic_data import load_coastal_survey_raw
+
+raw = load_coastal_survey_raw()
+
+pd.DataFrame({
+    "rows": [len(raw)],
+    "unique rows": [len(raw.drop_duplicates())],
+    "distinct sites": [raw["site_id"].nunique()],
+})
+```
+
+:::
+
+A model treats every row as independent evidence. These rows are not, in three ways:
+
+- **Duplicates.** `r nrow(raw) - nrow(distinct(raw))` rows are the same station
+  entered twice. They add nothing but count double, and a copy in the test data is
+  predicted perfectly without the model having learned anything; see
+  [Avoiding information leakage](information-leakage.qmd).
+- **Repeat visits.** The `r nrow(distinct(raw))` unique rows come from only
+  `r n_distinct(raw$site_id)` sites, about
+  `r round(nrow(distinct(raw)) / n_distinct(raw$site_id))` visits each. Visits to one
+  site share the water and the seabed, so they are closer to repeats of one
+  observation than to separate ones. Treating them as separate is called
+  **pseudo-replication**.
+- **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth;
+  [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+  comes back to this.
+
+So the number of independent observations is nearer `r n_distinct(raw$site_id)` than
+`r nrow(survey)`, and a score computed as if it were `r nrow(survey)` looks better
+than it should. The fix is not to throw rows away, since repeat visits show how much a
+site varies, but to keep each site's rows together when the data are split to test a
+model. [Splitting the data](splitting-data.qmd) shows how.
+
 ## One survey in four files
 
 The clean survey is the one on this page. Three more files are made from it, each for
@@ -184,11 +269,11 @@ a particular job:
 
 Each has its own loader, so a page never reads a file directly:
 
-- `load_coastal_survey()`: the clean survey, used on this page.
+- `load_coastal_survey()`: the clean survey.
 - `load_coastal_survey_raw()`: the same visits with the errors of a real field file,
   such as impossible depths and misspelt categories. The rest of this section finds
   and fixes them, starting with
-  [Exploring the data first](exploratory-analysis.qmd).
+  [Exploring and cleaning the data](exploring-and-cleaning.qmd).
 - `load_coastal_survey_truth()`: the average count the simulation expected at each
   station, before chance added its noise.
 - `load_coastal_community()`: counts of 24 species at the same stations, for finding
@@ -196,7 +281,7 @@ Each has its own loader, so a page never reads a file directly:
 
 ## The true answers are known
 
-The survey is **simulated**: a script decided how the species responds to its
+The survey is simulated: a script decided how the species responds to its
 surroundings, then drew counts that follow those rules with realistic noise added. So
 unlike a real survey, this one has known answers. Later pages fit a model, read what
 it found, and only then check it against the rules the simulation used.
@@ -210,17 +295,21 @@ ever read.
 ::: {.key-points}
 - One station is one visit and one row: where and when, the water, the seabed, and
   the count of one species.
-- Numbers and categories need different handling; most pages predict `abundance` or
-  `present` from the other columns.
+- Each row is an **observation**; most pages predict `abundance` or `present`, the
+  outcome, from some of the other columns, the inputs.
 - Depth, temperature and salinity move together, so they partly carry the same
   information.
-- Counts are small, often zero, and occasionally large.
+- The `r nrow(survey)` stations come from `r n_distinct(raw$site_id)` sites, so the
+  table holds far fewer independent observations than rows. Keep each site's rows
+  together when splitting.
 - The clean survey has three companion files: raw, truth and community, each with its
   own loader.
 :::
 
 ## Try it yourself
 
-Plot `abundance` against `depth_m`, then against `temperature_c`. Does the species
-seem to prefer a particular depth, or a particular temperature? Write your guess down;
-later pages will let you check it.
+1. Plot `abundance` against `depth_m`, then against `temperature_c`. Does the species
+   seem to prefer a particular depth, or a particular temperature? Write your guess
+   down; later pages will let you check it.
+2. For your own data, write one sentence saying what one observation is, and one
+   naming what makes two of your rows share information.

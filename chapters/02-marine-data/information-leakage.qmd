@@ -1,7 +1,7 @@
 ---
 title: "Avoiding information leakage"
-description: "The mistake that makes a model look good and then fail in the field, in four kinds, each shown on the same survey."
-order: 8
+description: "How the test set can shape a model before it is tested, the four common ways it happens, and the habit that prevents each one."
+order: 6
 categories: [data-preparation, validation]
 ---
 
@@ -14,35 +14,45 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
+n_noise <- 200  # columns of pure noise in the selection-leakage example
 ```
 
-## A failure that leaves no trace
+{{< new-terms >}}
 
-**Leakage** is information from the test data reaching the model before it is tested.
-It makes every score look better than it is, and it leaves no trace: a leaky model's
-output looks just like an honest one's, only better. The usual cause is not cheating
-but one line of code in the wrong place. This page shows the four kinds, each on the
-survey, so you can recognise them in your own code.
+## Leakage inflates a score without warning
+
+A test score is honest only if the test set played no part in building the model.
+**Information leakage**, or leakage for short, is information from the test set
+reaching the model before it is tested. The score then promises more than the model
+will deliver on new data, and nothing warns you: a leaky model's output looks just
+like an honest one's, only better. The usual cause is not cheating but one line of
+code in the wrong place, so knowing the four common kinds protects every result you
+report.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Four kinds of leakage
+## Leakage takes four common forms
 
 ::: {.diagram}
-![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the data meant for testing shapes the model before the test.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column made from the outcome, such as catch weight when predicting a count; drop columns made from the outcome. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test data shape the model before it is tested."}
+![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the test set shapes the model before it is tested.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column made from the outcome, such as catch weight when predicting a count; drop columns made from the outcome. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test set shape the model before it is tested."}
 :::
 
-The rule behind all four: the test data must be untouched by every decision, not just
-by the fitting.
+The test set must be untouched by every decision, not only by the fitting. One
+question catches all four kinds:
 
-## A model to test
+> **Does this line use any information from rows I intend to test on?**
 
-Each demonstration fits a linear regression of `abundance` and scores it on test data
-with two measures. The **RMSE** is roughly how far a prediction usually lands from the
-true count. **$R^2$** is the share of the variation in the test counts that the
-predictions follow, from 0 (none) to 1 (all of it).
+If it does, it belongs after the split, or inside the recipe.
+
+## One linear regression shows each kind
+
+Each kind below is shown on the same linear regression of `abundance` on the
+environment, fitted to a training set and scored on a test set with two measures. The
+[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+is the typical miss, in animals. **$R^2$** is the share of the variation in the test
+counts that the predictions follow, from 0 (none) to 1 (all of it).
 
 ::: {.panel-tabset group="language"}
 
@@ -124,8 +134,9 @@ def fit_and_test(predictors, train_data, test_data):
 
 ## Target leakage: the answer in disguise
 
-The survey recorded `catch_weight_kg` alongside the count. Adding it to the model takes
-one word:
+**Target leakage** is an input made from the outcome, so it carries part of the
+answer. The survey recorded `catch_weight_kg` alongside the count, and adding it to the
+model takes one word:
 
 ::: {.panel-tabset group="language"}
 
@@ -133,9 +144,11 @@ one word:
 
 ```{r}
 #| label: target-leakage
+with_weight <- update(honest, ~ . + catch_weight_kg)
+
 target <- bind_rows(
   `Environment only`  = fit_and_test(honest, train, test),
-  `Plus catch weight` = fit_and_test(update(honest, ~ . + catch_weight_kg), train, test),
+  `Plus catch weight` = fit_and_test(with_weight, train, test),
   .id = "model"
 )
 
@@ -168,8 +181,11 @@ predicting?**
 
 ## Group leakage: the same site twice
 
-A random split puts visits to the same site in both training and test (see
-[Splitting the data](splitting-data.qmd)). Keeping each site whole:
+**Group leakage** is the same unit, such as a site, a vessel or an animal, appearing in
+both the training set and the test set, so the test asks about something the model has
+already seen. A random split puts visits to the same site on both sides, as
+[Splitting the data](splitting-data.qmd#a-random-split-puts-each-site-on-both-sides)
+showed; a grouped split keeps each site whole. The two scored:
 
 ::: {.panel-tabset group="language"}
 
@@ -181,7 +197,8 @@ grouped <- group_initial_split(survey, group = site_id, prop = 0.75)
 
 group <- bind_rows(
   Random            = fit_and_test(honest, train, test),
-  `Grouped by site` = fit_and_test(honest, training(grouped), testing(grouped)),
+  `By site`         = fit_and_test(honest, training(grouped),
+                                   testing(grouped)),
   .id = "split"
 )
 
@@ -196,7 +213,7 @@ group_train, group_test = next(grouper.split(survey, groups=survey["site_id"]))
 
 pd.DataFrame([
     {"split": "Random", **fit_and_test(honest, train, test)},
-    {"split": "Grouped by site",
+    {"split": "By site",
      **fit_and_test(honest, survey.iloc[group_train], survey.iloc[group_test])},
 ])
 ```
@@ -215,9 +232,11 @@ the size of the group leak.
 
 ## Selection leakage: skill from noise
 
-Give the procedure nothing but noise: 200 columns of random numbers with no link to
-abundance at all. Then pick the ten columns most correlated with abundance, once using
-all the rows and once using only the training rows:
+**Selection leakage** is choosing inputs, or anything else about the model, by looking
+at every row, test rows included. To see what it can do, give the procedure nothing but
+noise: `r n_noise` columns of random numbers with no link to abundance at all. Then pick
+the ten columns most correlated with abundance, once using all the rows and once using
+only the training rows:
 
 ::: {.panel-tabset group="language"}
 
@@ -227,8 +246,9 @@ all the rows and once using only the training rows:
 #| label: selection-leakage
 set.seed(7)
 
-noise <- as_tibble(matrix(rnorm(nrow(survey) * 200), nrow(survey), 200,
-                          dimnames = list(NULL, paste0("v", 1:200))))
+noise <- matrix(rnorm(nrow(survey) * n_noise), ncol = n_noise,
+                dimnames = list(NULL, paste0("v", 1:n_noise))) |>
+  as_tibble()
 fake <- bind_cols(tibble(abundance = survey$abundance), noise)
 
 rows   <- sample(nrow(fake), 0.75 * nrow(fake))
@@ -287,14 +307,23 @@ pd.DataFrame({
 The true $R^2$ is zero, and choosing on the training rows reports close to that
 (`r sprintf("%.3f", selection$test_rsq[2])`). Choosing on all the rows reports
 `r sprintf("%.3f", selection$test_rsq[1])` from pure noise: small, but skill that does
-not exist. The effect grows with the number of
-candidate columns and shrinks with the number of rows, so a dataset with thousands of
-columns and a hundred samples can manufacture far more.
+not exist. The effect grows with the number of candidate columns and shrinks with the
+number of rows, so a dataset with thousands of columns and a hundred samples can
+manufacture far more. Picking the best of several models by their test scores is the
+same mistake, and the reason for the validation set in
+[Splitting the data](splitting-data.qmd#training-fits-validation-chooses-test-reports).
 
 ## Preprocessing leakage: numbers from every row
 
-Filling gaps with a median computed from every row lets the test rows shape the
-training data. The fix is the recipe from [Scaling and encoding](scaling-and-encoding.qmd):
+**Preprocessing leakage** is a preparation step that learns its numbers from every
+row: a median to fill gaps, a mean and standard deviation to standardise, a target
+encoding. The test rows then shape the training data. The fix is the recipe from
+[Scaling and encoding](scaling-and-encoding.qmd), whose steps learn their numbers from
+the training set alone:
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```r
 # Leaks: the median comes from every row, test rows included.
@@ -302,46 +331,60 @@ survey$chlorophyll_mg_m3[is.na(survey$chlorophyll_mg_m3)] <-
   median(survey$chlorophyll_mg_m3, na.rm = TRUE)
 split <- initial_split(survey)
 
-# Safe: the median is estimated from the training rows, then applied to the test rows.
+# Safe: the recipe learns the median from the training rows alone.
 split <- initial_split(survey)
 recipe(honest, data = training(split)) |>
   step_impute_median(all_numeric_predictors())
 ```
 
-With 800 rows and a median the harm is small. The same mistake with target encoding, or
-on a dataset of forty casts, is not; and the safe version costs nothing.
+## Python
 
-## The question to ask of every line
+```python
+# Leaks: the median comes from every row, test rows included.
+survey["chlorophyll_mg_m3"] = survey["chlorophyll_mg_m3"].fillna(
+    survey["chlorophyll_mg_m3"].median())
+train, test = train_test_split(survey)
 
-One question catches all four kinds:
+# Safe: the pipeline learns the median from the training rows when it is
+# fitted, then applies it to the test rows.
+train, test = train_test_split(survey)
+model = Pipeline([("impute", SimpleImputer(strategy="median")),
+                  ("model", LinearRegression())])
+```
 
-> **Does this line use any information from rows I intend to test on?**
+:::
 
-If it does, it belongs after the split, or inside the recipe. Some leakage cannot be
-removed, only reported: the whole dataset was explored in order to clean it, and that
-shaped the choices that followed. And keeping sites whole does not stop two *nearby*
-sites sharing their water;
+With `r nrow(survey)` rows and a median the harm is small. The same mistake with target
+encoding, or on a dataset of forty casts, is not; and the safe version costs nothing.
+
+## Some leakage can only be reported
+
+Two kinds of leakage survive the most careful code. The whole survey was explored in
+order to clean it ([Exploring and cleaning the data](exploring-and-cleaning.qmd)), and
+what was seen shaped the choices that followed; say so when you report. And keeping
+sites whole does not stop two *nearby* sites sharing their water;
 [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
 holds out whole areas for that.
 
 ## Key points
 
 ::: {.key-points}
-- Leakage is information from the test data reaching the model; it inflates every score
-  and leaves no trace.
-- Target leakage: drop any column made from the outcome. Catch weight, the count in
+- Leakage is information from the test set reaching the model; it inflates the score
+  and gives no warning.
+- Ask of every line whether it uses rows you intend to test on. If it does, move it
+  after the split or into the recipe.
+- Target leakage: drop any input made from the outcome. Catch weight, the count in
   other units, took $R^2$ from `r target$rsq[1]` to `r target$rsq[2]`.
 - Group leakage: keep a site's rows together. Here $R^2$ fell from `r group$rsq[1]` to
-  `r group$rsq[2]` once sites were kept whole.
-- RMSEs from different test sets cannot be compared; a relative measure such as $R^2$
-  roughly can.
-- Selection leakage made skill out of pure noise; preprocessing leakage is avoided by
-  putting every step in a recipe.
+  `r group$rsq[2]` once sites were kept whole. RMSEs from different test sets cannot be
+  compared; $R^2$ roughly can.
+- Selection leakage made skill out of pure noise: choose inputs and models on the
+  training rows alone.
 :::
 
 ## Try it yourself
 
-1. Re-run the noise experiment with 1,000 columns instead of 200, and again with 100
-   rows instead of 800. How large can the manufactured $R^2$ get?
+1. Re-run the noise experiment with 1,000 columns instead of `r n_noise`, and again with
+   100 rows instead of `r nrow(survey)`. How large can the manufactured $R^2$ get?
 2. List every column in your own data with where each value came from and when it
    became known. Any column that depends on the outcome is a target leak.
