@@ -1,7 +1,7 @@
 ---
 title: "Splitting the data"
-description: "Training, validation and test data, how to keep a rare class in every part, why a random split is the wrong split for a marine survey, and what a rare class needs beyond the split."
-order: 7
+description: "Training, validation and test sets, how to keep a rare class in every part, and why a marine survey is split by site rather than at random."
+order: 5
 categories: [data-preparation, validation, class-imbalance]
 ---
 
@@ -16,35 +16,37 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## A model must be tested on data it has not seen
 
 A model always looks good on the data it learned from; the only honest measure of how
 it will do on new stations is data it has never seen.
 [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd) compared
-two models that way. This page shows how to hold data back, how to keep a rare class
-in every part, and why, for a marine survey, the rows held back must be chosen with
-more care than a random draw.
+two models that way, on a training set and a test set. Which rows are held back
+decides what the test score means, and for a marine survey a random draw usually
+answers a different question from the one the model is built for.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Three roles for the data
+## Training fits, validation chooses, test reports
 
 ::: {.diagram}
-![Left: the three roles held-back data can play. Right: two ways to split a survey that visits each site several times. A random split puts visits to the same site on both sides; a split by site keeps each site whole.](img/split-roles.svg){fig-alt="Two panels. Three roles: training data, which the model learns from; validation data, used to choose between models; test data, used once to report the result. Two ways to split: four sites, A to D, each visited three times and drawn as three squares. In the random split one visit from every site is marked as test, so every test station's site is also in training. In the split by site all three visits to site D are test, so the test site is new to the model."}
+![Left: the three roles held-back data can play. Right: two ways to split a survey that visits each site several times. A random split puts visits to the same site on both sides; a split by site keeps each site whole.](img/split-roles.svg){fig-alt="Two panels. Three roles: the training set, which the model learns from; the validation set, used to choose between models; the test set, used once to report the result. Two ways to split: four sites, A to D, each visited three times and drawn as three squares. In the random split one visit from every site is marked as test, so every test station's site is also in training. In the split by site all three visits to site D are test, so the test site is new to the model."}
 :::
 
-- **Training data**: the model learns from it.
-- **Validation data**: used to *choose*, between models or between settings of one
-  model. Choosing is a kind of learning, so it must not use the test data.
-- **Test data**: used once, at the end, to report how well the chosen model does.
+- The **training set**: the model learns from it.
+- The **validation set**: used to *choose*, between models or between settings of one
+  model. Choosing is a kind of learning, so it must not use the test set.
+- The **test set**: used once, at the end, to report how well the chosen model does.
 
-The validation role is the one most often skipped. Try eight models and report the
+The validation set is the one most often skipped. Try eight models and report the
 best one's test score, and that score is the best of eight noisy numbers, which is too
-high. The test data answers "how good is this model?", never "which model is best?".
-When data is scarce, **cross-validation** takes the validation role by letting parts of
-the training data take turns;
+high. The test set answers "how good is this model?", never "which model is best?".
+When data are scarce, **cross-validation** takes the validation role by letting parts
+of the training set take turns at being held back;
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) covers it.
 
 Common splits keep 70 to 80% for training. The exact share is a trade-off between
@@ -96,9 +98,9 @@ rare_n   <- sum(survey$rare_species == "yes")
 ```
 
 The rare species is present at `r rare_pct`% of stations, `r rare_n` in all. A random
-split can easily leave very few of them in the test data. A **stratified** split
-(`strata =` in R, `stratify=` in Python) keeps the same share in both parts. Or it
-should:
+split can easily leave very few of them in the test set. A **stratified split**
+(`strata =` in R, `stratify=` in Python) draws each class separately, so both parts
+keep the same share. Or it should:
 
 ::: {.panel-tabset group="language"}
 
@@ -174,12 +176,18 @@ R now warns that the class is small, which is fair: `r rare_n` stations is thin
 ground to stratify on. The wider lesson: **check that a safeguard did what you asked**,
 by looking at the result rather than the code.
 
-## Random is not independent
+A rare class causes more trouble than the split: accuracy rewards a model that never
+predicts it, and the fit leans towards the common class.
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows both and the
+rebalancing that answers them.
+
+## A random split puts each site on both sides
 
 A random split treats rows as interchangeable. Survey rows are not: visits to the same
 site are alike ([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)). If one
 visit lands in training and another in test, the model has, in effect, already seen
-the test station. A **grouped split** keeps each site whole:
+the test station. A **grouped split** assigns whole groups, here whole sites, to one
+side or the other:
 
 ::: {.panel-tabset group="language"}
 
@@ -242,39 +250,17 @@ by site has a cost too: `r n_distinct(survey$site_id)` sites give only about
 `r round(n_distinct(survey$site_id) / 4)` test sites, so the test score is honest but
 uncertain.
 
-## A rare class needs more than a split
-
-A rare outcome causes two problems beyond the split. **Accuracy misleads**: a model
-that always answers "absent" is right `r round(100 - rare_pct)`% of the time here, as
-[Exploring and cleaning the data](exploring-and-cleaning.qmd) found, so a model must be judged
-by how well it finds the rare class. And the **fitting is pulled towards the common
-class**, because getting that right is where the easy gains are.
-
-The usual remedies rebalance the training data: fewer rows of the common class
-(**down-sampling**), repeated rows of the rare one (**up-sampling**), made-up rare rows
-(**SMOTE**), or more weight on each rare row (**class weights**). The `themis` package
-provides them as recipe steps. Two conditions apply:
-
-- **Rebalance the training data only.** A rebalanced test set measures performance on
-  a population that does not exist. `themis` steps skip new data automatically, but
-  only inside a recipe, not when the table is balanced by hand.
-- **Expect the probabilities to shift.** A model trained on a 50/50 world predicts as if
-  the species were common;
-  [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows how far
-  they shift.
-
 ## Key points
 
 ::: {.key-points}
-- Training data fits, validation data chooses, test data reports once. Choosing on the
-  test data makes its score too high.
+- The training set fits, the validation set chooses, the test set reports once.
+  Choosing on the test set makes its score too high.
 - Stratify a rare class, and check the result: in R a class under 10% is silently not
   stratified unless `pool` is lowered.
 - Visits to the same site are alike, so a random split tests a model on places it has
   already seen.
-- Split along what you will predict for: new sites, new years, new vessels.
-- A rare class misleads accuracy and pulls the fit towards the common class; rebalance
-  the training data only.
+- Split along what you will predict for: new sites, new years, new vessels. A split by
+  site gives an honest score from few test sites.
 :::
 
 ## Try it yourself

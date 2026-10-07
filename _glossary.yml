@@ -210,3 +210,18 @@ terms:
   - term: "Workflow"
     definition: "In tidymodels, a recipe and a model joined so that they are fitted together and applied to new data together; scikit-learn's Pipeline does the same job."
     page: chapters/02-marine-data/scaling-and-encoding.qmd
+
+  # 2 · Marine data: Splitting the data
+  - term: "Validation set"
+    definition: "Cases held back from fitting and used to choose between models or settings, so that the test set is left for the final report."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Cross-validation"
+    definition: "Taking the validation role inside the training set by letting parts of it take turns at being held back, so that every case is used for both fitting and checking."
+    page: chapters/02-marine-data/splitting-data.qmd
+    more: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Stratified split"
+    definition: "A split that draws each class separately, so that a rare class keeps the same share in the training and test sets."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Grouped split"
+    definition: "A split that assigns whole groups, such as all the visits to one site, to one side, so that the test set holds only groups the model has not seen."
+    page: chapters/02-marine-data/splitting-data.qmd
