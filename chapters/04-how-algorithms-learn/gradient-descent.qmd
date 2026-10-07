@@ -333,18 +333,20 @@ identical; only the effort changes.
 [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) gave two kinds of
 method that need standardised inputs: those that measure distances between rows and
 those that penalise large coefficients. Methods fitted by gradient descent are a third.
-The neural networks of [section 9](../09-neural-networks/index.qmd) are fitted this way,
-which is why they are always given standardised inputs.
+Neural networks are fitted this way, as [Forward propagation and
+backpropagation](../09-neural-networks/forward-and-backward.qmd) shows, which is why they
+are always given standardised inputs.
 
 `lm()` and `glm()` are not. The formula and the step-by-step search of the previous page
 adjust to the units by themselves, and trees compare values within one input at a time,
 so none of them needs it.
 
 With many observations, each step can use only a small random batch of them instead of
-the whole dataset. This is **stochastic gradient descent**, and
-[section 9](../09-neural-networks/index.qmd) uses it. On any walk, a fit stops either
-when its steps become tiny or when it reaches a set maximum number of steps, and
-[Checking a fit](reading-a-fit.qmd) shows how to tell the two apart.
+the whole dataset. This is **stochastic gradient descent**, and [Training a
+network](../09-neural-networks/training-a-network.qmd) explains how large networks are
+trained with it. On any walk, a fit stops either when its steps become tiny or when it
+reaches a set maximum number of steps, and [Checking a fit](reading-a-fit.qmd) shows how
+to tell the two apart.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
