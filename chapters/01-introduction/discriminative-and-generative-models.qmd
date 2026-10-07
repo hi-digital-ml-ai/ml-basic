@@ -1,7 +1,7 @@
 ---
 title: "Discriminative and generative models"
-description: "A discriminative model learns only the line between outcomes; a generative model learns the data well enough to invent new examples. Both answer the same presence question on the coastal survey, and agree where the data are dense."
-order: 5
+description: "A discriminative model learns only the answer; a generative model learns the data well enough to invent new examples. k-nearest neighbours and a pair of bell curves answer the same presence question on the coastal survey, and part company where the data are thin."
+order: 4
 categories: [foundations, supervised, classification]
 ---
 
@@ -13,40 +13,45 @@ library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 set.seed(123)
+
+# Percentages in the text.
+pct <- function(x) round(100 * x)
 ```
 
-## Two things a model can learn
+{{< new-terms >}}
+
+## A model learns either the answer or the data
 
 [Types of learning](types-of-learning.qmd) sorted methods by the data you hold. This
-page sorts them a second way: by the thing the model learns.
+page sorts them a second way: by what the model learns.
 
 Suppose the question is whether a species is present, given the water temperature. A
 model can learn one of two things.
 
 A **discriminative model** learns the answer directly: the chance that the species is
 present at each temperature. It draws the boundary between "present" and "absent" and
-nothing else. Most models in this course are discriminative, including linear and
-logistic regression.
+nothing else. Most methods in this course are discriminative, including k-nearest
+neighbours, decision trees, random forests and neural networks.
 
 A **generative model** learns the data themselves. It describes the temperatures where
 the species was found, and separately the temperatures where it was not. To classify a
-new case, it asks which of the two descriptions fits that temperature better. Because it
-has learned the data, it can also *generate* new ones: plausible temperatures for a
-place where the species occurs. The tools that write text or draw pictures are
-generative models of the same kind, on a vastly larger scale.
+new station, it asks which of the two descriptions fits that station's temperature
+better. Because it has learned the data, it can also *generate* new ones: plausible
+temperatures for a place where the species occurs. The tools that write text or draw
+pictures are generative models of the same kind, on a vastly larger scale.
 
 ::: {.diagram}
 ![The same data seen by two kinds of model. A discriminative model learns only the boundary between the groups; a generative model learns a description of each group, from which it can draw new examples.](img/discriminative-generative.svg){fig-alt="Two panels showing the same scatter of stations by temperature and depth: blue dots where the species was found, orange triangles where it was not. In the left panel, labelled discriminative, a dashed line separates the two groups. In the right panel, labelled generative, a shaded oval surrounds each group, and a hollow dot inside the blue oval is marked as a new example."}
 :::
 
-## Both kinds on the coastal survey
+## Both kinds answer the presence question
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-Both models below answer the presence question for the survey used in
-[Types of learning](types-of-learning.qmd), with temperature as the only input. They
-are fitted to the same three quarters of the stations and asked about the same three
-new stations, at 12, 9 and 5 °C.
+Both models below answer the presence question for the coastal survey, with temperature
+as the only input. They learn from the same three quarters of the stations, the
+training set, and are asked about the same three new stations: a warm one at 12 °C, one
+at 9 °C and a cold one at 3 °C.
 
 ```{r}
 #| label: data
@@ -56,33 +61,47 @@ split  <- initial_split(survey, prop = 0.75, strata = present)
 train  <- training(split)
 
 new_stations <- tibble(
-  station       = c("shallow", "mid-depth", "deep"),
-  temperature_c = c(12, 9, 5)
+  station       = c("warm", "middle", "cold"),
+  temperature_c = c(12, 9, 3)
 )
 ```
 
-### A discriminative model: logistic regression
+### k-nearest neighbours learns only the answer
 
-Logistic regression, with a squared temperature term so the chance of presence can rise
-and then fall, is the discriminative model:
+k-nearest neighbours, from [Types of learning](types-of-learning.qmd), is the
+discriminative model. For a new station it finds the 15 training stations with the
+closest temperatures and reports the share of them that had the species. With a single
+input there is nothing to put on a common scale, so it needs no recipe.
 
 ```{r}
 #| label: fit-discriminative
-discriminative <- logistic_reg() |>
-  fit(present ~ temperature_c + I(temperature_c^2), data = train)
+discriminative <- nearest_neighbor(neighbors = 15, weight_func = "rectangular") |>
+  set_engine("kknn") |>
+  set_mode("classification") |>
+  fit(present ~ temperature_c, data = train)
 
-bind_cols(new_stations, predict(discriminative, new_stations, type = "prob"))
+bind_cols(new_stations, predict(discriminative, new_stations, type = "prob")) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
+```
+
+```{r}
+#| label: knn-numbers
+#| include: false
+knn_yes <- predict(discriminative, new_stations, type = "prob")$.pred_yes
 ```
 
 For each new station it returns one thing: the chance of presence, and its complement.
-The species is likely at 9 °C and at 12 °C, and closer to a coin toss at 5 °C. That
-is all the model knows.
+At 9 °C, `r round(15 * knn_yes[2])` of the 15 nearest stations had the species, so the
+chance is `r pct(knn_yes[2])`%; at 12 °C it is `r pct(knn_yes[1])`% and at 3 °C
+`r pct(knn_yes[3])`%. That is all the model knows. It holds no description of
+cold or warm water, only the stations themselves.
 
-### A generative model: one bell curve per group
+### A generative model fits one bell curve per group
 
-The generative model describes the temperatures at stations with the species by a bell
-curve (a *Normal distribution*) with its own mean and spread, does the same for
-stations without the species, and records how common each group is.
+The generative model describes the temperatures at stations with the species by a
+**Normal distribution**: the familiar bell-shaped curve, centred on the group's mean
+temperature, with its width set by the group's sd. It does the same for the stations
+without the species, and records how common each group is.
 
 ```{r}
 #| label: fit-generative
@@ -93,12 +112,24 @@ generative <- train |>
 generative |> mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
-The two groups have similar mean temperatures, but the stations without the species
-spread much more widely: the species is missing mainly from the coldest and the warmest
-water.
+```{r}
+#| label: generative-numbers
+#| include: false
+yes_group <- filter(generative, present == "yes")
+no_group  <- filter(generative, present == "no")
+```
 
-To classify a new station, **Bayes' rule** weighs the two descriptions: how well each
-bell curve fits the station's temperature, times how common that group is.
+The two groups have similar mean temperatures, `r round(yes_group$mean, 2)` °C with the
+species and `r round(no_group$mean, 2)` °C without, but the stations without it spread
+much more widely (sd `r round(no_group$sd, 2)` °C against
+`r round(yes_group$sd, 2)` °C): the species is missing mainly from the coldest and the
+warmest water.
+
+The height of a bell curve at a given temperature is its **density**: high where that
+temperature is common in the group, low where it is rare. To classify a new station,
+**Bayes' rule** weighs the two groups: the density of each group's bell curve at the
+station's temperature, times how common that group is. The chance of presence is the
+"present" group's share of the total.
 
 ```{r}
 #| label: predict-generative
@@ -111,7 +142,7 @@ p_present_generative <- function(temperature) {
 }
 
 new_stations |>
-  mutate(.pred_yes = p_present_generative(temperature_c))
+  mutate(.pred_yes = round(p_present_generative(temperature_c), 2))
 ```
 
 Because it holds a description of the data, it can also generate new data. Here are
@@ -120,10 +151,18 @@ curve:
 
 ```{r}
 #| label: generate
-with(filter(generative, present == "yes"), round(rnorm(5, mean, sd), 1))
+with(yes_group, round(rnorm(5, mean, sd), 1))
 ```
 
-## The two agree where the data are dense
+## The two part company where the data are thin
+
+```{r}
+#| label: compare-numbers
+#| include: false
+gen_yes <- p_present_generative(new_stations$temperature_c)
+cold    <- filter(train, temperature_c < 3.5)
+cold_yes <- sum(cold$present == "yes")
+```
 
 @fig-two-models puts the two side by side. The left panel is the generative model's
 view: the data of each group, and the bell curve it fitted. The right panel shows the
@@ -131,14 +170,14 @@ answer both models give, the chance of presence at every temperature.
 
 ```{r}
 #| label: fig-two-models
-#| fig-cap: "Left: the generative view, the temperatures at stations with and without the species, each summarised by a bell curve. Right: the chance of presence against temperature from both models, with the observed proportion in each one-degree band as points. The two models agree where most stations lie and part company at the edges."
-#| fig-alt: "Two panels. The left panel shows two histograms of temperature with a bell curve over each: stations with the species cluster between about 6 and 12 degrees, stations without it spread from about 3 to 15 degrees. The right panel shows two curves of the probability of presence against temperature, both rising from low values at 2 degrees to a peak near 0.85 to 0.9 around 9 degrees and falling again towards 16 degrees; the logistic curve falls more steeply at both ends. Points for the observed proportions follow the curves in the middle."
+#| fig-cap: "Left: the generative view, the temperatures at stations with and without the species, each summarised by a bell curve. Right: the chance of presence against temperature from both models, with the share of stations with the species in each one-degree band as grey points. The two tell the same story where most stations lie and part company in the coldest water."
+#| fig-alt: "Two panels. The left panel shows two histograms of temperature with a bell curve over each: stations with the species form a narrow hump in the middle of the range, stations without it spread across the whole range. The right panel shows two curves of the chance of presence against temperature. The generative curve is smooth, rising to a peak in the middle and falling at both ends. The k-nearest neighbours curve is jagged, follows the grey points closely, and drops to zero in the coldest water, where the generative curve stays well above zero."
 #| fig-width: 8.5
 #| fig-height: 4.2
 curves <- tibble(temperature_c = seq(2, 16, by = 0.1)) |>
   mutate(
-    Discriminative = predict(discriminative, pick(temperature_c), type = "prob")$.pred_yes,
-    Generative     = p_present_generative(temperature_c)
+    `k-nearest neighbours` = predict(discriminative, pick(temperature_c), type = "prob")$.pred_yes,
+    `Bell curves`          = p_present_generative(temperature_c)
   ) |>
   pivot_longer(-temperature_c, names_to = "model", values_to = "p")
 
@@ -164,7 +203,7 @@ p_data <- ggplot(mutate(train, group = if_else(present == "yes", "Species found"
 p_chance <- ggplot(curves, aes(temperature_c, p, colour = model)) +
   geom_point(data = observed, aes(band, p), inherit.aes = FALSE, colour = "grey55", size = 2) +
   geom_line(linewidth = 1.1) +
-  scale_colour_manual(values = unname(ml_palette[c("green", "purple")])) +
+  scale_colour_manual(values = unname(ml_palette[c("purple", "green")])) +
   scale_y_continuous(limits = c(0, 1)) +
   labs(x = "Temperature (°C)", y = "Chance the species is present", colour = NULL,
        title = "Both give a chance of presence")
@@ -172,37 +211,46 @@ p_chance <- ggplot(curves, aes(temperature_c, p, colour = model)) +
 p_data + p_chance
 ```
 
-| | Discriminative | Generative |
+| | Discriminative (k-nearest neighbours) | Generative (bell curves) |
 | --- | --- | --- |
-| Learns | The chance of presence at each temperature | The temperatures in each group, and how common each group is |
+| Learns | The chance of presence among similar stations | The temperatures in each group, and how common each group is |
 | Answers "present or absent?" | Directly | Through Bayes' rule |
 | Can generate new stations | No | Yes |
-| Relies on | The shape of the probability curve | The shape of each group's data |
+| Relies on | Enough stations near the new one | The bell curves describing each group well |
 
-Where most stations lie, between about 6 and 12 °C, the two agree closely. At the edges
-they part company, and the three new stations show it: at 5 °C the generative model is
-the more hopeful of the two. There the generative answer rests on its bell curves, and
-the stations without the species are not really bell-shaped: they sit at both ends of
-the range, not around a single middle. The discriminative model never had to describe
-them, so the wrong shape costs it nothing.
+Where most stations lie, the two tell the same story: the chance of presence rises from
+cold water to a peak in the middle of the range and falls again in warm water. At 12 °C
+k-nearest neighbours gives `r pct(knn_yes[1])`% and the bell curves `r pct(gen_yes[1])`%. k-nearest neighbours wobbles more, because each answer
+counts only 15 stations.
 
-That is the usual trade. A generative model can do more, but it depends on its
-description of the data being right. A discriminative model makes fewer assumptions
-about the data, which is one reason it is the usual default.
+In the coldest water they part company. At 3 °C k-nearest neighbours gives
+`r pct(knn_yes[3])`% and the bell curves `r pct(gen_yes[3])`%. The training set has
+`r nrow(cold)` stations colder than 3.5 °C, and `r if (cold_yes == 0) "none" else cold_yes`
+of them had the species, so the neighbours have good grounds. The generative answer rests on its
+bell curve for the stations without the species, and those stations are not
+bell-shaped: they sit at both ends of the range, not around a single middle. The curve
+is too low at the cold end, so the model underrates how often the species is absent
+there. k-nearest neighbours never had to describe the data, so the wrong shape costs it
+nothing.
+
+That is the usual trade. A generative model can do more, but its answers are only as
+good as its description of the data. A discriminative model makes fewer assumptions
+about the data, which is one reason most machine learning is discriminative.
 
 ## Key points
 
 ::: {.key-points}
-- A discriminative model learns the answer: the chance of an outcome at each value of
-  the inputs.
+- A discriminative model, such as k-nearest neighbours, learns the answer: the chance of
+  an outcome at each value of the inputs.
 - A generative model learns the data themselves, and can generate new examples. The
   tools that write text or draw pictures are generative models.
-- Both can answer the same question, and agree where the data are dense.
+- Both can answer the same question, and tell the same story where the data are dense.
 - A generative model depends on its description of the data; where that description is
   wrong, so are its answers.
 :::
 
 ## Try it yourself
 
-Replace temperature with depth in both presence models. Do the discriminative and
-generative curves still agree where most stations lie?
+Replace temperature with depth in both presence models. Do k-nearest neighbours and the
+bell curves still tell the same story where most stations lie, and where do they part
+company?

@@ -109,3 +109,20 @@ terms:
   - term: "Emulator"
     definition: "A fast machine-learning copy of a slow simulation, such as an ocean model, trained on the simulation's own output and valid only within the conditions it was trained on."
     page: chapters/01-introduction/applications-in-marine-science.qmd
+
+  # 1 · Introduction: Discriminative and generative models
+  - term: "Discriminative model"
+    definition: "A model that learns only the answer, such as the chance of an outcome at each value of the inputs; most machine-learning methods are discriminative."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Generative model"
+    definition: "A model that learns a description of the data in each group, so it can classify new cases and also generate plausible new examples."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Normal distribution"
+    definition: "The bell-shaped curve that describes values spread symmetrically around their mean, with the sd setting its width."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Density"
+    definition: "The height of a distribution's curve at a value: high where values like it are common, low where they are rare."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Bayes' rule"
+    definition: "The rule a generative model uses to classify: weigh each group by how well its description fits the new case, times how common the group is."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
