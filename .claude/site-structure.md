@@ -51,6 +51,8 @@ Controlled list. Add a new one only by editing this file, so tags do not fragmen
 ```
 _quarto.yml
 index.qmd                          landing page: what the course is, how to use it
+glossary.qmd                       every term, A to Z, generated from _glossary.yml
+_glossary.yml                      one entry per term: definition, the page that introduces it
 img/video/                         YouTube thumbnails for the further-resources lists,
                                    named <video-id>.jpg, fetched once and committed
 toolkit/
@@ -61,7 +63,7 @@ chapters/
   index.qmd                        listing of all chapter pages, filterable by category
   01-introduction/
     index.qmd                      section overview + its own listing
-    what-is-machine-learning.qmd
+    prediction-and-explanation.qmd
     img/                           figures authored for this section
   02-marine-data/
   ... 10 sections, see .claude/curriculum.md
@@ -75,6 +77,7 @@ R/
 tools/
   extract-code.py                  pre-render: pages -> downloads/code/<section>/<page>.{R,py}
   code-downloads.lua               filter: the "Code from this page" line
+  glossary.lua                     shortcodes: the "New terms on this page" box, the Glossary
 downloads/                         generated, git-ignored: the scripts and the zip
 _freeze/                           committed render cache
 ```
@@ -83,8 +86,9 @@ Nothing in `downloads/` is authored or committed. It is generated from the pages
 every build and copied into the site through `resources:`; see `tools/README.md`.
 
 - Folders and files: `kebab-case`; chapter folders prefixed `NN-`.
-- Never rename a published page without adding a redirect in `_quarto.yml`
-  (`aliases:` in the page front matter); links get shared.
+- Pages may be renamed, merged or removed without a redirect while the site is in
+  development (user, 2026-10-07). Once it is shared publicly, add `aliases:` in the
+  front matter of a page that replaces an old address.
 
 ## Page front matter
 
