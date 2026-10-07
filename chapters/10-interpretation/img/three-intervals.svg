@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 490" width="100%" role="img" aria-label="Three intervals from one model. For the average, a confidence interval: narrow, holding few single catches; it narrows as more stations are sampled. For a new catch, a prediction interval: wide, holding most catches; it stays wide however many stations are sampled. From held-out errors, conformal prediction: the errors on calibration sites, sorted, set the width at the point where 90% of them end; it holds 9 catches in 10 at stations like the calibration sites. A note says a prediction interval is checked by its coverage, the share of new catches that fall inside it.">
+<defs>
+<marker id="arrow-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#009E73"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Three intervals</text>
+<rect class="box" x="0" y="48" width="294" height="384" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">For the average</text>
+<text class="lab" x="22" y="114" fill="#0072B2">A CONFIDENCE INTERVAL</text>
+<text class="body" x="22" y="344">Where the average lies.</text>
+<text class="body" x="22" y="368">It narrows as more</text>
+<text class="body" x="22" y="392">stations are sampled.</text>
+<rect class="box" x="323" y="48" width="294" height="384" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">For a new catch</text>
+<text class="lab" x="345" y="114" fill="#E69F00">A PREDICTION INTERVAL</text>
+<text class="body" x="345" y="344">Where one new catch may</text>
+<text class="body" x="345" y="368">land. It stays wide however</text>
+<text class="body" x="345" y="392">many stations are sampled.</text>
+<rect class="box" x="646" y="48" width="294" height="384" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">From held-out errors</text>
+<text class="lab" x="668" y="114" fill="#009E73">CONFORMAL PREDICTION</text>
+<text class="body" x="668" y="344">Calibration errors set the</text>
+<text class="body" x="668" y="368">width. It holds 9 in 10 at</text>
+<text class="body" x="668" y="392">stations like those sites.</text>
+<path class="ax" d="M 30 140 V 300 H 270"/>
+<path d="M 36.0 272.0 L 41.7 269.8 L 47.4 267.5 L 53.1 265.3 L 58.8 263.0 L 64.5 260.8 L 70.2 258.6 L 75.9 256.3 L 81.6 254.1 L 87.3 251.8 L 93.0 249.6 L 98.7 247.4 L 104.4 245.1 L 110.1 242.9 L 115.8 240.6 L 121.5 238.4 L 127.2 236.2 L 132.9 233.9 L 138.6 231.7 L 144.3 229.4 L 150.0 227.2 L 155.7 225.0 L 161.4 222.7 L 167.1 220.5 L 172.8 218.2 L 178.5 216.0 L 184.2 213.8 L 189.9 211.5 L 195.6 209.3 L 201.3 207.0 L 207.0 204.8 L 212.7 202.6 L 218.4 200.3 L 224.1 198.1 L 229.8 195.8 L 235.5 193.6 L 241.2 191.4 L 246.9 189.1 L 252.6 186.9 L 258.3 184.6 L 264.0 182.4 L 264.0 193.6 L 258.3 195.8 L 252.6 197.9 L 246.9 200.1 L 241.2 202.2 L 235.5 204.4 L 229.8 206.6 L 224.1 208.7 L 218.4 210.9 L 212.7 213.0 L 207.0 215.2 L 201.3 217.4 L 195.6 219.5 L 189.9 221.7 L 184.2 223.8 L 178.5 226.0 L 172.8 228.2 L 167.1 230.3 L 161.4 232.5 L 155.7 234.6 L 150.0 236.8 L 144.3 239.0 L 138.6 241.1 L 132.9 243.3 L 127.2 245.4 L 121.5 247.6 L 115.8 249.8 L 110.1 251.9 L 104.4 254.1 L 98.7 256.2 L 93.0 258.4 L 87.3 260.6 L 81.6 262.7 L 75.9 264.9 L 70.2 267.0 L 64.5 269.2 L 58.8 271.4 L 53.1 273.5 L 47.4 275.7 L 41.7 277.8 L 36.0 280.0 Z" fill="#0072B2" fill-opacity="0.55"/>
+<path d="M 36.0 276.0 L 41.7 273.8 L 47.4 271.6 L 53.1 269.4 L 58.8 267.2 L 64.5 265.0 L 70.2 262.8 L 75.9 260.6 L 81.6 258.4 L 87.3 256.2 L 93.0 254.0 L 98.7 251.8 L 104.4 249.6 L 110.1 247.4 L 115.8 245.2 L 121.5 243.0 L 127.2 240.8 L 132.9 238.6 L 138.6 236.4 L 144.3 234.2 L 150.0 232.0 L 155.7 229.8 L 161.4 227.6 L 167.1 225.4 L 172.8 223.2 L 178.5 221.0 L 184.2 218.8 L 189.9 216.6 L 195.6 214.4 L 201.3 212.2 L 207.0 210.0 L 212.7 207.8 L 218.4 205.6 L 224.1 203.4 L 229.8 201.2 L 235.5 199.0 L 241.2 196.8 L 246.9 194.6 L 252.6 192.4 L 258.3 190.2 L 264.0 188.0" fill="none" stroke="#1f2933" stroke-width="2"/>
+<circle cx="39.4" cy="276.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="46.1" cy="265.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="52.8" cy="266.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="59.5" cy="274.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="66.2" cy="273.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="72.9" cy="273.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="79.6" cy="258.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="86.3" cy="264.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="93.0" cy="246.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="99.7" cy="245.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="106.4" cy="220.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="113.1" cy="229.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="119.8" cy="257.8" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="126.5" cy="244.8" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="133.2" cy="248.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="139.9" cy="225.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="146.6" cy="223.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="153.4" cy="247.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="160.1" cy="213.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="166.8" cy="230.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="173.5" cy="220.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="180.2" cy="198.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="186.9" cy="226.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="193.6" cy="207.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="200.3" cy="192.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="207.0" cy="158.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="213.7" cy="206.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="220.4" cy="221.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="227.1" cy="227.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="233.8" cy="173.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="240.5" cy="162.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="247.2" cy="172.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="253.9" cy="178.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="260.6" cy="154.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<path class="ax" d="M 353 140 V 300 H 593"/>
+<path d="M 359.0 261.6 L 364.7 258.4 L 370.4 255.3 L 376.1 252.1 L 381.8 249.0 L 387.5 245.8 L 393.2 242.6 L 398.9 239.5 L 404.6 236.3 L 410.3 233.2 L 416.0 230.0 L 421.7 226.8 L 427.4 223.7 L 433.1 220.5 L 438.8 217.4 L 444.5 214.2 L 450.2 211.0 L 455.9 207.9 L 461.6 204.7 L 467.3 201.6 L 473.0 198.4 L 478.7 195.2 L 484.4 192.1 L 490.1 188.9 L 495.8 185.8 L 501.5 182.6 L 507.2 179.4 L 512.9 176.3 L 518.6 173.1 L 524.3 170.0 L 530.0 166.8 L 535.7 163.6 L 541.4 160.5 L 547.1 157.3 L 552.8 154.2 L 558.5 151.0 L 564.2 147.8 L 569.9 144.7 L 575.6 141.5 L 581.3 138.4 L 587.0 135.2 L 587.0 240.8 L 581.3 242.0 L 575.6 243.3 L 569.9 244.5 L 564.2 245.8 L 558.5 247.0 L 552.8 248.2 L 547.1 249.5 L 541.4 250.7 L 535.7 252.0 L 530.0 253.2 L 524.3 254.4 L 518.6 255.7 L 512.9 256.9 L 507.2 258.2 L 501.5 259.4 L 495.8 260.6 L 490.1 261.9 L 484.4 263.1 L 478.7 264.4 L 473.0 265.6 L 467.3 266.8 L 461.6 268.1 L 455.9 269.3 L 450.2 270.6 L 444.5 271.8 L 438.8 273.0 L 433.1 274.3 L 427.4 275.5 L 421.7 276.8 L 416.0 278.0 L 410.3 279.2 L 404.6 280.5 L 398.9 281.7 L 393.2 283.0 L 387.5 284.2 L 381.8 285.4 L 376.1 286.7 L 370.4 287.9 L 364.7 289.2 L 359.0 290.4 Z" fill="#E69F00" fill-opacity="0.3"/>
+<path d="M 359.0 276.0 L 364.7 273.8 L 370.4 271.6 L 376.1 269.4 L 381.8 267.2 L 387.5 265.0 L 393.2 262.8 L 398.9 260.6 L 404.6 258.4 L 410.3 256.2 L 416.0 254.0 L 421.7 251.8 L 427.4 249.6 L 433.1 247.4 L 438.8 245.2 L 444.5 243.0 L 450.2 240.8 L 455.9 238.6 L 461.6 236.4 L 467.3 234.2 L 473.0 232.0 L 478.7 229.8 L 484.4 227.6 L 490.1 225.4 L 495.8 223.2 L 501.5 221.0 L 507.2 218.8 L 512.9 216.6 L 518.6 214.4 L 524.3 212.2 L 530.0 210.0 L 535.7 207.8 L 541.4 205.6 L 547.1 203.4 L 552.8 201.2 L 558.5 199.0 L 564.2 196.8 L 569.9 194.6 L 575.6 192.4 L 581.3 190.2 L 587.0 188.0" fill="none" stroke="#1f2933" stroke-width="2"/>
+<circle cx="362.4" cy="276.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="369.1" cy="265.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="375.8" cy="266.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="382.5" cy="274.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="389.2" cy="273.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="395.9" cy="273.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="402.6" cy="258.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="409.3" cy="264.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="416.0" cy="246.7" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="422.7" cy="245.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="429.4" cy="220.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="436.1" cy="229.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="442.8" cy="257.8" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="449.5" cy="244.8" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="456.2" cy="248.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="462.9" cy="225.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="469.6" cy="223.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="476.4" cy="247.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="483.1" cy="213.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="489.8" cy="230.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="496.5" cy="220.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="503.2" cy="198.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="509.9" cy="226.9" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="516.6" cy="207.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="523.3" cy="192.1" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="530.0" cy="158.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="536.7" cy="206.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="543.4" cy="221.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="550.1" cy="227.4" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="556.8" cy="173.6" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="563.5" cy="162.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="570.2" cy="172.2" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="576.9" cy="178.0" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<circle cx="583.6" cy="154.5" r="3.2" fill="#55606a" fill-opacity="0.75"/>
+<rect x="680" y="242" width="12" height="8" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="696" y="238" width="12" height="12" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="712" y="235" width="12" height="15" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="728" y="231" width="12" height="19" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="744" y="226" width="12" height="24" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="760" y="220" width="12" height="30" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="776" y="213" width="12" height="37" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="792" y="204" width="12" height="46" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="808" y="192" width="12" height="58" rx="2" fill="#009E73" fill-opacity="0.8"/>
+<rect x="824" y="162" width="12" height="88" rx="2" fill="#009E73" fill-opacity="0.35"/>
+<line x1="822" y1="150" x2="822" y2="258" stroke="#1f2933" stroke-width="2" stroke-dasharray="5 4"/>
+<text class="sm" x="818" y="144" text-anchor="end">90% of errors</text>
+<text class="sm" x="680" y="276" fill="#55606a">errors on calibration sites</text>
+<path d="M 826 192 C 862 192, 862 206, 878 202" fill="none" stroke="#009E73" stroke-width="2" marker-end="url(#arrow-g)"/>
+<line x1="892" y1="138" x2="892" y2="254" stroke="#009E73" stroke-width="5" stroke-linecap="round"/>
+<circle cx="892" cy="196" r="6" fill="#1f2933"/>
+<text class="sm" x="892" y="278" text-anchor="middle">± width</text>
+<text class="note" x="470" y="464" text-anchor="middle">A prediction interval is checked by its coverage: the share of new catches that fall inside it.</text>
+</svg>
