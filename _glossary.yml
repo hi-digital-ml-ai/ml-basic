@@ -126,3 +126,18 @@ terms:
   - term: "Bayes' rule"
     definition: "The rule a generative model uses to classify: weigh each group by how well its description fits the new case, times how common the group is."
     page: chapters/01-introduction/discriminative-and-generative-models.qmd
+
+  # 2 · Marine data: The coastal survey
+  - term: "Station"
+    definition: "One visit of the survey ship to one place, where the water is measured and the seabed sampled; one row of the survey."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Observation"
+    definition: "One row of a data table: one thing that was measured, such as one station; machine learning also calls it an example, instance or sample."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Correlation"
+    definition: "A number from −1 to 1 for how closely two columns follow a straight-line link: 1 if they always rise together, −1 if one always falls as the other rises, 0 for no straight-line link."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Pseudo-replication"
+    definition: "Treating rows that share a source, such as repeat visits to one site, as if they were independent observations, which makes the evidence look stronger than it is."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+
