@@ -45,8 +45,6 @@ website:
         contents:
           - href: chapters/01-introduction/types-of-learning.qmd
             text: "Types of learning"
-          - href: chapters/01-introduction/what-is-machine-learning.qmd
-            text: "Statistical modelling and machine learning"
           - href: chapters/01-introduction/prediction-and-explanation.qmd
             text: "Prediction and explanation"
           - href: chapters/01-introduction/applications-in-marine-science.qmd
@@ -196,6 +194,8 @@ website:
             text: "From a model to a claim"
       - section: "More"
         contents:
+          - href: glossary.qmd
+            text: Glossary
           - href: chapters/index.qmd
             text: All pages
           - href: contributed/index.qmd
@@ -227,6 +227,9 @@ format:
 # Adds the "Code from this page" line to every page that has code.
 filters:
   - tools/code-downloads.lua
+
+shortcodes:
+  - tools/glossary.lua
 
 execute:
   freeze: auto

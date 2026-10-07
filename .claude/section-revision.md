@@ -19,6 +19,12 @@ section adds something new instead of re-evaluating the same models.
 
 The Welcome page and the two Toolkit pages are out of scope for now.
 
+**A second, site-wide pass started on 2026-10-07**: fewer pages, each idea taught once,
+machine learning before statistics, and every term explained at first use. Its target
+pages and the table of which page teaches each idea are in `curriculum.md`, Site-wide
+revision; the writing rules it added are in `authoring-guide.md`, Voice. The checklist
+below still applies to each section.
+
 ## Order of work
 
 1. **Branch.** One feature branch per section from `develop`:

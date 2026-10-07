@@ -24,7 +24,7 @@ Every model so far in this section weights the inputs and adds them up. A decisi
 tree works differently: it asks a series of yes-or-no questions about the inputs, such
 as whether the water is colder than 6 °C, and predicts from the answers. Nobody
 writes down the shape of the relationship; the questions find it.
-[Statistical modelling and machine learning](../01-introduction/what-is-machine-learning.qmd)
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd)
 fitted one to three inputs. This page shows how a tree is grown, how to read one, and
 how deep to let it grow. The random forests and boosting on the
 [next page](forests-and-boosting.qmd) are built from many trees.

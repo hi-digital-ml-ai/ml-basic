@@ -1,6 +1,6 @@
 ---
 title: "Types of learning"
-description: "Some data come with answers and some do not. Supervised learning predicts a known answer; unsupervised learning looks for groups. A short example of each on one coastal survey, which the rest of the course also uses."
+description: "Some data come with answers and some do not. Supervised learning predicts a known answer; unsupervised learning looks for groups. One method of each, k-nearest neighbours and k-means, on the coastal survey the whole course uses."
 order: 1
 categories: [foundations, supervised, unsupervised]
 ---
@@ -14,7 +14,12 @@ library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 set.seed(123)
+
+# Percentages in the text.
+pct <- function(x) round(100 * x)
 ```
+
+{{< new-terms >}}
 
 ## The data decide the kind of learning
 
@@ -23,10 +28,14 @@ clustering, random forests, neural networks. They are easier to hold on to once 
 place them on a map. The first division on that map depends on the data you hold rather
 than the method you choose.
 
-**Supervised learning** learns from examples with a known answer. Each example has
-measurements and an outcome, and the model learns to get from one to the other. The
-outcome sets the task: *regression* when it is a quantity, such as a temperature, and
-*classification* when it is a category, such as "yes" or "no".
+**Supervised learning** learns from examples with a known answer. Each example has some
+measurements, the **inputs** (also called features), and the answer, the **outcome**.
+The model learns to get from the inputs to the outcome, so that it can predict the
+outcome for a new example from its inputs alone. A known outcome is also called a
+**label**, especially when a person assigned it, as when a specialist names the species
+in an image. The outcome sets the task: **regression** when it is a quantity, such as a
+number of animals, and **classification** when it is a category, such as "present" or
+"absent".
 
 **Unsupervised learning** has no outcome at all. It receives a table of measurements
 and looks for structure in it: groups of similar examples, or variables that move
@@ -43,10 +52,11 @@ of data, and this course does not cover it.
 
 ## One coastal survey runs through the course
 
-Every example in this course uses the same dataset: a survey of 800 stations on a
-temperate coastal shelf, visited between 2018 and 2023. At each station the survey
-measured the water and counted one species of seabed animal. This page uses five of its
-columns:
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+Every example in this course uses the same dataset: a simulated survey of stations on a
+temperate coastal shelf. At each station the survey measured the water and counted one
+species of seabed animal. This page uses five of its columns:
 
 - **temperature**, the water temperature, in °C;
 - **salinity**, in practical salinity units (PSU), close to grams of salt per kilogram
@@ -64,91 +74,128 @@ survey |>
   head(5)
 ```
 
-The survey is simulated: we wrote the program that generated it, so we know the true
-relationships and can check whether a model finds them. It records more columns than
-these five. [Section 2](../02-marine-data/index.qmd) introduces the full dataset and the
-work needed before modelling it.
+The survey has `r nrow(survey)` stations and more columns than these five;
+[The coastal survey](../02-marine-data/the-coastal-survey.qmd) introduces them all.
 
-{{< include ../../_snippets/simulated-data.qmd >}}
+## k-nearest neighbours predicts from the most similar stations
 
-## Supervised learning on the survey
-
-Three quarters of the stations are kept for fitting and a quarter set aside for later
-pages. Three new stations, one shallow, one mid-depth and one deep, serve as the test
-case every model is asked about.
+Every model on this page is asked about the same three new stations. They are made up
+for illustration and are not part of the survey. We call them shallow, mid-depth and
+deep, from their depths; the models see only the three measurements.
 
 ```{r}
-#| label: data
-split  <- initial_split(survey, prop = 0.75, strata = present)
-train  <- training(split)
-test   <- testing(split)
-
+#| label: new-stations
 new_stations <- tibble(
-  station      = c("shallow", "mid-depth", "deep"),
+  station       = c("shallow", "mid-depth", "deep"),
   temperature_c = c(12, 9, 5),
   salinity_psu  = c(33.4, 33.7, 34.2),
   depth_m       = c(40, 90, 150)
 )
 ```
 
-These three stations are made up for illustration; they are not part of the survey. The
-names shallow, mid-depth and deep are labels we gave them from their depths (40, 90 and
-150 m) so the text can refer to them. The models never see the names, only the three
-measurements.
+The simplest supervised method is **k-nearest neighbours**. To predict for a new
+station, it
 
-### Classification: is the species present?
+1. measures how far the new station is from every survey station, across temperature,
+   salinity and depth at once;
+2. picks the *k* nearest survey stations, here 15;
+3. predicts from their answers: for presence, the share of them where the species was
+   found; for abundance, their average count.
 
-With presence as the outcome, the task is a classification. **Logistic regression** is
-linear regression adapted to a yes-or-no outcome, so that its answer is a probability
-between 0 and 1. A squared temperature term lets that probability rise and then fall
-again. [Section 3](../03-supervised-learning/logistic-regression.qmd) covers it in full.
+There is no equation to fit. The survey itself is the model, and predicting means
+looking up the stations most like the new one.
+
+"How far" needs care, because the three inputs are measured in different units. Depth
+spans about `r round(diff(range(survey$depth_m)), -1)` metres and salinity about
+`r round(diff(range(survey$salinity_psu)), 1)` units, so without adjustment depth alone
+would decide which stations are nearest. **Scaling** puts the inputs on a common scale:
+subtract each input's mean and divide by its standard deviation, so that every input is
+measured in standard deviations.
+
+### Presence is a classification
+
+With presence as the outcome, the task is a classification. In tidymodels, a
+**recipe** lists the outcome and the inputs and prepares the data, here by scaling. A
+workflow joins the recipe to the model, so the new stations are scaled in the same way
+as the survey before the model sees them.
 
 ```{r}
 #| label: fit-classification
-classifier <- logistic_reg() |>
-  fit(present ~ temperature_c + I(temperature_c^2) + salinity_psu + depth_m, data = train)
+# Every neighbour counts equally.
+knn <- nearest_neighbor(neighbors = 15, weight_func = "rectangular") |>
+  set_engine("kknn")
 
-bind_cols(select(new_stations, station), predict(classifier, new_stations, type = "prob"))
+presence_recipe <- recipe(present ~ temperature_c + salinity_psu + depth_m,
+                          data = survey) |>
+  step_normalize(all_numeric_predictors())
+
+classifier <- workflow() |>
+  add_recipe(presence_recipe) |>
+  add_model(set_mode(knn, "classification")) |>
+  fit(survey)
+
+bind_cols(select(new_stations, station), predict(classifier, new_stations, type = "prob")) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
-For each new station the model returns the chance that the species is present, and the
-chance that it is not.
+```{r}
+#| label: presence-numbers
+#| include: false
+presence <- bind_cols(new_stations, predict(classifier, new_stations, type = "prob"))
+```
 
-### Regression: how many animals?
+For each new station the model returns the share of its 15 nearest survey stations
+where the species was found, and the share where it was not. That share is its estimate
+of the chance of finding the species: `r pct(presence$.pred_yes[1])`% at the shallow
+station, `r pct(presence$.pred_yes[2])`% at the mid-depth one and
+`r pct(presence$.pred_yes[3])`% at the deep one.
+
+### Abundance is a regression
 
 Change the outcome to the number of animals counted and the same survey becomes a
-*regression* problem. An ordinary linear regression:
+regression problem. The method stays the same; only the last step changes, from a
+share to an average.
 
 ```{r}
 #| label: fit-regression
-regression <- linear_reg() |>
-  fit(abundance ~ temperature_c + salinity_psu + depth_m, data = train)
+abundance_recipe <- recipe(abundance ~ temperature_c + salinity_psu + depth_m,
+                           data = survey) |>
+  step_normalize(all_numeric_predictors())
 
-tidy(regression)
+regressor <- workflow() |>
+  add_recipe(abundance_recipe) |>
+  add_model(set_mode(knn, "regression")) |>
+  fit(survey)
 
-bind_cols(select(new_stations, station), predict(regression, new_stations))
+bind_cols(select(new_stations, station), predict(regressor, new_stations)) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
-Abundance falls with depth, by about 0.03 animals per metre. Salinity has no clear
-effect, which is correct: we built none into the simulation. The temperature slope is
-close to zero, even though the classification needed a curved temperature term.
-[The next page](what-is-machine-learning.qmd) takes up that puzzle.
+```{r}
+#| label: abundance-numbers
+#| include: false
+abundance <- bind_cols(new_stations, predict(regressor, new_stations))
+```
 
-## Unsupervised learning on the survey
+The model expects about `r round(abundance$.pred[1], 1)` animals at the shallow
+station, `r round(abundance$.pred[2], 1)` at the mid-depth one and
+`r round(abundance$.pred[3], 1)` at the deep one. It gives a prediction for any station
+but no number that says how much depth or temperature matters.
+[Prediction and explanation](prediction-and-explanation.qmd) asks when that matters.
+
+## k-means sorts the stations into groups without an answer
 
 Now remove the answers entirely: no abundance, no presence, only temperature, salinity
-and depth. We ask **k-means clustering** to sort the 800 stations into three groups. It
-works in four steps:
+and depth. We ask **k-means clustering** to sort the `r nrow(survey)` stations into
+three groups, called **clusters**. Despite the shared letter, its *k* is the number of
+groups, not a number of neighbours. It works in four steps:
 
 1. Place three group centres among the stations, at random.
 2. Assign every station to its nearest centre.
 3. Move each centre to the average of the stations assigned to it.
 4. Repeat steps 2 and 3 until no station changes group.
 
-"Nearest" is measured across all three variables at once, so they must be on a common
-scale first. Depth spans nearly 200 metres and salinity about two units; without
-rescaling, depth alone would decide every group.
-[Section 2](../02-marine-data/index.qmd) returns to this.
+"Nearest" is measured on scaled inputs, for the same reason as before.
 
 ```{r}
 #| label: fit-clusters
@@ -178,7 +225,7 @@ no surprise, because in this survey the three variables move together: salinity 
 with depth, and temperature falls with it. The cluster numbers themselves mean nothing;
 k-means numbers its groups in whatever order it happens to find them.
 
-## Supervised and unsupervised compared
+## The groups differ in a species k-means never saw
 
 Ask both kinds of model about the three new stations. The supervised classifier gives a
 chance of presence; k-means gives a group.
@@ -189,15 +236,15 @@ bind_cols(
   select(new_stations, station),
   predict(classifier, new_stations, type = "prob") |> select(.pred_yes),
   predict(clusters, new_stations)
-)
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 2)))
 ```
 
 The classifier's answer is about the species, because the species was its target.
 k-means returns only a number, `Cluster_1` to `Cluster_3`, which says nothing on its
 own. To give the groups names, the code below sorts them by the average depth of their
-stations, 45, 89 and 133 m in the table above, and calls them Shallow, Mid-depth and
-Deep. The names are ours; k-means knows only the numbers. With names attached, the groups
-can be compared with something k-means never saw:
+stations, shown in the table above, and calls them Shallow, Mid-depth and Deep. The names are ours; k-means knows only the numbers. With names attached, the
+groups can be compared with something k-means never saw:
 
 ```{r}
 #| label: name-groups
@@ -211,20 +258,25 @@ clustered <- clustered |>
   left_join(select(depth_order, .cluster, group), by = ".cluster") |>
   mutate(group = factor(group, levels = depth_order$group))
 
-clustered |>
+group_summary <- clustered |>
   summarise(stations = n(),
             `species present` = round(mean(present == "yes"), 2),
             `mean abundance`  = round(mean(abundance), 2),
             .by = group) |>
   arrange(group)
+
+group_summary
 ```
 
-The species turns up at about four in five shallow and mid-depth stations, and at 69%
-of deep ones, where the average catch is half that of the shallow group (@fig-clusters).
+The species turns up at `r pct(group_summary[["species present"]][1])`% of shallow
+stations, `r pct(group_summary[["species present"]][2])`% of mid-depth ones and
+`r pct(group_summary[["species present"]][3])`% of deep ones, and the average count
+falls from `r group_summary[["mean abundance"]][1]` in the shallow group to
+`r group_summary[["mean abundance"]][3]` in the deep one (@fig-clusters).
 
 ```{r}
 #| label: fig-clusters
-#| fig-cap: "Left: stations by depth and temperature, coloured by the group k-means assigned. Right: abundance in each group. The clustering never saw abundance, yet the shallow group holds about twice as many animals as the deep one."
+#| fig-cap: "Left: stations by depth and temperature, coloured by the group k-means assigned. Right: abundance in each group. The clustering never saw abundance, yet the groups differ in it."
 #| fig-alt: "Two panels. The left panel is a scatter plot of temperature against depth, with points coloured into three groups that mostly follow depth, with some overlap: shallow and warm on the left, mid-depth in the middle, deep and cold on the right. The right panel is a boxplot of abundance for each group; the shallow group has the highest median and the deep group the lowest."
 #| fig-width: 8.5
 #| fig-height: 4.5
@@ -245,7 +297,7 @@ p_space + p_abund + plot_layout(widths = c(1.25, 1))
 
 | | Supervised | Unsupervised |
 | --- | --- | --- |
-| Needs | An answer for every training station | Only the measurements |
+| Needs | An answer for every survey station | Only the measurements |
 | Returns | A prediction of the answer | A group, with no meaning attached |
 | Can be checked | Against stations held back, whose answers are known | Only indirectly, against things it never saw |
 | Example here | The chance of presence | Shallow, mid-depth and deep groups |
@@ -266,9 +318,9 @@ the groups.
 seabed images disagree more often than most people expect. A supervised model can never
 be more reliable than the labels it learned from.
 
-**The boundaries blur in practice.** Semi-supervised learning combines a few labels with
-many unlabelled examples; self-supervised learning builds labels from the data's own
-structure. The division on this page is a teaching map, not a law.
+**The boundaries blur in practice.** Some methods combine a few labels with many
+unlabelled examples, or build labels from the data's own structure. The division on this
+page is a teaching map, not a law.
 [Discriminative and generative models](discriminative-and-generative-models.qmd) adds a
 second division, by the thing the model learns.
 
@@ -277,15 +329,19 @@ second division, by the thing the model learns.
 ::: {.key-points}
 - Supervised learning needs examples with known answers. Regression predicts a quantity,
   classification a category.
+- k-nearest neighbours predicts a new case from the most similar cases in the data, and
+  the same method does classification and regression.
 - Unsupervised learning has no answers. Methods such as k-means find groups, and will
   always return as many as you ask for.
-- Reinforcement learning learns from the consequences of actions, and is outside this
-  course.
+- Methods that measure how near two cases are need their inputs scaled first.
 - A supervised model is no more reliable than its labels; an unsupervised one is shaped
   by the choices made in setting it up.
 :::
 
 ## Try it yourself
+
+Refit the classifier with `neighbors = 1`, then with `neighbors = 200`. Which of the
+three new stations changes most, and why does a single neighbour give only 0% or 100%?
 
 Refit the clustering with `num_clusters = 6`, then with `num_clusters = 2`. Do the
 groups still look like real habitats? Which evidence would make you prefer one answer

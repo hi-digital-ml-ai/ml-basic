@@ -20,7 +20,7 @@ set.seed(123)
 
 A model always looks good on the data it learned from; the only honest measure of how
 it will do on new stations is data it has never seen.
-[Statistical modelling and machine learning](../01-introduction/what-is-machine-learning.qmd) compared
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd) compared
 two models that way. This page shows how to hold data back, how to keep a rare class
 in every part, and why, for a marine survey, the rows held back must be chosen with
 more care than a random draw.

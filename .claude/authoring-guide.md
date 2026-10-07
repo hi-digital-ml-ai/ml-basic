@@ -14,7 +14,22 @@ new.
   opens with a code block has been written backwards.
 - Define each jargon term the first time it appears, in one sentence, inline.
   "A *feature* is simply one of the measured variables you feed the model: depth,
-  temperature, chlorophyll."
+  temperature, chlorophyll." Write the sentence for a first-year university student:
+  participants come from many backgrounds. Readers already know the mean, median,
+  standard deviation and variance, so do not define those; every modelling term (R²,
+  coefficient, confidence interval, standard error, ROC AUC ...) gets its sentence.
+  Videos follow the same rule.
+- **Machine learning first.** Lead with prediction, held-out data and the methods of
+  machine learning. Statistical machinery (coefficient intervals, standard errors,
+  p-values, likelihood values, dispersion checks) appears only as far as the lesson
+  needs it, and optional depth goes in a collapsed callout.
+- **New terms go in the glossary.** Every term a page bolds and defines gets an entry in
+  `_glossary.yml` (term, one plain sentence that agrees with the page's own, the page,
+  and optionally `more:` for a later page that covers it in full), and the page carries
+  `{{< new-terms >}}` straight after its setup chunk. Glossary definitions hold no links.
+- **Teach an idea once.** Each idea has one page that teaches it (the table in
+  `curriculum.md`, Site-wide revision); every other page names it and links there,
+  without re-explaining.
 - Short sentences. Active voice. Say "we" for what the page does together with the
   reader.
 - Equations are welcome but always follow a plain-English statement of the same
@@ -71,7 +86,10 @@ as a heading postpones the answer that the section is about to give. `The idea`,
 `Worked example`, `Key points` and `Try it yourself` stay fixed, because they are
 labels rather than claims.
 
-Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
+Aim for 1,000–1,800 words plus code, and no more than about 2,000. If a page runs
+longer, cut what another page teaches before splitting it. Quote at most about three
+numbers in a paragraph; more belong in a table. Open with the page's own question, not
+a summary of the previous page.
 
 ### Further resources
 

@@ -15,6 +15,82 @@ idiom without stopping to explain it, and so the Python tabs have somewhere to p
 
 ---
 
+## Site-wide revision (from 2026-10-07)
+
+A second pass over every page, after all ten sections had been revised once. The aim
+(user, 2026-10-07): give readers a good understanding of general machine-learning
+knowledge, clearly and readably, for participants of mixed backgrounds. Three problems
+drive it:
+
+- **Redundancy.** Most later pages re-taught an idea an earlier page owned (RMSE, the
+  split roles, the bootstrap, why to standardise, the learning rate, ridge, site against
+  block cross-validation, the cost threshold) and then added their own part. Pages grew
+  from about 1,500 words in §1 to 2,500–3,500 in §6, §7 and §10.
+- **A lean towards statistical modelling.** §3, §4, §6 and §10 spent much of their length
+  on coefficient intervals, standard errors, p-values, log-likelihoods, overdispersion
+  checks and posteriors, and Poisson, negative binomial and GAM models were the default
+  models through §6, §7 and §10.
+- **Terms used before they were explained**, and R² defined as a share of the variation
+  while the code computed `rsq()`, the squared correlation.
+
+Pages may be merged, removed and renamed freely; URLs need no redirects (the user is the
+only one working on the site). Every syllabus subtopic keeps a heading somewhere.
+
+### Target pages
+
+| Section | Pages, in order | Change |
+| --- | --- | --- |
+| 1 Introduction | Types of learning; Prediction and explanation; Applications in marine science; Discriminative and generative models | *Statistical modelling and machine learning* and *Prediction and explanation* merge: the two aims, the line and the tree, the RMSE built by hand, the confounder |
+| 2 Marine data | The coastal survey; Kinds of marine data; Exploring and cleaning the data; Scaling and encoding; Splitting the data; Avoiding information leakage | *Observations and features* merges into *The coastal survey*; *Exploring the data first* and *Missing values and outliers* merge (one finds the six problems, the other fixes them); *Splitting* drops its rebalancing section for a link to *Class imbalance* |
+| 3 Supervised learning | Linear and polynomial regression; Regression for counts; Logistic regression; k-nearest neighbours; Decision trees; Random forests and boosting; Choosing a method | *Regression and classification* folds into the overview and the linear regression page; **k-nearest neighbours is new** (user, 2026-10-07): the simplest machine-learning method, predicting from the most similar stations, which ties together distance, scaling, k-means and the distance-to-the-survey check |
+| 4 How algorithms learn | Loss functions; Finding the parameters; Gradient descent; Likelihood and priors | *Maximum likelihood* and *Priors and ridge regression* merge into one page on where losses and penalties come from, statistics in the maths callouts; *Checking a fit* folds into *Finding the parameters* (did the search work), its seeds part into *Reproducibility* |
+| 5 Generalisation | Underfitting and overfitting; The bias–variance trade-off; Regularisation; Hyperparameter selection | *Training error and new data* merges into *Underfitting and overfitting* (same splits, same curve); *Model complexity* folds into *Regularisation* (same random columns); ridge is taught here, §4 only says a penalty is a prior |
+| 6 Assumptions | Linearity and nonlinearity; Distributional assumptions; Dependent data; Uneven sampling and extrapolation; Class imbalance | *Independence of observations* and *Spatial and temporal dependence* merge into one page on repeat visits, neighbours and time (the why; the folds go to §7); *Distributional assumptions* becomes what a loss aims at, its prediction intervals moving to *Communicating uncertainty* |
+| 7 Validation | Cross-validation; Spatial and temporal cross-validation; Regression performance measures; Classification performance measures; Uncertainty and stability; Choosing measures that match the objective | Same pages; *Spatial and temporal CV* takes the site-against-block comparison from §6; *Classification measures* starts from *Class imbalance* |
+| 8 Unsupervised learning | Clustering with k-means; Choosing the number of clusters; Hierarchical clustering; Principal component analysis; How many components to keep; Checking a pattern before reporting it | Same pages |
+| 9 Neural networks | Neurons, layers and activations; Forward propagation and backpropagation; Training a network; When a network pays off; Autoencoders | *How much data a network needs* and *When a network is the right tool* merge; *Training a network* drops its repeat of §4's learning-rate lesson |
+| 10 Interpretation | Feature importance; Partial effects; Black boxes and interpretable models; Communicating uncertainty; Reproducibility and transparent reporting; From a model to a claim | Same pages; fewer coefficient intervals; the claim is written as a machine-learning report (a score against a baseline, shapes, prediction intervals) |
+
+Fifty-three pages, against sixty-two before. File names may change with the titles.
+
+### One page teaches each idea; the others link to it
+
+| Idea | Taught on | Other pages |
+| --- | --- | --- |
+| The coastal survey | *The coastal survey* | §1 gives two sentences and a link |
+| RMSE | *Prediction and explanation* (built by hand) | Link; *Regression performance measures* compares it with the others |
+| R² | The first page that quotes it, as the textbook R² (`rsq_trad()`, `r2_score()`) everywhere | Link |
+| Training, validation and test data | *Splitting the data* | Link |
+| Parameters and hyperparameters | *Finding the parameters* | Link |
+| Cross-validation | *Hyperparameter selection* | §7's *Cross-validation* starts where it stops; §6 pages link |
+| The bootstrap | *Random forests and boosting* | Link |
+| Why standardise | *Scaling and encoding* | One line and a link |
+| Learning rate, divergence, mini-batches | *Gradient descent* | *Training a network* keeps early stopping, seeds and mini-batches for networks |
+| Ridge and the lasso | *Regularisation* | *Likelihood and priors*: a penalty is a prior, nothing more |
+| Seeds and run-to-run spread | *Reproducibility and transparent reporting* | Link |
+| What a loss aims at (average, median), log counts falling short | *Distributional assumptions* | The measures pages link instead of rebuilding |
+| Overdispersion and the negative binomial | *Regression for counts* | Link |
+| Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
+| False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
+| Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
+| The simulated truth as a check | *The coastal survey* | One sentence and a link |
+
+Section overviews keep the thread paragraph ("The section picks up threads ...") to one or
+two sentences.
+
+### Decisions (user, 2026-10-07)
+
+- The default models of §6, §7 and §10 move from Poisson, negative binomial and the GAM
+  to a random forest and one simple baseline.
+- A **glossary**: `glossary.qmd` (sidebar, More) lists every term, and each page opens
+  with a collapsed "New terms on this page" box. Both come from one file,
+  `_glossary.yml`, through the `{{< new-terms >}}` and `{{< glossary >}}` shortcodes in
+  `tools/glossary.lua`. Add a page's terms to the file as the page is revised.
+
+---
+
 ## 1. Introduction to machine learning in marine science
 `chapters/01-introduction/` · categories: `foundations`
 

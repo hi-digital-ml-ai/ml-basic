@@ -1,0 +1,128 @@
+# The course glossary: one entry per term, in the order the course introduces them.
+# tools/glossary.lua shows a page's own terms in its "New terms on this page" box
+# ({{< new-terms >}}) and every term on glossary.qmd ({{< glossary >}}).
+#
+#   term:        as it is written in bold on the page
+#   definition:  one plain sentence, no links; it must agree with the page's own sentence
+#   page:        the page that first explains the term, from the project root
+#   more:        optional, a later page that covers it in full
+
+terms:
+
+  # 1 · Introduction: Types of learning
+  - term: "Supervised learning"
+    definition: "Learning from examples whose answer is known, in order to predict the answer for new examples."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Input (feature)"
+    definition: "A measurement a model uses to make its prediction, such as temperature or depth."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Outcome"
+    definition: "The answer a supervised model learns to predict, such as whether a species is present."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Label"
+    definition: "A known outcome, especially one a person assigned, such as a species named from an image."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Regression"
+    definition: "A supervised task whose outcome is a quantity, such as a number of animals; not only linear regression."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Classification"
+    definition: "A supervised task whose outcome is a category, such as present or absent."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Unsupervised learning"
+    definition: "Looking for structure, such as groups of similar examples, in measurements that come with no answer."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Reinforcement learning"
+    definition: "Learning which actions to take from the rewards they bring; not covered in this course."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "k-nearest neighbours"
+    definition: "A supervised method that predicts for a new case from the k most similar cases in the data: the share of each category, or the average of a quantity."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Scaling"
+    definition: "Putting inputs on a common scale, for example by subtracting each one's mean and dividing by its standard deviation, so that no input dominates a distance."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Recipe"
+    definition: "In tidymodels, the list of a model's outcome and inputs together with the steps that prepare the data, such as scaling."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "k-means clustering"
+    definition: "An unsupervised method that sorts cases into k groups, moving each group's centre to the average of its members until no case changes group."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Cluster"
+    definition: "A group of similar cases found by an unsupervised method."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+
+  # 1 · Introduction: Prediction and explanation
+  - term: "Machine learning"
+    definition: "Fitting models to data with the aim of predicting cases the model has not seen, usually letting the method find the shape of the relationship."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Statistical modelling"
+    definition: "Fitting models to data with the aim of explaining what drives an outcome, usually with a shape you write down so that each part of the model means something."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Prediction"
+    definition: "Using a model to estimate the outcome for a case it has not seen; checked by the error on cases held back from fitting."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Explanation"
+    definition: "Using a model to claim that changing an input would change the outcome; checked by study design and knowledge of the system, not by the data alone."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Test set"
+    definition: "Cases held back from fitting, so that the error on them shows how a model does on new cases."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/02-marine-data/splitting-data.qmd
+  - term: "Training set"
+    definition: "The cases a model learns from."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/02-marine-data/splitting-data.qmd
+  - term: "Linear regression"
+    definition: "A model that predicts the outcome by adding up a fixed amount for each input, so its prediction is a straight line in each input."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Slope (coefficient)"
+    definition: "In a linear regression, the change in the prediction for one unit more of an input, with the other inputs held fixed."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Decision tree"
+    definition: "A model that splits the data again and again at the threshold that best separates high outcomes from low ones, and predicts the average of each final group."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/decision-trees.qmd
+  - term: "RMSE (root mean squared error)"
+    definition: "A typical miss, in the outcome's own units: square each prediction's miss, take the mean, then the square root. Lower is better."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/07-validation/regression-metrics.qmd
+  - term: "Baseline"
+    definition: "The score of the simplest possible prediction, such as predicting the average everywhere; a model that cannot beat it has learned nothing useful."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Confounder"
+    definition: "A variable that affects both an input and the outcome, so the two move together even when neither affects the other."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Squared term"
+    definition: "An input multiplied by itself and added to a linear regression, which lets the fitted line bend into a curve."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Confidence interval (95%)"
+    definition: "A range around an estimate that shows how precisely the data pin it down: over many repeated surveys, 95 in 100 intervals built this way would contain the true value."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+
+  # 1 · Introduction: Applications in marine science
+  - term: "Emulator"
+    definition: "A fast machine-learning copy of a slow simulation, such as an ocean model, trained on the simulation's own output and valid only within the conditions it was trained on."
+    page: chapters/01-introduction/applications-in-marine-science.qmd
+
+  # 1 · Introduction: Discriminative and generative models
+  - term: "Discriminative model"
+    definition: "A model that learns only the answer, such as the chance of an outcome at each value of the inputs; most machine-learning methods are discriminative."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Generative model"
+    definition: "A model that learns a description of the data in each group, so it can classify new cases and also generate plausible new examples."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Normal distribution"
+    definition: "The bell-shaped curve that describes values spread symmetrically around their mean, with the sd setting its width."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Density"
+    definition: "The height of a distribution's curve at a value: high where values like it are common, low where they are rare."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Bayes' rule"
+    definition: "The rule a generative model uses to classify: weigh each group by how well its description fits the new case, times how common the group is."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd

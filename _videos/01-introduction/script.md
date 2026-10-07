@@ -24,7 +24,7 @@ visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
 This video is a short tour of the introduction. It covers three things: the kinds of
-learning, how machine learning relates to the statistics you already use, and where it
+learning, why predicting is not the same as explaining, and where machine learning
 helps in marine science.
 
 # The survey data
@@ -67,120 +67,133 @@ When the answer is a quantity, the task is regression. When it is a category, su
 present or absent, it is classification.
 
 ## Scene 7
+visual: manim Neighbours: the stations by depth and temperature; a new mid-depth station appears, and its 15 nearest stations light up (page results, types-of-learning.qmd)
+
+The simplest supervised method is k-nearest neighbours. For a new station, it finds the
+fifteen survey stations most like it in temperature, salinity and depth.
+
+## Scene 8
+visual: manim Neighbours: the 15 neighbours coloured found or not found; "11 of 15 found", then "73% chance of presence" (page results, types-of-learning.qmd)
+pause-after: 0.5
+
+Eleven of those fifteen had the species, so the model gives a seventy-three percent
+chance of presence. To predict abundance, it averages their counts instead.
+
+## Scene 9
 visual: manim Clusters: the 800 stations by depth and temperature, sorted into three groups by k-means (page results, types-of-learning.qmd#fig-clusters)
 
 With no answers at all, the learning is unsupervised. Here k-means sorts the stations
 into three groups using only the water: shallow, mid-depth and deep.
 
-## Scene 8
+## Scene 10
 visual: manim Always: ask for six groups, and six appear (schematic)
 
 It will return groups whether or not real ones exist, so its results need checking.
 
-## Scene 9
+## Scene 11
 visual: manim Models: a boundary between two groups, "discriminative", and an outline around each, "generative" (schematic)
 
-Models also differ in what they learn. A discriminative model learns only the line
-between outcomes. A generative model learns the data themselves, and can invent new
-examples. The tools that write text and draw pictures are generative.
+Models also differ in what they learn. A discriminative model, such as k-nearest
+neighbours, learns only the answer. A generative model learns the data themselves, and
+can invent new examples. The tools that write text and draw pictures are generative.
 
-## Scene 10
+## Scene 12
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
 Key point one. The data you hold decide the kind of learning: supervised with answers,
 unsupervised without them.
 
-# Statistics and machine learning
-
-## Scene 11
-visual: manim Scale: methods from "you write the shape down" to "the algorithm finds it", linear regression "used by both" (schematic)
-
-Machine learning is not a separate subject from statistics. The two share their data
-and their models, and linear regression belongs to both.
-
-## Scene 12
-visual: manim Aims: "estimate an effect" and "predict new cases, checked on data held back" (schematic)
-
-The difference is mostly the aim. A statistical model estimates an effect. A
-machine-learning model predicts new cases, and is checked on data held back from
-fitting.
+# Predicting and explaining
 
 ## Scene 13
-visual: manim Hump: abundance against temperature, the straight line nearly flat (page results, what-is-machine-learning.qmd#fig-shapes)
+visual: manim Aims: "prediction: the outcome at a new station, checked on stations held back" and "explanation: what drives the outcome" (schematic)
 
-In the survey, the species does best in middling water. A straight line through that
-hump is nearly flat, so the linear model reports no temperature effect.
+A model can serve two aims. Prediction asks what the outcome will be at a station
+nobody has measured, and it can be checked on stations held back from fitting.
+Explanation asks what drives the outcome.
 
 ## Scene 14
+visual: manim Aims: "machine learning" under prediction, "statistical modelling" under explanation (schematic)
+
+Machine learning usually aims at prediction, and statistical modelling at explanation.
+The same model can serve either, but it is checked in different ways.
+
+## Scene 15
+visual: manim Hump: abundance against temperature, the straight line nearly flat (page results, prediction-and-explanation.qmd#fig-shapes)
+
+In the survey, the species does best in middling water. A straight line through that
+hump is nearly flat, so a linear regression reports almost no temperature effect.
+
+## Scene 16
 visual: manim Hump: the decision tree's steps drawn over it, following the hump
 pause-after: 0.5
 
 A decision tree was never asked for a slope, and it finds the hump.
 
-## Scene 15
-visual: manim Rmse: the page's first five test stations, observed and the tree's predicted count; then the miss, then its square; "… and 195 more"; the mean of the squares 19.29; its square root 4.39 animals (page results, what-is-machine-learning.qmd)
+## Scene 17
+visual: manim Rmse: the page's first five test stations, observed and the tree's predicted count; then the miss, then its square; "… and 195 more"; the mean of the squares 19.29; its square root 4.39 animals (page results, prediction-and-explanation.qmd)
 
 To compare the two, each one predicts the stations held back. At every station, take
 the miss: the observed count minus the predicted one. Square the misses, so that none
 cancel out, average them, and take the square root. This is the root mean squared
 error, or RMSE: a typical miss, in animals.
 
-## Scene 16
-visual: manim Scores: three bars, predicting the average 4.72, the straight line 4.59, the tree 4.39; "lower is better" (page results, what-is-machine-learning.qmd)
+## Scene 18
+visual: manim Scores: three bars, the baseline of predicting the average 4.72, linear regression 4.59, the decision tree 4.39; "lower is better" (page results, prediction-and-explanation.qmd)
 pause-after: 0.5
 
-Lower is better. The tree's RMSE is 4.39 animals, the straight line's 4.59. Simply
-predicting the average count everywhere gives 4.72, so both models have learned
-something, if not much. The course scores predictions this way throughout.
+Lower is better. The tree's RMSE is 4.39 animals, the linear regression's 4.59. Simply
+predicting the average count everywhere, the baseline, gives 4.72, so both models have
+learned something, if not much. The course scores predictions this way throughout.
 
-## Scene 17
+## Scene 19
 visual: manim Cause: depth drives both salinity and the species; a dashed line from salinity to the species, "helps predict", then "but causes nothing" (schematic)
 
 Predicting and explaining are different jobs, too. A variable can help predict without
 causing anything. In the survey, salinity helps predict the species, but only because
 it rises with depth, and depth is what the species responds to.
 
-## Scene 18
+## Scene 20
 visual: manim Cause: "a good test error gives no warning", "explaining needs a study design and knowledge of the system", "more on this later in the course"
 pause-after: 0.5
 
 A good test error gives no warning of this. Explaining needs a study design and
 knowledge of the system, and the course comes back to these ideas as it goes.
 
-## Scene 19
+## Scene 21
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point two. Statistics and machine learning share their models. Decide first
-whether you want to predict or to explain.
+Key point two. Predicting and explaining are different jobs. Decide first which one you
+want, because they are checked in different ways.
 
 # Machine learning in marine science
 
-## Scene 20
+## Scene 22
 visual: manim Tasks: six cards appear, naming things to standing in for a slow model (schematic)
 
 Most marine applications come down to six tasks: naming things, mapping across space,
 filling gaps, forecasting, finding groups, and standing in for a slow model.
 
-## Scene 21
+## Scene 23
 visual: manim Tasks: each card gains a warning mark, "a typical way of going wrong"
 
-Each has a typical way of going wrong, and later sections deal with each one.
+Each has a typical way of going wrong, and the course deals with each one later.
 
-## Scene 22
+## Scene 24
 visual: manim Pipeline: plentiful data, a specialist's scarce labels, a model, predictions at scale (schematic)
 
 Most of the six are supervised, and the answers usually come from a specialist: slow
 and costly. A model turns those few labels into predictions for everything else.
 
-## Scene 23
+## Scene 25
 visual: manim Pipeline: the labelled few bunched in one corner, "not a random sample"
 
 But the labelled examples are rarely a random sample, and the model inherits their
 gaps.
 
-## Scene 24
+## Scene 26
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
@@ -189,14 +202,14 @@ labels came from.
 
 # Quiz
 
-## Scene 25
+## Scene 27
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. You have a folder of seabed photographs, and a specialist has named the
 species in some of them. Supervised or unsupervised? And which of the six tasks?
 
-## Scene 26
+## Scene 28
 visual: manim QuizAnswer: the named photos marked "supervised", and the "naming things" card (schematic)
 
 Supervised, because some photographs come with answers. The task is naming things: a
@@ -204,22 +217,22 @@ classification.
 
 # Key points
 
-## Scene 27
+## Scene 29
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: your data decide the kind of learning.
 
-## Scene 28
+## Scene 30
 visual: manim KeyPoints: the second ticked
 
 Two: decide whether you want to predict or to explain.
 
-## Scene 29
+## Scene 31
 visual: manim KeyPoints: the third ticked
 
 Three: most applications are one of six tasks, limited by their labels.
 
-## Scene 30
+## Scene 32
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.
