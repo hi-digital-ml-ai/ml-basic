@@ -1,6 +1,6 @@
 ---
 title: "1 · Introduction to machine learning in marine science"
-description: "What machine learning is, how it differs from statistical modelling, and when prediction is not the same as understanding."
+description: "What machine learning is, the kinds of problem it solves, and why a model that predicts well need not explain why. Four pages on one simulated coastal survey."
 categories: [foundations]
 listing:
   id: pages
@@ -13,19 +13,16 @@ listing:
 toc: false
 ---
 
-Most marine scientists already fit models. You have fitted a linear regression, checked
-residuals, looked at a p-value, and drawn a conclusion about how temperature affects
-abundance. So the obvious question about machine learning is: what is different?
+Machine learning builds a model from examples. Instead of writing down the rule that
+links water temperature to where a species lives, you give a method many stations where
+the answer is known, and it finds the rule itself. The test of the result is how well it
+predicts stations it has never seen.
 
-The short answer is *what the model is for*. A statistical model is usually built to
-tell you something about the world: the size of an effect, or whether it is
-distinguishable from noise. A machine-learning model is usually built to make good
-predictions about cases it has not seen. Those two goals pull in different directions,
-and a model that excels at one can be useless at the other.
-
-This section sets up that distinction and the vocabulary the rest of the course uses.
-Every page works on the same simulated coastal survey, so you can see the same data
-answer different questions.
+This section sets out the ideas the rest of the course builds on: the main kinds of
+learning, the difference between predicting and explaining, where machine learning
+helps in marine science, and the two things a model can learn. Every page works on the
+same simulated coastal survey, so you can see one set of data answer different
+questions. The pages build on each other, so read them in order.
 
 ## Pages in this section
 

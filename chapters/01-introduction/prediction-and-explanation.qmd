@@ -1,6 +1,6 @@
 ---
 title: "Prediction and explanation"
-description: "Statistical modelling and machine learning share their models but differ in aim: explaining what drives an outcome, or predicting new cases. A straight line, a decision tree and a confounder show why the two aims need different checks."
+description: "A machine-learning model is judged by its predictions; a statistical model by what it explains. A straight line, a decision tree and a confounder show why the two aims need different checks."
 order: 2
 categories: [foundations, interpretation]
 ---
