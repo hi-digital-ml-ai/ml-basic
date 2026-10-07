@@ -33,7 +33,7 @@ measurement to find the scores that hold.
 
 **Permutation importance** works on any fitted model. Predict the test data and
 measure the error, here the
-[RMSE](../01-introduction/what-is-machine-learning.qmd). Then shuffle one input: mix up
+[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss). Then shuffle one input: mix up
 its values, so each row gets another row's value. The input's values are all still
 there, but they no longer belong to their rows. If the model relied on that input, its
 predictions get worse and the error rises; if it did not, the error stays about the

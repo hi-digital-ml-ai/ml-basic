@@ -71,7 +71,7 @@ $a$ and slope $b$ that make the chosen objective smallest.
 Three names come from the same squared misses. The **squared error** is one residual
 multiplied by itself. The **mean squared error** averages it over the stations, and it is
 the objective a squared-error fit makes small. The **RMSE**, built by hand in
-[Statistical modelling and machine learning](../01-introduction/what-is-machine-learning.qmd#the-test-error-is-a-typical-miss),
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
 is the square root of that mean.
 
 The square root changes the units, not the winner. The mean squared error is in animals
