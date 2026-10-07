@@ -387,7 +387,7 @@ their paired difference, never by whether their own intervals overlap: here ever
 overlapped the others, and the forest still beat predicting the average in nearly every
 sample. A lead that holds in `r pct(vs_poisson[[5]])` of samples is not yet a result. For a method with
 random choices in the fit, a difference must also be larger than the spread from one run to
-the next, which [Reading a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured by
+the next, which [Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured by
 leaving the seed out.
 
 ## Key points

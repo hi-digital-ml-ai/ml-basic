@@ -90,7 +90,7 @@ models predict it:
   [Logistic regression](../03-supervised-learning/logistic-regression.qmd), with each
   input entered as a straight line in the log-odds.
 - **Random forest**, from
-  [Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). For presence,
+  [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd). For presence,
   each tree gives the share of stations with the species in the leaf a station falls in,
   and the forest averages those shares into a probability.
 

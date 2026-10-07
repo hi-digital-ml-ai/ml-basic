@@ -88,10 +88,10 @@ line or a level.
 ## Worked example
 
 Three models are fitted to the training sites of the survey with the inputs of
-[Count regression](../03-supervised-learning/count-regression.qmd). Poisson regression
+[Regression for counts](../03-supervised-learning/count-regression.qmd). Poisson regression
 with a straight line for every input checks the assumption. Two models drop the
 straight lines: the GAM, and a random forest of 500 trees, as in
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
 ### Preparing the data
 
@@ -462,7 +462,7 @@ the interactions, the forest the single readable curve.
 
 1. Add squared terms for temperature to the straight-line recipe with
    `step_poly(temperature_c, degree = 2, options = list(raw = TRUE))`, as
-   [Count regression](../03-supervised-learning/count-regression.qmd) did, and run the
+   [Regression for counts](../03-supervised-learning/count-regression.qmd) did, and run the
    error check again. Does the hump along temperature disappear?
 2. In `across_input()`, hold temperature at its lower quartile instead of its median,
    then at its upper quartile, and redraw the depth curves. Does the forest's curve

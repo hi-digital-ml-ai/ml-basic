@@ -208,7 +208,7 @@ the same model, or a look at whether the parameters moved from where they starte
 ### An objective with no lowest point
 
 `catch_weight_kg` is the leaked column from
-[Information leakage](../02-marine-data/information-leakage.qmd): it is weighed from the
+[Avoiding information leakage](../02-marine-data/information-leakage.qmd): it is weighed from the
 same catch that was counted, so every station where the species was present weighs
 more than every station where it was absent. We use it to predict presence.
 
@@ -382,7 +382,7 @@ success.
 Finally, every check on this page asks whether the search did what it was told. None of
 them asks whether it was told the right thing: a Poisson model of counts that vary far
 more than Poisson allows converges without complaint.
-[Count regression](../03-supervised-learning/count-regression.qmd) showed what that
+[Regression for counts](../03-supervised-learning/count-regression.qmd) showed what that
 costs, and
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
 asks which models need a distribution at all.

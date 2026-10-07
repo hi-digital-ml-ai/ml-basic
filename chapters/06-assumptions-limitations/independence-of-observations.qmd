@@ -40,7 +40,7 @@ The same problem appears wherever one unit is sampled several times:
 
 ## Resampling whole sites measures the effective sample size
 
-[Forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) grew each
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) grew each
 tree on a **bootstrap sample**: rows drawn at random with replacement, as many as the
 data has. Fitting the same model to many bootstrap samples shows how much an estimate
 moves from one sample to the next, and the spread of those estimates is its standard
@@ -62,7 +62,7 @@ means the rows are worth $k^2$ times fewer: the **effective sample size**.
 ## Worked example
 
 The data, the split by site, the recipe and the negative binomial model are those of
-[Count regression](../03-supervised-learning/count-regression.qmd). The prepared training
+[Regression for counts](../03-supervised-learning/count-regression.qmd). The prepared training
 data keeps each station's `site_id` beside its inputs, so that the resampling can draw
 whole sites.
 
@@ -321,7 +321,7 @@ sets of 500 resamples can tell apart. The widest is
 rows are worth about `r round(model_worth, -1)` independent stations to the model,
 against `r round(average_spread$worth, -1)` for the average catch.
 
-[Count regression](../03-supervised-learning/count-regression.qmd) widened Poisson
+[Regression for counts](../03-supervised-learning/count-regression.qmd) widened Poisson
 regression's intervals with the negative binomial model, but both assume every station
 is independent. Here the negative binomial model's are close to right: only `r widest$label`'s should be noticeably wider. A model that left
 out depth or the seabed would leave more for a site's visits to share, and its

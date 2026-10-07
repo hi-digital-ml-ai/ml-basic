@@ -77,7 +77,7 @@ nested score is the best guess at how it will do on new sites.
 ## Worked example
 
 The model is Poisson regression from
-[Count regression](../03-supervised-learning/count-regression.qmd), with each input
+[Regression for counts](../03-supervised-learning/count-regression.qmd), with each input
 entered as a straight line. Nested cross-validation needs no test sites, so this page uses
 all the survey's sites. Every fold holds whole sites, as in
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
