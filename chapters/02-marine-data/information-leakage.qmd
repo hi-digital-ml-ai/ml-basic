@@ -33,7 +33,7 @@ report.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Four kinds of leakage
+## Leakage takes four common forms
 
 ::: {.diagram}
 ![The four kinds of information leakage, each with an example and the way to avoid it. In every case, the test set shapes the model before it is tested.](img/leakage-kinds.svg){fig-alt="Four cards. Target leakage: a column made from the outcome, such as catch weight when predicting a count; drop columns made from the outcome. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. A note says each lets the test set shape the model before it is tested."}
@@ -197,7 +197,7 @@ grouped <- group_initial_split(survey, group = site_id, prop = 0.75)
 
 group <- bind_rows(
   Random            = fit_and_test(honest, train, test),
-  `Grouped by site` = fit_and_test(honest, training(grouped),
+  `By site`         = fit_and_test(honest, training(grouped),
                                    testing(grouped)),
   .id = "split"
 )
@@ -213,7 +213,7 @@ group_train, group_test = next(grouper.split(survey, groups=survey["site_id"]))
 
 pd.DataFrame([
     {"split": "Random", **fit_and_test(honest, train, test)},
-    {"split": "Grouped by site",
+    {"split": "By site",
      **fit_and_test(honest, survey.iloc[group_train], survey.iloc[group_test])},
 ])
 ```
