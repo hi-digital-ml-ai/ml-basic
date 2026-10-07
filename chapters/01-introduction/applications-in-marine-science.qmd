@@ -51,7 +51,7 @@ the clearest images, or the casts someone had time to classify. The model inheri
 their gaps and applies them everywhere.
 
 For the same reason, more labelled examples that resemble the target data usually
-help more than a cleverer algorithm. Published accuracy is also often optimistic,
+help more than a cleverer method. Published accuracy is also often optimistic,
 mostly because nearby or repeated samples end up in both the training set and the
 test set; see
 [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd).

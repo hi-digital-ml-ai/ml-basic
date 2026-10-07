@@ -24,7 +24,7 @@ models; what mostly separates them is which of these two aims comes first. This 
 shows that the two aims check a model in different ways, and that a model can serve
 one aim well while misleading you about the other.
 
-## Two aims for one model
+## One model can serve two aims
 
 Statistical modelling and machine learning are not two separate subjects. Both start
 from a table of measurements, and both fit a model by making its errors on that
@@ -32,11 +32,11 @@ table as small as possible. Linear regression belongs to both. The difference is
 mostly what the fitted model is for.
 
 - **Explanation** asks what drives the outcome: if an input changed, with everything
-  else held fixed, would the outcome change? This is the usual aim of statistical
-  modelling. The answer is a claim about cause, and the data alone cannot check it.
+  else held fixed, would the outcome change? This is the usual aim of **statistical
+  modelling**. The answer is a claim about cause, and the data alone cannot check it.
   It needs an experiment or knowledge of the system.
 - **Prediction** asks what the outcome will be for a case the model has not seen.
-  This is the usual aim of machine learning. It can be checked directly: hold some
+  This is the usual aim of **machine learning**. It can be checked directly: hold some
   cases back from fitting, predict them, and measure how far the predictions miss.
 
 The two aims also differ in who chooses the shape of the relationship. For
@@ -53,8 +53,8 @@ work, so most machine-learning methods find it from the data.
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 The examples use the coastal survey from [Types of learning](types-of-learning.qmd):
-the water temperature, salinity and depth at 800 stations, and the number of animals
-counted at each.
+the water temperature, salinity and depth at each station, and the number of animals
+counted there.
 
 First, a quarter of the stations are held back as the **test set**. No model sees
 them during fitting, so the error on them shows how a model does on new stations. The
@@ -72,7 +72,7 @@ test  <- testing(split)
 
 ### Linear regression gives one slope per input
 
-A linear regression predicts the count by adding up a fixed amount for each input.
+A **linear regression** predicts the count by adding up a fixed amount for each input.
 That amount is the input's **slope**, also called its **coefficient**: the change in
 the predicted count for one unit more of the input, with the other inputs held fixed.
 
