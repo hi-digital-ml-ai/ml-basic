@@ -1,6 +1,6 @@
 ---
 title: "The coastal survey"
-description: "The simulated survey the course works on: what a station records, the names for the parts of a data table, which columns move together, why its stations are fewer independent observations than rows, and the four files built from it."
+description: "The simulated survey the course works on: what one station records, and why its 800 rows are fewer independent observations than they look."
 order: 1
 categories: [marine-data, eda]
 ---
