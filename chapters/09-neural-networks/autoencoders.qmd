@@ -186,9 +186,9 @@ bind_rows(usefulness(components$x[, 1:2], "first two principal components"),
 On the substrate split they are identical to the third decimal. On depth the autoencoder
 is 0.016 ahead, and that gap is real: across five random seeds its depth R² lands between
 0.742 and 0.743 every time, always above PCA's 0.727. So the nonlinearity did find
-something: a slight curvature in the depth gradient, which is exactly the [mild arch §8
-measured and declined to
-overstate](../08-unsupervised-learning/principal-component-analysis.qmd). It is worth
+something: a slight curvature in the depth gradient, the arch along a long gradient that
+[Principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd)
+calls the horseshoe effect. It is worth
 about one and a half percentage points of variance in depth, for 196 weights and 3,000
 gradient steps.
 

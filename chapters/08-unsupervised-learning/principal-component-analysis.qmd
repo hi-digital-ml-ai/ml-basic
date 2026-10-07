@@ -1,6 +1,6 @@
 ---
 title: "Principal component analysis"
-description: "New axes built from old columns: what the loadings tell you, why 29% of the variance can be the whole signal, and why a component is almost never the gradient you were hoping for."
+description: "Principal component analysis turns twenty-four taxon columns into a map of the stations. Loadings and scores, how much of the variance the first components hold, and why depth and seabed run diagonally across the map rather than along its axes."
 order: 4
 categories: [unsupervised]
 ---
@@ -11,59 +11,70 @@ categories: [unsupervised]
 library(tidymodels)
 library(tidyverse)
 library(ggrepel)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 ```
 
-## A map of twenty-four columns
+## PCA turns 24 taxon columns into one map
 
-Twenty-four taxon columns cannot be plotted. You can look at them two at a time, which is
-276 scatter plots, or you can look at correlations, which tells you about taxa and not
-about stations. What you actually want is a map: one picture in which similar stations
-sit near each other and you can see what makes them differ.
+Twenty-four taxon columns cannot be drawn in one picture. Pairs of them make 276 scatter
+plots, and none shows the whole community. **Principal component analysis** (PCA) builds
+new axes from the old columns so that the first two hold as much of the spread as two axes
+can. Plotted on those two, the stations form a map on which similar communities sit close
+together. Ecologists call such a map an **ordination**, and PCA is the most widely used
+way to make one.
 
-Principal component analysis builds that map. It is the oldest and by some distance the
-most used unsupervised method in marine science, and the single most common error made
-with it is treating its axes as though they were the ecological gradients themselves.
+This page builds the map for the community matrix, shows how to read its axes from their
+**loadings**, and checks the axes against the recorded depth and seabed.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
 ## The idea
 
-PCA constructs new variables, called **components**, that are weighted sums of your original
-columns. The first component is the weighted sum with the largest possible variance. The
-second is the largest-variance weighted sum that is uncorrelated with the first, and so
-on. There are as many components as columns, and they are ordered, so keeping the first
-two or three keeps as much of the spread as two or three numbers can hold.
+PCA finds the direction through the data along which the points spread out most. That
+direction is the first **principal component**, PC1. The second, PC2, is the direction of
+most remaining spread at right angles to the first, and so on: there are as many
+components as columns, ordered by how much of the variance each holds. Keeping the first
+two or three keeps as much of the spread as two or three numbers can.
 
-The weights are called **loadings**: one per original column per component, telling you
-how much that column contributes. The value of a component for a particular station is
-its **score**.
+::: {.diagram}
+![PCA finds the direction of most spread through the data (PC1) and the next at right angles to it (PC2), then reads each point's position along the new axes. Loadings are the weights that build a component from the columns; a score is a point's value on a component; components are ordered by the share of the variance they hold.](img/principal-components.svg){fig-alt="Two cards joined by an arrow, with a strip of definitions below. 1 Find the directions: a cloud of grey points on column A against column B stretches diagonally up to the right; an orange arrow labelled PC1 runs along the longest spread and a shorter blue arrow labelled PC2 at right angles to it. One point is drawn in black. 2 Read the points on them: the same cloud turned so that PC1 runs left to right and PC2 upwards; a dashed line drops from the black point to the PC1 axis, labelled its score on PC1. The strip below reads: loadings, the weights that build a component from the columns, for example PC1 = 0.8 × A + 0.6 × B; score, a point's value on a component, where it sits along that new axis; variance, components are ordered by the share of the spread they hold, PC1 the most."}
+:::
 
-Two properties follow and both matter later. Components are **orthogonal** to each other
-by construction, whether or not the real gradients in your data are. And the sign of a
-component is **arbitrary**: flipping every loading and every score gives an identical
-solution, so "high PC1" has no meaning until you look at the loadings.
+Each component is a weighted sum of the original columns. The weights are its
+**loadings**, one per column, and they say what the component is made of. A station's
+value on a component is its **score**: its position along that axis of the map.
+
+Two details matter when reading the results. The columns are put on a common scale first,
+for the reason [Clustering with k-means](clustering.qmd) gave: otherwise the column with
+the largest numbers takes over the first component. And a component's **sign is
+arbitrary**. Flipping every loading and every score gives the same axis pointing the other
+way, so "high on PC1" means nothing until the loadings say which end is which.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
-Centre the columns of $X$ and take the eigen-decomposition of its covariance matrix
-$S = X^\top X / (n-1)$:
+With the columns of $X$ centred and scaled, take the eigen-decomposition of their
+correlation matrix $S = X^\top X / (n-1)$:
 
 $$S v_j = \lambda_j v_j , \qquad \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_p$$
 
-The eigenvector $v_j$ is the loading vector of component $j$, the score of station $i$ is
-$x_i^\top v_j$, and the eigenvalue $\lambda_j$ is the variance of that component. The
-proportion of variance explained is $\lambda_j / \sum_k \lambda_k$. If you standardised the
-columns first, $S$ is the correlation matrix, which is the usual choice, for exactly the
-reason [clustering needed it](clustering.qmd): otherwise the column with the biggest units
-wins.
+The eigenvector $v_j$ holds the loadings of component $j$, the score of station $i$ is
+$x_i^\top v_j$, and the eigenvalue $\lambda_j$ is the variance of that component. The share
+of the variance it holds is $\lambda_j / \sum_k \lambda_k$.
 :::
 
 ## Worked example
+
+### The first two components hold under a third of the variance
+
+The community matrix gets the log and common scale of
+[Clustering with k-means](clustering.qmd), and then `step_pca()`, which adds the
+components to the recipe. `num_comp = 2` keeps the first two as columns for the map; the
+recipe still records the variance of all 24, and `tidy()` reads it back. scikit-learn's
+`PCA` does the same job at the end of a pipeline.
 
 ::: {.panel-tabset group="language"}
 
@@ -73,27 +84,27 @@ wins.
 #| label: fit-pca
 survey <- load_coastal_survey_clean()
 community <- load_coastal_community()
-
 taxa_only <- community |> dplyr::select(starts_with("tax"))
 
-prepared <- recipe(~ ., data = taxa_only) |>
+pca_recipe <- recipe(~ ., data = taxa_only) |>
   step_log(all_numeric_predictors(), offset = 1) |>
   step_normalize(all_numeric_predictors()) |>
-  prep() |>
-  bake(new_data = NULL)
+  step_pca(all_numeric_predictors(), num_comp = 2)
 
-pca <- prcomp(prepared)
+pca_prep <- prep(pca_recipe)
 
-variance <- tibble(component = seq_along(pca$sdev),
-                   proportion = pca$sdev^2 / sum(pca$sdev^2)) |>
-  mutate(cumulative = cumsum(proportion))
+# Step 3 of the recipe is the PCA.
+variance <- tidy(pca_prep, number = 3, type = "variance") |>
+  filter(terms %in% c("percent variance", "cumulative percent variance")) |>
+  pivot_wider(names_from = terms, values_from = value) |>
+  dplyr::select(-id)
 
-variance |> slice_head(n = 6) |> mutate(across(where(is.double), \(x) round(x, 3)))
+variance |> slice_head(n = 6) |> mutate(across(where(is.double), \(x) round(x, 1)))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
@@ -104,136 +115,160 @@ from mlbasic_data import load_coastal_community, load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 community = load_coastal_community()
-
 taxa_only = community.filter(like="tax")
 
-prepared = Pipeline([
+pca_pipeline = Pipeline([
     ("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
     ("normalise", StandardScaler()),
-]).fit_transform(taxa_only)
-
-pca = PCA().fit(prepared)
-scores = pca.transform(prepared)
+    ("pca", PCA()),
+]).fit(taxa_only)
+pca = pca_pipeline["pca"]
 
 variance = pd.DataFrame({
     "component": np.arange(1, pca.n_components_ + 1),
-    "proportion": pca.explained_variance_ratio_,
+    "percent variance": 100 * pca.explained_variance_ratio_,
 })
-variance["cumulative"] = variance["proportion"].cumsum()
+variance["cumulative percent variance"] = variance["percent variance"].cumsum()
 
-variance.head(6).round(3)
+variance.head(6).round(1)
 ```
 
 :::
-
-PC1 explains 15.9% of the variance and PC2 explains 13.5%, so the two together hold
-**29.4%**.
-
-By the standards of a textbook example that is a poor result. By the standards of a
-community matrix it is entirely ordinary, and here we can prove it is not a failure at
-all, because we know what went into this dataset. There are exactly **two** structures
-in it: a depth gradient and a hard/soft substrate split. Everything else is
-negative-binomial sampling noise, and three of the twenty-four taxa were given no
-response to anything whatsoever, so at minimum an eighth of the variance is guaranteed to
-be unexplainable.
-
-::: {.callout-warning}
-"Percentage of variance explained" measures how much of the *total spread* the first
-components capture, not how much of the *signal* they capture. In sparse count data most
-of the spread is sampling noise, so a low percentage is expected and says nothing about
-whether the components are meaningful. Judge them by their loadings and by what they
-correlate with, not by their share.
-:::
-
-## Reading the loadings
-
-A component means whatever its loadings say it means.
 
 ```{r}
-#| label: fig-loadings
-#| fig-cap: "Every taxon placed by its loading on the first two components, coloured by the role it was given when the data was generated and labelled with its depth optimum in metres. The three taxa built to respond to nothing sit at the origin."
-#| fig-alt: "Scatter plot of PC2 loading against PC1 loading, one point per taxon. The taxa lie around a ring centred on the origin. Position around the ring tracks the depth-optimum label: shallow taxa at the bottom right, working anticlockwise through the left side to the deepest at the top left. The six hard-substrate taxa occupy only the upper-right quarter of the ring, about a quarter-turn round from the soft-substrate taxa of similar depth. Three unlabelled points, the taxa built to respond to nothing, sit clustered tightly at the centre where both loadings are near zero."
-#| fig-width: 7
-#| fig-height: 5.6
-taxa_traits <- load_coastal_community_taxa()
-
-loadings <- tibble(taxon = rownames(pca$rotation),
-                   PC1 = pca$rotation[, 1],
-                   PC2 = pca$rotation[, 2]) |>
-  left_join(taxa_traits, by = "taxon")
-
-ggplot(loadings, aes(PC1, PC2, colour = group)) +
-  geom_hline(yintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.3) +
-  geom_vline(xintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.3) +
-  geom_point(size = 3) +
-  geom_text_repel(aes(label = depth_optimum_m), size = 3.1, seed = 1,
-                  show.legend = FALSE, na.rm = TRUE) +
-  labs(x = "loading on PC1", y = "loading on PC2", colour = NULL,
-       subtitle = "Labels are each taxon's true depth optimum (m)")
+#| label: variance-numbers
+#| include: false
+pct <- variance$`percent variance`
+pct2 <- variance$`cumulative percent variance`[2]
 ```
 
-The taxa lie around a ring, and three things about where each one sits are correct.
+PC1 holds `r round(pct[1], 1)`% of the variance and PC2 `r round(pct[2], 1)`%, so the map
+shows `r round(pct2, 1)`% of it. From PC3 on, each component holds between
+`r round(pct[3], 1)`% and `r round(pct[24], 1)`%.
 
-Position around the ring tracks the **depth optimum**: shallow taxa at the bottom right,
-sweeping anticlockwise to the deepest at the top left. So the depth gradient is in there.
-**Substrate group rotates a taxon round the ring** by roughly a quarter-turn: the six
-hard-substrate taxa occupy the upper-right quarter and nothing else does. So the
-substrate split is in there too. And the three taxa built to respond to nothing sit **on
-top of the origin**, loading near zero on both components: PCA gave no weight to columns
-carrying no shared signal, without being told which ones they were.
+A share that low is usual for counts of species. Two stations of the same kind rarely give
+the same counts: chance alone makes counts vary, and that variation is spread across all
+24 columns, so no one direction can hold much of it. The share of the variance tells you
+how much of the total spread the map shows, not whether what it shows is real.
+[How many components to keep](dimensionality-reduction.qmd) asks which components carry
+structure; this page reads the first two.
 
-A ring is what you get when two roughly orthogonal gradients are projected onto two axes.
-Each taxon's angle encodes which combination of depth and substrate it responds to, and
-its distance from the centre encodes how strongly.
+### Loadings place each taxon by depth and seabed
 
-## The direction the axes actually point
-
-Now the part that trips people up. It is tempting to look at that figure and name PC1 "the
-depth axis" and PC2 "the substrate axis", or some such. Check it against the truth.
+`tidy(type = "coef")` returns the loadings; in scikit-learn they are the rows of
+`components_`. The table shows the five taxa with the largest loadings on PC1, either sign.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: axis-meaning
-stations <- community |>
-  mutate(PC1 = pca$x[, 1], PC2 = pca$x[, 2]) |>
-  inner_join(dplyr::select(survey, station_id, depth_m, substrate), by = "station_id") |>
-  mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft"))
+#| label: loadings
+loadings <- tidy(pca_prep, number = 3, type = "coef") |>
+  filter(component %in% c("PC1", "PC2")) |>
+  pivot_wider(names_from = component, values_from = value) |>
+  dplyr::select(taxon = terms, PC1, PC2)
 
-tibble(against = c("depth (correlation)", "hard bottom (mean difference)"),
-       PC1 = c(cor(stations$PC1, stations$depth_m),
-               diff(rev(tapply(stations$PC1, stations$bottom, mean)))),
-       PC2 = c(cor(stations$PC2, stations$depth_m),
-               diff(rev(tapply(stations$PC2, stations$bottom, mean))))) |>
+loadings |>
+  slice_max(abs(PC1), n = 5) |>
   mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-stations = community.assign(PC1=scores[:, 0], PC2=scores[:, 1]).merge(
-    survey[["station_id", "depth_m", "substrate"]], on="station_id")
-stations["bottom"] = np.where(stations["substrate"].isin(["rock", "gravel"]),
-                              "hard", "soft")
+```{python}
+loadings = pd.DataFrame(pca.components_[:2].T, columns=["PC1", "PC2"])
+loadings.insert(0, "taxon", taxa_only.columns)
 
-def against_bottom(column):
-    means = stations.groupby("bottom")[column].mean()
-    return means["hard"] - means["soft"]
-
-pd.DataFrame({
-    "against": ["depth (correlation)", "hard bottom (mean difference)"],
-    "PC1": [stations["PC1"].corr(stations["depth_m"]), against_bottom("PC1")],
-    "PC2": [stations["PC2"].corr(stations["depth_m"]), against_bottom("PC2")],
-}).round(3)
+(loadings.loc[loadings["PC1"].abs().sort_values(ascending=False).index]
+    .head(5)
+    .round(3)
+    .reset_index(drop=True))
 ```
 
 :::
 
-Depth correlates $-0.67$ with PC1 **and** $+0.53$ with PC2. Hard-bottom stations sit 3.2
-units higher than soft-bottom stations on PC1 **and** 2.3 units higher on PC2. Neither
-gradient belongs to either axis. Both are smeared diagonally across the pair.
+The two tabs give the same loadings with **opposite signs**, on both components. Both are
+correct: R and scikit-learn settle the arbitrary sign by different conventions.
+The rest of this page reads R's signs; on scikit-learn's, the map is turned upside down
+and left to right.
+
+A table of 48 loadings is hard to read. The figure puts each taxon at its loadings on
+PC1 and PC2, and adds two things the PCA never saw, worked out from the survey: the
+average depth at which the taxon was counted (weighted by its counts), and the share of
+its counts made on hard bottom.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: taxon-habitat
+stations_habitat <- community |>
+  inner_join(dplyr::select(survey, station_id, depth_m, substrate), by = "station_id")
+
+taxon_habitat <- stations_habitat |>
+  pivot_longer(starts_with("tax"), names_to = "taxon", values_to = "count") |>
+  summarise(mean_depth = weighted.mean(depth_m, count),
+            hard_share = weighted.mean(substrate %in% c("rock", "gravel"), count),
+            .by = taxon) |>
+  inner_join(loadings, by = "taxon")
+```
+
+```{r}
+#| label: loading-numbers
+#| include: false
+n_hard_taxa <- sum(taxon_habitat$hard_share > 0.5)
+centre <- taxon_habitat |> filter(sqrt(PC1^2 + PC2^2) < 0.05)
+n_centre <- nrow(centre)
+hard_station_share <- mean(stations_habitat$substrate %in% c("rock", "gravel"))
+deep_corner <- taxon_habitat |> filter(hard_share < 0.5) |> slice_min(PC1, n = 1)
+shallow_corner <- taxon_habitat |> filter(hard_share < 0.5) |> slice_min(PC2, n = 1)
+```
+
+```{r}
+#| label: fig-loadings
+#| fig-cap: "Each taxon placed by its loadings on the first two components. Colour is the share of its counts made on hard bottom; the label is the average depth at which it was counted, in metres. Neither was given to the PCA."
+#| fig-alt: !expr 'glue::glue("Scatter plot of loading on PC2 against loading on PC1, one point per taxon, labelled with its average depth in metres and coloured by the share of its counts on hard bottom. The taxa lie around a ring. The {n_hard_taxa} taxa counted mostly on hard bottom, in yellow, sit together in the upper right. The taxa counted mostly on soft bottom run round the lower and left side, from shallow at the lower right to deep at the upper left. {n_centre} taxa sit at the centre, labelled close to the survey average depth of {round(mean(stations_habitat$depth_m))} m.")'
+#| fig-width: 7
+#| fig-height: 5.6
+ggplot(taxon_habitat, aes(PC1, PC2, colour = hard_share)) +
+  geom_hline(yintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.3) +
+  geom_vline(xintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.3) +
+  geom_point(size = 3) +
+  geom_text_repel(aes(label = round(mean_depth)), size = 3.1, seed = 1,
+                  show.legend = FALSE) +
+  scale_colour_viridis_c(labels = scales::label_percent(),
+                         name = "counts on\nhard bottom") +
+  labs(x = "loading on PC1", y = "loading on PC2")
+```
+
+:::
+
+The taxa lie around a ring, and where each one sits matches its habitat.
+
+- The `r n_hard_taxa` taxa counted mostly on hard bottom sit together in the upper right.
+  No other taxon is there.
+- The rest run round the lower and left side in order of depth, from
+  `r round(shallow_corner$mean_depth)` m at the bottom to
+  `r round(deep_corner$mean_depth)` m at the far left.
+- `r n_centre` taxa sit at the centre, with loadings near zero on both components. Their
+  average depths, `r round(min(centre$mean_depth))` to `r round(max(centre$mean_depth))` m,
+  are close to the survey's `r round(mean(stations_habitat$depth_m))` m, and
+  `r round(100 * min(centre$hard_share))`–`r round(100 * max(centre$hard_share))`% of their
+  counts were on hard bottom, close to the `r round(100 * hard_station_share)`% of stations
+  there. They follow neither depth nor seabed, and PCA gave them almost no weight without
+  being told.
+
+So both components mix depth and seabed. A taxon's angle round the ring says which mix of
+the two it follows, and its distance from the centre says how strongly.
+
+### Depth and seabed run diagonally across the components
+
+The scores place the stations on the map. Correlating them with the recorded depth and
+seabed shows which way each increases across it. Correlation runs from −1 to 1, and taken
+together the two correlations give a direction on the map: an arrow along PC1 for a
+variable that correlates with PC1 alone, diagonal for one that correlates with both.
 
 ::: {.panel-tabset group="language"}
 
@@ -241,131 +276,133 @@ gradient belongs to either axis. Both are smeared diagonally across the pair.
 
 ```{r}
 #| label: directions
-depth_direction  <- coef(lm(scale(depth_m) ~ PC1 + PC2, data = stations))[-1]
-bottom_direction <- coef(lm((bottom == "hard") ~ PC1 + PC2, data = stations))[-1]
+stations <- community |>
+  bind_cols(bake(pca_prep, new_data = NULL)) |>
+  inner_join(dplyr::select(survey, station_id, depth_m, substrate),
+             by = "station_id") |>
+  mutate(hard_bottom = substrate %in% c("rock", "gravel"))
 
-tibble(gradient = c("depth", "hard bottom"),
-       angle_from_PC1 = c(atan2(depth_direction[2], depth_direction[1]),
-                          atan2(bottom_direction[2], bottom_direction[1])) * 180 / pi) |>
-  mutate(angle_from_PC1 = round(angle_from_PC1))
+directions <- tibble(
+  variable = c("depth", "hard bottom"),
+  PC1 = c(cor(stations$PC1, stations$depth_m), cor(stations$PC1, stations$hard_bottom)),
+  PC2 = c(cor(stations$PC2, stations$depth_m), cor(stations$PC2, stations$hard_bottom))) |>
+  mutate(angle_from_PC1 = atan2(PC2, PC1) * 180 / pi)
+
+directions |> mutate(across(where(is.double), \(x) round(x, 2)),
+                     angle_from_PC1 = round(angle_from_PC1))
 ```
 
 ## Python
 
-```python
-from sklearn.linear_model import LinearRegression
+```{python}
+scores = pca_pipeline.transform(taxa_only)
+stations = community.assign(PC1=scores[:, 0], PC2=scores[:, 1]).merge(
+    survey[["station_id", "depth_m", "substrate"]], on="station_id")
+stations["hard_bottom"] = stations["substrate"].isin(["rock", "gravel"])
 
-axes = stations[["PC1", "PC2"]]
-depth_direction = LinearRegression().fit(
-    axes, StandardScaler().fit_transform(stations[["depth_m"]]).ravel()).coef_
-bottom_direction = LinearRegression().fit(
-    axes, (stations["bottom"] == "hard").astype(float)).coef_
-
-pd.DataFrame({
-    "gradient": ["depth", "hard bottom"],
-    "angle_from_PC1": [
-        round(np.degrees(np.arctan2(depth_direction[1], depth_direction[0]))),
-        round(np.degrees(np.arctan2(bottom_direction[1], bottom_direction[0]))),
-    ],
+directions = pd.DataFrame({
+    "variable": ["depth", "hard bottom"],
+    "PC1": [stations["PC1"].corr(stations["depth_m"]),
+            stations["PC1"].corr(stations["hard_bottom"].astype(float))],
+    "PC2": [stations["PC2"].corr(stations["depth_m"]),
+            stations["PC2"].corr(stations["hard_bottom"].astype(float))],
 })
+directions["angle_from_PC1"] = np.degrees(np.arctan2(directions["PC2"],
+                                                     directions["PC1"]))
+directions.round(2).round({"angle_from_PC1": 0})
 ```
 
 :::
 
-Depth increases along a direction 139° round from the PC1 axis; hard bottom increases
-along one at 41°. Both real gradients lie at roughly 45° to the principal axes, and at
-about 98° to each other, so nearly perpendicular, which is what they are in the survey.
+```{r}
+#| label: direction-numbers
+#| include: false
+dir <- directions |> mutate(off_axis = abs(angle_from_PC1) %% 90,
+                            off_axis = pmin(off_axis, 90 - off_axis))
+depth_dir <- filter(dir, variable == "depth")
+hard_dir <- filter(dir, variable == "hard bottom")
+r2 <- \(x) sub("-", "−", sprintf("%.2f", x))
+between <- abs(depth_dir$angle_from_PC1 - hard_dir$angle_from_PC1)
+```
 
-The reason is in the variance table. PC1 holds 15.9% and PC2 holds 13.5%: almost the
-same. When two independent gradients contribute nearly equal variance, *any* rotation of
-the plane containing them has an equally good claim to being "the largest-variance
-direction", and PCA's choice among them is arbitrary. It has faithfully recovered the
-two-dimensional plane the structure lives in, and it has no way to know which two lines
-in that plane you cared about.
+Depth correlates `r r2(depth_dir$PC1)` with PC1 and `r r2(depth_dir$PC2)` with
+PC2; hard bottom correlates `r r2(hard_dir$PC1)` and `r r2(hard_dir$PC2)`.
+Neither belongs to one axis. Depth increases along a direction
+`r round(depth_dir$off_axis)`° from the nearest axis, and hard bottom along one
+`r round(hard_dir$off_axis)`° from it, where 45° would be exactly halfway between two
+axes. The two directions are `r round(between)`° apart, close to a right angle.
 
-::: {.callout-important}
-PCA finds the subspace, not the gradients. A component is a direction of large variance,
-and there is no reason for a direction of large variance to line up with an ecologically
-meaningful axis. When two drivers are comparable in strength, expect every component to
-be a blend of both. Naming PC1 after the variable it correlates with best is how
-plausible-sounding and wrong interpretations get into papers.
-:::
+The variance table explains it. PC1 and PC2 hold almost the same share,
+`r round(pct[1], 1)`% and `r round(pct[2], 1)`%. When two directions carry nearly equal
+spread, every direction in the plane they make carries nearly the same spread too, so
+which one PCA takes as PC1 is close to arbitrary. PCA has found the **plane** in which depth
+and seabed vary, and on the map both are clear. It has no way to know which two
+directions in that plane matter to an ecologist. Naming PC1 "the depth axis" because depth
+correlates with it would be wrong here: a component is a direction of large variance, and
+nothing makes it line up with one driver.
 
-## The station map
+::: {.panel-tabset group="language"}
 
-With that established, the ordination itself is still the most useful picture in the
-section.
+## R
 
 ```{r}
 #| label: fig-ordination
-#| fig-cap: "The 800 stations on the first two components, shaded by depth and shaped by substrate. The arrows mark the directions in which depth and hard bottom actually increase; neither runs along an axis."
-#| fig-alt: "Scatter plot of PC2 against PC1 for 800 stations. Colour runs from dark purple for shallow stations to yellow for deep ones and forms a smooth ramp with no boundary anywhere along it. The cloud has two arms meeting near the origin. The lower-left arm is the soft-bottom stations, drawn as triangles, running from dark at the bottom centre up to the palest points at the far left. The upper-right arm is the hard-bottom stations, drawn as circles, running from dark at the centre right up towards the top. The two arms overlap only in a narrow band near the origin. Two labelled arrows leave the origin, one up and to the left marked depth and one up and to the right marked hard bottom, each at roughly forty-five degrees to the axes."
+#| fig-cap: "The 800 stations on the first two components, coloured by depth and shaped by seabed. The arrows point the way depth and hard bottom increase, from their correlations with the two components; neither runs along an axis."
+#| fig-alt: !expr 'glue::glue("Scatter plot of PC2 against PC1 for {nrow(stations)} stations. Colour runs from dark purple for shallow stations to yellow for deep ones, a smooth ramp with no edge in it. Hard-bottom stations, drawn as circles, form an arm towards the upper right; soft-bottom stations, drawn as triangles, form an arm running from the bottom up to the left. Two arrows leave the origin: depth points up and to the left, hard bottom up and to the right, each about {round(mean(dir$off_axis))} degrees from the nearest axis.")'
 #| fig-width: 7
 #| fig-height: 5.6
-arrows <- tibble(gradient = c("depth", "hard bottom"),
-                 x = 5 * c(depth_direction[1], bottom_direction[1]) /
-                     c(sqrt(sum(depth_direction^2)), sqrt(sum(bottom_direction^2))),
-                 y = 5 * c(depth_direction[2], bottom_direction[2]) /
-                     c(sqrt(sum(depth_direction^2)), sqrt(sum(bottom_direction^2))))
+arrows <- directions |> mutate(x = 5 * PC1 / sqrt(PC1^2 + PC2^2),
+                               y = 5 * PC2 / sqrt(PC1^2 + PC2^2))
 
 ggplot(stations, aes(PC1, PC2)) +
-  geom_point(aes(colour = depth_m, shape = bottom), size = 1.9, alpha = 0.85) +
+  geom_point(aes(colour = depth_m,
+                 shape = if_else(hard_bottom, "Hard bottom", "Soft bottom")),
+             size = 1.9, alpha = 0.85) +
   geom_segment(data = arrows, aes(x = 0, y = 0, xend = x, yend = y),
                arrow = arrow(length = unit(0.18, "cm")), linewidth = 0.7,
                colour = ml_palette[["vermilion"]]) +
-  geom_text(data = arrows, aes(x = 1.15 * x, y = 1.15 * y, label = gradient),
-            colour = ml_palette[["vermilion"]], size = 3.4) +
-  scale_colour_viridis_c(name = "depth (m)") +
-  labs(shape = NULL)
+  geom_label(data = arrows, aes(x = 1.18 * x, y = 1.18 * y, label = variable),
+             colour = ml_palette[["vermilion"]], size = 3.4, label.size = 0) +
+  labs(colour = "depth (m)", shape = NULL)
 ```
 
-The cloud has two arms meeting near the origin. The hard-bottom arm is a genuine
-boundary: it is what [clustering found](clustering.qmd), and the two arms overlap only
-in a narrow band. The depth shading, meanwhile, runs smoothly up each arm with no edge in
-it anywhere: that is a genuine gradient, and it is why clustering found nothing about
-depth until it was forced to. One ordination shows you both kinds of
-structure and distinguishes them, which is something no partition can do.
+:::
 
-## Limits of PCA
+The map shows the two kinds of structure that the earlier pages met. Hard-bottom stations
+form an arm of their own that meets the soft-bottom arm only in a narrow band: that is the
+boundary [Clustering with k-means](clustering.qmd) found. Depth shading runs smoothly
+along each arm with no edge anywhere: a gradient, which k-means and the tree could only cut
+at an arbitrary depth. A grouping cannot show that difference; the map shows both at once.
 
-**PCA is linear.** It can only find structure that appears as a straight direction in the
-data. A taxon with a hump-shaped response to depth, which is most taxa including all of ours,
-is only approximately captured. Long gradients also tend to fold into a curve in the
-ordination, the *arch* or *horseshoe* effect, which ecologists have written about for
-decades. It is mild here because the gradient is short relative to the niche widths; on a
-full estuarine salinity gradient it would not be.
+## PCA sees straight-line directions
 
-**Variance is not importance.** A rare, patchily distributed taxon of high conservation
-interest contributes little variance and will barely register in any component.
+PCA finds directions of variance, and only straight ones. A taxon that peaks at middle
+depths is captured only roughly, and along a long gradient the stations bend into an arch
+on the map, which ecologists call the **horseshoe effect**. A single station with extreme
+counts can also pull a component towards itself, so look for isolated points before
+reading the axes.
 
-**Outliers dominate.** A single station with an enormous count, or a decimal-point error
-of the kind §2 hunted, can bend the first component towards itself. Look at the
-ordination for isolated points before interpreting anything.
-
-**The sign means nothing.** Re-run on another machine, or with a different BLAS, and
-PC1 may come out flipped. Never write "PC1 increases with depth" without saying which end
-you are looking at.
-
-::: {.callout-tip}
 ## Key points
 
-- PCA makes new axes that are weighted sums of your columns, ordered by variance, each
-  uncorrelated with the last. The weights are **loadings**; a station's values are
-  **scores**.
-- **Standardise first** unless every column is already in comparable units.
-- 29.4% of variance in two components is not a bad result for a community matrix. Most of
-  the rest is sampling noise, and here provably so.
-- Read a component from its **loadings**, never from its number.
-- **Components are not gradients.** Both real gradients here lie at about 45° to the
-  principal axes, because they carry almost the same variance and PCA has no way to
-  choose between rotations.
-- An ordination distinguishes a **boundary** (a separate lobe) from a **gradient** (a
-  smooth ramp). That distinction is the point of the whole section.
+::: {.key-points}
+- **Principal component analysis** builds new axes from the columns, ordered by the
+  variance they hold, each at right angles to the last. The first two make a map of the
+  stations, an **ordination**.
+- **Loadings** are the weights that build a component; a station's position on it is its
+  **score**. Read a component from its loadings, and only after checking its sign: R and
+  scikit-learn gave opposite signs here.
+- The first two components held `r round(pct2, 1)`% of the variance. For counts of
+  species that is usual, and it does not mean the map shows nothing.
+- **A component is not a gradient.** Depth and hard bottom both ran about
+  `r round(mean(dir$off_axis))`° from the nearest axis, because PC1 and PC2 held nearly
+  equal variance. PCA finds the plane, not the drivers within it.
+- On the map, the seabed shows as a **boundary** between two arms and depth as a smooth
+  **gradient**.
 :::
 
 ## Try it yourself
 
-1. Run `prcomp()` on the raw counts with `scale. = FALSE`. Which single taxon dominates
-   PC1, and what is its mean count?
-2. Colour the ordination by `season` instead of depth. Season affects chlorophyll in this
-   survey but was given no direct effect on the community: does the picture agree?
+1. Remove `step_normalize()` from the recipe, keeping the log. Which taxa now have the
+   largest loadings on PC1, and what do they have in common?
+2. Colour the station map by `season` from the survey instead of by depth. Does season
+   line up with either component?

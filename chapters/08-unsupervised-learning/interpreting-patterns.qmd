@@ -1,6 +1,6 @@
 ---
-title: "Interpreting patterns, and their limits"
-description: "Three questions to ask of any unsupervised result: does it replicate, does it correspond to anything you did not use, and is it a group or a cut through a gradient."
+title: "Checking a pattern before reporting it"
+description: "Three checks before a cluster or a gradient goes into a report: whether it comes back in bootstrap samples, whether it is a group or a cut through a gradient, and whether it matches a recorded variable the method never saw."
 order: 6
 categories: [unsupervised, interpretation]
 ---
@@ -9,56 +9,113 @@ categories: [unsupervised, interpretation]
 #| label: setup
 #| include: false
 library(tidymodels)
+library(tidyclust)
 library(tidyverse)
-library(mclust, include.only = c("adjustedRandIndex"))
-library(patchwork)
+library(mclust, include.only = "adjustedRandIndex")
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 ```
 
-## Deciding what goes in the paper
+## An unsupervised result has no answers to test against
 
-You have run the analysis. There are two clusters, or three, and the ordination looks
-like something. Now somebody has to decide what goes in the paper.
+k-means and hierarchical clustering return groups for any table, and PCA returns
+components for any table. A supervised model can be checked against held-out answers;
+an unsupervised one has no answers to hold out. Three checks take their place, and
+together they show whether a pattern is worth reporting and what kind of pattern it is.
 
-Supervised work has an answer to this: hold data out, predict it, report the error.
-Unsupervised work has no held-out truth to predict, so the question "is this real?" has no
-single number. It has three questions instead, and this page asks all three of the result
-from [the clustering page](clustering.qmd).
+This page puts the two-cluster result from [Clustering with k-means](clustering.qmd)
+through all three, and then a second split that passes the first check and fails the
+others.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## The idea
+
+::: {.diagram}
+![Three checks before reporting a pattern. Refit on bootstrap samples and see whether the same grouping comes back; look at where the stations sit between the two cluster centres, where real groups leave a gap and a gradient does not; and compare the grouping with a recorded variable that the method was never given.](img/pattern-checks.svg){fig-alt="Three cards side by side with a strip of definitions below. 1 Replication: three small bootstrap samples, each clustered into a blue and an orange group, give the same grouping, captioned the same grouping comes back in every sample. 2 Group or gradient: two small histograms of where stations sit between the two cluster centres, with a dashed boundary line half way; the upper one, labelled groups: a gap, has two humps and almost nothing at the boundary; the lower one, labelled gradient: no gap, is flat from end to end. 3 External check: a column of cluster points, three blue and three orange, each beside a recorded seabed label, hard for every blue point and soft for every orange one, captioned matches a variable the method was never given. The strip reads: bootstrap sample, sites drawn at random with replacement, each with all its stations; ARI, agreement of two groupings, pair by pair, 1 for identical and 0 for chance; recorded variable, measured separately and left out of the analysis."}
+:::
+
+1. **Replication.** Refit the clustering on many bootstrap samples and compare each new
+   grouping with the original using the adjusted Rand index (ARI) from
+   [Hierarchical clustering](beyond-k-means.qmd). A real pattern comes back.
+2. **Group or gradient.** k-means cuts a gradient as readily as it finds a gap, and a
+   steady gradient is cut in the same place every time, so it comes back too. Where the
+   stations sit between the two centres tells the two apart: groups leave a gap at the
+   boundary, a gradient does not.
+3. **An external variable.** Compare the grouping with something recorded separately and
+   left out of the analysis, such as the seabed type. Agreement with a variable the method
+   never saw is the strongest evidence available.
+
+## Worked example
+
+### Sixty bootstrap samples give two answers
+
+A **bootstrap sample**, from
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), draws
+rows at random with replacement. Stations at the same site are more alike than stations
+from different sites, so here whole sites are drawn, as in
+[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd);
+`group_bootstraps()` in rsample does this. k-means, with the recipe of
+[Clustering with k-means](clustering.qmd), is refitted on each of 60 samples, and the
+refitted model assigns every station of the survey to its nearest centre. Each grouping is
+then compared with the original one, with the recorded seabed, and by how far apart in
+depth its two clusters sit.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: prepare
+#| label: bootstrap
 survey <- load_coastal_survey_clean()
 community <- load_coastal_community()
 
-composition <- recipe(~ ., data = dplyr::select(community, starts_with("tax"))) |>
-  step_log(all_numeric_predictors(), offset = 1) |>
-  step_normalize(all_numeric_predictors()) |>
-  prep() |>
-  bake(new_data = NULL) |>
-  as.matrix()
-
 stations <- community |>
-  inner_join(dplyr::select(survey, station_id, depth_m, substrate), by = "station_id") |>
+  inner_join(dplyr::select(survey, station_id, site_id, depth_m, substrate),
+             by = "station_id") |>
   mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft"))
 
-set.seed(11)
-reference <- kmeans(composition, centers = 2, nstart = 50, iter.max = 100)$cluster
+taxa_only <- dplyr::select(stations, starts_with("tax"))
+cluster_workflow <- workflow(
+  recipe(~ ., data = taxa_only) |>
+    step_log(all_numeric_predictors(), offset = 1) |>
+    step_normalize(all_numeric_predictors()),
+  k_means(num_clusters = 2) |> set_engine("stats", nstart = 25, iter.max = 100))
+
+fit_clusters <- \(data) fit(cluster_workflow, dplyr::select(data, starts_with("tax")))
+assign_clusters <- \(fitted, data) predict(fitted, data)$.pred_cluster
+
+set.seed(41)
+habitat_fit <- fit_clusters(stations)
+original <- assign_clusters(habitat_fit, stations)
+
+set.seed(12)
+resamples <- group_bootstraps(stations, group = site_id, times = 60)
+replicates <- map_dfr(resamples$splits, \(split) {
+  assigned <- assign_clusters(fit_clusters(analysis(split)), stations)
+  tibble(agreement = adjustedRandIndex(assigned, original),
+         seabed = adjustedRandIndex(assigned, stations$bottom),
+         depth_gap = abs(diff(tapply(stations$depth_m, assigned, median))))
+})
+
+replicates |>
+  mutate(outcome = if_else(agreement > 0.5, "same as original", "different")) |>
+  summarise(samples = n(),
+            `ARI with original` = round(mean(agreement), 2),
+            `ARI with seabed` = round(mean(seabed), 2),
+            `depth between clusters (m)` = round(mean(depth_gap)),
+            .by = outcome)
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.pipeline import Pipeline
@@ -69,271 +126,284 @@ from mlbasic_data import load_coastal_community, load_coastal_survey_clean
 survey = load_coastal_survey_clean()
 community = load_coastal_community()
 
-composition = Pipeline([
-    ("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
-    ("normalise", StandardScaler()),
-]).fit_transform(community.filter(like="tax"))
-
-stations = community.merge(survey[["station_id", "depth_m", "substrate"]],
-                           on="station_id")
+stations = community.merge(
+    survey[["station_id", "site_id", "depth_m", "substrate"]], on="station_id")
 stations["bottom"] = np.where(stations["substrate"].isin(["rock", "gravel"]),
                               "hard", "soft")
 
-reference = KMeans(n_clusters=2, n_init=50, max_iter=100,
-                   random_state=11).fit_predict(composition)
-```
+cluster_workflow = Pipeline([
+    ("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
+    ("normalise", StandardScaler()),
+    ("model", KMeans(n_clusters=2, n_init=25, max_iter=100, random_state=41)),
+])
 
-:::
+def fit_clusters(data):
+    return clone(cluster_workflow).fit(data.filter(like="tax"))
 
-## Question one: replication
+def assign_clusters(fitted, data):
+    return fitted.predict(data.filter(like="tax")) + 1
 
-Resample the stations, cluster the resample, and ask whether you get the same partition
-back. The mechanics are the bootstrap from [§7](../07-validation/uncertainty-and-stability.qmd):
-draw 800 stations with replacement, cluster them, then assign *all* the original stations
-to whichever bootstrap centre is nearest and compare that against the reference partition
-with the adjusted Rand index.
+# scikit-learn has no group bootstrap: draw sites with replacement and
+# take every station of each site drawn.
+def site_bootstrap(data, rng):
+    sites = data["site_id"].unique()
+    drawn = rng.choice(sites, size=len(sites), replace=True)
+    return pd.concat([data[data["site_id"] == site] for site in drawn])
 
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: bootstrap
-assign_to_nearest <- function(centres, points) {
-  apply(points, 1, \(row) which.min(colSums((t(centres) - row)^2)))
-}
-
-set.seed(12)
-replicates <- map_dfr(1:60, \(replicate) {
-  drawn <- sample(nrow(composition), replace = TRUE)
-  centres <- kmeans(composition[drawn, ], centers = 2, nstart = 25, iter.max = 100)$centers
-  relabelled <- assign_to_nearest(centres, composition)
-  tibble(replicate = replicate,
-         agreement = adjustedRandIndex(relabelled, reference),
-         matches_substrate = adjustedRandIndex(relabelled, stations$bottom),
-         depth_correlation = abs(cor(relabelled, stations$depth_m)))
-})
-
-summarise(replicates, mean = mean(agreement), median = median(agreement),
-          min = min(agreement)) |>
-  mutate(across(everything(), \(x) round(x, 3)))
-```
-
-## Python
-
-```python
-def assign_to_nearest(centres, points):
-    distances = ((points[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
-    return distances.argmin(axis=1)
+habitat_fit = fit_clusters(stations)
+original = assign_clusters(habitat_fit, stations)
 
 rng = np.random.default_rng(12)
+rows = []
+for sample in range(60):
+    assigned = assign_clusters(fit_clusters(site_bootstrap(stations, rng)), stations)
+    medians = stations.groupby(assigned)["depth_m"].median()
+    rows.append({"agreement": adjusted_rand_score(assigned, original),
+                 "seabed": adjusted_rand_score(assigned, stations["bottom"]),
+                 "depth_gap": abs(medians.iloc[1] - medians.iloc[0])})
+replicates = pd.DataFrame(rows)
 
-def one_replicate(replicate):
-    drawn = rng.integers(len(composition), size=len(composition))
-    centres = KMeans(n_clusters=2, n_init=25, max_iter=100,
-                     random_state=replicate).fit(composition[drawn]).cluster_centers_
-    relabelled = assign_to_nearest(centres, composition)
-    return {
-        "replicate": replicate,
-        "agreement": adjusted_rand_score(relabelled, reference),
-        "matches_substrate": adjusted_rand_score(relabelled, stations["bottom"]),
-        "depth_correlation": abs(np.corrcoef(relabelled,
-                                             stations["depth_m"])[0, 1]),
-    }
-
-replicates = pd.DataFrame([one_replicate(r) for r in range(1, 61)])
-
-replicates["agreement"].agg(["mean", "median", "min"]).round(3)
-```
-
-:::
-
-A mean agreement of 0.881 with the full-data partition sounds like a stable result with a
-bit of noise on it. The median is 0.986 and the minimum is 0.095, which should already
-give you pause. Look at the distribution.
-
-```{r}
-#| label: fig-bootstrap
-#| fig-cap: "Agreement between 60 bootstrap clusterings and the full-data partition. There is no middle: 53 replicates reproduce the substrate split almost exactly, 7 return a completely different partition, and nothing lands in between. The mean of 0.881 describes no replicate that actually happened."
-#| fig-alt: "Histogram of adjusted Rand index over 60 bootstrap replicates, from 0 to 1. Seven replicates form two short bars between 0.05 and 0.15 at the far left, reaching heights of 2 and 5. Fifty-three form bars between 0.90 and 1.00 at the far right, four in the first and forty-nine in the second. The entire range between 0.15 and 0.90 is empty. A dashed vertical line marking the mean at 0.881 stands in that empty gap, immediately left of the right-hand bars."
-#| fig-width: 6.5
-#| fig-height: 4
-ggplot(replicates, aes(agreement)) +
-  geom_histogram(binwidth = 0.05, boundary = 0, fill = ml_palette[["blue"]],
-                 colour = "white") +
-  geom_vline(xintercept = mean(replicates$agreement), linetype = "dashed",
-             colour = ml_palette[["vermilion"]], linewidth = 0.7) +
-  annotate("text", x = mean(replicates$agreement) - 0.02, y = 40, hjust = 1,
-           label = "mean", colour = ml_palette[["vermilion"]], size = 3.4) +
-  scale_x_continuous(limits = c(0, 1)) +
-  labs(x = "adjusted Rand index against the full-data partition",
-       y = "bootstrap replicates",
-       subtitle = "60 bootstrap clusterings at k = 2")
-```
-
-The result is bimodal. Most of the time the bootstrap recovers the partition we started
-with; some of the time it returns something with almost nothing in common with it. An
-average over those two outcomes is a number that never occurred.
-
-What are the nine?
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: two-answers
-replicates |>
-  mutate(outcome = if_else(agreement > 0.5, "same as full data", "something else")) |>
-  summarise(replicates = n(),
-            `agreement with substrate` = round(mean(matches_substrate), 3),
-            `|correlation with depth|` = round(mean(depth_correlation), 3),
-            .by = outcome)
-```
-
-## Python
-
-```python
-outcome = np.where(replicates["agreement"] > 0.5,
-                   "same as full data", "something else")
-
-(replicates.assign(outcome=outcome)
-    .groupby("outcome")
-    .apply(lambda g: pd.Series({
-        "replicates": len(g),
-        "agreement with substrate": round(g["matches_substrate"].mean(), 3),
-        "|correlation with depth|": round(g["depth_correlation"].mean(), 3),
-    }), include_groups=False)
+outcome = np.where(replicates["agreement"] > 0.5, "same as original", "different")
+(replicates.groupby(outcome, sort=False)
+    .agg(samples=("agreement", "size"),
+         ari_original=("agreement", "mean"),
+         ari_seabed=("seabed", "mean"),
+         depth_gap=("depth_gap", "mean"))
+    .round({"ari_original": 2, "ari_seabed": 2, "depth_gap": 0})
+    .rename(columns={"ari_original": "ARI with original",
+                     "ari_seabed": "ARI with seabed",
+                     "depth_gap": "depth between clusters (m)"})
+    .rename_axis("outcome")
     .reset_index())
 ```
 
 :::
 
-They are the depth split. The 53 majority replicates recover the hard/soft substrate
-boundary, agreeing with it at 0.909 and barely correlated with depth; the 7 minority
-replicates cut the survey by depth instead, correlating 0.76 with it. Both are genuine
-optima of the same objective on slightly different samples, and this dataset simply
-contains two competing two-cluster answers of similar quality.
+```{r}
+#| label: bootstrap-numbers
+#| include: false
+same <- filter(replicates, agreement > 0.5)
+different <- filter(replicates, agreement <= 0.5)
+```
 
-::: {.callout-important}
-Report the distribution, not its average. A bimodal stability result is not a noisy
-version of one answer; it is two answers, and knowing that is far more useful than a
-mean. Had we reported 0.881 and moved on, we would have described the data as having one
-stable two-cluster structure, which is false.
-:::
-
-## Question two: a group, or a cut through a gradient
-
-Now the harder one, because stability does not answer it. Take only the soft-bottom
-stations, one substrate with no boundary left to find, and cluster them into two.
+In `r nrow(same)` of the 60 samples the original grouping comes back almost exactly, with
+an average ARI of `r round(mean(same$agreement), 2)`: hard bottom against soft. The other
+`r nrow(different)` give a grouping with almost nothing in common with it. Their clusters
+barely follow the seabed, with an ARI of `r round(mean(different$seabed), 2)`, and sit
+`r round(mean(different$depth_gap))` m apart in median depth against
+`r round(mean(same$depth_gap))` m: they split the survey into shallow and deep.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: soft-only
-soft <- stations$bottom == "soft"
-soft_composition <- composition[soft, ]
-
-set.seed(13)
-soft_reference <- kmeans(soft_composition, centers = 2, nstart = 50, iter.max = 100)$cluster
-
-set.seed(14)
-soft_agreement <- map_dbl(1:60, \(replicate) {
-  drawn <- sample(nrow(soft_composition), replace = TRUE)
-  centres <- kmeans(soft_composition[drawn, ], centers = 2, nstart = 25,
-                    iter.max = 100)$centers
-  adjustedRandIndex(assign_to_nearest(centres, soft_composition), soft_reference)
-})
-
-c(mean = mean(soft_agreement), min = min(soft_agreement),
-  `median depth of cluster 1` = median(stations$depth_m[soft][soft_reference == 1]),
-  `median depth of cluster 2` = median(stations$depth_m[soft][soft_reference == 2])) |>
-  round(2)
-```
-
-## Python
-
-```python
-soft = (stations["bottom"] == "soft").to_numpy()
-soft_composition = composition[soft]
-soft_depth = stations.loc[soft, "depth_m"].to_numpy()
-
-soft_reference = KMeans(n_clusters=2, n_init=50, max_iter=100,
-                        random_state=13).fit_predict(soft_composition)
-
-picker = np.random.default_rng(14)
-soft_agreement = np.array([
-    adjusted_rand_score(
-        assign_to_nearest(
-            KMeans(n_clusters=2, n_init=25, max_iter=100, random_state=r)
-            .fit(soft_composition[picker.integers(len(soft_composition),
-                                                  size=len(soft_composition))])
-            .cluster_centers_,
-            soft_composition),
-        soft_reference)
-    for r in range(1, 61)
-])
-
-pd.Series({
-    "mean": soft_agreement.mean(),
-    "min": soft_agreement.min(),
-    "median depth of cluster 1": np.median(soft_depth[soft_reference == 0]),
-    "median depth of cluster 2": np.median(soft_depth[soft_reference == 1]),
-}).round(2)
+#| label: fig-bootstrap
+#| fig-cap: "Agreement between each of 60 bootstrap refits and the original grouping. The refits give one of two answers, and nothing in between; the dashed line, the average, falls where no refit landed."
+#| fig-alt: !expr 'glue::glue("Histogram of the adjusted Rand index with the original grouping for 60 bootstrap refits, on an axis from 0 to 1. {nrow(different)} refits form a short bar near {round(mean(different$agreement), 1)} at the far left and {nrow(same)} form a tall bar near 1 at the far right; the range between is empty. A dashed vertical line marks the average, {round(mean(replicates$agreement), 2)}, in the empty range just left of the tall bar.")'
+#| fig-width: 6.5
+#| fig-height: 3.6
+ggplot(replicates, aes(agreement)) +
+  geom_histogram(binwidth = 0.05, boundary = 0, fill = ml_palette[["blue"]],
+                 colour = "white") +
+  geom_vline(xintercept = mean(replicates$agreement), linetype = "dashed",
+             colour = ml_palette[["vermilion"]], linewidth = 0.7) +
+  annotate("text", x = mean(replicates$agreement) - 0.02, y = 0.75 * nrow(same),
+           hjust = 1, label = "average", colour = ml_palette[["vermilion"]],
+           size = 3.4) +
+  scale_x_continuous(limits = c(0, 1)) +
+  labs(x = "ARI with the original grouping", y = "bootstrap samples")
 ```
 
 :::
 
-This partition is **more** stable than the substrate one: mean agreement 0.890 and never
-below 0.71, against a bimodal 0.881 that reached 0.095 at its worst. It splits the soft
-bottom into a shallow group at a median of 60 m and a deep group at a median of 124 m. It
-would pass any stability check you cared to apply, and a paper describing "two distinct
-soft-sediment assemblages" would look well supported.
+The average ARI is `r round(mean(replicates$agreement), 2)`, which reads like one stable
+answer with some noise, but no refit came near it. The data holds two competing
+two-cluster answers, and the seabed split is the stronger: it came back
+`r nrow(same)` times out of 60. Report how often each answer came back, not the average.
 
-It corresponds to nothing. We know, because we wrote the generator: every taxon was given
-a depth optimum, and the optima were **spread evenly** from 20 m to 160 m. There are no
-soft-sediment assemblages in this data. There is one continuous turnover, and k-means cut
-it in half, in the same place every time, which is why the cut is stable.
+### A soft-bottom split comes back every time but has no gap
+
+Now the soft-bottom stations alone, where the seabed leaves no boundary to find. k-means
+splits them into two clusters as readily, and the bootstrap check is repeated on them.
+
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
-#| label: fig-continuum
-#| fig-cap: "Eight soft-substrate taxa across the depth range, each smoothed over the soft-bottom stations. The peaks slide steadily along the axis and neighbouring curves overlap heavily; there is no depth at which one set of taxa hands over to another. The dashed line is the midpoint between the two clusters' median depths: the cut the partition amounts to."
-#| fig-alt: "Line chart of smoothed mean count against depth from 0 to 180 metres, one line per taxon for eight soft-substrate taxa, coloured by true depth optimum from dark for shallow to yellow for deep. The peaks are staggered across the whole range, the darkest peaking near 20 metres and the palest near 155 metres, with each curve rising and falling over roughly 100 metres so that neighbouring curves overlap heavily and several taxa are abundant at every depth. No gap or step appears anywhere along the axis. A dashed vertical line near 92 metres marks the midpoint between the two clusters."
-#| fig-width: 7.5
-#| fig-height: 4.6
-soft_taxa <- load_coastal_community_taxa() |>
-  filter(group == "soft-substrate") |>
-  arrange(depth_optimum_m)
+#| label: soft-bottom
+soft <- filter(stations, bottom == "soft")
 
-# The two clusters overlap in depth, so there is no sharp edge to draw. This is the
-# midpoint between their median depths: the cut the partition amounts to.
-boundary <- mean(tapply(stations$depth_m[soft], soft_reference, median))
+set.seed(41)
+soft_fit <- fit_clusters(soft)
+soft_original <- assign_clusters(soft_fit, soft)
 
-community |>
-  inner_join(dplyr::select(stations, station_id, depth_m, bottom), by = "station_id") |>
-  filter(bottom == "soft") |>
-  pivot_longer(all_of(soft_taxa$taxon), names_to = "taxon", values_to = "count") |>
-  left_join(soft_taxa, by = "taxon") |>
-  mutate(taxon = fct_reorder(taxon, depth_optimum_m)) |>
-  ggplot(aes(depth_m, count, colour = depth_optimum_m, group = taxon)) +
-  geom_vline(xintercept = boundary, linetype = "dashed",
-             colour = ml_palette[["grey"]]) +
-  geom_smooth(se = FALSE, method = "loess", formula = y ~ x, span = 0.6,
-              linewidth = 0.9) +
-  scale_colour_viridis_c(name = "true depth optimum (m)") +
-  labs(x = "depth (m)", y = "smoothed mean count",
-       subtitle = "Soft-substrate taxa along the depth gradient")
+set.seed(14)
+soft_resamples <- group_bootstraps(soft, group = site_id, times = 60)
+soft_agreement <- map_dbl(soft_resamples$splits, \(split)
+  adjustedRandIndex(assign_clusters(fit_clusters(analysis(split)), soft),
+                    soft_original))
+
+depths <- tapply(soft$depth_m, soft_original, median)
+tibble(`median depth, cluster 1 (m)` = round(depths[[1]]),
+       `median depth, cluster 2 (m)` = round(depths[[2]]),
+       `lowest ARI with original` = round(min(soft_agreement), 2),
+       `average ARI with original` = round(mean(soft_agreement), 2))
 ```
 
-This is the single most important picture in the section. A gradient and a set of groups
-look identical once you have turned them into cluster labels, and no amount of resampling
-will tell them apart, because a stable algorithm cuts a stable gradient in a stable place.
+## Python
 
-## Question three: correspondence with something external
+```{python}
+soft = stations[stations["bottom"] == "soft"].reset_index(drop=True)
 
-The only thing that separated the two cases was information from outside the clustering.
+soft_fit = fit_clusters(soft)
+soft_original = assign_clusters(soft_fit, soft)
+
+picker = np.random.default_rng(14)
+soft_agreement = np.array([
+    adjusted_rand_score(
+        assign_clusters(fit_clusters(site_bootstrap(soft, picker)), soft),
+        soft_original)
+    for sample in range(60)
+])
+
+depths = soft.groupby(soft_original)["depth_m"].median()
+pd.DataFrame([{
+    "median depth, cluster 1 (m)": round(depths[1]),
+    "median depth, cluster 2 (m)": round(depths[2]),
+    "lowest ARI with original": round(soft_agreement.min(), 2),
+    "average ARI with original": round(soft_agreement.mean(), 2),
+}])
+```
+
+:::
+
+```{r}
+#| label: soft-numbers
+#| include: false
+soft_depths <- sort(tapply(soft$depth_m, soft_original, median))
+```
+
+This split never fails the way the seabed split did: every refit agrees with it at an ARI
+of `r round(min(soft_agreement), 2)` or more, and none gives a different answer. It divides the soft bottom into a shallow
+cluster, with a median depth of `r round(soft_depths[[1]])` m, and a deep one at
+`r round(soft_depths[[2]])` m. By the first check alone, it would be reported as two
+soft-bottom assemblages.
+
+The second check asks whether the two clusters are separated by a gap. Each station gets
+a position on the straight line from the first cluster centre to the second, 0 at the
+first and 1 at the second, measured in the logged, standardised counts the clustering used.
+The boundary between the clusters is half way. Groups leave few stations near the
+boundary; a gradient leaves as many there as anywhere.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: positions
+# Where each station sits on the line from centre 1 (0) to centre 2 (1).
+position_between_centres <- function(fitted, data) {
+  scaled <- bake(extract_recipe(fitted),
+                 new_data = dplyr::select(data, starts_with("tax"))) |>
+    as.matrix()
+  centres <- extract_fit_engine(fitted)$centers
+  direction <- centres[2, ] - centres[1, ]
+  offset <- sweep(scaled[, colnames(centres)], 2, centres[1, ])
+  drop(offset %*% direction) / sum(direction^2)
+}
+
+positions <- bind_rows(
+  tibble(split = "All stations, two clusters",
+         position = position_between_centres(habitat_fit, stations)),
+  tibble(split = "Soft bottom only, two clusters",
+         position = position_between_centres(soft_fit, soft),
+         depth_m = soft$depth_m))
+
+positions |>
+  summarise(stations = n(),
+            `share within 0.1 of the boundary` =
+              round(mean(abs(position - 0.5) < 0.1), 3),
+            .by = split)
+```
+
+## Python
+
+```{python}
+def position_between_centres(fitted, data):
+    scaled = fitted[:-1].transform(data.filter(like="tax"))
+    centres = fitted["model"].cluster_centers_
+    direction = centres[1] - centres[0]
+    return (scaled - centres[0]) @ direction / (direction @ direction)
+
+positions = pd.concat([
+    pd.DataFrame({"split": "All stations, two clusters",
+                  "position": position_between_centres(habitat_fit, stations)}),
+    pd.DataFrame({"split": "Soft bottom only, two clusters",
+                  "position": position_between_centres(soft_fit, soft),
+                  "depth_m": soft["depth_m"]}),
+])
+
+(positions.groupby("split")["position"]
+    .agg(stations="size",
+         near_boundary=lambda p: round((abs(p - 0.5) < 0.1).mean(), 3))
+    .rename(columns={"near_boundary": "share within 0.1 of the boundary"})
+    .reset_index())
+```
+
+:::
+
+```{r}
+#| label: position-numbers
+#| include: false
+near <- positions |>
+  summarise(share = mean(abs(position - 0.5) < 0.1), .by = split) |>
+  pull(share)
+soft_positions <- filter(positions, !is.na(depth_m))
+depth_cor <- abs(cor(soft_positions$position, soft_positions$depth_m))
+soft_taxa <- load_coastal_community_taxa() |> filter(group == "soft-substrate")
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-positions
+#| fig-cap: "Where each station sits between the two cluster centres, 0 at one centre and 1 at the other; the dashed line is the boundary between the clusters. The seabed split leaves a gap at the boundary; the soft-bottom split cuts through the middle of one broad spread."
+#| fig-alt: !expr 'glue::glue("Two histograms of position between the two cluster centres, from about minus 0.5 to 1.5, with a dashed vertical line at 0.5. Top, all stations: a low, wide hump around 0 and a tall hump around 1, with a dip almost to zero at 0.5, where {scales::percent(near[1], accuracy = 1)} of stations lie within 0.1 of the boundary. Bottom, soft bottom only: one broad spread from about minus 0.4 to 1.4, with bars running straight across the boundary and no dip, {scales::percent(near[2], accuracy = 1)} of stations within 0.1 of the boundary.")'
+#| fig-width: 7
+#| fig-height: 4.6
+ggplot(positions, aes(position)) +
+  geom_histogram(binwidth = 0.05, boundary = 0, fill = ml_palette[["blue"]],
+                 colour = "white") +
+  geom_vline(xintercept = 0.5, linetype = "dashed",
+             colour = ml_palette[["vermilion"]], linewidth = 0.7) +
+  facet_wrap(~ split, ncol = 1, scales = "free_y") +
+  labs(x = "position between the two cluster centres", y = "stations")
+```
+
+:::
+
+The seabed split has a gap: only `r scales::percent(near[1], accuracy = 1)` of stations
+lie within 0.1 of its boundary. The soft-bottom split has none:
+`r scales::percent(near[2], accuracy = 1)` of its stations lie that close, about
+`r round(near[2] / near[1])` times as many. The soft-bottom stations run in one continuous
+line from one centre to the other, and k-means cut the line in the middle. It cuts near
+the same middle in every bootstrap sample, which is why the split comes back.
+
+Depth, which the clustering was never given, shows what the line is. A station's position
+correlates `r round(depth_cor, 2)` with its depth: the soft-bottom communities change
+steadily from shallow to deep. The simulation behind the survey agrees, since it gave the
+`r nrow(soft_taxa)` soft-bottom taxa depth optima spread from
+`r min(soft_taxa$depth_optimum_m)` to `r max(soft_taxa$depth_optimum_m)` m with no break
+between them.
+
+### Only the seabed split matches a recorded category
+
+The last check compares each grouping with recorded variables: the seabed, and depth cut
+into three bands of equal size. For the soft-bottom split, the seabed is sand against mud.
 
 ::: {.panel-tabset group="language"}
 
@@ -341,116 +411,90 @@ The only thing that separated the two cases was information from outside the clu
 
 ```{r}
 #| label: external
-depth_band <- cut(stations$depth_m, breaks = quantile(stations$depth_m, c(0, 1/3, 2/3, 1)),
+depth_band <- cut(stations$depth_m,
+                  breaks = quantile(stations$depth_m, c(0, 1/3, 2/3, 1)),
                   include.lowest = TRUE)
+soft_band <- depth_band[stations$bottom == "soft"]
 
-tibble(`clustering of` = c("all stations, k = 2", "soft stations only, k = 2"),
-       `vs substrate` = c(adjustedRandIndex(reference, stations$bottom),
-                          adjustedRandIndex(soft_reference, stations$bottom[soft])),
-       `vs depth tertile` = c(adjustedRandIndex(reference, depth_band),
-                              adjustedRandIndex(soft_reference, depth_band[soft]))) |>
-  mutate(across(where(is.double), \(x) round(x, 3)))
+external <- tibble(
+  split = c("All stations", "Soft bottom only"),
+  `ARI with recorded seabed` = c(adjustedRandIndex(original, stations$bottom),
+                                 adjustedRandIndex(soft_original, soft$substrate)),
+  `ARI with depth band` = c(adjustedRandIndex(original, depth_band),
+                            adjustedRandIndex(soft_original, soft_band)))
+external |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
+```{python}
 depth_band = pd.qcut(stations["depth_m"], q=3)
+soft_band = depth_band[(stations["bottom"] == "soft").to_numpy()]
 
-pd.DataFrame({
-    "clustering of": ["all stations, k = 2", "soft stations only, k = 2"],
-    "vs substrate": [adjusted_rand_score(reference, stations["bottom"]),
-                     adjusted_rand_score(soft_reference,
-                                         stations.loc[soft, "bottom"])],
-    "vs depth tertile": [adjusted_rand_score(reference, depth_band),
-                         adjusted_rand_score(soft_reference,
-                                             depth_band[soft])],
-}).round(3)
+external = pd.DataFrame({
+    "split": ["All stations", "Soft bottom only"],
+    "ARI with recorded seabed": [
+        adjusted_rand_score(original, stations["bottom"]),
+        adjusted_rand_score(soft_original, soft["substrate"])],
+    "ARI with depth band": [
+        adjusted_rand_score(original, depth_band),
+        adjusted_rand_score(soft_original, soft_band)],
+})
+external.round(2)
 ```
 
 :::
 
-The whole-survey clustering matches substrate at 0.920 and depth tertiles at 0.020: it has
-found a categorical variable it was never shown. The soft-only clustering matches substrate
-at 0.000, which it must, since every station in it has the same substrate, and matches
-depth tertiles at 0.40, which is what cutting a continuous variable into classes and then
-comparing against arbitrary classes of the same variable always gives.
+```{r}
+#| label: external-numbers
+#| include: false
+ext <- external |> mutate(across(where(is.double), \(x) round(x, 2)))
+```
 
-That is the asymmetry to hold on to. Agreement with a **categorical** external variable is
-evidence of groups. Agreement with a **continuous** one, binned for the comparison, is
-evidence only of a gradient, and a gradient is a finding too, just not the one the word
-"cluster" implies.
+The seabed split matches the recorded seabed at an ARI of
+`r ext[[2]][1]` and depth bands at `r ext[[3]][1]`: from the counts alone, k-means found a
+category it was never shown. The soft-bottom split matches sand and mud at
+`r ext[[2]][2]` and depth bands at `r ext[[3]][2]`.
 
-::: {.callout-warning}
-Whatever you validate against must be information the clustering did not have. Cluster a
-community matrix and check against substrate, salinity, season or a seabed map: anything
-measured separately. Clustering the environment *and* the community together and then
-noting that the clusters differ environmentally proves nothing at all.
-:::
+Agreement with a recorded **category**, such as the seabed, is evidence of groups.
+Agreement with a **continuous** variable cut into bands is not: cutting a gradient into
+two clusters and depth into three bands gives part agreement whether or not groups exist.
+What it shows is a gradient, and a gradient is a finding too.
 
-## The defensible claims
+The three checks together give a result that can be reported: the communities form two
+groups, hard and soft bottom, found in `r nrow(same)` of 60 bootstrap samples and matching
+the recorded seabed at an ARI of `r ext[[2]][1]`; within the soft bottom, composition
+changes steadily with depth, with no boundary.
 
-From everything on this page, the defensible claims about this survey are:
+## A checked pattern is still a hypothesis
 
-- Composition separates into **hard-bottom and soft-bottom** assemblages, recovered
-  without substrate information, matching the seabed classification at an adjusted Rand
-  index of 0.920, and reproduced in 53 of 60 bootstrap replicates.
-- Within each of those, composition **turns over continuously with depth**, with no
-  detectable boundary; a two-cluster split of the soft bottom is stable but describes a cut
-  at about 92 m rather than two assemblages.
-- The remaining 7 bootstrap replicates preferred the depth split, so the substrate boundary
-  is the stronger of two competing structures rather than the only one.
+The checks show whether a pattern in this survey is worth reporting, not that it holds
+elsewhere. Treat it as a hypothesis for the next survey, or for a supervised model to test
+on new data.
 
-And the claims that are not available:
-
-- Any count of "assemblages" on this shelf beyond the two substrate groups.
-- Any statement that a principal component *is* the depth gradient, which is at
-  [about 45° to both axes](principal-component-analysis.qmd).
-- Any interpretation of distance or cluster size in
-  [the UMAP picture](dimensionality-reduction.qmd).
-
-::: {.callout-note}
-## The real use of unsupervised methods
-Nothing here says the analysis was a waste. Clustering found a real boundary from counts
-alone, the ordination separated a boundary from a gradient at a glance, and two components
-predicted station depth to 21 m. Unsupervised methods are excellent at generating
-hypotheses and at compressing data you cannot otherwise look at. They are weak at
-confirming anything, because there is nothing held out to confirm against. Use them to
-decide what to measure next, and reach for
-[§7's machinery](../07-validation/index.qmd) when something needs testing.
-:::
-
-## The rest of the course
-
-[§9](../09-neural-networks/index.qmd) takes up representation learning, where an
-autoencoder does what PCA does without the linearity, and inherits every interpretation
-problem on this page along with it.
-
-[§10](../10-interpretation/index.qmd) takes up the rest. The bimodal bootstrap here is a
-small version of a general problem: a single number from a single run, reported without
-its distribution, is the most common way that a plausible result becomes a wrong one.
-
-::: {.callout-tip}
 ## Key points
 
-- Ask three questions of any unsupervised result: does it **replicate**, is it a **group
-  or a cut**, and does it match something **external**.
-- Report the whole stability distribution. Ours was bimodal, with 53 replicates finding the
-  substrate split and 7 a depth split, and its mean of 0.881 described neither.
-- **Stability is necessary, not sufficient.** The soft-bottom depth split was the most
-  stable result on the page and corresponds to nothing: a stable algorithm cuts a stable
-  gradient in a stable place.
-- External validation is the strongest evidence available, and only if the variable was
-  withheld from the clustering. Matching a **categorical** variable is evidence of groups;
-  matching a **binned continuous** one is not.
-- Write down the gradient as a finding. "Composition turns over continuously with depth"
-  is a result, and a more honest one than a cluster count.
+::: {.key-points}
+- Check three things before reporting a cluster: does it come back in **bootstrap
+  samples**, is it a **group or a cut through a gradient**, and does it match a
+  **recorded variable** the method never saw.
+- Draw whole sites in the bootstrap when stations at one site are alike. Report how often
+  each answer came back: here `r nrow(same)` of 60 samples gave the seabed split and
+  `r nrow(different)` a depth split, and the average ARI described neither.
+- **Coming back is not enough.** A split through a steady gradient falls in the same place
+  every time: no bootstrap sample of the soft bottom gave a different answer.
+- Groups leave a **gap** at the boundary between their centres; a gradient leaves
+  stations all along it.
+- Agreement with a recorded **category** is evidence of groups. Agreement with a
+  continuous variable cut into bands shows a gradient, which is a finding in its own
+  right.
 :::
 
 ## Try it yourself
 
-1. Run the bootstrap at $k = 3$ instead of 2. Is the distribution bimodal there too, and
-   which structures are competing?
-2. Cluster the soft-bottom stations into two using only the three taxa that respond to
-   nothing (`tax22`–`tax24`). How stable is *that* partition, and what does its stability
-   tell you?
+1. Replace `group_bootstraps(stations, group = site_id, times = 60)` with
+   `bootstraps(stations, times = 60)`, which draws single stations. How many samples now
+   give the depth split, and why might drawing stations make the result look surer than
+   it is?
+2. Repeat the bootstrap check with `num_clusters = 3`. Do the refits still give two
+   competing answers, and what does the third cluster follow?

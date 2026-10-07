@@ -153,17 +153,17 @@ website:
         href: chapters/08-unsupervised-learning/index.qmd
         contents:
           - href: chapters/08-unsupervised-learning/clustering.qmd
-            text: "Clustering"
+            text: "Clustering with k-means"
           - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
             text: "Choosing the number of clusters"
           - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
-            text: "Hierarchical and model-based clustering"
+            text: "Hierarchical clustering"
           - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
             text: "Principal component analysis"
           - href: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
-            text: "Dimensionality reduction in practice"
+            text: "How many components to keep"
           - href: chapters/08-unsupervised-learning/interpreting-patterns.qmd
-            text: "Interpreting patterns, and their limits"
+            text: "Checking a pattern before reporting it"
       - section: "9 · Neural networks"
         href: chapters/09-neural-networks/index.qmd
         contents:
