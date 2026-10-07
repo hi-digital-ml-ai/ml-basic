@@ -1,6 +1,6 @@
 ---
-title: "Partial effects: shape, not just rank"
-description: "Partial dependence, ICE and ALE on a model whose truth we know: one predictor recovered almost exactly, one not recovered at all, and the same failure from a correctly specified GLM."
+title: "Partial effects"
+description: "A partial dependence plot draws how a model's prediction changes along one input, averaged over every station, and ICE curves draw the same change station by station. On the survey they find the temperature hump at nearly every station, and show that the depth curve describes the model, not the species."
 order: 2
 categories: [interpretation]
 ---
@@ -11,581 +11,516 @@ categories: [interpretation]
 library(tidymodels)
 library(tidyverse)
 library(patchwork)
-library(DALEXtra)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Shape, not just rank
+## Partial effects draw how a prediction changes along one input
 
-An importance ranking tells you which columns a model leans on. It does not tell you whether
-abundance goes up or down with depth, whether the relationship turns over, or where the
-optimum is, and those are the sentences that go in a paper.
-
-**Partial-effect plots** are how you get the shape out of a model that has no coefficients.
-They are also where interpretation quietly stops being about the model and starts being
-about the data, because a shape you cannot estimate is a shape no plotting method will show
-you. This page demonstrates both halves on a survey where we know the answer.
+[Feature importance](feature-importance.qmd) says how much a model relies on an input,
+but not whether the prediction rises or falls with it, or where it peaks. **Partial
+effects** draw that shape. [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
+drew one: a random forest's prediction across depth, with the other inputs held at
+typical values. That is one slice, and held at other values the forest's curve could
+change shape. This page draws curves that do not depend on that choice, one averaged
+over every station and one for each station.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## A partial dependence plot averages the curve over every station
 
-A **partial dependence plot** (PDP) answers: if every station in the survey had been at 40 m
-depth, what would the model have predicted on average? Then repeat for 45 m, 50 m, and so on,
-and join the dots. Every other column stays as it was recorded, so the curve is the model's
-prediction with one variable swept and the rest left alone.
+A **partial dependence plot** starts from the data the model was fitted to. Set one
+input to the same value in every row, keep every other input as it was recorded, and
+predict each row. The average of those predictions is one point on the curve. Repeat
+for each value along the input's range, and the points make the curve. It works for
+any model, because it only needs predictions.
 
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: pdp-function
-partial_dependence <- function(model, data, variable, grid) {
-  map_dbl(grid, \(value) {
-    swept <- data
-    swept[[variable]] <- value
-    mean(predict(model, swept)$.pred)
-  })
-}
-```
-
-## Python
-
-```python
-import numpy as np
-import pandas as pd
-
-def partial_dependence(model, data, variable, grid):
-    """Sweep one column across a grid, holding every other column as it is,
-    and average the predictions. scikit-learn ships this as
-    sklearn.inspection.partial_dependence; it is four lines, so here it is."""
-    values = []
-    for value in grid:
-        swept = data.copy()
-        swept[variable] = value
-        values.append(model.predict(swept).mean())
-    return np.array(values)
-```
-
+::: {.diagram}
+![Partial dependence in three steps: give every row the same value of one input and keep the others, predict each row and move the value along its range so each row traces a curve, then average the rows' curves.](img/partial-dependence.svg){fig-alt="Three cards. Set one input, every row gets one value: a small table with inputs A, B and C, where every cell of column A reads 40 and the shaded cells of B and C are kept. Predict each row, one ICE curve per row: five orange humped curves of different heights against input A, with a dashed line at 40 marking where each row's prediction was made. Average, the partial dependence: the same five curves in grey with a thick green curve through their middle, their average. A note says that where the rows' curves differ in shape, the average hides it, so look at both."}
 :::
 
-Four lines. That really is the whole method, and writing it out makes its one assumption
-visible: it builds rows that combine a *chosen* value of one variable with the *observed*
-values of all the others, whether or not such a station could exist.
+## ICE curves show the same sweep station by station
 
-## The truth, and a model
+Before averaging, each row has its own curve: its prediction as the one input moves
+and the rest of the row stays put. These are **individual conditional expectation
+(ICE) curves**, and the partial dependence is their average. If they share one shape
+and differ only in height, the average describes them well. If they peak in different
+places or cross, the effect of the input depends on the others, an interaction of the
+kind [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
+showed a forest can learn, and the average alone would hide it.
 
-Because the survey is simulated we can compute the exact curve a perfect interpretation
-would recover. The generator's expected count depends on depth and temperature through two
-quadratics, on chlorophyll, on substrate, and on a smooth spatial field. `true_mean` gives us
-the first four directly; the spatial field we can recover by subtraction, because everything
-else in the expression is known.
+## A sweep can build stations the survey never had
+
+Setting depth to the shallowest value in every row pairs it with every station's
+recorded temperature, including the cold water of the deepest stations. Few or no such
+stations exist, so there the model is extrapolating. The curves on this page run only
+over the middle 90% of each input's values, where most stations lie, and are read
+where the inputs' combinations look like the data.
+
+## Worked example
+
+The random forest of
+[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd),
+500 trees on the six inputs of
+[Regression for counts](../03-supervised-learning/count-regression.qmd), is fitted to
+the same training sites. Its partial dependence is compared with the one slice, then
+its ICE curves are drawn, and finally position is added as an input to see whether the
+depth curve changes.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: recover-truth
+#| label: prepare
 survey <- load_coastal_survey_clean()
 
-known_truth <- survey |>
-  select(station_id, abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season, longitude, latitude) |>
-  drop_na() |>
-  inner_join(load_coastal_survey_truth(), by = "station_id") |>
-  mutate(
-    substrate_effect = c(sand = 0, mud = 0.40, gravel = 0.20,
-                         rock = -0.60)[as.character(substrate)],
-    spatial_term = log(true_mean) -
-      (1.5 - 0.55 * ((depth_m - 80) / 60)^2 - 0.60 * ((temperature_c - 9) / 3)^2 +
-         0.35 * log1p(chlorophyll_mg_m3) + substrate_effect)
-  )
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season")
 
-true_partial_dependence <- function(variable, grid) {
-  map_dbl(grid, \(value) {
-    swept <- known_truth
-    swept[[variable]] <- value
-    effect <- c(sand = 0, mud = 0.40, gravel = 0.20,
-                rock = -0.60)[as.character(swept$substrate)]
-    mean(exp(1.5 - 0.55 * ((swept$depth_m - 80) / 60)^2 -
-               0.60 * ((swept$temperature_c - 9) / 3)^2 +
-               0.35 * log1p(swept$chlorophyll_mg_m3) + effect + swept$spatial_term))
-  })
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+forest_on <- function(columns) {
+  forest_recipe <- recipe(reformulate(columns, "abundance"), data = train) |>
+    step_impute_median(all_numeric_predictors())
+  forest_model <- rand_forest(trees = 500) |>
+    set_engine("ranger", seed = 123) |>
+    set_mode("regression")
+  workflow(forest_recipe, forest_model) |> fit(train)
 }
 
-modelling <- known_truth |>
-  select(-station_id, -true_mean, -substrate_effect, -spatial_term)
-
-set.seed(2)
-forest <- workflow() |>
-  add_recipe(recipe(abundance ~ ., data = modelling) |>
-               step_dummy(all_nominal_predictors())) |>
-  add_model(rand_forest(trees = 800) |>
-              set_engine("ranger", seed = 1) |> set_mode("regression")) |>
-  fit(modelling)
-
-nrow(modelling)
+forest <- forest_on(inputs)
 ```
 
 ## Python
 
-```python
+```{python}
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import partial_dependence
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
-from mlbasic_data import load_coastal_survey_clean, load_coastal_survey_truth
+from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["station_id", "abundance", "depth_m", "temperature_c",
-           "chlorophyll_mg_m3", "salinity_psu", "substrate", "season",
-           "longitude", "latitude"]
-substrate_effects = {"sand": 0.0, "mud": 0.40, "gravel": 0.20, "rock": -0.60}
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey,
+                                           groups=survey["site_id"]))
+train = survey.iloc[train_rows].reset_index(drop=True)
+test = survey.iloc[test_rows].reset_index(drop=True)
 
-known_truth = (survey[columns].dropna()
-    .merge(load_coastal_survey_truth(), on="station_id")
-    .reset_index(drop=True))
-known_truth["substrate_effect"] = known_truth["substrate"].astype(str).map(
-    substrate_effects)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
 
-def environment_term(frame, effect):
-    return (1.5
-            - 0.55 * ((frame["depth_m"] - 80) / 60) ** 2
-            - 0.60 * ((frame["temperature_c"] - 9) / 3) ** 2
-            + 0.35 * np.log1p(frame["chlorophyll_mg_m3"])
-            + effect)
+def forest_on(numeric):
+    recipe = ColumnTransformer(
+        [("numeric", SimpleImputer(strategy="median"), numeric),
+         ("categorical", OneHotEncoder(drop="first", sparse_output=False),
+          categorical)])
+    # max_features and min_samples_leaf match ranger's defaults
+    model = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                                  min_samples_leaf=5, random_state=123)
+    forest = Pipeline([("recipe", recipe), ("model", model)])
+    return forest.fit(train[numeric + categorical], train["abundance"])
 
-known_truth["spatial_term"] = (
-    np.log(known_truth["true_mean"])
-    - environment_term(known_truth, known_truth["substrate_effect"]))
-
-def true_partial_dependence(variable, grid):
-    values = []
-    for value in grid:
-        swept = known_truth.copy()
-        swept[variable] = value
-        effect = swept["substrate"].astype(str).map(substrate_effects)
-        values.append(np.exp(environment_term(swept, effect)
-                             + swept["spatial_term"]).mean())
-    return np.array(values)
-
-modelling = known_truth.drop(columns=["station_id", "true_mean",
-                                      "substrate_effect", "spatial_term"])
-encoded = pd.get_dummies(modelling.drop(columns="abundance"), drop_first=True)
-
-forest = RandomForestRegressor(n_estimators=800, random_state=1).fit(
-    encoded, modelling["abundance"])
-
-len(modelling)
+forest = forest_on(numeric)
 ```
 
 :::
 
-::: {.callout-warning}
-`true_mean` and everything derived from it are available here **only because the data is
-simulated**. No real survey has them. They are used on this page as a target to check the
-interpretation against, never as a predictor.
-:::
+### Averaged over every station, the curves tell the story of the one slice
 
-## Temperature: recovered
+Each input is set in turn to 40 values across the middle 90% of its range, and every
+training station is predicted at each. The partial dependence is the average at each
+value; the slice holds the other inputs at typical values (sand, summer, the median of
+the rest), as Linearity and nonlinearity did.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: temperature-pdp
-temperature_grid <- seq(3, 16, by = 0.25)
-
-temperature_curves <- tibble(
-  temperature_c = temperature_grid,
-  truth  = true_partial_dependence("temperature_c", temperature_grid),
-  forest = partial_dependence(forest, modelling, "temperature_c", temperature_grid)
-)
-
-temperature_curves |>
-  filter(temperature_c %in% c(3, 6, 9, 12, 15)) |>
-  mutate(across(-temperature_c, \(x) round(x, 2)))
-```
-
-## Python
-
-```python
-temperature_grid = np.arange(3, 16.25, 0.25)
-
-temperature_curves = pd.DataFrame({
-    "temperature_c": temperature_grid,
-    "truth": true_partial_dependence("temperature_c", temperature_grid),
-    "forest": partial_dependence(forest, encoded, "temperature_c",
-                                 temperature_grid),
-})
-
-temperature_curves[
-    temperature_curves["temperature_c"].isin([3, 6, 9, 12, 15])].round(2)
-```
-
-:::
-
-The forest puts the optimum at 7.75 °C against a true 9 °C, and it gets the shape right: up,
-over, down. What it does not get is the amplitude. The truth falls to 0.51 at 3 °C; the
-forest only falls to 3.18. Tree ensembles average many predictions, each bounded by the
-training data, so their partial effects are systematically **flattened at the extremes**.
-If you read an optimum off a forest's PDP you will usually be close. If you read the *size*
-of the effect off it, you will understate it, often by a lot.
-
-## Depth: not recovered
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: depth-pdp
-depth_grid <- seq(10, 180, by = 5)
-
-depth_curves <- tibble(
-  depth_m = depth_grid,
-  truth  = true_partial_dependence("depth_m", depth_grid),
-  forest = partial_dependence(forest, modelling, "depth_m", depth_grid)
-)
-
-depth_curves |>
-  filter(depth_m %in% c(10, 40, 80, 120, 160)) |>
-  mutate(across(-depth_m, \(x) round(x, 2)))
-```
-
-## Python
-
-```python
-depth_grid = np.arange(10, 185, 5)
-
-depth_curves = pd.DataFrame({
-    "depth_m": depth_grid,
-    "truth": true_partial_dependence("depth_m", depth_grid),
-    "forest": partial_dependence(forest, encoded, "depth_m", depth_grid),
-})
-
-depth_curves[depth_curves["depth_m"].isin([10, 40, 80, 120, 160])].round(2)
-```
-
-:::
-
-The true depth effect is a hump with its peak at 80 m: 2.47 at 10 m, rising to 5.22 at 80,
-falling to 1.96 at 160. The forest's partial dependence declines monotonically from 5.04 to
-3.77 and peaks at the shallowest depth on the grid.
-
-This is not a small error in the optimum. It is the wrong shape, and a paper reporting
-"abundance declines with depth" from this plot would be making a claim the data contradicts.
-
-## Whether it is the forest's fault
-
-The obvious next move is to blame the black box and fit something interpretable. So let us
-fit the model that is *exactly* right: a negative-binomial GLM with quadratics in depth and
-temperature, the generator's own functional form.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: glm
-correct_form <- MASS::glm.nb(
-  abundance ~ poly(depth_m, 2, raw = TRUE) + poly(temperature_c, 2, raw = TRUE) +
-    log1p(chlorophyll_mg_m3) + substrate + season + salinity_psu,
-  data = modelling
-)
-
-glm_partial <- function(variable, grid) {
-  map_dbl(grid, \(value) {
-    swept <- modelling
-    swept[[variable]] <- value
-    mean(predict(correct_form, swept, type = "response"))
-  })
+#| label: sweep
+# every training station's prediction with one input set to each of 40
+# values over the middle 90% of its range
+sweep <- function(fitted, input) {
+  ends <- quantile(train[[input]], c(0.05, 0.95), na.rm = TRUE)
+  map(seq(ends[1], ends[2], length.out = 40), \(level) {
+    swept <- train
+    swept[[input]] <- level
+    tibble(station = swept$station_id, value = level,
+           .pred = predict(fitted, swept)$.pred)
+  }) |>
+    list_rbind()
 }
 
-depth_curves$glm <- glm_partial("depth_m", depth_grid)
+ice <- list(depth_m = sweep(forest, "depth_m"),
+            temperature_c = sweep(forest, "temperature_c"))
 
-depth_curves |>
-  filter(depth_m %in% c(10, 40, 80, 120, 160)) |>
-  mutate(across(-depth_m, \(x) round(x, 2)))
+# the partial dependence is the average over the stations
+partial <- map(ice, \(d) summarise(d, .pred = mean(.pred), .by = value))
+
+# one slice, as in Linearity and nonlinearity
+typical <- train |>
+  summarise(across(c(depth_m, temperature_c, chlorophyll_mg_m3,
+                     salinity_psu), \(x) median(x, na.rm = TRUE))) |>
+  mutate(substrate = factor("sand", levels = levels(train$substrate)),
+         season    = factor("summer", levels = levels(train$season)))
+
+slices <- map(names(partial), \(input) {
+  grid <- tibble(!!input := partial[[input]]$value)
+  rows <- typical |> select(-all_of(input)) |> cross_join(grid)
+  tibble(value = grid[[1]], .pred = predict(forest, rows)$.pred)
+}) |>
+  set_names(names(partial))
+
+peak_of <- \(d) d$value[which.max(d$.pred)]
+tibble(Peak = c("Depth (m)", "Temperature (°C)"),
+       `Partial dependence` = map_dbl(partial, peak_of),
+       `One slice` = map_dbl(slices, peak_of)) |>
+  mutate(across(-Peak, \(x) round(x, 1)))
 ```
 
 ## Python
 
-```python
-import statsmodels.formula.api as smf
+```{python}
+# every training station's prediction with one input set to each of 40
+# values over the middle 90% of its range
+def sweep(fitted, column, kind="average"):
+    result = partial_dependence(
+        fitted, train[fitted.feature_names_in_], [column], kind=kind,
+        percentiles=(0.05, 0.95), grid_resolution=40)
+    return result["grid_values"][0], result[kind][0]
 
-correct_form = smf.negativebinomial(
-    "abundance ~ depth_m + I(depth_m**2)"
-    " + temperature_c + I(temperature_c**2)"
-    " + np.log1p(chlorophyll_mg_m3) + C(substrate) + C(season) + salinity_psu",
-    modelling,
-).fit(method="bfgs", maxiter=2000, disp=0)
+# one slice, as in Linearity and nonlinearity
+typical = train[numeric].median()
 
-def glm_partial(variable, grid):
-    values = []
-    for value in grid:
-        swept = modelling.copy()
-        swept[variable] = value
-        values.append(correct_form.predict(swept).mean())
-    return np.array(values)
+def one_slice(column, grid):
+    rows = pd.DataFrame({c: [typical[c]] * len(grid) for c in numeric})
+    rows[column] = grid
+    rows["substrate"], rows["season"] = "sand", "summer"
+    return forest.predict(rows[numeric + categorical])
 
-depth_curves["glm"] = glm_partial("depth_m", depth_grid)
-
-depth_curves[depth_curves["depth_m"].isin([10, 40, 80, 120, 160])].round(2)
+peaks = {}
+for column in ["depth_m", "temperature_c"]:
+    grid, average = sweep(forest, column)
+    peaks[column] = {
+        "Partial dependence": grid[average.argmax()],
+        "One slice": grid[one_slice(column, grid).argmax()]}
+(pd.DataFrame(peaks).T
+    .set_axis(["Depth (m)", "Temperature (°C)"])
+    .rename_axis("Peak")
+    .round(1))
 ```
 
 :::
 
-The GLM is worse. Its depth curve falls from 8.19 to 1.80, monotonically, and peaks at the
-shallow end like the forest's. Looking at its coefficients shows why.
-
-::: {.panel-tabset group="language"}
-
-## R
-
 ```{r}
-#| label: coefficients
-tibble(term = c("depth, linear", "depth, quadratic",
-                "temperature, linear", "temperature, quadratic"),
-       estimate = coef(correct_form)[2:5],
-       `std. error` = sqrt(diag(vcov(correct_form)))[2:5],
-       `true value` = c(2 * 0.55 * 80 / 3600, -0.55 / 3600,
-                        2 * 0.60 * 9 / 9, -0.60 / 9)) |>
-  mutate(`p value` = round(2 * pnorm(-abs(estimate / `std. error`)), 4),
-         across(c(estimate, `std. error`, `true value`), \(x) signif(x, 3)))
-```
+#| label: fig-partial
+#| fig-cap: "The random forest's partial dependence and its one slice against the curves the simulation used (dashed), each divided by its own peak, over the middle 90% of each input's values. Both of the forest's curves find the temperature hump. Neither finds the depth peak: the slice is level from the shallowest depth drawn to about 80 m and then falls, and the partial dependence falls from the start."
+#| fig-alt: "Two panels, each with a partial dependence curve, a one-slice curve and a dashed simulation curve, scaled so each peaks at 1. Left, depth: the simulation's curve is an arch peaking at 80 metres; the partial dependence is highest at the shallowest depth and falls in steps to about 0.57; the slice stays between about 0.93 and 1 to about 80 metres, then falls in steps to about 0.53. Right, temperature: the simulation's curve is an arch peaking at 9 degrees; both forest curves sit near 0.5 below 5.5 degrees, rise steeply between 6 and 7 degrees to a peak between 7 and 8 degrees and stay near 0.9 to about 10 degrees; above that the slice falls to about a quarter of its peak and the partial dependence to about 0.58."
+#| fig-width: 8
+#| fig-height: 4
+# the curves R/make-example-data.R used, on the log scale
+true_curve <- list(
+  depth_m       = \(depth) -0.55 * ((depth - 80) / 60)^2,
+  temperature_c = \(temperature) -0.60 * ((temperature - 9) / 3)^2
+)
 
-## Python
+shapes <- map(names(partial), \(input) {
+  bind_rows(
+    partial[[input]] |> mutate(curve = "Partial dependence"),
+    slices[[input]] |> mutate(curve = "One slice"),
+    partial[[input]] |>
+      mutate(curve = "Simulation", .pred = exp(true_curve[[input]](value)))
+  ) |>
+    mutate(input, relative = .pred / max(.pred), .by = curve)
+}) |>
+  list_rbind()
 
-```python
-terms = ["depth_m", "I(depth_m ** 2)", "temperature_c", "I(temperature_c ** 2)"]
-
-pd.DataFrame({
-    "term": ["depth, linear", "depth, quadratic",
-             "temperature, linear", "temperature, quadratic"],
-    "estimate": correct_form.params[terms].to_numpy(),
-    "std. error": correct_form.bse[terms].to_numpy(),
-    "true value": [2 * 0.55 * 80 / 3600, -0.55 / 3600,
-                   2 * 0.60 * 9 / 9, -0.60 / 9],
-    "p value": correct_form.pvalues[terms].round(4).to_numpy(),
-})
-```
-
-:::
-
-**Temperature is recovered almost exactly**: its quadratic coefficient comes back at −0.0674
-against a true −0.0667, its linear term at 1.08 against 1.20, both with enormous $z$
-statistics. **Depth is not recovered at all**: the quadratic term is estimated at about a
-fourteenth of its true value with a $p$ value of 0.63, and the linear term comes back with
-the wrong sign.
-
-So both models, one with no functional form at all and one with precisely the right one,
-tell the same wrong story about depth. That rules out the method.
-
-```{r}
-#| label: fig-partial-effects
-#| fig-cap: "Partial dependence for temperature and depth: the true curve, the random forest's, and a negative-binomial GLM given the generator's exact functional form. Temperature is recovered by both. Depth is recovered by neither: the true hump at 80 m appears as a monotone decline."
-#| fig-alt: "Two panels. In the temperature panel the true curve rises from about 0.5 at three degrees to a peak of 5.6 at nine and falls symmetrically back to 0.5 at fifteen; the GLM curve has the same shape but peaks about a degree earlier and about 0.7 higher, and it crosses the true curve on the way down; the forest curve has the same peak position but is much flatter, running from about 3.2 up to 5.1 and back to 3.5. In the depth panel the true curve is a broad hump peaking at 5.2 around eighty metres; both the GLM and the forest curves decline steadily from left to right with no hump at all, the GLM starting much higher at about 8.2 and ending lowest at about 1.8."
-#| fig-width: 9.5
-#| fig-height: 4.2
-temperature_curves$glm <- glm_partial("temperature_c", temperature_grid)
-
-tidy_curves <- function(data, variable) {
-  data |>
-    pivot_longer(c(truth, forest, glm), names_to = "curve", values_to = "prediction") |>
-    mutate(curve = factor(curve, levels = c("truth", "glm", "forest"),
-                          labels = c("truth", "GLM (correct form)", "random forest")))
+shape_plot <- function(which, x_label) {
+  ggplot(filter(shapes, input == which),
+         aes(value, relative, colour = curve, linetype = curve)) +
+    geom_line(linewidth = 1.1) +
+    scale_colour_manual(values = c("Partial dependence" = ml_palette[["blue"]],
+                                   "One slice" = ml_palette[["orange"]],
+                                   Simulation = ml_palette[["grey"]])) +
+    scale_linetype_manual(values = c("Partial dependence" = "solid",
+                                     "One slice" = "solid",
+                                     Simulation = "dashed")) +
+    labs(x = x_label, y = "Prediction relative to its peak", colour = NULL,
+         linetype = NULL)
 }
 
-panel <- function(data, x, label, marker) {
-  ggplot(tidy_curves(data), aes({{ x }}, prediction, colour = curve)) +
-    geom_vline(xintercept = marker, linetype = "dashed", colour = "#c9d1d7") +
-    geom_line(linewidth = 0.9) +
-    labs(x = label, y = "partial dependence (count)", colour = NULL)
-}
-
-(panel(temperature_curves, temperature_c, "temperature (°C)", 9) |
- panel(depth_curves, depth_m, "depth (m)", 80)) +
+shape_plot("depth_m", "Depth (m)") +
+  shape_plot("temperature_c", "Temperature (°C)") +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```
 
-## The confounding no plot can fix
-
-Depth and temperature are correlated at −0.45, and not by accident: in the generator,
-temperature is *built from* depth. The two quadratic effects therefore overlap, and the
-survey does not contain the observations that would separate them: there are almost no cold
-shallow stations and almost no warm deep ones.
-
-When two effects cannot be separated, a fitting procedure assigns the shared part to
-whichever predictor explains it better. Temperature wins, because its effect is larger
-(−0.60 per squared unit against −0.55, on a much narrower range) and because it sits closer
-to the response in the causal chain. Depth is left with the residual, which is a monotone
-decline.
-
-Dropping temperature does not help: depth then absorbs the *combined* depth-and-temperature
-effect, which is also monotone over the sampled range.
-
-> **A partial-effect plot cannot separate effects that the sampling design confounded.** No
-> amount of ALE, SHAP or conditional permutation recovers a curve that is not identified in
-> the data. The fix is a different survey, not a different plot.
-
-That is a limitation of the data, and it is the honest thing to report: "depth and
-temperature are confounded in this survey; the fitted decline with depth is not separable
-from the temperature optimum".
-
-## Two refinements worth knowing
-
-**ICE curves** show the same sweep for each station individually instead of averaging them.
-An average can hide the fact that the model says something quite different for different
-rows, and on this model it does.
-
 ```{r}
-#| label: fig-ice
-#| fig-cap: "Individual conditional expectation curves for temperature: 60 randomly chosen stations swept across the temperature range, with their average, the PDP, in bold. The curves are not parallel. Their humps differ fourfold in height and peak anywhere between 6 and 11.75 °C, and averaging humps that do not line up flattens the average below all of them."
-#| fig-alt: "Sixty thin grey curves, all roughly hump-shaped but differing greatly in height and sharpness. Most sit between 1 and 7 on the vertical axis with modest humps; a handful rise to peaks of 8 to 10; one outlier runs across the top of the panel between 13 and 18. The humps do not all peak in the same place, spreading between about six and twelve degrees. A single bold blue curve, the average, runs through the lower middle of the bundle with a much shallower hump than most of the individual curves, rising from about 3.2 to 5.3 and back."
-#| fig-width: 7
-#| fig-height: 4.4
-set.seed(31)
-chosen <- modelling[sample(nrow(modelling), 60), ]
-
-ice <- map_dfr(temperature_grid, \(value) {
-  swept <- chosen
-  swept$temperature_c <- value
-  tibble(station = seq_len(nrow(chosen)), temperature_c = value,
-         prediction = predict(forest, swept)$.pred)
-})
-
-ggplot(ice, aes(temperature_c, prediction)) +
-  geom_line(aes(group = station), colour = "#9aa5ad", alpha = 0.45, linewidth = 0.4) +
-  geom_line(data = temperature_curves, aes(temperature_c, forest),
-            colour = ml_palette[["blue"]], linewidth = 1.2) +
-  labs(x = "temperature (°C)", y = "predicted count")
+#| label: partial-numbers
+#| include: false
+one <- \(x) format(round(x, 1), nsmall = 1)
+pd_peak <- map_dbl(partial, peak_of)
+slice_peak <- map_dbl(slices, peak_of)
+true_peak <- c(depth_m = 80, temperature_c = 9)
+# the forest's prediction at the simulation's depth peak, relative to its own
+at_true_depth <- function(d) {
+  d$.pred[which.min(abs(d$value - true_peak[["depth_m"]]))] / max(d$.pred)
+}
+shallowest <- min(partial$depth_m$value)
+warmest <- \(d) last(d$.pred) / max(d$.pred)
 ```
 
-```{r}
-#| label: ice-spread
-ice |>
-  summarise(height = max(prediction) - min(prediction),
-            peak_at = temperature_c[which.max(prediction)], .by = station) |>
-  summarise(`smallest hump` = round(min(height), 2),
-            `median hump` = round(median(height), 2),
-            `largest hump` = round(max(height), 2),
-            `earliest peak` = min(peak_at), `latest peak` = max(peak_at))
-```
+On temperature the partial dependence peaks at `r one(pd_peak[["temperature_c"]])` °C
+and the slice at `r one(slice_peak[["temperature_c"]])` °C, both a little cooler than
+the simulation's `r true_peak[["temperature_c"]]` °C. They part in the warmest water:
+there the slice falls to `r percent(warmest(slices$temperature_c))` of its peak and
+the partial dependence only to `r percent(warmest(partial$temperature_c))`. The slice
+answers for one summer station on sand; the average answers for the stations as they
+are, and the ICE curves below show how much they differ.
 
-The individual humps are between 1.35 and 5.98 counts tall, with a median of 2.73, and
-they peak anywhere from 6 °C to 11.75 °C. The PDP's own hump is only 1.9 counts tall,
-*shorter than any individual curve on the plot*, because averaging humps that do not line up
-smears them out. That is worth knowing before quoting a partial-effect amplitude: it is not
-the effect at a typical station, it is the effect at a typical station after the misalignment
-between stations has been averaged away.
+On depth neither curve has the simulation's arch. The partial dependence is highest
+at `r round(shallowest)` m, the shallowest value drawn, and at the simulation's peak
+of `r true_peak[["depth_m"]]` m it has fallen to
+`r percent(at_true_depth(partial$depth_m))` of its peak. The slice is level through
+the shallow half and falls beyond it. So the wrong depth curve of Linearity and
+nonlinearity did not come from the typical values the slice was held at; it is what
+the forest learned.
 
-**Accumulated local effects** (ALE) fix the impossible-rows problem. Instead of sweeping a
-variable across its whole range for every station, ALE looks at small windows of the
-variable and asks how the prediction changes for stations *already in that window*, so it
-never asks the model about a 20 m station at 2 °C.
+### ICE curves show the temperature hump at nearly every station
+
+The same sweep, before averaging, gives one curve for each of the
+`r nrow(train)` training stations. @fig-ice draws them for temperature. For each
+station, the table below measures the rise from the coldest temperature drawn to the
+partial dependence's peak, and the fall from there to the warmest.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: ale
-explainer <- explain_tidymodels(forest, data = select(modelling, -abundance),
-                                y = modelling$abundance, verbose = FALSE)
+#| label: ice
+# each station's rise from the coldest value drawn to the partial
+# dependence's peak, and its fall from there to the warmest
+top <- peak_of(partial$temperature_c)
+changes <- ice$temperature_c |>
+  summarise(rise = .pred[value == top] - first(.pred),
+            fall = .pred[value == top] - last(.pred), .by = station)
 
-set.seed(5)
-accumulated <- model_profile(explainer, variables = "depth_m",
-                             type = "accumulated", N = NULL)
-
-as_tibble(accumulated$agr_profiles) |>
-  transmute(depth_m = round(`_x_`), `accumulated local effect` = round(`_yhat_`, 2)) |>
-  slice(which(row_number() %in% round(seq(1, n(), length.out = 6))))
+changes |>
+  pivot_longer(c(rise, fall), names_to = "change", values_to = "size") |>
+  summarise(`Above zero` = percent(mean(size > 0)),
+            Lowest = round(min(size), 1),
+            Median = round(median(size), 1),
+            Highest = round(max(size), 1), .by = change) |>
+  mutate(change = str_to_sentence(change)) |>
+  rename(Change = change)
 ```
 
 ## Python
 
-```python
-def accumulated_local_effects(model, data, variable, bins=20):
-    """ALE by hand: inside each narrow band of the variable, move every row to
-    the band's two edges and average the difference. Unlike a partial
-    dependence curve this never asks the model about combinations the data
-    does not contain."""
-    edges = np.unique(np.quantile(data[variable], np.linspace(0, 1, bins + 1)))
-    band = np.clip(np.searchsorted(edges, data[variable], side="left") - 1,
-                   0, len(edges) - 2)
+```{python}
+grid, curves = sweep(forest, "temperature_c", kind="individual")
 
-    differences = np.zeros(len(edges) - 1)
-    for b in range(len(edges) - 1):
-        rows = data[band == b]
-        if rows.empty:
-            continue
-        lower, upper = rows.copy(), rows.copy()
-        lower[variable], upper[variable] = edges[b], edges[b + 1]
-        differences[b] = (model.predict(upper) - model.predict(lower)).mean()
+# each station's rise from the coldest value drawn to the partial
+# dependence's peak, and its fall from there to the warmest
+top = curves.mean(axis=0).argmax()
+changes = pd.DataFrame({"rise": curves[:, top] - curves[:, 0],
+                        "fall": curves[:, top] - curves[:, -1]})
 
-    accumulated = np.concatenate([[0.0], np.cumsum(differences)])
-    weights = np.bincount(band, minlength=len(edges) - 1)
-    centre = np.average((accumulated[:-1] + accumulated[1:]) / 2,
-                        weights=weights)
-    return pd.DataFrame({variable: edges,
-                         "accumulated local effect": accumulated - centre})
-
-accumulated = accumulated_local_effects(forest, encoded, "depth_m")
-
-accumulated.iloc[np.linspace(0, len(accumulated) - 1, 6).round().astype(int)].round(2)
+(pd.DataFrame({"Above zero": (changes > 0).mean().map("{:.0%}".format),
+               "Lowest": changes.min().round(1),
+               "Median": changes.median().round(1),
+               "Highest": changes.max().round(1)})
+    .set_axis(["Rise", "Fall"])
+    .rename_axis("Change"))
 ```
 
 :::
 
-ALE gives the same broad decline, 4.63 at the shallowest stations to 3.29 at the deepest,
-with a barely perceptible flat stretch around 100 m and no hump anywhere. That is the right
-lesson to take from it: **ALE fixes
-extrapolation, not confounding.** It is the better default for correlated predictors because
-it stops the model being asked about stations that cannot exist, and it still cannot tell you
-about an effect the data does not identify.
+```{r}
+#| label: fig-ice
+#| fig-cap: "ICE curves for temperature: the random forest's prediction for each training station as its temperature is moved and the rest of the station stays as recorded, with their average, the partial dependence, in blue. Almost every curve rises between 6 and 7 °C, stays high to about 10 °C and then falls; the curves differ mostly in height."
+#| fig-alt: "Several hundred thin grey curves against temperature from about 4 to 13.5 degrees, most between 1 and 10 predicted individuals, a few reaching 17 to 25. Nearly all are level below about 5.5 degrees, rise between 6 and 7 degrees, stay high with small wiggles to about 10.4 degrees, then drop and level off towards the warm end. Higher curves rise and fall by more. A thick blue curve, their average, runs through the lower middle of the bundle with the same shape, from about 3 up to nearly 6 and back to about 3.4."
+#| fig-width: 7
+#| fig-height: 4.2
+ggplot(ice$temperature_c, aes(value, .pred)) +
+  geom_line(aes(group = station), colour = ml_palette[["grey"]],
+            alpha = 0.25, linewidth = 0.3) +
+  geom_line(data = partial$temperature_c, colour = ml_palette[["blue"]],
+            linewidth = 1.4) +
+  labs(x = "Temperature (°C)", y = "Predicted count (individuals)")
+```
 
-## Limits of partial effects
+```{r}
+#| label: ice-numbers
+#| include: false
+# "every station", or "all but k of the n stations"
+share <- \(x) {
+  if (all(x)) "every station" else
+    paste("all but", sum(!x), "of the", length(x), "stations")
+}
+```
 
-**A partial effect is an average, and averages hide interactions.** If depth matters on rock
-and not on mud, the PDP shows a blend of the two. Check with ICE curves or by faceting the
-sweep within levels of the other variable.
+The curve rises from the coldest water to the partial dependence's peak on
+`r share(changes$rise > 0)`, and falls again towards the warmest on
+`r share(changes$fall > 0)`. The size of the rise differs far more: half the
+stations rise by less than `r one(median(changes$rise))` individuals, the largest by
+`r one(max(changes$rise))`.
+Stations where the forest predicts many animals anyway gain most from the right
+temperature, so the curves share a shape and differ in scale. The partial dependence
+shows where the hump lies; how large it is depends on the station.
 
-**The curve extends as far as your grid does, not as far as your data.** Sweeping depth to
-180 m when 97% of stations are shallower than 160 m produces a curve that is mostly
-extrapolation on the right. Mark the data range on the plot, or trim the grid to it.
+### Position as an input leaves the depth curve falling
 
-**Nothing here is causal.** Even the temperature curve, recovered almost perfectly, is a
-statement about a simulated world we wrote. In a real survey it would still be conditional on
-what else was measured, and the confounding demonstrated above is the norm rather than the
-exception.
+[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
+traced the depth curve to position: the shelf deepens offshore, so depth carries an
+effect that belongs to something about position. A second forest is given longitude
+and latitude as well, as in
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd),
+and both are scored on the test sites.
 
-::: {.callout-tip}
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: position
+forest_place <- forest_on(c(inputs, "longitude", "latitude"))
+
+test_rmse <- \(fitted) rmse_vec(test$abundance, predict(fitted, test)$.pred)
+place_depth <- sweep(forest_place, "depth_m") |>
+  summarise(.pred = mean(.pred), .by = value)
+
+tibble(Model = c("Six inputs", "Six inputs and position"),
+       `Test RMSE` = round(c(test_rmse(forest), test_rmse(forest_place)), 2),
+       `Depth curve's peak (m)` = round(c(peak_of(partial$depth_m),
+                                          peak_of(place_depth)), 1))
+```
+
+## Python
+
+```{python}
+place = ["longitude", "latitude"]
+forest_place = forest_on(numeric + place)
+
+def test_rmse(fitted):
+    return root_mean_squared_error(
+        test["abundance"], fitted.predict(test[fitted.feature_names_in_]))
+
+grid, place_depth = sweep(forest_place, "depth_m")
+
+pd.DataFrame({
+    "Model": ["Six inputs", "Six inputs and position"],
+    "Test RMSE": [test_rmse(forest), test_rmse(forest_place)],
+    "Depth curve's peak (m)": [peaks["depth_m"]["Partial dependence"],
+                               grid[place_depth.argmax()]],
+}).round({"Test RMSE": 2, "Depth curve's peak (m)": 1})
+```
+
+:::
+
+```{r}
+#| label: position-numbers
+#| include: false
+two <- \(x) format(round(x, 2), nsmall = 2)
+```
+
+Position helps the predictions: the test RMSE falls from
+`r two(test_rmse(forest))` to `r two(test_rmse(forest_place))` individuals. The depth
+curve keeps its shape. Its peak is still at `r round(peak_of(place_depth))` m, and at
+`r true_peak[["depth_m"]]` m it stands at
+`r percent(at_true_depth(place_depth))` of that peak, against
+`r percent(at_true_depth(partial$depth_m))` without position.
+
+Position predicts depth closely. A linear regression on longitude and latitude,
+fitted to the training sites, predicts the depth of the test stations:
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: depth-from-place
+depth_from_place <- linear_reg() |>
+  fit(depth_m ~ longitude + latitude, data = train)
+
+augment(depth_from_place, test) |> rmse(depth_m, .pred)
+```
+
+## Python
+
+```{python}
+depth_from_place = LinearRegression().fit(train[place], train["depth_m"])
+
+root_mean_squared_error(test["depth_m"],
+                        depth_from_place.predict(test[place]))
+```
+
+:::
+
+```{r}
+#| label: place-numbers
+#| include: false
+depth_rmse <- augment(depth_from_place, test) |>
+  rmse(depth_m, .pred) |>
+  pull(.estimate)
+```
+
+Its RMSE is `r round(depth_rmse)` m: once the place is known, depth is known to
+within about that. The survey holds few stations that differ in depth but not in place, and
+no model can tell from these data which of the two the catch follows. The forest is
+free to give the effect to either, and the curve shows what it chose.
+
+## Partial effects describe the model, and the data decide how far they describe the species
+
+A partial dependence plot and its ICE curves are a faithful picture of what a model
+predicts. On the survey they found the temperature hump at nearly every station, and
+they showed that the depth curve is not the species' response. Reading a curve as the
+species' response needs data in which the input varies on its own, for depth,
+stations at different depths in the same area.
+[Black boxes and interpretable models](black-box-or-not.qmd) compares the forest with
+models whose curves can be read directly.
+
 ## Key points
 
-- A **partial dependence plot** sweeps one variable and averages the model's prediction. It
-  is four lines of code and one strong assumption: that the rows it constructs could exist.
-- **Forests flatten their partial effects.** The temperature optimum came back at 7.75 °C
-  against a true 9 °C, but the amplitude was understated sixfold at the cold end.
-- **Depth's true hump at 80 m came back as a monotone decline**, from the forest *and* from
-  a negative-binomial GLM given the generator's exact functional form, whose depth quadratic
-  was estimated at a fourteenth of its true value with $p = 0.63$.
-- Depth and temperature are confounded by the survey design. **No interpretation method
-  recovers an effect the data does not identify**: report the confounding instead.
-- **ICE** shows whether the average describes the individuals. Here it did not, the PDP's
-  hump being shorter than every one of the sixty individual humps. **ALE** avoids impossible
-  rows. Neither fixes confounding.
+::: {.key-points}
+- A **partial dependence plot** sets one input to each value in turn in every row,
+  predicts, and averages. It works for any model and does not depend on where the
+  other inputs are held.
+- **ICE curves** are the same sweep for each row before averaging. Curves that share a
+  shape show the average describes them; curves that peak in different places show an
+  interaction.
+- Draw the curves where the data are: a sweep pairs each value with every row's other
+  inputs, including combinations the survey never had.
+- On the survey the forest's temperature curves rose and fell at nearly every
+  station, by amounts that differed from station to station.
+- The depth curve stayed highest in shallow water, even with position as an input.
+  Depth follows position on the survey, and no curve can separate what the data
+  do not.
 :::
 
 ## Try it yourself
 
-1. Compute the partial dependence of `substrate` as a bar chart and compare it with the true
-   effects (mud 0.40, gravel 0.20, sand 0, rock −0.60 on the log scale). Is a categorical
-   effect recovered better than a continuous one?
-2. Restrict the survey to stations between 60 and 110 m, where the depth–temperature
-   correlation is weakest, and refit the GLM. Does the depth quadratic come back?
+1. Draw the partial dependence of `substrate`: set every training station to each
+   level in turn and average the predictions. Which level does the forest predict
+   most animals on?
+2. Leave `temperature_c` out of the inputs, refit the forest and redraw the depth
+   curve. Does depth take over part of the temperature hump?
