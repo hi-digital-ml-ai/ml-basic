@@ -4,7 +4,7 @@
     manim -ql scenes.py Scene08                      # draft
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
-The video is an overview of the section: a short tour of its five pages. Scenes marked
+The video is an overview of the section: a short tour of its four pages. Scenes marked
 "page results" read visuals/data/*.csv, which tools/figures-for-video.R writes from the
 pages. The others are schematic: made-up shapes, never numbers that could pass for
 survey results. The opening, key-point, recap, quiz and end-card scenes are shared
@@ -24,10 +24,10 @@ class Title(TitleScene):
 
 
 PROMISES = ["The kinds of learning",
-            "How machine learning relates to statistics",
+            "Predicting is not explaining",
             "Where it helps in marine science"]
 ANSWERS = ["Answers or none:\nsupervised or\nunsupervised",
-           "Same models, different\naims: decide first to\npredict or to explain",
+           "Different jobs, checked\ndifferently: decide first\nto predict or to explain",
            "Six tasks, each\nlimited by its labels"]
 RECAP = ["Your data decide the kind of learning",
          "Decide first: predict or explain",
@@ -204,13 +204,90 @@ class Scene06(VideoScene):
         self.finish()
 
 
-# Unsupervised, and what a model learns (scenes 7–9) ------------------------------------------
+# Supervised: k-nearest neighbours (scenes 7–8) ----------------------------------------------
 
-GROUP_COLOURS = {"Shallow": ORANGE, "Mid-depth": GREEN, "Deep": BLUE}
+FOUND, NOT_FOUND = BLUE, ORANGE
+
+
+def neighbours_layout(scene):
+    """The stations by depth and temperature, a new mid-depth station, and its 15 nearest
+    stations, found on the classifier's scaled temperature, salinity and depth."""
+    stations = scene.data("neighbours")
+    new = scene.data("new-stations").set_index("station").loc["mid-depth"]
+    axes, frame = chart([0, 200, 50], [2, 16, 2], 6.8, 5.0, [0, 50, 100, 150, 200], [4, 8, 12, 16],
+                        "depth (m)", "temperature (°C)")
+    frame.move_to([-3.0, -0.3, 0])
+    grey = VGroup(*[Dot(axes.c2p(d, t), 0.035, color=GREY, fill_opacity=0.45)
+                    for d, t in zip(stations["depth_m"], stations["temperature_c"])])
+    near = stations[stations["neighbour"]]
+    picked = VGroup(*[Dot(axes.c2p(d, t), 0.07, color=PURPLE)
+                      for d, t in zip(near["depth_m"], near["temperature_c"])])
+    star = Star(5, outer_radius=0.2, color=INK, fill_color=YELLOW, fill_opacity=1, stroke_width=3
+                ).move_to(axes.c2p(new["depth_m"], new["temperature_c"]))
+    star_name = label("a new station", 28, INK, weight=BOLD).next_to(star, UP + RIGHT, 0.35)
+    ring = Circle(radius=0.75, color=PURPLE, stroke_width=4).move_to(picked)
+    found = [p == "yes" for p in near["present"]]
+    return axes, frame, grey, picked, star, star_name, ring, found, new
 
 
 class Scene07(VideoScene):
     number = 7
+
+    def construct(self):
+        axes, frame, grey, picked, star, star_name, ring, found, new = neighbours_layout(self)
+        head = label("k-nearest neighbours", 40, INK, weight=BOLD).to_edge(UP, buff=0.35)
+        note = VGroup(label("nearest in temperature,", 28, SUBDUED),
+                      label("salinity and depth", 28, SUBDUED)).arrange(DOWN, buff=0.1)
+        fifteen = label("the 15 most similar", 32, PURPLE, weight=BOLD)
+        VGroup(fifteen, note).arrange(DOWN, buff=0.3).move_to([4.2, 0.4, 0])
+        # "The simplest supervised method is k-nearest neighbours."
+        self.play(FadeIn(head), FadeIn(frame), FadeIn(grey), run_time=self.share(0.25))
+        # "For a new station,"
+        at(self, 0.4)
+        self.play(GrowFromCenter(star), FadeIn(star_name), run_time=self.share(0.1))
+        # "it finds the fifteen survey stations most like it in temperature, salinity and depth."
+        at(self, 0.55)
+        self.play(FadeIn(picked, scale=1.5), Create(ring), FadeIn(fifteen), run_time=self.share(0.2))
+        self.play(FadeIn(note), run_time=self.share(0.1))
+        self.add(star)   # keep the star on top of the stations
+        self.finish()
+
+
+class Scene08(VideoScene):
+    number = 8
+
+    def construct(self):
+        axes, frame, grey, picked, star, star_name, ring, found, new = neighbours_layout(self)
+        head = label("k-nearest neighbours", 40, INK, weight=BOLD).to_edge(UP, buff=0.35)
+        self.add(head, frame, grey, picked, ring, star, star_name)
+        tokens = VGroup(*[Dot(radius=0.16, color=FOUND if f else NOT_FOUND) for f in found])
+        tokens.arrange_in_grid(3, 5, buff=0.25).move_to([4.2, 1.7, 0])
+        keys = VGroup(VGroup(Dot(radius=0.1, color=FOUND), label("found", 26, SUBDUED)).arrange(RIGHT, buff=0.15),
+                      VGroup(Dot(radius=0.1, color=NOT_FOUND), label("not found", 26, SUBDUED)).arrange(RIGHT, buff=0.15)
+                      ).arrange(RIGHT, buff=0.5).next_to(tokens, DOWN, 0.3)
+        share = label(f"{sum(found)} of {len(found)} found", 36, INK, weight=BOLD).next_to(keys, DOWN, 0.45)
+        chance = card(f"{round(100 * new['.pred_yes'])}% chance of presence", GREEN, 28).next_to(share, DOWN, 0.4)
+        counts = VGroup(label("abundance:", 28, SUBDUED, weight=BOLD), label("their average count", 28, SUBDUED)
+                        ).arrange(DOWN, buff=0.1).next_to(chance, DOWN, 0.4)
+        # "Eleven of those fifteen had the species,"
+        self.play(ReplacementTransform(picked.copy(), tokens), FadeIn(keys), run_time=self.share(0.2))
+        self.play(FadeIn(share), run_time=self.share(0.08))
+        # "so the model gives a seventy-three percent chance of presence."
+        at(self, 0.4)
+        self.play(FadeIn(chance, shift=0.2 * UP), run_time=self.share(0.1))
+        # "To predict abundance, it averages their counts instead."
+        at(self, 0.72)
+        self.play(FadeIn(counts), run_time=self.share(0.1))
+        self.finish()
+
+
+# Unsupervised, and what a model learns (scenes 9–11) ------------------------------------------
+
+GROUP_COLOURS = {"Shallow": ORANGE, "Mid-depth": GREEN, "Deep": BLUE}
+
+
+class Scene09(VideoScene):
+    number = 9
 
     def construct(self):
         stations = self.data("clusters")
@@ -240,8 +317,8 @@ class Scene07(VideoScene):
         self.finish()
 
 
-class Scene08(VideoScene):
-    number = 8
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
         # Schematic: a structureless cloud, cut into three groups and then into six.
@@ -280,8 +357,8 @@ def triangle(point, colour=ORANGE, size=0.14):
     return Triangle(color=colour, fill_color=colour, fill_opacity=1, stroke_width=0).scale(size).move_to(point)
 
 
-class Scene09(VideoScene):
-    number = 9
+class Scene11(VideoScene):
+    number = 11
 
     def construct(self):
         # Schematic: the same two groups seen by the two kinds of model.
@@ -308,80 +385,81 @@ class Scene09(VideoScene):
         # "Models also differ in what they learn."
         self.play(FadeIn(panels[0][2]), FadeIn(panels[1][2]), FadeIn(panels[0][0]), FadeIn(panels[1][0]),
                   run_time=self.share(0.12))
-        # "A discriminative model learns only the line between outcomes."
-        at(self, 0.18)
+        # "A discriminative model, such as k-nearest neighbours, learns only the answer."
+        at(self, 0.15)
         self.play(FadeIn(panels[0][1]), Create(boundary), run_time=self.share(0.15))
         # "A generative model learns the data themselves, and can invent new examples."
-        at(self, 0.42)
+        at(self, 0.47)
         self.play(FadeIn(panels[1][1]), FadeIn(blobs), run_time=self.share(0.15))
-        at(self, 0.6)
+        at(self, 0.64)
         self.play(GrowFromCenter(new), FadeIn(new_name), GrowArrow(new_arrow), run_time=self.share(0.1))
         # "The tools that write text and draw pictures are generative."
-        at(self, 0.78)
+        at(self, 0.8)
         self.play(FadeIn(tools, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene10(KeyPointScene):
-    number, point = 10, 1
+class Scene12(KeyPointScene):
+    number, point = 12, 1
 
 
-# Statistics and machine learning (scenes 11–19) --------------------------------------------
+# Predicting and explaining (scenes 13–21) --------------------------------------------------
 
-class Scene11(VideoScene):
-    number = 11
+def aims_layout():
+    """Schematic: the two aims side by side, coloured as on the prediction and explanation
+    page's diagram."""
+    cols = VGroup()
+    for name, colour, lines in [("Prediction", ORANGE, ["the outcome at a new station,", "checked on stations held back"]),
+                                ("Explanation", GREEN, ["what drives the outcome"])]:
+        box = RoundedRectangle(width=6.0, height=3.4, corner_radius=0.2, stroke_color=colour, stroke_width=5)
+        strip = Rectangle(width=6.0, height=0.14, stroke_width=0, fill_color=colour, fill_opacity=1).align_to(box, UP)
+        head = label(name, 42, INK, weight=BOLD)
+        body = VGroup(*[label(t, 30, INK) for t in lines]).arrange(DOWN, buff=0.15)
+        VGroup(head, body).arrange(DOWN, buff=0.45).move_to(box)
+        cols.add(VGroup(box, strip, head, body))
+    cols.arrange(RIGHT, buff=0.5).move_to([0, 0.1, 0])
+    title_ = label("one model, two aims", 42, PURPLE, weight=BOLD).to_edge(UP, buff=0.5)
+    usual = VGroup(*[label(f"usual aim of {who}", 30, colour, weight=BOLD).next_to(col, DOWN, 0.3)
+                     for who, colour, col in [("machine learning", ORANGE, cols[0]),
+                                              ("statistical modelling", GREEN, cols[1])]])
+    return title_, cols, usual
+
+
+class Scene13(VideoScene):
+    number = 13
 
     def construct(self):
-        # Schematic: the statistics page's scale of methods.
-        bar = Rectangle(width=11.6, height=0.22, stroke_width=0).set_fill([BLUE, ORANGE], opacity=1)
-        bar.set_sheen_direction(RIGHT).move_to([0, 0.4, 0])
-        methods = ["t-test", "ANOVA", "linear regression", "GLM", "GAM", "decision tree", "random forest", "neural network"]
-        xs = np.linspace(-5.2, 5.2, len(methods))
-        ticks, names = VGroup(), VGroup()
-        for i, (x, m) in enumerate(zip(xs, methods)):
-            ticks.add(Line([x, 0.1, 0], [x, 0.7, 0], color=INK, stroke_width=3))
-            names.add(label(m, 28, INK).move_to([x, 1.15 if i % 2 == 0 else -0.35, 0]))
-        both = RoundedRectangle(width=xs[4] - xs[2] + 2.3, height=2.2, corner_radius=0.15, stroke_width=0,
-                                fill_color=PURPLE, fill_opacity=0.15).move_to([(xs[2] + xs[4]) / 2, 0.4, 0])
-        both_name = label("used by both", 32, PURPLE, weight=BOLD).next_to(both, DOWN, 0.2)
-        left = label("you write the shape down", 28, BLUE, weight=BOLD).move_to([-4.2, -1.9, 0])
-        right = label("the algorithm finds it", 28, ORANGE, weight=BOLD).move_to([4.4, -1.9, 0])
-        head = label("one toolbox", 44, INK, weight=BOLD).to_edge(UP, buff=0.7)
-        # "Machine learning is not a separate subject from statistics."
-        self.play(FadeIn(head), GrowFromCenter(bar), run_time=self.share(0.2))
-        self.play(LaggedStart(*[AnimationGroup(Create(t), FadeIn(n)) for t, n in zip(ticks, names)], lag_ratio=0.15),
-                  FadeIn(left), FadeIn(right), run_time=self.share(0.3))
-        # "The two share their data and their models, and linear regression belongs to both."
-        at(self, 0.65)
-        self.play(FadeIn(both), FadeIn(both_name), run_time=self.share(0.15))
+        title_, cols, usual = aims_layout()
+        predict_body = cols[0][3]
+        # "A model can serve two aims."
+        self.play(FadeIn(title_), run_time=self.share(0.1))
+        # "Prediction asks what the outcome will be at a station nobody has measured,"
+        at(self, 0.12)
+        self.play(FadeIn(cols[0][:3]), FadeIn(predict_body[0], shift=0.2 * UP), run_time=self.share(0.12))
+        # "and it can be checked on stations held back from fitting."
+        at(self, 0.5)
+        self.play(FadeIn(predict_body[1], shift=0.2 * UP), run_time=self.share(0.1))
+        # "Explanation asks what drives the outcome."
+        at(self, 0.78)
+        self.play(FadeIn(cols[1], shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
-class Scene12(VideoScene):
-    number = 12
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
-        # Schematic: the two aims side by side.
-        cols = VGroup()
-        for name, colour, lines in [("Statistical modelling", BLUE, ["estimates an effect"]),
-                                    ("Machine learning", ORANGE, ["predicts new cases,", "checked on data held back"])]:
-            box = RoundedRectangle(width=6.0, height=3.6, corner_radius=0.2, stroke_color=colour, stroke_width=5)
-            strip = Rectangle(width=6.0, height=0.14, stroke_width=0, fill_color=colour, fill_opacity=1
-                              ).align_to(box, UP)
-            head = label(name, 40, INK, weight=BOLD)
-            body = VGroup(*[label(t, 34, INK) for t in lines]).arrange(DOWN, buff=0.15)
-            VGroup(head, body).arrange(DOWN, buff=0.5).move_to(box)
-            cols.add(VGroup(box, strip, head, body))
-        cols.arrange(RIGHT, buff=0.5).move_to([0, -0.3, 0])
-        aim = label("the difference is the aim", 40, PURPLE, weight=BOLD).to_edge(UP, buff=0.7)
-        # "The difference is mostly the aim."
-        self.play(FadeIn(aim), FadeIn(cols[0][:3]), FadeIn(cols[1][:3]), run_time=self.share(0.2))
-        # "A statistical model estimates an effect."
-        at(self, 0.25)
-        self.play(FadeIn(cols[0][3], shift=0.2 * UP), run_time=self.share(0.12))
-        # "A machine-learning model predicts new cases, and is checked on data held back from fitting."
-        at(self, 0.5)
-        self.play(FadeIn(cols[1][3], shift=0.2 * UP), run_time=self.share(0.15))
+        title_, cols, usual = aims_layout()
+        self.add(title_, cols)
+        checked = card("the same model, checked in different ways", PURPLE, 30).to_edge(DOWN, buff=0.35)
+        # "Machine learning usually aims at prediction,"
+        self.play(FadeIn(usual[0], shift=0.2 * UP), run_time=self.share(0.12))
+        # "and statistical modelling at explanation."
+        at(self, 0.3)
+        self.play(FadeIn(usual[1], shift=0.2 * UP), run_time=self.share(0.12))
+        # "The same model can serve either, but it is checked in different ways."
+        at(self, 0.6)
+        self.play(FadeIn(checked, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
@@ -412,22 +490,22 @@ def hump_layout(scene):
     return frame, dots, hidden, straight, steps, tags, title_
 
 
-class Scene13(VideoScene):
-    number = 13
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         frame, dots, hidden, straight, steps, tags, title_ = hump_layout(self)
         # "In the survey, the species does best in middling water."
         self.play(FadeIn(frame), FadeIn(title_), run_time=self.share(0.12))
         self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.003), FadeIn(hidden), run_time=self.share(0.3))
-        # "A straight line through that hump is nearly flat, so the linear model reports no temperature effect."
+        # "A straight line through that hump is nearly flat, so a linear regression reports almost no temperature effect."
         at(self, 0.45)
         self.play(Create(straight), FadeIn(tags["straight"]), run_time=self.share(0.25))
         self.finish()
 
 
-class Scene14(VideoScene):
-    number = 14
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         frame, dots, hidden, straight, steps, tags, title_ = hump_layout(self)
@@ -438,8 +516,8 @@ class Scene14(VideoScene):
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         # Page results: the first five test stations as the page tabulates them, and the
@@ -495,13 +573,13 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         # Page results: the test RMSE of each model, beside predicting the average.
         scores = self.data("test-rmse")
-        colours = {"predicting the average": GREY, "straight line": BLUE, "decision tree": ORANGE}
+        colours = {"predicting the average": GREY, "linear regression": BLUE, "decision tree": ORANGE}
         unit = 1.3   # scene units per animal
         left = -1.0
         bars = {}
@@ -523,14 +601,14 @@ class Scene16(VideoScene):
         learned.next_to(mark, UP, 0.15).align_to(mark, RIGHT).shift(0.6 * RIGHT)
         # "Lower is better."
         self.play(FadeIn(head), Create(base), FadeIn(unit_), run_time=self.share(0.1))
-        # "The tree's RMSE is 4.39 animals, the straight line's 4.59."
+        # "The tree's RMSE is 4.39 animals, the linear regression's 4.59."
         at(self, 0.12)
         self.play(GrowFromEdge(bars["decision tree"][0], LEFT), FadeIn(bars["decision tree"][1:]),
                   run_time=self.share(0.12))
         at(self, 0.3)
-        self.play(GrowFromEdge(bars["straight line"][0], LEFT), FadeIn(bars["straight line"][1:]),
+        self.play(GrowFromEdge(bars["linear regression"][0], LEFT), FadeIn(bars["linear regression"][1:]),
                   run_time=self.share(0.1))
-        # "Simply predicting the average count everywhere gives 4.72,"
+        # "Simply predicting the average count everywhere, the baseline, gives 4.72,"
         at(self, 0.45)
         self.play(GrowFromEdge(bars["predicting the average"][0], LEFT),
                   FadeIn(bars["predicting the average"][1:]), run_time=self.share(0.12))
@@ -556,8 +634,8 @@ def cause_layout():
     return depth, salinity, species, drives, link, predicts, cross, nothing, title_
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         depth, salinity, species, drives, link, predicts, cross, nothing, title_ = cause_layout()
@@ -578,8 +656,8 @@ class Scene17(VideoScene):
         self.finish()
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         depth, salinity, species, drives, link, predicts, cross, nothing, title_ = cause_layout()
@@ -600,11 +678,11 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(KeyPointScene):
-    number, point = 19, 2
+class Scene21(KeyPointScene):
+    number, point = 21, 2
 
 
-# Machine learning in marine science (scenes 20–24) ------------------------------------------
+# Machine learning in marine science (scenes 22–26) ------------------------------------------
 
 TASKS = [("Naming things", "classification", ORANGE), ("Mapping across space", "regression or classification", BLUE),
          ("Filling gaps", "regression", BLUE), ("Forecasting", "regression", BLUE),
@@ -629,8 +707,8 @@ def warning_mark():
     return VGroup(tri, label("!", 30, BACKGROUND, weight=BOLD).move_to(tri.get_center() + 0.05 * DOWN))
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         head, cards = tasks_layout()
@@ -641,8 +719,8 @@ class Scene20(VideoScene):
         self.finish()
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         head, cards = tasks_layout()
@@ -674,8 +752,8 @@ def pipeline_layout():
     return boxes, arrows
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         # Schematic: the applications page's pipeline.
@@ -694,8 +772,8 @@ class Scene22(VideoScene):
         self.finish()
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         # Schematic: a cloud of cases, and the labelled few bunched in one corner of it.
@@ -716,20 +794,20 @@ class Scene23(VideoScene):
         self.finish()
 
 
-class Scene24(KeyPointScene):
-    number, point = 24, 3
+class Scene26(KeyPointScene):
+    number, point = 26, 3
 
 
-# The quiz (scenes 25–26) ------------------------------------------------------------------
+# The quiz (scenes 27–28) ------------------------------------------------------------------
 
-class Scene25(QuizScene):
-    number = 25
+class Scene27(QuizScene):
+    number = 27
     question = ("Seabed photographs, some named", "by a specialist.",
                 "Supervised or unsupervised?", "Which of the six tasks?")
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene28(VideoScene):
+    number = 28
 
     def construct(self):
         # Schematic: photos, some carrying a name; the naming-things card.
@@ -753,19 +831,19 @@ class Scene26(VideoScene):
         self.finish()
 
 
-# The recap (scenes 27–29) and the end card (scene 30) --------------------------------------
-
-class Scene27(RecapScene):
-    number, point = 27, 1
-
-
-class Scene28(RecapScene):
-    number, point = 28, 2
-
+# The recap (scenes 29–31) and the end card (scene 32) --------------------------------------
 
 class Scene29(RecapScene):
-    number, point = 29, 3
+    number, point = 29, 1
 
 
-class Scene30(EndCardScene):
-    number = 30
+class Scene30(RecapScene):
+    number, point = 30, 2
+
+
+class Scene31(RecapScene):
+    number, point = 31, 3
+
+
+class Scene32(EndCardScene):
+    number = 32

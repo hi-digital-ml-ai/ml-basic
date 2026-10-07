@@ -897,3 +897,19 @@ about 900 words, 7:48 on the draft voice. Not yet narrated with Gemini.
   access. Please contact support." after one scene (§10 scene 1, kept in its `audio/`).
   The §7, §8, §9 and §10 videos all wait on that being resolved in the Google Cloud
   project.
+
+## §1 Introduction rebuilt (2026-10-07)
+
+Rebuilt from the second-pass pages (`feature/revise-introduction`): four pages, machine
+learning first. 32 scenes, about 810 words. The three points stay (kinds of learning,
+predicting is not explaining, six tasks limited by their labels), with three changes:
+
+- Two new scenes teach k-nearest neighbours, the section's supervised method: the
+  stations by depth and temperature, a new mid-depth station and its 15 nearest
+  (found on the classifier's own scaled inputs in `exports.R`), then 11 of 15 found, a
+  73% chance of presence. The discriminative scene names k-nearest neighbours.
+- The statistics toolbox scene (t-test to neural network) is gone. Point two is now
+  "predicting is not explaining": two schematic scenes set out the two aims and which
+  field usually holds each; the hump, the RMSE built by hand, the baseline and the
+  confounder follow as before, read from `prediction-and-explanation.qmd`.
+- Unchanged scenes keep their words, so `narrate.py` reuses their takes.
