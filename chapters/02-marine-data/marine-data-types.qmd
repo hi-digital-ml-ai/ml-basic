@@ -28,7 +28,7 @@ arithmetic makes sense, and spot a column that would mislead it.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Seven kinds of variable
+## Marine data holds seven kinds of variable
 
 Most introductions stop at two kinds, numbers and categories. Marine data has more:
 
