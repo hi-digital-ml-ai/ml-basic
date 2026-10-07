@@ -58,10 +58,8 @@ website:
             text: "The coastal survey"
           - href: chapters/02-marine-data/marine-data-types.qmd
             text: "Kinds of marine data"
-          - href: chapters/02-marine-data/exploratory-analysis.qmd
-            text: "Exploring the data first"
-          - href: chapters/02-marine-data/missing-values-and-outliers.qmd
-            text: "Missing values and outliers"
+          - href: chapters/02-marine-data/exploring-and-cleaning.qmd
+            text: "Exploring and cleaning the data"
           - href: chapters/02-marine-data/scaling-and-encoding.qmd
             text: "Scaling and encoding"
           - href: chapters/02-marine-data/splitting-data.qmd

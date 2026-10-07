@@ -141,3 +141,28 @@ terms:
     definition: "Treating rows that share a source, such as repeat visits to one site, as if they were independent observations, which makes the evidence look stronger than it is."
     page: chapters/02-marine-data/the-coastal-survey.qmd
 
+  # 2 · Marine data: Exploring and cleaning the data
+  - term: "Exploratory data analysis"
+    definition: "A first look at a dataset, by plots and counts, whose aim is to find what is wrong with it before any model is fitted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Sentinel value"
+    definition: "A number such as −999 written in place of a missing value, which a model or summary will treat as a real measurement unless it is converted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing value"
+    definition: "A value that was not recorded, written NA in R and NaN in Python, so that no summary mistakes it for a measurement."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Outlier"
+    definition: "A value far from the rest of the data: sometimes an error, often a genuine extreme that should be kept."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing completely at random"
+    definition: "Gaps that follow nothing at all, such as a dropped sample bottle; dropping those rows costs precision but adds no bias."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing at random"
+    definition: "Gaps that follow something that was recorded, such as the season, so the recorded columns can help fill them in."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing not at random"
+    definition: "Gaps that depend on the missing value itself, such as a sensor that fails in the conditions it should measure; no fix from the data alone can repair them."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Imputation"
+    definition: "Filling in missing values by predicting them from the columns that were recorded, done as part of the model so that the test data play no part."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
