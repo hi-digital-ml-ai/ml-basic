@@ -141,6 +141,33 @@ terms:
     definition: "Treating rows that share a source, such as repeat visits to one site, as if they were independent observations, which makes the evidence look stronger than it is."
     page: chapters/02-marine-data/the-coastal-survey.qmd
 
+  # 2 · Marine data: Kinds of marine data
+  - term: "Continuous variable"
+    definition: "A measured quantity, where a difference of one unit means the same everywhere on the scale, such as temperature or depth."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Categorical variable"
+    definition: "A variable that puts each row into one of a fixed set of groups, such as a seabed type or a vessel."
+    page: chapters/02-marine-data/marine-data-types.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Nominal"
+    definition: "A category with no order between its groups, such as sand, mud, gravel and rock."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Ordinal"
+    definition: "A category whose groups have an order but no known spacing, such as low, medium and high; coding them 1, 2, 3 assumes the spacing."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Circular variable"
+    definition: "A variable that returns to where it started, such as month, time of day or a bearing; encoded as its sine and cosine so that the ends of the cycle are neighbours."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Profile"
+    definition: "A series of measurements down the water at one place and time, such as a CTD cast; usually summarised into one row per cast."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Compositional data"
+    definition: "Shares of a whole that sum to one, such as the proportion of each species in a sample, so that one share can rise only if others fall."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Log-ratio"
+    definition: "The log of one share divided by another share, or by the average of the shares, which frees compositional data from summing to one."
+    page: chapters/02-marine-data/marine-data-types.qmd
+
   # 2 · Marine data: Exploring and cleaning the data
   - term: "Exploratory data analysis"
     definition: "A first look at a dataset, by plots and counts, whose aim is to find what is wrong with it before any model is fitted."
