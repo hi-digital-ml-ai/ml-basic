@@ -251,3 +251,17 @@ terms:
   - term: "Polynomial regression"
     definition: "Linear regression with squared (or higher) powers of an input added as extra columns, so its prediction can curve and peak."
     page: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+
+  # 3 · Supervised learning: Regression for counts
+  - term: "Poisson regression"
+    definition: "A regression for counts that predicts the logarithm of the expected count, so its predictions never fall below zero."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Multiplier"
+    definition: "A coefficient of a model on the log scale, raised as a power of e: the factor by which one extra unit of the input multiplies the prediction."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Overdispersion"
+    definition: "Counts that vary more than Poisson regression expects, as counts of animals that gather in groups usually do."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Negative binomial"
+    definition: "A count model like Poisson regression with one extra number for overdispersion; it predicts much the same counts but reports wider ranges."
+    page: chapters/03-supervised-learning/count-regression.qmd

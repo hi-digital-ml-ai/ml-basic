@@ -1,6 +1,6 @@
 ---
 title: "Regression for counts"
-description: "Poisson regression predicts a count on the log scale, so it never falls below zero; the negative binomial allows for counts that vary more than Poisson expects."
+description: "A count never falls below zero, and the larger it is, the more it varies. Poisson regression is built for the first, the negative binomial for the second, and both still give one number per input."
 order: 3
 categories: [supervised, regression]
 ---
@@ -17,24 +17,27 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## A count never falls below zero
 
-The curve on [Linear and polynomial regression](linear-and-polynomial-regression.qmd)
-found a peak in the survey's count and then predicted fewer than zero animals. This
-page introduces Poisson regression, which predicts a count on a log scale and so can
-never go below zero, and shows how to read its coefficients as multipliers. It then
-checks one assumption Poisson makes that counts of animals rarely meet, and relaxes it
-with the negative binomial.
+Polynomial regression on [Linear and polynomial regression](linear-and-polynomial-regression.qmd)
+found the temperature a species prefers, then predicted fewer than zero animals. A
+count has two properties that linear regression ignores: it never falls below zero,
+and the larger it is, the more it varies. Poisson regression is built for the first and
+the negative binomial for the second. Both keep what made linear regression easy to
+read, one coefficient per input, and change only how the coefficients become a
+prediction.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Predicting the log of the count
+## Poisson regression predicts the log of the count
 
-Poisson regression keeps the weighted sum of linear regression, a starting value plus a
-fixed amount for each input, but uses it to predict the logarithm of the expected
-count, $\hat{\mu}$ (the average count for those inputs):
+**Poisson regression** keeps the weighted sum of linear regression, a starting value
+plus a fixed amount for each input, but uses it to predict the logarithm of the
+expected count, $\hat{\mu}$ (the average count for those inputs):
 
 $$\log(\hat{\mu}) = a + b_1 x_1 + b_2 x_2 + \dots \qquad\text{so}\qquad \hat{\mu} = e^{a + b_1 x_1 + b_2 x_2 + \dots}$$
 
@@ -49,20 +52,37 @@ extra unit of the input multiplies the expected count by $e^{0.4}$ =
 multiplier of 1, no change, and a negative one a multiplier below 1. A squared input
 works as it did for linear regression: the curve has one peak, still at $-b / 2c$.
 
-## Counts that vary more than Poisson expects
+Linear, polynomial and Poisson regression share one design: a weighted sum of the
+inputs, passed through a function that keeps the prediction in range. For linear
+regression the function does nothing; for counts it is $e$ raised to the sum.
+[Logistic regression](logistic-regression.qmd) uses the same design for a probability,
+which must stay between 0 and 1.
 
-Poisson regression also assumes how widely the counts scatter around the expected
-count: their variance equals it. Where the model expects 4 animals, the counts should
-have a variance of about 4; where it expects 20, about 20. Animals that gather in
-groups vary more than that, as
-[Regression and classification](regression-and-classification.qmd) found for the
-survey. This is **overdispersion**. The predictions are still sensible, but the model
-treats the data as more certain than they are, so its confidence intervals are too
-narrow.
+## Counts of animals vary more than Poisson expects
 
-The **negative binomial** is a count model with one extra number, $\theta$ (theta),
-for the extra spread: the smaller $\theta$, the more the counts vary beyond what
-Poisson expects. Its predictions follow the same kind of curve.
+```{r}
+#| label: spread-numbers
+#| include: false
+survey <- load_coastal_survey_clean()
+count_mean <- mean(survey$abundance)
+count_var  <- var(survey$abundance)
+```
+
+Poisson regression also fixes how widely the counts scatter around each prediction:
+their variance equals the expected count. Where the model expects 4 animals, the counts
+should have a variance of about 4. Animals that gather in groups vary more than that,
+because a station either finds the group or misses it. This is **overdispersion**, and
+it is normal in ecological counts. The survey's counts have a variance of
+`r round(count_var, 1)` against a mean of `r round(count_mean, 1)`, about
+`r round(count_var / count_mean)` times as much, though part of that comes from the
+inputs: some stations sit in better habitat than others.
+
+The **negative binomial** model adds one number for the extra spread, estimated from
+the data along with the coefficients. Its predictions follow the same kind of curve as
+Poisson's; what changes is how much scatter it expects around each one. That matters
+whenever a model reports a range: under Poisson, the confidence intervals for the
+coefficients and the ranges for new stations come out too narrow
+([Communicating uncertainty](../10-interpretation/communicating-uncertainty.qmd)).
 
 ::: {.diagram}
 ![Linear regression models the count itself and can fall below zero. Poisson regression is a straight line in the log of the count, so the count nears zero but never crosses it. The negative binomial keeps the curve and allows a wider spread.](img/counts-model.svg){fig-alt="Three cards. Linear regression, the count itself: count equals a plus b times the input; a straight line through falling counts crosses a dashed line marking zero; a straight line in the count keeps falling, even below zero. Poisson regression, a straight line in the log: count equals e to the power a plus b times the input; a curve falls towards the zero line and levels off above it; each unit multiplies the count, so the curve nears zero but never crosses it. Negative binomial, room for extra spread: the same rising curve with two shaded bands, a narrow one for Poisson and a wider one for the negative binomial, both growing as the count grows; counts of animals that gather in groups vary more than Poisson expects. A note says a count never falls below zero, and its spread grows with its size."}
@@ -72,10 +92,7 @@ Poisson expects. Its predictions follow the same kind of curve.
 
 The data, the split by site and the recipe with squared depth and temperature are those
 of [Linear and polynomial regression](linear-and-polynomial-regression.qmd). Each
-seabed type is compared with sand, which `step_relevel()` makes the baseline, and each
-season with spring.
-
-### Preparing the data
+seabed type is compared with sand and each season with spring.
 
 ::: {.panel-tabset group="language"}
 
@@ -83,8 +100,6 @@ season with spring.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean()
-
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
 test  <- testing(split)
@@ -92,11 +107,9 @@ test  <- testing(split)
 predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
   salinity_psu + substrate + season
 
-line_recipe <- recipe(predictors, data = train) |>
+curve_recipe <- recipe(predictors, data = train) |>
   step_impute_median(all_numeric_predictors()) |>
-  step_relevel(substrate, ref_level = "sand")
-
-curve_recipe <- line_recipe |>
+  step_relevel(substrate, ref_level = "sand") |>
   step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
 ```
 
@@ -105,7 +118,6 @@ curve_recipe <- line_recipe |>
 ```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import GroupShuffleSplit
@@ -124,45 +136,31 @@ grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
 train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
 train, test = survey.iloc[train_rows], survey.iloc[test_rows]
 
-# The dropped level of each column is its baseline: sand, and spring as in R.
-dummies = OneHotEncoder(drop=["sand", "spring"], sparse_output=False)
-
-line_recipe = ColumnTransformer([
-    ("numeric", SimpleImputer(strategy="median"), numeric),
-    ("categorical", dummies, categorical),
-])
-
 def squared(column):
     return (column, Pipeline([
         ("impute", SimpleImputer(strategy="median")),
         ("poly", PolynomialFeatures(degree=2, include_bias=False)),
     ]), [column])
 
+# The dropped level of each column is its baseline: sand, and spring as in R.
 curve_recipe = ColumnTransformer([
     squared("depth_m"),
     squared("temperature_c"),
     ("numeric", SimpleImputer(strategy="median"),
      ["chlorophyll_mg_m3", "salinity_psu"]),
-    ("categorical", dummies, categorical),
+    ("categorical", OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
+     categorical),
 ])
-
-# scikit-learn's PoissonRegressor gives no confidence intervals, so the count
-# models come from statsmodels, fitted on the recipe's output.
-prepared = curve_recipe.fit(train[predictors])
-
-def design(data):
-    columns = pd.DataFrame(prepared.transform(data[predictors]),
-                           columns=prepared.get_feature_names_out(),
-                           index=data.index)
-    return sm.add_constant(columns)
 ```
 
 :::
 
-### Poisson regression
+### Poisson regression levels off above zero
 
-In tidymodels, Poisson regression is `poisson_reg()`, from the poissonreg package; it
-takes the same recipe as linear regression.
+In tidymodels, Poisson regression is `poisson_reg()`, from the poissonreg package; in
+scikit-learn it is `PoissonRegressor`, where `alpha=0` turns off a penalty that
+[Regularisation](../05-generalisation/regularisation.qmd) explains. Both take the same
+recipe as linear regression, and polynomial regression is fitted beside it.
 
 ::: {.panel-tabset group="language"}
 
@@ -170,14 +168,22 @@ takes the same recipe as linear regression.
 
 ```{r}
 #| label: fit-poisson
+curve_fit   <- workflow(curve_recipe, linear_reg())  |> fit(train)
 poisson_fit <- workflow(curve_recipe, poisson_reg()) |> fit(train)
 ```
 
 ## Python
 
 ```{python}
-poisson_fit = sm.GLM(train["abundance"], design(train),
-                     family=sm.families.Poisson()).fit()
+from sklearn.base import clone
+from sklearn.linear_model import LinearRegression, PoissonRegressor
+
+def fit(model):
+    return Pipeline([("recipe", clone(curve_recipe)), ("model", model)]).fit(
+        train[predictors], train["abundance"])
+
+curve_fit = fit(LinearRegression())
+poisson_fit = fit(PoissonRegressor(alpha=0, solver="newton-cholesky"))
 ```
 
 :::
@@ -185,22 +191,19 @@ poisson_fit = sm.GLM(train["abundance"], design(train),
 ```{r}
 #| label: poisson-numbers
 #| include: false
-line_fit  <- workflow(line_recipe, linear_reg()) |> fit(train)
-curve_fit <- workflow(curve_recipe, linear_reg()) |> fit(train)
-
-poisson_coef <- tidy(poisson_fit) |> select(term, estimate) |> deframe()
-poisson_optimum <- -poisson_coef[["temperature_c_poly_1"]] /
-  (2 * poisson_coef[["temperature_c_poly_2"]])
-curve_coef <- tidy(curve_fit) |> select(term, estimate) |> deframe()
-curve_optimum <- -curve_coef[["temperature_c_poly_1"]] /
-  (2 * curve_coef[["temperature_c_poly_2"]])
+optimum <- function(fitted) {
+  coefs <- tidy(fitted) |> select(term, estimate) |> deframe()
+  -coefs[["temperature_c_poly_1"]] / (2 * coefs[["temperature_c_poly_2"]])
+}
+poisson_optimum <- optimum(poisson_fit)
+curve_optimum   <- optimum(curve_fit)
 temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```
 
 Poisson regression puts the temperature peak at `r round(poisson_optimum, 1)` °C, close
 to the `r round(curve_optimum, 1)` °C of polynomial regression. The two part company
-after the peak. The polynomial regression curve falls ever faster and crosses zero; the
-Poisson regression curve levels off towards zero and stays above it.
+after the peak. The polynomial curve falls ever faster and crosses zero; the Poisson
+curve levels off towards zero and stays above it.
 
 ::: {.panel-tabset group="language"}
 
@@ -208,8 +211,8 @@ Poisson regression curve levels off towards zero and stays above it.
 
 ```{r}
 #| label: fig-shapes
-#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. Linear and polynomial regression are those of the previous page; Poisson regression finds a similar peak and levels off above zero in warm water."
-#| fig-alt: "Three lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The linear regression line declines slowly. The polynomial regression curve rises to a peak in the middle of the range, then falls steeply and crosses zero before the warm end. The Poisson regression curve rises to a similar peak, then falls more gently and flattens just above zero."
+#| fig-cap: "The predicted count across the survey's temperatures, with the other inputs held at their typical values (sand, summer, median depth, chlorophyll and salinity). The ticks along the bottom are the training stations. Poisson regression finds a peak close to polynomial regression's and levels off above zero in warm water."
+#| fig-alt: "Two lines of predicted count against temperature, with a horizontal line marking zero and ticks along the bottom showing the temperatures of the training stations. The polynomial regression curve rises to a peak in the middle of the range, then falls steeply and crosses zero before the warm end. The Poisson regression curve rises to a similar peak, then falls more gently and flattens just above zero."
 #| fig-width: 7.5
 #| fig-height: 4.5
 grid <- tibble(
@@ -222,7 +225,6 @@ grid <- tibble(
 )
 
 curves <- bind_rows(
-  augment(line_fit, grid)    |> mutate(model = "Linear regression"),
   augment(curve_fit, grid)   |> mutate(model = "Polynomial regression"),
   augment(poisson_fit, grid) |> mutate(model = "Poisson regression")
 )
@@ -232,23 +234,25 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
   geom_rug(data = train, aes(temperature_c), inherit.aes = FALSE,
            sides = "b", alpha = 0.3, colour = ml_palette[["grey"]]) +
   geom_line(linewidth = 1.1) +
-  scale_colour_manual(values = c("Linear regression" = ml_palette[["blue"]],
-                                 "Polynomial regression" = ml_palette[["orange"]],
+  scale_colour_manual(values = c("Polynomial regression" = ml_palette[["orange"]],
                                  "Poisson regression" = ml_palette[["vermilion"]]),
-                      breaks = c("Linear regression", "Polynomial regression",
-                                 "Poisson regression")) +
+                      breaks = c("Polynomial regression", "Poisson regression")) +
   labs(x = "Temperature (°C)", y = "Predicted count", colour = NULL,
        title = "Poisson regression levels off above zero")
 ```
 
 :::
 
-### Reading the coefficients as multipliers
+Beyond the sampled temperatures the Poisson curve keeps its shape too, close to zero on
+both sides, whether or not the species is there;
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+deals with predicting outside the data.
 
-`exponentiate = TRUE` turns each coefficient into its multiplier. Each comes with a
-**95% confidence interval**: the range of multipliers the data are consistent with.
-An interval that stays on one side of 1 says the data can tell that level from the
-baseline; one that includes 1 says they cannot.
+### Each coefficient is a multiplier
+
+Raising each coefficient as a power of $e$ gives its multiplier. For a seabed type or a
+season, the multiplier compares it with the baseline, sand or spring, with the other
+inputs held fixed.
 
 ::: {.panel-tabset group="language"}
 
@@ -256,32 +260,22 @@ baseline; one that includes 1 says they cannot.
 
 ```{r}
 #| label: multipliers
-multipliers <- function(fitted) {
-  tidy(fitted, conf.int = TRUE, exponentiate = TRUE) |>
-    filter(str_detect(term, "substrate|season")) |>
-    transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
-              multiplier = estimate,
-              conf_low = conf.low, conf_high = conf.high)
-}
+multipliers <- tidy(poisson_fit) |>
+  filter(str_detect(term, "substrate|season")) |>
+  transmute(term, multiplier = round(exp(estimate), 2))
 
-multipliers(poisson_fit) |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+multipliers
 ```
 
 ## Python
 
 ```{python}
-def multipliers(fitted):
-    interval = np.exp(fitted.conf_int())
-    table = pd.DataFrame({
-        "term": fitted.params.index.str.replace(
-            r"^categorical__(substrate|season)_", r"\1: ", regex=True),
-        "multiplier": np.exp(fitted.params).round(2).to_numpy(),
-        "conf_low": interval[0].round(2).to_numpy(),
-        "conf_high": interval[1].round(2).to_numpy(),
-    })
-    return table[table["term"].str.contains("substrate|season")].reset_index(drop=True)
+multipliers = pd.DataFrame({
+    "term": poisson_fit[:-1].get_feature_names_out(),
+    "multiplier": np.exp(poisson_fit[-1].coef_).round(2),
+})
 
-multipliers(poisson_fit)
+multipliers[multipliers["term"].str.contains("substrate|season")]
 ```
 
 :::
@@ -289,134 +283,20 @@ multipliers(poisson_fit)
 ```{r}
 #| label: multiplier-numbers
 #| include: false
-poisson_table <- multipliers(poisson_fit)
-mud  <- poisson_table |> filter(term == "substrate: mud")
-rock <- poisson_table |> filter(term == "substrate: rock")
+mud  <- multipliers |> filter(term == "substratemud") |> pull(multiplier)
+rock <- multipliers |> filter(term == "substraterock") |> pull(multiplier)
 ```
 
-With the other inputs held fixed, a muddy station is expected to hold
-`r round(mud$multiplier, 2)` times the count of a sandy one, with an interval from
-`r round(mud$conf_low, 2)` to `r round(mud$conf_high, 2)`. A rocky one is expected to
-hold `r round(rock$multiplier, 2)` times as many, fewer than on sand, and its interval,
-`r round(rock$conf_low, 2)` to `r round(rock$conf_high, 2)`, stays below 1. Taken at
-face value, the data tell both mud and rock apart from sand. The next check shows how
-far to trust these intervals.
+A muddy station is expected to hold `r mud` times the count of a sandy one, and a
+rocky one `r rock` times, fewer than on sand. A multiplier reads the same whatever the
+count: mud adds `r scales::percent(mud - 1)` to 2 animals or to 200.
 
-### Checking the spread
+### The count models score better on new sites
 
-For each station, square the gap between the count and the prediction and divide by
-the prediction, which is what Poisson expects that squared gap to be on average. If
-Poisson is right, the average of these, taken over the stations less one for each
-coefficient, is about 1.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: spread
-poisson_glm <- extract_fit_engine(poisson_fit)
-
-sum(residuals(poisson_glm, type = "pearson")^2) / poisson_glm$df.residual
-```
-
-## Python
-
-```{python}
-poisson_fit.pearson_chi2 / poisson_fit.df_resid
-```
-
-:::
-
-```{r}
-#| label: spread-numbers
-#| include: false
-spread_ratio <- sum(residuals(poisson_glm, type = "pearson")^2) /
-  poisson_glm$df.residual
-```
-
-The ratio is `r round(spread_ratio, 1)`: after the inputs have explained what they can,
-the counts still vary about `r round(spread_ratio, 1)` times as much as Poisson
-expects. The predictions can stand, but the intervals above are too narrow.
-
-### Negative binomial model
-
-parsnip has no negative binomial model, so it comes from the MASS package. The recipe
-is still used: `prep()` estimates it on the training data and `bake()` applies it,
-as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd), and
-`MASS::glm.nb()` is fitted on the result.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: negative-binomial
-prepared <- prep(curve_recipe)
-nb_fit <- MASS::glm.nb(abundance ~ ., data = bake(prepared, new_data = NULL))
-
-nb_fit$theta
-```
-
-## Python
-
-```{python}
-# sm.NegativeBinomial estimates the extra spread alongside the coefficients,
-# as glm.nb() does; it reports alpha, which is 1 / theta.
-nb_fit = sm.NegativeBinomial(train["abundance"], design(train)).fit(
-    method="newton", disp=0)
-
-1 / nb_fit.params["alpha"]
-```
-
-:::
-
-The two models' intervals, side by side:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: compare-intervals
-left_join(multipliers(poisson_fit), multipliers(nb_fit),
-          by = "term", suffix = c("_poisson", "_negbin")) |>
-  select(term, starts_with("conf")) |>
-  mutate(across(where(is.numeric), \(x) round(x, 2)))
-```
-
-## Python
-
-```{python}
-both = multipliers(poisson_fit).merge(
-    multipliers(nb_fit), on="term", suffixes=("_poisson", "_negbin"))
-
-both.filter(regex="term|conf")
-```
-
-:::
-
-```{r}
-#| label: nb-numbers
-#| include: false
-nb_table <- multipliers(nb_fit)
-nb_rock  <- nb_table |> filter(term == "substrate: rock")
-nb_mud   <- nb_table |> filter(term == "substrate: mud")
-wider    <- mean((nb_table$conf_high - nb_table$conf_low) /
-                   (poisson_table$conf_high - poisson_table$conf_low))
-```
-
-$\theta$ is `r round(nb_fit$theta, 2)`, a lot of extra spread. The multipliers barely
-move, but every interval widens, on average to `r round(wider, 1)` times its Poisson
-width. Mud's interval, `r round(nb_mud$conf_low, 2)` to `r round(nb_mud$conf_high, 2)`,
-still stays above 1. Rock's, `r round(nb_rock$conf_low, 2)` to
-`r round(nb_rock$conf_high, 2)`, now includes 1: allowing for the extra spread, the data
-can no longer tell rock from sand. The Poisson model was sure of a difference the data
-do not support.
-
-### The four compared on new sites
-
-The same scores as on the previous page, on the same test sites.
+scikit-learn has no negative binomial model, so the Python tab takes it from
+statsmodels; in R it comes from the MASS package. Both are fitted on the recipe's
+output, as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd). The
+three models are then scored on the test sites as on the previous page.
 
 ::: {.panel-tabset group="language"}
 
@@ -424,18 +304,20 @@ The same scores as on the previous page, on the same test sites.
 
 ```{r}
 #| label: compare
+prepared <- prep(curve_recipe)
+nb_fit <- MASS::glm.nb(abundance ~ ., data = bake(prepared, new_data = NULL))
+
 score <- function(predicted, label) {
   tibble(
     model      = label,
     rmse       = rmse_vec(test$abundance, predicted),
-    rsq        = rsq_vec(test$abundance, predicted),
+    rsq        = rsq_trad_vec(test$abundance, predicted),
     lowest     = min(predicted),
     below_zero = sum(predicted < 0)
   )
 }
 
 scores <- bind_rows(
-  score(predict(line_fit, test)$.pred,    "Linear regression"),
   score(predict(curve_fit, test)$.pred,   "Polynomial regression"),
   score(predict(poisson_fit, test)$.pred, "Poisson regression"),
   score(predict(nb_fit, bake(prepared, new_data = test), type = "response"),
@@ -447,13 +329,16 @@ scores |> mutate(across(rmse:lowest, \(x) round(x, 2)))
 ## Python
 
 ```{python}
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import root_mean_squared_error
+import statsmodels.api as sm
+from sklearn.metrics import r2_score, root_mean_squared_error
 
-def linear(recipe):
-    fitted = Pipeline([("recipe", recipe), ("model", LinearRegression())]).fit(
-        train[predictors], train["abundance"])
-    return fitted.predict(test[predictors])
+prepared = clone(curve_recipe).fit(train[predictors])
+
+def design(data):
+    return sm.add_constant(prepared.transform(data[predictors]))
+
+nb_fit = sm.NegativeBinomial(train["abundance"].to_numpy(), design(train)).fit(
+    method="newton", disp=0)
 
 def score(predicted, label):
     predicted = np.asarray(predicted)
@@ -461,15 +346,14 @@ def score(predicted, label):
     return {
         "model": label,
         "rmse": round(root_mean_squared_error(truth, predicted), 2),
-        "rsq": round(np.corrcoef(predicted, truth)[0, 1] ** 2, 2),
+        "rsq": round(r2_score(truth, predicted), 2),
         "lowest": round(predicted.min(), 2),
         "below_zero": int((predicted < 0).sum()),
     }
 
 pd.DataFrame([
-    score(linear(line_recipe), "Linear regression"),
-    score(linear(curve_recipe), "Polynomial regression"),
-    score(poisson_fit.predict(design(test)), "Poisson regression"),
+    score(curve_fit.predict(test[predictors]), "Polynomial regression"),
+    score(poisson_fit.predict(test[predictors]), "Poisson regression"),
     score(nb_fit.predict(design(test)), "Negative binomial model"),
 ])
 ```
@@ -486,41 +370,31 @@ nb_score      <- get_score("Negative binomial model")
 ```
 
 The two count models make no negative predictions; the lowest is
-`r round(poisson_score$lowest, 2)` animals. They also score a little better than
-polynomial regression on new sites: $R^2$ rises from `r round(curve_score$rsq, 2)`
-to `r round(poisson_score$rsq, 2)` for Poisson and `r round(nb_score$rsq, 2)` for the
-negative binomial. Poisson and the negative binomial predict almost the same counts;
-what the negative binomial changes is how sure the model is.
-
-## The same design for other outcomes
-
-All three models on this page and the last share one design: a weighted sum of the
-inputs, turned into a prediction by a function that keeps it in range. For linear
-regression the function does nothing; for counts it is $e$ raised to the sum, which
-keeps the prediction above zero. [Logistic regression](logistic-regression.qmd) uses the
-same design for a probability, which must stay between 0 and 1.
+`r round(poisson_score$lowest, 2)` animals. They also score better than polynomial
+regression on new sites: $R^2$ is `r round(poisson_score$rsq, 2)` for Poisson
+regression and `r round(nb_score$rsq, 2)` for the negative binomial, against
+`r round(curve_score$rsq, 2)`. The two count models predict almost the same counts, so for
+prediction alone the choice between them hardly matters; the negative binomial earns
+its place when the model must also say how far a new count may stray.
 
 ## Key points
 
 ::: {.key-points}
 - Poisson regression predicts the log of the expected count, so its predictions never
   fall below zero.
-- Its coefficients read as multipliers once raised as a power of $e$: on the survey, a
-  muddy station holds `r round(mud$multiplier, 2)` times the count of a sandy
-  one.
-- Poisson assumes the counts vary as much as their average and no more; here they vary
-  about `r round(spread_ratio, 1)` times as much, so its confidence intervals are too
-  narrow.
-- The negative binomial allows for the extra spread. Its predictions match Poisson's,
-  and its wider intervals no longer tell rock from sand.
-- Match the model to the outcome: a count is never negative, and its spread grows with
-  its size.
+- Each coefficient becomes a multiplier: on the survey, a muddy station holds
+  `r mud` times the count of a sandy one.
+- Counts of animals vary more than Poisson expects. The negative binomial allows for
+  this overdispersion; it changes the ranges a model reports far more than its
+  predictions.
+- On new sites both count models beat polynomial regression and predict almost the
+  same counts.
 :::
 
 ## Try it yourself
 
-1. Fit `poisson_reg()` with `line_recipe` instead of `curve_recipe` and add it to the
-   figure. It is a straight line in the log of the count: what shape is it on the
-   figure?
-2. Compute the spread ratio for the negative binomial, with `nb_fit` in place of
-   `poisson_glm`. Is it closer to 1?
+1. Replace `curve_recipe` with a recipe that has no `step_poly()` and refit
+   `poisson_reg()`. It is a straight line in the log of the count: what shape does it
+   make across temperature?
+2. Compute the mean and variance of `abundance` for each `substrate`. Is the count
+   overdispersed on every seabed type, or on some more than others?
