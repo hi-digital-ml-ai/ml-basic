@@ -4,7 +4,7 @@
     manim -ql scenes.py Scene08                      # draft
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
-The video is an overview of the section: a short tour of its seven pages. Scenes marked
+The video is an overview of the section: three points from its seven pages. Scenes marked
 "page results" read visuals/data/*.csv, which tools/figures-for-video.R writes from the
 pages. The others are schematic: made-up shapes, never numbers that could pass for
 survey results. The opening, key-point, recap, quiz and end-card scenes are shared
@@ -24,19 +24,19 @@ class Title(TitleScene):
 
 
 PROMISES = ["Models that add up their inputs",
-            "Models made of yes-or-no questions",
+            "Models that learn their shape",
             "How to choose between them"]
 ANSWERS = ["Match the model to the outcome:\na count is never negative,\na probability needs a threshold",
-           "Trees find shapes on their own;\ntheir size is chosen\non validation data",
+           "Flexible models learn the shape;\na hyperparameter, chosen on\nvalidation data, sets how closely",
            "Start from the question\nand the outcome, not the\nmost flexible method"]
 RECAP = ["Match the model to the outcome",
-         "Choose a tree's size on validation data",
+         "Choose hyperparameters on validation data",
          "Start from the question"]
 
 
 class Scene01(LearnScene):
     number = 1
-    times = (0.43, 0.62, 0.8)
+    times = (0.41, 0.59, 0.83)
 
 
 def card(text, colour=PURPLE, size=40):
@@ -116,7 +116,7 @@ def model_curve(chart, table, model, colour, width=6):
     return chart.line(rows["temperature_c"], rows[".pred"], colour, width)
 
 
-# Models that add up their inputs (scenes 2–13) ------------------------------------------
+# Models that add up their inputs (scenes 2–12) ------------------------------------------
 
 class Scene02(VideoScene):
     number = 2
@@ -160,33 +160,32 @@ class Scene03(VideoScene):
     number = 3
 
     def construct(self):
-        # Page results: regression-and-classification.qmd, the count's shape.
+        # Page results: count-regression.qmd, the survey's counts.
         hist = self.data("histogram")
-        shape = self.data("count-shape").iloc[0]
         chart = Chart([-0.5, 40.5, 5], [0, 200, 50], 10.5, 4.6, x_ticks=range(0, 41, 10), y_ticks=(0, 100, 200),
                       x_name="animals caught at a station", y_name="stations", centre=(0.5, -0.6, 0))
         base = chart.p(0, 0)[1]
         bars = VGroup()
         for _, row in hist.iterrows():
             x, n = row["abundance"], row["n"]
-            height = chart.p(0, n)[1] - base
+            height = max(chart.p(0, n)[1] - base, 0.02)
             bar = Rectangle(width=chart.p(0.9, 0)[0] - chart.p(0, 0)[0], height=height, stroke_width=0,
-                            fill_color=VERMILION if x == 0 else BLUE, fill_opacity=0.85)
+                            fill_color=BLUE, fill_opacity=0.85)
             bars.add(bar.move_to([chart.p(x, 0)[0], base + height / 2, 0]))
         head = label("the count of one species at each station", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        zeros = label(f"{shape['zero_pct']:.1f}% caught nothing", 34, VERMILION, weight=BOLD)
-        zeros.next_to(chart.p(1.5, 170), RIGHT, 0.1)
-        spread = card(f"overdispersed: variance about {round(shape['count_var'] / shape['count_mean'])} times the mean", PURPLE, 28)
-        spread.move_to(chart.p(24, 100))
-        # "The survey's outcome is the count of one species at each station."
+        floor = Arrow(chart.p(6, 150), chart.p(0, 150), color=VERMILION, stroke_width=5, buff=0.1)
+        never = label("never below zero", 32, VERMILION, weight=BOLD).next_to(floor, RIGHT, 0.15)
+        few = card("most stations: only a few animals", PURPLE, 30).move_to(chart.p(24, 100))
+        # "In this section, the outcome is the count of one species at each station of the survey."
         self.play(FadeIn(head), FadeIn(chart.frame), run_time=self.share(0.12))
         self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.05), run_time=self.share(0.2))
-        # "22.5% of the stations caught nothing,"
-        cue(self, "22.5%")
-        self.play(Indicate(bars[0], color=VERMILION), FadeIn(zeros, shift=0.2 * RIGHT), run_time=self.share(0.12))
-        # "and the counts vary about six times as much as their average."
-        cue(self, "and the counts vary")
-        self.play(FadeIn(spread, shift=0.2 * UP), run_time=self.share(0.1))
+        # "A count is a whole number, it never falls below zero,"
+        cue(self, "it never falls")
+        self.play(GrowArrow(floor), FadeIn(never), run_time=self.share(0.1))
+        # "and most stations caught only a few animals."
+        cue(self, "and most stations")
+        self.play(Indicate(VGroup(*bars[:6]), color=PURPLE, scale_factor=1.05), FadeIn(few, shift=0.2 * UP),
+                  run_time=self.share(0.12))
         self.finish()
 
 
@@ -196,8 +195,11 @@ def count_chart():
 
 
 def count_layout(scene):
-    """The count-regression page's figure: three models across the survey's temperatures."""
-    table = scene.data("count-curves")
+    """Three models across the survey's temperatures: the line and the curve from the linear
+    page, Poisson regression from the count page (same grid, same curve on both)."""
+    line = scene.data("line-curves")
+    counts = scene.data("count-curves")
+    table = pd.concat([line, counts[counts["model"] == "Poisson regression"]])
     chart = count_chart()
     zero = chart.hline(0)
     zero_name = label("zero", 24, SUBDUED).next_to(chart.p(16.5, 0), RIGHT, 0.1)
@@ -215,7 +217,7 @@ class Scene04(VideoScene):
     number = 4
 
     def construct(self):
-        # Page results: count-regression.qmd#fig-shapes, linear regression.
+        # Page results: linear-and-polynomial-regression.qmd#fig-shapes, linear regression.
         table, chart, zero, curves = count_layout(self)
         name = curve_name("linear regression: one slope", BLUE, chart.p(10.5, 4.6))
         # "Linear regression predicts a starting value plus a fixed amount for each input."
@@ -298,7 +300,7 @@ class Scene07(VideoScene):
         table, chart, zero, curves = count_layout(self)
         curves["line"].set_stroke(opacity=0.5)
         self.add(chart.frame, zero, curves["line"], curves["curve"])
-        name = curve_name("Poisson regression", VERMILION, chart.p(12.8, 1.9), UP)
+        name = label("Poisson regression", 30, VERMILION, weight=BOLD).move_to(chart.p(8.5, -1.6))
         never = card("close to zero, never below", VERMILION, 30).move_to([3.4, 2.9, 0])
         # "Poisson regression predicts the logarithm of the count instead."
         self.play(curves["line"].animate.set_stroke(opacity=0.25), curves["curve"].animate.set_stroke(opacity=0.35),
@@ -311,99 +313,43 @@ class Scene07(VideoScene):
         self.finish()
 
 
-SUBSTRATE_ROWS = [("sand", None), ("mud", "substrate: mud"), ("rock", "substrate: rock")]
-
-
-def multiplier_layout(scene):
-    table = scene.data("multipliers")
-    chart = Chart([0.5, 2.0, 0.25], [0, 3, 1], 9.0, 3.6, x_ticks=(0.5, 1, 1.5, 2), x_name="multiplier on the count",
-                  centre=(1.0, -0.2, 0))
-    one = DashedLine(chart.p(1, 0), chart.p(1, 3), color=GREY, stroke_width=3)
-    rows = {}
-    for i, (name, term) in enumerate(SUBSTRATE_ROWS):
-        y = 2.5 - i
-        words = label(name, 34, INK, weight=BOLD).next_to(chart.p(0.5, y), LEFT, 0.4)
-        marks = {}
-        for fit, colour in [("poisson", VERMILION), ("negbin", PURPLE)]:
-            if term is None:
-                marks[fit] = VGroup(Dot(chart.p(1, y), 0.12, color=GREY))
-                continue
-            r = table[(table["fit"] == fit) & (table["term"] == term)].iloc[0]
-            marks[fit] = VGroup(Line(chart.p(r["conf_low"], y), chart.p(r["conf_high"], y), color=colour,
-                                     stroke_width=7),
-                                Dot(chart.p(r["multiplier"], y), 0.13, color=colour))
-        rows[name] = (words, marks)
-    return table, chart, one, rows
+SUBSTRATE_ROWS = [("sand", None), ("mud", "substratemud"), ("rock", "substraterock")]
 
 
 class Scene08(VideoScene):
     number = 8
 
     def construct(self):
-        # Page results: count-regression.qmd, the Poisson multipliers.
-        table, chart, one, rows = multiplier_layout(self)
+        # Page results: count-regression.qmd#each-coefficient-is-a-multiplier.
+        table = self.data("multipliers").set_index("term")
+        chart = Chart([0.5, 2.0, 0.25], [0, 3, 1], 9.0, 3.6, x_ticks=(0.5, 1, 1.5, 2), x_name="multiplier on the count",
+                      centre=(1.0, -0.2, 0))
+        one = DashedLine(chart.p(1, 0), chart.p(1, 3), color=GREY, stroke_width=3)
+        rows = {}
+        for i, (name, term) in enumerate(SUBSTRATE_ROWS):
+            y = 2.5 - i
+            value = 1 if term is None else table.loc[term, "multiplier"]
+            rows[name] = VGroup(label(name, 34, INK, weight=BOLD).next_to(chart.p(0.5, y), LEFT, 0.4),
+                                Dot(chart.p(value, y), 0.14, color=GREY if term is None else VERMILION))
         head = label("each seabed type against sand", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        mud = table[(table["fit"] == "poisson") & (table["term"] == "substrate: mud")].iloc[0]
-        times = label(f"× {mud['multiplier']:.2f}", 34, VERMILION, weight=BOLD)
-        times.next_to(rows["mud"][1]["poisson"], UP, 0.15)
-        base = label("baseline", 26, SUBDUED).next_to(rows["sand"][1]["poisson"], RIGHT, 0.25)
+        times = label(f"× {table.loc['substratemud', 'multiplier']:.2f}", 34, VERMILION, weight=BOLD)
+        times.next_to(rows["mud"][1], UP, 0.15)
+        base = label("baseline", 26, SUBDUED).next_to(rows["sand"][1], RIGHT, 0.25)
         # "Its coefficients become multipliers."
         self.play(FadeIn(head), FadeIn(VGroup(chart.axes.x_axis, chart.ticks, chart.x_name)), Create(one),
                   run_time=self.share(0.15))
-        self.play(FadeIn(rows["sand"][0]), FadeIn(rows["sand"][1]["poisson"]), FadeIn(base), run_time=self.share(0.1))
+        self.play(FadeIn(rows["sand"]), FadeIn(base), run_time=self.share(0.1))
         # "With everything else held fixed, a muddy station is expected to hold 1.34 times the count of a sandy one."
         cue(self, "a muddy station")
-        self.play(FadeIn(rows["mud"][0]), FadeIn(rows["mud"][1]["poisson"]), run_time=self.share(0.1))
+        self.play(FadeIn(rows["mud"]), run_time=self.share(0.1))
         cue(self, "1.34")
         self.play(FadeIn(times, shift=0.1 * UP), run_time=self.share(0.08))
-        self.play(FadeIn(rows["rock"][0]), FadeIn(rows["rock"][1]["poisson"]), run_time=self.share(0.1))
+        self.play(FadeIn(rows["rock"]), run_time=self.share(0.1))
         self.finish()
 
 
 class Scene09(VideoScene):
     number = 9
-
-    def construct(self):
-        # Page results: count-regression.qmd, the spread ratio and the negative binomial's intervals.
-        table, chart, one, rows = multiplier_layout(self)
-        head = label("each seabed type against sand", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        base = label("baseline", 26, SUBDUED).next_to(rows["sand"][1]["poisson"], RIGHT, 0.25)
-        self.add(head, chart.axes.x_axis, chart.ticks, chart.x_name, one, base,
-                 *[VGroup(w, m["poisson"]) for w, m in rows.values()])
-        ratio = self.data("spread").iloc[0]["spread_ratio"]
-        spread = card(f"overdispersed: {ratio:.1f} times the spread Poisson expects", VERMILION, 30)
-        spread.move_to(head)
-        # The negative binomial's intervals sit just below Poisson's, so the two can be compared.
-        for name in ("mud", "rock"):
-            rows[name][1]["negbin"].shift(0.3 * DOWN)
-        narrow = label("Poisson: too narrow", 28, VERMILION, weight=BOLD)
-        wide = label("negative binomial: wider", 28, PURPLE, weight=BOLD)
-        key = VGroup(narrow, wide).arrange(RIGHT, buff=1.0).to_edge(DOWN, buff=0.35)
-        ring = SurroundingRectangle(VGroup(rows["rock"][1]["negbin"], one), color=PURPLE, buff=0.12, corner_radius=0.1)
-        rock = label("rock: no longer told apart from sand", 28, PURPLE, weight=BOLD).next_to(ring, UP, 0.12)
-        rock.set_x(ring.get_x())
-        # "But Poisson assumes the counts vary only as much as their average. Even after the inputs
-        # are taken into account, they vary 3.7 times as much: the counts are overdispersed,"
-        cue(self, "Even after")
-        self.play(ReplacementTransform(head, spread), run_time=self.share(0.08))
-        # "so Poisson's intervals are too narrow."
-        cue(self, "so Poisson's")
-        self.play(FadeIn(narrow), *[Indicate(rows[n][1]["poisson"][0], color=VERMILION) for n in ("mud", "rock")],
-                  run_time=self.share(0.08))
-        # "The negative binomial model allows for the extra spread. Its intervals are wider,"
-        cue(self, "The negative binomial")
-        self.play(FadeIn(wide), run_time=self.share(0.06))
-        cue(self, "Its intervals are wider")
-        self.play(*[TransformFromCopy(rows[n][1]["poisson"], rows[n][1]["negbin"]) for n in ("mud", "rock")],
-                  run_time=self.share(0.1))
-        # "and rock can no longer be told apart from sand."
-        cue(self, "and rock")
-        self.play(Create(ring), FadeIn(rock), run_time=self.share(0.08))
-        self.finish()
-
-
-class Scene10(VideoScene):
-    number = 10
 
     def construct(self):
         # Page results: logistic-regression.qmd#fig-curve.
@@ -432,8 +378,8 @@ class Scene10(VideoScene):
         self.finish()
 
 
-class Scene11(VideoScene):
-    number = 11
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
         # Schematic: the two ways a present-or-absent answer can be wrong.
@@ -468,8 +414,8 @@ class Scene11(VideoScene):
         self.finish()
 
 
-class Scene12(VideoScene):
-    number = 12
+class Scene11(VideoScene):
+    number = 11
 
     def construct(self):
         # Page results: logistic-regression.qmd, the thresholds table.
@@ -514,11 +460,115 @@ class Scene12(VideoScene):
         self.finish()
 
 
-class Scene13(KeyPointScene):
-    number, point = 13, 1
+class Scene12(KeyPointScene):
+    number, point = 12, 1
 
 
-# Models made of questions (scenes 14–23) ------------------------------------------------
+# Models that learn their shape (scenes 13–23) -------------------------------------------
+
+class Scene13(VideoScene):
+    number = 13
+
+    def construct(self):
+        # Schematic: made-up points on two unnamed inputs, after the kNN page's diagram.
+        rng = np.random.default_rng(13)
+        chart = Chart([0, 10, 1], [0, 10, 1], 6.4, 5.0, x_name="input 1", y_name="input 2", centre=(-2.2, -0.3, 0))
+        points = rng.uniform(0.5, 9.5, size=(40, 2))
+        new = np.array([5.2, 4.8])
+        order = np.argsort(np.hypot(*(points - new).T))
+        near = order[:5]
+        radius = np.hypot(*(points[near[-1]] - new)) + 0.35
+        dots = VGroup(*[Dot(chart.p(*p), 0.09, color=GREY) for p in points])
+        star = Star(5, outer_radius=0.2, color=VERMILION, fill_opacity=1).move_to(chart.p(*new))
+        links = VGroup(*[Line(chart.p(*new), chart.p(*points[i]), color=BLUE, stroke_width=3) for i in near])
+        ring = Circle(radius * (chart.p(1, 0)[0] - chart.p(0, 0)[0]), color=BLUE, stroke_width=4).move_to(star)
+        head = label("k-nearest neighbours", 44, BLUE, weight=BOLD).to_corner(UL, buff=0.6)
+        new_name = VGroup(Star(5, outer_radius=0.16, color=VERMILION, fill_opacity=1),
+                          label("a new station", 30, VERMILION, weight=BOLD)).arrange(RIGHT, buff=0.2)
+        notes = VGroup(card("k = 5", BLUE, 34),
+                       card("prediction:\ntheir average count", PURPLE, 30)).arrange(DOWN, buff=0.5)
+        VGroup(new_name, notes).arrange(DOWN, buff=0.5).move_to([4.3, -0.3, 0])
+        # "Each of these models assumes a shape, such as a line or a curve. k-nearest neighbours assumes none."
+        self.play(FadeIn(chart.frame), FadeIn(dots), run_time=self.share(0.12))
+        cue(self, "k-nearest neighbours")
+        self.play(FadeIn(head, shift=0.2 * RIGHT), run_time=self.share(0.08))
+        # "For a new station, it finds the k most similar stations in the training data"
+        cue(self, "For a new station")
+        self.play(FadeIn(star, scale=0.5), FadeIn(new_name), run_time=self.share(0.08))
+        cue(self, "it finds")
+        self.play(*[Create(l) for l in links], *[dots[i].animate.set_color(BLUE).scale(1.4) for i in near],
+                  Create(ring), FadeIn(notes[0]), run_time=self.share(0.15))
+        # "and averages their counts."
+        cue(self, "and averages")
+        self.play(FadeIn(notes[1], shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+def neighbours_layout(scene):
+    """The kNN page's figure: the error against the number of neighbours, on a log scale."""
+    table = scene.data("neighbours")
+    chart = Chart([0, np.log10(300), 1], [0, 5.5, 1], 10.5, 5.0, x_ticks=np.log10([1, 3, 10, 30, 100, 300]),
+                  y_ticks=(0, 2, 4), x_name="number of neighbours, k", y_name="error (RMSE)", centre=(0.5, -0.45, 0),
+                  x_text=lambda v: f"{10 ** v:.0f}")
+    xs = np.log10(table["k"])
+    lines = {name: VGroup(chart.line(xs, table[name], colour),
+                          *[Dot(chart.p(x, y), 0.07, color=colour) for x, y in zip(xs, table[name])])
+             for name, colour in [("training", BLUE), ("validation", ORANGE)]}
+    names = {"training": label("fitting stations", 28, BLUE, weight=BOLD).next_to(chart.p(0.25, 0.3), RIGHT, 0.1),
+             "validation": label("validation sites", 28, ORANGE, weight=BOLD).next_to(chart.p(0.08, 5.2), RIGHT, 0.25)}
+    return table, chart, lines, names
+
+
+class Scene14(VideoScene):
+    number = 14
+
+    def construct(self):
+        # Page results: nearest-neighbours.qmd#fig-neighbours.
+        table, chart, lines, names = neighbours_layout(self)
+        one = table.iloc[0]
+        ring = Circle(0.25, color=ORANGE, stroke_width=5).move_to(chart.p(0, one["validation"]))
+        overfit = card("overfitting", VERMILION, 32).move_to(chart.p(0.75, 2.2))
+        blur = card("one average", GREY, 28).move_to(chart.p(2.25, 2.4))
+        # "With one neighbour, it copies every chance high and low: perfect on the stations it learned from,"
+        self.play(FadeIn(chart.frame), run_time=self.share(0.08))
+        cue(self, "perfect on")
+        self.play(Create(lines["training"]), FadeIn(names["training"]), run_time=self.share(0.14))
+        # "and worst of all on the validation sites, which were held back from fitting."
+        cue(self, "and worst of all")
+        self.play(Create(lines["validation"]), FadeIn(names["validation"]), run_time=self.share(0.14))
+        self.play(Create(ring), run_time=self.share(0.05))
+        # "This is overfitting."
+        cue(self, "This is overfitting")
+        self.play(FadeIn(overfit, shift=0.2 * UP), run_time=self.share(0.06))
+        # "With hundreds of neighbours, every prediction blurs into one average."
+        cue(self, "With hundreds")
+        self.play(FadeIn(blur, shift=0.2 * UP), run_time=self.share(0.08))
+        self.finish()
+
+
+class Scene15(VideoScene):
+    number = 15
+
+    def construct(self):
+        # Page results: nearest-neighbours.qmd#fig-neighbours, the best number of neighbours.
+        table, chart, lines, names = neighbours_layout(self)
+        self.add(chart.frame, *lines.values(), *names.values())
+        best = table.loc[table["validation"].idxmin()]
+        x = np.log10(best["k"])
+        mark = DashedLine(chart.p(x, 0), chart.p(x, 5.5), color=GREY, stroke_width=4)
+        lowest = label(f"lowest at {int(best['k'])}", 30, ORANGE, weight=BOLD).next_to(chart.p(x, 3.3), RIGHT, 0.2)
+        rule = card("a hyperparameter: chosen on validation data", PURPLE, 28).move_to(chart.p(1.25, 1.6))
+        # "In between, the validation error is lowest at 30 neighbours."
+        cue(self, "is lowest")
+        self.play(Create(mark), FadeIn(lowest), run_time=self.share(0.1))
+        # "A setting like k, fixed before the model is fitted, is called a hyperparameter."
+        cue(self, "is called")
+        self.play(FadeIn(rule, shift=0.2 * UP), run_time=self.share(0.1))
+        # "It is chosen on validation data, never on the data the model learned from."
+        cue(self, "never on")
+        self.play(Indicate(lines["validation"], color=ORANGE, scale_factor=1.0), run_time=self.share(0.1))
+        self.finish()
+
 
 def tree_layout(scene):
     """The decision-trees page's depth-3 tree, its top questions drawn as boxes.
@@ -565,8 +615,8 @@ def tree_layout(scene):
     return nodes, levels, (q2, q3, cold, band, warm)
 
 
-class Scene14(VideoScene):
-    number = 14
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         # Page results: decision-trees.qmd#fig-tree, the top of the depth-3 tree.
@@ -584,8 +634,8 @@ class Scene14(VideoScene):
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         # Page results: decision-trees.qmd, the temperature band.
@@ -620,33 +670,8 @@ def step_chart(x_max=20, y_max=6.5, y_ticks=(0, 2, 4, 6)):
                  x_name="temperature (°C)", y_name="predicted count", centre=(0.5, -0.45, 0))
 
 
-class Scene16(VideoScene):
-    number = 16
-
-    def construct(self):
-        # Page results: decision-trees.qmd#fig-steps.
-        table = self.data("tree-steps")
-        span = self.data("tree-range").iloc[0]
-        chart = step_chart()
-        shades = VGroup(chart.shade(0, span["low"]), chart.shade(span["high"], 20))
-        beyond = label("beyond the data", 24, SUBDUED).move_to(chart.p(18, 6.1))
-        poisson = model_curve(chart, table, "Poisson regression", VERMILION, 5).set_stroke(opacity=0.6)
-        tree = model_curve(chart, table, "Decision tree", GREEN, 7)
-        names = VGroup(label("decision tree", 30, GREEN, weight=BOLD).next_to(chart.p(9, 5.3), UP, 0.15),
-                       label("Poisson regression", 26, VERMILION).next_to(chart.p(0.3, 5.9), RIGHT, 0))
-        level = card("stays level", GREEN, 30).next_to(chart.p(18, 2.6), UP, 0.3)
-        # "Its predictions come in steps."
-        self.play(FadeIn(chart.frame), FadeIn(shades), FadeIn(beyond), FadeIn(poisson), FadeIn(names[1]),
-                  run_time=self.share(0.12))
-        self.play(Create(tree), FadeIn(names[0]), run_time=self.share(0.25))
-        # "And beyond the warmest station it has seen, a tree stays level: it has no rule for going further."
-        cue(self, "a tree stays level")
-        self.play(Indicate(shades[1], color=GREEN), FadeIn(level, shift=0.2 * UP), run_time=self.share(0.12))
-        self.finish()
-
-
-class Scene17(VideoScene):
-    number = 17
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         # Page results: decision-trees.qmd#fig-depth.
@@ -656,27 +681,26 @@ class Scene17(VideoScene):
                       x_name="tree depth", y_name="error (RMSE)", centre=(0.5, -0.45, 0))
         train = chart.line(depths["depth"], depths["training"], BLUE)
         valid = chart.line(depths["depth"], depths["validation"], ORANGE)
-        names = VGroup(label("stations it was fitted to", 28, BLUE, weight=BOLD).move_to(chart.p(13, 2.9)),
+        names = VGroup(label("fitting stations", 28, BLUE, weight=BOLD).move_to(chart.p(13, 2.4)),
                        label("validation sites", 28, ORANGE, weight=BOLD).next_to(chart.p(13, 4.6), DOWN, 0.1))
         mark = DashedLine(chart.p(best, 0), chart.p(best, 5.5), color=GREY, stroke_width=4)
         lowest = label(f"lowest at depth {best}", 30, ORANGE, weight=BOLD).next_to(chart.p(best, 5.2), RIGHT, 0.2)
-        rule = card("choose the depth on the validation sites", PURPLE, 26).move_to(chart.p(4.3, 0.7))
-        # "A deeper tree fits the stations it learned from ever more closely."
-        self.play(FadeIn(chart.frame), run_time=self.share(0.1))
+        rule = card("depth:\na hyperparameter", PURPLE, 28).move_to(chart.p(8.4, 0.75))
+        # "The tree's depth is a hyperparameter too."
+        self.play(FadeIn(chart.frame), FadeIn(rule, shift=0.2 * UP), run_time=self.share(0.12))
+        # "A deeper tree fits the stations it learned from ever more closely,"
+        cue(self, "A deeper tree")
         self.play(Create(train), FadeIn(names[0]), run_time=self.share(0.18))
-        # "On the validation sites, which were held back from fitting, the error is lowest at depth 5, then climbs."
-        cue(self, "On the validation")
-        self.play(Create(valid), FadeIn(names[1]), run_time=self.share(0.18))
+        # "but on the validation sites the error is lowest at depth 5, then climbs."
+        cue(self, "but on the validation")
+        self.play(Create(valid), FadeIn(names[1]), run_time=self.share(0.15))
         cue(self, "lowest at depth")
         self.play(Create(mark), FadeIn(lowest), run_time=self.share(0.08))
-        # "So the depth is chosen on the validation sites."
-        cue(self, "So the depth")
-        self.play(FadeIn(rule, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         # Page results: forests-and-boosting.qmd, the first question of six resampled trees.
@@ -705,14 +729,14 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
-        # Page results: forests-and-boosting.qmd#fig-average, thirty trees and the forest.
+        # Page results: forests-and-boosting.qmd, thirty of the 400-tree forest's trees and their average.
         trees = self.data("forest-trees")
         forest = self.data("forest-average")
-        span = self.data("tree-range").iloc[0]
+        span = self.data("forest-range").iloc[0]
         chart = step_chart(20, 18.5, (0, 5, 10, 15))
         shades = VGroup(chart.shade(0, span["low"]), chart.shade(span["high"], 20))
         thin = VGroup(*[chart.line(g["temperature_c"], g[".pred"], ORANGE, 2.5).set_stroke(opacity=0.35)
@@ -736,8 +760,8 @@ def small_tree(colour=GREEN, scale=1.0):
                   Line(top.get_center(), right.get_center(), color=colour, stroke_width=4), top, left, right).scale(scale)
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         # Schematic: small trees in sequence, each fitted to the errors left before it.
@@ -763,8 +787,8 @@ class Scene20(VideoScene):
         self.finish()
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         # Page results: forests-and-boosting.qmd#fig-trees, validation error by number of trees.
@@ -799,48 +823,6 @@ class Scene21(VideoScene):
         self.finish()
 
 
-def rmse_bars(rows, head_text, top=5.0, width=8.0):
-    """Horizontal RMSE bars, each with its value as the pages round it."""
-    head = label(head_text, 40, INK, weight=BOLD).to_edge(UP, buff=0.6)
-    left = -2.2
-    bars = VGroup()
-    for i, (name, value, colour) in enumerate(rows):
-        y = 1.6 - 1.15 * i
-        length = value / top * width
-        bar = Rectangle(width=length, height=0.75, stroke_width=0, fill_color=colour, fill_opacity=0.85)
-        bar.move_to([left + length / 2, y, 0])
-        what = label(name, 30, INK, weight=BOLD).next_to([left, y, 0], LEFT, 0.3)
-        amount = label(f"{value:.2f}", 34, INK, weight=BOLD).next_to(bar, RIGHT, 0.2)
-        bars.add(VGroup(bar, what, amount))
-    axis_name = label("error on the test sites (RMSE, lower is better)", 26, SUBDUED)
-    axis_name.next_to(bars, DOWN, 0.4).set_x(left + width / 2)
-    return head, bars, axis_name
-
-
-class Scene22(VideoScene):
-    number = 22
-
-    def construct(self):
-        # Page results: forests-and-boosting.qmd#tbl-test.
-        table = self.data("ensembles-test").set_index("model")
-        head, bars, axis_name = rmse_bars([("single tree", table.loc["tree", "rmse"], GREY),
-                                           ("boosting", table.loc["boost", "rmse"], PURPLE),
-                                           ("random forest", table.loc["forest", "rmse"], GREEN),
-                                           ("Poisson regression", table.loc["poisson", "rmse"], VERMILION)],
-                                          "four models on new sites")
-        # "On new sites, both ensembles beat the single tree."
-        self.play(FadeIn(head), FadeIn(axis_name), run_time=self.share(0.1))
-        self.play(GrowFromEdge(bars[0][0], LEFT), FadeIn(bars[0][1:]), run_time=self.share(0.1))
-        cue(self, "both ensembles")
-        self.play(*[GrowFromEdge(b[0], LEFT) for b in bars[1:3]], *[FadeIn(b[1:]) for b in bars[1:3]],
-                  run_time=self.share(0.15))
-        # "But neither beats Poisson regression."
-        cue(self, "But neither")
-        self.play(GrowFromEdge(bars[3][0], LEFT), FadeIn(bars[3][1:]), run_time=self.share(0.12))
-        self.play(Indicate(bars[3], color=VERMILION, scale_factor=1.04), run_time=self.share(0.12))
-        self.finish()
-
-
 class Scene23(KeyPointScene):
     number, point = 23, 2
 
@@ -870,14 +852,14 @@ class Scene24(VideoScene):
 
 
 # The choosing page's labels, as they read mid-sentence on screen.
-METHOD_NAMES = {"Negative binomial model": "negative binomial", "Poisson regression": "Poisson regression",
+METHOD_NAMES = {"k-nearest neighbours": "k-nearest neighbours", "Poisson regression": "Poisson regression",
                 "Polynomial regression": "polynomial regression", "Linear regression": "linear regression",
                 "Random forest": "random forest", "Boosting": "boosting", "Decision tree": "decision tree"}
 
 
 def comparison_layout(scene):
     table = scene.data("comparison")          # already ordered by test RMSE
-    chart = Chart([3.4, 4.6, 0.2], [0, len(table) + 1, 1], 7.6, 4.9, x_ticks=(3.5, 4.0, 4.5),
+    chart = Chart([3.4, 4.6, 0.2], [0, len(table) + 2, 1], 7.6, 5.2, x_ticks=(3.5, 4.0, 4.5),
                   x_name="error on new sites (RMSE, lower is better)", centre=(2.2, -0.2, 0))
     rows = {}
     for i, (_, r) in enumerate(table.iterrows()):
@@ -902,22 +884,22 @@ class Scene25(VideoScene):
         # Page results: choosing-a-method.qmd#fig-comparison, the test sites.
         table, chart, rows, guides, key = comparison_layout(self)
         order = list(table["model"])
-        counts = SurroundingRectangle(VGroup(*[rows[m][1] for m in order[:2]]), color=GREEN, buff=0.12,
+        counts = SurroundingRectangle(rows[order[0]][1], color=GREEN, buff=0.12,
                                       corner_radius=0.1)
         trees = SurroundingRectangle(VGroup(*[rows[m][1] for m in order[-3:]]), color=ORANGE, buff=0.12,
                                      corner_radius=0.1)
-        few = card("a few hundred noisy stations", PURPLE, 28).move_to(chart.p(4.25, 7.4))
+        few = card("a few hundred noisy stations", PURPLE, 28).move_to(chart.p(4.15, 8.1))
         # "Scored on the same new sites,"
         self.play(FadeIn(VGroup(chart.axes.x_axis, chart.ticks, chart.x_name)), FadeIn(guides), FadeIn(key[0]),
                   FadeIn(VGroup(*[rows[m][1] for m in order])), run_time=self.share(0.12))
         self.play(LaggedStart(*[FadeIn(rows[m][2], scale=0.5) for m in order], lag_ratio=0.15),
                   run_time=self.share(0.15))
-        # "the two count models come first, and the three tree-based models last."
-        cue(self, "the two count")
+        # "Poisson regression comes first, and the three tree models last."
+        cue(self, "Poisson regression comes")
         self.play(Create(counts), run_time=self.share(0.08))
         cue(self, "and the three")
         self.play(Create(trees), run_time=self.share(0.08))
-        # "A few hundred noisy stations are too few for many trees to beat a simple curve."
+        # "A few hundred noisy stations are too few for the flexible methods to beat a simple curve."
         cue(self, "A few hundred")
         self.play(FadeIn(few, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
@@ -935,7 +917,7 @@ class Scene26(VideoScene):
         best = table.loc[table["validation_rmse"].idxmin(), "model"]
         ring = Circle(0.25, color=ORANGE, stroke_width=5).move_to(rows[best][3])
         first = card("first on validation", ORANGE, 24).next_to(ring, RIGHT, 0.2)
-        tuned = card("tuned on these sites: a kind of overfitting", VERMILION, 28).move_to(chart.p(4.0, 7.4))
+        tuned = card("tuned on these sites: a kind of overfitting", VERMILION, 28).move_to(chart.p(4.0, 8.1))
         close = card("one split cannot separate close models", PURPLE, 28).move_to(tuned)
         # "On the validation sites, though, the single tree came first."
         self.play(FadeIn(key[1]), *[Create(rows[m][4]) for m in order], *[FadeIn(rows[m][3], scale=0.5) for m in order],
@@ -989,8 +971,8 @@ class Scene27(VideoScene):
         # "Beyond the sampled temperatures, each model follows its own rule."
         self.play(FadeIn(chart.frame), FadeIn(backdrop), run_time=self.share(0.1))
         self.play(*[Create(c) for c in curves.values()], run_time=self.share(0.2))
-        # "The forest stays level, Poisson regression flattens towards zero, and the straight line falls below it."
-        for key, phrase in [("forest", "The forest"), ("poisson", "Poisson regression"), ("line", "and the straight")]:
+        # "The forest stays level, Poisson regression flattens towards zero, and linear regression falls below zero."
+        for key, phrase in [("forest", "The forest"), ("poisson", "Poisson regression"), ("line", "and linear")]:
             cue(self, phrase)
             self.play(FadeIn(names[key]), Indicate(curves[key], color=curves[key].get_color(), scale_factor=1.0),
                       run_time=self.share(0.1))
