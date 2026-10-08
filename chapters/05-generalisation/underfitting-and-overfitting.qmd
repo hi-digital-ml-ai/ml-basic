@@ -55,7 +55,7 @@ model can bend through every training example, so its training error can fall to
 while its error on new data does not. More data narrows the gap, since noise spread over
 many examples is harder to fit than noise in a few.
 
-## The U-shaped error curve and its two failures
+## Underfitting and overfitting sit at the two ends of a U-shaped curve
 
 Before it sees any data, a model is limited to a family of shapes. A straight line can only
 be a straight line; a tree with four leaves can only give four different predictions. How

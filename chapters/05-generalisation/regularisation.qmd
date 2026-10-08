@@ -19,7 +19,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Adding a little bias on purpose
+## A penalty trades a little bias for less variance
 
 [Underfitting and overfitting](underfitting-and-overfitting.qmd) moved a decision tree from
 rigid to flexible with one setting, and [The bias–variance trade-off](bias-variance.qmd)
@@ -59,7 +59,7 @@ flexible as before, and averaging more of them steadies the prediction without l
 bend further. Boosting is different, because each new tree fits part of what the trees
 before it got wrong, so more trees do make it more flexible.
 
-## Counting parameters works for a linear model
+## Counting coefficients measures flexibility only for a linear model
 
 In a linear model, each input adds one coefficient, and each coefficient gives the fitted
 surface one more way to bend. Its complexity is close to its number of coefficients. That
@@ -355,7 +355,7 @@ the regression passes through every station: its $R^2$ is 1 and its training err
 `r round(full$new / baseline)` times that of predicting the average. It has found
 nothing; it has simply run out of stations to be wrong about.
 
-### The lasso predicts as well as knowing the real inputs
+### The lasso matches a regression on the measured inputs alone
 
 Now the regression gets the first 200 random columns, and the penalties have to hold them
 back. For each split, ridge regression, the lasso and an elastic net with `mixture = 0.5`

@@ -18,7 +18,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Settings the fitting cannot choose
+## Some settings must be chosen on data the model was not fitted to
 
 Each page in this section has turned a setting, a tree's minimum node size or the lasso's
 penalty λ, and found that its best value cannot be read from the training error. This page
@@ -31,7 +31,7 @@ that swings with the sites that happen to be held back.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Parameters and hyperparameters
+## A hyperparameter is fixed before fitting and limits it
 
 A [parameter](../04-how-algorithms-learn/parameter-estimation.qmd) is learned by fitting:
 the coefficients of a regression, or the splits of a tree and the prediction in each leaf.
@@ -176,7 +176,7 @@ The `r n_sites` training sites make ten folds of
 `r n_distinct(held_out[[1]]$site_id)`. The folds hold different numbers of stations,
 because some sites were visited more often than others.
 
-### Every node size scored in every fold
+### The cross-validated error has a flat bottom
 
 `tune()` marks the setting to be filled in later, and `tune_grid()` fits and scores the
 workflow at every candidate value in every fold: 12 values in ten folds, 120 trees. Each
@@ -290,7 +290,7 @@ ggplot(cv, aes(leaves, mean)) +
 
 :::
 
-### Many node sizes tie and the simplest is chosen
+### The one-standard-error rule picks the simplest of the tied settings
 
 The lowest cross-validated error is `r f2(best_row$mean)`, for a node size of
 `r best$min_n` and trees of about `r round(best_row$leaves)` leaves, the same setting
@@ -476,7 +476,7 @@ The claimed error is also a little flattering. It is the lowest of 12 errors, so
 the winner's lead is luck. The honest figure comes from data that played no part in the
 choice: the test sites.
 
-### Scoring the test sites once
+### The test sites confirm the tree's small lead
 
 `last_fit()` refits the chosen workflow on all the training sites and scores the test
 sites. It is the only step on this page that touches them, and it comes after the choice

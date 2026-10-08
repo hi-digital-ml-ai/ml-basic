@@ -1,6 +1,6 @@
 ---
 title: "5 · Generalisation and model complexity"
-description: "A model can fit its training stations closely and still fail on new sites. The section traces that failure to the model's complexity, splits its error into bias, variance and noise, and chooses complexity settings by cross-validation."
+description: "A model can fit its training stations closely and still fail on new sites. The section names the two ways to fail, splits the error into bias, variance and noise, holds a model back with a penalty, and chooses its settings by cross-validation."
 categories: [generalisation, tuning]
 listing:
   id: pages
@@ -15,21 +15,19 @@ toc: false
 
 A flexible enough model can fit its training stations almost perfectly and still predict
 new sites no better than the average count. Its error on the data it was fitted to says
-little about new data, and the gap grows with how freely the model can bend. Each page in
-this section takes one step, on the same simulated survey as the rest of the course:
+little about new data, and the gap grows with how freely the model can bend. The four
+pages in this section follow that problem from diagnosis to cure, on the same simulated
+survey as the rest of the course:
 
-- **training error and the error on new data**, two scores from one model, and the gap
-  between them;
-- **underfitting and overfitting**, the two ways to fail on new data, and the signs each
-  leaves in the two errors;
-- **model complexity**, the setting in each method that controls how freely it bends, and
-  the reason counting parameters measures it only for a linear model;
+- **underfitting and overfitting**, the two ways to fail on new data, the U-shaped curve
+  they make, and which one costs more on the survey;
 - **the bias–variance trade-off**, which splits the error on new data into bias, variance
-  and noise;
-- **regularisation**, a penalty that makes a linear model simpler: ridge regression shrinks
-  every coefficient, and the lasso sets some to zero;
-- **hyperparameter selection**, choosing a setting by cross-validation by site, with the
-  test sites kept for one final score.
+  and noise, and finds that the noise is the largest part;
+- **regularisation**, the setting that makes each method more or less flexible, and a
+  penalty that holds a linear model back: ridge regression shrinks every coefficient,
+  and the lasso sets some to zero;
+- **hyperparameter selection**, choosing such a setting by cross-validation by site, with
+  the test sites kept for one final score.
 
 The section picks up threads from earlier ones.
 [Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
