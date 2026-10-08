@@ -1,6 +1,6 @@
 ---
-title: "Maximum likelihood"
-description: "Name the distribution you think produced the data, and the loss follows: least squares assumes a Normal response, and Poisson regression a Poisson one."
+title: "Likelihood and priors"
+description: "Name the distribution you think produced the data, and the loss follows: squared error assumes a Normal outcome, Poisson deviance a Poisson one. Add a belief about how large the coefficients are, and the penalty follows too."
 order: 4
 categories: [optimisation]
 ---
@@ -14,11 +14,13 @@ library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
-set.seed(123)
+set.seed(2026)
 
 # A number for the prose, with a true minus sign.
 num <- function(x, digits) sub("^-", "−", format(round(x, digits), nsmall = digits))
 ```
+
+{{< new-terms >}}
 
 ## Name the distribution and the loss follows
 
@@ -26,8 +28,9 @@ num <- function(x, digits) sub("^-", "−", format(round(x, digits), nsmall = di
 measurement, Poisson deviance for a count, log loss for presence or absence. Those
 losses are not a list to memorise. Each comes from one principle, **maximum
 likelihood**: say what kind of distribution you think produced the data, and the loss
-follows from it. The choice of loss then becomes a question you can answer from the
-survey: what kind of quantity is the response, and how does it vary?
+follows from it. The same principle explains the penalties that
+[Regularisation](../05-generalisation/regularisation.qmd) adds to a loss: each is a
+belief, held before the data arrive, about how large the coefficients are likely to be.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -77,7 +80,7 @@ one + three
 Take one station where 3 animals were counted, and suppose the counts follow a Poisson
 distribution with some expected count $\mu$. If $\mu$ were 3, a count of 3 would be
 quite likely; if $\mu$ were 0.2 or 30, it would be a surprise. Plotting that probability
-against $\mu$ gives the **likelihood** for that station. With one station, almost any
+against $\mu$ gives the likelihood for that station. With one station, almost any
 $\mu$ between 1 and 8 is plausible.
 
 Stations are independent, so the probability of several counts together is the product
@@ -108,28 +111,27 @@ The survey has `r nrow(d)` stations with chlorophyll and depth measured. The pro
 easily, and does not move the peak.
 
 Fitting algorithms find a lowest point, not a highest one, so they minimise the
-**negative log-likelihood** instead. That is a loss averaged (or summed) over the data,
-exactly like the objectives on [Loss functions](loss-functions.qmd). Change the
-distribution, and the loss changes with it.
+**negative log-likelihood** instead. That is a loss summed over the data, exactly like
+the objectives on [Loss functions](loss-functions.qmd). Change the distribution, and the
+loss changes with it.
 
-| If the response is assumed to be… | The negative log-likelihood is… | Used by |
+| If the outcome is assumed to be… | The negative log-likelihood is… | Used by |
 | --- | --- | --- |
-| Normal, with the same spread everywhere | Squared error | Linear regression, `lm()` |
+| Normal, with the same spread everywhere | Squared error | Linear regression |
 | Laplace, a sharper peak with heavier tails | Absolute error | Least absolute deviations |
 | Poisson | Poisson deviance | Poisson regression |
-| Negative binomial | Negative binomial deviance | Count regression with extra spread |
 | Bernoulli, yes or no | Log loss | Logistic regression |
 
 ::: {.diagram}
 ![A distribution for the response gives a loss. A Normal response, a measurement that can take any value with the same spread everywhere, gives squared error. A Poisson response, a count, gives Poisson deviance. A Bernoulli response, presence or absence, gives log loss.](img/distributions-to-losses.svg){fig-alt="Three cards. Normal, gives squared error, a measurement that can take any value: a bell curve centred on a dashed line marked prediction, with the part of the curve below a dashed zero line shaded; same spread everywhere, and values below zero allowed. Poisson, gives Poisson deviance, a count of 0, 1, 2 and so on: bars for counts from 0 to 10, highest near 3; whole numbers from zero, with spread growing with the mean. Bernoulli, gives log loss, presence or absence: a short bar for absent and a taller bar for present; one probability of presence, the rest goes to absence. A note says: name the distribution, and its negative log-likelihood is the loss."}
 :::
 
-The first row matters most. Least squares assumes a Normal response with the same spread
+The first row matters most. Squared error assumes a Normal outcome with the same spread
 everywhere, whether or not anyone says so. A Normal distribution runs below zero, and
 nothing in squared error objects to a negative prediction, which is why
 [polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-in section 3 predicted a negative count. Poisson regression names a distribution that
-stops at zero, and the problem goes away.
+predicted a negative count. Poisson regression names a distribution that stops at zero,
+and the problem goes away.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
@@ -138,12 +140,61 @@ With $p(y_i \mid \theta)$ the probability of observation $i$ under parameters $\
 
 $$\text{maximise } \sum_i \log p(y_i \mid \theta) \quad\Longleftrightarrow\quad \text{minimise } \sum_i -\log p(y_i \mid \theta)$$
 
-For a Normal response with mean $\hat y_i$ and standard deviation $\sigma$,
+For a Normal outcome with mean $\hat y_i$ and standard deviation $\sigma$,
 
 $$-\log p(y_i \mid \hat y_i, \sigma) = \frac{(y_i - \hat y_i)^2}{2\sigma^2} + \log \sigma + \tfrac{1}{2}\log 2\pi$$
 
 For a fixed $\sigma$, only the first term depends on the predictions, and it is squared
 error divided by a constant, so the same line minimises both.
+:::
+
+## A prior becomes a penalty
+
+Maximum likelihood looks at nothing but the data. With many stations that is a
+strength. With a small survey and many inputs, it reports whatever those few stations
+happen to show, including effects far larger than any the species could have.
+
+A **prior** is what you believe about a parameter before seeing the data, written as a
+distribution: "the effect of one standard deviation of temperature is usually within
+about ±2 animals" is a prior on the temperature coefficient. **Maximum a posteriori**
+(MAP) estimation multiplies the likelihood by the prior, a combination called the
+**posterior**, and takes its highest point. Many stations outweigh a loose prior; a few
+stations get pulled towards it.
+
+Take the negative log of a prior, as the likelihood's was taken above, and it becomes a
+penalty: a second term added to the loss that grows as the coefficients move away from
+zero.
+
+::: {.diagram}
+![A flat prior gives no penalty, which is maximum likelihood. A Normal prior centred on zero gives the squared penalty of ridge regression, which shrinks every coefficient but sets none to zero. A Laplace prior gives the absolute penalty of the lasso, which can set some coefficients to zero.](img/priors-to-penalties.svg){fig-alt="Three cards. Flat prior, gives no penalty, maximum likelihood: a level line across the coefficient axis; a coefficient of 900 is as plausible as one of 0.9. Normal prior, gives the squared penalty, ridge regression: a bell curve centred on zero; most effects small, shrinks every coefficient but zeroes none. Laplace prior, gives the absolute penalty, lasso: a sharp peak at zero; can set some coefficients to zero. A note says: choose a prior on the coefficients, and its negative log is the penalty."}
+:::
+
+A Normal prior centred on zero gives the sum of the squared coefficients, the penalty of
+ridge regression, with a weight λ (lambda) equal to the noise variance over the prior's
+variance: noisy data or a tight prior pull harder. Maximum likelihood is not free of
+assumptions either: its flat prior treats a coefficient of 900 as just as plausible as
+one of 0.9. The prior is stated per standard deviation of each input, so the inputs are
+standardised first, as [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd)
+advises for any penalty.
+
+::: {.callout-note collapse="true"}
+## The maths, if you want it
+
+MAP maximises the log-likelihood plus the log-prior:
+
+$$\hat\beta_{\text{MAP}} = \arg\max_\beta \; \log p(y \mid \beta) + \log p(\beta)$$
+
+With a Normal outcome of standard deviation $\sigma$ and a Normal prior
+$\beta_j \sim \text{Normal}(0, \tau)$ on each coefficient, this is
+
+$$-\frac{1}{2\sigma^2}\sum_i (y_i - x_i^\top\beta)^2 \;-\; \frac{1}{2\tau^2}\sum_j \beta_j^2 + \text{const}$$
+
+Multiply by $-2\sigma^2$, and maximising it becomes minimising
+
+$$\sum_i (y_i - x_i^\top\beta)^2 + \lambda \sum_j \beta_j^2, \qquad \lambda = \frac{\sigma^2}{\tau^2}$$
+
+which is the ridge objective. A Laplace prior puts $\lvert\beta_j\rvert$ in place of
+$\beta_j^2$, which is the lasso.
 :::
 
 ## Worked example
@@ -172,13 +223,13 @@ normal_mle <- optim(c(0, 0, 1), neg_log_lik_normal, method = "BFGS",
                     control = list(reltol = 1e-14, maxit = 5000))
 ls_fit <- lm(abundance ~ chl_z, data = d)
 
-normal_compare <- tibble(
+tibble(
   method    = c("Maximum likelihood", "Least squares, lm()"),
   intercept = c(normal_mle$par[1], coef(ls_fit)[1]),
   slope     = c(normal_mle$par[2], coef(ls_fit)[2]),
   sigma     = c(exp(normal_mle$par[3]), sqrt(mean(residuals(ls_fit)^2)))
-)
-normal_compare |> mutate(across(where(is.numeric), \(x) round(x, 4)))
+) |>
+  mutate(across(where(is.numeric), \(x) round(x, 4)))
 ```
 
 ## Python
@@ -189,7 +240,7 @@ import pandas as pd
 import statsmodels.api as sm
 from scipy.optimize import minimize
 from scipy.stats import norm, poisson
-from sklearn.linear_model import LinearRegression, PoissonRegressor
+from sklearn.linear_model import LinearRegression, PoissonRegressor, Ridge
 
 from mlbasic_data import load_coastal_survey_clean
 
@@ -284,154 +335,163 @@ pd.DataFrame({
 
 :::
 
-The coefficients agree to five decimal places, and so do the log-likelihoods:
-`r num(-poisson_mle$value, 3)` by `optim()` and `r num(as.numeric(logLik(poisson_glm)), 3)`
-by `glm()`. `glm(family = poisson)` is this likelihood with a faster search.
+The coefficients agree to five decimal places. `glm(family = poisson)` is this
+likelihood with a faster search, and the Python tab shows that scikit-learn's
+`PoissonRegressor` carries a penalty unless it is switched off.
 
-The standard errors in `glm()`'s summary come from the same curve. A log-likelihood
-that falls away sharply from its peak means the data rule out nearby values, and the
-standard error is small; a flat peak means they do not, and it is large.
+### A Normal prior gives ridge regression
 
-### Raw units stop the search
-
-The search above used standardised inputs. Here it is with depth in metres, so that
-depth squared runs into the thousands.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: raw-units
-Xraw <- model.matrix(~ chlorophyll_mg_m3 + depth_m + I(depth_m^2), data = d)
-
-raw_mle <- optim(rep(0, ncol(Xraw)),
-                 \(b) -sum(dpois(y, lambda = exp(drop(Xraw %*% b)), log = TRUE)),
-                 method = "BFGS", control = list(reltol = 1e-14, maxit = 5000))
-
-signif(raw_mle$par, 2)
-raw_mle$convergence
-```
-
-## Python
-
-```{python}
-Xraw = sm.add_constant(d[["chlorophyll_mg_m3", "depth_m"]]
-                       .assign(depth_m2=d["depth_m"] ** 2)).to_numpy()
-
-# scipy's search also fails here, but differently: its first step is so large
-# that exp() overflows, and it reports failure where optim() reports success.
-with np.errstate(over="ignore", invalid="ignore"):
-    raw_mle = minimize(lambda b: -poisson.logpmf(y, mu=np.exp(Xraw @ b)).sum(),
-                       x0=np.zeros(Xraw.shape[1]), method="BFGS")
-
-print("coefficients:", np.array2string(raw_mle.x, precision=2))
-print("success:", raw_mle.success)
-print("message:", raw_mle.message)
-```
-
-:::
-
-The coefficients are still zero, where the search started, and a convergence code of 0
-means `optim()` reports success. The search gives up at the first step, and nothing in
-the output says so. It is the problem from [Gradient descent](gradient-descent.qmd):
-inputs on very different scales make a search fail. `glm()` fits the raw inputs without
-trouble, because its search, the one written out on
-[Finding the parameters](parameter-estimation.qmd), handles scale differently.
-[Finding the parameters](parameter-estimation.qmd#each-sign-of-a-failed-search-has-its-own-fix) shows how to catch a search that stops like this.
-
-### The negative binomial model adds one parameter
+A pilot survey might have forty stations. We draw forty at random and fit abundance on
+twelve inputs: depth and temperature with their squares, chlorophyll, salinity, and
+substrate and season as dummy columns. Every input is standardised on the forty
+stations, so each coefficient is the change in abundance for one standard deviation of
+its input. We fit three times: by maximum likelihood; by MAP, writing down the Normal
+likelihood plus a Normal prior with a standard deviation of 1 on every coefficient; and
+by the ridge formula, with λ equal to the noise variance over the prior variance.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: nb-fit
-dispersion <- deviance(poisson_glm) / df.residual(poisson_glm)
+#| label: map-equals-ridge
+pilot <- survey |>
+  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
+         salinity_psu, substrate, season) |>
+  drop_na()
 
-nb_fit <- MASS::glm.nb(abundance ~ chl_z + depth_z + I(depth_z^2), data = d)
+X_all <- model.matrix(
+  ~ depth_m + I(depth_m^2) + temperature_c + I(temperature_c^2) +
+    chlorophyll_mg_m3 + salinity_psu + substrate + season,
+  data = pilot
+)[, -1]
 
-tibble(
-  model            = c("Poisson regression", "Negative binomial model"),
-  parameters       = c(length(coef(poisson_glm)), length(coef(nb_fit)) + 1),
-  `log-likelihood` = c(as.numeric(logLik(poisson_glm)), as.numeric(logLik(nb_fit))),
-  theta            = c("none", format(round(nb_fit$theta, 2)))
-) |>
-  mutate(across(where(is.numeric), \(x) round(x, 2)))
+# Forty stations, standardised on themselves; abundance is centred on their
+# mean, so the model needs no intercept.
+rows <- sample(nrow(pilot), 40)
+X_train <- scale(X_all[rows, ])
+y_train <- pilot$abundance[rows] - mean(pilot$abundance[rows])
+
+sigma <- summary(lm(y_train ~ X_train - 1))$sigma   # noise sd, unpenalised fit
+tau   <- 1                                           # prior sd on each coefficient
+
+neg_log_posterior <- function(b) {
+  -sum(dnorm(y_train, X_train %*% b, sigma, log = TRUE)) -
+    sum(dnorm(b, 0, tau, log = TRUE))
+}
+map_fit <- optim(rep(0, ncol(X_train)), neg_log_posterior, method = "BFGS",
+                 control = list(reltol = 1e-14, maxit = 10000))
+
+ridge <- function(lambda) {
+  drop(solve(t(X_train) %*% X_train + lambda * diag(ncol(X_train)),
+             t(X_train) %*% y_train))
+}
+lambda <- sigma^2 / tau^2
+
+coefs <- tibble(
+  term  = str_replace(colnames(X_train), "^(substrate|season)", "\\1: "),
+  `maximum likelihood` = ridge(0),
+  MAP   = map_fit$par,
+  ridge = ridge(lambda)
+)
+coefs |> mutate(across(where(is.numeric), \(x) round(x, 3)))
 ```
 
 ## Python
 
 ```{python}
-dispersion = poisson_glm.deviance / poisson_glm.df_resid
+pilot = survey[["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
+                "salinity_psu", "substrate", "season"]].dropna().reset_index(drop=True)
 
-# statsmodels estimates alpha = 1 / theta, the extra spread the other way round.
-nb_fit = sm.NegativeBinomial(y, Xp).fit(method="newton", disp=0)
+X_all = pd.concat([
+    pilot[["depth_m"]], (pilot["depth_m"] ** 2).rename("depth_m^2"),
+    pilot[["temperature_c"]], (pilot["temperature_c"] ** 2).rename("temperature_c^2"),
+    pilot[["chlorophyll_mg_m3", "salinity_psu"]],
+    pd.get_dummies(pilot[["substrate", "season"]], drop_first=True,
+                   prefix_sep=": ", dtype=float),
+], axis=1)
+
+# Forty stations, standardised on themselves; abundance is centred on their
+# mean, so the model needs no intercept. A different random 40 from R's, so
+# the numbers differ from the page's.
+rows = np.random.default_rng(2026).choice(len(pilot), size=40, replace=False)
+X_train = standardise(X_all.iloc[rows])
+y_train = pilot["abundance"].iloc[rows] - pilot["abundance"].iloc[rows].mean()
+
+sigma = np.sqrt(sm.OLS(y_train, X_train).fit().scale)   # noise sd, unpenalised fit
+tau = 1                                                  # prior sd on each coefficient
+
+def neg_log_posterior(b):
+    return (-norm.logpdf(y_train, X_train.to_numpy() @ b, sigma).sum()
+            - norm.logpdf(b, 0, tau).sum())
+
+map_fit = minimize(neg_log_posterior, np.zeros(X_train.shape[1]), method="BFGS",
+                   options={"gtol": 1e-10})
+
+def ridge(lam):
+    return np.linalg.solve(X_train.T @ X_train + lam * np.eye(X_train.shape[1]),
+                           X_train.T @ y_train)
+
+lam = sigma**2 / tau**2
+
+# scikit-learn's Ridge makes the same objective smallest, with alpha in the
+# place of lambda.
+sk_ridge = Ridge(alpha=lam, fit_intercept=False).fit(X_train, y_train)
 
 pd.DataFrame({
-    "model": ["Poisson regression", "Negative binomial model"],
-    "parameters": [len(poisson_glm.params), len(nb_fit.params)],
-    "log-likelihood": [poisson_glm.llf, nb_fit.llf],
-    "theta": ["none", f"{1 / nb_fit.params['alpha']:.2f}"],
-}).round(2)
+    "term": X_train.columns,
+    "maximum likelihood": ridge(0),
+    "MAP": map_fit.x,
+    "ridge": ridge(lam),
+    "Ridge()": sk_ridge.coef_,
+}).round(3)
 ```
 
 :::
 
 ```{r}
-#| label: se-ratio
+#| label: map-numbers
 #| include: false
-se_ratio <- summary(poisson_glm)$coefficients[, 2] / summary(nb_fit)$coefficients[, 2]
+agree_places <- floor(-log10(max(abs(coefs$MAP - coefs$ridge))))
+temp <- coefs |> filter(term %in% c("temperature_c", "I(temperature_c^2)"))
 ```
 
-These counts vary more than Poisson allows: the deviance is `r round(dispersion, 1)`
-times its degrees of freedom, where Poisson expects about 1.
-[Regression for counts](../03-supervised-learning/count-regression.qmd) called this
-overdispersion. The negative binomial model adds one parameter, $\theta$, for the extra spread,
-and `glm.nb()` estimates it by maximum likelihood along with the coefficients:
-$\theta$ = `r round(nb_fit$theta, 2)`.
-
-That one parameter raises the log-likelihood from
-`r num(as.numeric(logLik(poisson_glm)), 0)` to `r num(as.numeric(logLik(nb_fit)), 0)`.
-The coefficients change little, but the Poisson standard errors are only
-`r scales::percent(min(se_ratio), 1)` to `r scales::percent(max(se_ratio), 1)` of the
-negative binomial model's: under the wrong distribution, the model was far more sure of itself
-than the data allow.
-
-Two cautions come with these numbers. $\theta$ describes the spread left over *given
-the inputs in the model*, so adding an input changes it. And log-likelihoods can be
-compared only between models of the same response: a model of `abundance` and one of
-`log(abundance + 1)` give likelihoods of different quantities.
+The MAP and ridge columns agree to `r agree_places` decimal places: the same answer
+reached from two directions, with λ = `r num(lambda, 1)`. Setting λ to zero gives back
+maximum likelihood, the first column. There, temperature and its square, two closely
+related columns, take large opposite values that partly cancel,
+`r num(temp[["maximum likelihood"]][1], 2)` and `r num(temp[["maximum likelihood"]][2], 2)`
+animals per standard deviation. That is what twelve inputs on forty stations allow. The
+prior pulls them to `r num(temp$ridge[1], 2)` and `r num(temp$ridge[2], 2)`.
+[Regularisation](../05-generalisation/regularisation.qmd) tests whether such shrinking
+predicts new stations better, and chooses λ on held-out data.
 
 ## Forests and boosting have no likelihood
 
-A random forest or a boosted model states no distribution for the response, so it has no
-likelihood: no log-likelihood to compare and no standard errors from the curve's shape.
-That is part of the trade in
-[Choosing a method](../03-supervised-learning/choosing-a-method.qmd): the flexible
-methods give up these tools in exchange for fitting any shape.
+A random forest or a boosted model makes a loss small, usually squared error, but states
+no distribution for the outcome, so it has no likelihood to compare and no prior to
+state. The flexible methods of
+[Choosing a method](../03-supervised-learning/choosing-a-method.qmd) give up these tools
+in exchange for fitting any shape.
 
-Maximum likelihood also has a weakness of its own. It finds the parameters that make
-*this* dataset most likely, and with many parameters and few stations those fit the
-noise as well as the pattern. [Priors and ridge regression](map-and-priors.qmd) adds a
-preference for small parameters to the likelihood to hold them back.
+A penalty can also stop being a prior. Once λ is chosen from the data, as
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) does, it is
+no longer a belief held before the survey, so report it as a tuned setting.
 
 ## Key points
 
 ::: {.key-points}
 - **Likelihood** is the probability of the data at given parameter values; the
   **maximum likelihood estimate** is the value that makes the data most likely.
-- The negative log-likelihood is a loss. Name the distribution, and the loss follows:
-  Normal gives squared error, Poisson gives Poisson deviance, Bernoulli gives log loss.
-- Least squares assumes a Normal response, which is why it allows negative counts.
-- Writing the likelihood by hand reproduced `lm()` and `glm()`; with inputs in raw
-  units the same search stopped at its start and reported success.
-- One dispersion parameter raised the log-likelihood from
-  `r num(as.numeric(logLik(poisson_glm)), 0)` to `r num(as.numeric(logLik(nb_fit)), 0)`,
-  and the Poisson standard errors were `r scales::percent(min(se_ratio), 1)` to
-  `r scales::percent(max(se_ratio), 1)` of the negative binomial model's.
-- Forests and boosting have no likelihood, and so no standard errors of this kind.
+- Its negative log is a loss. Name the distribution, and the loss follows: Normal gives
+  squared error, Poisson gives Poisson deviance, Bernoulli gives log loss. Written by
+  hand, these reproduced `lm()` and `glm()`.
+- Squared error assumes a Normal outcome, which is why it allows negative counts.
+- A **prior**'s negative log is a penalty: a Normal prior gives ridge regression, a
+  Laplace prior the lasso, and a flat prior maximum likelihood. Here MAP and ridge
+  agreed to `r agree_places` decimal places.
+- Forests and boosting state no distribution, and a λ chosen on the data is a tuned
+  setting, not a prior.
 :::
 
 ## Try it yourself
@@ -440,5 +500,8 @@ preference for small parameters to the likelihood to hold them back.
    `sum(abs(y - mu)) / s + length(y) * log(2 * s)`. Fit a line of abundance against
    `chlorophyll_mg_m3` by minimising it with `optim()`, and compare the intercept and
    slope with the absolute-error line on [Loss functions](loss-functions.qmd).
-2. Add `temperature_c` to the negative binomial model and refit. Does $\theta$ go up or
-   down, and what does that say about where some of the extra spread came from?
+2. Double `sigma` and refit, leaving `tau` alone. Predict first which way the
+   coefficients move, then check against λ = σ²/τ².
+3. Replace the Normal prior in `neg_log_posterior()` with a Laplace one,
+   `sum(abs(b)) / tau` in place of the `dnorm()` term, and refit. Do any coefficients
+   reach exactly zero?

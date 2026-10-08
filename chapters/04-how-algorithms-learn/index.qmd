@@ -34,10 +34,10 @@ The section also pays back debts from earlier ones.
 standardise inputs without giving the full reason, and
 [Gradient descent](gradient-descent.qmd) supplies it. Section 3's
 [polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-predicted a negative count, and [Maximum likelihood](maximum-likelihood.qmd) shows that
+predicted a negative count, and [Likelihood and priors](likelihood-and-priors.qmd) shows that
 squared error assumes a Normal response, which allows one. The penalty that
 [5 · Generalisation and model complexity](../05-generalisation/index.qmd) uses to stop models overfitting
-is the prior from [Priors and ridge regression](map-and-priors.qmd).
+is a prior, as the same page shows.
 
 ## Pages in this section
 

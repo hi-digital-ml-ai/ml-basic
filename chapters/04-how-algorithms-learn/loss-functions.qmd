@@ -357,7 +357,7 @@ afterwards. Accuracy cannot serve as the loss, because it changes only when a
 prediction crosses the threshold and so gives the search no direction to move in.
 
 These losses look like a list of special cases, but they all come from one principle,
-which [Maximum likelihood](maximum-likelihood.qmd) describes.
+which [Likelihood and priors](likelihood-and-priors.qmd) describes.
 
 ## Key points
 

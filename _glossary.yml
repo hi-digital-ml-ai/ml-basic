@@ -383,3 +383,26 @@ terms:
     definition: "Gradient descent in which each step uses a small random batch of the observations instead of all of them."
     page: chapters/04-how-algorithms-learn/gradient-descent.qmd
     more: chapters/09-neural-networks/training-a-network.qmd
+
+  # 4 · How algorithms learn: Likelihood and priors
+  - term: "Maximum likelihood"
+    definition: "Fitting by choosing the parameter values that make the observed data most probable under a stated distribution."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Likelihood"
+    definition: "The probability of the observed data, read as a function of the parameter values."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum likelihood estimate"
+    definition: "The parameter value at the peak of the likelihood, the one that makes the data most probable."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Negative log-likelihood"
+    definition: "Minus the logarithm of the likelihood: a loss, which the fit makes as small as it can. Squared error, Poisson deviance and log loss are examples."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Prior"
+    definition: "What is believed about a parameter before seeing the data, written as a distribution; its negative log is a penalty."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum a posteriori"
+    definition: "Fitting by choosing the parameter values that best balance the likelihood and the prior: the highest point of the posterior."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Posterior"
+    definition: "The likelihood combined with the prior: what is believed about the parameters after seeing the data."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
