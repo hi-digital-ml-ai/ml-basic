@@ -1,6 +1,6 @@
 ---
 title: "3 · Supervised learning"
-description: "Regression for quantities and counts, logistic regression for yes-or-no outcomes, decision trees and their ensembles, and how to choose between them for a scientific question."
+description: "From a straight line to hundreds of trees, every method in the section is fitted to one survey and scored on the same new sites. With a few hundred stations, a curve matched to the outcome is hard to beat."
 categories: [supervised, regression, classification, trees-ensembles]
 listing:
   id: pages
@@ -19,17 +19,37 @@ where a specialist labelled the species. The model learns the relationship betwe
 inputs and the answer, then applies it to cases where the answer is unknown. This is
 the family of methods most marine work needs.
 
-The section starts with the outcome, because the kind of thing being predicted
-decides which models can be used and how their errors are scored. It then introduces
-one method per page, each on the same simulated survey, so each new method can be
-compared with the ones before it:
+The kind of answer comes first, because it decides which models fit and how their
+errors are scored. [Types of learning](../01-introduction/types-of-learning.qmd) split
+the task into regression, for a quantity, and classification, for a category. Few
+marine outcomes fit either box neatly:
 
-- **linear and polynomial regression** for a quantity, a straight line and then a curve;
-- **Poisson and negative binomial regression** for a count, which never predict fewer
-  than zero animals;
-- **logistic regression** for a yes-or-no outcome, such as present or absent;
-- **decision trees**, which predict by asking yes-or-no questions about the inputs;
-- **random forests and boosting**, which combine many trees into one prediction.
+| Outcome | What needs care |
+| --- | --- |
+| Catch weight | Skewed: a few very large catches |
+| Count of animals | Whole numbers, never negative, with a spread that grows with the average |
+| Count with many zeros | A zero can mean the species is absent, or present and missed |
+| Percentage cover | Cannot go below 0 or above 100 |
+| Present or absent | One of the two is usually much rarer |
+| Habitat class | Often ordered (poor, fair, good), and the order carries information |
+
+Turning a quantity into a category, such as a count into present or absent, makes it
+simpler but throws information away;
+[Logistic regression](logistic-regression.qmd#a-probability-stays-between-0-and-1)
+shows what goes.
+
+The section then introduces one method per page, each on the same simulated survey, so
+each new method can be compared with the ones before it:
+
+- linear and polynomial regression for a quantity, a straight line and then a curve,
+  the yardstick for everything after;
+- Poisson and negative binomial regression for a count, which never predict fewer than
+  zero animals;
+- logistic regression for a yes-or-no outcome, such as present or absent;
+- k-nearest neighbours, which predicts from the most similar stations and assumes no
+  shape;
+- decision trees, which predict by asking yes-or-no questions about the inputs;
+- random forests and boosting, which combine many trees into one prediction.
 
 It ends on choosing between them. The aim, the kind of outcome, the range the model
 must predict over, the amount of data and the people who must accept the result all

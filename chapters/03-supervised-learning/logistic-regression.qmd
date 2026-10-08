@@ -1,7 +1,7 @@
 ---
 title: "Logistic regression"
-description: "Logistic regression predicts the log-odds of a yes-or-no outcome, so its answer is a probability between 0 and 1; a threshold, chosen from the cost of each mistake, turns it into yes or no."
-order: 4
+description: "Whether a species is there is a yes-or-no question, best answered with a probability. Logistic regression keeps that probability between 0 and 1, and turning it into yes or no is a choice the data cannot make for you."
+order: 3
 categories: [supervised, classification]
 ---
 
@@ -16,19 +16,29 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## A probability stays between 0 and 1
 
-Whether a species is present at a station is a yes-or-no outcome, and a useful answer
-is a probability. Logistic regression gives one, with the same design as the Poisson
-regression of [Regression for counts](count-regression.qmd). This page shows how to
-read its coefficients as odds ratios, and that turning a probability into yes or no is
-a separate choice, made from the cost of each kind of mistake.
+Whether a species is present at a station is a yes-or-no outcome, and the most useful
+answer is a probability: how likely the species is to be there. Linear regression
+cannot give one, because its line runs above 1 and below 0 as easily as it ran below
+zero animals on [Linear and polynomial regression](linear-and-polynomial-regression.qmd).
+**Logistic regression** keeps the weighted sum and squeezes it between 0 and 1. Turning
+the probability into yes or no takes one more choice, which the data cannot make for
+you.
+
+The survey's yes-or-no outcome is the count cut at zero: present if any animal was
+caught. That keeps where the species occurs and loses how many: a station with one
+animal and a station with the largest catch are both simply present. Cut a quantity
+into categories only when the question itself is yes or no, such as a legal limit or a
+protocol that records only whether a species was seen.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Predicting the log-odds
+## Logistic regression predicts the log-odds
 
 A probability $p$ must lie between 0 and 1, but a weighted sum of inputs can take any
 value. Logistic regression connects the two through the **odds**: the probability that
@@ -40,15 +50,15 @@ above, the same range as a weighted sum. So logistic regression predicts the log
 $$\log\!\left(\frac{\hat{p}}{1 - \hat{p}}\right) = a + b_1 x_1 + b_2 x_2 + \dots \qquad\text{so}\qquad \hat{p} = \frac{1}{1 + e^{-(a + b_1 x_1 + b_2 x_2 + \dots)}}$$
 
 However large or small the sum, $\hat{p}$ stays between 0 and 1. Against one input it
-traces an S-shaped curve, close to 0 at one end and close to 1 at the other.
+traces an S-shaped curve, close to 0 at one end and close to 1 at the other. A squared
+input gives the log-odds one peak, as it did for counts, and the probability peaks at
+the same place.
 
-As with counts, raising $e$ to the power of a coefficient gives a multiplier, here on
-the odds: the **odds ratio**. A coefficient of 0.4 multiplies the odds by $e^{0.4}$ =
-`r round(exp(0.4), 2)` for each extra unit of the input. What that does to the
-probability depends on where it starts: an odds ratio of 2 takes a probability of 0.5
-to `r round(2 / 3, 2)`, but 0.9 only to `r round(0.9 * 2 / (0.1 + 0.9 * 2), 2)`. A
-squared input gives the log-odds one peak, as it did for counts, and the probability
-peaks at the same place.
+As with the [multipliers](count-regression.qmd#each-coefficient-is-a-multiplier) of
+Poisson regression, raising $e$ to the power of a coefficient gives a multiplier, here
+on the odds: the **odds ratio**. What it does to the probability depends on where the
+probability starts. An odds ratio of 2 takes a probability of 0.5 to
+`r round(2 / 3, 2)`, but 0.9 only to `r round(0.9 * 2 / (0.1 + 0.9 * 2), 2)`.
 
 ## A probability is not yet an answer
 
@@ -67,15 +77,12 @@ what each mistake costs, which only the person using the model can say.
 
 ## Worked example
 
-The outcome is `present`: whether any animal of the species was caught at a station.
-The split by site and the recipe with squared depth and temperature are those of
-[Linear and polynomial regression](linear-and-polynomial-regression.qmd).
-
-### Preparing the data
-
-In R, `logistic_reg()` fits with `glm()`, which predicts the probability of the
-outcome's second level. The survey lists `yes` before `no`, so the model would describe
-absence; `fct_relevel()` puts `no` first, so it describes presence.
+The outcome is `present`. The data, the split by site and the recipe with squared depth
+and temperature are those of
+[Linear and polynomial regression](linear-and-polynomial-regression.qmd). In R,
+`logistic_reg()` predicts the probability of the outcome's second level. The survey
+lists `yes` before `no`, so `fct_relevel()` puts `no` first and the model describes
+presence rather than absence.
 
 ::: {.panel-tabset group="language"}
 
@@ -104,7 +111,6 @@ curve_recipe <- recipe(predictors, data = train) |>
 ```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import GroupShuffleSplit
@@ -137,24 +143,16 @@ curve_recipe = ColumnTransformer([
     ("categorical", OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
      categorical),
 ])
-
-# statsmodels gives confidence intervals, as for the count models, and takes
-# the outcome as 1 for present and 0 for absent, so no level order to watch.
-prepared = curve_recipe.fit(train[predictors])
-
-def design(data):
-    columns = pd.DataFrame(prepared.transform(data[predictors]),
-                           columns=prepared.get_feature_names_out(),
-                           index=data.index)
-    return sm.add_constant(columns)
-
-def outcome(data):
-    return (data["present"] == "yes").astype(int)
 ```
 
 :::
 
-### Logistic regression
+### Logistic regression keeps every probability below 1
+
+`logistic_reg()` takes the same recipe as linear regression. In scikit-learn,
+`LogisticRegression` sorts the classes alphabetically, so the second column of its
+probabilities is `yes`; `C=np.inf` turns off a penalty that
+[Regularisation](../05-generalisation/regularisation.qmd) explains.
 
 ::: {.panel-tabset group="language"}
 
@@ -168,8 +166,12 @@ logistic_fit <- workflow(curve_recipe, logistic_reg()) |> fit(train)
 ## Python
 
 ```{python}
-logistic_fit = sm.GLM(outcome(train), design(train),
-                      family=sm.families.Binomial()).fit()
+from sklearn.linear_model import LogisticRegression
+
+logistic_fit = Pipeline([
+    ("recipe", curve_recipe),
+    ("model", LogisticRegression(C=np.inf, solver="newton-cholesky")),
+]).fit(train[predictors], train["present"])
 ```
 
 :::
@@ -180,6 +182,7 @@ logistic_fit = sm.GLM(outcome(train), design(train),
 logistic_coef <- tidy(logistic_fit) |> select(term, estimate) |> deframe()
 logistic_optimum <- -logistic_coef[["temperature_c_poly_1"]] /
   (2 * logistic_coef[["temperature_c_poly_2"]])
+mud_odds <- exp(logistic_coef[["substratemud"]])
 
 # Linear regression with the same inputs, on presence coded as 1 and absence as 0
 train_01 <- train |> mutate(present = as.numeric(present == "yes"))
@@ -196,7 +199,9 @@ linear_above_1 <- sum(predict(linear_01, test)$.pred > 1)
 The probability of presence peaks at `r round(logistic_optimum, 1)` °C and falls away
 on either side. Linear regression with the same inputs, fitted to presence coded as 1
 and absence as 0, predicts a probability above 1 for `r linear_above_1` of the
-`r nrow(test)` test stations; logistic regression cannot.
+`r nrow(test)` test stations; logistic regression cannot. Its coefficients read as odds
+ratios: with the other inputs held fixed, the odds of presence on mud are
+`r round(mud_odds, 2)` times those on sand.
 
 ::: {.panel-tabset group="language"}
 
@@ -230,59 +235,12 @@ ggplot(augment(logistic_fit, grid), aes(temperature_c, .pred_yes)) +
 
 :::
 
-### Reading the coefficients as odds ratios
+Outside the sampled temperatures the curve carries on towards 0 in both directions,
+whatever the species does there;
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+deals with predicting outside the data.
 
-`exponentiate = TRUE` turns each coefficient into its odds ratio, with a 95% confidence
-interval as on the counts page.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: odds-ratios
-odds_ratios <- tidy(logistic_fit, conf.int = TRUE, exponentiate = TRUE) |>
-  filter(str_detect(term, "substrate|season")) |>
-  transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
-            odds_ratio = estimate,
-            conf_low = conf.low, conf_high = conf.high)
-
-odds_ratios |> mutate(across(where(is.numeric), \(x) round(x, 2)))
-```
-
-## Python
-
-```{python}
-interval = np.exp(logistic_fit.conf_int())
-odds_ratios = pd.DataFrame({
-    "term": logistic_fit.params.index.str.replace(
-        r"^categorical__(substrate|season)_", r"\1: ", regex=True),
-    "odds_ratio": np.exp(logistic_fit.params).round(2).to_numpy(),
-    "conf_low": interval[0].round(2).to_numpy(),
-    "conf_high": interval[1].round(2).to_numpy(),
-})
-
-odds_ratios[odds_ratios["term"].str.contains("substrate|season")]
-```
-
-:::
-
-```{r}
-#| label: odds-numbers
-#| include: false
-mud <- odds_ratios |> filter(term == "substrate: mud")
-excluding_1 <- sum(odds_ratios$conf_low > 1 | odds_ratios$conf_high < 1)
-```
-
-With the other inputs held fixed, the odds of presence on mud are
-`r round(mud$odds_ratio, 2)` times those on sand, but the interval runs from
-`r round(mud$conf_low, 2)` to `r round(mud$conf_high, 2)` and includes 1.
-`r str_to_sentence(if (excluding_1 == 0) "none" else xfun::numbers_to_words(excluding_1))` of the six intervals leave
-out 1. The count models could tell mud from sand; whether any animal was caught
-carries less information than how many, as
-[Regression and classification](regression-and-classification.qmd) warned.
-
-### Choosing a threshold
+### The threshold trades false alarms for misses
 
 **Accuracy** is the share of answers that are right. Each row below applies one
 threshold to the test sites. A threshold of 0 calls every station present, the answer
@@ -313,8 +271,8 @@ thresholds
 ## Python
 
 ```{python}
-probability = logistic_fit.predict(design(test))
-present = outcome(test) == 1
+probability = logistic_fit.predict_proba(test[predictors])[:, 1]
+present = (test["present"] == "yes").to_numpy()
 
 def calls(threshold):
     called = probability >= threshold
@@ -354,10 +312,9 @@ probabilities may never reach 0.5, so nothing is called present.
 
 ::: {.key-points}
 - Logistic regression predicts the log-odds of a yes-or-no outcome, so its predicted
-  probabilities stay between 0 and 1.
-- Its coefficients read as odds ratios once raised as a power of $e$: multipliers on
-  the odds, not on the probability.
-- Check which outcome level the model describes: in R, `glm()` describes the second.
+  probabilities stay between 0 and 1; its coefficients read as odds ratios.
+- Turning a count into present or absent keeps where a species occurs and loses how
+  many there are.
 - A threshold turns a probability into yes or no. Raising it gives fewer false alarms
   and more misses; choose it from what each mistake costs.
 - Compare accuracy with the answer that ignores the inputs: here, calling every

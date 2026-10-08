@@ -61,7 +61,7 @@ Fifty-three pages, against sixty-two before. File names may change with the titl
 | RMSE | *Prediction and explanation* (built by hand) | Link; *Regression performance measures* compares it with the others |
 | R² | The first page that quotes it, as the textbook R² (`rsq_trad()`, `r2_score()`) everywhere | Link |
 | Training, validation and test data | *Splitting the data* | Link |
-| Parameters and hyperparameters | *Finding the parameters* | Link |
+| Parameters and hyperparameters | The term *hyperparameter* on *k-nearest neighbours* (the number of neighbours); the contrast with parameters on *Finding the parameters* | Link |
 | Cross-validation | *Hyperparameter selection* | §7's *Cross-validation* starts where it stops; §6 pages link |
 | The bootstrap | *Random forests and boosting* | Link |
 | Why standardise | *Scaling and encoding* | One line and a link |
@@ -150,6 +150,31 @@ old trees, forests and boosting page split into two. Counts come before logistic
 regression, so the log scale is introduced on counts and reused for probabilities. The
 single tree gets its own page before the ensembles, which build on it. Titles carry no
 commas.
+
+**Second pass 2026-10-08** (`feature/revise-supervised-learning`): seven pages, as in
+the target table. *Regression and classification* is gone: Types of learning already
+names the two tasks and keeps the subtopic's headings (*Presence is a classification*,
+*Abundance is a regression*), its marine-outcomes table moved to the overview, overdispersion
+lives on *Regression for counts*, and what a count loses as present or absent opens
+*Logistic regression*. *k-nearest neighbours* is new, between logistic regression and
+the trees, and owns overfitting and the term hyperparameter; *Decision trees* links to
+it for the fitting and validation sites, overfitting and flat predictions beyond the
+data. *Random forests and boosting* owns the bootstrap. *Choosing a method* compares
+seven models (k-nearest neighbours in, the negative binomial out). Every page uses the
+textbook R², links RMSE and R² to where they are taught, and says one line on
+extrapolation with a link. The video was rebuilt from these pages the same day (see
+`videos.md`).
+
+Found during this pass, to fix when those sections are revised:
+
+- **Poisson intervals called too narrow.** Pages still say Poisson regression's
+  intervals are too narrow for the survey's counts, a statistical-modelling point the
+  revised §3 no longer makes: `reading-a-fit.qmd:385`, `maximum-likelihood.qmd:390`,
+  `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
+  `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
+- **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
+  §5 `model-complexity.qmd`, §6 `spatial-and-temporal-dependence.qmd`, §9
+  `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`

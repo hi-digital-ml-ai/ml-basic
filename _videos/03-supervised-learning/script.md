@@ -26,8 +26,8 @@ visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
 This video is a short tour of supervised learning. It covers three things: models
-that add up their inputs, models made of yes-or-no questions, and how to choose
-between them.
+that add up their inputs, models that learn their shape from the data, and how to
+choose between them.
 
 # Models that add up their inputs
 
@@ -39,20 +39,20 @@ count, calls for regression. A category, such as present or absent, calls for
 classification.
 
 ## Scene 3
-visual: manim Histogram: stations by the number of animals caught, the bar at zero marked 22.5%, then "overdispersed: variance about 6 times the mean" (page results, regression-and-classification.qmd)
+visual: manim Histogram: stations by the number of animals caught, "never below zero" at the left edge, "a few large catches" at the right (page results, count-regression.qmd)
 
-The survey's outcome is the count of one species at each station. 22.5% of the
-stations caught nothing, and the counts vary about six times as much as their average.
-This is called overdispersion.
+In this section, the outcome is the count of one species at each station of the
+survey. A count is a whole number, it never falls below zero, and most stations
+caught only a few animals.
 
 ## Scene 4
-visual: manim Curves: predicted count against temperature, the straight line of linear regression (page results, count-regression.qmd#fig-shapes)
+visual: manim Curves: predicted count against temperature, the straight line of linear regression (page results, linear-and-polynomial-regression.qmd#fig-shapes)
 
 Linear regression predicts a starting value plus a fixed amount for each input. Against
 temperature, that is one slope, the same in cold water and warm.
 
 ## Scene 5
-visual: manim Curves: polynomial regression added, rising to a peak marked at 7.5 °C (page results, linear-and-polynomial-regression.qmd)
+visual: manim Curves: polynomial regression added, rising to a peak marked at 7.5 °C (page results, linear-and-polynomial-regression.qmd#fig-shapes)
 
 Add the square of temperature as one more column, and the line bends into a curve.
 This is polynomial regression, and it finds a peak at 7.5 degrees.
@@ -71,35 +71,25 @@ Poisson regression predicts the logarithm of the count instead. Turned back into
 count, a prediction can come close to zero, but never cross it.
 
 ## Scene 8
-visual: manim Multipliers: sand as 1, mud as 1.34 times sand, rock below 1, each with its interval (page results, count-regression.qmd)
+visual: manim Multipliers: sand as 1, mud as 1.34 times sand, rock below 1 (page results, count-regression.qmd#each-coefficient-is-a-multiplier)
 
 Its coefficients become multipliers. With everything else held fixed, a muddy station
 is expected to hold 1.34 times the count of a sandy one.
 
 ## Scene 9
-visual: manim Multipliers: "overdispersed: 3.7 times the spread Poisson expects", Poisson's intervals marked too narrow; the negative binomial's wider intervals drawn beside them, and rock's now crosses 1 (page results, count-regression.qmd)
-pause-after: 0.5
-
-But Poisson assumes the counts vary only as much as their average. Even after the
-inputs are taken into account, they vary 3.7 times as much: the counts are
-overdispersed, so Poisson's intervals are too narrow. The negative binomial model
-allows for the extra spread. Its intervals are wider, and rock can no longer be told
-apart from sand.
-
-## Scene 10
 visual: manim Logistic: the probability of presence against temperature, between 0 and 1, the training stations as dots along the top and bottom (page results, logistic-regression.qmd#fig-curve)
 
 For present or absent, logistic regression uses the same design to predict a
 probability, which always stays between zero and one.
 
-## Scene 11
+## Scene 10
 visual: manim Mistakes: a threshold turns the probability into present or absent; two cards, a false alarm (said present, was absent) and a miss (said absent, was present) (schematic)
 
 A threshold turns the probability into an answer: present or absent. The answer can be
 wrong in two ways. A false alarm says present where the species was absent. A miss
 says absent where it was present.
 
-## Scene 12
+## Scene 11
 visual: manim Thresholds: false alarms and misses on the test sites at thresholds 0.5 and 0.9, 34 and 4, then 6 and 97; "what does each mistake cost?" (page results, logistic-regression.qmd)
 pause-after: 0.5
 
@@ -107,78 +97,89 @@ At a threshold of 0.5, the model gives 34 false alarms and 4 misses. Raise it to
 and the false alarms fall to 6, but the misses rise to 97. The right threshold depends
 on what each mistake costs.
 
-## Scene 13
+## Scene 12
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
 Key point one. Match the model to the outcome: a count is never negative, and a
 probability needs a threshold you choose.
 
-# Models made of questions
+# Models that learn their shape
+
+## Scene 13
+visual: manim Neighbours: "k-nearest neighbours" as the heading; stations as grey dots on two inputs, a new station, its five nearest joined to it and ringed, "k = 5", "prediction: their average count" (schematic, after nearest-neighbours.qmd img/nearest-neighbours.svg)
+
+Each of these models assumes a shape, such as a line or a curve. k-nearest neighbours
+assumes none. For a new station, it finds the k most similar stations in
+the training data and averages their counts.
 
 ## Scene 14
+visual: manim Neighbours: the error against the number of neighbours, on the fitting stations and on the validation sites; the first at zero for one neighbour, the second at its worst there; both rising towards 300 (page results, nearest-neighbours.qmd#fig-neighbours)
+
+With one neighbour, it copies every chance high and low: perfect on the stations it
+learned from, and worst of all on the validation sites, which were held back from
+fitting. This is overfitting. With hundreds of neighbours, every prediction blurs into
+one average.
+
+## Scene 15
+visual: manim Neighbours: the validation error lowest at 30 neighbours, marked; "a hyperparameter: chosen on validation data" (page results, nearest-neighbours.qmd#fig-neighbours)
+pause-after: 0.5
+
+In between, the validation error is lowest at 30 neighbours. A setting like k, fixed
+before the model is fitted, is called a hyperparameter. It is chosen on validation
+data, never on the data the model learned from.
+
+## Scene 16
 visual: manim Tree: "a decision tree" as the heading; the depth-3 tree for the count grows question by question, chlorophyll first, then two questions on temperature (page results, decision-trees.qmd#fig-tree)
 
 A decision tree works differently. It asks yes-or-no questions about the inputs, and
 each leaf predicts the average of the stations that reach it.
 
-## Scene 15
+## Scene 17
 visual: manim Tree: the band between 6.4 and 10.4 °C highlighted, average 5.2 animals, against 1.5 below and 2.6 above (page results, decision-trees.qmd)
 
 On the survey, two questions about temperature find a band, from 6.4 to 10.4 degrees,
 with the most animals. A peak takes one question for each side.
 
-## Scene 16
-visual: manim Steps: the tree's prediction against temperature as a staircase beside the Poisson curve, the shaded ends beyond the data, the staircase staying level (page results, decision-trees.qmd#fig-steps)
-
-Its predictions come in steps. And beyond the warmest station it has seen, a tree
-stays level: it has no rule for going further.
-
-## Scene 17
-visual: manim Depth: the error on the stations the tree was fitted to and on the validation sites, against depth; the first falling towards zero, the second lowest at depth 5 (page results, decision-trees.qmd#fig-depth)
+## Scene 18
+visual: manim Depth: the error on the fitting stations and on the validation sites against depth; the first falling towards zero, the second lowest at depth 5 (page results, decision-trees.qmd#fig-depth)
 pause-after: 0.5
 
-A deeper tree fits the stations it learned from ever more closely. On the validation
-sites, which were held back from fitting, the error is lowest at depth 5, then climbs.
-So the depth is chosen on the validation sites.
+The tree's depth is a hyperparameter too. A deeper tree fits the stations it learned
+from ever more closely, but on the validation sites the error is lowest at depth 5,
+then climbs.
 
-## Scene 18
+## Scene 19
 visual: manim Resamples: six trees from resampled stations, each opening on chlorophyll, their thresholds marked on one line from 2.57 to 12.6 (page results, forests-and-boosting.qmd)
 
 One tree is also unstable. Grow it on six resamples of the same stations, and the first
 question is always about chlorophyll, but its threshold moves from 2.57 to 12.6.
 
-## Scene 19
-visual: manim Forest: thirty of the forest's trees as thin staircases, then their average as a thick line in small steps (page results, forests-and-boosting.qmd#fig-average)
+## Scene 20
+visual: manim Forest: thirty of the page's forest's trees as thin staircases across temperature, then the average of all its trees as a thick line in small steps (page results, forests-and-boosting.qmd)
 
 A random forest grows hundreds of trees, each on a resampled copy of the data, and
 averages them. The big jumps shrink into small steps.
 
-## Scene 20
+## Scene 21
 visual: manim Boosting: small trees in a row, each arrow labelled "errors", their sum the prediction (schematic, after forests-and-boosting.qmd img/forest-and-boosting.svg)
 
 Boosting adds small trees one after another. Each new tree is fitted to the errors
 left by the trees before it.
 
-## Scene 21
+## Scene 22
 visual: manim Counts: error on the validation sites against the number of trees, the forest flat, boosting lowest at 200 and rising (page results, forests-and-boosting.qmd#fig-trees)
 pause-after: 0.5
 
 More trees never hurt a forest. Boosting is different: on the validation sites it does
 best at 200 trees, then gets worse, as the later trees fit the noise.
 
-## Scene 22
-visual: manim Test: RMSE on the test sites, the single tree, boosting, the forest and Poisson regression (page results, forests-and-boosting.qmd#tbl-test)
-
-On new sites, both ensembles beat the single tree. But neither beats Poisson
-regression.
-
 ## Scene 23
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point two. Trees find shapes on their own, but their size must be chosen on
-validation data.
+Key point two. Flexible models learn the shape themselves, but a hyperparameter sets
+how closely they fit, and it is chosen on validation data.
 
 # Choosing between them
 
@@ -190,11 +191,11 @@ outcome, the range you must predict over, how much data you have, and who must a
 the result.
 
 ## Scene 25
-visual: manim Comparison: the seven models' test RMSE as dots, ordered, the two count models first and the three tree-based models last (page results, choosing-a-method.qmd#fig-comparison)
+visual: manim Comparison: the seven models' test RMSE as dots, ordered, Poisson regression first and the three tree models last (page results, choosing-a-method.qmd#fig-comparison)
 
-Scored on the same new sites, the two count models come first, and the three
-tree-based models last. A few hundred noisy stations are too few for many trees to
-beat a simple curve.
+Scored on the same new sites, Poisson regression comes first, and the three tree
+models last. A few hundred noisy stations are too few for the flexible methods to beat
+a simple curve.
 
 ## Scene 26
 visual: manim Comparison: the validation dots added, the tree first there; the tree's and boosting's gaps from validation to test marked "tuned on these sites"; "one split cannot separate close models" (page results, choosing-a-method.qmd#fig-comparison)
@@ -206,10 +207,11 @@ patterns: a kind of overfitting. The test sites, kept apart, show the cost. And 
 split cannot tell apart models that are close.
 
 ## Scene 27
-visual: manim Beyond: three models from 0 to 22 °C, the shaded ends beyond the data; the forest level, Poisson regression flattening to zero, the straight line falling below it (page results, choosing-a-method.qmd#fig-extrapolate)
+visual: manim Beyond: three models from 0 to 22 °C, the shaded ends beyond the data; the forest level, Poisson regression flattening to zero, linear regression falling below it (page results, choosing-a-method.qmd#fig-extrapolate)
 
 Beyond the sampled temperatures, each model follows its own rule. The forest stays
-level, Poisson regression flattens towards zero, and the straight line falls below it.
+level, Poisson regression flattens towards zero, and linear regression falls below
+zero.
 
 ## Scene 28
 visual: manim Beyond: "nothing in the data says which is right", "choose an assumption you can defend"
@@ -250,7 +252,8 @@ To sum up. <short pause> One: match the model to the outcome.
 ## Scene 33
 visual: manim KeyPoints: the second ticked
 
-Two: trees find shapes on their own, but their size is chosen on validation data.
+Two: flexible models learn the shape, but a hyperparameter, chosen on validation data,
+sets how closely.
 
 ## Scene 34
 visual: manim KeyPoints: the third ticked

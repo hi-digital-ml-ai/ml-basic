@@ -6,27 +6,32 @@
 
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
-exports <- list(
-  # The count's shape: stations per count, and the summary the prose quotes.
-  "regression-and-classification.qmd" = function(env, dir) {
-    write(with(env, dplyr::count(survey, abundance)), dir, "histogram")
-    write(with(env, tibble::tibble(count_mean, count_var, zero_pct)), dir, "count-shape")
-  },
+# The pages' grid for curves across temperature: the other inputs at typical values.
+temperature_grid <- function(train, from, to, n = 200) {
+  tibble::tibble(
+    temperature_c     = seq(from, to, length.out = n),
+    depth_m           = median(train$depth_m, na.rm = TRUE),
+    chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3, na.rm = TRUE),
+    salinity_psu      = median(train$salinity_psu, na.rm = TRUE),
+    substrate         = factor("sand", levels = levels(train$substrate)),
+    season            = factor("summer", levels = levels(train$season))
+  )
+}
 
-  # The curve's temperature optimum, and its negative predictions on the test sites.
+exports <- list(
+  # The line and the curve across temperature, the curve's peak, and its negative
+  # predictions on the test sites.
   "linear-and-polynomial-regression.qmd" = function(env, dir) {
+    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "line-curves")
     write(with(env, tibble::tibble(optimum, test_stations = nrow(test))), dir, "optimum")
     write(with(env, scores), dir, "line-curve-scores")
   },
 
-  # The three curves across temperature, the multipliers of both count models, and
-  # the spread ratio.
+  # The survey's counts, Poisson regression across temperature and its multipliers.
   "count-regression.qmd" = function(env, dir) {
+    write(with(env, dplyr::count(survey, abundance)), dir, "histogram")
     write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "count-curves")
-    write(with(env, dplyr::bind_rows(poisson = poisson_table, negbin = nb_table, .id = "fit")),
-          dir, "multipliers")
-    write(with(env, tibble::tibble(spread_ratio, theta = nb_fit$theta, wider)), dir, "spread")
-    write(with(env, scores), dir, "count-scores")
+    write(with(env, multipliers), dir, "multipliers")
   },
 
   # The probability curve, the training stations it was fitted to, and the thresholds.
@@ -38,26 +43,36 @@ exports <- list(
     write(with(env, thresholds), dir, "thresholds")
   },
 
-  # The depth-3 tree's nodes, its steps against the Poisson curve, and the depths.
+  # The error against the number of neighbours.
+  "nearest-neighbours.qmd" = function(env, dir) {
+    write(with(env, neighbours), dir, "neighbours")
+  },
+
+  # The depth-3 tree's nodes and the error against depth.
   "decision-trees.qmd" = function(env, dir) {
     write(with(env, dplyr::select(nodes, node, var, n, yval, cut)), dir, "tree-nodes")
-    write(with(env, dplyr::select(curves, model, temperature_c, .pred)), dir, "tree-steps")
-    write(with(env, tibble::tibble(low = temp_range[1], high = temp_range[2])), dir, "tree-range")
     write(with(env, depths), dir, "depths")
   },
 
-  # The six first questions, the scores by number of trees, thirty of the forest's
-  # trees with their average, and the four models on the test sites.
+  # The six first questions, the scores by number of trees, and thirty of the
+  # page's 400-tree forest's trees with their average, across temperature.
   "forests-and-boosting.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(question = first_questions, threshold = thresholds)),
           dir, "first-questions")
     write(with(env, dplyr::bind_rows(forest = forest_scores, boosting = boost_scores,
                                      .id = "model")), dir, "tree-counts")
-    write(with(env, trees_long), dir, "forest-trees")
-    write(with(env, dplyr::select(augment(forest_fit, grid), temperature_c, .pred)),
+    # Outside with(): there, `grid` would find graphics::grid().
+    grid <- temperature_grid(env$train, 0, 20)
+    baked <- recipes::bake(workflows::extract_recipe(env$forest_fit), grid)
+    every <- predict(workflows::extract_fit_engine(env$forest_fit), baked,
+                     predict.all = TRUE)$predictions
+    trees <- purrr::map(1:30, \(i) tibble::tibble(tree = i, temperature_c = grid$temperature_c,
+                                                  .pred = every[, i])) |> purrr::list_rbind()
+    write(trees, dir, "forest-trees")
+    write(tibble::tibble(temperature_c = grid$temperature_c, .pred = rowMeans(every)),
           dir, "forest-average")
-    write(with(env, tibble::tibble(model = names(test_rmse), rmse = unname(test_rmse),
-                                   depth = best_depth, trees = best_boost)), dir, "ensembles-test")
+    write(with(env, tibble::tibble(low = min(train$temperature_c, na.rm = TRUE),
+                                   high = max(train$temperature_c, na.rm = TRUE))), dir, "forest-range")
   },
 
   # The seven models on the validation and test sites, and the three curves beyond
