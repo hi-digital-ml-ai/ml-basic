@@ -1,6 +1,6 @@
 ---
 title: "Random forests and boosting"
-description: "Two ways to combine many decision trees: a random forest averages trees grown on resampled data, and boosting adds small trees one after another, each fixing the errors of those before it."
+description: "One decision tree changes a lot with a slightly different sample, and many trees together are steadier. A random forest averages trees grown on resampled stations; boosting adds small trees, each fixing what the others missed. On the survey both beat one tree but not a smooth curve."
 order: 6
 categories: [supervised, trees-ensembles]
 ---
@@ -18,6 +18,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Many trees instead of one
 
 A single [decision tree](decision-trees.qmd) is easy to read but unstable: a few
@@ -25,30 +27,29 @@ different training examples can change its first question, and every question be
 changes too. Combining many trees steadies the prediction, and there are two common
 ways to do it. A **random forest** grows many trees side by side and averages them.
 **Boosting** grows small trees one after another, each correcting the ones before it.
-This page shows both on the survey and compares them with a single tree and with
-Poisson regression from [Regression for counts](count-regression.qmd).
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## A random forest averages many trees
+## A random forest averages trees grown on resampled data
 
 Each tree in a forest is grown on a **bootstrap sample** of the training data: a sample
-of the same size drawn with replacement, so some examples appear twice or more and
-others not at all. Every tree therefore sees a slightly different dataset and asks
-slightly different questions. The forest's prediction is the average of all the trees'
-predictions. Where one tree guesses too high and another too low, the errors partly
-cancel.
+of the same size drawn with replacement. Picture each station written on a slip of
+paper; a slip is drawn, noted and put back, as many times as there are stations. Some
+stations are drawn twice or more and about `r round(100 * exp(-1))`% not at all, so
+each sample is a slightly different survey, one that could as well have been
+collected. The bootstrap returns in
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd), where it
+measures how far a score would move with another sample.
 
-A forest adds one more source of variety. At each question, a tree may choose only
-among a few inputs picked at random, not among all of them. Without that rule, one
-strong input would open almost every tree, the trees would be too alike, and averaging
-them would gain little. The number of inputs to choose from is a setting called
-`mtry`; the usual default for a quantity is a third of the inputs.
-
-Adding trees to a forest makes its average steadier, up to a point where more trees
-change nothing. Too many trees cost computing time but do no harm.
+Every tree therefore asks slightly different questions, and the forest's prediction is
+the average of all the trees' predictions. Where one tree guesses too high and another
+too low, the errors partly cancel. A forest adds one more source of variety: at each
+question, a tree may choose only among a few inputs picked at random. Without that
+rule, one strong input would open almost every tree, the trees would be too alike, and
+averaging them would gain little. Adding trees makes the average steadier, up to a
+point where more trees change nothing; too many cost computing time but do no harm.
 
 ## Boosting adds small trees in sequence
 
@@ -62,7 +63,12 @@ three questions deep, and the model's prediction is the sum of all of them.
 Every tree fits some of what the earlier trees missed, so the training error keeps
 falling as trees are added. Eventually the trees are fitting the noise, and the error on
 new data rises again. Unlike a forest, then, boosting has a number of trees that is too
-many, and it has to be chosen on validation data, as the depth of a single tree was.
+many: it is a hyperparameter, chosen on validation data as the depth of a single tree
+was. Either way the prediction is built from trees. Averaging turns their large jumps
+into many small steps, but beyond the data every tree stays level, and so does the
+forest or the boosted sum;
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+deals with predicting outside the data.
 
 ::: {.diagram}
 ![One tree changes with its sample. A random forest averages many trees grown on resampled data; boosting adds small trees in sequence, each fitted to the errors left by those before it.](img/forest-and-boosting.svg){fig-alt="Three cards. One tree changes with its sample: three staircase predictions from trees fitted to slightly different samples of the same data step up at different places. A few different examples can change the first question and everything below it. Forest, average many trees: many faint staircases and their average, a thick line that rises more gradually. Each tree sees a resample of the examples and a few random inputs at each question. Boosting, small trees in sequence: three small trees in a row, each arrow labelled errors, and the prediction is the sum of all the trees, each scaled down. Each small tree fits what the trees before it got wrong. A note says adding trees to a forest stops helping but does no harm; boosting starts to overfit, so its number of trees is chosen on held-back data."}
@@ -70,12 +76,10 @@ many, and it has to be chosen on validation data, as the depth of a single tree 
 
 ## Worked example
 
-The data, the split by site and the fitting and validation sites are those of
-[Decision trees](decision-trees.qmd). The forest uses the same recipe as the single
-tree. xgboost, the package tidymodels uses for boosting, needs numbers only, so its
-recipe also turns each category into 0/1 columns.
-
-### Preparing the data
+The data, the split by site, the fitting and validation sites and the recipe are those
+of [Decision trees](decision-trees.qmd#worked-example). xgboost, the package tidymodels
+uses for boosting, needs numbers only, so its recipe also turns each category into 0/1
+columns.
 
 ::: {.panel-tabset group="language"}
 
@@ -111,7 +115,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import r2_score, root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -197,6 +201,7 @@ for _ in range(6):
 thresholds <- as.numeric(str_extract(first_questions, "[0-9.]+$"))
 first_inputs <- unique(str_remove(first_questions, "[<>=].*$"))
 stopifnot(length(first_inputs) == 1)
+f2 <- function(x) sub("^-", "−", sprintf("%.2f", x))
 ```
 
 Every sample opens with a question about `r str_remove(first_inputs, "_mg_m3")`,
@@ -204,12 +209,14 @@ but the threshold moves from `r min(thresholds)` to `r max(thresholds)` mg m⁻�
 threshold sends different stations down each branch, so the questions below it differ
 too. The data barely changed; the tree changed a lot.
 
-### Choosing the number of trees
+### More trees steady a forest but overfit boosting
 
 Forests and boosted models of 1 to 1600 trees are fitted on the fitting sites and
-scored on the validation sites. The forest keeps the defaults: a third of the inputs
-to choose from at each question, and leaves of at least five stations. The boosted
-trees are three questions deep with a learning rate of 0.05.
+scored with the
+[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+on the validation sites. The forest keeps ranger's defaults: two of the six inputs to
+choose from at each question, and leaves of at least five stations. The boosted trees are
+three questions deep with a learning rate of 0.05.
 
 ::: {.panel-tabset group="language"}
 
@@ -296,8 +303,8 @@ plot_scores <- function(scores, title) {
     scale_colour_manual(values = c(training = ml_palette[["blue"]],
                                    validation = ml_palette[["orange"]])) +
     expand_limits(y = 0) +
-    labs(x = "Number of trees (log scale)", y = "RMSE", colour = NULL,
-         title = title)
+    labs(x = "Number of trees (log scale)", y = "RMSE (individuals)",
+         colour = NULL, title = title)
 }
 
 plot_scores(forest_scores, "Forest: more trees stop helping") +
@@ -315,173 +322,133 @@ at_size <- function(scores, n) filter(scores, trees == n)
 best_boost <- boost_scores |> slice_min(validation) |> pull(trees)
 ```
 
-The forest's validation error falls from `r round(at_size(forest_scores, 1)$validation, 2)`
-with one tree to `r round(at_size(forest_scores, 100)$validation, 2)` with 100, and
-then barely moves: `r round(at_size(forest_scores, 1600)$validation, 2)` with 1600.
+The forest's validation error falls from `r f2(at_size(forest_scores, 1)$validation)`
+with one tree to `r f2(at_size(forest_scores, 100)$validation)` with 100, and
+then barely moves: `r f2(at_size(forest_scores, 1600)$validation)` with 1600.
 Its training error settles well below that, because every tree has seen most of the
 fitting stations. The page uses 400 trees from here on.
 
 Boosting behaves differently. Its training error falls with every tree added, to
-`r round(at_size(boost_scores, 1600)$training, 2)` at 1600 trees. Its validation error
-is lowest, `r round(at_size(boost_scores, best_boost)$validation, 2)`, at
+`r f2(at_size(boost_scores, 1600)$training)` at 1600 trees. Its validation error
+is lowest, `r f2(at_size(boost_scores, best_boost)$validation)`, at
 `r best_boost` trees and rises after that, to
-`r round(at_size(boost_scores, 1600)$validation, 2)` at 1600. The later trees are
+`r f2(at_size(boost_scores, 1600)$validation)` at 1600. The later trees are
 fitting chance patterns in the fitting sites, the overfitting a deep single tree
 showed.
 
-### Averaging smooths the steps
-
-@fig-average draws 30 of the forest's 400 trees across temperature, with the other
-inputs held at typical values, and the forest's prediction, their average.
-
-```{r}
-#| label: forest-fit
-#| include: false
-forest_fit <- workflow(tree_recipe, forest_model(400)) |> fit(train)
-temp_range <- range(train$temperature_c, na.rm = TRUE)
-```
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-average
-#| fig-cap: "Predicted count across temperature from 30 of the forest's trees (thin lines) and from the whole forest (thick line), with the other inputs held at typical values (sand, summer, median depth, chlorophyll and salinity). The shaded ends lie beyond the temperatures of the training stations."
-#| fig-alt: "Thin orange staircases of predicted count against temperature from 0 to 20 degrees, each stepping up and down at different temperatures and some reaching far higher than others. A thick line through them, the forest's average, rises and falls in many small steps, with its highest values in the middle of the range. In the shaded regions beyond the training temperatures every line, including the average, stays level."
-#| fig-width: 7.5
-#| fig-height: 4.5
-grid <- tibble(
-  temperature_c     = seq(0, 20, length.out = 400),
-  depth_m           = median(train$depth_m, na.rm = TRUE),
-  chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3, na.rm = TRUE),
-  salinity_psu      = median(train$salinity_psu, na.rm = TRUE),
-  substrate         = factor("sand", levels = levels(train$substrate)),
-  season            = factor("summer", levels = levels(train$season))
-)
-
-each_tree <- predict(extract_fit_engine(forest_fit), grid,
-                     predict.all = TRUE)$predictions
-trees_long <- as_tibble(each_tree[, 1:30], .name_repair = \(x) paste0("tree", 1:30)) |>
-  mutate(temperature_c = grid$temperature_c) |>
-  pivot_longer(-temperature_c, names_to = "tree", values_to = ".pred")
-
-ggplot(trees_long, aes(temperature_c, .pred)) +
-  annotate("rect", xmin = -Inf, xmax = temp_range[1], ymin = -Inf, ymax = Inf,
-           fill = ml_palette[["grey"]], alpha = 0.12) +
-  annotate("rect", xmin = temp_range[2], xmax = Inf, ymin = -Inf, ymax = Inf,
-           fill = ml_palette[["grey"]], alpha = 0.12) +
-  geom_line(aes(group = tree), colour = ml_palette[["orange"]], alpha = 0.35) +
-  geom_line(data = augment(forest_fit, grid), colour = ml_palette[["vermilion"]],
-            linewidth = 1.4) +
-  labs(x = "Temperature (°C)", y = "Predicted count",
-       title = "Each tree jumps; their average moves in small steps")
-```
-
-:::
-
-A forest's trees are grown deep, so each is a jagged staircase with its own
-thresholds, and some reach far higher than the rest. Averaged, the large jumps shrink
-into many small steps. The average is still made
-of trees, though: beyond the warmest training station, at
-`r round(temp_range[2], 1)` °C, every tree stays level, and so does the forest.
-
-### The ensembles on new sites
+### The ensembles beat one tree but not the curve
 
 The forest of 400 trees and the boosted model of `r best_boost` trees are refitted on
-all the training stations and scored once on the test sites.
+all the training stations and scored once on the test sites, beside the depth-5 tree
+from [Decision trees](decision-trees.qmd) and Poisson regression from
+[Regression for counts](count-regression.qmd).
+[$R^2$](../02-marine-data/information-leakage.qmd#one-linear-regression-shows-each-kind)
+is the share of the variation in the test counts that the predictions follow.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: test-score
-boost_fit <- workflow(boost_recipe, boost_model(best_boost)) |> fit(train)
+#| label: compare
+forest_fit <- workflow(tree_recipe, forest_model(400)) |> fit(train)
+boost_fit  <- workflow(boost_recipe, boost_model(best_boost)) |> fit(train)
+tree_fit   <- workflow(tree_recipe, tree_model(5)) |> fit(train)
 
-test_score <- function(fitted, model) {
+curve_recipe <- tree_recipe |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+poisson_fit <- workflow(curve_recipe, poisson_reg()) |> fit(train)
+
+test_score <- function(fitted, label) {
   predicted <- predict(fitted, test)$.pred
-  tibble(model = model,
-         rmse  = round(rmse_vec(test$abundance, predicted), 2),
-         rsq   = round(rsq_vec(test$abundance, predicted), 2))
+  tibble(model = label,
+         rmse  = rmse_vec(test$abundance, predicted),
+         rsq   = rsq_trad_vec(test$abundance, predicted))
 }
 
-bind_rows(test_score(forest_fit, "forest"),
-          test_score(boost_fit, "boosting"))
+scores <- bind_rows(test_score(tree_fit, "Decision tree"),
+                    test_score(boost_fit, "Boosting"),
+                    test_score(forest_fit, "Random forest"),
+                    test_score(poisson_fit, "Poisson regression"))
+scores |> mutate(across(-model, \(x) round(x, 2)))
 ```
 
 ## Python
 
 ```{python}
+from sklearn.linear_model import PoissonRegressor
+from sklearn.preprocessing import PolynomialFeatures
+
 best_boost = int(boost_scores.loc[boost_scores["validation"].idxmin(), "trees"])
 
-def test_score(fitted, model):
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical", OneHotEncoder(drop=["gravel", "spring"], sparse_output=False),
+     categorical),
+])
+poisson_fit = Pipeline([
+    ("recipe", curve_recipe),
+    ("model", PoissonRegressor(alpha=0, solver="newton-cholesky")),
+]).fit(train[predictors], train["abundance"])
+
+def test_score(fitted, label):
     predicted = fitted.predict(test[predictors])
-    return {"model": model,
+    return {"model": label,
             "rmse": root_mean_squared_error(test["abundance"], predicted),
-            "rsq": np.corrcoef(predicted, test["abundance"])[0, 1] ** 2}
+            "rsq": r2_score(test["abundance"], predicted)}
 
 pd.DataFrame([
-    test_score(fit(forest_model(400), train), "forest"),
-    test_score(fit(boost_model(best_boost), train), "boosting"),
+    test_score(fit(DecisionTreeRegressor(max_depth=5, random_state=123), train),
+               "Decision tree"),
+    test_score(fit(boost_model(best_boost), train), "Boosting"),
+    test_score(fit(forest_model(400), train), "Random forest"),
+    test_score(poisson_fit, "Poisson regression"),
 ]).round(2)
 ```
 
 :::
 
 ```{r}
-#| label: comparison-numbers
+#| label: compare-numbers
 #| include: false
-error_on <- function(fitted, data) {
-  rmse_vec(data$abundance, predict(fitted, data)$.pred)
-}
-rsq_on <- function(fitted) rsq_vec(test$abundance, predict(fitted, test)$.pred)
-
-depth_scores <- map_dbl(1:15, \(d) {
-  error_on(workflow(tree_recipe, tree_model(d)) |> fit(fitting), validation)
+# The depth-5 tree is the one Decision trees chose on the same validation sites.
+depth_rmse <- map_dbl(1:15, \(d) {
+  fitted <- workflow(tree_recipe, tree_model(d)) |> fit(fitting)
+  rmse_vec(validation$abundance, predict(fitted, validation)$.pred)
 })
-best_depth <- which.min(depth_scores)
-tree_fit   <- workflow(tree_recipe, tree_model(best_depth)) |> fit(train)
-
-poisson_recipe <- tree_recipe |>
-  step_relevel(substrate, ref_level = "sand") |>
-  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
-poisson_fit <- workflow(poisson_recipe, poisson_reg()) |> fit(train)
-
-forest_val <- at_size(forest_scores, 400)$validation
-test_rmse <- map_dbl(list(tree = tree_fit, forest = forest_fit,
-                          boost = boost_fit, poisson = poisson_fit),
-                     \(f) error_on(f, test))
-test_rsq <- map_dbl(list(tree = tree_fit, forest = forest_fit,
-                         boost = boost_fit, poisson = poisson_fit), rsq_on)
+stopifnot(which.min(depth_rmse) == 5)
+get_score <- function(label) scores |> filter(model == label)
+tree_score    <- get_score("Decision tree")
+boost_score   <- get_score("Boosting")
+forest_score  <- get_score("Random forest")
+poisson_score <- get_score("Poisson regression")
 ```
 
-| Model | Test RMSE | Test $R^2$ |
-| --- | --- | --- |
-| Single tree, depth `r best_depth` | `r round(test_rmse[["tree"]], 2)` | `r round(test_rsq[["tree"]], 2)` |
-| Boosting, `r best_boost` trees | `r round(test_rmse[["boost"]], 2)` | `r round(test_rsq[["boost"]], 2)` |
-| Random forest, 400 trees | `r round(test_rmse[["forest"]], 2)` | `r round(test_rsq[["forest"]], 2)` |
-| Poisson regression | `r round(test_rmse[["poisson"]], 2)` | `r round(test_rsq[["poisson"]], 2)` |
-
-: The four models on the test sites. The single tree and Poisson regression are those of the two earlier pages. {#tbl-test}
-
-Both ensembles predict the test sites better than the single tree did, and the forest
-does best of the three, with an RMSE of `r round(test_rmse[["forest"]], 2)` against
-the tree's `r round(test_rmse[["tree"]], 2)`. On the validation sites the order was
-the other way round: the tree scored `r round(min(depth_scores), 2)` and the forest
-`r round(forest_val, 2)`. A single tree fitted to one set of sites can happen to suit
-another small set, and the next set of sites shows how fragile that was. This is one
-more reason to judge models on several splits, as
-[Cross-validation](../07-validation/cross-validation.qmd) does.
-
-Neither ensemble matches Poisson regression on this survey. About 600 noisy stations do
-not hold enough information for many trees to learn a shape that a smooth curve with
-a few terms describes as well. With far more stations, the balance can shift towards
-the ensembles. [Choosing a method](choosing-a-method.qmd) compares the section's
-models together.
+Both ensembles predict the test sites better than the single tree, which misses by
+`r f2(tree_score$rmse)` animals. Boosting misses by `r f2(boost_score$rmse)`, with an
+$R^2$ of `r f2(boost_score$rsq)`, still below zero; the forest misses by
+`r f2(forest_score$rmse)`, with `r f2(forest_score$rsq)`. Poisson regression, at
+`r f2(poisson_score$rmse)` and `r f2(poisson_score$rsq)`, is still the best. The
+`r nrow(train)` noisy training stations do not hold enough information for many trees to learn a
+shape that a smooth curve with a few terms describes as well; with far more stations,
+the balance can shift towards the ensembles. The Python tab, with its own split of the
+sites, puts the forest just ahead of Poisson regression. A gap that small could change
+with another set of test sites, which
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) measures.
+[Choosing a method](choosing-a-method.qmd) compares the section's models together.
 
 A forest or a boosted model cannot be printed and read like a single tree: its answer
-is the sum of hundreds of trees. [Feature importance](../10-interpretation/feature-importance.qmd) shows which inputs
+is the sum of hundreds of trees.
+[Feature importance](../10-interpretation/feature-importance.qmd) shows which inputs
 such a model relies on, and [Partial effects](../10-interpretation/partial-effects.qmd)
 how its predictions change with each.
 
@@ -496,9 +463,8 @@ how its predictions change with each.
 - Boosting adds small trees in sequence, each fitted to the remaining errors and scaled
   down by a learning rate. Too many trees fit the noise, so the number is chosen on
   validation data.
-- Averaging smooths a tree's steps, but a forest still stays level beyond the data.
-- On the test sites both ensembles beat the single tree, and neither beat Poisson
-  regression.
+- On the test sites both ensembles beat the single tree, the forest by most, and
+  neither beat Poisson regression.
 :::
 
 ## Try it yourself

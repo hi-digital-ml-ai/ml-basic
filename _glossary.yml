@@ -309,3 +309,18 @@ terms:
   - term: "Depth"
     definition: "The number of questions a decision tree asks from the top to a leaf; a deeper tree fits its training data more closely."
     page: chapters/03-supervised-learning/decision-trees.qmd
+  # 3 · Supervised learning: random forests and boosting
+  - term: "Random forest"
+    definition: "A model that grows many decision trees side by side, each on a bootstrap sample and choosing among a few random inputs at each question, and averages their predictions."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+  - term: "Boosting"
+    definition: "A model that adds small decision trees one after another, each fitted to the errors the trees before it left, and predicts with their sum."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+  - term: "Bootstrap sample"
+    definition: "A sample of the same size as the data, drawn from it with replacement, so some examples appear twice or more and others not at all."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+    more: chapters/07-validation/uncertainty-and-stability.qmd
+  - term: "Learning rate"
+    definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+    more: chapters/04-how-algorithms-learn/gradient-descent.qmd
