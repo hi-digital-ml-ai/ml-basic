@@ -1,6 +1,6 @@
 ---
 title: "Finding the parameters"
-description: "Linear regression's parameters come from a formula in one step; almost every other model has to search for them, and a search can go wrong in ways a formula cannot."
+description: "Linear regression's parameters come from a formula in one step; almost every other model searches for them. A search that went wrong still prints coefficients, so check that it finished."
 order: 2
 categories: [optimisation]
 ---
@@ -19,31 +19,32 @@ set.seed(123)
 num <- function(x, digits) sub("^-", "−", format(round(x, digits), nsmall = digits))
 ```
 
+{{< new-terms >}}
+
 ## Solved in one step or found by searching
 
 [Loss functions](loss-functions.qmd) gave each fit a number to make as small as possible.
 This page shows the two ways a model finds the parameter values that do it. Linear
 regression has a formula that gives them exactly, in one step. Every other model in
 [Supervised learning](../03-supervised-learning/index.qmd) has to search for them, and a
-search can stop too early or end in a different place on another run. Knowing which kind
-of model you have tells you which of those checks it needs.
+search can stop too early or walk off without finding an answer, while still printing
+coefficients that look normal.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Parameters and hyperparameters
+## The fit sets parameters and you set hyperparameters
 
 A **parameter** is a number the fit chooses from the data: a slope in a regression, or
 the value a decision tree splits at. You do not set these.
 
-A **hyperparameter** is a number you set before fitting, which controls the fit: the
-depth of a tree, or the number of trees in a forest. The fit cannot choose it, because
-its job is to limit what the fit may do.
-[Decision trees](../03-supervised-learning/decision-trees.qmd) chose the depth by trying
-several on the validation sites;
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) returns to
-this.
+A hyperparameter, met on
+[k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd), is the
+opposite: a setting fixed before fitting, such as the number of neighbours or the depth
+of a tree. The fit cannot choose it, because its job is to limit what the fit may do, so
+it is chosen on validation data;
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) shows how.
 
 ::: {.callout-note}
 ## "Parameter" means different things in different fields
@@ -66,7 +67,7 @@ has in mind.
   in an underscore, as in `coef_`.
 :::
 
-## The objective as a landscape
+## Fitting finds the lowest point of a landscape
 
 For a straight line, the objective depends on two parameters, the intercept and the
 slope. Draw it as a map, with the two parameters as the axes and the objective as the
@@ -115,8 +116,12 @@ narrow: along the diagonal valley, a higher intercept with a lower slope fits al
 well, so the data pin down some combinations of the two far better than others. That
 shape matters on [Gradient descent](gradient-descent.qmd).
 
-There are three ways to find the lowest point, and each kind of model in section 3 uses
-one of them.
+The figure found the lowest point by trying every combination on a grid, 120 values for
+each parameter. That works for two parameters and fails soon after. At 100 values each,
+two parameters make ten thousand combinations, done in a moment; four make a hundred
+million; ten make $10^{20}$, which at a billion a second takes about
+`r format(round(1e20 / 1e9 / (3600 * 24 * 365), -2), big.mark = ",")` years. Real fits
+use the shape of the objective instead, in one of three ways.
 
 ::: {.diagram}
 ![Linear regression's parameters come from a formula in one step. Poisson and logistic regression search step by step downhill until the objective stops falling. Trees, forests and boosting choose one split at a time and never revisit it.](img/finding-parameters.svg){fig-alt="Three cards. By formula, solved in one step, linear regression: an arrow labelled solve points straight down to the lowest point of a U-shaped objective curve; exact, and the same answer every time. By search, step by step downhill, Poisson and logistic regression: a row of dots from a point marked start steps down the curve, each step shorter, to its lowest point; repeats until the objective stops falling. One split at a time, greedy, trees, forests and boosting: a small tree with its first and second splits filled in; takes the best split now and never goes back to it. A note says a search can stop early or end somewhere else; a formula cannot."}
@@ -153,10 +158,12 @@ tibble(term = names(by_lm), `by formula` = by_formula, `by lm()` = by_lm) |>
 ## Python
 
 ```{python}
+import warnings
+
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 from mlbasic_data import load_coastal_survey_clean
 
@@ -200,14 +207,14 @@ for. Absolute error has no such formula, which is why
 [Loss functions](loss-functions.qmd) needed `optim()` for it.
 :::
 
-### Logistic regression needs a search
+### Logistic regression searches until it stops improving
 
 [Logistic regression](../03-supervised-learning/logistic-regression.qmd) has no formula
 for its lowest point, so `glm()` finds it by repeating one step. Each step replaces the
 objective with a weighted linear regression that matches it near the current
 coefficients, solves that by formula, and starts again from the answer. We write the
-steps out, starting from coefficients of zero, and watch the log-likelihood, a measure
-of fit that [Maximum likelihood](maximum-likelihood.qmd) explains; higher is better.
+steps out, starting from coefficients of zero, and watch the objective, the mean log
+loss from [Loss functions](loss-functions.qmd#counts-and-presence-have-their-own-losses).
 
 ::: {.panel-tabset group="language"}
 
@@ -223,20 +230,20 @@ d3b <- survey |>
 Xb <- model.matrix(~ chlorophyll_mg_m3 + depth_m + temperature_c, data = d3b)
 yb <- as.numeric(d3b$present == "yes")
 
-log_likelihood <- function(b) {
+log_loss <- function(b) {
   eta <- drop(Xb %*% b)
-  sum(yb * eta - log1p(exp(eta)))
+  -mean(yb * eta - log1p(exp(eta)))
 }
 
 b <- rep(0, ncol(Xb))
-start <- log_likelihood(b)
+start <- log_loss(b)
 steps <- map_dfr(1:6, function(k) {
   eta <- drop(Xb %*% b)
   p   <- plogis(eta)
   w   <- p * (1 - p)
   z   <- eta + (yb - p) / w
   b  <<- drop(solve(t(Xb) %*% (Xb * w), t(Xb) %*% (w * z)))
-  tibble(step = k, log_likelihood = log_likelihood(b),
+  tibble(step = k, log_loss = log_loss(b),
          chlorophyll = b[2], depth = b[3], temperature = b[4])
 })
 
@@ -250,12 +257,12 @@ d3b = survey[["present", *inputs]].dropna()
 Xb = sm.add_constant(d3b[inputs]).to_numpy()
 yb = (d3b["present"] == "yes").to_numpy(dtype=float)
 
-def log_likelihood(b):
+def log_loss(b):
     eta = Xb @ b
-    return np.sum(yb * eta - np.log1p(np.exp(eta)))
+    return -np.mean(yb * eta - np.log1p(np.exp(eta)))
 
 b = np.zeros(Xb.shape[1])
-start = log_likelihood(b)
+start = log_loss(b)
 rows = []
 for step in range(1, 7):
     eta = Xb @ b
@@ -263,7 +270,7 @@ for step in range(1, 7):
     w = p * (1 - p)
     z = eta + (yb - p) / w
     b = np.linalg.solve(Xb.T @ (Xb * w[:, None]), Xb.T @ (w * z))
-    rows.append({"step": step, "log_likelihood": log_likelihood(b),
+    rows.append({"step": step, "log_loss": log_loss(b),
                  "chlorophyll": b[1], "depth": b[2], "temperature": b[3]})
 
 steps = pd.DataFrame(rows)
@@ -281,16 +288,18 @@ steps.round(5)
 glm_fit <- glm(present ~ chlorophyll_mg_m3 + depth_m + temperature_c,
                data = d3b, family = binomial)
 round(coef(glm_fit), 5)
+c(converged = glm_fit$converged, steps = glm_fit$iter)
 ```
 
 ## Python
 
 ```{python}
 # scikit-learn's LogisticRegression would not match: it adds a penalty by
-# default (C=1.0), which Priors and ridge regression explains. statsmodels fits
-# the model as glm() does.
+# default (C=1.0), which Regularisation explains. statsmodels fits the model
+# as glm() does.
 glm_fit = sm.GLM(yb, sm.add_constant(d3b[inputs]), family=sm.families.Binomial()).fit()
-glm_fit.params.round(5)
+print(glm_fit.params.round(5))
+print({"converged": glm_fit.converged, "steps": glm_fit.fit_history["iteration"]})
 ```
 
 :::
@@ -298,43 +307,110 @@ glm_fit.params.round(5)
 ```{r}
 #| label: settled
 #| include: false
-gain <- diff(c(start, steps$log_likelihood))
-settled <- which(abs(gain) < 1e-4)[1]
+gain <- diff(c(start, steps$log_loss))
+settled <- which(abs(gain) < 1e-6)[1]
+chl_off <- abs(steps$chlorophyll[2] / coef(glm_fit)[["chlorophyll_mg_m3"]] - 1)
 ```
 
-From coefficients of zero, the log-likelihood is `r num(start, 1)`. The first step
-takes it to `r num(steps$log_likelihood[1], 1)` and the second to
-`r num(steps$log_likelihood[2], 1)`; by step `r settled` it changes by less than
-0.0001, and the coefficients match `glm()`'s. `glm()` reports `r glm_fit$iter` steps
-for this model. It stops when a step changes the fit by less than a set tolerance, and
-calls that converged.
+From coefficients of zero, the log loss is `r num(start, 3)`. The first step takes it
+to `r num(steps$log_loss[1], 3)` and the second to `r num(steps$log_loss[2], 3)`; by
+step `r settled` it changes by less than 0.000001, and the coefficients match
+`glm()`'s. `glm()` stops when a step changes the fit by less than a set amount, and
+records that it has **converged**.
 
-### Trying every combination is out of reach
+Had the search stopped after two steps, the chlorophyll coefficient would be
+`r num(steps$chlorophyll[2], 3)` instead of
+`r num(coef(glm_fit)[["chlorophyll_mg_m3"]], 3)`, `r scales::percent(chl_off, 1)` out,
+and nothing about the number would look wrong. A search that runs out of steps returns
+wherever it got to. R warns when that happens, but the coefficients carry no mark: the
+`converged` field is the place to look.
 
-Stepping downhill can look roundabout next to the obvious alternative: try every
-combination of parameter values on a grid and keep the best. The bowl figure above did
-exactly that, with 120 values for each of two parameters.
+### Separation leaves no lowest point
+
+`catch_weight_kg` is the leaked column from
+[Avoiding information leakage](../02-marine-data/information-leakage.qmd): it is weighed
+from the same catch that was counted, so every station where the species was present
+weighs more than every station where it was absent. We use it to predict presence.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: grid-cost
-grid_cost <- tibble(
-  parameters = c(2, 4, 10),
-  `grid points at 100 values each` = format(100^parameters, big.mark = ",", scientific = FALSE)
-)
-grid_cost
+#| label: separation
+#| warning: true
+d_leak <- survey |>
+  select(present, catch_weight_kg) |>
+  drop_na() |>
+  mutate(present = fct_relevel(present, "no"))
+is_present <- d_leak$present == "yes"
+
+separated <- map_dfr(c(10, 25, 100), \(allowed) {
+  fit <- glm(present ~ catch_weight_kg, data = d_leak, family = binomial,
+             control = glm.control(maxit = allowed))
+  tibble(
+    `steps allowed` = allowed,
+    `steps taken`   = fit$iter,
+    converged       = fit$converged,
+    coefficient     = coef(fit)[["catch_weight_kg"]],
+    `training accuracy` = mean((fitted(fit) > 0.5) == is_present)
+  )
+})
+
+separated |> mutate(across(where(is.double), \(x) round(x, 1)))
+```
+
+## Python
+
+```{python}
+d_leak = survey[["present", "catch_weight_kg"]].dropna()
+leak_y = (d_leak["present"] == "yes").astype(float)
+leak_X = sm.add_constant(d_leak[["catch_weight_kg"]])
+
+rows = []
+for allowed in [10, 25, 100]:
+    # statsmodels warns of "perfect separation"; errstate hides numpy's
+    # overflow warnings on the way, which say the same.
+    with np.errstate(over="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fit = sm.GLM(leak_y, leak_X, family=sm.families.Binomial()).fit(maxiter=allowed)
+    rows.append({"fit": f"statsmodels, {allowed} steps allowed",
+                 "steps taken": fit.fit_history["iteration"],
+                 "converged": fit.converged,
+                 "coefficient": fit.params["catch_weight_kg"]})
+
+# scikit-learn's LogisticRegression gives no sign at all: its default penalty
+# (C=1.0) stops the coefficient from walking off, so it looks ordinary.
+default = LogisticRegression().fit(d_leak[["catch_weight_kg"]], leak_y)
+rows.append({"fit": "LogisticRegression()",
+             "steps taken": default.n_iter_[0],
+             "converged": default.n_iter_[0] < default.max_iter,
+             "coefficient": default.coef_[0, 0]})
+
+pd.DataFrame(rows).round(1)
 ```
 
 :::
 
-Two parameters make ten thousand combinations, done in a moment. Four, the number in the
-linear regression above, make a hundred million. Ten make $10^{20}$, which at a billion
-a second takes about `r format(round(1e20 / 1e9 / (3600 * 24 * 365), -2), big.mark = ",")` years.
-A search has to use the shape of the objective to go downhill instead of looking
-everywhere, and [Gradient descent](gradient-descent.qmd) shows the simplest way.
+This is **separation**: one input splits the two classes completely. Moving its
+coefficient further from zero always makes the predictions a little more confident and
+the log loss a little smaller, so the objective keeps falling and has no lowest point.
+The search walks off in that direction for as long as it is allowed: the coefficient is
+`r round(separated$coefficient[1])` after `r separated$"steps taken"[1]` steps and
+`r round(separated$coefficient[2])` after `r separated$"steps taken"[2]`. Given more
+room, R stops after `r separated$"steps taken"[3]` steps at
+`r round(separated$coefficient[3])` and reports that it converged, because by then the
+log loss is so close to zero that a step barely changes it. Every fit classifies all the
+training stations correctly, and R warns that fitted probabilities of 0 or 1 occurred.
+
+So the coefficient is wherever the search gave up, not an estimate, and even a
+converged search can have found no real lowest point. The sign is a coefficient that
+keeps growing when the search is allowed more steps, with a perfect score on the
+training data. It does not mean the input is powerful science; it means the input gives
+the answer away, and in practice that is usually a leak. A penalty on the coefficients,
+as [Regularisation](../05-generalisation/regularisation.qmd) adds, stops the walk,
+which is why scikit-learn's default logistic regression, in the Python tab, returns an
+ordinary-looking number instead.
 
 ## Trees search one split at a time
 
@@ -343,28 +419,42 @@ input and every split value, keeps the one that lowers the squared error most, a
 moves on without going back. This **greedy** search is fast, but it can miss a better
 tree whose first split looks worse on its own. Random forests and boosting grow many
 trees this way, and forests also draw stations and inputs at random, so without a set
-seed each run gives a slightly different model.
+seed each run gives a slightly different model;
+[Reproducibility and transparent reporting](../10-interpretation/reproducibility.qmd)
+measures how much.
+
+## Each sign of a failed search has its own fix
 
 A model found by formula has nothing to check about the fit itself. A model found by
-search can stop before the bottom, stop somewhere other than the bottom, or change from
-run to run, and none of these shows in its coefficients.
-[Checking a fit](reading-a-fit.qmd) shows how to spot each one.
+search can fail in ways its coefficients do not show, and each failure leaves a sign.
+
+| Sign | What happened | What to do |
+| --- | --- | --- |
+| `converged` is `FALSE`, or a warning that the search did not converge | Ran out of steps | Allow more steps; if it still does not finish, rethink the model |
+| A coefficient that grows with the steps allowed, and a perfect training score | Separation: an input gives the answer away | Find that input; suspect leakage |
+| The objective grows with every step, or becomes `NaN` | Steps too large | Take smaller steps; [standardise the inputs](gradient-descent.qmd) |
+| A different answer on each run | Random choices in the fit | Set a seed to repeat it; refit without one to measure the spread |
+
+"Converged" means only that the search stopped by its own rule, and each package sets
+its own, so two packages fitting the same model can disagree in the third decimal place
+and both report success. The last check needs no software at all: are the predictions
+possible, with no negative counts and no probabilities outside 0 and 1?
 
 ## Key points
 
 ::: {.key-points}
-- **Parameters** are chosen by the fit from the data; **hyperparameters**, such as a
-  tree's depth, are set before fitting and limit what the fit may do.
+- **Parameters** are chosen by the fit from the data; hyperparameters, such as a tree's
+  depth, are set before fitting and limit what the fit may do.
 - Linear regression under squared error has a formula: one step, exact, and the same on
-  every run.
-- Poisson and logistic regression search step by step; here logistic regression settled
-  in `r settled` steps from a start at zero.
-- Trying every combination is out of reach: ten parameters on a modest grid take
-  $10^{20}$ evaluations.
+  every run. Trying every combination instead is out of reach beyond a few parameters.
+- Most other models search step by step; here logistic regression settled in
+  `r settled` steps from a start at zero.
+- A search that went wrong still prints coefficients. Stopped after two steps, the
+  chlorophyll coefficient was `r scales::percent(chl_off, 1)` out and looked normal;
+  check the `converged` flag, and treat a coefficient that grows with more steps as
+  separation, an input that gives the answer away.
 - Trees choose one split at a time and never revisit it; forests and boosting add
   randomness on top.
-- A model found by search can fail in ways a formula cannot, so check which kind you
-  have.
 :::
 
 ## Try it yourself
@@ -373,3 +463,6 @@ run to run, and none of these shows in its coefficients.
 2. Add a copy of depth in other units, `depth_m * 2`, as a fourth input and give it to
    `lm()`. What does the coefficient table say, and would you have noticed without
    looking for it? Try the same with `solve()`.
+3. Fit `glm(present ~ abundance, family = binomial)`. `present` is defined as
+   `abundance > 0`, so abundance splits the classes exactly. How large does its
+   coefficient grow?

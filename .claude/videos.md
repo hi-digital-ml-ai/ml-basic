@@ -934,3 +934,24 @@ between them. Changes from the first version:
   (`exports.R` predicts with `predict.all = TRUE` outside `with()`, where `grid` would
   find `graphics::grid()`). The comparison has seven models, k-nearest neighbours in;
   Poisson regression first on test, the tree first on validation.
+
+## §4 How algorithms learn rebuilt (2026-10-08)
+
+Rebuilt from the second-pass pages (`feature/revise-how-algorithms-learn`): 26 scenes,
+6:45, all narrated with Gemini (8 new takes, 6 reused, about $0.03). The first two
+points stay (the loss decides what the model attends to; check that the search
+finished). The third is now "the assumptions inside the loss":
+
+- Two new schematic scenes: a Normal, a Poisson and a present-or-absent distribution
+  each giving its loss (squared error, Poisson deviance, log loss), then the Normal
+  curve running below zero against Poisson bars stopping at zero, which explains the
+  negative count from *Linear and polynomial regression*.
+- The forty-station scene keeps its words; the prior scene reads
+  `likelihood-and-priors.qmd` (9.23 to 0.26, −6.78 to −0.18) and no longer claims
+  better predictions. The RMSE scene (4.85, 4.76, 4.45) is cut, since no page computes
+  it now.
+- Scene 3 teaches noise instead of the residual against the true average. The quiz
+  answer reads `parameter-estimation.qmd`: stopped after two steps, 0.268 against
+  0.348, 23 per cent out.
+- The Gemini takes ran 0.89 to 1.17 of the draft's length; the scenes follow their
+  cues, so the layout reviewed on the draft should hold.

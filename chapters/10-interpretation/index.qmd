@@ -60,9 +60,8 @@ gave the forest intervals from a quantile forest, and
 [Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) put an
 interval on a score; [Communicating uncertainty](communicating-uncertainty.qmd) checks
 intervals on predictions by their coverage at new sites.
-[Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured how far a forest
-moves without a seed; [Reproducibility and transparent reporting](reproducibility.qmd)
-compares that with the split of sites.
+[Reproducibility and transparent reporting](reproducibility.qmd) measures how far a
+forest moves without a seed and compares that with the split of sites.
 [Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
 by vessel, and [From a model to a claim](from-model-to-claim.qmd) shows
 the bias that no comparison of a model with its records can find.

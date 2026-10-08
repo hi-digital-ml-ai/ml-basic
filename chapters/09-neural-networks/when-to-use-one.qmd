@@ -224,8 +224,8 @@ n_coefficients <- c("one", "two", "three", "four")[nrow(tidy(named_fit))]
 ```
 
 Run on its own, `glm()` warns that the fit did not converge and that some fitted
-probabilities are 0 or 1. The combination separates core from outside completely, which [Checking a
-fit](../04-how-algorithms-learn/reading-a-fit.qmd) calls **separation**: the coefficients
+probabilities are 0 or 1. The combination separates core from outside completely, which [Finding the
+parameters](../04-how-algorithms-learn/parameter-estimation.qmd#separation-leaves-no-lowest-point) calls **separation**: the coefficients
 grow without limit, but the ranking is right. With the named combination, logistic
 regression reaches a ROC AUC of `r f3(named_auc)` with `r n_coefficients` coefficients,
 level with the network.

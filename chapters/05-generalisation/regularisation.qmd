@@ -21,10 +21,9 @@ set.seed(123)
 [The bias–variance trade-off](bias-variance.qmd) found that a random forest cuts variance
 by averaging many trees. Regularisation cuts it another way. It charges the model for
 large coefficients, so the model fits its own data a little worse, and new data better.
-This page sets out the two penalties in common use: ridge regression, met in
-[Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd), and the
-lasso, which that page only mentioned. It shows that they can rescue a regression swamped
-by useless inputs, and what the lasso's choice of inputs can and cannot tell you.
+This page sets out the two penalties in common use, ridge regression and the lasso. It
+shows that they can rescue a regression swamped by useless inputs, and what the lasso's
+choice of inputs can and cannot tell you.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -47,10 +46,10 @@ and removes variance.
 Two penalties are in common use:
 
 - **Ridge regression** charges the sum of the squared coefficients.
-  [Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd) derived it
-  from a Normal prior. A squared penalty is heavy on large coefficients and light on
+  [Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) derives
+  it from a Normal prior. A squared penalty is heavy on large coefficients and light on
   small ones, so it shrinks every coefficient but sets none to exactly zero.
-- **The lasso** charges the sum of their absolute values. The same page noted that it
+- **The lasso** charges the sum of their absolute values. The same page shows that it
   comes from a Laplace prior, which has a sharp peak at zero. The price of each unit is the same all the way down to zero, so a small
   coefficient that does little for the fit is cheaper to drop than to keep. The lasso sets
   such coefficients to exactly zero, and the input is gone from the model.

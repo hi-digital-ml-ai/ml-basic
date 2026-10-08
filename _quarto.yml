@@ -92,12 +92,8 @@ website:
             text: "Finding the parameters"
           - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
             text: "Gradient descent"
-          - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
-            text: "Maximum likelihood"
-          - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
-            text: "Priors and ridge regression"
-          - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
-            text: "Checking a fit"
+          - href: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+            text: "Likelihood and priors"
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:

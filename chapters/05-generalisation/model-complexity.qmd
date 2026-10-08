@@ -47,7 +47,7 @@ model along the axis.
 :::
 
 Two of these settings are easy to misread. In
-[ridge regression](../04-how-algorithms-learn/map-and-priors.qmd), raising the penalty
+[ridge regression](regularisation.qmd), raising the penalty
 makes the model simpler, since it pulls every coefficient towards zero. And the number of
 trees in a random forest is not a complexity setting at all.
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) found

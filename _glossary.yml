@@ -324,3 +324,85 @@ terms:
     definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
     more: chapters/04-how-algorithms-learn/gradient-descent.qmd
+
+  # 4 · How algorithms learn: Loss functions
+  - term: "Residual"
+    definition: "How far one prediction missed: the observed value minus the predicted one."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Noise"
+    definition: "The part of an outcome that the conditions do not decide, such as patchy animals or chance, which no model can predict."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+    more: chapters/05-generalisation/bias-variance.qmd
+  - term: "Loss function"
+    definition: "A rule that turns a residual into a penalty: zero for a perfect prediction, and larger the worse the miss."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Squared error"
+    definition: "A loss that multiplies the residual by itself, so a miss of 10 costs a hundred times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Absolute error"
+    definition: "A loss that drops the residual's sign, so a miss of 10 costs ten times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Objective"
+    definition: "The loss averaged over the data, possibly with a penalty added: the one number a fit makes as small as it can."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Mean squared error"
+    definition: "The squared error averaged over the data; its square root is the RMSE."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Poisson deviance"
+    definition: "The loss for counts, which prices a miss by how many animals were expected, so missing by 5 costs more where few were expected."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Log loss"
+    definition: "The loss for a predicted probability, which grows with how little probability the model gave to what happened."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+
+  # 4 · How algorithms learn: Finding the parameters
+  - term: "Parameter"
+    definition: "A number the fit chooses from the data, such as a slope or the value a tree splits at."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Normal equations"
+    definition: "The equations whose solution gives linear regression's coefficients directly, in one step, without a search."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Converged"
+    definition: "Said of a search that stopped because its steps no longer improved the fit by more than a set amount, rather than because it ran out of steps."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Separation"
+    definition: "When one input splits the two classes completely, so a classifier's coefficient grows without limit and the search never finds a lowest point."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Greedy"
+    definition: "Said of a search that takes the best step now and never goes back to change it, as a decision tree does with its splits."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+
+  # 4 · How algorithms learn: Gradient descent
+  - term: "Gradient descent"
+    definition: "A search that finds which way is downhill on the objective and takes a step that way, again and again, until the ground is flat."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Gradient"
+    definition: "The slope of the objective along each parameter, which together point uphill."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Stochastic gradient descent"
+    definition: "Gradient descent in which each step uses a small random batch of the observations instead of all of them."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+    more: chapters/09-neural-networks/training-a-network.qmd
+
+  # 4 · How algorithms learn: Likelihood and priors
+  - term: "Maximum likelihood"
+    definition: "Fitting by choosing the parameter values that make the observed data most probable under a stated distribution."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Likelihood"
+    definition: "The probability of the observed data, read as a function of the parameter values."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum likelihood estimate"
+    definition: "The parameter value at the peak of the likelihood, the one that makes the data most probable."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Negative log-likelihood"
+    definition: "Minus the logarithm of the likelihood: a loss, which the fit makes as small as it can. Squared error, Poisson deviance and log loss are examples."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Prior"
+    definition: "What is believed about a parameter before seeing the data, written as a distribution; its negative log is a penalty."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum a posteriori"
+    definition: "Fitting by choosing the parameter values that best balance the likelihood and the prior: the highest point of the posterior."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Posterior"
+    definition: "The likelihood combined with the prior: what is believed about the parameters after seeing the data."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd

@@ -35,7 +35,7 @@ The section picks up threads from earlier ones.
 [Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
 validation sites, and [Underfitting and overfitting](underfitting-and-overfitting.qmd)
 shows the cost of choosing badly. The penalty in [Regularisation](regularisation.qmd) is
-the prior from [Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd).
+a prior, as [Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) shows.
 [Splitting the data](../02-marine-data/splitting-data.qmd) set validation sites aside for
 choosing a model; [Hyperparameter selection](hyperparameter-selection.qmd) replaces them
 with cross-validation, which lets every training site take a turn.
