@@ -30,8 +30,7 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
 This video is an overview built on three ideas, each with the reason it matters: a
 perfect fit on the fitting stations is a warning sign, the U-shaped error curve comes
 from bias and variance, and complexity is chosen by cross-validation with the test
-sites opened once. It does not tour every page: the out-of-bag error, the number of
-sites, the one-standard-error rule and the lasso's list of inputs are left to the
+sites opened once. It does not tour every page: the one-standard-error rule and the lasso's list of inputs are left to the
 pages. It never says which inputs truly drive the species.
 -->
 
@@ -48,7 +47,7 @@ honestly.
 # A perfect fit is a warning sign
 
 ## Scene 2
-visual: manim FiveModels: five bars grow, each model's error on its fitting stations (page results, training-versus-new-data.qmd#fig-crossing)
+visual: manim FiveModels: five bars grow, each model's error on its fitting stations (page results, underfitting-and-overfitting.qmd#fig-crossing)
 
 Here are five models from earlier in the course, fitted to the same simulated coastal
 survey. The bars show each model's error on the stations it was fitted to.
@@ -72,15 +71,15 @@ So score them on new sites, held back from fitting. The perfect tree comes last,
 6.21. That is worse than ignoring every input and predicting the average count, 4.83.
 
 ## Scene 6
-visual: manim Crossing: each model a line from its error on the fitting stations to its error on new sites; the lines cross (page results, training-versus-new-data.qmd#fig-crossing)
+visual: manim Crossing: each model a line from its error on the fitting stations to its error on new sites; the lines cross (page results, underfitting-and-overfitting.qmd#fig-crossing)
 
 The order turns over. Linear regression, last on its own stations, is close to the
 best on new ones.
 
 ## Scene 7
-visual: manim SignalAndNoise: dots, a smooth trend through them labelled "signal", then the scatter around it labelled "noise" (schematic)
+visual: manim SignalAndNoise: dots, a smooth trend through them labelled "pattern", then the scatter around it labelled "noise" (schematic)
 
-Why? Data hold two kinds of pattern. Signal, such as warmer water holding more of a
+Why? Data hold a pattern and noise. The pattern, such as warmer water holding more of a
 species, turns up again at new sites. Noise, such as one lucky haul, does not.
 
 ## Scene 8
@@ -163,7 +162,7 @@ tree, noise was 72 per cent of the error.
 visual: manim TreeAndForest: bias² and variance bars for a single tree and a random forest of the same trees; the forest's variance bar shrinks (page results, bias-variance.qmd)
 
 This is why a random forest works. Averaging many trees keeps their bias, but cuts
-their variance, here about fifteen-fold.
+their variance, here about thirteen-fold.
 
 ## Scene 21
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
@@ -203,11 +202,11 @@ A node size, a penalty: every method has a setting like this, and it has to be c
 Not by training error, which always favours the most flexible.
 
 ## Scene 26
-visual: manim Repeats: forty runs of one validation split as dots, the error each claimed for its winner, spread wide (page results, hyperparameter-selection.qmd#fig-repeats)
+visual: manim Repeats: twenty runs of one validation split as dots, the error each claimed for its winner, spread wide (page results, hyperparameter-selection.qmd#fig-repeats)
 
 The simplest way is one validation split: hold back some sites and compare settings on
-them. But it depends on which sites were held back. In 40 repeats, the error it claimed
-ranged from 3.52 to 6.36.
+them. But it depends on which sites were held back. In 20 repeats, the error it claimed
+ranged from 3.72 to 5.37.
 
 ## Scene 27
 visual: manim Folds: the training sites dealt into ten folds; each fold lights up in turn as new data while the rest are fitted (schematic)
@@ -216,16 +215,16 @@ Cross-validation does better. Deal the training sites into ten folds. Each fold 
 turn as new data while the model is fitted to the rest, and the ten errors are averaged.
 
 ## Scene 28
-visual: manim Repeats: the forty cross-validation dots added below, in a narrow band (page results)
+visual: manim Repeats: the twenty cross-validation dots added below, in a narrow band (page results)
 
-Every training site counts, so the verdict is steadier: in 40 repeats, from 4.45 to
-4.70.
+Every training site counts, so the verdict is steadier: in 20 repeats, from 4.45 to
+4.64.
 
 ## Scene 29
-visual: manim TestOnce: a sealed box of test sites opened once; the tree against predicting the average, 0.29 better, beside the 0.26 cross-validation promised (page results, hyperparameter-selection.qmd)
+visual: manim TestOnce: a sealed box of test sites opened once; the tree against predicting the average, 0.28 better, beside the 0.26 cross-validation promised (page results, hyperparameter-selection.qmd)
 
 Last, the test sites, held back since the start, are scored once. The chosen tree beats
-predicting the average by 0.29, close to the 0.26 that cross-validation promised.
+predicting the average by 0.28, close to the 0.26 that cross-validation promised.
 
 ## Scene 30
 visual: manim TestOnce: the box marked "spent"; choosing again turns test sites into validation sites (schematic)
@@ -250,7 +249,7 @@ Quick quiz. A colleague adds ten new columns to a regression, and its R squared 
 fitting stations goes up. Does that show the new columns help?
 
 ## Scene 33
-visual: manim QuizAnswer: "No"; R² on the fitting stations rising with columns of random numbers, the error on new sites rising too (page results, model-complexity.qmd#fig-noise)
+visual: manim QuizAnswer: "No"; R² on the fitting stations rising with columns of random numbers, the error on new sites rising too (page results, regularisation.qmd#fig-noise)
 
 No. R squared on the fitting stations never falls when a column is added, even a column
 of random numbers. On the survey, ten random columns raised it, and raised the error on
