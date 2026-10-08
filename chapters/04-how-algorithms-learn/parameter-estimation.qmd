@@ -34,7 +34,7 @@ coefficients that look normal.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Parameters and hyperparameters
+## The fit sets parameters and you set hyperparameters
 
 A **parameter** is a number the fit chooses from the data: a slope in a regression, or
 the value a decision tree splits at. You do not set these.
@@ -67,7 +67,7 @@ has in mind.
   in an underscore, as in `coef_`.
 :::
 
-## The objective as a landscape
+## Fitting finds the lowest point of a landscape
 
 For a straight line, the objective depends on two parameters, the intercept and the
 slope. Draw it as a map, with the two parameters as the axes and the objective as the

@@ -31,7 +31,7 @@ and how to choose between them.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## From one miss to the whole dataset
+## Averaging the misses gives the objective
 
 The **residual** is how far one prediction missed: the observed value minus the
 predicted one. A station with 7 animals and a prediction of 4 has a residual of 3; with a
@@ -95,7 +95,7 @@ We fit a straight line of abundance against chlorophyll twice, changing only the
 tries values until the function is as small as it can make it.
 [The next two pages](parameter-estimation.qmd) show how a search like this works.
 
-### Two losses, two lines
+### Squared and absolute error draw different lines
 
 ::: {.panel-tabset group="language"}
 

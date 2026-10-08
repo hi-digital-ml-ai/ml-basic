@@ -34,7 +34,7 @@ and a reason to standardise inputs that
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The slope and the step
+## The gradient gives the direction and the learning rate the step
 
 The **gradient** is the slope of the objective in the direction of each parameter. For
 each one it says whether nudging that parameter up makes the objective larger or
@@ -58,7 +58,7 @@ fitting, and it decides the outcome.
 
 ## Worked example
 
-### Writing the walk out
+### The whole algorithm is one line of code
 
 We predict abundance from chlorophyll and depth. To keep the model to two parameters, so
 the walk can be drawn as a path on a map, we centre abundance and standardise both
@@ -154,7 +154,7 @@ pd.Series(optimum, index=["chlorophyll", "depth"]).round(3)
 
 :::
 
-### Three learning rates
+### The learning rate decides whether the walk arrives
 
 ::: {.panel-tabset group="language"}
 
@@ -272,8 +272,9 @@ the other. At 0.8 the walk never arrives: after 40 steps the mean squared error 
 
 For this objective the largest rate that still arrives is about `r round(safe, 2)`.
 Just below it the walk still arrives, slowly and zig-zagging; just above it the walk
-fails, and nothing on the way warns you. A fit whose loss suddenly becomes enormous, or `NaN`, has usually crossed
-this limit, and a smaller learning rate is the first thing to try.
+fails, and nothing on the way warns you. A fit whose loss suddenly becomes enormous, or
+`NaN`, has usually crossed this limit, and a smaller learning rate is the first thing to
+try.
 
 ### The units of the inputs set the work
 
