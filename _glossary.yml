@@ -452,3 +452,20 @@ terms:
   - term: "Elastic net"
     definition: "A linear regression whose penalty mixes ridge regression's and the lasso's; mixture sets the share, from 0 for ridge to 1 for the lasso."
     page: chapters/05-generalisation/regularisation.qmd
+
+  # 5 · Generalisation: Hyperparameter selection
+  - term: "k-fold cross-validation"
+    definition: "Cutting the training data into k folds and letting each take a turn as new data while the model is fitted to the rest; the k errors are averaged."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Fold"
+    definition: "One of the k groups the training data are cut into for cross-validation; with data in sites, each fold holds whole sites."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Cross-validated error"
+    definition: "The average of the errors on the held-out folds, used to compare candidate settings."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Standard error"
+    definition: "How far an average could move with a different draw of data; for a cross-validated error, the spread of the fold errors over the square root of the number of folds."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "One-standard-error rule"
+    definition: "Among the settings whose cross-validated error is within one standard error of the lowest, choosing the simplest."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd

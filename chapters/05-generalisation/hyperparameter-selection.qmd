@@ -1,7 +1,7 @@
 ---
 title: "Hyperparameter selection"
 description: "A setting such as a tree's node size must be chosen on data the model was not fitted to. Cross-validation by site lets every training site take a turn as new data, and gives a steadier verdict than one set of validation sites."
-order: 6
+order: 4
 categories: [generalisation, tuning]
 ---
 
@@ -16,11 +16,14 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Settings the fitting cannot choose
 
 Each page in this section has turned a setting, a tree's minimum node size or the lasso's
 penalty λ, and found that its best value cannot be read from the training error. This page
-names those settings and introduces **cross-validation**, the standard way to choose them.
+names those settings and sets out
+[cross-validation](../02-marine-data/splitting-data.qmd), the standard way to choose them.
 It also shows that one set of validation sites, as earlier sections used, gives a verdict
 that swings with the sites that happen to be held back.
 
@@ -30,8 +33,10 @@ that swings with the sites that happen to be held back.
 
 ## Parameters and hyperparameters
 
-A **parameter** is learned by fitting: the coefficients of a regression, or the splits of a
-tree and the prediction in each leaf. A **hyperparameter** is fixed before fitting begins,
+A [parameter](../04-how-algorithms-learn/parameter-estimation.qmd) is learned by fitting:
+the coefficients of a regression, or the splits of a tree and the prediction in each leaf.
+A [hyperparameter](../03-supervised-learning/nearest-neighbours.qmd) is fixed before
+fitting begins,
 and limits what the fitting can do: a tree's depth or minimum node size, the number of trees
 in a forest, the penalty λ. The fitting cannot choose a hyperparameter, because on its own
 data the most flexible setting always looks best, as
@@ -333,8 +338,8 @@ grounds that the more flexible model's lead is within the noise.
 ### One validation split gives a noisy verdict
 
 The choice above rests on one cutting of the sites into folds. To see how much a choice
-depends on the sites that happen to be held out, the whole selection is repeated 40 times,
-in two ways. One uses a single validation split, three quarters of the training sites for
+depends on the sites that happen to be held out, the whole selection is repeated
+many times, in two ways. One uses a single validation split, three quarters of the training sites for
 fitting, as in [Decision trees](../03-supervised-learning/decision-trees.qmd). The other
 uses ten-fold cross-validation, with the sites dealt into new folds each time. Each run
 records the node size that won and the error it claimed.
@@ -345,18 +350,22 @@ records the node size that won and the error it claimed.
 
 ```{r}
 #| label: repeats
-# The error on the held-out sites of each node size, fitted to the rest
+# The error on the held-out sites of each node size, fitted to the rest.
+# The recipe is prepared once per split and shared by the 12 trees, which
+# gives the same trees as fitting the workflow 12 times, in less time.
 errors_on <- function(s) {
-  fitting <- analysis(s)
-  new     <- assessment(s)
+  prepped <- prep(tree_recipe, training = analysis(s))
+  fitting <- bake(prepped, new_data = NULL)
+  new     <- bake(prepped, new_data = assessment(s))
   map_dbl(sizes, \(n) {
-    fitted <- finalize_workflow(tree_workflow, tibble(min_n = n)) |> fit(fitting)
+    fitted <- finalize_model(tree_model, tibble(min_n = n)) |>
+      fit(abundance ~ ., data = fitting)
     rmse_vec(new$abundance, predict(fitted, new)$.pred)
   })
 }
 winner <- function(errors) tibble(min_n = sizes[which.min(errors)], claimed = min(errors))
 
-repeats <- map(1:40, \(r) {
+repeats <- map(1:20, \(r) {
   one_split <- group_initial_split(train, group = site_id, prop = 0.75)
   ten_folds <- group_vfold_cv(train, group = site_id, v = 10)
   # one column per fold; the row means are the cross-validated errors
@@ -386,7 +395,7 @@ def errors_on(fit_rows, new_rows):
                      for f in fitted])
 
 runs = []
-for r in range(40):
+for r in range(20):
     one_split = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=r)
     ten_folds = GroupKFold(n_splits=10, shuffle=True, random_state=r)
     groups = train["site_id"]
@@ -414,6 +423,7 @@ repeats = pd.DataFrame(runs)
 summary_of <- function(m) filter(repeats, method == m)
 one_runs <- summary_of("One validation split")
 cv_runs <- summary_of("Ten-fold cross-validation")
+n_runs <- nrow(one_runs)
 one_spread <- diff(range(one_runs$claimed))
 lead <- baseline - best_row$mean
 cv_mode <- count(cv_runs, min_n) |> slice_max(n, n = 1, with_ties = FALSE)
@@ -426,7 +436,7 @@ in_tie <- sum(repeats$min_n %in% tied$min_n)
 
 ```{r}
 #| label: fig-repeats
-#| fig-cap: "The node size chosen in each of 40 runs, and the error claimed for it, by a single validation split (top) and by ten-fold cross-validation (bottom). Node sizes run from rigid on the left to flexible on the right."
+#| fig-cap: "The node size chosen in each run, and the error claimed for it, by a single validation split (top) and by ten-fold cross-validation (bottom). Node sizes run from rigid on the left to flexible on the right."
 #| fig-alt: !expr glue::glue("Two panels of points share an axis of the 12 node sizes, from 300 on the left to 2 on the right. Each point is one run, placed at the node size it chose and the error it claimed. With one validation split, the points spread over {n_distinct(one_runs$min_n)} node sizes, from {max(one_runs$min_n)} to {min(one_runs$min_n)}, and from {f2(min(one_runs$claimed))} to {f2(max(one_runs$claimed))} in error. With ten-fold cross-validation, they sit over {n_distinct(cv_runs$min_n)} node sizes, from {max(cv_runs$min_n)} to {min(cv_runs$min_n)}, in a narrow band from {f2(min(cv_runs$claimed))} to {f2(max(cv_runs$claimed))}. No run chose a node size smaller than {min(repeats$min_n)}.")
 #| fig-width: 7
 #| fig-height: 5
@@ -447,7 +457,7 @@ repeats |>
 
 :::
 
-**One validation split gives a noisy verdict.** Across the 40 runs, the error it claimed
+**One validation split gives a noisy verdict.** Across the `r n_runs` runs, the error it claimed
 for its winner ranged from `r f2(min(one_runs$claimed))` to `r f2(max(one_runs$claimed))`,
 a spread caused only by which sites were held out. That spread is about
 `r round(one_spread / lead)` times the tree's whole lead over predicting the average.
@@ -458,7 +468,7 @@ Ten-fold cross-validation's claimed errors ranged only from `r f2(min(cv_runs$cl
 `r in_words(n_distinct(one_runs$min_n))` different node sizes, from
 `r max(one_runs$min_n)` down to `r min(one_runs$min_n)`. Cross-validation chose
 `r in_words(n_distinct(cv_runs$min_n))`, and settled on `r cv_mode$min_n` in
-`r cv_mode$n` of the 40 runs. `r if (in_tie == 80) "Every one of the 80 choices was" else paste(in_tie, "of the 80 choices were")`
+`r cv_mode$n` of the `r n_runs` runs. `r if (in_tie == 2 * n_runs) paste("Every one of the", 2 * n_runs, "choices was") else paste(in_tie, "of the", 2 * n_runs, "choices were")`
 among the settings that tie, so neither method can pin the node size down, and the data
 say it matters little.
 
@@ -517,8 +527,8 @@ n_test_sites <- n_distinct(test$site_id)
 ```
 
 The tree scores `r f2(test_tree)` on the test sites, against `r f2(test_average)` for
-predicting the training sites' average: better by `r f2(test_average - test_tree)`.
-Cross-validation put the tree `r f2(baseline - best_row$mean)` ahead of the average.
+predicting the training sites' average: better by `r f2(round(test_average, 2) - round(test_tree, 2))`.
+Cross-validation put the tree `r f2(round(baseline, 2) - round(best_row$mean, 2))` ahead of the average.
 Both errors are lower on the test sites than in cross-validation, because these
 `r n_test_sites` sites happen to be easier to predict; a single set of test sites is one
 draw too. The gain over the average on the same sites is the fairer comparison, and it
@@ -526,20 +536,20 @@ holds up.
 
 Once the test sites have been scored, they are spent. Choosing again because their score
 disappointed would make them validation sites, and the score would flatter the model as
-the claimed errors above do. [Cross-validation](../07-validation/cross-validation.qmd), in
-section 7, shows how to get an honest score when the data are too few to set test sites
+the claimed errors above do. [Cross-validation](../07-validation/cross-validation.qmd)
+shows how to get an honest score when the data are too few to set test sites
 aside.
 
 ## Key points
 
 ::: {.key-points}
-- A **hyperparameter** is fixed before fitting and limits it. The training error always
+- A hyperparameter is fixed before fitting and limits it. The training error always
   favours the most flexible setting, so a hyperparameter is chosen on data the model was
   not fitted to.
 - **k-fold cross-validation** cuts the training data into *k* folds; each takes a turn as
   new data while the model is fitted to the rest, and the *k* errors are averaged. Folds
   hold whole sites, as a split does.
-- **One validation split gives a noisy verdict.** In 40 runs, the error it claimed for its
+- One validation split gives a noisy verdict. In `r n_runs` runs, the error it claimed for its
   winner ranged from `r f2(min(one_runs$claimed))` to `r f2(max(one_runs$claimed))`;
   with ten-fold cross-validation, from `r f2(min(cv_runs$claimed))` to
   `r f2(max(cv_runs$claimed))`.
