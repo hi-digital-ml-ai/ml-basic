@@ -913,3 +913,24 @@ predicting is not explaining, six tasks limited by their labels), with three cha
   field usually holds each; the hump, the RMSE built by hand, the baseline and the
   confounder follow as before, read from `prediction-and-explanation.qmd`.
 - Unchanged scenes keep their words, so `narrate.py` reuses their takes.
+
+## §3 Supervised learning rebuilt (2026-10-08)
+
+Rebuilt from the second-pass pages (`feature/revise-supervised-learning`): 35 scenes,
+7:25, all narrated with Gemini (10 new takes, 25 reused, about $0.03). The three points
+are models that add up their inputs, models that learn their shape, and choosing
+between them. Changes from the first version:
+
+- The opening histogram reads `count-regression.qmd`, since *Regression and
+  classification* is gone. The overdispersion scene, the tree's steps beyond the data
+  and the test-only comparison bars are cut; the negative binomial left with the page.
+- Three scenes teach k-nearest neighbours: a schematic new station and its five
+  nearest; the error against k on fitting stations and validation sites (overfitting
+  at k = 1); validation lowest at 30, where the word hyperparameter is introduced. The
+  tree's depth (lowest at 5) is then "a hyperparameter too", and key point two is
+  "flexible models learn the shape; a hyperparameter, chosen on validation data, sets
+  how closely".
+- The forest scene draws thirty of the page's own forest's trees and their average
+  (`exports.R` predicts with `predict.all = TRUE` outside `with()`, where `grid` would
+  find `graphics::grid()`). The comparison has seven models, k-nearest neighbours in;
+  Poisson regression first on test, the tree first on validation.

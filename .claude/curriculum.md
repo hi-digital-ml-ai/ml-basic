@@ -162,7 +162,8 @@ it for the fitting and validation sites, overfitting and flat predictions beyond
 data. *Random forests and boosting* owns the bootstrap. *Choosing a method* compares
 seven models (k-nearest neighbours in, the negative binomial out). Every page uses the
 textbook R², links RMSE and R² to where they are taught, and says one line on
-extrapolation with a link.
+extrapolation with a link. The video was rebuilt from these pages the same day (see
+`videos.md`).
 
 Found during this pass, to fix when those sections are revised:
 
@@ -174,9 +175,6 @@ Found during this pass, to fix when those sections are revised:
 - **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
   §5 `model-complexity.qmd`, §6 `spatial-and-temporal-dependence.qmd`, §9
   `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
-- **§3 video.** `_videos/03-supervised-learning` still takes results from the deleted
-  *Regression and classification* (`exports.R`, `scenes.py:163`, `script.md:42`) and
-  predates k-nearest neighbours; rebuild it from the revised pages.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`
