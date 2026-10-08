@@ -231,7 +231,7 @@ terms:
     definition: "Information from the test set reaching the model before it is tested, which makes the test score promise more than the model delivers on new data."
     page: chapters/02-marine-data/information-leakage.qmd
   - term: "R² (R squared)"
-    definition: "The share of the variation in the test outcomes that the predictions follow, from 0 (none) to 1 (all of it). Higher is better."
+    definition: "The share of the variation in the test outcomes that the predictions follow: 1 means every prediction is exact, 0 means no better than predicting the average, and below 0 means worse. Higher is better."
     page: chapters/02-marine-data/information-leakage.qmd
     more: chapters/07-validation/regression-metrics.qmd
   - term: "Target leakage"

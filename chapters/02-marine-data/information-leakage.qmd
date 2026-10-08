@@ -52,7 +52,8 @@ Each kind below is shown on the same linear regression of `abundance` on the
 environment, fitted to a training set and scored on a test set with two measures. The
 [RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
 is the typical miss, in animals. **$R^2$** is the share of the variation in the test
-counts that the predictions follow, from 0 (none) to 1 (all of it).
+counts that the predictions follow: 1 means every prediction is exact, 0 means no better
+than predicting the test counts' own average, and below 0 means worse than that.
 
 ::: {.panel-tabset group="language"}
 
@@ -76,10 +77,8 @@ fit_and_test <- function(formula, train_data, test_data) {
     add_model(linear_reg()) |>
     fit(train_data) |>
     augment(test_data) |>
-    metrics(truth = abundance, estimate = .pred) |>
-    filter(.metric %in% c("rmse", "rsq")) |>
-    select(.metric, .estimate) |>
-    pivot_wider(names_from = .metric, values_from = .estimate) |>
+    summarise(rmse = rmse_vec(abundance, .pred),
+              rsq  = rsq_trad_vec(abundance, .pred)) |>
     mutate(across(everything(), \(x) round(x, 2)))
 }
 
@@ -95,7 +94,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import root_mean_squared_error
+from sklearn.metrics import r2_score, root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -125,8 +124,7 @@ def fit_and_test(predictors, train_data, test_data):
     truth = test_data["abundance"]
     return {
         "rmse": round(root_mean_squared_error(truth, predicted), 2),
-        # yardstick's rsq is the squared correlation, not 1 - SSE/SST.
-        "rsq": round(np.corrcoef(predicted, truth)[0, 1] ** 2, 2),
+        "rsq": round(r2_score(truth, predicted), 2),
     }
 ```
 
@@ -263,7 +261,7 @@ best_ten <- function(data) {
 
 evaluate <- function(variables) {
   model <- lm(reformulate(variables, "abundance"), data = ftrain)
-  round(cor(predict(model, ftest), ftest$abundance)^2, 3)
+  round(rsq_trad_vec(ftest$abundance, predict(model, ftest)), 3)
 }
 
 selection <- tibble(
@@ -294,7 +292,7 @@ def best_ten(data):
 def evaluate(variables):
     model = LinearRegression().fit(fake_train[variables], fake_train["abundance"])
     predicted = model.predict(fake_test[variables])
-    return round(np.corrcoef(predicted, fake_test["abundance"])[0, 1] ** 2, 3)
+    return round(r2_score(fake_test["abundance"], predicted), 3)
 
 pd.DataFrame({
     "chosen_using": ["All rows", "Training rows only"],
@@ -304,8 +302,10 @@ pd.DataFrame({
 
 :::
 
-The true $R^2$ is zero, and choosing on the training rows reports close to that
-(`r sprintf("%.3f", selection$test_rsq[2])`). Choosing on all the rows reports
+The true $R^2$ is zero. Choosing on the training rows reports
+`r sub("^-", "−", sprintf("%.3f", selection$test_rsq[2]))`, a little below zero,
+because a model of noise predicts new rows slightly worse than their average would.
+Choosing on all the rows reports
 `r sprintf("%.3f", selection$test_rsq[1])` from pure noise: small, but skill that does
 not exist. The effect grows with the number of candidate columns and shrinks with the
 number of rows, so a dataset with thousands of columns and a hundred samples can
