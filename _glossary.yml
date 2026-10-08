@@ -302,3 +302,10 @@ terms:
     definition: "A setting fixed before a model is fitted, such as the number of neighbours, and chosen on validation data rather than learned from the training data."
     page: chapters/03-supervised-learning/nearest-neighbours.qmd
     more: chapters/05-generalisation/hyperparameter-selection.qmd
+  # 3 · Supervised learning: decision trees
+  - term: "Leaf"
+    definition: "A final group of a decision tree, split no further; it predicts the average outcome of the training examples in it, or for a category the share of each."
+    page: chapters/03-supervised-learning/decision-trees.qmd
+  - term: "Depth"
+    definition: "The number of questions a decision tree asks from the top to a leaf; a deeper tree fits its training data more closely."
+    page: chapters/03-supervised-learning/decision-trees.qmd
