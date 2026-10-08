@@ -44,7 +44,7 @@ pictures are generative models of the same kind, on a vastly larger scale.
 ![The same data seen by two kinds of model. A discriminative model learns only the boundary between the groups; a generative model learns a description of each group, from which it can draw new examples.](img/discriminative-generative.svg){fig-alt="Two panels showing the same scatter of stations by temperature and depth: blue dots where the species was found, orange triangles where it was not. In the left panel, labelled discriminative, a dashed line separates the two groups. In the right panel, labelled generative, a shaded oval surrounds each group, and a hollow dot inside the blue oval is marked as a new example."}
 :::
 
-## Both kinds answer the presence question
+## Both kinds predict presence from temperature
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -154,7 +154,7 @@ curve:
 with(yes_group, round(rnorm(5, mean, sd), 1))
 ```
 
-## The two part company where the data are thin
+## Generative and discriminative models disagree where data are thin
 
 ```{r}
 #| label: compare-numbers

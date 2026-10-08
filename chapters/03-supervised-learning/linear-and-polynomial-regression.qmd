@@ -253,7 +253,7 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
 ### Polynomial regression scores better but predicts fewer than zero animals
 
 Both models are scored on the test sites with the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations),
 the typical miss in animals, and
 [$R^2$](../02-marine-data/information-leakage.qmd#one-linear-regression-shows-each-kind),
 the share of the variation in the test counts that the predictions follow. The last

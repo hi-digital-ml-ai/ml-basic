@@ -151,7 +151,7 @@ scikit-learn it is `KNeighborsRegressor`. kknn gives closer neighbours more weig
 unless told otherwise, so `weight_func = "rectangular"` makes every neighbour count
 equally, as scikit-learn does by default. Models with $k$ from 1 to 300 are fitted on
 the fitting sites and scored with the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations),
 the typical miss in animals, on the stations they were fitted to and on the validation
 sites.
 

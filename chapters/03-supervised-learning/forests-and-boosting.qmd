@@ -213,7 +213,7 @@ too. The data barely changed; the tree changed a lot.
 
 Forests and boosted models of 1 to 1600 trees are fitted on the fitting sites and
 scored with the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations)
 on the validation sites. The forest keeps ranger's defaults: two of the six inputs to
 choose from at each question, and leaves of at least five stations. The boosted trees are
 three questions deep with a learning rate of 0.05.

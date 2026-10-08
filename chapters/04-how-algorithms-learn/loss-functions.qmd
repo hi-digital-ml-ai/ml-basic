@@ -79,7 +79,7 @@ $a$ and slope $b$ that make the chosen objective smallest.
 
 The squared error averaged over the stations is the **mean squared error**, the
 objective a squared-error fit makes small. The RMSE, built by hand in
-[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations),
 is its square root. The square root changes the units, not the winner: the line with the
 smaller mean squared error also has the smaller RMSE. Algorithms make the mean squared
 error small, as it is simpler to work with, and people report the RMSE, as it reads in
