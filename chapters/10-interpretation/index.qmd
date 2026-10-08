@@ -56,7 +56,7 @@ shows why no model gets it right on this survey, and
 the multipliers of
 [Regression for counts](../03-supervised-learning/count-regression.qmd).
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-gave the forest intervals from a quantile forest, and
+found the forest's errors skewed and widening, and
 [Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) put an
 interval on a score; [Communicating uncertainty](communicating-uncertainty.qmd) checks
 intervals on predictions by their coverage at new sites.

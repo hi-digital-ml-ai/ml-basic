@@ -54,6 +54,15 @@ Its promise is plain: if new stations are drawn the same way as the calibration 
 9 in 10 of their catches fall inside. It assumes nothing about the model or the shape of
 its errors. It also says nothing about stations unlike the calibration ones.
 
+A **quantile forest** gives a forest an interval another way. It grows the same trees as
+a random forest, but keeps every training catch in each leaf instead of only their
+average, and reads the 5% and 95% points off the catches that land with a new station.
+Like the quantile loss of
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd),
+it aims at chosen points of the catches rather than their average. Its intervals are
+lopsided where the errors are, as count errors usually are, and widen where the catches
+spread more.
+
 ::: {.diagram}
 ![Three intervals from one model. An interval for the average is narrow and holds few single catches. An interval for a new catch is wide and holds most of them. Conformal prediction sets the width from the errors on calibration sites, so that 9 in 10 catches fall inside at stations like them.](img/three-intervals.svg){fig-alt="Three cards. For the average, a confidence interval: a narrow blue band along a rising line, with grey points for single catches scattered well above and below it; it narrows with more stations. For a new catch, a prediction interval: a wide pale orange band around the same line, holding nearly all the points; it stays wide however many stations. From held-out errors, conformal prediction: a row of bars for the errors on calibration sites, sorted by size, with a dashed line marking where 90% of them end, and an arrow from that line to an interval drawn around a prediction; it holds 9 in 10 at stations like the calibration sites. A note says a prediction interval is checked by its coverage, the share of new catches that fall inside it."}
 :::
@@ -67,7 +76,7 @@ the average and one for a new catch. The random forest of
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
 is then given a conformal interval, and is calibrated a second time on stations with
 little chlorophyll, to see what happens where it is used beyond them. Every interval is
-a 90% interval, as on that page.
+a 90% interval.
 
 ### Preparing the data
 
@@ -390,9 +399,9 @@ conformal_fifths <- conformal |>
 The calibration sites set the half-width at `r one(half_width)` animals, so every
 interval is `r one(2 * half_width)` wide. At the test sites it holds
 `r pct(mean(conformal$inside))` of the catches, from a model with no distribution.
-Like the Normal interval of
-[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd),
-though, it has one width: it holds `r pct(first(conformal_fifths$coverage))` of the
+It has one width, though, while the forest's errors widen with its predictions, as
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#the-forests-errors-are-skewed-and-widen-with-its-predictions)
+found: it holds `r pct(first(conformal_fifths$coverage))` of the
 catches in the fifth of stations with the smallest predictions and
 `r pct(last(conformal_fifths$coverage))` in the fifth with the largest, and its lower
 end is below zero for `r pct(mean(conformal$low < 0))` of the stations, where it is
@@ -403,9 +412,8 @@ station.
 
 The sites a model is calibrated on are not always like the stations where it is used.
 Here the forest is fitted and calibrated again on the three quarters of stations with
-the least chlorophyll, then used on the quarter with the most. The quantile forest of
-[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd),
-whose intervals widen where its catches do, is fitted beside it on the same sites.
+the least chlorophyll, then used on the quarter with the most. A quantile forest, whose
+intervals widen where its catches do, is fitted beside it on the same sites.
 
 ::: {.panel-tabset group="language"}
 
