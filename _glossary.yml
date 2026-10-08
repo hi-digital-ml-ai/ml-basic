@@ -265,3 +265,29 @@ terms:
   - term: "Negative binomial"
     definition: "A count model like Poisson regression with one extra number for overdispersion; it predicts much the same counts but reports wider ranges."
     page: chapters/03-supervised-learning/count-regression.qmd
+
+  # 3 · Supervised learning: Logistic regression
+  - term: "Logistic regression"
+    definition: "A model for a yes-or-no outcome that predicts the log-odds with a weighted sum of the inputs, so its predicted probability stays between 0 and 1."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Odds"
+    definition: "The probability that something happens divided by the probability that it does not: a probability of 0.8 gives odds of 4."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Log-odds"
+    definition: "The logarithm of the odds, which can take any value; logistic regression predicts it with a weighted sum."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Odds ratio"
+    definition: "A coefficient of logistic regression raised as a power of e: the factor by which one extra unit of the input multiplies the odds."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Threshold"
+    definition: "The probability at or above which a model's answer is yes; 0.5 by default, but best chosen from what each kind of mistake costs."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "False alarm"
+    definition: "An answer of yes where the truth is no."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Miss"
+    definition: "An answer of no where the truth is yes."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Accuracy"
+    definition: "The share of yes-or-no answers that are right."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
