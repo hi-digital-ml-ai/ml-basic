@@ -324,3 +324,33 @@ terms:
     definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
     more: chapters/04-how-algorithms-learn/gradient-descent.qmd
+
+  # 4 · How algorithms learn: Loss functions
+  - term: "Residual"
+    definition: "How far one prediction missed: the observed value minus the predicted one."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Noise"
+    definition: "The part of an outcome that the conditions do not decide, such as patchy animals or chance, which no model can predict."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+    more: chapters/05-generalisation/bias-variance.qmd
+  - term: "Loss function"
+    definition: "A rule that turns a residual into a penalty: zero for a perfect prediction, and larger the worse the miss."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Squared error"
+    definition: "A loss that multiplies the residual by itself, so a miss of 10 costs a hundred times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Absolute error"
+    definition: "A loss that drops the residual's sign, so a miss of 10 costs ten times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Objective"
+    definition: "The loss averaged over the data, possibly with a penalty added: the one number a fit makes as small as it can."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Mean squared error"
+    definition: "The squared error averaged over the data; its square root is the RMSE."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Poisson deviance"
+    definition: "The loss for counts, which prices a miss by how many animals were expected, so missing by 5 costs more where few were expected."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Log loss"
+    definition: "The loss for a predicted probability, which grows with how little probability the model gave to what happened."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd

@@ -16,14 +16,16 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Every fit makes one number small
 
 Each model in [Supervised learning](../03-supervised-learning/index.qmd) was fitted by
 an algorithm that tried values for the model's parameters until one number was as small
 as it could make it. That number measures how wrong the predictions are, and its formula
-decides which observations the model pays most attention to. This page shows the two
-common choices, squared and absolute error, drawing two different lines through the
-same data, and how to choose between them.
+decides which stations the model pays most attention to. This page shows the two common
+choices, squared and absolute error, drawing two different lines through the same data,
+and how to choose between them.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -34,6 +36,13 @@ same data, and how to choose between them.
 The **residual** is how far one prediction missed: the observed value minus the
 predicted one. A station with 7 animals and a prediction of 4 has a residual of 3; with a
 prediction of 9, a residual of −2.
+
+Part of every residual is **noise**: the part of a count that the station's conditions
+do not decide, such as patchy animals, a net that fished well or badly, and chance. No
+model can predict it, so even the best fit leaves residuals. The rest is the model's own
+mistake, such as a straight line missing a curve, which
+[The bias–variance trade-off](../05-generalisation/bias-variance.qmd) separates from
+the noise.
 
 A **loss function** turns a residual into a penalty: zero for a perfect prediction, and
 larger the worse the miss. The two common ones treat large misses very differently.
@@ -51,8 +60,8 @@ and fitting means finding the parameter values that make it smallest.
 :::
 
 An objective can also carry a penalty on the parameters themselves, which keeps them
-small. [Priors and ridge regression](map-and-priors.qmd), later in this section, shows
-where such a penalty comes from.
+small. [Regularisation](../05-generalisation/regularisation.qmd) uses one to stop a
+model fitting the noise.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
@@ -68,66 +77,16 @@ $a$ and slope $b$ that make the chosen objective smallest.
 
 ### The fit uses squared error and the RMSE reports it
 
-Three names come from the same squared misses. The **squared error** is one residual
-multiplied by itself. The **mean squared error** averages it over the stations, and it is
-the objective a squared-error fit makes small. The **RMSE**, built by hand in
+The squared error averaged over the stations is the **mean squared error**, the
+objective a squared-error fit makes small. The RMSE, built by hand in
 [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
-is the square root of that mean.
-
-The square root changes the units, not the winner. The mean squared error is in animals
-squared, which is hard to picture; the RMSE is back in animals, a typical miss. The line
-with the smaller mean squared error also has the smaller RMSE, so fitting by either gives
-the same line. Algorithms make the mean squared error small, as it is simpler to work
-with, and people report the RMSE, as it reads in the outcome's own units.
+is its square root. The square root changes the units, not the winner: the line with the
+smaller mean squared error also has the smaller RMSE. Algorithms make the mean squared
+error small, as it is simpler to work with, and people report the RMSE, as it reads in
+animals rather than animals squared.
 
 The RMSE is not the average size of a miss. That is the mean absolute error, and the RMSE
 is never smaller than it, because squaring gives the large misses more weight.
-
-## A residual is not an error
-
-Statistics keeps apart two quantities that everyday speech, and much of machine
-learning, both call "error".
-
-- The **error** is how far an observation sits from the true average for its
-  conditions: the abundance a station would show on average if it were sampled again
-  and again under the same chlorophyll, temperature and everything else. Nobody knows
-  that true average, so the error can never be computed. It is the **noise**, the part
-  of the count that the conditions do not decide: patchy animals, a net that fished
-  well or badly, and chance.
-- The **residual** is how far an observation sits from the model's prediction. It can
-  always be computed, and it is the fit's estimate of the error.
-
-The two differ because the prediction is not the true average. The fitted line was
-drawn through these same stations, so it leans towards them, and the residuals on the
-data used for fitting come out smaller, on average, than the errors they estimate.
-[Section 5](../05-generalisation/index.qmd) builds on this gap: a model looks better on
-its training data than on new data.
-
-A residual also mixes two sources. Part of it is noise, and part is the model's own
-mistake: a straight line through a curved relationship misses in the same direction
-over a whole range of chlorophyll, however many stations there are. That systematic
-part is **bias**, and [The bias–variance trade-off](../05-generalisation/bias-variance.qmd)
-separates the two.
-
-Machine learning also uses "error" loosely, for any measure of how wrong the
-predictions are: squared error, training error, test error. This course keeps that usage
-for the names of losses, so squared error is worked out from residuals, not from
-errors.
-
-::: {.callout-note collapse="true"}
-## The maths, if you want it
-
-Write the outcome at station $i$ as its true average plus noise,
-$y_i = f(x_i) + \varepsilon_i$, where $f$ is the unknown relationship and $x_i$ the
-station's conditions. Then
-
-$$\text{error: } \varepsilon_i = y_i - f(x_i) \qquad\qquad \text{residual: } e_i = y_i - \hat{f}(x_i)$$
-
-where $\hat{f}$ is the fitted model. The residual is the error plus the model's miss of
-the truth, $e_i = \varepsilon_i + \bigl(f(x_i) - \hat{f}(x_i)\bigr)$. A least-squares
-fit makes $\sum e_i^2$ as small as any line can, and the true line is one of those
-lines, so $\sum e_i^2 \le \sum \varepsilon_i^2$ whenever the truth is a straight line.
-:::
 
 ## Worked example
 
@@ -228,7 +187,8 @@ pd.Series({"intercept": line.intercept_, "chlorophyll_mg_m3": line.coef_[0]}).ro
 The squared-error line starts at `r round(squared[1], 2)` animals and rises
 `r round(squared[2], 2)` for each mg m⁻³ of chlorophyll. The absolute-error line starts
 at `r round(absolute[1], 2)` and rises `r round(absolute[2], 2)`. The squared-error line
-is the one `lm()` returns, and `lm()` is the engine behind `linear_reg()` in section 3:
+is the one `lm()` returns, and `lm()` is the engine behind `linear_reg()` on
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd):
 linear regression is the line that makes squared error smallest.
 [The next page](parameter-estimation.qmd) shows it can be found without a search.
 
@@ -294,8 +254,7 @@ share.round(3)
 
 The `r length(worst)` stations with the largest misses, 5% of the data, supply
 `r scales::percent(share[["squared"]], 1)` of the total squared error but only
-`r scales::percent(share[["absolute"]], 1)` of the total absolute error. Half of what
-the squared-error fit tries to reduce comes from those few stations.
+`r scales::percent(share[["absolute"]], 1)` of the total absolute error.
 
 ### One station moves the slope
 
@@ -356,7 +315,7 @@ not, and the right one depends on what the large catches are.
 - **A real aggregation.** Fish shoal, and the big hauls may be the most important
   observations, for biomass or for a quota. Squared error is right, and its
   sensitivity is the point.
-- **Noise, or a net that fished badly.** Then squared error hands half of the objective
+- **Noise, or a net that fished badly.** Then squared error hands much of the objective
   to the least trustworthy stations, and absolute error is safer. A third loss, Huber,
   is squared for small misses and absolute for large ones, a compromise between the two.
 
@@ -403,21 +362,18 @@ which [Maximum likelihood](maximum-likelihood.qmd) describes.
 ## Key points
 
 ::: {.key-points}
-- A **loss** scores one prediction from its residual; the **objective** averages it over
-  the data, and fitting means making the objective as small as possible.
-- A squared-error fit makes the mean squared error small. The RMSE is its square root:
-  the same best line, reported in the outcome's own units.
-- A **residual** is the miss against the model's prediction and can be computed; an
-  **error** is the miss against the unknown true average, the noise. Residuals on the
-  training data understate the errors.
+- A **loss** turns each residual into a penalty; the **objective** averages it over the
+  data, and fitting means making the objective as small as possible.
 - Squared error prices a miss of 10 at a hundred times a miss of 1. Here the worst 5% of
   stations supplied `r scales::percent(share[["squared"]], 1)` of the total squared
   error, and removing one station moved the slope by
   `r scales::percent(abs(slopes$change[1]), 0.1)`.
 - Absolute error is steadier. Use it when the extremes are doubtful, and squared error
-  when the extremes are the science.
-- Counts and presence have their own losses: Poisson deviance and log loss.
-- The loss is a scientific choice. Report it with the model.
+  when the extremes are the science; report the choice with the model.
+- Linear regression is the squared-error line, and the RMSE is the square root of its
+  objective, in the outcome's own units.
+- Counts and presence have their own losses, Poisson deviance and log loss, and
+  accuracy cannot be one, because it gives the search no direction.
 :::
 
 ## Try it yourself
