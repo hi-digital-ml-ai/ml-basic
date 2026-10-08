@@ -37,6 +37,7 @@ terms:
   - term: "k-nearest neighbours"
     definition: "A supervised method that predicts for a new case from the k most similar cases in the data: the share of each category, or the average of a quantity."
     page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/03-supervised-learning/nearest-neighbours.qmd
   - term: "Scaling"
     definition: "Putting inputs on a common scale, for example by subtracting each one's mean and dividing by its standard deviation, so that no input dominates a distance."
     page: chapters/01-introduction/types-of-learning.qmd
@@ -291,3 +292,13 @@ terms:
   - term: "Accuracy"
     definition: "The share of yes-or-no answers that are right."
     page: chapters/03-supervised-learning/logistic-regression.qmd
+
+  # 3 · Supervised learning: k-nearest neighbours
+  - term: "Overfitting"
+    definition: "Fitting the training data so closely, chance highs and lows included, that predictions on new data get worse."
+    page: chapters/03-supervised-learning/nearest-neighbours.qmd
+    more: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Hyperparameter"
+    definition: "A setting fixed before a model is fitted, such as the number of neighbours, and chosen on validation data rather than learned from the training data."
+    page: chapters/03-supervised-learning/nearest-neighbours.qmd
+    more: chapters/05-generalisation/hyperparameter-selection.qmd
