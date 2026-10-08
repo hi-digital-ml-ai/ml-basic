@@ -143,7 +143,7 @@ curve_recipe = ColumnTransformer([
 
 :::
 
-### The curve finds a peak the line misses
+### Polynomial regression finds a peak linear regression misses
 
 Both models are fitted on the training sites. The table shows the coefficients for
 depth and temperature; in R, `_poly_1` is the input and `_poly_2` its square.
@@ -250,7 +250,7 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
 
 :::
 
-### The curve scores better, and predicts fewer than zero animals
+### Polynomial regression scores better but predicts fewer than zero animals
 
 Both models are scored on the test sites with the
 [RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),

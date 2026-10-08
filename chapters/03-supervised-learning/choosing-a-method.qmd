@@ -29,7 +29,7 @@ methods for counts on the same new sites.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Questions that narrow the choice
+## Five questions narrow the choice
 
 [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd)
 separated the two aims: explaining needs a model whose parts can be read, while
@@ -321,8 +321,10 @@ results |>
   geom_line(aes(group = model), colour = "#c9d1d7", linewidth = 1.6) +
   geom_point(aes(colour = sites), size = 3.4) +
   scale_colour_manual(values = c(validation = ml_palette[["orange"]],
-                                 test = ml_palette[["blue"]])) +
-  labs(x = "RMSE (individuals; lower is better)", y = NULL, colour = NULL,
+                                 test = ml_palette[["blue"]]),
+                      breaks = c("validation", "test"),
+                      labels = c("Validation sites", "Test sites")) +
+  labs(x = "RMSE (individuals)", y = NULL, colour = NULL,
        title = "Two sets of new sites rank the models differently")
 ```
 

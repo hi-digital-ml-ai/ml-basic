@@ -20,7 +20,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Many trees instead of one
+## Many trees are steadier than one
 
 A single [decision tree](decision-trees.qmd) is easy to read but unstable: a few
 different training examples can change its first question, and every question below it
@@ -249,8 +249,8 @@ forest_scores <- map(sizes, \(n) score(tree_recipe, forest_model(n), n)) |>
 boost_scores <- map(sizes, \(n) score(boost_recipe, boost_model(n), n)) |>
   list_rbind()
 
-bind_rows(forest = slice_min(forest_scores, validation),
-          boosting = slice_min(boost_scores, validation), .id = "model") |>
+bind_rows(`Random forest` = slice_min(forest_scores, validation),
+          Boosting = slice_min(boost_scores, validation), .id = "model") |>
   mutate(across(c(training, validation), \(x) round(x, 2)))
 ```
 
@@ -276,8 +276,8 @@ forest_scores = pd.DataFrame([score(forest_model(n), n) for n in sizes])
 boost_scores = pd.DataFrame([score(boost_model(n), n) for n in sizes])
 
 pd.concat({
-    "forest": forest_scores.loc[[forest_scores["validation"].idxmin()]],
-    "boosting": boost_scores.loc[[boost_scores["validation"].idxmin()]],
+    "Random forest": forest_scores.loc[[forest_scores["validation"].idxmin()]],
+    "Boosting": boost_scores.loc[[boost_scores["validation"].idxmin()]],
 }).round(2)
 ```
 
@@ -301,7 +301,9 @@ plot_scores <- function(scores, title) {
     geom_point(size = 2) +
     scale_x_log10() +
     scale_colour_manual(values = c(training = ml_palette[["blue"]],
-                                   validation = ml_palette[["orange"]])) +
+                                   validation = ml_palette[["orange"]]),
+                        breaks = c("training", "validation"),
+                        labels = c("Fitting stations", "Validation sites")) +
     expand_limits(y = 0) +
     labs(x = "Number of trees (log scale)", y = "RMSE (individuals)",
          colour = NULL, title = title)
@@ -336,7 +338,7 @@ is lowest, `r f2(at_size(boost_scores, best_boost)$validation)`, at
 fitting chance patterns in the fitting sites, the overfitting a deep single tree
 showed.
 
-### The ensembles beat one tree but not the curve
+### The ensembles beat one tree but not Poisson regression
 
 The forest of 400 trees and the boosted model of `r best_boost` trees are refitted on
 all the training stations and scored once on the test sites, beside the depth-5 tree
