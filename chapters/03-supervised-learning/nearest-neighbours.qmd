@@ -55,7 +55,7 @@ $k = 1$, so it is chosen on validation data, the role
 [Splitting the data](../02-marine-data/splitting-data.qmd) set aside for choosing
 between models.
 
-## Beyond the data the neighbours stay the same
+## Beyond the data, the prediction levels off
 
 For a station warmer than any in the training data, the nearest stations are the
 warmest ones there, and they stay the same however much warmer it gets. The prediction
@@ -260,7 +260,7 @@ error only because the counts at the validation sites happen to vary less: their
 standard deviation is `r f2(validation_sd)`, against `r f2(fitting_sd)` at the fitting
 sites.
 
-### Poisson regression predicts new sites better
+### Poisson regression predicts new sites better than k-nearest neighbours
 
 The neighbours are refitted at $k$ = `r best_k` on all the training stations and
 scored once on the test sites, beside Poisson regression from

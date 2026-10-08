@@ -291,7 +291,7 @@ A muddy station is expected to hold `r mud` times the count of a sandy one, and 
 rocky one `r rock` times, fewer than on sand. A multiplier reads the same whatever the
 count: mud adds `r scales::percent(mud - 1)` to 2 animals or to 200.
 
-### The count models score better on new sites
+### Both count models beat polynomial regression on new sites
 
 scikit-learn has no negative binomial model, so the Python tab takes it from
 statsmodels; in R it comes from the MASS package. Both are fitted on the recipe's

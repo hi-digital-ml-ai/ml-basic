@@ -20,7 +20,7 @@ num <- function(x) sub("^-", "−", as.character(x))
 
 {{< new-terms >}}
 
-## Linear regression is the yardstick
+## Every method must beat linear regression on new sites
 
 Linear regression is the simplest model for a quantity, and the yardstick for every
 method in this section: each is scored on the same new sites, and a more complex method
