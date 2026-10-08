@@ -1,6 +1,6 @@
 ---
 title: "Linear and polynomial regression"
-description: "Linear regression fits a straight line; a squared input bends it into a curve that can find an optimum, fits better, and can still predict fewer than zero animals."
+description: "Linear regression is the yardstick every method in this section must beat. One squared input lets it find the temperature a species prefers, but nothing in it knows that a count stops at zero."
 order: 2
 categories: [supervised, regression]
 ---
@@ -14,41 +14,32 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
+# Numbers in the text, with a true minus sign.
+num <- function(x) sub("^-", "−", as.character(x))
 ```
 
-## A straight line is where regression starts
+{{< new-terms >}}
 
-Linear regression is the model most scientists already know, and most of this section
-builds on it. This page sets out what it assumes, then bends the straight line into a
-curve that can find the temperature a species prefers. The curve fits better, and it
-shows the first problem with modelling counts: it predicts fewer than zero animals.
+## Linear regression is the yardstick
+
+Linear regression is the simplest model for a quantity, and the yardstick for every
+method in this section: each is scored on the same new sites, and a more complex method
+earns its place only by beating it. One small change, a squared input, lets the
+straight line bend and find the temperature a species prefers. What neither the line
+nor the curve can learn is that a count stops at zero.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## A straight line and its assumptions
+## A squared input bends the line into a curve
 
-Linear regression predicts the outcome as a starting value plus a fixed amount for each
-input:
-
-$$\hat{y} = a + b_1 x_1 + b_2 x_2 + \dots$$
-
-Each **coefficient** ($b_1$, $b_2$, ...) is the change in the prediction for one extra
-unit of that input, with the other inputs held fixed. If the coefficient for
-temperature is 0.5, each extra degree adds half a unit to the prediction, in cold water
-and in warm.
-
-That one sentence carries the model's assumptions. One extra unit has the same effect
-everywhere, so the relationship is a straight line. The errors, the gaps between the
-data and the line, are assumed independent of one another and about equally large
-everywhere. And nothing stops the prediction from taking any value, negative ones
-included.
-
-## Bending the line into a curve
-
-A straight line cannot rise and then fall. Adding the square of an input as one more
-column lets it:
+A linear regression adds a starting value to a fixed amount for each input, the
+input's coefficient times its value
+([Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#linear-regression-gives-one-slope-per-input)).
+One extra unit of an input changes the prediction by the same amount wherever you
+start, so the prediction is a straight line in each input. A straight line cannot rise
+and then fall. Adding the square of an input as one more column lets it:
 
 $$\hat{y} = a + b x + c x^2$$
 
@@ -59,24 +50,24 @@ shape of the curve.
 
 When $c$ is negative the curve has one peak, at $x = -b / 2c$. That is the shape of an
 optimum: a species that does best at one temperature or depth and less well on either
-side. The same property causes trouble at the edges. Outside the range of the data, a
-curve keeps rising or falling, and nothing in the model checks where it goes.
+side.
 
 ::: {.diagram}
 ![A straight line has one slope. Adding a squared input bends it into a curve with one peak, still fitted by linear regression. Beyond the data, the curve keeps going, even below zero.](img/line-to-curve.svg){fig-alt="Three cards. Straight line: a plus b times the input; each extra unit of the input adds the same amount, wherever you start. Curve: a plus b times the input plus c times the input squared; the curve rises to a peak, marked optimum, and falls again; it is still linear regression, a weighted sum of columns, one of them a square. Beyond the data: a shaded band marks the range of the data, the curve peaks inside it and, dashed, keeps falling outside it on both sides, below a line marking zero. A note says a curve can follow a peak that a straight line misses, but only inside the range of the data."}
 :::
 
+Outside the range of the data, a curve keeps rising or falling, and nothing in the
+model checks where it goes;
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+deals with predicting there.
+
 ## Worked example
 
-The survey's count of one species is the outcome, with depth, temperature, chlorophyll,
-salinity, seabed type and season as inputs. Each model is fitted once as a straight line
-and once with a squared term for depth and temperature.
-
-### Preparing the data
-
-The survey visits each site several times, so the data are split by site, as
-[Splitting the data](../02-marine-data/splitting-data.qmd) recommends: the test sites
-are new to the models. In the recipe, `step_poly()` adds the squared columns;
+The outcome is the survey's count of one species, with depth, temperature,
+chlorophyll, salinity, seabed type and season as inputs. A quarter of the sites are
+held back as test sites, as [Splitting the data](../02-marine-data/splitting-data.qmd)
+recommends, so the models are scored on sites they have never seen. The two recipes
+differ in one step: `step_poly()` adds the squares of depth and temperature, and
 `raw = TRUE` keeps them as plain squares, so the coefficients mean what they do in the
 equation above.
 
@@ -106,7 +97,6 @@ curve_recipe <- line_recipe |>
 ## Python
 
 ```{python}
-import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -153,19 +143,26 @@ curve_recipe = ColumnTransformer([
 
 :::
 
-### Linear regression
+### The curve finds a peak the line misses
+
+Both models are fitted on the training sites. The table shows the coefficients for
+depth and temperature; in R, `_poly_1` is the input and `_poly_2` its square.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: fit-line
-line_fit <- workflow(line_recipe, linear_reg()) |> fit(train)
+#| label: fit
+line_fit  <- workflow(line_recipe,  linear_reg()) |> fit(train)
+curve_fit <- workflow(curve_recipe, linear_reg()) |> fit(train)
 
-tidy(line_fit) |>
-  filter(term %in% c("depth_m", "temperature_c")) |>
-  transmute(term, estimate = as.character(signif(estimate, 3)))
+bind_rows(
+  tidy(line_fit)  |> mutate(model = "Linear regression"),
+  tidy(curve_fit) |> mutate(model = "Polynomial regression")
+) |>
+  filter(str_detect(term, "depth|temperature")) |>
+  transmute(model, term, estimate = as.character(signif(estimate, 3)))
 ```
 
 ## Python
@@ -177,58 +174,26 @@ def fit(recipe):
     return Pipeline([("recipe", recipe), ("model", LinearRegression())]).fit(
         train[predictors], train["abundance"])
 
-def coefficients(fitted):
-    table = pd.DataFrame({"term": fitted[:-1].get_feature_names_out(),
+def coefficients(fitted, label):
+    table = pd.DataFrame({"model": label,
+                          "term": fitted[:-1].get_feature_names_out(),
                           "estimate": fitted[-1].coef_})
     table = table[table["term"].str.contains("depth|temperature")]
-    return table.assign(estimate=table["estimate"].map(lambda v: float(f"{v:.3g}"))
-                        ).reset_index(drop=True)
+    return table.assign(estimate=table["estimate"].map(lambda v: float(f"{v:.3g}")))
 
 line_fit = fit(line_recipe)
-coefficients(line_fit)
-```
-
-:::
-
-```{r}
-#| label: line-numbers
-#| include: false
-line_coef <- tidy(line_fit) |> select(term, estimate) |> deframe()
-```
-
-The straight line gives temperature a coefficient of
-`r signif(line_coef[["temperature_c"]], 2)`: each extra degree lowers the predicted
-count by `r abs(signif(line_coef[["temperature_c"]], 2))` animals, with the other inputs
-held fixed. Read on its own, the line says warmer water always means fewer animals, at
-the same rate from the coldest station to the warmest.
-
-### Polynomial regression
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fit-curve
-curve_fit <- workflow(curve_recipe, linear_reg()) |> fit(train)
-
-tidy(curve_fit) |>
-  filter(str_detect(term, "depth|temperature")) |>
-  transmute(term, estimate = as.character(signif(estimate, 3)))
-```
-
-## Python
-
-```{python}
 curve_fit = fit(curve_recipe)
-coefficients(curve_fit)
+
+pd.concat([coefficients(line_fit, "Linear regression"),
+           coefficients(curve_fit, "Polynomial regression")], ignore_index=True)
 ```
 
 :::
 
 ```{r}
-#| label: curve-numbers
+#| label: fit-numbers
 #| include: false
+line_coef  <- tidy(line_fit)  |> select(term, estimate) |> deframe()
 curve_coef <- tidy(curve_fit) |> select(term, estimate) |> deframe()
 temp_b <- curve_coef[["temperature_c_poly_1"]]
 temp_c <- curve_coef[["temperature_c_poly_2"]]
@@ -236,16 +201,16 @@ optimum <- -temp_b / (2 * temp_c)
 temp_range <- range(train$temperature_c, na.rm = TRUE)
 ```
 
-In R the columns are named `_poly_1` for the input and `_poly_2` for its square. For
-temperature, $b$ is `r signif(temp_b, 3)` and $c$ is `r signif(temp_c, 3)`: negative, so
-the curve has a peak, at $-b / 2c$ = `r round(optimum, 1)` °C. The survey's
-temperatures run from `r round(temp_range[1], 1)` to `r round(temp_range[2], 1)` °C, so
-the peak sits well inside the data.
+The straight line gives temperature one coefficient,
+`r num(signif(line_coef[["temperature_c"]], 2))`: each extra degree lowers the predicted
+count by `r abs(signif(line_coef[["temperature_c"]], 2))` animals, in the coldest water
+and the warmest alike. For the curve, $b$ is `r num(signif(temp_b, 3))` and $c$ is
+`r num(signif(temp_c, 3))`. $c$ is negative, so the
+curve has a peak, at $-b / 2c$ = `r round(optimum, 1)` °C, well inside the survey's
+`r round(temp_range[1], 1)` to `r round(temp_range[2], 1)` °C.
 
-The curve tells a different story from the line: the count rises with temperature up
-to the peak and falls after it. A straight line cannot show that. Fitted through a
-hump, it averages the rising side with the falling side, and its one slope describes
-neither.
+Fitted through a hump, a straight line averages the rising side with the falling side,
+and its one slope describes neither:
 
 ::: {.panel-tabset group="language"}
 
@@ -285,13 +250,14 @@ ggplot(curves, aes(temperature_c, .pred, colour = model)) +
 
 :::
 
-### The two compared on new sites
+### The curve scores better, and predicts fewer than zero animals
 
-Both models are scored on the test sites with the two measures from
-[Avoiding information leakage](../02-marine-data/information-leakage.qmd): the **RMSE**, roughly
-how far a prediction usually lands from the true count, and **$R^2$**, the share of the
-variation in the test counts that the predictions follow. The last two columns give
-the lowest prediction and the number below zero.
+Both models are scored on the test sites with the
+[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+the typical miss in animals, and
+[$R^2$](../02-marine-data/information-leakage.qmd#one-linear-regression-shows-each-kind),
+the share of the variation in the test counts that the predictions follow. The last
+two columns give the lowest prediction and the number of predictions below zero.
 
 ::: {.panel-tabset group="language"}
 
@@ -304,7 +270,7 @@ score <- function(fitted, label) {
   tibble(
     model      = label,
     rmse       = rmse_vec(predictions$abundance, predictions$.pred),
-    rsq        = rsq_vec(predictions$abundance, predictions$.pred),
+    rsq        = rsq_trad_vec(predictions$abundance, predictions$.pred),
     lowest     = min(predictions$.pred),
     below_zero = sum(predictions$.pred < 0)
   )
@@ -328,7 +294,7 @@ def score(fitted, label):
     return {
         "model": label,
         "rmse": round(root_mean_squared_error(truth, predicted), 2),
-        "rsq": round(np.corrcoef(predicted, truth)[0, 1] ** 2, 2),
+        "rsq": round(r2_score(truth, predicted), 2),
         "lowest": round(predicted.min(), 2),
         "below_zero": int((predicted < 0).sum()),
     }
@@ -346,40 +312,30 @@ line_score  <- scores |> filter(model == "Linear regression")
 curve_score <- scores |> filter(model == "Polynomial regression")
 ```
 
-On sites the models have never seen, polynomial regression does better: $R^2$ rises from
+On sites the models have never seen, the curve does better: $R^2$ rises from
 `r round(line_score$rsq, 2)` to `r round(curve_score$rsq, 2)`, and the RMSE falls from
-`r round(line_score$rmse, 2)` to `r round(curve_score$rmse, 2)` animals. Neither is
-high; predicting a new site is hard, as
-[Avoiding information leakage](../02-marine-data/information-leakage.qmd) found.
+`r round(line_score$rmse, 2)` to `r round(curve_score$rmse, 2)` animals.
 
-## Fewer than zero animals
-
-The better model is also the more impossible one. Polynomial regression predicts a negative count
+The better model is also the more impossible one. The curve predicts a negative count
 at `r curve_score$below_zero` of the `r nrow(test)` test stations, the lowest
-`r round(curve_score$lowest, 1)` animals; linear regression does so at
-`r line_score$below_zero`. Nothing in linear regression knows that a count
-stops at zero. The curve falls steeply after its peak, so it crosses zero sooner.
-
-Setting the negative predictions to zero hides the symptom but not the cause: the model
-still assumes a count can go on falling below zero, and that its errors are the same
-size at a count of 1 as at a count of 30.
-[Regression for counts](count-regression.qmd) introduces a model built for counts.
+`r num(round(curve_score$lowest, 1))` animals; the line does so at `r line_score$below_zero`.
+Nothing in linear regression knows that a count stops at zero, and the curve falls
+steeply after its peak, so it crosses zero sooner. Setting the negative predictions to
+zero hides the symptom, not the cause. [Regression for counts](count-regression.qmd)
+uses a model whose predictions cannot go below zero.
 
 ## Key points
 
 ::: {.key-points}
-- Linear regression predicts a starting value plus a fixed amount per unit of each
-  input; each coefficient is the change for one extra unit, with the other inputs held
-  fixed.
+- Linear regression is the yardstick: every method in this section is scored against
+  it on the same new sites.
 - Adding a squared input bends the line into a curve with one peak. It is still linear
-  regression, and it suits a species with an optimum temperature or depth.
-- A straight line can hide a peak: on the survey, the line says each degree changes
-  the count by `r signif(line_coef[["temperature_c"]], 2)`, while the curve finds a
-  peak at `r round(optimum, 1)` °C.
-- The curve scores better on new sites, and predicts a negative count at
+  regression, and it suits a species with a preferred temperature or depth.
+- On the survey, the line gives temperature one slope,
+  `r num(signif(line_coef[["temperature_c"]], 2))` animals per degree, while the curve finds
+  a peak at `r round(optimum, 1)` °C and scores better on new sites.
+- Neither knows that a count stops at zero: the curve predicts a negative count at
   `r curve_score$below_zero` of `r nrow(test)` test stations.
-- Outside the range of the data, a curve keeps rising or falling; use it only inside
-  that range.
 :::
 
 ## Try it yourself

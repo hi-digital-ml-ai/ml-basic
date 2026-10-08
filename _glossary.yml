@@ -246,3 +246,8 @@ terms:
   - term: "Preprocessing leakage"
     definition: "Leakage through a preparation step, such as filling gaps with a median, that learns its numbers from every row instead of the training set alone."
     page: chapters/02-marine-data/information-leakage.qmd
+
+  # 3 · Supervised learning: Linear and polynomial regression
+  - term: "Polynomial regression"
+    definition: "Linear regression with squared (or higher) powers of an input added as extra columns, so its prediction can curve and peak."
+    page: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
