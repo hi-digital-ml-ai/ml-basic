@@ -184,7 +184,7 @@ rebalancing that answers them.
 ## A random split puts each site on both sides
 
 A random split treats rows as interchangeable. Survey rows are not: visits to the same
-site are alike ([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)). If one
+site are alike ([The coastal survey](the-coastal-survey.qmd#repeat-visits-to-the-same-sites-are-not-independent)). If one
 visit lands in training and another in test, the model has, in effect, already seen
 the test station. A **grouped split** assigns whole groups, here whole sites, to one
 side or the other:

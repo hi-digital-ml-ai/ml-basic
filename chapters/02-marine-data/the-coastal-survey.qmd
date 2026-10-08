@@ -140,7 +140,7 @@ close together share more than their depth: they sit in the same patch of sea, s
 their counts tend to be alike. That matters when stations are held back to test a
 model, as the count of sites further down shows.
 
-## Depth shapes the water
+## Deeper water is colder and saltier
 
 The water measurements do not vary independently. Deeper water here is colder and
 saltier:
@@ -197,7 +197,7 @@ stations hold `r median(survey$abundance)` animals or fewer, and the largest cou
 tail, are typical of survey catches, and they are why the course treats abundance with
 some care.
 
-## The stations come from far fewer sites
+## Repeat visits to the same sites are not independent
 
 The survey returns to fixed sites, and each visit to a site is one station. The clean
 file leaves the site out, but the raw file, the survey as it came off the ship, keeps
@@ -279,7 +279,7 @@ Each has its own loader, so a page never reads a file directly:
 - `load_coastal_community()`: counts of 24 species at the same stations, for finding
   groups of stations.
 
-## The true answers are known
+## The survey is simulated, so its answers are known
 
 The survey is simulated: a script decided how the species responds to its
 surroundings, then drew counts that follow those rules with realistic noise added. So
