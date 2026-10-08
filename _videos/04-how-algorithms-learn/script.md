@@ -1,5 +1,5 @@
 ---
-title: "How algorithms learn: the loss, the search and the prior"
+title: "How algorithms learn: the loss, the search and its assumptions"
 section: chapters/04-how-algorithms-learn/index.qmd
 voice: Sadaltager
 style: "friendly British English, speaking at a natural, conversational pace"
@@ -15,9 +15,9 @@ section's pages. No section numbers anywhere in the video: other sections are na
 
 This video is an overview built on three ideas, each with the reason it matters: the
 loss decides what a model pays attention to, a search can fail quietly so it must be
-checked, and a prior keeps a small survey sensible. It does not tour every page;
-maximum likelihood, the units of the inputs, separation and random runs are left to
-the pages. It never says which variables truly drive the species.
+checked, and every loss assumes a distribution, as a prior adds a penalty. It does not
+tour every page; the units of the inputs, separation, trees and the maths of likelihood
+are left to the pages. It never says which variables truly drive the species.
 -->
 
 # In this video
@@ -27,8 +27,8 @@ visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
 This video looks at what happens when a model is fitted. It covers three ideas: the one
-number every fit makes small, the search that finds the best parameters, and how
-knowing something before the survey helps a small one.
+number every fit makes small, the search that finds the best parameters, and the
+assumptions hidden inside that number.
 
 # The number a fit makes small
 
@@ -41,14 +41,14 @@ adjusts the parameters to do better, and repeats. Fitting is a search for the be
 score.
 
 ## Scene 3
-visual: manim Residual: a line through scattered points, one point's gap to the line drawn and labelled "residual = observed − predicted"; then a dashed curve, "the true average: unknown", and the same point's gap to it labelled "error"; a card "the residual is the fit's estimate of the error" (schematic, after loss-functions.qmd)
+visual: manim Residual: a line through scattered points, one point's gap to the line drawn and labelled "residual = observed − predicted"; then "noise: what the conditions do not decide", with "patchy animals", "a net that fished badly", "chance"; a card "even the best fit leaves residuals" (schematic, after loss-functions.qmd)
 pause-after: 0.5
 
 The score is built from residuals. A residual is how far one prediction missed: the
-observed count minus the predicted one. It is not quite an error. The error is the miss
-against the true average for those conditions, the count you would get on average if
-you sampled there again and again. Nobody knows that average, so the residual is the
-fit's estimate of the error.
+observed count minus the predicted one. Part of every residual is noise, the part of a
+count that the station's conditions do not decide, such as patchy animals, a net that
+fished badly, or chance. No model can predict it, so even the best fit leaves
+residuals.
 
 ## Scene 4
 visual: manim Losses: squared error as a steep U and absolute error as a shallow V against the residual; a miss of 10 marked, costing 100 and 10 (schematic, the page's definitions)
@@ -131,79 +131,90 @@ pause-after: 0.5
 Key point two. Fitting is a search, and a search can fail quietly. Check that it
 finished.
 
-# Knowing something before the survey
+# The assumptions inside the loss
 
 ## Scene 15
-visual: manim Forty: forty stations, twelve inputs; temperature +9.23 animals per standard deviation and its square −6.78, two bars cancelling (page results, map-and-priors.qmd)
+visual: manim Distributions: three cards, a bell curve "Normal: a measurement" giving "squared error", bars from zero "Poisson: a count" giving "Poisson deviance", two bars "present or absent" giving "log loss"; "name the distribution, and the loss follows" (schematic, after likelihood-and-priors.qmd)
+pause-after: 0.5
+
+Where does a loss come from? Each one assumes something about how the data were
+produced. Squared error assumes each value is scattered around the prediction in a
+bell-shaped curve, a Normal distribution. Assume a Poisson distribution, made for
+counts, and the loss becomes Poisson deviance. For present or absent, it becomes log
+loss. Name the distribution, and the loss follows.
+
+## Scene 16
+visual: manim Negative: a bell curve around a low prediction with the part below zero shaded, "squared error: below zero allowed"; beside it Poisson bars starting at zero, "Poisson: never below zero" (schematic)
+pause-after: 0.5
+
+That explains a puzzle from earlier in the course: a polynomial regression predicted a
+negative number of animals. A Normal curve runs below zero, so squared error saw
+nothing wrong. A Poisson distribution stops at zero, so Poisson regression never
+predicts fewer than zero animals.
+
+## Scene 17
+visual: manim Forty: forty stations, twelve inputs; temperature +9.23 animals per standard deviation and its square −6.78, two bars cancelling (page results, likelihood-and-priors.qmd)
 
 Now a small survey: forty stations and twelve inputs. The fit gives temperature an
 effect of 9.23 animals, and its square minus 6.78. Two large effects that cancel out
 are a warning sign: with so few stations, the fit is chasing chance patterns.
 
-## Scene 16
-visual: manim Prior: the heading "what you knew before can help"; the likelihood for the temperature coefficient, wide, peaking at 9.23; the heading turns into "a prior: effects that large are rare" as a prior centred on zero is added; the combined estimate at 0.22 (page results, map-and-priors.qmd#fig-prior-likelihood)
+## Scene 18
+visual: manim Prior: the heading "what you knew before can help"; a Normal curve centred on zero, "a prior: effects that large are rare"; the two bars shrinking to 0.26 and −0.18 (page results, likelihood-and-priors.qmd)
 
-With so few stations, what you knew before the survey can help the model predict
-better. And you did know something: effects that large are rare. A prior writes that
-down, as a curve centred on zero. Combined with the data, it pulls the temperature
-effect to 0.22.
+With so few stations, what you knew before the survey can help. And you did know
+something: effects that large are rare. A prior writes that down, as a curve centred on
+zero. Combined with the data, it pulls the temperature effect from 9.23 to 0.26, and
+its square from minus 6.78 to minus 0.18.
 
-## Scene 17
+## Scene 19
 visual: manim Penalty: "loss + penalty on large parameters"; "a prior = a penalty", "this is ridge regression" (schematic)
 
 In the fit, a prior works as a penalty added to the loss, one that grows as the
 parameters grow. This is ridge regression, and the next section of the course uses it
 to stop models overfitting.
 
-## Scene 18
-visual: manim Scores: test RMSE on the 680 stations held back, predicting the average 4.85, without the prior 4.76, with the prior 4.45 (page results, map-and-priors.qmd)
-pause-after: 0.5
-
-Does it help? On the 680 stations held back, predicting the average gives an error of
-4.85. The fit without a prior gives 4.76; with the prior, 4.45. The prior fits the
-forty stations a little worse, and predicts new ones better.
-
-## Scene 19
+## Scene 20
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
 pause-after: 0.5
 
-Key point three. With little data, what you knew before the survey keeps a model
-sensible.
+Key point three. Every loss assumes a distribution for the data, and a prior on the
+parameters adds a penalty.
 
 # Quiz
 
-## Scene 20
+## Scene 21
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. A colleague fits logistic regression, and every coefficient looks
 sensible. Can they trust them?
 
-## Scene 21
-visual: manim QuizAnswer: "not yet"; the fit stopped after two steps beside the finished one, chlorophyll −0.312 against −0.344, "converged: FALSE" highlighted (page results, reading-a-fit.qmd)
+## Scene 22
+visual: manim QuizAnswer: "not yet"; the fit stopped after two steps beside the finished one, chlorophyll 0.268 against 0.348, "converged: FALSE" highlighted (page results, parameter-estimation.qmd)
 
-Not yet. On the survey, a fit stopped after two steps gave a chlorophyll coefficient 9
+Not yet. On the survey, a fit stopped after two steps gave a chlorophyll coefficient 23
 per cent out, and it looked entirely normal. Only the convergence flag showed the
 problem. Check it first.
 
 # Key points
 
-## Scene 22
+## Scene 23
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: the loss decides what a model pays attention to.
 
-## Scene 23
+## Scene 24
 visual: manim KeyPoints: the second ticked
 
 Two: a search can fail quietly, so check that it finished.
 
-## Scene 24
+## Scene 25
 visual: manim KeyPoints: the third ticked
 
-Three: with little data, a prior keeps a model sensible.
+Three: every loss assumes a distribution, and a prior adds a penalty.
 
-## Scene 25
+## Scene 26
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.

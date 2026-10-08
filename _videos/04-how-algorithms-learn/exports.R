@@ -46,21 +46,21 @@ exports <- list(
           dir, "descent")
   },
 
-  # The forty-station fit, the prior's figure values, and the three test errors the
-  # page compares.
-  "map-and-priors.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(prior_sd = prior_sds, peak = peaks)), dir, "prior-peaks")
+  # The forty-station fit: temperature and its square, by maximum likelihood and with
+  # the prior.
+  "likelihood-and-priors.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(
-      training = nrow(X_train), testing = nrow(X_test), inputs = ncol(X_train),
-      b_temp, se_temp, b_temp2,
-      mean_rmse = mean_only, mle_rmse = curve$test[1], map_rmse = map_test)), dir, "map-summary")
+      stations = nrow(X_train), inputs = ncol(X_train),
+      term = c("temperature", "its square"),
+      ml = temp[["maximum likelihood"]], map = temp$ridge)), dir, "forty")
   },
 
-  # The fit stopped after two steps, against the finished one.
-  "reading-a-fit.qmd" = function(env, dir) {
+  # Logistic regression stopped after two steps, against glm()'s finished fit.
+  "parameter-estimation.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(
-      fit = c("two steps", "left to finish"),
-      converged = c(stopped_early$converged, full_fit$converged),
-      chlorophyll = c(coef(stopped_early)[2], coef(full_fit)[2]), off = chl_off)), dir, "truncated")
+      fit = c("stopped after two steps", "left to finish"),
+      converged = c(FALSE, glm_fit$converged),
+      chlorophyll = c(steps$chlorophyll[2], coef(glm_fit)[["chlorophyll_mg_m3"]]),
+      off = chl_off)), dir, "truncated")
   }
 )

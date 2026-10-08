@@ -5,7 +5,7 @@
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
 The video is built on three ideas from the section, each with the reason it matters:
-the loss, the search and the prior. Scenes marked "page results" read
+the loss, the search and the assumptions inside the loss. Scenes marked "page results" read
 visuals/data/*.csv, which tools/figures-for-video.R writes from the pages. The others
 are schematic: made-up shapes, never numbers that could pass for survey results. The
 opening, key-point, recap, quiz and end-card scenes are shared (mlbasic_video.py) and
@@ -27,19 +27,18 @@ class Title(TitleScene):
 
 PROMISES = ["The number every fit makes small",
             "The search that finds the parameters",
-            "Knowing something before the survey"]
+            "The assumptions inside the loss"]
 ANSWERS = ["The loss decides\nwhat the model\npays attention to",
            "A search can fail quietly:\ncheck that it finished",
-           "With little data,\nwhat you knew before\nkeeps a model sensible"]
+           "Every loss assumes\na distribution;\na prior adds a penalty"]
 RECAP = ["The loss decides what a model attends to",
          "Check that the search finished",
-         "With little data, a prior keeps a model sensible"]
+         "A loss assumes a distribution; a prior, a penalty"]
 
-# Stated in the pages' prose rather than computed: the misses the loss page prices,
-# the rate at which the walk never arrives, and the tighter prior's standard deviation.
+# Stated in the pages' prose rather than computed: the misses the loss page prices and
+# the rate at which the walk never arrives.
 MISSES = (1, 10)
 DIVERGING_RATE = 0.8
-PRIOR_SD = 1
 
 LOSS_COLOURS = {"Squared error": BLUE, "Absolute error": ORANGE}
 RATE_COLOURS = {0.02: ORANGE, 0.3: BLUE}
@@ -169,7 +168,7 @@ class Scene01(LearnScene):
     def setup(self):
         super().setup()
         self.times = tuple(position(self, p) for p in
-                           ("the one number", "the search that", "and how knowing"))
+                           ("the one number", "the search that", "and the assumptions"))
 
 
 # The number a fit makes small (scenes 2–8) -------------------------------------------------
@@ -238,13 +237,16 @@ class Scene03(VideoScene):
         gap = Line(axes.c2p(x, y), axes.c2p(x, fitted(x)), color=VERMILION, stroke_width=6)
         gap_name = label("residual", 30, VERMILION, weight=BOLD).next_to(gap, RIGHT, 0.15).shift(0.3 * UP)
         formula = label("residual = observed − predicted", 36, VERMILION, weight=BOLD).to_edge(UP, buff=0.5)
-        # A schematic truth: a gentle curve near the line, which nobody can see in practice.
-        truth = lambda x: 0.7 + 0.75 * x - 0.022 * x * x   # noqa: E731
-        curve = DashedVMobject(axes.plot(truth, x_range=[0, 10], color=GREEN, stroke_width=5), num_dashes=40)
-        curve_name = label("the true average: unknown", 26, GREEN, weight=BOLD).move_to(axes.c2p(7.6, 1.0))
-        error = Line(axes.c2p(x - 0.18, y), axes.c2p(x - 0.18, truth(x)), color=GREEN, stroke_width=6)
-        error_name = label("error", 30, GREEN, weight=BOLD).next_to(error, LEFT, 0.15)
-        note = card("the residual is the fit's\nestimate of the error", PURPLE, 30).move_to([-2.7, 1.1, 0])
+        noise = VGroup(label("noise: what the station's", 28, GREEN, weight=BOLD),
+                       label("conditions do not decide", 28, GREEN, weight=BOLD),
+                       *[label(t, 26, GREEN) for t in ("patchy animals", "a net that fished badly", "chance")]
+                       ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+        noise.align_to(axes, LEFT).align_to(axes, UP).shift(0.4 * RIGHT + 0.1 * DOWN)
+        # The other stations' misses, faint, once noise is named: every station has one.
+        others = VGroup(*[Line(axes.c2p(px, py), axes.c2p(px, fitted(px)), color=GREEN, stroke_width=3,
+                               stroke_opacity=0.6)
+                          for i, (px, py) in enumerate(zip(SKETCH_X, SKETCH_Y)) if i != SKETCH_POINT])
+        note = card("even the best fit\nleaves residuals", PURPLE, 28).to_edge(RIGHT, buff=0.3).shift(0.3 * DOWN)
         # "The score is built from residuals."
         self.play(FadeIn(VGroup(axes, x_name, y_name)), FadeIn(dots), run_time=self.share(0.05))
         self.play(Create(line), FadeIn(line_name), run_time=self.share(0.06))
@@ -253,16 +255,18 @@ class Scene03(VideoScene):
         self.play(Create(gap), FadeIn(gap_name), run_time=self.share(0.05))
         cue(self, "the observed count")
         self.play(FadeIn(formula, shift=0.2 * DOWN), run_time=self.share(0.05))
-        # "It is not quite an error."
-        cue(self, "It is not quite")
-        self.play(Indicate(gap_name, color=VERMILION), run_time=self.share(0.04))
-        # "The error is the miss against the true average for those conditions, ..."
-        cue(self, "The error is")
-        self.play(Create(curve), FadeIn(curve_name), run_time=self.share(0.06))
-        cue(self, "the true average")
-        self.play(Create(error), FadeIn(error_name), run_time=self.share(0.05))
-        # "Nobody knows that average, so the residual is the fit's estimate of the error."
-        cue(self, "so the residual")
+        # "Part of every residual is noise, the part of a count that the station's conditions do not decide,"
+        cue(self, "Part of every")
+        self.play(FadeIn(noise[:2]), Create(others), run_time=self.share(0.06))
+        # "such as patchy animals, a net that fished badly, or chance."
+        cue(self, "such as patchy")
+        self.play(FadeIn(noise[2]), run_time=self.share(0.03))
+        cue(self, "a net that")
+        self.play(FadeIn(noise[3]), run_time=self.share(0.03))
+        cue(self, "or chance")
+        self.play(FadeIn(noise[4]), run_time=self.share(0.03))
+        # "No model can predict it, so even the best fit leaves residuals."
+        cue(self, "so even the best")
         self.play(FadeIn(note, shift=0.2 * UP), run_time=self.share(0.05))
         self.finish()
 
@@ -620,28 +624,140 @@ class Scene14(KeyPointScene):
     number, point = 14, 2
 
 
-# Knowing something before the survey (scenes 15–19) -----------------------------------------
+# The assumptions inside the loss (scenes 15–20) ---------------------------------------------
+
+def poisson_pmf(k, mean):
+    return math.exp(-mean) * mean ** k / math.factorial(k)
+
+
+def effect_bars(axes, values, names, colours, size=38):
+    """Bars from zero on a vertical axis, each with its value and name; one VGroup per bar."""
+    bars = VGroup()
+    for x, value, name, colour in zip((1, 2), values, names, colours):
+        base, top = axes.c2p(x, 0), axes.c2p(x, value)
+        bar = Rectangle(width=1.2, height=max(abs(top[1] - base[1]), 0.02), stroke_width=0, fill_color=colour,
+                        fill_opacity=1).move_to(base, aligned_edge=DOWN if value > 0 else UP)
+        text = label(("+" if value > 0 else "") + fixed(value), size, colour, weight=BOLD
+                     ).next_to(bar, UP if value > 0 else DOWN, 0.15)
+        name_text = label(name, 28, colour, weight=BOLD).next_to(base, DOWN if value > 0 else UP, 0.2)
+        bars.add(VGroup(bar, text, name_text))
+    return bars
+
 
 class Scene15(VideoScene):
     number = 15
 
     def construct(self):
-        # Page results: map-and-priors.qmd, maximum likelihood on forty stations.
-        summary = self.data("map-summary").iloc[0]
-        heading = title(f"A small survey: {int(summary['training'])} stations, {int(summary['inputs'])} inputs", 44
-                        ).to_edge(UP, buff=0.4)
+        # Schematic, after likelihood-and-priors.qmd's diagram: three distributions, three losses.
+        heading = title("Where a loss comes from", 50).to_edge(UP, buff=0.5)
+        specs = [("Normal", "a measurement", "squared error", BLUE),
+                 ("Poisson", "a count", "Poisson deviance", ORANGE),
+                 ("Bernoulli", "present or absent", "log loss", GREEN)]
+        panels, losses, arrows = VGroup(), VGroup(), VGroup()
+        for i, (name, kind, loss, colour) in enumerate(specs):
+            box = RoundedRectangle(width=4.0, height=3.4, corner_radius=0.15, stroke_color="#1b6a87",
+                                   stroke_width=3, fill_color="#f4f8fa", fill_opacity=1)
+            strip = Rectangle(width=4.0, height=0.12, stroke_width=0, fill_color=colour, fill_opacity=1
+                              ).align_to(box, UP)
+            words = VGroup(label(name, 34, INK, weight=BOLD), label(kind, 26, SUBDUED)).arrange(DOWN, buff=0.08)
+            words.next_to(strip, DOWN, 0.2)
+            axes = plain_axes([0, 10, 1], [0, 1.1, 1], 3.2, 1.4).next_to(words, DOWN, 0.25)
+            if i == 0:
+                sketch = axes.plot(lambda x: bell(x, 5, 1.6), x_range=[0, 10, 0.05], color=colour, stroke_width=6)
+            elif i == 1:
+                peak = poisson_pmf(3, 3)
+                sketch = VGroup(*[Rectangle(width=0.22, height=max(1.4 * poisson_pmf(k, 3) / peak / 1.1, 0.01),
+                                            stroke_width=0, fill_color=colour, fill_opacity=1
+                                            ).move_to(axes.c2p(0.5 + k, 0), aligned_edge=DOWN)
+                                  for k in range(10)])
+            else:
+                sketch = VGroup(*[Rectangle(width=0.7, height=1.4 * h / 1.1, stroke_width=0, fill_color=colour,
+                                            fill_opacity=1).move_to(axes.c2p(x, 0), aligned_edge=DOWN)
+                                  for x, h in ((3, 0.35), (7, 0.65))])
+                sketch.add(label("absent", 22, SUBDUED).next_to(axes.c2p(3, 0), DOWN, 0.08),
+                           label("present", 22, SUBDUED).next_to(axes.c2p(7, 0), DOWN, 0.08))
+            panel_ = VGroup(box, strip, words, axes, sketch).move_to([-4.6 + 4.6 * i, 0.9, 0])
+            panels.add(panel_)
+            arrow = Arrow(box.get_bottom(), box.get_bottom() + 0.8 * DOWN, buff=0.05, color=INK, stroke_width=5)
+            arrows.add(arrow)
+            losses.add(label(loss, 34, colour, weight=BOLD).next_to(arrow, DOWN, 0.15))
+        rule = card("name the distribution, and the loss follows", PURPLE, 32).to_edge(DOWN, buff=0.4)
+        # "Where does a loss come from?"
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "Squared error assumes each value is scattered around the prediction in a bell-shaped curve,
+        # a Normal distribution."
+        cue(self, "Squared error assumes")
+        self.play(FadeIn(panels[0]), run_time=self.share(0.06))
+        cue(self, "a Normal distribution")
+        self.play(GrowArrow(arrows[0]), FadeIn(losses[0]), run_time=self.share(0.05))
+        # "Assume a Poisson distribution, made for counts, and the loss becomes Poisson deviance."
+        cue(self, "Assume a Poisson")
+        self.play(FadeIn(panels[1]), run_time=self.share(0.06))
+        cue(self, "and the loss becomes")
+        self.play(GrowArrow(arrows[1]), FadeIn(losses[1]), run_time=self.share(0.05))
+        # "For present or absent, it becomes log loss."
+        cue(self, "For present")
+        self.play(FadeIn(panels[2]), run_time=self.share(0.05))
+        cue(self, "it becomes log")
+        self.play(GrowArrow(arrows[2]), FadeIn(losses[2]), run_time=self.share(0.04))
+        # "Name the distribution, and the loss follows."
+        cue(self, "Name the distribution")
+        self.play(FadeIn(rule, shift=0.2 * UP), run_time=self.share(0.05))
+        self.finish()
+
+
+class Scene16(VideoScene):
+    number = 16
+
+    def construct(self):
+        # Schematic: a Normal curve around a low prediction runs below zero; Poisson stops at zero.
+        heading = title("A negative number of animals", 50).to_edge(UP, buff=0.5)
+        left, left_frame = chart([-4, 6, 1], [0, 1.15, 0.5], 5.2, 3.4, [0], [], "animals", "")
+        left_frame.move_to([-3.4, -0.6, 0])
+        curve = left.plot(lambda x: bell(x, 1, 1.6), x_range=[-4, 6, 0.02], color=BLUE, stroke_width=6)
+        below = left.get_area(curve, x_range=[-4, 0], color=VERMILION, opacity=0.45)
+        zero = DashedLine(left.c2p(0, 0), left.c2p(0, 1.12), color=INK, stroke_width=3)
+        left_name = VGroup(label("Normal: squared error", 30, BLUE, weight=BOLD),
+                           label("below zero allowed", 28, VERMILION, weight=BOLD)).arrange(DOWN, buff=0.1)
+        left_name.next_to(left_frame, UP, 0.25)
+        right, right_frame = chart([-4, 6, 1], [0, 1.15, 0.5], 5.2, 3.4, [0], [], "animals", "")
+        right_frame.move_to([3.4, -0.6, 0])
+        peak = poisson_pmf(0, 1)
+        bars = VGroup(*[Rectangle(width=0.36, height=max(3.4 / 1.15 * poisson_pmf(k, 1) / peak, 0.01),
+                                  stroke_width=0, fill_color=ORANGE, fill_opacity=1
+                                  ).move_to(right.c2p(k, 0), aligned_edge=DOWN) for k in range(6)])
+        right_zero = DashedLine(right.c2p(0, 0), right.c2p(0, 1.12), color=INK, stroke_width=3).shift(0.2 * LEFT)
+        right_name = VGroup(label("Poisson: Poisson deviance", 30, ORANGE, weight=BOLD),
+                            label("never below zero", 28, GREEN, weight=BOLD)).arrange(DOWN, buff=0.1)
+        right_name.next_to(right_frame, UP, 0.25)
+        # "That explains a puzzle from earlier in the course: a polynomial regression predicted a negative
+        # number of animals."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.08))
+        # "A Normal curve runs below zero, so squared error saw nothing wrong."
+        cue(self, "A Normal curve")
+        self.play(FadeIn(left_frame), Create(zero), Create(curve), FadeIn(left_name[0]), run_time=self.share(0.1))
+        cue(self, "runs below zero")
+        self.play(FadeIn(below), FadeIn(left_name[1]), run_time=self.share(0.08))
+        # "A Poisson distribution stops at zero, so Poisson regression never predicts fewer than zero animals."
+        cue(self, "A Poisson distribution")
+        self.play(FadeIn(right_frame), Create(right_zero), FadeIn(bars, lag_ratio=0.2), FadeIn(right_name[0]),
+                  run_time=self.share(0.1))
+        cue(self, "so Poisson regression")
+        self.play(FadeIn(right_name[1]), run_time=self.share(0.08))
+        self.finish()
+
+
+class Scene17(VideoScene):
+    number = 17
+
+    def construct(self):
+        # Page results: likelihood-and-priors.qmd, maximum likelihood on forty stations.
+        forty = self.data("forty")
+        heading = title(f"A small survey: {int(forty['stations'][0])} stations, {int(forty['inputs'][0])} inputs",
+                        44).to_edge(UP, buff=0.4)
         axes = plain_axes([0, 3, 1], [-8, 10, 2], 6.0, 5.0).move_to([-2.6, -0.8, 0])
         zero = Line(axes.c2p(0, 0), axes.c2p(3, 0), color=INK, stroke_width=3)
-        bars = VGroup()
-        for x, value, name, colour in ((1, summary["b_temp"], "temperature", BLUE),
-                                       (2, summary["b_temp2"], "its square", ORANGE)):
-            base, top = axes.c2p(x, 0), axes.c2p(x, value)
-            bar = Rectangle(width=1.2, height=abs(top[1] - base[1]), stroke_width=0, fill_color=colour,
-                            fill_opacity=1).move_to(base, aligned_edge=DOWN if value > 0 else UP)
-            text = label(("+" if value > 0 else "") + fixed(value), 38, colour, weight=BOLD
-                         ).next_to(bar, UP if value > 0 else DOWN, 0.15)
-            name_text = label(name, 28, colour, weight=BOLD).next_to(base, DOWN if value > 0 else UP, 0.2)
-            bars.add(VGroup(bar, text, name_text))
+        bars = effect_bars(axes, forty["ml"], ["temperature", "its square"], [BLUE, ORANGE])
         unit = label("animals per standard deviation of each input", 28, SUBDUED)
         unit.next_to(heading, DOWN, 0.2)
         cancel = label("two large effects\nthat cancel out", 34, INK, weight=BOLD).move_to([3.6, 0.8, 0])
@@ -663,53 +779,51 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
-        # Page results: map-and-priors.qmd#fig-prior-likelihood, temperature alone, prior sd 1.
-        summary = self.data("map-summary").iloc[0]
-        peak = self.data("prior-peaks").set_index("prior_sd")["peak"][PRIOR_SD]
-        b_hat, se = summary["b_temp"], summary["se_temp"]
-        sd = math.sqrt(1 / (1 / se ** 2 + 1 / PRIOR_SD ** 2))
+        # Page results: likelihood-and-priors.qmd, the same two effects with a Normal prior (ridge).
+        forty = self.data("forty")
         heading = title("What you knew before can help", 46).to_edge(UP, buff=0.4)
         prior_heading = title("A prior: effects that large are rare", 46).to_edge(UP, buff=0.4)
-        axes, frame = chart([-5, 15, 1], [0, 1.15, 0.5], 10.5, 4.4, [-5, 0, 5, 10, 15], [],
-                            "temperature effect", "")
-        frame.move_to([0, -0.9, 0])
-        zero = DashedLine(axes.c2p(0, 0), axes.c2p(0, 1.1), color=GREY)
-
-        def curve(mean, spread, colour, width=6):
-            return axes.plot(lambda b: bell(b, mean, spread), x_range=[-5, 15, 0.02], color=colour,
-                             stroke_width=width)
-
-        data = curve(b_hat, se, GREY)
-        data_name = label(f"the data alone: {fixed(b_hat)}", 28, GREY, weight=BOLD
-                          ).next_to(axes.c2p(13, bell(13, b_hat, se)), UP, 0.2)
-        prior = curve(0, PRIOR_SD, ORANGE)
-        prior_name = label("the prior,\ncentred on zero", 28, ORANGE, weight=BOLD).move_to(axes.c2p(-4.2, 0.55))
-        combined = curve(peak, sd, BLUE, 7)
-        combined_name = label(f"combined: {fixed(peak)}", 32, BLUE, weight=BOLD).move_to([-1.0, 2.3, 0])
-        # "With so few stations, what you knew before the survey can help the model predict better."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
+        axes = plain_axes([0, 3, 1], [-8, 10, 2], 6.0, 5.0).move_to([2.6, -0.8, 0])
+        zero = Line(axes.c2p(0, 0), axes.c2p(3, 0), color=INK, stroke_width=3)
+        names = ["temperature", "its square"]
+        before = effect_bars(axes, forty["ml"], names, [BLUE, ORANGE])
+        after = effect_bars(axes, forty["map"], names, [BLUE, ORANGE])
+        ghosts = VGroup(*[VGroup(b[0].copy().set_fill(opacity=0).set_stroke(GREY, 3),
+                                 b[1].copy().set_color(GREY)) for b in before])
+        unit = label("animals per standard deviation of each input", 28, SUBDUED).next_to(heading, DOWN, 0.2)
+        pa, prior_frame = chart([-4, 4, 1], [0, 1.15, 0.5], 4.6, 2.6, [-3, 0, 3], [], "an effect", "")
+        prior_frame.move_to([-4.0, -0.4, 0])
+        prior = pa.plot(lambda b: bell(b, 0, 1), x_range=[-4, 4, 0.02], color=PURPLE, stroke_width=6)
+        prior_name = label("the prior,\ncentred on zero", 28, PURPLE, weight=BOLD).next_to(prior_frame, UP, 0.2)
+        # "With so few stations, what you knew before the survey can help."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), Create(zero), FadeIn(unit), FadeIn(before),
+                  run_time=self.share(0.08))
         # "And you did know something: effects that large are rare."
-        cue(self, "And you did")
-        self.play(FadeIn(frame), Create(zero), run_time=self.share(0.06))
-        self.play(Create(data), FadeIn(data_name), run_time=self.share(0.1))
+        cue(self, "effects that large")
+        self.play(Indicate(VGroup(before[0][1], before[1][1]), color=INK), run_time=self.share(0.06))
         # "A prior writes that down, as a curve centred on zero."
         cue(self, "A prior writes")
-        self.play(ReplacementTransform(heading, prior_heading), Create(prior), FadeIn(prior_name),
-                  run_time=self.share(0.1))
-        # "Combined with the data, it pulls the temperature effect to 0.22."
-        cue(self, "Combined with")
-        self.play(Create(combined), run_time=self.share(0.12))
+        self.play(ReplacementTransform(heading, prior_heading), FadeIn(prior_frame), Create(prior),
+                  FadeIn(prior_name), run_time=self.share(0.1))
+        # "Combined with the data, it pulls the temperature effect from 9.23 to 0.26,"
         cue(self, "it pulls")
-        self.play(FadeIn(combined_name), run_time=self.share(0.08))
+        self.add(ghosts[0])
+        self.play(ReplacementTransform(before[0][0], after[0][0]), FadeOut(before[0][1]), FadeIn(after[0][1]),
+                  run_time=self.share(0.1))
+        # "and its square from minus 6.78 to minus 0.18."
+        cue(self, "and its square from")
+        self.add(ghosts[1])
+        self.play(ReplacementTransform(before[1][0], after[1][0]), FadeOut(before[1][1]), FadeIn(after[1][1]),
+                  run_time=self.share(0.1))
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         # Schematic: the prior as a penalty in the loss.
@@ -738,65 +852,23 @@ class Scene17(VideoScene):
         self.finish()
 
 
-class Scene18(VideoScene):
-    number = 18
-
-    def construct(self):
-        # Page results: map-and-priors.qmd, the three test errors.
-        summary = self.data("map-summary").iloc[0]
-        heading = title("Does it help?", 50).to_edge(UP, buff=0.5)
-        sub = label(f"error on the {int(summary['testing'])} stations held back (lower is better)", 30, SUBDUED
-                    ).next_to(heading, DOWN, 0.25)
-        axes, frame = chart([4.4, 4.9, 0.05], [0, 1, 1], 11.0, 0.01, [4.4, 4.5, 4.6, 4.7, 4.8, 4.9], [],
-                            "test RMSE (animals)", "", x_format="{:.1f}")
-        frame.move_to([0, -1.7, 0])
-        marks = VGroup()
-        for value, name, colour, height in ((summary["mean_rmse"], "predicting the average", GREY, 2.3),
-                                            (summary["mle_rmse"], "without a prior", ORANGE, 1.2),
-                                            (summary["map_rmse"], "with the prior", BLUE, 1.8)):
-            stem = Line(axes.c2p(value, 0), axes.c2p(value, 0) + height * UP, color=colour, stroke_width=5)
-            dot = Dot(axes.c2p(value, 0), radius=0.12, color=colour)
-            text = VGroup(label(fixed(value), 38, colour, weight=BOLD), label(name, 28, colour)
-                          ).arrange(DOWN, buff=0.06).next_to(stem, UP, 0.12)
-            marks.add(VGroup(stem, dot, text))
-        marks[1][2].next_to(marks[1][0].get_end(), LEFT, 0.15, aligned_edge=UP)
-        trade = label("the prior fits the forty a little worse,\nand predicts new stations better", 30, BLUE,
-                      weight=BOLD).to_edge(DOWN, buff=0.15)
-        # "Does it help?"
-        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
-        # "On the 680 stations held back, predicting the average gives an error of 4.85."
-        cue(self, "On the 680")
-        self.play(FadeIn(sub), FadeIn(frame), run_time=self.share(0.08))
-        cue(self, "predicting the average")
-        self.play(FadeIn(marks[0]), run_time=self.share(0.08))
-        # "The fit without a prior gives 4.76; with the prior, 4.45."
-        cue(self, "The fit without")
-        self.play(FadeIn(marks[1]), run_time=self.share(0.08))
-        cue(self, "with the prior,")
-        self.play(FadeIn(marks[2]), run_time=self.share(0.08))
-        # "The prior fits the forty stations a little worse, and predicts new ones better."
-        cue(self, "The prior fits")
-        self.play(FadeIn(trade), run_time=self.share(0.08))
-        self.finish()
+class Scene20(KeyPointScene):
+    number, point = 20, 3
 
 
-class Scene19(KeyPointScene):
-    number, point = 19, 3
+# The quiz (scenes 21–22) ------------------------------------------------------------------
 
-
-# The quiz (scenes 20–21) ------------------------------------------------------------------
-
-class Scene20(QuizScene):
-    number = 20
+class Scene21(QuizScene):
+    number = 21
     question = ("A colleague fits logistic regression,", "and every coefficient looks sensible.",
                 "Can they trust them?")
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
-        # Page results: reading-a-fit.qmd, logistic regression stopped after two steps.
+        # Page results: parameter-estimation.qmd, logistic regression stopped after two steps.
         fits = self.data("truncated")
         answer = title("Not yet", 56).to_edge(UP, buff=0.5)
         rows = [["logistic regression", "chlorophyll", "converged"]]
@@ -811,10 +883,10 @@ class Scene21(VideoScene):
         advice = card("check the flag first", PURPLE, 36).to_edge(DOWN, buff=0.5)
         # "Not yet."
         self.play(FadeIn(answer, scale=0.9), run_time=self.share(0.06))
-        # "On the survey, a fit stopped after two steps gave a chlorophyll coefficient 9 per cent out,"
+        # "On the survey, a fit stopped after two steps gave a chlorophyll coefficient 23 per cent out,"
         cue(self, "On the survey")
         self.play(FadeIn(grid[0]), FadeIn(VGroup(grid[1][:2], grid[2][:2])), run_time=self.share(0.1))
-        cue(self, "9")
+        cue(self, "23 per cent")
         self.play(FadeIn(off), run_time=self.share(0.08))
         # "and it looked entirely normal. Only the convergence flag showed the problem."
         cue(self, "Only the convergence")
@@ -825,19 +897,19 @@ class Scene21(VideoScene):
         self.finish()
 
 
-# The recap (scenes 22–24) and the end card (scene 25) --------------------------------------
-
-class Scene22(RecapScene):
-    number, point = 22, 1
-
+# The recap (scenes 23–25) and the end card (scene 26) --------------------------------------
 
 class Scene23(RecapScene):
-    number, point = 23, 2
+    number, point = 23, 1
 
 
 class Scene24(RecapScene):
-    number, point = 24, 3
+    number, point = 24, 2
 
 
-class Scene25(EndCardScene):
-    number = 25
+class Scene25(RecapScene):
+    number, point = 25, 3
+
+
+class Scene26(EndCardScene):
+    number = 26
