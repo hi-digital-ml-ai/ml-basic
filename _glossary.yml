@@ -425,6 +425,17 @@ terms:
     definition: "The smallest group of examples a decision tree may split in two (min_n); smaller values let the tree grow larger."
     page: chapters/05-generalisation/underfitting-and-overfitting.qmd
 
+  # 5 · Generalisation: The bias–variance trade-off
+  - term: "Bias"
+    definition: "How far a model's average prediction, over many surveys, sits from the expected value: the miss a model makes in the same direction every time."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Variance (of a model)"
+    definition: "How much a model's predictions change when it is fitted to a different survey of the same place."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Bias–variance trade-off"
+    definition: "More flexibility lowers a model's bias and raises its variance, so the lowest error on new data lies in between."
+    page: chapters/05-generalisation/bias-variance.qmd
+
   # 5 · Generalisation: Regularisation
   - term: "Regularisation"
     definition: "Adding a penalty to the loss so that a model fits its own data a little worse and new data better."

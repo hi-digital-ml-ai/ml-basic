@@ -1,7 +1,7 @@
 ---
 title: "The bias–variance trade-off"
 description: "Fit the same model to many surveys of the same shelf and its predictions differ. Its error on new stations then splits into bias, variance and noise, and on the survey the noise is the largest part."
-order: 4
+order: 2
 categories: [generalisation]
 ---
 
@@ -15,6 +15,8 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
+
+{{< new-terms >}}
 
 ## The U-shaped curve has two causes
 
@@ -32,7 +34,7 @@ model can touch.
 Picture the survey repeated many times: the same shelf, the same design, different sites
 each time. Each survey gives a different set of stations, so the same method fitted to each
 gives a slightly different model, and each model predicts something slightly different at
-a new station. Set those predictions beside the station's **expected count**, the average
+a new station. Set those predictions beside the station's expected count, the average
 count the station would give if it could be sampled again and again, and three parts of the
 error appear.
 
@@ -41,7 +43,8 @@ error appear.
   survey, and more surveys do not help.
 - **Variance** is how much the predictions differ from survey to survey. A flexible model
   follows whichever stations it happened to get, so each survey gives it a different shape.
-- **Noise** is how far a single count falls from its expected count. A station expected to
+- [Noise](../04-how-algorithms-learn/loss-functions.qmd#averaging-the-misses-gives-the-objective)
+  is how far a single count falls from its expected count. A station expected to
   hold four animals may yield none, or a dozen. No model can predict that part, because it
   does not depend on the inputs.
 
@@ -363,7 +366,8 @@ on [Underfitting and overfitting](underfitting-and-overfitting.qmd) beat predict
 little: most of what is left is chance in the counts, which no model removes.
 
 No real study can draw this chart, because no real survey knows its expected counts. In
-practice only the sum shows, as the error on new sites of the last three pages. The
+practice only the sum shows, as the error on new sites on
+[Underfitting and overfitting](underfitting-and-overfitting.qmd). The
 variance alone can still be seen: refit the model on resampled data and watch how much
 its predictions move.
 
@@ -371,7 +375,7 @@ its predictions move.
 
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built a
 forest by averaging many trees. The same decomposition shows what the averaging does. Here
-a forest whose trees have a node size of 5 is fitted to the same 100 replicate surveys and
+a forest of 100 trees, each with a node size of 5, is fitted to the same 100 replicate surveys and
 set beside a single tree with the same node size.
 
 ::: {.panel-tabset group="language"}
@@ -380,7 +384,7 @@ set beside a single tree with the same node size.
 
 ```{r}
 #| label: forest
-forest_model <- rand_forest(mode = "regression", min_n = 5) |>
+forest_model <- rand_forest(mode = "regression", trees = 100, min_n = 5) |>
   set_engine("ranger", seed = 123)
 
 forest_predictions <- imap(surveys$splits, \(s, i) {
@@ -408,7 +412,7 @@ rows = []
 for i, survey_rows in enumerate(surveys):
     one_survey = pool.iloc[survey_rows]
     # max_features="sqrt" draws a few inputs at each question, as ranger does.
-    forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+    forest = RandomForestRegressor(n_estimators=100, max_features="sqrt",
                                    min_samples_split=5, random_state=123,
                                    n_jobs=-1)
     fitted = (Pipeline([("recipe", tree_recipe), ("model", forest)])
@@ -455,7 +459,7 @@ to cut more variance than it costs.
 ::: {.key-points}
 - Over many surveys, the squared error at a new station splits into **bias²**, the average
   model's systematic miss; **variance**, how much the model changes from survey to
-  survey; and **noise**, how far a count falls from its expected count.
+  survey; and noise, how far a count falls from its expected count.
 - More flexibility lowers the bias and raises the variance. The lowest error on new data
   lies where one more step of flexibility would cost more in variance than it saves in
   bias.
