@@ -16,6 +16,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Downhill one step at a time
 
 [Finding the parameters](parameter-estimation.qmd) ended with a search problem: trying
@@ -40,7 +42,10 @@ smaller, and by how much. Taken together, these slopes point uphill, so each ste
 the parameters the opposite way.
 
 The **learning rate** sets how far each step goes: the step is the learning rate times
-the slope. It is a hyperparameter, chosen before fitting, and it decides the outcome.
+the slope. Boosting, on
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), used
+one in the same way, to scale down each new tree. It is a hyperparameter, chosen before
+fitting, and it decides the outcome.
 
 - Too small, and every step is safe but the walk needs hundreds of them.
 - About right, and it reaches the bottom in a handful.
@@ -337,8 +342,8 @@ Neural networks are fitted this way, as [Forward propagation and
 backpropagation](../09-neural-networks/forward-and-backward.qmd) shows, which is why they
 are always given standardised inputs.
 
-`lm()` and `glm()` are not. The formula and the step-by-step search of the previous page
-adjust to the units by themselves, and trees compare values within one input at a time,
+`lm()` and `glm()` are not. The formula and the step-by-step search of
+[Finding the parameters](parameter-estimation.qmd) adjust to the units by themselves, and trees compare values within one input at a time,
 so none of them needs it.
 
 With many observations, each step can use only a small random batch of them instead of

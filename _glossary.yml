@@ -371,3 +371,15 @@ terms:
   - term: "Greedy"
     definition: "Said of a search that takes the best step now and never goes back to change it, as a decision tree does with its splits."
     page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+
+  # 4 · How algorithms learn: Gradient descent
+  - term: "Gradient descent"
+    definition: "A search that finds which way is downhill on the objective and takes a step that way, again and again, until the ground is flat."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Gradient"
+    definition: "The slope of the objective along each parameter, which together point uphill."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Stochastic gradient descent"
+    definition: "Gradient descent in which each step uses a small random batch of the observations instead of all of them."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+    more: chapters/09-neural-networks/training-a-network.qmd
