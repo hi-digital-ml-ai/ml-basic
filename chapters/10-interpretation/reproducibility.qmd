@@ -42,9 +42,8 @@ A machine-learning analysis draws random numbers at several steps:
 
 All of them come from a random number generator, which gives the same sequence of numbers
 whenever it starts from the same **seed**. Setting a seed makes the whole analysis repeat
-exactly. [Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) fitted a forest ten
-times without one and found that the score moved a little from run to run: a seed hides
-that spread rather than removing it. The random choices do not all move a score by the
+exactly. Without one, a forest's score moves a little from run to run: a seed hides that
+spread rather than removing it. The random choices do not all move a score by the
 same amount, and the worked example compares them.
 
 ## Worked example

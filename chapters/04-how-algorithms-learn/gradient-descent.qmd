@@ -345,8 +345,8 @@ With many observations, each step can use only a small random batch of them inst
 the whole dataset. This is **stochastic gradient descent**, and [Training a
 network](../09-neural-networks/training-a-network.qmd) explains how large networks are
 trained with it. On any walk, a fit stops either when its steps become tiny or when it
-reaches a set maximum number of steps, and [Checking a fit](reading-a-fit.qmd) shows how
-to tell the two apart.
+reaches a set maximum number of steps, and [Finding the parameters](parameter-estimation.qmd#each-sign-of-a-failed-search-has-its-own-fix)
+shows how to tell the two apart.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it

@@ -338,7 +338,7 @@ the output says so. It is the problem from [Gradient descent](gradient-descent.q
 inputs on very different scales make a search fail. `glm()` fits the raw inputs without
 trouble, because its search, the one written out on
 [Finding the parameters](parameter-estimation.qmd), handles scale differently.
-[Checking a fit](reading-a-fit.qmd) shows how to catch a search that stops like this.
+[Finding the parameters](parameter-estimation.qmd#each-sign-of-a-failed-search-has-its-own-fix) shows how to catch a search that stops like this.
 
 ### The negative binomial model adds one parameter
 

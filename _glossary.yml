@@ -354,3 +354,20 @@ terms:
   - term: "Log loss"
     definition: "The loss for a predicted probability, which grows with how little probability the model gave to what happened."
     page: chapters/04-how-algorithms-learn/loss-functions.qmd
+
+  # 4 · How algorithms learn: Finding the parameters
+  - term: "Parameter"
+    definition: "A number the fit chooses from the data, such as a slope or the value a tree splits at."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Normal equations"
+    definition: "The equations whose solution gives linear regression's coefficients directly, in one step, without a search."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Converged"
+    definition: "Said of a search that stopped because its steps no longer improved the fit by more than a set amount, rather than because it ran out of steps."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Separation"
+    definition: "When one input splits the two classes completely, so a classifier's coefficient grows without limit and the search never finds a lowest point."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Greedy"
+    definition: "Said of a search that takes the best step now and never goes back to change it, as a decision tree does with its splits."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd

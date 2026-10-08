@@ -96,8 +96,6 @@ website:
             text: "Maximum likelihood"
           - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
             text: "Priors and ridge regression"
-          - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
-            text: "Checking a fit"
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:
