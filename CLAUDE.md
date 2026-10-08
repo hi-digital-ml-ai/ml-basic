@@ -53,12 +53,13 @@ tools/extract-code.py --out /tmp/check  # the downloadable scripts, without buil
   results mean" repeated on every page, and not phrased as questions.
 - **tidymodels is the default toolkit** (`recipes` → `parsnip` → `workflows` →
   `rsample`/`tune` → `yardstick`). Show base-R or other packages only to contrast.
-- **Modelling steps carry a Python tab.** In sections 2, 3, 5, 7, 8 and 10 each
-  modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. The
-  R tab is the one Quarto runs; the Python is displayed only, and is kept honest
-  by `python/check-snippets.py`. See `.claude/authoring-guide.md`.
+- **Modelling steps carry a Python tab.** In sections 2, 3, 4, 5, 7, 8 and 10 each
+  modelling chunk sits in a `panel-tabset` with its scikit-learn equivalent. Both
+  tabs run (the Python through `reticulate`) and show their own output; pages not
+  yet revised only display their Python. `python/check-snippets.py` runs every
+  Python tab. See `.claude/authoring-guide.md`.
 - **Every page** carries YAML `title`, `description`, `categories`, and ends with a
-  *Key points* callout. Categories come from the controlled list in
+  *Key points* section. Categories come from the controlled list in
   `.claude/site-structure.md`; do not invent new ones ad hoc.
 - **Examples are marine examples.** Prefer the datasets in `data/`; never invent
   numbers that look like real survey results.
@@ -79,3 +80,5 @@ gitflow: `main` (published site), `develop` (integration), `feature/*`, `release
 | `.claude/contributed-pages.md` | How participant pages are added and reviewed |
 | `.claude/workflow.md` | Build, freeze, renv, gitflow, GitHub Pages deployment |
 | `tools/README.md` | How the downloadable code is generated from the pages |
+| `.claude/videos.md` | YouTube videos per section: decisions, pipeline, laptop setup, next step |
+| `.claude/section-revision.md` | Checklist for revising a section's pages, diagrams and video, learned from §1 |

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 660" width="100%" role="img" aria-label="Nested cross-validation in five outer rounds. In outer round 1 the first of five folds of sites is held out, and the other four are handed to the search. The search cuts those four folds again into inner folds; in each inner round one inner fold is held out, and every candidate model is scored on it. The candidate with the lowest inner error is chosen, fitted to all four folds, and used once to predict the outer fold. Below, three steps: repeat for each of the five outer folds; pool the outer folds' predictions into one score; that score is the search's, choice included. A note says the outer fold plays no part in the choice, so its error is not flattered by it.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Nested cross-validation</text>
+<rect class="box" x="0" y="48" width="960" height="420" rx="8"/><rect x="0" y="48" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="88">Outer round 1 of 5</text>
+<rect x="300" y="74" width="26" height="18" rx="3" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<text class="sm" x="334" y="89">fitted to</text>
+<rect x="520" y="74" width="26" height="18" rx="3" fill="#D55E00"/>
+<text class="sm" x="554" y="89">outer fold, held out</text>
+<rect x="740" y="74" width="26" height="18" rx="3" fill="#E69F00"/>
+<text class="sm" x="774" y="89">inner fold, held out</text>
+<text class="body" x="22" y="145">All sites</text>
+<rect x="140" y="120" width="112" height="36" rx="4" fill="#D55E00" stroke="#D55E00" stroke-width="1.6"/>
+<circle cx="160" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="184" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="208" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<circle cx="232" cy="138.0" r="6" fill="#ffffff" opacity="0.95" stroke="#D55E00" stroke-width="1.2"/>
+<rect x="262" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="120" width="112" height="36" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="138.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<path d="M262 166 V174 H740 V166" fill="none" stroke="#6b7680" stroke-width="1.6"/>
+<path d="M501.0 174 V186" stroke="#6b7680" stroke-width="2"/><path d="M495.0 186 L501.0 196 L507.0 186 Z" fill="#6b7680"/>
+<rect x="248" y="200" width="506" height="186" rx="6" fill="#ffffff" stroke="#6b7680" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text class="lab" x="22" y="226" fill="#1b6a87">THE SEARCH</text>
+<text class="body" x="22" y="254">Every candidate is</text>
+<text class="body" x="22" y="278">scored on inner</text>
+<text class="body" x="22" y="302">folds of these sites</text>
+<text class="body" x="22" y="326">only.</text>
+<rect x="262" y="212" width="112" height="32" rx="4" fill="#E69F00" stroke="#E69F00" stroke-width="1.6"/>
+<circle cx="282" cy="228.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="306" cy="228.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="330" cy="228.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="354" cy="228.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="384" y="212" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="212" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="212" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="228.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="254" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="254" width="112" height="32" rx="4" fill="#E69F00" stroke="#E69F00" stroke-width="1.6"/>
+<circle cx="404" cy="270.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="428" cy="270.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="452" cy="270.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="476" cy="270.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="506" y="254" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="254" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="270.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="296" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="296" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="296" width="112" height="32" rx="4" fill="#E69F00" stroke="#E69F00" stroke-width="1.6"/>
+<circle cx="526" cy="312.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="550" cy="312.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="574" cy="312.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="598" cy="312.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<rect x="628" y="296" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="648" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="672" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="696" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="720" cy="312.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="262" y="338" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="282" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="306" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="330" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="354" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="384" y="338" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="404" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="428" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="452" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="476" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="506" y="338" width="112" height="32" rx="4" fill="#cfe3f1" stroke="#0072B2" stroke-width="1.6"/>
+<circle cx="526" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="550" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="574" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<circle cx="598" cy="354.0" r="6" fill="#ffffff" opacity="0.9" stroke="#0072B2" stroke-width="1.2"/>
+<rect x="628" y="338" width="112" height="32" rx="4" fill="#E69F00" stroke="#E69F00" stroke-width="1.6"/>
+<circle cx="648" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="672" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="696" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<circle cx="720" cy="354.0" r="6" fill="#ffffff" opacity="0.95" stroke="#E69F00" stroke-width="1.2"/>
+<text class="body" x="768" y="256">Choose the</text>
+<text class="body" x="768" y="280">candidate with</text>
+<text class="body" x="768" y="304">the lowest</text>
+<text class="body" x="768" y="328">inner error.</text>
+<path d="M501.0 386 V400" stroke="#6b7680" stroke-width="2"/><path d="M495.0 400 L501.0 410 L507.0 400 Z" fill="#6b7680"/>
+<text class="body" x="470" y="440" text-anchor="middle">Fit the chosen candidate to all four folds and predict the <tspan style="fill:#D55E00; font-weight:bold">outer fold</tspan>.</text>
+<rect class="box" x="0" y="494" width="300" height="96" rx="8"/><rect x="0" y="494" width="300" height="6" rx="3" fill="#1b6a87"/>
+<text class="lab" x="18" y="526" fill="#1b6a87">STEP 1</text>
+<text class="body" x="18" y="552">Repeat for each of the</text>
+<text class="body" x="18" y="574">five outer folds.</text>
+<path d="M304 542 H318" stroke="#6b7680" stroke-width="2"/><path d="M318 536 L328 542 L318 548 Z" fill="#6b7680"/>
+<rect class="box" x="330" y="494" width="300" height="96" rx="8"/><rect x="330" y="494" width="300" height="6" rx="3" fill="#1b6a87"/>
+<text class="lab" x="348" y="526" fill="#1b6a87">STEP 2</text>
+<text class="body" x="348" y="552">Pool the outer folds’</text>
+<text class="body" x="348" y="574">predictions into one score.</text>
+<path d="M634 542 H648" stroke="#6b7680" stroke-width="2"/><path d="M648 536 L658 542 L648 548 Z" fill="#6b7680"/>
+<rect class="box" x="660" y="494" width="300" height="96" rx="8"/><rect x="660" y="494" width="300" height="6" rx="3" fill="#6b7680"/>
+<text class="lab" x="678" y="526" fill="#6b7680">STEP 3</text>
+<text class="body" x="678" y="552">That score is the search’s,</text>
+<text class="body" x="678" y="574">choice included.</text>
+<text class="note" x="470" y="630" text-anchor="middle">The outer fold plays no part in the choice, so its error is not flattered by it.</text>
+</svg>

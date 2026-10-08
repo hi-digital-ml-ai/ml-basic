@@ -15,42 +15,166 @@ idiom without stopping to explain it, and so the Python tabs have somewhere to p
 
 ---
 
+## Site-wide revision (from 2026-10-07)
+
+A second pass over every page, after all ten sections had been revised once. The aim
+(user, 2026-10-07): give readers a good understanding of general machine-learning
+knowledge, clearly and readably, for participants of mixed backgrounds. Three problems
+drive it:
+
+- **Redundancy.** Most later pages re-taught an idea an earlier page owned (RMSE, the
+  split roles, the bootstrap, why to standardise, the learning rate, ridge, site against
+  block cross-validation, the cost threshold) and then added their own part. Pages grew
+  from about 1,500 words in §1 to 2,500–3,500 in §6, §7 and §10.
+- **A lean towards statistical modelling.** §3, §4, §6 and §10 spent much of their length
+  on coefficient intervals, standard errors, p-values, log-likelihoods, overdispersion
+  checks and posteriors, and Poisson, negative binomial and GAM models were the default
+  models through §6, §7 and §10.
+- **Terms used before they were explained**, and R² defined as a share of the variation
+  while the code computed `rsq()`, the squared correlation.
+
+Pages may be merged, removed and renamed freely; URLs need no redirects (the user is the
+only one working on the site). Every syllabus subtopic keeps a heading somewhere.
+
+### Target pages
+
+| Section | Pages, in order | Change |
+| --- | --- | --- |
+| 1 Introduction | Types of learning; Prediction and explanation; Applications in marine science; Discriminative and generative models | *Statistical modelling and machine learning* and *Prediction and explanation* merge: the two aims, the line and the tree, the RMSE built by hand, the confounder |
+| 2 Marine data | The coastal survey; Kinds of marine data; Exploring and cleaning the data; Scaling and encoding; Splitting the data; Avoiding information leakage | *Observations and features* merges into *The coastal survey*; *Exploring the data first* and *Missing values and outliers* merge (one finds the six problems, the other fixes them); *Splitting* drops its rebalancing section for a link to *Class imbalance* |
+| 3 Supervised learning | Linear and polynomial regression; Regression for counts; Logistic regression; k-nearest neighbours; Decision trees; Random forests and boosting; Choosing a method | *Regression and classification* folds into the overview and the linear regression page; **k-nearest neighbours is new** (user, 2026-10-07): the simplest machine-learning method, predicting from the most similar stations, which ties together distance, scaling, k-means and the distance-to-the-survey check |
+| 4 How algorithms learn | Loss functions; Finding the parameters; Gradient descent; Likelihood and priors | *Maximum likelihood* and *Priors and ridge regression* merge into one page on where losses and penalties come from, statistics in the maths callouts; *Checking a fit* folds into *Finding the parameters* (did the search work), its seeds part into *Reproducibility* |
+| 5 Generalisation | Underfitting and overfitting; The bias–variance trade-off; Regularisation; Hyperparameter selection | *Training error and new data* merges into *Underfitting and overfitting* (same splits, same curve); *Model complexity* folds into *Regularisation* (same random columns); ridge is taught here, §4 only says a penalty is a prior |
+| 6 Assumptions | Linearity and nonlinearity; Distributional assumptions; Dependent data; Uneven sampling and extrapolation; Class imbalance | *Independence of observations* and *Spatial and temporal dependence* merge into one page on repeat visits, neighbours and time (the why; the folds go to §7); *Distributional assumptions* becomes what a loss aims at, its prediction intervals moving to *Communicating uncertainty* |
+| 7 Validation | Cross-validation; Spatial and temporal cross-validation; Regression performance measures; Classification performance measures; Uncertainty and stability; Choosing measures that match the objective | Same pages; *Spatial and temporal CV* takes the site-against-block comparison from §6; *Classification measures* starts from *Class imbalance* |
+| 8 Unsupervised learning | Clustering with k-means; Choosing the number of clusters; Hierarchical clustering; Principal component analysis; How many components to keep; Checking a pattern before reporting it | Same pages |
+| 9 Neural networks | Neurons, layers and activations; Forward propagation and backpropagation; Training a network; When a network pays off; Autoencoders | *How much data a network needs* and *When a network is the right tool* merge; *Training a network* drops its repeat of §4's learning-rate lesson |
+| 10 Interpretation | Feature importance; Partial effects; Black boxes and interpretable models; Communicating uncertainty; Reproducibility and transparent reporting; From a model to a claim | Same pages; fewer coefficient intervals; the claim is written as a machine-learning report (a score against a baseline, shapes, prediction intervals) |
+
+Fifty-three pages, against sixty-two before. File names may change with the titles.
+
+### One page teaches each idea; the others link to it
+
+| Idea | Taught on | Other pages |
+| --- | --- | --- |
+| The coastal survey | *The coastal survey* | §1 gives two sentences and a link |
+| RMSE | *Prediction and explanation* (built by hand) | Link; *Regression performance measures* compares it with the others |
+| R² | The first page that quotes it, as the textbook R² (`rsq_trad()`, `r2_score()`) everywhere | Link |
+| Training, validation and test data | *Splitting the data* | Link |
+| Parameters and hyperparameters | The term *hyperparameter* on *k-nearest neighbours* (the number of neighbours); the contrast with parameters on *Finding the parameters* | Link |
+| Cross-validation | *Hyperparameter selection* | §7's *Cross-validation* starts where it stops; §6 pages link |
+| The bootstrap | *Random forests and boosting* | Link |
+| Why standardise | *Scaling and encoding* | One line and a link |
+| Learning rate, divergence, mini-batches | *Gradient descent* | *Training a network* keeps early stopping, seeds and mini-batches for networks |
+| Ridge and the lasso | *Regularisation* | *Likelihood and priors*: a penalty is a prior, nothing more |
+| Seeds and run-to-run spread | *Reproducibility and transparent reporting* | Link |
+| What a loss aims at (average, median), log counts falling short | *Distributional assumptions* | The measures pages link instead of rebuilding |
+| Overdispersion and the negative binomial | *Regression for counts* | Link |
+| Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
+| False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
+| Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
+| The simulated truth as a check | *The coastal survey* | One sentence and a link |
+
+Section overviews keep the thread paragraph ("The section picks up threads ...") to one or
+two sentences.
+
+### Decisions (user, 2026-10-07)
+
+- The default models of §6, §7 and §10 move from Poisson, negative binomial and the GAM
+  to a random forest and one simple baseline.
+- A **glossary**: `glossary.qmd` (sidebar, More) lists every term, and each page opens
+  with a collapsed "New terms on this page" box. Both come from one file,
+  `_glossary.yml`, through the `{{< new-terms >}}` and `{{< glossary >}}` shortcodes in
+  `tools/glossary.lua`. Add a page's terms to the file as the page is revised.
+
+---
+
 ## 1. Introduction to machine learning in marine science
 `chapters/01-introduction/` · categories: `foundations`
 
+- Types of learning: supervised and unsupervised learning (reinforcement learning
+  named, not covered)
 - What machine learning is, and how it differs from traditional statistical modelling
-- Examples of machine-learning applications in marine science
-- Main types of learning: supervised, unsupervised, neural-network-based
 - Prediction versus explanation and scientific inference
+- Examples of machine-learning applications in marine science
+- Discriminative and generative models
 
-## 2. Understanding and preparing marine datasets
+**Being revised (from 2026-09-29, `feature/improve-introduction`).** Types of learning
+comes first; discriminative and generative models have their own page, last. Examples
+use only temperature, salinity and depth, and each method is explained before it is used.
+
+## 2. Understanding and preparing marine data
 `chapters/02-marine-data/` · categories: `data-preparation`, `marine-data`
 
-- Observations, features, responses, and labels
-- Continuous, categorical, spatial, temporal, and profile data
-- Exploratory data analysis before modelling
-- Missing values, outliers, measurement errors, and class imbalance
-- Feature scaling, transformation, and encoding
-- Training, validation, and test datasets
+- The coastal survey: the simulated dataset the course uses, its columns and files,
+  observations and features (with outcomes and labels)
+- Kinds of marine data: continuous, categorical, circular, temporal, spatial, profile
+  and compositional
+- Exploring and cleaning the data: exploratory analysis, missing values and outliers
+  (with measurement errors)
+- Scaling and encoding
+- Splitting the data: training, validation and test data; class imbalance is a link to
+  *Class imbalance* in §6
 - Avoiding information leakage
 
-**Written, with one change from the original outline:** exploratory analysis moved
-*ahead* of missing values and outliers. You find the sentinel values and the impossible
-depths by looking, so the looking has to come first; the cleaning page then acts on what
-the EDA page found. The subtopics are otherwise as listed.
+**Revised 2026-09-30** (`feature/improve-marine-data`). A first page introduces the
+survey formally; every page is shorter and has one diagram. The pages use only linear
+regression as a model, since later sections introduce the others. The survey's true
+effects are deliberately not listed; later pages reveal them when checking a model.
 
-Circular data (month, day of year, bearing, tidal phase) was added to the data-types
-page. It is not in the original outline and it is a genuine marine trap.
+**Second pass 2026-10-08** (`feature/revise-marine-data`): six pages, as in the target
+table above. *Observations and features* merged into *The coastal survey*; *Exploring
+the data first* and *Missing values and outliers* merged into *Exploring and cleaning
+the data*, which still finds the problems by looking before it fixes them; *Splitting
+the data* links to *Class imbalance* instead of teaching rebalancing. Every term is
+defined at first use, with glossary entries. *Avoiding information leakage* names the
+term in the overview, since every later section depends on it.
 
 ## 3. Supervised learning
 `chapters/03-supervised-learning/` · categories: `supervised`, `regression`,
 `classification`, `trees-ensembles`
 
-- Regression and classification problems
+- Regression and classification
 - Linear and polynomial regression
+- Regression for counts: Poisson and negative binomial
 - Logistic regression
-- Decision trees, random forests, and boosting
+- Decision trees
+- Random forests and boosting
 - Choosing a method according to the scientific question and dataset
+
+**Revision started 2026-09-30** (`feature/improve-supervised-learning`). Seven pages,
+one new method each: the old linear, polynomial and count page split into two, and the
+old trees, forests and boosting page split into two. Counts come before logistic
+regression, so the log scale is introduced on counts and reused for probabilities. The
+single tree gets its own page before the ensembles, which build on it. Titles carry no
+commas.
+
+**Second pass 2026-10-08** (`feature/revise-supervised-learning`): seven pages, as in
+the target table. *Regression and classification* is gone: Types of learning already
+names the two tasks and keeps the subtopic's headings (*Presence is a classification*,
+*Abundance is a regression*), its marine-outcomes table moved to the overview, overdispersion
+lives on *Regression for counts*, and what a count loses as present or absent opens
+*Logistic regression*. *k-nearest neighbours* is new, between logistic regression and
+the trees, and owns overfitting and the term hyperparameter; *Decision trees* links to
+it for the fitting and validation sites, overfitting and flat predictions beyond the
+data. *Random forests and boosting* owns the bootstrap. *Choosing a method* compares
+seven models (k-nearest neighbours in, the negative binomial out). Every page uses the
+textbook R², links RMSE and R² to where they are taught, and says one line on
+extrapolation with a link. The video was rebuilt from these pages the same day (see
+`videos.md`).
+
+Found during this pass, to fix when those sections are revised:
+
+- **Poisson intervals called too narrow.** Pages still say Poisson regression's
+  intervals are too narrow for the survey's counts, a statistical-modelling point the
+  revised §3 no longer makes: `reading-a-fit.qmd:385`, `maximum-likelihood.qmd:390`,
+  `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
+  `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
+- **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
+  §5 `model-complexity.qmd`, §6 `spatial-and-temporal-dependence.qmd`, §9
+  `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`
@@ -66,15 +190,22 @@ page. It is not in the original outline and it is a genuine marine trap.
 `reading-a-fit.qmd`, framed as a diagnostic page rather than a conceptual one, because
 "interpreting optimisation" is only useful as a set of things to check.
 
+**Revised 2026-09-30** (`feature/improve-how-algorithms-learn`): the same six pages in the
+same order, retitled *Loss functions*, *Finding the parameters*, *Gradient descent*,
+*Maximum likelihood*, *Priors and ridge regression* and *Checking a fit*. The file names
+are unchanged, since sections 5, 6 and 9 link to them.
+
 Three deliberate spillovers outside the section's own subject:
 
-- Gradient descent carries the *real* justification for §2's scaling advice (a factor of
-  about ninety in iterations on this data). §2 could only assert it.
-- MAP derives ridge regression, which §5 will then present as a technique. The two pages
-  must stay consistent: §5 should refer back rather than re-deriving.
-- `reading-a-fit.qmd` uses §2's leaked `catch_weight_kg` column to produce separation, and
-  measures random-forest run-to-run noise (0.037 RMSE) as the resolution limit for §3's
-  ten-model comparison.
+- *Gradient descent* carries the real justification for §2's scaling advice: the same
+  model takes many times more steps in raw units. §2 could only assert it.
+- *Priors and ridge regression* derives ridge from a Normal prior, which §5 then presents
+  as a technique. The two pages must stay consistent: §5 should refer back rather than
+  re-deriving.
+- *Checking a fit* uses §2's leaked `catch_weight_kg` column to produce separation, and
+  measures the spread of ten unseeded forests as the resolution limit for comparing
+  models, which §3's two count models fall inside. §5's *Training versus new data* points
+  to it without quoting a number.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -89,13 +220,21 @@ Three deliberate spillovers outside the section's own subject:
 **Written, one page per subtopic, in the order listed** (complexity before bias–variance,
 so the axis is defined before it is decomposed).
 
-Every page before the last deliberately chooses its complexity by looking at the test set,
-and says so each time; `hyperparameter-selection.qmd` is where that is done properly. Keep
-that framing if these pages are edited; it is what makes §7 feel necessary rather than
-pedantic.
+**Revision decisions, 2026-10-01** (`feature/improve-generalisation`): the same six pages
+in the same order. They replace the old test-set framing ("every page before the last
+deliberately chooses its complexity by looking at the test set"):
+
+- Every page uses §2's split by site into fitting, validation and test sites, as §3 does,
+  not a random split of stations. Earlier pages choose a setting on the validation sites;
+  the test sites are scored once.
+- *Underfitting and overfitting* builds on §3's training-versus-validation curve for tree
+  depth rather than re-teaching it.
+- *Hyperparameter selection* introduces k-fold cross-validation (folds of sites) and shows
+  that one validation split picks unstable winners. §2's pointer to cross-validation points
+  here; §7's *Cross-validation* page builds on it with spatial and temporal versions.
 
 `regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
-[MAP page](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
+[Priors and ridge regression](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
 and §5 refers back. The same applies in reverse if §4 is edited.
 
 ### New dataset: `data/coastal-survey-truth.csv`
@@ -112,9 +251,9 @@ never quote a score against it without saying no real study could compute one.
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
 `class-imbalance`
 
-- Independence of observations
 - Linearity and nonlinearity
 - Distributional assumptions
+- Independence of observations
 - Spatial and temporal dependence
 - Uneven sampling and extrapolation
 - Class imbalance
@@ -130,17 +269,63 @@ never quote a score against it without saying no real study could compute one.
   `sampling-and-extrapolation.qmd`, because uneven coverage and extrapolation are the same problem
   at two severities and read badly when separated.
 
+**Revision decisions, 2026-10-02** (`feature/improve-assumptions-limitations`): the same
+six pages, reordered. The first two cover what a model assumes about shape and spread,
+which machine learning relaxes; the next three cover how the data were collected, which
+it does not.
+
+- Every page uses §2's split by site and §5's cross-validation by site, not AIC or a
+  random split.
+- Material earlier sections now teach is cut, not repeated: pseudo-replication and the
+  split by site (§2), overdispersion and the negative binomial (§3), Poisson standard
+  errors that are too small (§4), random against grouped cross-validation (§5).
+- *Linearity and nonlinearity* is framed for a machine-learning course: linearity is an
+  assumption of linear models, which trees and forests drop. It checks the assumption by
+  dividing caught by predicted along each input (temperature shows a hump), then
+  draws the curves of a random forest and a GAM, which drops the straight lines but keeps one
+  readable curve per input (smooth bumps with a penalty on bending, tied to §5's
+  penalty; no effective degrees of freedom), against the simulation's curves. §10's revision dropped
+  effective degrees of freedom too. *Distributional
+  assumptions* is framed the same way: most machine-learning models predict without
+  Normal errors or equal spread, but the distribution decides what a prediction means
+  and how sure it can be. One random forest throughout: its cross-validated errors fail
+  both checks; trained on log counts it scores the same RMSE but predicts about 30% too
+  few animals (it aims at the median, not the average); a Normal interval reaches below
+  zero, while a quantile forest's intervals widen where the catches do. Generative
+  models get one sentence (§1 covers them). Simulating from Poisson and negative
+  binomial models was cut (2026-10-02); the negative binomial model is now credited to
+  §3's *Count regression* on the pages that reuse it.
+  *Independence* shrinks to effective sample size and its cost to standard errors.
+  *Spatial and temporal dependence* compares cross-validation by site against spatial
+  blocks and diagnoses with a residual map, not Moran's I. *Extrapolation* replaces
+  Mahalanobis distance with the distance to the nearest surveyed station. *Class
+  imbalance* introduces sensitivity, specificity and precision; ROC AUC and PR AUC stay
+  in §7.
+- **One to three worked-example parts per page, each on the page's topic** (user,
+  2026-10-02: four was too many; give good, easy examples and leave the rest for
+  learners to pursue). Cut that day: linearity's scores of four models on their own
+  stations and new sites (a §5 lesson) and its Poisson model with squared terms (left
+  as an exercise); spatial's count of fitted sites within 30 km (the diagram makes the
+  point); extrapolation's ratio table (two sentences under the depth figure keep its
+  numbers). Extrapolation then dropped the negative binomial model, which behaved like
+  polynomial regression past the data, leaving two methods.
+- Running Python tabs on every page. scikit-learn has no GAM: its tab uses
+  `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
+
 ### Two threads that must be kept if these pages are edited
 
-**RMSE is not comparable across resampling schemes.** Three pages hit this and each says so.
-Different folds or splits hold different distributions of the response, so a "harder" scheme
-can report a *lower* RMSE. Use R², or the same test set for both. §3's leakage page found it
-first; §6 repeats it deliberately.
+**RMSE is not comparable across resampling schemes.** Different folds or splits hold
+different distributions of the response, so a "harder" scheme can report a *lower* RMSE.
+Use R², or the same test set for both. §2's leakage page found it first;
+`spatial-and-temporal-dependence.qmd` meets it when it compares cross-validation by site
+with spatial blocks, says so in the prose and repeats it in its Key points.
 
-**A better fit is not a more correct model.** `linearity-and-nonlinearity.qmd` turns on this:
-the GAM has the best AIC of three models by a wide margin and the most wrong depth response,
-because depth is confounded with temperature, chlorophyll and an unmodelled spatial field.
-Flexibility buys shape, not identifiability.
+**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
+the forest and the GAM
+recover the temperature hump, but both put depth's peak in shallow water, because depth
+is confounded with position, which carries an unmodelled spatial field. The page keeps
+this to one paragraph and links to §1 and §10's partial-effects page, which teach
+confounding; the page itself stays on linearity.
 
 ### Uses of `coastal-survey-truth.csv`
 
@@ -164,37 +349,50 @@ and "confusion matrix, precision, recall" are the same material and read badly a
 are one page, `classification-metrics.qmd`, organised around the matrix as the object and every
 threshold-dependent measure as a ratio of its four cells.
 
-### Two conventions that hold the section together
+**Revision decisions, 2026-10-03** (`feature/improve-validation`): the same six pages,
+in three pairs: the folds (cross-validation, spatial and temporal), the measures
+(regression, classification), and what to report (uncertainty, choosing a measure).
 
-Both were adopted to fix problems §6 ran into, and editing either page must keep them.
+- Every page uses the same ten folds of sites (`set.seed(61)`, `group_vfold_cv(survey,
+  group = site_id, v = 10)`; Python `GroupKFold(n_splits=10, shuffle=True,
+  random_state=61)`) and scores the pooled out-of-fold predictions. Pages 3 to 6 share
+  their models: predicting the average, Poisson regression, a random forest and the
+  forest on log counts for counts; logistic regression and the forest for presence.
+- Each worked example runs in about a minute per tab, with no caching (user, 2026-10-03:
+  a Python tab that took 30 minutes was an analysis, not an example). Repeated schemes
+  and large grids were cut to fit.
+- *Cross-validation*: five or ten folds are enough; the pooled score, not the average of
+  the folds'; selection optimism from a search over 100 sets of inputs with noise
+  columns, and nested cross-validation to score the search.
+- *Spatial and temporal cross-validation*: the score depends on the distance to the
+  nearest fitted station; a correlogram of the errors sets the block width (half-degree
+  blocks); an expanding window for forecasts. Schemes are compared over ten runs, since
+  single runs overlap.
+- *Regression performance measures*: RMSE, MAE, Poisson deviance and R², what each is
+  lowest at; the squared correlation (`rsq()`) against the textbook R² (`rsq_trad()`);
+  MAE would scale the forest's predictions down. MAPE is dismissed for counts.
+- *Classification performance measures*: calls at one threshold, the ranking (ROC AUC)
+  and the probabilities (log loss, with a calibration plot). F1 cannot tell the models
+  from calling every station present. Sensitivity, specificity and precision come from
+  §6's *Class imbalance* and are not taught again.
+- *Uncertainty and stability*: a bootstrap of the sites over the pooled out-of-fold
+  predictions, without refitting, and a paired comparison on the same draws.
+- *Choosing measures that match the objective*: a table of uses and their measures; a
+  shortlist scored on the animals it finds against a perfect and a random one (the
+  forest on log counts predicts 69% of the catch yet finds as many as the others); the
+  expected cost of the calls, with the cheapest threshold at k/(1+k) for calibrated
+  probabilities. The mean-only total argument is on page 3 and is not repeated.
+
+### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
 each row exactly once, so pooling gives one metric over identical rows for every scheme. This is
 the proper answer to §6's "RMSE is not comparable across resampling schemes" thread, and
-`spatial-and-temporal-cv.qmd` depends on it; without pooling, its five-scheme table would not
-be a comparison.
+`spatial-and-temporal-cv.qmd` depends on it.
 
-**Use the same resamples object for every model compared.** `uncertainty-and-stability.qmd`
-quantifies why: unpaired, the GLM-versus-forest interval is 1.54 wide and covers zero; paired on
-identical folds it is 0.33 wide.
-
-### Three findings the pages are built on
-
-- **Selection optimism.** `cross-validation.qmd` searches 100 candidate predictor sets drawn
-  from 8 real and 20 pure-noise columns. The winner contains three noise columns; nested CV puts
-  the honest RMSE 0.38 above what the search reported, and a fixed no-search model beats the
-  searched one on all five outer folds. About 0.04 of that gap is bookkeeping (five large folds
-  rather than ten small ones), and the page says so.
-- **The score is a function of fold separation.** `spatial-and-temporal-cv.qmd` measures the
-  median distance from each held-out station to its nearest training station and plots R²
-  against it. Blocked CV is not "more correct"; it is a harder question, chosen deliberately.
-  Leave-one-year-out sits off the trend because it separates in time, and `survey_year` has no
-  effect in the generator, so the diagnostic correctly reports nothing there.
-- **Measures disagree, informatively.** `regression-metrics.qmd` and `choosing-a-metric.qmd` are
-  a pair: the first shows MAE and RMSE picking different winners because the log-transformed
-  model under-predicts the survey total by 31%, the second shows that same model *winning* the
-  fifty-station shortlist. Keep both, and keep the mean-only row: it scores a perfect 1.000 on
-  the total and has no skill, which is the argument against aggregate-only validation.
+**Use the same folds for every model compared.** `uncertainty-and-stability.qmd` shows why:
+paired on the same draws, the difference between two models has a much narrower interval than
+either model's own score.
 
 ### Aimed at §10
 
@@ -211,11 +409,14 @@ reproduces the bias, and no validation scheme detects it. That is the handover t
 - Interpretation and limitations of unsupervised methods
 
 **Written as six pages, splitting one subtopic and merging two.** "Clustering" became three
-pages, because the method, the choice of *k* and the choice of algorithm are three separate
-decisions and a single page could only gesture at two of them. "Pattern detection in marine
-datasets" and "interpretation and limitations" became one page, `interpreting-patterns.qmd`,
-because the honest way to teach pattern detection is to detect a pattern and then interrogate
-it; separating them would have produced one credulous page and one abstract one.
+pages: k-means (`clustering.qmd`), the number of clusters (`choosing-the-number-of-clusters.qmd`)
+and hierarchical clustering (`beyond-k-means.qmd`, which also introduces the adjusted Rand
+index the later pages use). PCA is `principal-component-analysis.qmd`; "dimensionality
+reduction" is `dimensionality-reduction.qmd`, on how many components to keep, ending with
+UMAP briefly. "Pattern detection in marine datasets" and "interpretation and limitations"
+became one page, `interpreting-patterns.qmd` ("Checking a pattern before reporting it"),
+because a pattern is best taught by detecting one and then checking it. Gaussian mixtures
+were dropped in the 2026 revision: they added a method without adding a lesson.
 
 ### A second dataset
 
@@ -230,44 +431,38 @@ Two things are built into it and every page depends on the contrast:
 - **Substrate is a genuine split.** Six taxa are effectively hard-bottom only, eight
   soft-bottom only. The one real grouping of stations is hard versus soft: two groups.
 
-Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They load at
-zero on both principal components, which is how `principal-component-analysis.qmd` shows PCA
-ignoring noise columns unprompted.
+Three taxa (`tax22`–`tax24`) respond to nothing, like salinity in the survey. They sit at the
+centre of the loadings plot in `principal-component-analysis.qmd`, which is how that page shows
+PCA giving noise columns almost no weight unprompted. The pages never state these facts as
+given; they find them, and refer to the simulation only to check a result.
 
 ### Two conventions that hold the section together
 
-**Run the identical pipeline on a structure-free null.** Shuffle each column independently:
-every variable keeps its own distribution, all co-occurrence is destroyed. Almost no
-unsupervised statistic can be read on an absolute scale, and this is what supplies the scale.
-It is used for cluster-count selection, for parallel analysis, and for UMAP. `clusGap()`'s
-default uniform-bounding-box reference chose six clusters against the permutation null's two.
-Keep that example, it is the argument for choosing your own null.
+**Run the same steps on a shuffled copy of the data.** Shuffle each column on its own: every
+column keeps its values, and which values occur together is lost. Silhouette widths and shares
+of the variance have no fixed scale, and this supplies one. It is used for the number of
+clusters (silhouette 0.179 at *k* = 2, 3.5 times the shuffled value), for parallel analysis
+(three components) and for UMAP.
 
-**Validate against a variable the method never saw, and mind its type.** Agreement with a
-*categorical* external variable is evidence of groups; agreement with a *binned continuous* one
-is evidence only of a gradient. This asymmetry is the whole of `interpreting-patterns.qmd`.
+**Check against a variable the method never saw, and mind its type.** Agreement with a
+recorded *category* is evidence of groups; agreement with a continuous variable cut into bands
+shows only a gradient. `interpreting-patterns.qmd` makes this its third check.
 
 ### Three findings the pages are built on
 
-- **Stability is necessary, not sufficient.** The most stable result in the section
-  corresponds to nothing: splitting the soft-bottom stations by depth reproduces at ARI 0.890,
-  never below 0.71, and the generator contains no soft-sediment assemblages. A stable algorithm
-  cuts a stable gradient in a stable place. This is the section's headline and the reason the
-  community data was built with a continuum in it.
-- **Bimodal stability.** The whole-survey bootstrap at *k* = 2 returns 53 replicates recovering
-  the substrate split (ARI > 0.9) and 7 recovering a depth split (ARI < 0.15), with nothing in
-  between; the mean of 0.881 describes neither. Keep the histogram: it is the argument for
-  reporting distributions rather than averages, and it echoes §7's stability page.
-- **Defaults decide the answer.** Depth is 99.4% of the raw environmental table's variance;
-  `hclust()`'s default complete linkage scores 0.332 at *k* = 2 where Ward scores 0.889; the
-  "80% of variance" rule keeps 16 of 24 components where cross-validated prediction needs 2.
-  Every page names a default and shows what it costs.
-
-### Aimed at §9 and §10
-
-`interpreting-patterns.qmd` hands two things forward. To §9: an autoencoder is PCA without the
-linearity and inherits every interpretation problem on that page. To §10: a single number from
-a single run, reported without its distribution, is how a plausible result becomes a wrong one.
+- **Coming back is not enough.** Splitting the soft-bottom stations comes back in every
+  site bootstrap (lowest ARI 0.69), yet the generator has no soft-bottom assemblages.
+  `interpreting-patterns.qmd` tells it apart from the seabed split without revealing the
+  truth: projected onto the line between the two centres, 11% of soft-bottom stations sit
+  within 0.1 of the boundary against 2% for the seabed split, and the position correlates
+  0.87 with depth.
+- **Two answers, not one average.** The bootstrap by site (`group_bootstraps()`, as in §6)
+  at *k* = 2 gives 52 refits with the seabed split and 8 with a depth split; the average ARI
+  of 0.87 describes neither. Keep the histogram: it is the argument for reporting how often
+  each answer came back.
+- **Settings decide the answer.** The linkage rule alone moves agreement with the seabed from
+  0.005 (single) to 0.89 (Ward), and tidyclust and scikit-learn have different defaults; the
+  80% rule keeps 16 components, the shuffled baseline 3, cross-validation for depth 2.
 
 ## 9. Introduction to neural networks
 `chapters/09-neural-networks/` · categories: `neural-networks`
@@ -278,68 +473,84 @@ a single run, reported without its distribution, is how a plausible result becom
 - Strengths, limitations, and data requirements
 - When neural networks are, and are not, appropriate
 
-**Written as six pages, reframing one subtopic and adding one.** "Loss functions and
-gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the four
-decisions (learning rate, input scale, when to stop, which seed) that §4 did not have to
-face because its loss surfaces were convex. The added page is `autoencoders.qmd`, which
-§8's `interpreting-patterns.qmd` explicitly promised; it is also the only unsupervised
-network, and the easiest network to check, because a linear one has a closed-form answer.
+**Written as six pages, reframing one subtopic and splitting another.** "Loss functions and
+gradient descent" is §4's material, so §9's version is `training-a-network.qmd`: the
+settings (learning rate, when to stop, which seed) that §4 did not have to face because its
+loss surfaces were convex. "Strengths, limitations, and data requirements" and "when
+appropriate" became `how-much-data.qmd` and `when-to-use-one.qmd`, the first measuring a
+case where the network does not lead and the second one where it does. The added page is
+`autoencoders.qmd`, which follows on from §8's `principal-component-analysis.qmd`: the
+only unsupervised network, and the easiest to check, because a linear one gives PCA's
+answer.
+
+Revised in October 2026 (`feature/improve-neural-networks`). Page order and titles:
+Neurons, layers and activations; Forward propagation and backpropagation; Training a
+network; How much data a network needs; When a network is the right tool; Autoencoders.
+The section is R-only: no Python tabs.
 
 ### The engine decision
 
-**No `torch`, `brulee` or `keras`.** Everything here runs on `nnet` (already installed for
-§3) plus about forty lines of base R. That was a deliberate choice, not a constraint: a
-hand-written forward/backward pass whose gradients are checked against finite differences
-teaches backpropagation far better than a framework call, and it costs no system
-dependency. If §9 is ever extended to convolutional or recurrent architectures, that
-decision has to be revisited; see `.claude/workflow.md`.
+**No `torch`, `brulee` or `keras`.** Everything runs on `nnet` (already installed for §3),
+parsnip's `mlp()`, and short base-R networks. That was a deliberate choice, not a
+constraint: a hand-written forward and backward pass whose slopes are checked against
+small nudges of each weight teaches backpropagation better than a framework call, and it
+costs no system dependency. `forward-and-backward.qmd`, `training-a-network.qmd` and
+`autoencoders.qmd` each write their own gradient descent. If §9 is ever extended to
+convolutional or recurrent architectures, that decision has to be revisited; see
+`.claude/workflow.md`.
 
-One consequence must be kept if these pages are edited: `nnet` optimises with **BFGS, not
-gradient descent**, and parsnip maps `epochs` to `maxit` (quasi-Newton iterations). Both
-`forward-and-backward.qmd` and `training-a-network.qmd` say so explicitly. Do not let a
-later edit imply that `mlp(engine = "nnet")` takes a learning rate.
+Two consequences must be kept if these pages are edited:
+
+- `nnet` optimises with **BFGS, not gradient descent**, and parsnip maps `epochs` to
+  `maxit`. `forward-and-backward.qmd` and `training-a-network.qmd` both say so. Do not let
+  a later edit imply that `mlp(engine = "nnet")` takes a learning rate.
+- **parsnip squeezes two-class `nnet` probabilities into 0.269–0.731**, that is
+  1/(1 + e) to e/(1 + e): `parsnip:::nnet_softmax()` turns nnet's single output p into
+  the pair (1 − p, p) and then applies a softmax to it, as if they were scores. The ranking is untouched, so ROC AUC and predicted classes are right,
+  but the probabilities are not. `when-to-use-one.qmd` therefore reports AUC and draws
+  predicted classes, never probability maps or calibration. The old page's "a good score
+  and an uncalibrated model" lesson was this artefact, not a property of networks.
 
 ### Three findings the pages are built on
 
-- **The network was short of signal, not of rows.** `how-much-data.qmd` computes the
-  mean-only baseline (4.402) and an oracle that knows every true expected count (3.701), so
-  the whole learnable window is 0.70 RMSE. A default eight-unit network never enters it at
-  any training-set size, and on the *noise-free* target the same network beats linear
-  regression by 24%. It had learned the response surface; negative-binomial noise buried the
-  advantage. This is the section's headline and it is why the `coastal-survey-truth.csv`
-  diagnostic is worth the page space.
-- **A hidden unit is a rotated coordinate.** `when-to-use-one.qmd` builds a water-mass band
-  in T–S space, the one place this section steps outside `data/coastal-survey.csv`, and it
-  says so in a callout. A four-unit network (17 weights) reaches AUC 0.998 where a 500-tree
-  forest reaches 0.926 and logistic regression is capped at 0.72 at every sample size. That
-  single property, combinations of inputs rather than inputs, is the section's answer to "when
-  is a network the right tool", and it is what generalises to images and audio.
-- **A linear autoencoder is PCA, exactly.** Same reconstruction error to four decimals,
-  canonical correlation 1.000. The nonlinear version reconstructs slightly *worse* and gains
-  0.016 in depth R²: the mild arch §8 measured and declined to overstate. Every seed finds
-  the same plane and a different basis in it, which is §8's interpretation lesson with PCA's
-  guardrails (canonical rotation, variance ordering, determinism) removed.
+- **The network was short of signal, not of rows.** `how-much-data.qmd` draws learning
+  curves for linear regression, a random forest and an eight-unit network on the survey.
+  The forest leads at every size; cross-validation shrinks the network to one hidden unit
+  with the largest penalty. Scored against the simulated expected counts instead of the
+  observed ones, the network learned the response best (27% better than linear
+  regression): the count noise buried the gain. This is the section's headline; the page
+  says the expected counts are available only because the survey is simulated.
+- **A hidden unit bends along a tilted line.** `when-to-use-one.qmd` simulates a water-mass
+  band in T–S space, the one place this section steps outside the course datasets. A
+  two-unit network (9 weights) reaches ROC AUC 0.999 from 200 stations where a 500-tree
+  forest reaches 0.926 and logistic regression stays near 0.72 at every size; the forest
+  needs about 1,600 stations to come close. Adding the named combination as a column
+  (feature engineering) lets logistic regression match the network. Combinations of
+  inputs nobody has named is the section's answer to "when is a network the right tool",
+  and what carries over to images, spectra and sound.
+- **A linear autoencoder is PCA.** Same reconstruction error to four decimals, and its
+  code predicts both principal components with R² 1.000 (regression R², not canonical
+  correlation, which the course has not introduced). The tanh version predicts depth only
+  slightly better than PCA's two components (0.743 against 0.727), because the community
+  changes almost in straight lines. Every seed finds the same plane with different axes in
+  it, which is §8's interpretation lesson with PCA's ordering and determinism removed.
 
-### Two things that were measured rather than asserted
+### Measured on the pages, kept positive
 
-Both cost a rewrite and both should survive editing.
-
-- **The best straight line through a hump can have the wrong sign.** `what-a-network-is.qmd`
-  originally described the zero-unit fit as descending; it ascends, because the cold tail of
-  this survey is lower than the warm one. That is now the page's argument, not an erratum.
-- **Unscaled inputs make the network lose to a straight line.** 0.763 against 0.680, with no
-  warning of any kind. `training-a-network.qmd` measures it with plain gradient descent;
-  `nnet`'s BFGS suffers less (0.811 against 0.744) because it estimates curvature, which is
-  why the demonstration is hand-written.
+- `what-a-network-is.qmd`: two hidden units (7 weights) find the temperature optimum
+  without being told its shape; one is not enough and more add little.
+- `forward-and-backward.qmd`: all 21 hand-written slopes agree with the nudged ones to 10
+  decimal places, and a run can pause on a plateau before it beats a straight line.
+- `training-a-network.qmd`: learning rate 0.2 goes lowest, 0.5 bounces, 2 becomes NaN
+  without a warning; early stopping keeps step 1,937 of 8,000; ten seeds vary by 0.055 in
+  validation MSE. The old unscaled-inputs comparison was cut; the page now simply
+  standardises every input.
 
 ### Aimed at §10
 
-Three handovers. Network weights are not reportable quantities, so §10's importance and
-partial-effect tools are the *only* route to an effect. Ten identical runs varied by 0.046
-in validation MSE, which is §10's reproducibility case made in numbers. And
-`when-to-use-one.qmd` ends on a network that ranks almost perfectly (AUC 0.998) while never
-predicting a probability outside 0.27–0.73, a good score and an uncalibrated model, which
-is §10's "what can you honestly claim" in miniature.
+Network weights are not reportable quantities, so §10's importance and partial-effect
+tools are the route to an effect. Ten identical runs varying by 0.055 in validation MSE is
+§10's reproducibility case in numbers.
 
 ## 10. Interpretation and responsible application
 `chapters/10-interpretation/` · categories: `interpretation`, `reproducibility`
@@ -357,53 +568,71 @@ are different objects with different failure modes and one page could only do th
 takes the survey through the whole course and ends in the two paragraphs you would actually
 write, so the exercises are then attached to something concrete rather than free-floating.
 
-### The section's organising move
+**Revision decisions, 2026-10-07** (`feature/improve-interpretation`): the same six pages,
+with *Communicating uncertainty* moved before *Reproducibility*. The first two read a black
+box from outside, the next two read a model from its parts and say how sure its predictions
+are, and the last two turn the analysis into a report.
 
-Every page checks its interpretation against `data/coastal-survey-truth.csv` and the generator
-in `R/make-example-data.R`. `partial-effects.qmd` goes furthest: it recovers the unexplained
-spatial term by subtraction (`log(true_mean)` minus every known term, exact to 7e-15) and can
-therefore compute the *true* partial-dependence function to compare against. That is only
-possible because the data is simulated, and every page that uses it says so in a callout.
+- **One method per page, introduced before it is used.** *Feature importance* introduces
+  permutation importance on test sites against the forest's impurity importance;
+  *Partial effects* introduces partial dependence and ICE curves; *Black boxes and
+  interpretable models* reads a GAM from its parts; *Communicating uncertainty* introduces
+  confidence and prediction intervals, coverage and conformal prediction; *Reproducibility*
+  measures what a seed, a split and cross-validation each move.
+- **Every page uses the course's own methods:** the split by site (§2), cross-validation by
+  site (§5), the random forest and boosting (§3), the negative binomial model (§3), the GAM
+  and the quantile forest (§6). ALE plots, effective degrees of freedom and p-values were cut,
+  and the old GLM given the generator's exact form went with them.
+- **The truth is revealed only to check a model**, never as a page's starting point.
+  *Partial effects* and *From a model to a claim* compare the curves with
+  `R/make-example-data.R`; the other pages read the model alone. The old spatial-term
+  recovery by subtraction was cut.
+- **One to three worked-example parts per page,** each running in about a minute per tab.
+  Feature importance keeps three random columns and ten splits; *Black boxes* scores the
+  average, boosting, the forest and the GAM on the same ten folds; *From a model to a claim*
+  writes its Methods and Results paragraphs entirely in inline R.
+- **The overview has no numbers.** Its "Findings from this section" list (GAM 4.08, 29%
+  coverage, rock 38% → 69%) was cut with the pages that computed them.
+- Running Python tabs on every page. scikit-learn has no GAM or intervals: the tabs use
+  `SplineTransformer` with a ridge penalty, statsmodels' negative binomial for intervals,
+  and boosting with a quantile loss for the quantile forest.
 
 ### Three findings the pages are built on
 
-- **No interpretation method recovers an effect the design confounded.** The true depth
-  response peaks at 80 m. A forest's partial dependence declines monotonically, ALE agrees,
-  and a negative-binomial GLM given the generator's *exact* functional form estimates the
-  depth quadratic at a fourteenth of its true value with $p = 0.63$. Depth and temperature are
-  correlated at −0.45 and temperature is generated from depth. This is the section's headline
-  and it is why the page does not stop at "blame the black box".
-- **The most accurate model was also the second most interpretable.** On identical folds with
-  pooled out-of-fold predictions, the GAM scored 4.08 against the random forest's 4.28 and
-  untuned boosted trees' 4.74, and closed 83% of the baseline-to-oracle gap. The real
-  trade-off is knowing the functional form (4.25) against not knowing it (4.38), not accuracy
-  against interpretability. Keep the untuned boosted trees: default-against-default is the
-  comparison people actually run.
-- **Observation bias defeats every safeguard in the course.** Halving the recorded catch on
-  rock more than doubles the estimated rock effect *and improves* the cross-validated RMSE and
-  R². This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
-  course says.
+- **No curve separates what the design confounds.** The simulation's depth peak is at 80 m;
+  the forest's partial dependence and the GAM's curve both stay highest in shallow water,
+  even with position as an input, because depth follows distance offshore. The temperature
+  hump is recovered at nearly every station. *From a model to a claim* turns this into the
+  sentence a study can write: the temperature curve is supported, a depth peak is not.
+- **Reading cost no accuracy on the survey.** On the same folds of sites the GAM predicted
+  new sites as well as the random forest and better than untuned boosting, and its curves
+  match the forest's. A black box earns its place where inputs work in combination, inputs
+  are raw, or prediction is the whole job.
+- **Observation bias defeats validation.** A gear that keeps half the animals on rock turns
+  "cannot tell" into a confident rock multiplier while the cross-validated RMSE improves.
+  This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
+  course says: checks on the records come from outside the model.
 
 ### Two conventions that hold the section together
 
-**Every importance table needs a null column and a repeat.** Three `rnorm()` columns give the
-scale (impurity importance ranks them sixth to eighth of sixteen, above every substrate term).
-Eight splits give the stability: chlorophyll runs from rank 1 to rank 11, while salinity and
-`survey_year`, the two true nulls, clear the noise ceiling zero times out of eight. The
-reportable quantity is the *count of splits above the ceiling*, not the ranking. This is §8's
-structure-free null and §7's baseline arriving in a third form.
+**Every importance score needs a null and a repeat.** Three columns of random numbers show
+what an unused input scores (impurity importance ranks them above the seabed); ten splits
+show which inputs beat them again and again. Report how often an input beats the random
+columns, not its rank.
 
-**Name which interval you are quoting and measure its coverage.** A 95% confidence band on the
-mean covered 29% of observed counts; an interval from a forest's in-sample RMSE covered 77%;
-conformal covered 96.5% at constant width with a lower bound of −9.1 animals. Coverage on
-held-out data is one line of code and is the only evidence an interval works.
+**Name which interval you are quoting and measure its coverage.** An interval for the
+average holds few catches at new sites, an interval for a new catch about nine in ten, and
+conformal prediction holds its promise only at stations like the calibration sites (the
+stations with the most chlorophyll fall short at the same width). Coverage on held-out
+sites is the evidence an interval works.
 
 ### A trap that caught this section twice
 
 `summarise()` and `tibble()` evaluate arguments in order, so
 `summarise(rmse = mean(rmse), lower = quantile(rmse, 0.1))` computes the quantile of the
 *new scalar*, silently collapsing every ribbon to its line. The same shadowing bit §7 and §8.
-Put derived columns before the column they are derived from, or rename.
+Put derived columns before the column they are derived from, or rename. The revision
+met it again in `from-model-to-claim.qmd`, where a column `rock` shadowed a local `rock`.
 
 ---
 

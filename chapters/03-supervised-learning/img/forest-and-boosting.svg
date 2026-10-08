@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="Two ways to combine trees. One tree changes with its sample: three staircase predictions from trees fitted to slightly different samples of the same data step up at different places. A few different examples can change the first question and everything below it. Forest, average many trees: many faint staircases and their average, a thick line that rises more gradually. Each tree sees a resample of the examples and a few random inputs at each question. Boosting, small trees in sequence: three small trees in a row, each arrow labelled errors, and the prediction is the sum of all the trees, each scaled down. Each small tree fits what the trees before it got wrong. A note says adding trees to a forest stops helping but does no harm; boosting starts to overfit, so its number of trees is chosen on held-back data.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .q    { font: 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .leaf { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #ffffff; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+      .edge { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8a949c"/></marker>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Two ways to combine trees</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">One tree</text>
+<text class="lab" x="22" y="114" fill="#0072B2">CHANGES WITH ITS SAMPLE</text>
+<text class="body" x="22" y="348">A few different examples</text>
+<text class="body" x="22" y="372">can change the first</text>
+<text class="body" x="22" y="396">question and all below it.</text>
+<path class="ax" d="M34 150 V295 H266"/>
+<text class="sm" x="266" y="315" text-anchor="end">input</text>
+<text class="sm" x="26" y="222.5" text-anchor="middle" transform="rotate(-90 26 222.5)" dy="-4">prediction</text>
+<path d="M36 270 H104.4 V205 H177.4 V245 H264" fill="none" stroke="#0072B2" stroke-width="3" stroke-opacity="0.9"/>
+<path d="M36 262 H138.6 V185 H218.4 V232 H264" fill="none" stroke="#0072B2" stroke-width="3" stroke-opacity="0.55"/>
+<path d="M36 278 H81.6 V222 H161.4 V196 H195.6 V255 H264" fill="none" stroke="#0072B2" stroke-width="3" stroke-opacity="0.3"/>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Forest</text>
+<text class="lab" x="345" y="114" fill="#E69F00">AVERAGE MANY TREES</text>
+<text class="body" x="345" y="348">Each tree sees a resample</text>
+<text class="body" x="345" y="372">of the examples and a few</text>
+<text class="body" x="345" y="396">random inputs per question.</text>
+<path class="ax" d="M357 150 V295 H589"/>
+<text class="sm" x="589" y="315" text-anchor="end">input</text>
+<text class="sm" x="349" y="222.5" text-anchor="middle" transform="rotate(-90 349 222.5)" dy="-4">prediction</text>
+<path d="M359 269.39910333096157 H409.5 V203.741121389463 H521.6 V245.52016851502552 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 278.7493816419292 H397.7 V191.33674451580828 H485.3 V234.5612669093075 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 278.72922902548777 H461.3 V199.14871551317606 H516.6 V245.89390793523654 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 279.36090614286593 H403.5 V200.83452357379883 H527.8 V248.75505197364174 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 277.16460492573634 H439.1 V203.27958498552744 H488.8 V236.43549446643993 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 271.4549817733093 H395.3 V207.8776612663689 H543.6 V252.60675840715348 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 269.8992680800149 H442.0 V210.83271575546823 H547.4 V240.4493895694213 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 263.94908619461756 H457.2 V186.8948789672241 H544.5 V234.07563435452784 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359 274.5329658173361 H459.2 V192.8369431433182 H514.2 V242.20280354721368 H587" fill="none" stroke="#E69F00" stroke-width="1.6" stroke-opacity="0.35"/>
+<path d="M359.0 273.7 L362.0 273.7 L365.0 273.7 L368.0 273.7 L371.0 273.7 L374.0 273.7 L377.0 273.7 L380.0 273.7 L383.0 273.7 L386.0 273.7 L389.0 273.7 L392.0 273.7 L395.0 273.7 L398.0 256.9 L401.0 256.9 L404.0 248.2 L407.0 248.2 L410.0 240.9 L413.0 240.9 L416.0 240.9 L419.0 240.9 L422.0 240.9 L425.0 240.9 L428.0 240.9 L431.0 240.9 L434.0 240.9 L437.0 240.9 L440.0 232.7 L443.0 226.1 L446.0 226.1 L449.0 226.1 L452.0 226.1 L455.0 226.1 L458.0 217.6 L461.0 208.5 L464.0 199.6 L467.0 199.6 L470.0 199.6 L473.0 199.6 L476.0 199.6 L479.0 199.6 L482.0 199.6 L485.0 199.6 L488.0 204.4 L491.0 208.1 L494.0 208.1 L497.0 208.1 L500.0 208.1 L503.0 208.1 L506.0 208.1 L509.0 208.1 L512.0 208.1 L515.0 213.6 L518.0 218.8 L521.0 218.8 L524.0 223.5 L527.0 223.5 L530.0 228.8 L533.0 228.8 L536.0 228.8 L539.0 228.8 L542.0 228.8 L545.0 239.0 L548.0 242.3 L551.0 242.3 L554.0 242.3 L557.0 242.3 L560.0 242.3 L563.0 242.3 L566.0 242.3 L569.0 242.3 L572.0 242.3 L575.0 242.3 L578.0 242.3 L581.0 242.3 L584.0 242.3 L587.0 242.3" fill="none" stroke="#D55E00" stroke-width="3.4"/>
+<text class="sm" x="585" y="220" text-anchor="end" fill="#D55E00" font-weight="bold">average</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Boosting</text>
+<text class="lab" x="668" y="114" fill="#009E73">SMALL TREES IN SEQUENCE</text>
+<text class="body" x="668" y="348">Each small tree fits what</text>
+<text class="body" x="668" y="372">the trees before it</text>
+<text class="body" x="668" y="396">got wrong.</text>
+<path class="edge" d="M702 190 L686.0 216.0"/>
+<path class="edge" d="M702 190 L718.0 216.0"/>
+<circle cx="702" cy="190" r="6.0" fill="#009E73"/>
+<circle cx="686.0" cy="216.0" r="6.0" fill="#009E73"/>
+<circle cx="718.0" cy="216.0" r="6.0" fill="#009E73"/>
+<text class="sm" x="702" y="258" text-anchor="middle">tree 1</text>
+<path class="edge" d="M793 190 L777.0 216.0"/>
+<path class="edge" d="M793 190 L809.0 216.0"/>
+<circle cx="793" cy="190" r="6.0" fill="#009E73"/>
+<circle cx="777.0" cy="216.0" r="6.0" fill="#009E73"/>
+<circle cx="809.0" cy="216.0" r="6.0" fill="#009E73"/>
+<text class="sm" x="793" y="258" text-anchor="middle">tree 2</text>
+<path class="edge" d="M884 190 L868.0 216.0"/>
+<path class="edge" d="M884 190 L900.0 216.0"/>
+<circle cx="884" cy="190" r="6.0" fill="#009E73"/>
+<circle cx="868.0" cy="216.0" r="6.0" fill="#009E73"/>
+<circle cx="900.0" cy="216.0" r="6.0" fill="#009E73"/>
+<text class="sm" x="884" y="258" text-anchor="middle">tree 3</text>
+<path class="edge" d="M728 204 H767" marker-end="url(#arr)"/>
+<text class="sm" x="747.5" y="192" text-anchor="middle" fill="#55606a">errors</text>
+<path class="edge" d="M819 204 H858" marker-end="url(#arr)"/>
+<text class="sm" x="838.5" y="192" text-anchor="middle" fill="#55606a">errors</text>
+<text class="sm" x="793" y="296" text-anchor="middle">prediction = the sum of all trees,</text>
+<text class="sm" x="793" y="316" text-anchor="middle">each scaled down</text>
+<text class="note" x="470" y="452" text-anchor="middle">More trees never harm a forest; boosting starts to overfit, so its number of trees is chosen on held-back data.</text>
+</svg>

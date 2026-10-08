@@ -1,0 +1,76 @@
+---
+title: "A short, specific title naming the question"
+description: "One sentence for the listing card: the method and the data, e.g. 'A random forest applied to 1,240 otolith images from coastal surveys'."
+author: "Name, Institution"
+date: 2026-01-01
+categories: [case-study]   # plus method tags from .claude/site-structure.md
+# image: img/<slug>-thumbnail.png
+---
+
+<!--
+Template for a contributed page whose analysis is in R. Delete these comments as
+you go. The Python counterpart is contributed/_template-python.qmd; pick the one
+your analysis is written in, and do not mix the two on one page.
+
+Filename: 2026-<author-slug>-<topic>.qmd  (e.g. 2026-nakamura-otolith-ageing.qmd)
+The shape below is a suggestion; follow your analysis, not the template.
+
+R pages need no engine: line. knitr is the site default, and _freeze/ caches the
+results, so commit the _freeze/ folder your render produces alongside the page.
+-->
+
+## The question
+
+What you wanted to find out, and why it matters in your field. Two or three
+paragraphs. Assume the reader is a marine scientist from a different speciality.
+
+## The data
+
+Where it came from, the period it covers, how many observations, what one row is.
+State the licence and how to cite it.
+
+::: {.callout-note}
+## Data availability
+Say plainly whether the data is in this repository, available on request, or
+embargoed. If the figures below use a synthetic or aggregated stand-in, say so here.
+:::
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+source(here::here("R/theme.R"))
+set.seed(123)
+```
+
+## Preparing the data
+
+What you cleaned, dropped, or transformed, and why. Note anything a reader would
+need to know to reproduce it.
+
+## The model
+
+Which method, and why that one for this question.
+
+```{r}
+#| label: fit
+# recipe -> spec -> workflow -> fit
+```
+
+## Results
+
+```{r}
+#| label: fig-results
+#| fig-cap: "What the figure shows."
+#| fig-alt: "Describe the figure for a reader who cannot see it."
+```
+
+## Scope and limits
+
+The honest section. What you would not claim from this. Where the model would fail.
+Whether the validation scheme suits the dependence structure in your data.
+
+::: {.callout-tip}
+## Key points
+- Three to five bullets a reader should leave with.
+:::

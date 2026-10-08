@@ -1,7 +1,7 @@
 ---
-title: "Prediction versus explanation"
-description: "Two different scientific goals that pull models in different directions, and why the best predictor is rarely the best explanation."
-order: 4
+title: "Prediction and explanation"
+description: "A machine-learning model is judged by its predictions; a statistical model by what it explains. A straight line, a decision tree and a confounder show why the two aims need different checks."
+order: 2
 categories: [foundations, interpretation]
 ---
 
@@ -12,235 +12,320 @@ library(tidymodels)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 set.seed(123)
+# Numbers in the text, with a true minus sign.
+num <- function(x, digits = 1) sub("^-", "−", format(round(x, digits), nsmall = digits))
 ```
 
-## The cost of an unstated goal
+{{< new-terms >}}
 
-Almost every disappointing machine-learning project in marine science begins with a
-goal that was never stated. Someone wants to know *why* a species is declining, builds
-a model that predicts well, and then discovers that it will not answer the question.
+You can fit a model to understand what drives an outcome, or to predict cases you
+have not seen yet. Statistical modelling and machine learning often use the same
+models; what mostly separates them is which of these two aims comes first. This page
+shows that the two aims check a model in different ways, and that a model can serve
+one aim well while misleading you about the other.
 
-The two goals are genuinely different:
+## One model can serve two aims
 
-- **Prediction**: given conditions I have not observed, what will the value be?
-- **Explanation**: how does this driver affect the outcome, and by how much?
+Statistical modelling and machine learning are not two separate subjects. Both start
+from a table of measurements, and both fit a model by making its errors on that
+table as small as possible. Linear regression belongs to both. The difference is
+mostly what the fitted model is for.
 
-A model can be superb at one and useless at the other. Worse, nothing in the output
-warns you: a model with an excellent test score looks equally impressive whichever
-question you brought.
+- **Explanation** asks what drives the outcome: if an input changed, with everything
+  else held fixed, would the outcome change? This is the usual aim of **statistical
+  modelling**. The answer is a claim about cause, and the data alone cannot check it.
+  It needs an experiment or knowledge of the system.
+- **Prediction** asks what the outcome will be for a case the model has not seen.
+  This is the usual aim of **machine learning**. It can be checked directly: hold some
+  cases back from fitting, predict them, and measure how far the predictions miss.
+
+The two aims also differ in who chooses the shape of the relationship. For
+explanation you usually write it down, such as a straight line in each input, so
+that each part of the model means something. For prediction the shape only has to
+work, so most machine-learning methods find it from the data.
+
+::: {.diagram}
+![Prediction and explanation compared. Machine learning usually aims at prediction and statistical modelling at explanation; explanation asks more of the model and is harder to check.](img/prediction-and-explanation.svg){fig-alt="At the top, one box reads 'One model fitted to the data', with arrows to two columns. Prediction, in orange, the usual aim of machine learning: a curve through scattered points with a new case marked on it; the question is the outcome for a case the model has not seen, the answer is a value for each new case, it is checked by the error on cases held back from fitting, and the shape is usually found by the algorithm. Explanation, in green, the usual aim of statistical modelling: depth points to both salinity and the outcome, and a crossed-out dashed line joins salinity to the outcome; the question is whether changing an input changes the outcome, the answer is a claim about cause and effect, it is checked by study design and knowledge of the system, not by the data alone, and the shape is usually written down by you. A bar along the bottom runs from orange to green: explanation asks more of the model and is harder to check."}
+:::
+
+## A straight line misses a temperature optimum
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+The examples use the coastal survey from [Types of learning](types-of-learning.qmd):
+the water temperature, salinity and depth at each station, and the number of animals
+counted there.
 
-Think about what each goal permits.
-
-For **prediction**, any variable that carries information is fair game. Whether it
-causes the outcome is irrelevant. If bird sightings predict fish abundance, use bird
-sightings. Distance from port, survey vessel, day of year are all legitimate, provided
-they will be available when you deploy the model and mean the same thing then.
-
-For **explanation**, the variable must play the right causal role, and which *other*
-variables you include changes the answer. Add the wrong covariate and the effect you
-care about shifts, vanishes, or reverses. Explanation requires you to think about the
-system; prediction lets you avoid thinking about it.
-
-There is a second asymmetry, which is less often said out loud:
-
-::: {.callout-note}
-For prediction, you can check whether you succeeded: hold data back and measure.
-For explanation, you usually cannot. There is no held-out dataset that tells you
-whether your estimate of the temperature effect is the true one. You have arguments,
-assumptions and design, and that is all.
-:::
-
-This is why "the model predicts well, so the effects must be right" is not a valid
-inference. It is also why a model built for explanation should be judged on whether its
-structure matches the science, not on its test score.
-
-## Worked example
-
-Four models on the same data. Two are shaped by thinking about the species; two are
-shaped by letting the algorithm work.
+First, a quarter of the stations are held back as the **test set**. No model sees
+them during fitting, so the error on them shows how a model does on new stations. The
+other three quarters, the **training set**, are what the models learn from.
+[Splitting the data](../02-marine-data/splitting-data.qmd) covers the split in full.
 
 ```{r}
-#| label: fit-four
+#| label: split
 survey <- load_coastal_survey()
-split  <- initial_split(survey, prop = 0.75)
-train  <- training(split)
-test   <- testing(split)
 
-plain  <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-  salinity_psu + substrate
-
-# An ecologist's model: species have thermal and depth optima, so allow curves.
-curved <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
-  chlorophyll_mg_m3 + salinity_psu + substrate
-
-# A predictor's model: throw in position, which is not a cause of anything.
-located <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-  salinity_psu + substrate + longitude + latitude
-
-forest <- function(formula) {
-  rand_forest(trees = 500) |>
-    set_engine("ranger", seed = 123) |>
-    set_mode("regression") |>
-    fit(formula, data = train)
-}
-
-fits <- list(
-  "Linear model"                = linear_reg() |> fit(plain,  data = train),
-  "Linear model, with curves"   = linear_reg() |> fit(curved, data = train),
-  "Random forest"               = forest(plain),
-  "Random forest + coordinates" = forest(located)
-)
-
-imap(fits, \(fit, name) {
-  augment(fit, test) |>
-    rmse(truth = abundance, estimate = .pred) |>
-    transmute(model = name, test_rmse = round(.estimate, 2))
-}) |>
-  list_rbind()
+split <- initial_split(survey, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
 ```
 
-Read that ranking carefully, because it is not the one people expect.
+### Linear regression gives one slope per input
 
-The **linear model with curved terms predicts better than the random forest**, and
-almost as well as the forest with coordinates added. The best-performing interpretable
-model here came not from a more powerful algorithm but from one piece of ecology:
-species have optima, so let the relationship bend.
-
-And what does that model say about temperature, the variable the plain linear model
-dismissed?
+A **linear regression** predicts the count by adding up a fixed amount for each input.
+That amount is the input's **slope**, also called its **coefficient**: the change in
+the predicted count for one unit more of the input, with the other inputs held fixed.
 
 ```{r}
-#| label: temperature-terms
-tidy(fits[["Linear model, with curves"]]) |>
-  filter(grepl("temperature", term)) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+#| label: fit-linear
+linear <- linear_reg() |>
+  fit(abundance ~ temperature_c + salinity_psu + depth_m, data = train)
+
+tidy(linear) |>
+  filter(term != "(Intercept)") |>
+  select(term, slope = estimate) |>
+  mutate(slope = round(slope, 3))
 ```
 
-The linear term is still not significant. The quadratic term is overwhelmingly so.
-The "no temperature effect" from [the first page](what-is-machine-learning.qmd) was
-never a fact about the species. It was a fact about a model that could only draw
-straight lines.
+The temperature slope is close to zero: one degree warmer lowers the predicted count
+by only `r num(abs(tidy(linear)$estimate[2]), 2)` animals. Read as an explanation, temperature
+hardly matters to this species.
+
+### A decision tree finds its own shape
+
+A **decision tree** splits the training stations in two at the threshold that best
+separates high counts from low ones, then splits each half again. Here it stops after
+three rounds of splits and predicts the average count in each final group. Nobody
+writes down the shape; the splits find it.
+[Decision trees](../03-supervised-learning/decision-trees.qmd) explains trees in full.
 
 ```{r}
-#| label: fig-optimum
-#| fig-cap: "The temperature response recovered by the curved model, with other variables held at their median. The fitted optimum (dashed) sits at 8.6 °C; the value built into the simulation (solid) is 9 °C."
-#| fig-alt: "A curve of predicted abundance against temperature rising from about 3 degrees to a peak just below 9 degrees and falling away to 16 degrees. A dashed vertical line marks the fitted optimum at 8.6 degrees and a solid vertical line marks the true optimum at 9 degrees; the two nearly coincide."
+#| label: fit-tree
+tree <- decision_tree(mode = "regression", tree_depth = 3) |>
+  fit(abundance ~ temperature_c + salinity_psu + depth_m, data = train)
+```
+
+The tree's first split is "temperature below
+`r round(tree$fit$splits[1, "index"], 1)` °C": temperature mattered most to it,
+although the linear regression's slope said it hardly mattered at all.
+
+@fig-shapes shows what each model predicts across the range of temperature, with
+salinity and depth held at their typical values.
+
+```{r}
+#| label: fig-shapes
+#| fig-cap: "Predicted abundance against temperature, with salinity and depth held at their medians. The linear regression is nearly flat; the decision tree finds low counts in cold and warm water and the most animals in between."
+#| fig-alt: "Scatter of abundance against temperature for the training stations, with counts highest between about 6 and 11 degrees. A nearly flat straight line, the linear regression, runs through the points. A stepped line, the decision tree, sits low below about 6.4 degrees, rises to its highest level between about 6.4 and 11 degrees, and drops again above."
 #| fig-width: 7
 #| fig-height: 4.5
 grid <- tibble(
-  temperature_c     = seq(3, 16, by = 0.05),
-  depth_m           = median(train$depth_m),
-  chlorophyll_mg_m3 = median(train$chlorophyll_mg_m3),
-  salinity_psu      = median(train$salinity_psu),
-  substrate         = factor("sand", levels = levels(train$substrate))
+  temperature_c = seq(min(survey$temperature_c), max(survey$temperature_c), by = 0.05),
+  salinity_psu  = median(train$salinity_psu),
+  depth_m       = median(train$depth_m)
 )
 
-grid$predicted <- predict(fits[["Linear model, with curves"]], new_data = grid)$.pred
-fitted_optimum <- grid$temperature_c[which.max(grid$predicted)]
+curves <- bind_rows(
+  mutate(grid, model = "Linear regression", .pred = predict(linear, grid)$.pred),
+  mutate(grid, model = "Decision tree",     .pred = predict(tree, grid)$.pred)
+)
 
-ggplot(grid, aes(temperature_c, predicted)) +
-  geom_vline(xintercept = 9, colour = ml_palette[["grey"]], linewidth = 0.8) +
-  geom_vline(xintercept = fitted_optimum, colour = ml_palette[["vermilion"]],
-             linetype = "dashed", linewidth = 0.8) +
-  geom_line(colour = ml_palette[["blue"]], linewidth = 1.2) +
-  annotate("text", x = 9.25, y = min(grid$predicted), hjust = 0,
-           label = "true optimum, 9 °C", colour = ml_palette[["grey"]], size = 3.6) +
-  annotate("text", x = 8.35, y = max(grid$predicted), hjust = 1,
-           label = paste0("fitted, ", round(fitted_optimum, 1), " °C"),
-           colour = ml_palette[["vermilion"]], size = 3.6) +
-  labs(x = "Temperature (°C)", y = "Predicted abundance",
-       title = "An interpretable model, recovering something true")
+ggplot(train, aes(temperature_c, abundance)) +
+  geom_point(alpha = 0.25, colour = ml_palette[["grey"]]) +
+  geom_line(data = curves, aes(y = .pred, colour = model), linewidth = 1.2) +
+  scale_colour_manual(values = c("Linear regression" = ml_palette[["blue"]],
+                                 "Decision tree"     = ml_palette[["orange"]])) +
+  coord_cartesian(ylim = c(0, 15)) +
+  labs(x = "Temperature (°C)", y = "Abundance (animals per station)", colour = NULL)
 ```
 
-Because this dataset is simulated, we can do what real data never allows: check the
-answer. The species really does peak at 9 °C, and the model says 8.6 °C. It recovered
-the ecology.
+The species does best in middling water and thins out in colder and warmer water. A
+straight line through a hump is flat, so the linear regression reports almost no
+effect. The tree was never asked for a slope, so the hump costs it nothing.
 
-Notice also what the curve does at its ends: it predicts *negative* abundance below
-about 3 °C and above about 15 °C. Counts cannot be negative. We fitted a linear model
-to count data, and this is the price: the interpretation is sound near the centre of
-the data and nonsense at the edges.
-[Section 3](../03-supervised-learning/index.qmd) fixes this properly with a model built
-for counts. It is worth seeing the flaw first: a model can recover a real biological
-optimum and still make impossible predictions, and a plot of only the central range
-would have hidden it.
+## The test error is a typical miss
 
-## Reading the four models
+To say which model predicts better, we need one number for how far its predictions
+miss on the test stations. The course uses the **root mean squared error**, or
+**RMSE**, so it is worth building once by hand. Each test station has an observed
+count and a prediction, and the miss is the difference between them. Here are the
+first five test stations, predicted by the tree:
 
-Now look at the model that predicted best: the forest with longitude and latitude
-added.
+```{r}
+#| label: rmse-by-hand
+misses <- augment(tree, test) |>
+  transmute(observed = abundance, predicted = .pred,
+            miss = observed - predicted, squared = miss^2)
+head(misses, 5) |> mutate(across(predicted:squared, \(x) round(x, 2)))
+```
 
-Those two coordinates improved prediction. They are also, ecologically, nothing. No
-fish responds to longitude. What they do is act as a **proxy**: they let the model
-absorb spatial structure that the environmental variables fail to capture. The model
-has effectively learned *where the good patches were during this survey*.
+The RMSE takes three steps over all `r nrow(misses)` test stations:
 
-For prediction inside the surveyed area, in the surveyed period, that is legitimate and
-useful. As explanation it is empty, and if anyone extracts a variable-importance plot
-from it and reports that "position is the strongest driver of abundance", they have
-said nothing about the species at all.
+1. **Square** each miss. A miss of −3 and a miss of +3 both become 9, so misses in
+   opposite directions cannot cancel out. A large miss counts for much more than a
+   small one: the first station, `r round(misses$miss[1], 1)` animals out, adds `r round(misses$squared[1])`.
+2. Take the **mean** of the squares: `r round(mean(misses$squared), 2)` here.
+3. Take the **square root**, which brings the answer back to animals:
+   `r round(sqrt(mean(misses$squared)), 2)`.
 
-So we have three models and three different kinds of answer:
+The result reads as a typical miss, in the outcome's own units: the tree's predictions
+for new stations are usually off by about `r round(sqrt(mean(misses$squared)))`
+animals, in either direction. Lower is better, and 0 would mean every prediction was
+exact.
 
-| Model | Predicts | Explains | Honest use |
-| --- | --- | --- | --- |
-| Plain linear model | Worst | Misleadingly: reports no temperature effect | None here; the form is wrong |
-| Linear model with curves | Nearly best | Yes, recovers the 9 °C optimum | Either goal |
-| Random forest | Middling | No coefficients to read | Prediction, with care |
-| Forest + coordinates | Best | No, position is a proxy, not a cause | Prediction inside the surveyed area only |
+::: {.callout-note collapse="true"}
+## The maths, if you want it
 
-The best predictor is the worst explanation. The best explanation is nearly the best
-predictor. Neither of those is a general law, but both are common enough that
-assuming the opposite is a real risk.
+With $y_i$ the observed count at test station $i$, $\hat{y}_i$ the prediction and $n$
+test stations,
 
-## Limits of this separation
+$$\text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}$$
 
-**"Interpretable" is not the same as "correct".** The curved model gave a clean
-temperature optimum, and we verified it only because we wrote the simulation. With real
-data, an interpretable model can be confidently, legibly wrong, and its legibility makes
-it more persuasive, not less.
+Squaring weighs a miss of 10 a hundred times a miss of 1, so the RMSE listens hardest
+to the largest misses. [Loss functions](../04-how-algorithms-learn/loss-functions.qmd)
+shows what that does to a fit, and
+[Regression performance measures](../07-validation/regression-metrics.qmd) compares the
+RMSE with other measures.
+:::
 
-**Proxies are not always obvious.** Longitude is easy to spot. Sampling date standing in
-for a survey-design change, or a sensor serial number standing in for calibration drift,
-is not, and both will improve your test score.
+A typical miss means little on its own. It needs a **baseline**: the score of the
+simplest prediction there is, here the training stations' average count, predicted
+for every test station whatever its water.
 
-**Explanation has prerequisites that no algorithm supplies.** Which covariates to
-include is a causal question, answered with subject knowledge, not by trying
-combinations and keeping the best score. [Section 10](../10-interpretation/index.qmd)
-returns to this with the tools for it.
+```{r}
+#| label: test-error
+baseline <- mean(train$abundance)
 
-**A recovered effect can sit inside an impossible model.** The curved model found the
-thermal optimum and predicts negative abundance at both extremes. Getting one thing
-right is not a certificate for the rest, and the parts of a model you do not plot are
-the parts that embarrass you later.
+test_rmse <- tibble(
+  model = c("Average count", "Linear regression", "Decision tree"),
+  test_rmse = c(
+    rmse_vec(test$abundance, rep(baseline, nrow(test))),
+    rmse_vec(test$abundance, predict(linear, test)$.pred),
+    rmse_vec(test$abundance, predict(tree, test)$.pred)
+  )
+)
+test_rmse |> mutate(test_rmse = round(test_rmse, 2))
+```
 
-**Prediction has an expiry date.** A model that learned where the good patches were is
-valid while the patches stay put. Under a shifting climate, the proxy silently stops
-being a proxy, and the model gives no signal that anything has changed.
+Both models beat the average, so the water does carry information about the species.
+The tree beats it by `r with(test_rmse, round(test_rmse[1] - test_rmse[3], 2))`
+animals, the linear regression by only
+`r with(test_rmse, round(test_rmse[1] - test_rmse[2], 2))`. A model that cannot beat
+the baseline has learned nothing useful.
 
-::: {.callout-tip}
+Neither model is simply better. The tree predicts better but gives no single number
+for "the effect of temperature". The linear regression gives that number, but the
+number is wrong because the shape was wrong. The fix for explanation is to bend the
+line, and the next example does.
+
+## Depth confounds the salinity slope
+
+A **confounder** is a variable that affects both an input and the outcome, so the two
+move together even when neither affects the other. In the survey, salinity rises with
+depth, and depth may matter to the species. If it does, depth confounds salinity.
+
+Three linear regressions are fitted to the same training stations. Each adds a
+**squared term** for temperature, which lets the line bend into a curve that rises
+and then falls, the hump the tree found.
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
+covers squared terms.
+
+```{r}
+#| label: fit-three
+formulas <- list(
+  "Temperature"                    = abundance ~ temperature_c + I(temperature_c^2),
+  "Temperature + salinity"         = abundance ~ temperature_c + I(temperature_c^2) +
+    salinity_psu,
+  "Temperature + salinity + depth" = abundance ~ temperature_c + I(temperature_c^2) +
+    salinity_psu + depth_m + I(depth_m^2)
+)
+fits <- map(formulas, \(f) fit(linear_reg(), f, data = train))
+```
+
+### For prediction, salinity can stand in for depth
+
+```{r}
+#| label: test-error-three
+three_rmse <- imap(fits, \(fit, name) {
+  tibble(model = name,
+         test_rmse = rmse_vec(test$abundance, predict(fit, test)$.pred))
+}) |>
+  list_rbind()
+three_rmse |> mutate(test_rmse = round(test_rmse, 2))
+```
+
+All three curves beat both models above. Adding salinity lowers the error a little,
+because salinity carries some of depth's information. For prediction that is
+allowed: nothing more is asked of an input than that it helps. Adding depth itself
+helps most.
+
+### For explanation, the salinity slope misleads
+
+```{r}
+#| label: salinity-slopes
+slopes <- imap(fits[-1], \(fit, name) {
+  tidy(fit, conf.int = TRUE) |>
+    filter(term == "salinity_psu") |>
+    mutate(model = name)
+}) |>
+  list_rbind()
+without_depth <- slopes$estimate[1]
+with_depth    <- slopes$estimate[2]
+```
+
+Without depth, the salinity slope is `r num(without_depth)`: each extra unit of
+salinity goes with about `r round(abs(without_depth), 1)` fewer animals. Each slope
+comes with a **95% confidence interval**, a range that shows how precisely the data
+pin the slope down: if the survey were repeated many times, 95 in 100 intervals built
+this way would contain the true slope. An interval that stays clear of zero, the value
+for no relationship, is usually read as a real effect, and this one does
+(@fig-salinity).
+
+Read as a cause, that slope says freshening the water would bring more animals. Once
+depth enters the model, the salinity slope shrinks to `r num(with_depth)` and its
+interval includes zero. Because the survey is simulated, we can check the answer: the
+program that generated it gives salinity no effect at all, and the species' count
+depends on depth.
+
+```{r}
+#| label: fig-salinity
+#| fig-cap: "The salinity slope, with its 95% confidence interval, in the two models that include salinity. Without depth, salinity appears to matter. With depth, its slope shrinks to near zero, the true value built into the simulation."
+#| fig-alt: "Two horizontal interval bars on an axis of salinity slope. For the model without depth, the estimate is about minus 2.2 with an interval from about minus 3.3 to minus 1.2, clear of the dashed zero line. For the model with depth, the estimate is about minus 0.2 with an interval from about minus 1.6 to 1.2, spanning zero."
+#| fig-width: 7
+#| fig-height: 2.8
+ggplot(slopes, aes(estimate, model)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0.15,
+                orientation = "y", colour = ml_palette[["blue"]], linewidth = 1) +
+  geom_point(size = 3, colour = ml_palette[["blue"]]) +
+  labs(x = "Salinity slope (animals per unit of salinity)", y = NULL)
+```
+
+### Test error cannot reveal a confounder
+
+Had depth not been recorded, the model with salinity would have the lower test error
+and a confident salinity slope, and nothing in its output would point to depth. A
+confounder can be dealt with only by measuring it, as here, by knowing from the system
+that it is there, or by an experiment that changes the input alone. That is why
+explanation needs study design and knowledge of the system, and prediction does not.
+
 ## Key points
-- Decide which question you are asking *before* choosing a method. Prediction and
-  explanation pull in different directions.
-- For prediction, any informative variable is fair. For explanation, the variable has
-  to play the right causal role, and the other covariates change the answer.
-- You can verify prediction by holding data back. You cannot verify explanation the
-  same way, which is why a good test score is not evidence that your effects are real.
-- Subject knowledge often beats algorithmic flexibility: knowing that species have
-  thermal optima was worth more here than 500 trees.
-- A variable that improves prediction can be ecologically meaningless. Position is the
-  clearest case, and variable-importance plots will still rank it at the top.
+
+::: {.key-points}
+- Statistical modelling and machine learning share their models and their fitting.
+  They differ in aim: explanation for the first, prediction for the second.
+- Prediction is checked on a test set, stations held back from fitting.
+  Explanation claims a cause and rests on study design and knowledge of the system.
+- For explanation you choose the shape of the relationship; most machine-learning
+  methods find it. A flat slope can mean "no relationship" or "a shape the model
+  cannot draw".
+- The RMSE is a typical miss in the outcome's own units: square the misses, average
+  them, take the square root. Compare it with a baseline such as the average.
+- A confounder affects both an input and the outcome. It can give an input a
+  confident slope while the input causes nothing, and test error cannot reveal it.
 :::
 
 ## Try it yourself
 
-1. Fit the forest with coordinates but *without* depth and temperature. How much does
-   prediction suffer? What does that tell you about how much the coordinates were
-   standing in for?
-2. Take the curved model and drop `salinity_psu`. Do the other coefficients move? Now
-   imagine you had no way to know salinity was irrelevant, which is the normal
-   situation, and consider what that implies for reporting effect sizes.
+Drop `salinity_psu` from the third model. Does the test error change, and do the
+depth terms move? Then fit `abundance ~ salinity_psu` alone and compare its slope with
+the ones in @fig-salinity.

@@ -1,6 +1,6 @@
 ---
 title: "Kinds of marine data"
-description: "Continuous, categorical, circular, spatial, temporal and profile data, and what each one needs before a model can use it."
+description: "Continuous, categorical, circular, temporal, spatial, profile and compositional data, and what each one needs before a model can use it."
 order: 2
 categories: [data-preparation, marine-data]
 ---
@@ -12,67 +12,65 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-raw <- load_coastal_survey_raw()
+source(here::here("R/python-tabs.R"))
 ```
 
-## The cost of a misread variable
+{{< new-terms >}}
 
-A model does not know that `season` is a season or that `longitude` is a position. It
-sees numbers, and it will do arithmetic on them whatever they mean. Almost every
-preparation mistake in this course comes from a variable whose *type* was misread:
-a category treated as a quantity, a cycle treated as a line, a position treated as a
-cause.
+## A model sees only numbers
 
-Marine data is unusually rich in these. Depth profiles, tidal phase, compass bearings
-and community composition all break the simple continuous/categorical division that
-most introductions stop at.
+A model does not know that one column is a month and another a position on a map. It
+sees numbers and does arithmetic on them, whatever they mean. Knowing what kind of
+variable each column holds lets you hand it to a model in a form where that
+arithmetic makes sense, and spot a column that would mislead it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Marine data holds seven kinds of variable
 
-### Continuous
+Most introductions stop at two kinds, numbers and categories. Marine data has more:
 
-Temperature, depth, salinity, chlorophyll. Genuine quantities where differences and
-ratios mean something. These are the easy case, and the only real question is scale, which is
-[covered later in this section](scaling-and-encoding.qmd).
+::: {.diagram}
+![Seven kinds of variable common in marine data, with examples of each and what it needs before a model can use it.](img/data-kinds.svg){fig-alt="Seven cards. Continuous: temperature, depth, salinity; needs scaling. Categorical: substrate, gear type, vessel; needs encoding as numbers. Circular: month, season, bearing, tidal phase; needs sine and cosine. Temporal: sampling dates and times; needs a known date format. Spatial: longitude, latitude; needs splits by area. Profile: a CTD cast, values down the water; needs one summary per cast. Compositional: species shares, grain-size fractions; needs log-ratios."}
+:::
 
-Beware numbers that are not quantities. `survey_year` is stored as an integer, and a
-model will happily conclude that 2023 is 1.0005 times 2021. A station numbered `ST0422`
-is a name, not a measurement.
+A **continuous variable** is a measured quantity, where a difference of one unit means
+the same everywhere on the scale: temperature, depth, salinity. A **categorical
+variable** puts each row into one of a fixed set of groups: a seabed type, a vessel.
+[Scaling and encoding](scaling-and-encoding.qmd) puts continuous columns on a common
+scale, which methods that measure distance need, and turns categories into numbers.
+The rest of this page covers the kinds that are easy to get wrong.
 
-### Categorical
+## A number is not always a quantity
 
-Substrate, season, vessel, gear type, species. Two kinds, and the difference matters:
+A column stored as numbers is not necessarily a quantity. Seabed types are often
+recorded as codes: 1 for sand, 2 for mud, 3 for gravel, 4 for rock. A model given that
+column treats rock as four times sand and gravel as halfway between mud and rock, and
+fits a trend through codes someone chose.
 
-- **Nominal**: no order. Sand, mud, gravel, rock.
-- **Ordinal**: ordered, but with unknown spacing. A seabed disturbance score of
-  low/medium/high is ordered; whether medium sits halfway between the other two is a
-  guess, and encoding it as 1, 2, 3 asserts exactly that.
+Categories come in two kinds. A **nominal** category has no order: sand, mud, gravel,
+rock. An **ordinal** category has an order but no known spacing: a disturbance score
+of low, medium or high. Coding it 1, 2, 3 claims that medium sits exactly halfway
+between the other two, which is a guess.
 
-### Circular
+## Cycles belong on a circle
 
-The one most introductions omit, and marine data is full of it: day of year, month,
-tidal phase, current direction, wind bearing, time of day.
-
-December is month 12 and January is month 1. On a number line they are eleven apart.
-In the ocean they are adjacent. Feed raw month numbers to a model and you have told it
-that midwinter is maximally distant from midwinter.
-
-The standard repair is to place the cycle on a circle, using its sine and cosine:
+A **circular variable** returns to where it started: month, day of the year, tidal
+phase, current direction, time of day. December is month 12 and January month 1:
+eleven apart on a number line, but neighbours in the ocean. The usual fix replaces the
+column with two new ones, its sine and cosine, which place each value on a circle:
 
 $$x_1 = \sin\!\left(\frac{2\pi t}{T}\right), \qquad x_2 = \cos\!\left(\frac{2\pi t}{T}\right)$$
 
 where $t$ is the position in the cycle and $T$ its length: 12 for months, 365 for days
-of the year, 360 for a bearing. Two features replace one, and the December–January
-distance comes out correct.
+of the year, 360 for a bearing in degrees.
 
 ```{r}
 #| label: fig-circular
-#| fig-cap: "The same twelve months, encoded two ways. On a number line December and January sit at opposite ends; on a circle they are neighbours, which is what the ocean does."
-#| fig-alt: "Two panels. The left panel places months 1 to 12 along a straight horizontal line, with a long arrow showing the distance of 11 between December and January. The right panel places the same months around a circle, with December and January adjacent and a short arrow between them."
+#| fig-cap: "The same twelve months, encoded two ways. On a number line December and January sit at opposite ends; on a circle they are neighbours, as they are in the ocean."
+#| fig-alt: "Two panels. The left panel places months 1 to 12 along a straight horizontal line, with a long arrow showing the distance of 11 between December and January. The right panel places the same months around a circle, with December and January adjacent."
 #| fig-width: 8.5
 #| fig-height: 4
 months <- tibble(
@@ -89,7 +87,7 @@ p_line <- ggplot(months, aes(month, 0)) +
   annotate("segment", x = 1, xend = 12, y = -0.35, yend = -0.35,
            colour = ml_palette[["vermilion"]], linewidth = 0.8,
            arrow = arrow(ends = "both", length = unit(0.15, "cm"))) +
-  annotate("text", x = 6.5, y = -0.5, label = "the model thinks these are 11 apart",
+  annotate("text", x = 6.5, y = -0.5, label = "The model thinks these are 11 apart",
            colour = ml_palette[["vermilion"]], size = 3.4) +
   coord_cartesian(ylim = c(-0.7, 0.5)) +
   scale_x_continuous(breaks = seq(2, 12, 2)) +
@@ -113,10 +111,14 @@ p_circle <- ggplot(months, aes(x, y)) +
 p_line + p_circle
 ```
 
-### Temporal
+The encoding spends two columns on one variable and assumes the cycle is smooth. A
+quantity that jumps at a boundary, such as a quota year that starts in April, does not
+belong on a circle.
 
-Dates arrive as text, in whatever format the software wrote. This survey used two
-vessels with two conventions:
+## Dates need a known format
+
+Dates arrive as text, in whatever format the logging software wrote. The survey's two
+vessels used two formats:
 
 ::: {.panel-tabset group="language"}
 
@@ -124,6 +126,8 @@ vessels with two conventions:
 
 ```{r}
 #| label: dates
+raw <- load_coastal_survey_raw()
+
 raw |>
   distinct(vessel, sample_date) |>
   slice_head(n = 2, by = vessel)
@@ -131,7 +135,7 @@ raw |>
 
 ## Python
 
-```python
+```{python}
 import pandas as pd
 
 from mlbasic_data import load_coastal_survey_raw
@@ -143,14 +147,10 @@ raw[["vessel", "sample_date"]].drop_duplicates().groupby("vessel").head(2)
 
 :::
 
-::: {.callout-warning}
-`05/10/2022` is the fifth of October in most of the world and the tenth of May in the
-United States. No parser can tell from the string alone. Getting this wrong shifts
-observations between seasons, and seasonal signal is usually the strongest signal in
-a marine dataset, so the damage is large and entirely silent.
-
-Find out which convention the file uses before parsing; do not let a default decide.
-:::
+A date such as `05/10/2022` is 5 October in most of the world and 10 May in the United
+States, and nothing in the text says which. Read the wrong way, it moves a station into
+another season without any error. So find out which format each source used, and parse
+each format explicitly:
 
 ::: {.panel-tabset group="language"}
 
@@ -170,7 +170,7 @@ sum(is.na(dated$sample_date))
 
 ## Python
 
-```python
+```{python}
 # One vessel logged ISO dates, the other day-first. Parse each format on its
 # own and take whichever succeeded, rather than letting pandas guess per row.
 iso = pd.to_datetime(raw["sample_date"], format="%Y-%m-%d", errors="coerce")
@@ -184,143 +184,76 @@ int(dated["sample_date"].isna().sum())
 
 :::
 
-Once parsed, time can enter a model in two quite different ways, and confusing them
-causes trouble later:
+No date is left unparsed, and `day_of_year` is ready for the sine and cosine above.
 
-- **Time as a feature**: day of year captures seasonality, and it is circular.
-- **Time as structure**: the fact that observations are ordered and correlated, which
-  is not a column at all. It constrains how you may split the data
-  ([section 7](../07-validation/index.qmd)), and no feature encodes it.
+## Time and position say which rows are alike
 
-### Spatial
+Time and position can be inputs, but they matter more for another reason: they say
+which rows are close to each other, and so likely to be alike. Samples a day apart, or
+a few kilometres apart, share information, as repeat visits to one site do
+([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)).
+That limits how the data can be split to test a model, which
+[Splitting the data](splitting-data.qmd) takes up.
 
-Longitude and latitude are coordinates, not drivers. As
-[section 1 showed](../01-introduction/prediction-and-explanation.qmd), including them
-often improves prediction, since they proxy for whatever the environmental variables
-missed, while explaining nothing.
+As inputs, longitude and latitude often improve predictions while explaining nothing,
+because they stand in for whatever the other columns missed, just as salinity stood in
+for depth in [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd).
+Variables built from position, such as distance to the coast or the slope of the
+seabed, are usually more useful than raw coordinates.
 
-Three practical points. Degrees of longitude are not a constant distance, so if you
-need real distances, project to metres before computing them. Like time, position is
-mostly *structure* rather than a feature: it says which observations are near each
-other, and [section 7](../07-validation/index.qmd) uses that to build honest splits.
-And derived spatial variables (distance to coast, slope, aspect, distance to the shelf
-break) are often far more useful than the raw coordinates, because they are physical.
+## Profiles and shares need reshaping
 
-### Profile data
+A **profile** is a series of measurements down the water at one place and time, such
+as a CTD cast: a curve, not a single row. The usual start is one row per cast, with
+summaries chosen for the biology: surface temperature, mixed layer depth, total
+chlorophyll. Splitting a cast into one row per depth band instead multiplies rows that
+are not independent, so a cast's rows must then stay together when the data are split.
 
-The genuinely awkward one. A CTD cast is not a row; it is a curve. You have three
-options, and all of them cost something.
+**Compositional data** are shares of a whole, such as the proportion of each species
+in a sample, and sum to one: if one share rises, others must fall. Methods that ignore
+this can report links between shares that come from the arithmetic, not the ecology.
+The usual remedy is a **log-ratio**, the log of each share divided by another share or
+by their average, which removes the sum-to-one constraint.
 
-| Approach | What one row becomes | What it costs |
-| --- | --- | --- |
-| Summarise | One row per cast, with derived values: SST, mixed layer depth, integrated chlorophyll, thermocline strength | Throws away the shape; but derived values are interpretable and this is usually the right start |
-| Bin | One row per cast per depth bin, with depth as a feature | Multiplies non-independent rows: 40 rows from one cast are not 40 observations |
-| Treat as a curve | The whole profile is the observation | Needs functional data methods, outside this course |
+## The kinds in the survey
 
-Summarising is the pragmatic default, and it works well provided the summaries are
-chosen for the biology rather than for convenience. If you bin, you must keep a cast's
-rows together when you split the data, the same grouped-resampling problem as
-monitoring sites.
+The raw survey file holds five of the seven kinds in its `r ncol(raw)` columns, plus
+identifiers and outcomes:
 
-### Compositional
+| Kind or role | Columns | Stored as | Before a model uses it |
+| --- | --- | --- | --- |
+| Continuous | `depth_m`, `temperature_c`, `salinity_psu`, `chlorophyll_mg_m3` | numbers | A common scale, for methods that measure distance |
+| Categorical | `vessel`, `substrate` | text | Dummy columns ([Scaling and encoding](scaling-and-encoding.qmd)) |
+| Circular | `season` | text | Sine and cosine of `day_of_year`, or four categories |
+| Temporal | `sample_date`, `survey_year` | text; whole numbers | Parse each date format explicitly |
+| Spatial | `longitude`, `latitude` | numbers | Mostly for splitting by place |
+| Identifiers | `station_id`, `site_id` | text | Never an input; `site_id` keeps a site's rows together |
+| Outcomes | `abundance`, `present`, `rare_species`, `catch_weight_kg` | numbers; text | What a model predicts, never an input |
 
-Community composition, sediment grain-size fractions, diet proportions. The parts sum
-to one, so they are not free to vary independently: if one taxon's share rises, others
-must fall. Standard methods treat them as unconstrained and can report relationships
-that are arithmetic rather than ecological. Log-ratio transformations are the usual
-remedy, and it is worth knowing the problem exists before you feed a percentage matrix
-to anything.
+Two columns are easy to misread. `season` stored as text looks like four unrelated
+categories and hides that spring comes between winter and summer. `catch_weight_kg`
+is a number like any other, but it is weighed from the same catch that is counted, so
+it is another measure of the outcome; [Avoiding information leakage](information-leakage.qmd)
+shows what happens when a model is given it. Nothing in the file says either: knowing
+what a column means is knowledge you bring.
 
-## The types in our own survey
-
-Our own survey mixes five of these types in seventeen columns:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: type-audit
-tibble(
-  column = names(raw),
-  stored_as = map_chr(raw, \(x) class(x)[1])
-) |>
-  mutate(really = case_when(
-    column %in% c("station_id", "site_id", "vessel", "season",
-                  "substrate", "present", "rare_species") ~ "categorical",
-    column == "sample_date"                               ~ "temporal (as text)",
-    column == "survey_year"                               ~ "temporal, not a quantity",
-    column %in% c("longitude", "latitude")                ~ "spatial structure",
-    column %in% c("abundance", "catch_weight_kg")         ~ "response",
-    TRUE                                                  ~ "continuous"
-  )) |>
-  print(n = Inf)
-```
-
-## Python
-
-```python
-categorical = ["station_id", "site_id", "vessel", "season",
-               "substrate", "present", "rare_species"]
-
-def really(column):
-    if column in categorical:
-        return "categorical"
-    if column == "sample_date":
-        return "temporal (as text)"
-    if column == "survey_year":
-        return "temporal, not a quantity"
-    if column in ("longitude", "latitude"):
-        return "spatial structure"
-    if column in ("abundance", "catch_weight_kg"):
-        return "response"
-    return "continuous"
-
-pd.DataFrame({
-    "column": raw.columns,
-    "stored_as": [raw[c].dtype.name for c in raw.columns],
-    "really": [really(c) for c in raw.columns],
-})
-```
-
-:::
-
-Two mismatches matter. `survey_year` is stored as an integer and is not a quantity.
-`season` is stored as text and is *circular*, not merely categorical. Treating it as
-four unordered levels loses the fact that spring is adjacent to summer, which for a
-seasonal signal is real information thrown away.
-
-## Limits of the type list
-
-**Type is about meaning, not storage.** No amount of inspecting the file tells you that
-`survey_year` is a label rather than a measurement. This is knowledge you bring.
-
-**Sine-cosine encoding is not free.** It spends two features on one variable and assumes
-the cycle is smooth. If your quantity jumps at a boundary, such as a management year starting
-in April, the circle is the wrong model.
-
-**Some marine data fits none of these boxes.** Acoustic backscatter is a matrix per
-ping, imagery is pixels, genomic data is thousands of correlated columns. The principle
-still applies: decide what one observation is, then decide what each column means.
-
-::: {.callout-tip}
 ## Key points
-- A model does arithmetic on whatever you give it. Being stored as a number does not
-  make something a quantity.
-- Circular variables (month, day of year, bearing, tidal phase) need sine and cosine
-  encoding, or you assert that December is far from January.
-- Ambiguous date formats silently shift observations between seasons. Establish the
-  convention; never let the parser guess.
-- Position and time are usually *structure*, not features: they say which observations
-  are near each other, which constrains how you may split the data.
-- Profiles have to be summarised, binned or modelled as curves. Summarising is the
-  sensible default; binning multiplies rows that are not independent.
+
+::: {.key-points}
+- A model does arithmetic on whatever it is given; a column stored as numbers is not
+  necessarily a quantity.
+- Circular variables such as month, bearing and tidal phase need sine and cosine, or
+  December ends up far from January.
+- Ambiguous date formats silently move stations between seasons: find out the format
+  and parse it explicitly.
+- Time and position say which rows are alike, which limits how the data can be split.
+- Profiles need summarising, usually one row per cast; compositional shares need
+  log-ratios.
 :::
 
 ## Try it yourself
 
-1. Encode `day_of_year` as sine and cosine, and plot mean abundance against each. Does
-   the seasonal pattern look stronger than it does against `season` as four levels?
-2. List the columns in your own data and write next to each what it *means*, not how it
-   is stored. How many are circular, compositional, or an identifier masquerading as a
-   number?
+1. Encode `day_of_year` as sine and cosine, and plot `abundance` against each. Does the
+   seasonal pattern look clearer than against `season` as four categories?
+2. List the columns in your own data and write next to each what it *means*, not how
+   it is stored. How many are circular, compositional, or a name stored as a number?

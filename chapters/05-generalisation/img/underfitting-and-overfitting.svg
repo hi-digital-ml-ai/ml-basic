@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 810" width="100%" role="img" aria-label="Three small panels show the same eleven points with a hump-shaped pattern. Too rigid, underfitting: a straight line that misses the hump. In between: a smooth curve that follows the hump. Too flexible, overfitting: a zigzag through every point. Below, a wide panel plots two errors against flexibility. The training error falls steadily to zero. The error on new data falls a little, reaches its lowest point, then rises. On the left, the underfitting zone, both errors are high and close together. On the right, the overfitting zone, the training error is low and the error on new data high, with a wide gap between them. A note says the training error keeps falling as the model bends, and only the error on new data shows where it has gone too far.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Underfitting and overfitting</text>
+<rect class="box" x="0" y="48" width="300" height="250" rx="8"/><rect x="0" y="48" width="300" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="20" y="86">Too rigid</text>
+<text class="lab" x="20" y="108" fill="#0072B2">UNDERFITTING</text>
+<path class="ax" d="M30 128 V278 H275"/>
+<path d="M38.0 186.1 L267.0 185.9" fill="none" stroke="#0072B2" stroke-width="3"/>
+<circle cx="51.7" cy="209.5" r="5" fill="#1f2933"/>
+<circle cx="71.9" cy="220.0" r="5" fill="#1f2933"/>
+<circle cx="92.0" cy="168.3" r="5" fill="#1f2933"/>
+<circle cx="112.2" cy="183.9" r="5" fill="#1f2933"/>
+<circle cx="132.3" cy="149.3" r="5" fill="#1f2933"/>
+<circle cx="152.5" cy="179.5" r="5" fill="#1f2933"/>
+<circle cx="172.7" cy="152.1" r="5" fill="#1f2933"/>
+<circle cx="192.8" cy="188.1" r="5" fill="#1f2933"/>
+<circle cx="213.0" cy="169.7" r="5" fill="#1f2933"/>
+<circle cx="233.1" cy="215.9" r="5" fill="#1f2933"/>
+<circle cx="253.3" cy="209.5" r="5" fill="#1f2933"/>
+<rect class="box" x="330" y="48" width="300" height="250" rx="8"/><rect x="330" y="48" width="300" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="350" y="86">In between</text>
+<text class="lab" x="350" y="108" fill="#009E73">FOLLOWS THE PATTERN</text>
+<path class="ax" d="M360 128 V278 H605"/>
+<path d="M372.6 232.7 L376.3 228.9 L380.0 225.0 L383.8 221.2 L387.5 217.5 L391.2 213.7 L394.9 210.1 L398.7 206.5 L402.4 203.0 L406.1 199.6 L409.8 196.3 L413.6 193.1 L417.3 190.0 L421.0 187.0 L424.7 184.2 L428.5 181.5 L432.2 179.0 L435.9 176.6 L439.6 174.3 L443.4 172.3 L447.1 170.4 L450.8 168.7 L454.6 167.1 L458.3 165.8 L462.0 164.6 L465.7 163.6 L469.5 162.8 L473.2 162.2 L476.9 161.8 L480.6 161.6 L484.4 161.6 L488.1 161.8 L491.8 162.2 L495.5 162.8 L499.3 163.6 L503.0 164.6 L506.7 165.8 L510.4 167.1 L514.2 168.7 L517.9 170.4 L521.6 172.3 L525.4 174.3 L529.1 176.6 L532.8 179.0 L536.5 181.5 L540.3 184.2 L544.0 187.0 L547.7 190.0 L551.4 193.1 L555.2 196.3 L558.9 199.6 L562.6 203.0 L566.3 206.5 L570.1 210.1 L573.8 213.7 L577.5 217.5 L581.2 221.2 L585.0 225.0 L588.7 228.9 L592.4 232.7" fill="none" stroke="#009E73" stroke-width="3"/>
+<circle cx="381.7" cy="209.5" r="5" fill="#1f2933"/>
+<circle cx="401.9" cy="220.0" r="5" fill="#1f2933"/>
+<circle cx="422.0" cy="168.3" r="5" fill="#1f2933"/>
+<circle cx="442.2" cy="183.9" r="5" fill="#1f2933"/>
+<circle cx="462.3" cy="149.3" r="5" fill="#1f2933"/>
+<circle cx="482.5" cy="179.5" r="5" fill="#1f2933"/>
+<circle cx="502.7" cy="152.1" r="5" fill="#1f2933"/>
+<circle cx="522.8" cy="188.1" r="5" fill="#1f2933"/>
+<circle cx="543.0" cy="169.7" r="5" fill="#1f2933"/>
+<circle cx="563.1" cy="215.9" r="5" fill="#1f2933"/>
+<circle cx="583.3" cy="209.5" r="5" fill="#1f2933"/>
+<rect class="box" x="660" y="48" width="300" height="250" rx="8"/><rect x="660" y="48" width="300" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="680" y="86">Too flexible</text>
+<text class="lab" x="680" y="108" fill="#D55E00">OVERFITTING</text>
+<path class="ax" d="M690 128 V278 H935"/>
+<path d="M698.0 209.5 L711.7 209.5 L731.9 220.0 L752.0 168.3 L772.2 183.9 L792.3 149.3 L812.5 179.5 L832.7 152.1 L852.8 188.1 L873.0 169.7 L893.1 215.9 L913.3 209.5 L927.0 209.5" fill="none" stroke="#D55E00" stroke-width="3"/>
+<circle cx="711.7" cy="209.5" r="5" fill="#1f2933"/>
+<circle cx="731.9" cy="220.0" r="5" fill="#1f2933"/>
+<circle cx="752.0" cy="168.3" r="5" fill="#1f2933"/>
+<circle cx="772.2" cy="183.9" r="5" fill="#1f2933"/>
+<circle cx="792.3" cy="149.3" r="5" fill="#1f2933"/>
+<circle cx="812.5" cy="179.5" r="5" fill="#1f2933"/>
+<circle cx="832.7" cy="152.1" r="5" fill="#1f2933"/>
+<circle cx="852.8" cy="188.1" r="5" fill="#1f2933"/>
+<circle cx="873.0" cy="169.7" r="5" fill="#1f2933"/>
+<circle cx="893.1" cy="215.9" r="5" fill="#1f2933"/>
+<circle cx="913.3" cy="209.5" r="5" fill="#1f2933"/>
+<rect class="box" x="0" y="322" width="960" height="410" rx="8"/><rect x="0" y="322" width="960" height="6" rx="3" fill="#1b6a87"/>
+<text class="head" x="22" y="362">Two errors against flexibility</text>
+<rect x="80.0" y="386" width="76.5" height="236" fill="#0072B2" opacity="0.10"/>
+<rect x="437.0" y="386" width="493.0" height="236" fill="#D55E00" opacity="0.10"/>
+<path class="ax" d="M80 386 V622 H930"/>
+<text class="sm" x="930" y="644" text-anchor="end">more flexible →</text>
+<text class="sm" x="64" y="507.0" text-anchor="middle" transform="rotate(-90 64 507.0)">error</text>
+<path d="M308.6 386 V622" stroke="#1f2933" stroke-width="1.4" stroke-dasharray="4 5"/>
+<path d="M80.0 444.9 L87.1 447.6 L94.3 450.3 L101.4 453.0 L108.6 455.6 L115.7 458.2 L122.9 460.8 L130.0 463.4 L137.1 465.9 L144.3 468.5 L151.4 471.0 L158.6 473.5 L165.7 475.9 L172.9 478.4 L180.0 480.8 L187.1 483.2 L194.3 485.6 L201.4 487.9 L208.6 490.3 L215.7 492.6 L222.9 494.9 L230.0 497.1 L237.1 499.4 L244.3 501.6 L251.4 503.8 L258.6 506.0 L265.7 508.2 L272.9 510.3 L280.0 512.4 L287.1 514.5 L294.3 516.6 L301.4 518.7 L308.6 520.7 L315.7 522.7 L322.9 524.7 L330.0 526.7 L337.1 528.7 L344.3 530.6 L351.4 532.5 L358.6 534.4 L365.7 536.3 L372.9 538.1 L380.0 540.0 L387.1 541.8 L394.3 543.6 L401.4 545.3 L408.6 547.1 L415.7 548.8 L422.9 550.5 L430.0 552.2 L437.1 553.9 L444.3 555.5 L451.4 557.1 L458.6 558.8 L465.7 560.3 L472.9 561.9 L480.0 563.5 L487.1 565.0 L494.3 566.5 L501.4 568.0 L508.6 569.4 L515.7 570.9 L522.9 572.3 L530.0 573.7 L537.1 575.1 L544.3 576.5 L551.4 577.8 L558.6 579.2 L565.7 580.5 L572.9 581.8 L580.0 583.0 L587.1 584.3 L594.3 585.5 L601.4 586.7 L608.6 587.9 L615.7 589.1 L622.9 590.2 L630.0 591.3 L637.1 592.5 L644.3 593.5 L651.4 594.6 L658.6 595.7 L665.7 596.7 L672.9 597.7 L680.0 598.7 L687.1 599.7 L694.3 600.6 L701.4 601.6 L708.6 602.5 L715.7 603.4 L722.9 604.2 L730.0 605.1 L737.1 605.9 L744.3 606.7 L751.4 607.5 L758.6 608.3 L765.7 609.0 L772.9 609.8 L780.0 610.5 L787.1 611.2 L794.3 611.8 L801.4 612.5 L808.6 613.1 L815.7 613.7 L822.9 614.3 L830.0 614.8 L837.1 615.4 L844.3 615.9 L851.4 616.3 L858.6 616.8 L865.7 617.2 L872.9 617.6 L880.0 618.0 L887.1 618.4 L894.3 618.7 L901.4 619.0 L908.6 619.2 L915.7 619.5 L922.9 619.6 L930.0 619.7" fill="none" stroke="#0072B2" stroke-width="3.5"/>
+<path d="M80.0 438.0 L87.1 442.4 L94.3 446.4 L101.4 450.1 L108.6 453.6 L115.7 456.8 L122.9 459.8 L130.0 462.6 L137.1 465.1 L144.3 467.5 L151.4 469.7 L158.6 471.8 L165.7 473.7 L172.9 475.4 L180.0 477.1 L187.1 478.6 L194.3 480.0 L201.4 481.3 L208.6 482.5 L215.7 483.6 L222.9 484.6 L230.0 485.5 L237.1 486.2 L244.3 486.9 L251.4 487.5 L258.6 488.0 L265.7 488.4 L272.9 488.8 L280.0 489.0 L287.1 489.3 L294.3 489.4 L301.4 489.5 L308.6 489.6 L315.7 489.6 L322.9 489.5 L330.0 489.4 L337.1 489.3 L344.3 489.1 L351.4 488.9 L358.6 488.6 L365.7 488.3 L372.9 488.0 L380.0 487.6 L387.1 487.2 L394.3 486.8 L401.4 486.3 L408.6 485.8 L415.7 485.3 L422.9 484.8 L430.0 484.2 L437.1 483.6 L444.3 483.0 L451.4 482.4 L458.6 481.7 L465.7 481.0 L472.9 480.3 L480.0 479.6 L487.1 478.9 L494.3 478.1 L501.4 477.3 L508.6 476.5 L515.7 475.7 L522.9 474.9 L530.0 474.0 L537.1 473.1 L544.3 472.3 L551.4 471.4 L558.6 470.4 L565.7 469.5 L572.9 468.5 L580.0 467.6 L587.1 466.6 L594.3 465.6 L601.4 464.6 L608.6 463.6 L615.7 462.5 L622.9 461.5 L630.0 460.4 L637.1 459.3 L644.3 458.2 L651.4 457.1 L658.6 456.0 L665.7 454.8 L672.9 453.7 L680.0 452.5 L687.1 451.3 L694.3 450.1 L701.4 448.9 L708.6 447.7 L715.7 446.5 L722.9 445.2 L730.0 443.9 L737.1 442.7 L744.3 441.4 L751.4 440.1 L758.6 438.8 L765.7 437.5 L772.9 436.1 L780.0 434.8 L787.1 433.4 L794.3 432.0 L801.4 430.7 L808.6 429.3 L815.7 427.9 L822.9 426.4 L830.0 425.0 L837.1 423.6 L844.3 422.1 L851.4 420.6 L858.6 419.2 L865.7 417.7 L872.9 416.2 L880.0 414.7 L887.1 413.1 L894.3 411.6 L901.4 410.0 L908.6 408.5 L915.7 406.9 L922.9 405.3 L930.0 403.7" fill="none" stroke="#D55E00" stroke-width="3.5"/>
+<text class="sm" x="811.0" y="457.9" style="fill:#D55E00;font-weight:bold" text-anchor="middle">error on new data</text>
+<text class="sm" x="607.0" y="573.9" style="fill:#0072B2;font-weight:bold" text-anchor="middle">training error</text>
+<text class="sm" x="316.6" y="400">lowest error on new data</text>
+<text class="lab" x="131.0" y="672" fill="#0072B2" text-anchor="middle">UNDERFITTING</text>
+<text class="body" x="81.0" y="698">Both errors high</text>
+<text class="body" x="81.0" y="720">and close together</text>
+<text class="lab" x="683.5" y="672" fill="#D55E00" text-anchor="middle">OVERFITTING</text>
+<text class="body" x="683.5" y="698" text-anchor="middle">Training error low, error on new data high:</text>
+<text class="body" x="683.5" y="720" text-anchor="middle">a wide gap between them</text>
+<text class="note" x="470" y="770" text-anchor="middle">The training error keeps falling as the model bends; only the error on new data shows where it has gone too far.</text>
+</svg>

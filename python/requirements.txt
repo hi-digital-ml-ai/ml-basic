@@ -1,13 +1,28 @@
-# For running the Python tabs and python/check-snippets.py.
-# The site itself renders with R only. Nothing here is needed to build it.
+# For running the Python tabs and python/check-snippets.py, and for rendering a
+# revised page, whose Python tabs run through reticulate. Building the site from a
+# committed _freeze/ needs none of it.
 pandas>=2.2
 scikit-learn>=1.5
 scipy>=1.11
 
+# Rendering only: pandas' to_markdown() uses it to show a DataFrame as a table
+# (R/python-tabs.R).
+tabulate>=0.9
+
 # Only where scikit-learn has no equivalent: GLM inference (standard errors,
-# p-values, deviance) and the negative binomial, in sections 3 and 6.
+# p-values, deviance) and the negative binomial, in sections 3, 4 and 6.
 statsmodels>=0.14
 
 # Section 8 only: UMAP, which began life as a Python library and has no
 # scikit-learn equivalent.
 umap-learn>=0.5
+
+# A contributed page written in Python (engine: jupyter) executes under Jupyter, which
+# the course pages do not use, so it needs these two as well. Install them only if you
+# are writing or re-rendering such a page:
+#
+#   conda install jupyter matplotlib
+#
+# jupyter provides the kernel Quarto runs the chunks through; matplotlib draws the
+# figures, styled by python/mlbasic_theme.py. Neither is needed to build the site
+# from a committed _freeze/.

@@ -1,0 +1,326 @@
+# The course glossary: one entry per term, in the order the course introduces them.
+# tools/glossary.lua shows a page's own terms in its "New terms on this page" box
+# ({{< new-terms >}}) and every term on glossary.qmd ({{< glossary >}}).
+#
+#   term:        as it is written in bold on the page
+#   definition:  one plain sentence, no links; it must agree with the page's own sentence
+#   page:        the page that first explains the term, from the project root
+#   more:        optional, a later page that covers it in full
+
+terms:
+
+  # 1 · Introduction: Types of learning
+  - term: "Supervised learning"
+    definition: "Learning from examples whose answer is known, in order to predict the answer for new examples."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Input (feature)"
+    definition: "A measurement a model uses to make its prediction, such as temperature or depth."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Outcome"
+    definition: "The answer a supervised model learns to predict, such as whether a species is present."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Label"
+    definition: "A known outcome, especially one a person assigned, such as a species named from an image."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Regression"
+    definition: "A supervised task whose outcome is a quantity, such as a number of animals; not only linear regression."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Classification"
+    definition: "A supervised task whose outcome is a category, such as present or absent."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Unsupervised learning"
+    definition: "Looking for structure, such as groups of similar examples, in measurements that come with no answer."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "Reinforcement learning"
+    definition: "Learning which actions to take from the rewards they bring; not covered in this course."
+    page: chapters/01-introduction/types-of-learning.qmd
+  - term: "k-nearest neighbours"
+    definition: "A supervised method that predicts for a new case from the k most similar cases in the data: the share of each category, or the average of a quantity."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/03-supervised-learning/nearest-neighbours.qmd
+  - term: "Scaling"
+    definition: "Putting inputs on a common scale, for example by subtracting each one's mean and dividing by its standard deviation, so that no input dominates a distance."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Recipe"
+    definition: "In tidymodels, the list of a model's outcome and inputs together with the steps that prepare the data, such as scaling."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "k-means clustering"
+    definition: "An unsupervised method that sorts cases into k groups, moving each group's centre to the average of its members until no case changes group."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Cluster"
+    definition: "A group of similar cases found by an unsupervised method."
+    page: chapters/01-introduction/types-of-learning.qmd
+    more: chapters/08-unsupervised-learning/clustering.qmd
+
+  # 1 · Introduction: Prediction and explanation
+  - term: "Machine learning"
+    definition: "Fitting models to data with the aim of predicting cases the model has not seen, usually letting the method find the shape of the relationship."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Statistical modelling"
+    definition: "Fitting models to data with the aim of explaining what drives an outcome, usually with a shape you write down so that each part of the model means something."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Prediction"
+    definition: "Using a model to estimate the outcome for a case it has not seen; checked by the error on cases held back from fitting."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Explanation"
+    definition: "Using a model to claim that changing an input would change the outcome; checked by study design and knowledge of the system, not by the data alone."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Test set"
+    definition: "Cases held back from fitting, so that the error on them shows how a model does on new cases."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/02-marine-data/splitting-data.qmd
+  - term: "Training set"
+    definition: "The cases a model learns from."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/02-marine-data/splitting-data.qmd
+  - term: "Linear regression"
+    definition: "A model that predicts the outcome by adding up a fixed amount for each input, so its prediction is a straight line in each input."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Slope (coefficient)"
+    definition: "In a linear regression, the change in the prediction for one unit more of an input, with the other inputs held fixed."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Decision tree"
+    definition: "A model that splits the data again and again at the threshold that best separates high outcomes from low ones, and predicts the average of each final group."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/decision-trees.qmd
+  - term: "RMSE (root mean squared error)"
+    definition: "A typical miss, in the outcome's own units: square each prediction's miss, take the mean, then the square root. Lower is better."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/07-validation/regression-metrics.qmd
+  - term: "Baseline"
+    definition: "The score of the simplest possible prediction, such as predicting the average everywhere; a model that cannot beat it has learned nothing useful."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Confounder"
+    definition: "A variable that affects both an input and the outcome, so the two move together even when neither affects the other."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+  - term: "Squared term"
+    definition: "An input multiplied by itself and added to a linear regression, which lets the fitted line bend into a curve."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+    more: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+  - term: "Confidence interval (95%)"
+    definition: "A range around an estimate that shows how precisely the data pin it down: over many repeated surveys, 95 in 100 intervals built this way would contain the true value."
+    page: chapters/01-introduction/prediction-and-explanation.qmd
+
+  # 1 · Introduction: Applications in marine science
+  - term: "Emulator"
+    definition: "A fast machine-learning copy of a slow simulation, such as an ocean model, trained on the simulation's own output and valid only within the conditions it was trained on."
+    page: chapters/01-introduction/applications-in-marine-science.qmd
+
+  # 1 · Introduction: Discriminative and generative models
+  - term: "Discriminative model"
+    definition: "A model that learns only the answer, such as the chance of an outcome at each value of the inputs; most machine-learning methods are discriminative."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Generative model"
+    definition: "A model that learns a description of the data in each group, so it can classify new cases and also generate plausible new examples."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Normal distribution"
+    definition: "The bell-shaped curve that describes values spread symmetrically around their mean, with the sd setting its width."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Density"
+    definition: "The height of a distribution's curve at a value: high where values like it are common, low where they are rare."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+  - term: "Bayes' rule"
+    definition: "The rule a generative model uses to classify: weigh each group by how well its description fits the new case, times how common the group is."
+    page: chapters/01-introduction/discriminative-and-generative-models.qmd
+
+  # 2 · Marine data: The coastal survey
+  - term: "Station"
+    definition: "One visit of the survey ship to one place, where the water is measured and the seabed sampled; one row of the survey."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Observation"
+    definition: "One row of a data table: one thing that was measured, such as one station; machine learning also calls it an example, instance or sample."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Correlation"
+    definition: "A number from −1 to 1 for how closely two columns follow a straight-line link: 1 if they always rise together, −1 if one always falls as the other rises, 0 for no straight-line link."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+  - term: "Pseudo-replication"
+    definition: "Treating rows that share a source, such as repeat visits to one site, as if they were independent observations, which makes the evidence look stronger than it is."
+    page: chapters/02-marine-data/the-coastal-survey.qmd
+
+  # 2 · Marine data: Kinds of marine data
+  - term: "Continuous variable"
+    definition: "A measured quantity, where a difference of one unit means the same everywhere on the scale, such as temperature or depth."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Categorical variable"
+    definition: "A variable that puts each row into one of a fixed set of groups, such as a seabed type or a vessel."
+    page: chapters/02-marine-data/marine-data-types.qmd
+    more: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Nominal"
+    definition: "A category with no order between its groups, such as sand, mud, gravel and rock."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Ordinal"
+    definition: "A category whose groups have an order but no known spacing, such as low, medium and high; coding them 1, 2, 3 assumes the spacing."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Circular variable"
+    definition: "A variable that returns to where it started, such as month, time of day or a bearing; encoded as its sine and cosine so that the ends of the cycle are neighbours."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Profile"
+    definition: "A series of measurements down the water at one place and time, such as a CTD cast; usually summarised into one row per cast."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Compositional data"
+    definition: "Shares of a whole that sum to one, such as the proportion of each species in a sample, so that one share can rise only if others fall."
+    page: chapters/02-marine-data/marine-data-types.qmd
+  - term: "Log-ratio"
+    definition: "The log of one share divided by another share, or by the average of the shares, which frees compositional data from summing to one."
+    page: chapters/02-marine-data/marine-data-types.qmd
+
+  # 2 · Marine data: Exploring and cleaning the data
+  - term: "Exploratory data analysis"
+    definition: "A first look at a dataset, by plots and counts, whose aim is to find what is wrong with it before any model is fitted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Sentinel value"
+    definition: "A number such as −999 written in place of a missing value, which a model or summary will treat as a real measurement unless it is converted."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing value"
+    definition: "A value that was not recorded, written NA in R and NaN in Python, so that no summary mistakes it for a measurement."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Outlier"
+    definition: "A value far from the rest of the data: sometimes an error, often a genuine extreme that should be kept."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing completely at random"
+    definition: "Gaps that follow nothing at all, such as a dropped sample bottle; dropping those rows costs precision but adds no bias."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing at random"
+    definition: "Gaps that follow something that was recorded, such as the season, so the recorded columns can help fill them in."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Missing not at random"
+    definition: "Gaps that depend on the missing value itself, such as a sensor that fails in the conditions it should measure; no fix from the data alone can repair them."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+  - term: "Imputation"
+    definition: "Filling in missing values by predicting them from the columns that were recorded, done as part of the model so that the test data play no part."
+    page: chapters/02-marine-data/exploring-and-cleaning.qmd
+
+  # 2 · Marine data: Scaling and encoding
+  - term: "Standardising"
+    definition: "Subtracting a column's mean and dividing by its standard deviation, so that every column has mean 0 and spread 1 whatever its units; the usual form of scaling."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Log transform"
+    definition: "Replacing each value by its logarithm, which pulls in a long right tail and turns effects that multiply into effects that add."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Dummy column"
+    definition: "A column of 0s and 1s that marks one level of a category; a category with k levels becomes k − 1 of them, and the remaining level is the baseline."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Target encoding"
+    definition: "Replacing each level of a category by a summary of the outcome for that level, which uses the outcome and so risks leakage."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+  - term: "Workflow"
+    definition: "In tidymodels, a recipe and a model joined so that they are fitted together and applied to new data together; scikit-learn's Pipeline does the same job."
+    page: chapters/02-marine-data/scaling-and-encoding.qmd
+
+  # 2 · Marine data: Splitting the data
+  - term: "Validation set"
+    definition: "Cases held back from fitting and used to choose between models or settings, so that the test set is left for the final report."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Cross-validation"
+    definition: "Taking the validation role inside the training set by letting parts of it take turns at being held back, so that every case is used for both fitting and checking."
+    page: chapters/02-marine-data/splitting-data.qmd
+    more: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Stratified split"
+    definition: "A split that draws each class separately, so that a rare class keeps the same share in the training and test sets."
+    page: chapters/02-marine-data/splitting-data.qmd
+  - term: "Grouped split"
+    definition: "A split that assigns whole groups, such as all the visits to one site, to one side, so that the test set holds only groups the model has not seen."
+    page: chapters/02-marine-data/splitting-data.qmd
+
+  # 2 · Marine data: Avoiding information leakage
+  - term: "Information leakage"
+    definition: "Information from the test set reaching the model before it is tested, which makes the test score promise more than the model delivers on new data."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "R² (R squared)"
+    definition: "The share of the variation in the test outcomes that the predictions follow: 1 means every prediction is exact, 0 means no better than predicting the average, and below 0 means worse. Higher is better."
+    page: chapters/02-marine-data/information-leakage.qmd
+    more: chapters/07-validation/regression-metrics.qmd
+  - term: "Target leakage"
+    definition: "Leakage through an input made from the outcome, such as a catch weight when predicting the count of the same catch."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Group leakage"
+    definition: "Leakage through the same unit, such as a site, appearing in both the training set and the test set."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Selection leakage"
+    definition: "Leakage through choosing inputs or models by looking at every row, test rows included."
+    page: chapters/02-marine-data/information-leakage.qmd
+  - term: "Preprocessing leakage"
+    definition: "Leakage through a preparation step, such as filling gaps with a median, that learns its numbers from every row instead of the training set alone."
+    page: chapters/02-marine-data/information-leakage.qmd
+
+  # 3 · Supervised learning: Linear and polynomial regression
+  - term: "Polynomial regression"
+    definition: "Linear regression with squared (or higher) powers of an input added as extra columns, so its prediction can curve and peak."
+    page: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
+
+  # 3 · Supervised learning: Regression for counts
+  - term: "Poisson regression"
+    definition: "A regression for counts that predicts the logarithm of the expected count, so its predictions never fall below zero."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Multiplier"
+    definition: "A coefficient of a model on the log scale, raised as a power of e: the factor by which one extra unit of the input multiplies the prediction."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Overdispersion"
+    definition: "Counts that vary more than Poisson regression expects, as counts of animals that gather in groups usually do."
+    page: chapters/03-supervised-learning/count-regression.qmd
+  - term: "Negative binomial"
+    definition: "A count model like Poisson regression with one extra number for overdispersion; it predicts much the same counts but reports wider ranges."
+    page: chapters/03-supervised-learning/count-regression.qmd
+
+  # 3 · Supervised learning: Logistic regression
+  - term: "Logistic regression"
+    definition: "A model for a yes-or-no outcome that predicts the log-odds with a weighted sum of the inputs, so its predicted probability stays between 0 and 1."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Odds"
+    definition: "The probability that something happens divided by the probability that it does not: a probability of 0.8 gives odds of 4."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Log-odds"
+    definition: "The logarithm of the odds, which can take any value; logistic regression predicts it with a weighted sum."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Odds ratio"
+    definition: "A coefficient of logistic regression raised as a power of e: the factor by which one extra unit of the input multiplies the odds."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Threshold"
+    definition: "The probability at or above which a model's answer is yes; 0.5 by default, but best chosen from what each kind of mistake costs."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "False alarm"
+    definition: "An answer of yes where the truth is no."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Miss"
+    definition: "An answer of no where the truth is yes."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+  - term: "Accuracy"
+    definition: "The share of yes-or-no answers that are right."
+    page: chapters/03-supervised-learning/logistic-regression.qmd
+
+  # 3 · Supervised learning: k-nearest neighbours
+  - term: "Overfitting"
+    definition: "Fitting the training data so closely, chance highs and lows included, that predictions on new data get worse."
+    page: chapters/03-supervised-learning/nearest-neighbours.qmd
+    more: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Hyperparameter"
+    definition: "A setting fixed before a model is fitted, such as the number of neighbours, and chosen on validation data rather than learned from the training data."
+    page: chapters/03-supervised-learning/nearest-neighbours.qmd
+    more: chapters/05-generalisation/hyperparameter-selection.qmd
+  # 3 · Supervised learning: decision trees
+  - term: "Leaf"
+    definition: "A final group of a decision tree, split no further; it predicts the average outcome of the training examples in it, or for a category the share of each."
+    page: chapters/03-supervised-learning/decision-trees.qmd
+  - term: "Depth"
+    definition: "The number of questions a decision tree asks from the top to a leaf; a deeper tree fits its training data more closely."
+    page: chapters/03-supervised-learning/decision-trees.qmd
+  # 3 · Supervised learning: random forests and boosting
+  - term: "Random forest"
+    definition: "A model that grows many decision trees side by side, each on a bootstrap sample and choosing among a few random inputs at each question, and averages their predictions."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+  - term: "Boosting"
+    definition: "A model that adds small decision trees one after another, each fitted to the errors the trees before it left, and predicts with their sum."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+  - term: "Bootstrap sample"
+    definition: "A sample of the same size as the data, drawn from it with replacement, so some examples appear twice or more and others not at all."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+    more: chapters/07-validation/uncertainty-and-stability.qmd
+  - term: "Learning rate"
+    definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
+    more: chapters/04-how-algorithms-learn/gradient-descent.qmd

@@ -1,6 +1,6 @@
 ---
 title: "The bias–variance trade-off"
-description: "Splitting a model's error into the part that is systematic, the part that is instability, and the part nothing can remove."
+description: "Fit the same model to many surveys of the same shelf and its predictions differ. Its error on new stations then splits into bias, variance and noise, and on the survey the noise is the largest part."
 order: 4
 categories: [generalisation]
 ---
@@ -10,64 +10,69 @@ categories: [generalisation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(rpart)
-library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(504)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Two reasons behind one curve
+## The U-shaped curve has two causes
 
-The U-shaped curve of [two pages ago](underfitting-and-overfitting.qmd) is a fact without an
-explanation. It descends for one reason and ascends for a different one, and the two reasons
-are what you actually manipulate when you choose a model.
-
-The descent is **bias** falling: the model is becoming able to represent shapes that are really
-there. The ascent is **variance** rising: the model is becoming sensitive to which particular
-stations it happened to be given. Underneath both sits a floor neither can reach.
-
-This page measures all three on the coastal survey, which is possible only because the survey is
-simulated and we know what the true expected count at each station is.
+On [Underfitting and overfitting](underfitting-and-overfitting.qmd), the error on new sites
+fell as the tree grew, reached a lowest point, then rose. The fall and the rise have
+different causes. This page separates them, and finds a third part of the error that no
+model can touch.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## The error at a new station splits into three parts
 
-Imagine repeating your survey many times: same design, same shelf, new stations. Each survey
-gives a different training set, so each gives a slightly different fitted model, and each of
-those makes a different prediction at some station of interest. Three things then contribute to
-how wrong those predictions are:
+Picture the survey repeated many times: the same shelf, the same design, different sites
+each time. Each survey gives a different set of stations, so the same method fitted to each
+gives a slightly different model, and each model predicts something slightly different at
+a new station. Set those predictions beside the station's **expected count**, the average
+count the station would give if it could be sampled again and again, and three parts of the
+error appear.
 
-- **Bias** is how far the *average* of all those predictions sits from the truth. A straight
-  line fitted to a hump-shaped response is biased: every repetition gets it wrong in the same
-  direction, and averaging a thousand of them does not help.
-- **Variance** is how much the predictions scatter around their own average. A deep tree has
-  high variance: two surveys of the same shelf produce two quite different trees.
-- **Irreducible error** is the part of the count that was never a function of the environment.
-  A station with an expected count of 4 might land on 0 or 11. No model removes this.
+- **Bias** is how far the average prediction, over all the surveys, sits from the expected
+  count. A model too rigid to follow the pattern misses in the same direction on every
+  survey, and more surveys do not help.
+- **Variance** is how much the predictions differ from survey to survey. A flexible model
+  follows whichever stations it happened to get, so each survey gives it a different shape.
+- **Noise** is how far a single count falls from its expected count. A station expected to
+  hold four animals may yield none, or a dozen. No model can predict that part, because it
+  does not depend on the inputs.
 
-$$\mathbb{E}\left[(y - \hat{f}(x))^2\right] \;=\; \underbrace{\left(\mathbb{E}[\hat f(x)] - f(x)\right)^2}_{\text{bias}^2} \;+\; \underbrace{\mathbb{E}\left[(\hat f(x) - \mathbb{E}[\hat f(x)])^2\right]}_{\text{variance}} \;+\; \underbrace{\sigma^2(x)}_{\text{irreducible}}$$
+The squared error at a new station, averaged over many surveys, is the sum of the three
+parts:
 
-Here $f(x)$ is the true expected count at station $x$, $\hat f$ is the model we happened to fit,
-and the expectations are over repeated training sets. Rigid models sit at the high-bias end;
-flexible ones at the high-variance end; and the term on the right does not depend on the model
-at all.
+$$\text{squared error} = \text{bias}^2 + \text{variance} + \text{noise}$$
 
-::: {.callout-note}
-Marine analogy: bias is a poorly calibrated instrument, reading 0.3 °C high on every cast, and a
-thousand casts will not find it. Variance is an instrument with a noisy sensor, right on
-average but unreliable on any single cast. The two need completely different responses, and a
-model has both.
+::: {.diagram}
+![A rigid model fitted to six surveys gives six similar predictions that all miss the expected count: high bias, low variance. A flexible model gives six predictions that centre on it but disagree: low bias, high variance. Counts at the same spot scatter around the expected count whatever the model. More flexibility trades bias for variance; the noise stays.](img/bias-variance.svg){fig-alt="Three small panels, each with a dashed hump-shaped curve for the expected count and a dotted mark at one station. Rigid model, high bias and low variance: six straight lines fitted to six surveys lie close together, and all miss the top of the hump; a bracket marked bias spans the gap between the curve and the lines. Flexible model, low bias and high variance: six wavy curves follow the hump but spread apart; a bracket marked variance spans their spread. Noise, the same for every model: dots for counts at one station scatter above and below the curve; a bracket marked noise spans them. Below, a wide panel says the error at a new station is bias squared plus variance plus noise, and shows two stacked bars. The rigid model's bar is mostly bias with a little variance; the flexible model's bar is mostly variance with a little bias. Both end in a noise segment of the same length. More flexibility trades bias for variance, and the noise stays the same. A note says bias and variance belong to the model, and the noise belongs to the counts."}
 :::
+
+More flexibility lowers the bias and raises the variance. That exchange is the
+**bias–variance trade-off**, and it explains the U-shaped error curve: on the way down, bias is
+falling faster than variance rises; on the way up, the reverse. The noise is the same
+for every model, so it sets a floor that no setting can reach below.
 
 ## Worked example
 
-Measuring bias requires knowing the truth, which no real dataset supplies. This one does: the
-generating script recorded the expected count behind every station before the negative-binomial
-draw, and `load_coastal_survey_truth()` returns it.
+Splitting the error needs two things no real study has: many surveys of the same shelf,
+and the expected count at each station. The survey is simulated, so the expected counts
+are known; [The coastal survey](../02-marine-data/the-coastal-survey.qmd) introduced them
+as the truth file. The many surveys are imitated by drawing many sets of sites from one
+pool.
+
+### Preparing the data
+
+A quarter of the training sites are set aside, and every model is judged at their
+stations. From the remaining sites, 100 replicate surveys are drawn, each with half of
+the sites. The trees are those of [Underfitting and overfitting](underfitting-and-overfitting.qmd),
+sized by their minimum node size, `min_n`.
 
 ::: {.panel-tabset group="language"}
 
@@ -76,49 +81,88 @@ draw, and `load_coastal_survey_truth()` returns it.
 ```{r}
 #| label: prepare
 survey <- load_coastal_survey_clean() |>
-  inner_join(load_coastal_survey_truth(), by = "station_id") |>
-  select(station_id, abundance, true_mean, depth_m, temperature_c,
-         chlorophyll_mg_m3, salinity_psu, substrate, season) |>
-  drop_na()
+  left_join(load_coastal_survey_truth(), by = "station_id")
 
-set.seed(504)
-split <- initial_split(survey, prop = 0.5)
-pool <- training(split)   # the stations replicate surveys are drawn from
-eval <- testing(split)    # the stations every model is judged at
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
 
-c(pool = nrow(pool), evaluation = nrow(eval))
+# A quarter of the training sites, where every model is judged
+held_out   <- group_initial_split(train, group = site_id, prop = 0.75)
+pool       <- training(held_out)
+evaluation <- testing(held_out)
+
+# 100 replicate surveys, each with half of the remaining sites
+surveys <- group_mc_cv(pool, group = site_id, prop = 0.5, times = 100)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+tree_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+
+tree_model <- function(min_n) {
+  decision_tree(mode = "regression", tree_depth = 30, min_n = min_n,
+                cost_complexity = 0)
+}
+leaves_of <- function(fitted) sum(extract_fit_engine(fitted)$frame$var == "<leaf>")
+
+c(pool = nrow(pool), evaluation = nrow(evaluation))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 
 from mlbasic_data import load_coastal_survey_clean, load_coastal_survey_truth
 
-survey = (load_coastal_survey_clean()
-    .merge(load_coastal_survey_truth(), on="station_id")
-    [["station_id", "abundance", "true_mean", "depth_m", "temperature_c",
-      "chlorophyll_mg_m3", "salinity_psu", "substrate", "season"]]
-    .dropna())
+survey = load_coastal_survey_clean().merge(load_coastal_survey_truth(),
+                                           on="station_id")
 
-d = pd.get_dummies(survey.drop(columns="station_id"), drop_first=True)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-pool, evaluation = train_test_split(d, train_size=0.5, random_state=504)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train = survey.iloc[train_rows]
 
-features = [c for c in d.columns if c not in ("abundance", "true_mean")]
-X_eval, true_mean = evaluation[features], evaluation["true_mean"].to_numpy()
+# A quarter of the training sites, where every model is judged
+pool_rows, evaluation_rows = next(grouper.split(train, groups=train["site_id"]))
+pool, evaluation = train.iloc[pool_rows], train.iloc[evaluation_rows]
+
+# 100 replicate surveys, each with half of the remaining sites
+splitter = GroupShuffleSplit(n_splits=100, train_size=0.5, random_state=123)
+surveys = [rows for rows, _ in splitter.split(pool, groups=pool["site_id"])]
+
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False,
+                                  handle_unknown="ignore"), categorical),
+])
+
+def tree_model(min_n):
+    return DecisionTreeRegressor(min_samples_split=min_n,
+                                 min_samples_leaf=max(1, round(min_n / 3)),
+                                 random_state=123)
 
 pd.Series({"pool": len(pool), "evaluation": len(evaluation)})
 ```
 
 :::
 
-We now draw 200 training sets of 200 stations each from the pool, fit a tree to every one at
-each of eight flexibility settings, and record every prediction at every evaluation station.
+### Trees refitted to 100 replicate surveys
+
+For every replicate survey, trees with 11 minimum node sizes, from 200 down to 2, are
+fitted, and each predicts every evaluation station.
 
 ::: {.panel-tabset group="language"}
 
@@ -126,49 +170,56 @@ each of eight flexibility settings, and record every prediction at every evaluat
 
 ```{r}
 #| label: replicates
-knobs       <- c(120, 60, 30, 15, 8, 4, 2, 1)
-replicates  <- 200
-formula_all <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-  salinity_psu + substrate + season
+sizes <- c(200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2)
 
-set.seed(504)
-predictions <- array(NA_real_, dim = c(length(knobs), replicates, nrow(eval)))
-
-for (b in seq_len(replicates)) {
-  sampled <- pool[sample(nrow(pool), 200), ]
-  for (j in seq_along(knobs)) {
-    fit <- rpart(formula_all, data = sampled,
-                 control = rpart.control(cp = 0, minsplit = 2,
-                                         minbucket = knobs[j], maxdepth = 30))
-    predictions[j, b, ] <- predict(fit, eval)
-  }
+predict_survey <- function(s, i) {
+  one_survey <- analysis(s)
+  map(sizes, \(n) {
+    fitted <- workflow(tree_recipe, tree_model(n)) |> fit(one_survey)
+    tibble(survey     = i,
+           min_n      = n,
+           leaves     = leaves_of(fitted),
+           station_id = evaluation$station_id,
+           .pred      = predict(fitted, evaluation)$.pred)
+  }) |>
+    list_rbind()
 }
 
-dim(predictions)
+predictions <- imap(surveys$splits, predict_survey) |> list_rbind()
+nrow(predictions)
 ```
 
 ## Python
 
-```python
-knobs = [120, 60, 30, 15, 8, 4, 2, 1]
-replicates = 200
+```{python}
+sizes = [200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2]
 
-rng = np.random.default_rng(504)
-predictions = np.empty((len(knobs), replicates, len(evaluation)))
+rows = []
+for i, survey_rows in enumerate(surveys):
+    one_survey = pool.iloc[survey_rows]
+    for n in sizes:
+        fitted = (Pipeline([("recipe", tree_recipe), ("model", tree_model(n))])
+                  .fit(one_survey[predictors], one_survey["abundance"]))
+        rows.append(pd.DataFrame({
+            "survey": i,
+            "min_n": n,
+            "leaves": fitted["model"].get_n_leaves(),
+            "station_id": evaluation["station_id"].to_numpy(),
+            "pred": fitted.predict(evaluation[predictors]),
+        }))
 
-for b in range(replicates):
-    sampled = pool.iloc[rng.choice(len(pool), 200, replace=False)]
-    for j, leaf in enumerate(knobs):
-        tree = DecisionTreeRegressor(
-            min_samples_leaf=leaf, min_samples_split=2, ccp_alpha=0.0,
-            random_state=b,
-        ).fit(sampled[features], sampled["abundance"])
-        predictions[j, b, :] = tree.predict(X_eval)
-
-predictions.shape
+predictions = pd.concat(rows, ignore_index=True)
+len(predictions)
 ```
 
 :::
+
+### Measuring bias and variance at each station
+
+At each evaluation station, the 100 predictions give the two parts that belong to the
+model. Their average, set against the expected count, gives the bias; their spread gives
+the variance. The noise comes from the counts alone: how far each observed count lies from
+its expected count. All three are averaged over the stations.
 
 ::: {.panel-tabset group="language"}
 
@@ -176,180 +227,250 @@ predictions.shape
 
 ```{r}
 #| label: decompose
-decomposition <- map_dfr(seq_along(knobs), \(j) {
-  average_prediction <- colMeans(predictions[j, , ])
-  tibble(
-    minbucket = knobs[j],
-    `bias²`   = mean((average_prediction - eval$true_mean)^2),
-    variance  = mean(apply(predictions[j, , ], 2, \(v) mean((v - mean(v))^2)))
-  )
-}) |>
-  mutate(`bias² + variance` = `bias²` + variance)
+# bias² and variance at each station, then averaged over the stations
+split_error <- function(predictions) {
+  predictions |>
+    left_join(select(evaluation, station_id, true_mean), by = "station_id") |>
+    group_by(station_id, .add = TRUE) |>
+    summarise(bias_squared = (mean(.pred) - first(true_mean))^2,
+              variance     = mean((.pred - mean(.pred))^2),
+              .groups = "drop_last") |>
+    summarise(across(c(bias_squared, variance), mean))
+}
 
-# Negative binomial with size = 1.5, so the noise variance at a station is mu + mu^2/1.5
-irreducible <- mean(eval$true_mean + eval$true_mean^2 / 1.5)
+noise <- mean((evaluation$abundance - evaluation$true_mean)^2)
 
-decomposition |>
-  mutate(`RMSE against observed counts` = sqrt(`bias² + variance` + irreducible)) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+leaves <- predictions |>
+  distinct(survey, min_n, leaves) |>
+  group_by(min_n) |>
+  summarise(leaves = mean(leaves))
+
+parts <- predictions |>
+  group_by(min_n) |>
+  split_error() |>
+  left_join(leaves, by = "min_n") |>
+  mutate(noise = noise, total = bias_squared + variance + noise) |>
+  relocate(leaves, .after = min_n) |>
+  arrange(desc(min_n))
+
+parts |> mutate(across(-min_n, \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-average_prediction = predictions.mean(axis=1)            # over replicates
-variance_per_station = predictions.var(axis=1)           # population variance
+```{python}
+truth = evaluation.set_index("station_id")["true_mean"]
 
-decomposition = pd.DataFrame({
-    "minbucket": knobs,
-    "bias²": ((average_prediction - true_mean) ** 2).mean(axis=1),
-    "variance": variance_per_station.mean(axis=1),
-})
-decomposition["bias² + variance"] = (decomposition["bias²"]
-                                     + decomposition["variance"])
+# bias² and variance at each station, then averaged over the stations
+def split_error(predictions, by):
+    at_station = (predictions.groupby(by + ["station_id"])["pred"]
+                  .agg(average="mean", variance=lambda p: p.var(ddof=0))
+                  .reset_index())
+    at_station["bias_squared"] = (at_station["average"]
+                                  - at_station["station_id"].map(truth)) ** 2
+    return (at_station.groupby(by, as_index=False)
+            [["bias_squared", "variance"]].mean())
 
-# Negative binomial with size = 1.5, so the noise variance at a station is
-# mu + mu^2 / 1.5.
-irreducible = (true_mean + true_mean ** 2 / 1.5).mean()
+noise = ((evaluation["abundance"] - evaluation["true_mean"]) ** 2).mean()
 
-decomposition["RMSE against observed counts"] = np.sqrt(
-    decomposition["bias² + variance"] + irreducible)
+leaves = predictions.groupby("min_n", as_index=False)["leaves"].mean()
 
-decomposition.round(3)
+parts = (split_error(predictions, ["min_n"])
+         .merge(leaves, on="min_n")
+         .assign(noise=noise,
+                 total=lambda d: d["bias_squared"] + d["variance"] + noise)
+         [["min_n", "leaves", "bias_squared", "variance", "noise", "total"]]
+         .sort_values("min_n", ascending=False)
+         .reset_index(drop=True))
+
+parts.round(2)
 ```
 
 :::
 
 ```{r}
-#| label: fig-decomposition
-#| fig-cap: "Bias², variance and their sum against tree flexibility, from 200 replicate training sets. Complexity increases to the right. Bias² falls by 42% and then stops; variance rises by a factor of nearly four hundred and does not stop. Their sum is the familiar U, with its minimum at minbucket = 30. The dashed line is the irreducible noise, which is larger than everything above it."
-#| fig-alt: "A line chart with minbucket on a reversed logarithmic horizontal axis running from 120 on the left to 1 on the right, labelled as increasing complexity, and squared error from zero to about 25 on the vertical axis. A falling curve labelled bias squared starts at 12.6, declines to 7.3 near minbucket 4 and ticks up slightly to 7.9. A rising curve labelled variance starts at almost zero and climbs, steeply at the right-hand end, to 17.1. Their sum forms a shallow U with a minimum of 10.5 at minbucket 30, rising to 25.0 at the right. A dashed horizontal line at 22.7 marks the irreducible noise, above the sum everywhere except at the extreme right."
-#| fig-width: 7
-#| fig-height: 4.8
-decomposition |>
-  pivot_longer(-minbucket, names_to = "component", values_to = "value") |>
-  # Complexity rises as minbucket falls, so plot on a reversed log scale.
-  mutate(complexity = -log10(minbucket)) |>
-  ggplot(aes(complexity, value, colour = component)) +
-  geom_hline(yintercept = irreducible, linetype = "dashed",
-             colour = ml_palette[["grey"]]) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  annotate("text", x = -log10(14), y = irreducible + 1.2, size = 3.4,
-           colour = ml_palette[["grey"]],
-           label = "irreducible noise: no model reaches below this") +
-  scale_x_continuous(breaks = -log10(knobs), labels = knobs) +
-  labs(x = "minbucket: more flexible to the right",
-       y = "Squared error (individuals²)", colour = NULL,
-       title = "Where the U-shaped curve comes from")
+#| label: parts-numbers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+in_words <- function(n) {
+  if (n > 10) return(as.character(n))
+  c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
+}
+parts <- mutate(parts, model_error = bias_squared + variance)
+row_at <- function(n) filter(parts, min_n == n)
+stiff <- row_at(max(sizes))
+loose <- row_at(min(sizes))
+lowest_bias <- slice_min(parts, bias_squared)
+best <- slice_min(parts, model_error)
+noise_share <- round(100 * noise / best$total)
 ```
 
-## Reading the decomposition
+::: {.panel-tabset group="language"}
 
-**Bias falls, then stops.** From 12.6 at the most rigid setting to 7.3 at `minbucket = 4`, and
-no further. The remaining 7.3 is structural: these six predictors, fitted by greedy splitting on
-200 stations, cannot reproduce the true surface however finely they are cut. More flexibility
-does not buy it, and the small rise at the last two settings is discussed below.
+## R
 
-**Variance rises without limit.** From 0.05 to 17.1, a factor of nearly four hundred, and
-the rise steepens. At `minbucket = 1` the variance alone is twice the bias²: two surveys of the
-same shelf would produce predictions differing by more than the model's systematic error.
+```{r}
+#| label: fig-parts
+#| fig-cap: "Bias², variance and their sum against the number of leaves in the tree, from trees fitted to 100 replicate surveys and judged at the same evaluation stations. The dashed line is the noise, which every model carries on top of the other two."
+#| fig-alt: !expr glue::glue("Three lines of squared error against the number of leaves on a logarithmic axis. The bias squared line starts at {f2(stiff$bias_squared)} for the most rigid trees, falls to about {f2(lowest_bias$bias_squared)}, then levels off. The variance line starts at {f2(stiff$variance)} and climbs ever faster to {f2(loose$variance)} for the most flexible trees. Their sum is U-shaped, lowest at {f2(best$model_error)} with about {round(best$leaves)} leaves. A dashed line at {f2(noise)} marks the noise, above the sum everywhere except at the flexible end.")
+#| fig-width: 7
+#| fig-height: 4.6
+parts |>
+  select(leaves, `Bias²` = bias_squared, Variance = variance,
+         `Bias² + variance` = model_error) |>
+  pivot_longer(-leaves, names_to = "part", values_to = "value") |>
+  mutate(part = fct_inorder(part)) |>
+  ggplot(aes(leaves, value, colour = part)) +
+  geom_hline(yintercept = noise, linetype = "dashed", colour = ml_palette[["grey"]]) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  annotate("text", x = min(parts$leaves), y = noise + 0.8, hjust = 0, size = 3.4,
+           colour = ml_palette[["grey"]], label = "noise: the same for every model") +
+  scale_colour_manual(values = unname(ml_palette[c("blue", "vermilion", "green")])) +
+  scale_x_log10() +
+  expand_limits(y = 0) +
+  labs(x = "Leaves in the tree (log scale)", y = "Squared error (individuals²)",
+       colour = NULL, title = "Bias falls and stops; variance keeps rising")
+```
 
-**Their sum is the U.** Minimum 10.4 at `minbucket = 30`, which is both where
-[the earlier sweep](underfitting-and-overfitting.qmd) put it and where it should be: the optimum
-is the point where one more unit of flexibility buys less bias than it costs in variance.
-
-**And all three are dominated by the floor.** The irreducible variance here is **22.7**, against
-a best-case bias² + variance of 10.4. Converting to the scale of the response: a model that knew
-the truth exactly would still score an RMSE of 4.76 against observed counts, and the best tree
-scores 5.76. **More than two-thirds of the squared error in the best model is noise no method
-can remove.**
-
-That reframes the whole exercise. The gap between a mediocre model and a good one on this survey
-is 5.76 against 6.91: real, worth having, and small next to the 4.76 that neither can go below.
-If you have ever wondered why marine habitat models have such unimpressive R² values, this is
-usually the answer, and it is a property of counting animals rather than a failure of analysis.
-
-::: {.callout-note collapse="true"}
-## The slight rise in bias² at the flexible end
-
-In the textbook decomposition, bias should keep falling as flexibility grows. Here it
-rises from 7.34 to 7.90 over the last two settings, and the cause is a real limitation of
-measuring bias this way rather than an error.
-
-The replicate training sets are drawn from one pool of 360 stations, so they overlap heavily. A
-tree with one station per leaf returns that station's *observed* count, noise included, and the
-same stations recur across replicates, so averaging does not cancel it. The measured "average
-model" therefore keeps some of the pool's noise, which registers as bias.
-
-With genuinely independent surveys it would fall away. It is worth knowing about because
-resampling from a single dataset is the only option in practice, and this is one of the places
-that approximation shows.
 :::
 
-### The families on this axis
+### Bias falling and variance rising make the U
 
-| Model | Bias | Variance | Typical failure |
-| --- | --- | --- | --- |
-| Linear regression | High if the truth curves | Low | Confidently wrong in the same direction every time |
-| Polynomial, high degree | Low | High | Wild between data points |
-| Single deep tree | Low | Very high | A different tree from every survey |
-| Random forest | Low | **Reduced by averaging** | Over-smooths sharp thresholds |
-| Boosting | Very low | Grows with rounds | Excellent then suddenly not |
-| Ridge / lasso | Raised deliberately | Lowered deliberately | Real effects shrunk towards zero |
+**Bias falls, then stops.** The most rigid trees, with about
+`r in_words(round(stiff$leaves))` leaves, have a bias² of `r f2(stiff$bias_squared)`.
+Bigger trees bring it down to about `r f2(lowest_bias$bias_squared)` by about `r round(lowest_bias$leaves)` leaves, and no further.
+What remains is a shape that trees on these inputs cannot reach, however finely they cut.
+It even edges back up at the flexible end, to `r f2(loose$bias_squared)`, but only because
+the replicate surveys share sites: a tree with tiny leaves copies its own stations' counts,
+and the luck in those counts survives the averaging and is counted as bias.
 
-The middle two rows are the important ones. A random forest does not reduce bias relative
-to a single tree, because the trees are the same kind of object. It reduces *variance*, by
-averaging models whose errors are partly independent, which is why the forest in [section
-3](../03-supervised-learning/trees-forests-boosting.qmd) beat a single grown-out tree
-while sharing its flexibility. And ridge does the reverse of what you might expect: it
-accepts extra bias on purpose, because the variance it saves is worth more. That trade is
-exactly what [the λ curve](../04-how-algorithms-learn/map-and-priors.qmd) showed.
+**Variance keeps rising.** It grows from `r f2(stiff$variance)` to `r f2(loose$variance)`,
+about `r in_words(round(loose$variance / stiff$variance))` times as much, and faster at
+each step. The most flexible trees differ so much from survey to survey that their
+variance is about `r in_words(round(loose$variance / loose$bias_squared))` times their bias². Shared sites make the replicate surveys more alike than
+truly separate surveys would be, so the real variance is, if anything, larger.
 
-## Limits of this decomposition
+**Their sum is the U-shaped error curve.** Bias² plus variance is lowest, at `r f2(best$model_error)`, for a
+node size of `r best$min_n`, about `r in_words(round(best$leaves))` leaves. To the left, bias costs
+more than variance saves; to the right, the reverse.
 
-**You cannot compute this on real data.** Every number above depends on `true_mean`, which
-exists only because the survey is simulated. In practice bias and variance are not separately
-observable; you see their sum through held-out error. The decomposition is a way of *thinking*
-about that sum, not a diagnostic you can run.
+**For the best tree, the noise is the largest part.** The noise is `r f2(noise)`, about
+`r in_words(round(noise / best$model_error))` times the bias² and variance of the best
+tree, and `r noise_share`% of its whole error. A model with no bias and no
+variance at all would still have an RMSE of `r f2(sqrt(noise))`. That is why the best tree
+on [Underfitting and overfitting](underfitting-and-overfitting.qmd) beat predicting the average by so
+little: most of what is left is chance in the counts, which no model removes.
 
-**Variance is measurable, though.** The part you can estimate without knowing the truth is the
-spread of predictions across resampled fits: bootstrap the training set, refit, and look at how
-much the predictions move. That is a genuine measurement, and it is what
-[section 7](../07-validation/index.qmd) uses for stability.
+No real study can draw this chart, because no real survey knows its expected counts. In
+practice only the sum shows, as the error on new sites of the last three pages. The
+variance alone can still be seen: refit the model on resampled data and watch how much
+its predictions move.
 
-**The trade-off is not always a trade.** Random forests and boosting reduce variance without
-paying in bias, so they improve on both terms at once. The phrase "bias–variance trade-off"
-describes what happens along *one model's* complexity knob, not what happens when you change
-method.
+### Averaging trees cuts the variance
 
-**The floor moves with the question.** The irreducible 22.7 is specific to predicting a single
-station's count. Predict the *mean* count over a region, or presence rather than abundance, and
-the noise floor drops sharply, because averaging cancels what a single draw cannot. If your
-model's error is mostly irreducible, changing the question is often more productive than
-changing the model.
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built a
+forest by averaging many trees. The same decomposition shows what the averaging does. Here
+a forest whose trees have a node size of 5 is fitted to the same 100 replicate surveys and
+set beside a single tree with the same node size.
 
-::: {.callout-tip}
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: forest
+forest_model <- rand_forest(mode = "regression", min_n = 5) |>
+  set_engine("ranger", seed = 123)
+
+forest_predictions <- imap(surveys$splits, \(s, i) {
+  fitted <- workflow(tree_recipe, forest_model) |> fit(analysis(s))
+  tibble(survey = i, station_id = evaluation$station_id,
+         .pred = predict(fitted, evaluation)$.pred)
+}) |>
+  list_rbind()
+
+tree_and_forest <- bind_rows(
+  `single tree` = filter(predictions, min_n == 5),
+  `random forest` = forest_predictions,
+  .id = "model"
+) |>
+  group_by(model) |>
+  split_error()
+
+tree_and_forest |> mutate(across(-model, \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+rows = []
+for i, survey_rows in enumerate(surveys):
+    one_survey = pool.iloc[survey_rows]
+    # max_features="sqrt" draws a few inputs at each question, as ranger does.
+    forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                                   min_samples_split=5, random_state=123,
+                                   n_jobs=-1)
+    fitted = (Pipeline([("recipe", tree_recipe), ("model", forest)])
+              .fit(one_survey[predictors], one_survey["abundance"]))
+    rows.append(pd.DataFrame({
+        "survey": i,
+        "station_id": evaluation["station_id"].to_numpy(),
+        "pred": fitted.predict(evaluation[predictors]),
+    }))
+
+tree_and_forest = pd.concat([
+    predictions.query("min_n == 5").assign(model="single tree"),
+    pd.concat(rows).assign(model="random forest"),
+])
+
+split_error(tree_and_forest, ["model"]).round(2)
+```
+
+:::
+
+```{r}
+#| label: forest-numbers
+#| include: false
+one_tree <- filter(tree_and_forest, model == "single tree")
+forest <- filter(tree_and_forest, model == "random forest")
+```
+
+The forest's bias² is `r f2(forest$bias_squared)`, against `r f2(one_tree$bias_squared)`
+for the single tree: its trees are the same kind of tree, so averaging them leaves the
+bias where it was. Its variance is `r f2(forest$variance)` against
+`r f2(one_tree$variance)`: the single tree's is about
+`r in_words(round(one_tree$variance / forest$variance))` times as large. Each tree
+still follows its own stations, but the trees follow different ones, and their mistakes
+partly cancel in the average. Adding trees to a forest therefore cuts the variance without
+adding bias, which is why
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) found that
+more trees did no harm.
+
+[Regularisation](regularisation.qmd) goes the other way: it adds a little bias on purpose,
+to cut more variance than it costs.
+
 ## Key points
 
-- Expected error splits into **bias²** (systematically wrong), **variance** (unstable across
-  surveys) and **irreducible noise** (not a function of the environment).
-- More flexibility lowers bias and raises variance. The U-curve's minimum is where the exchange
-  stops being worthwhile: here, `minbucket = 30`.
-- Measured on this survey: bias² fell from 12.6 to 7.3; variance rose from 0.05 to 17.1, a
-  factor of nearly four hundred.
-- The irreducible noise was **22.7**, more than double the best achievable bias² + variance.
-  Most of what looks like model error is not.
-- Ensembles cut variance without adding bias; regularisation adds bias deliberately to cut
-  variance. They are moves in different directions on the same picture.
-
+::: {.key-points}
+- Over many surveys, the squared error at a new station splits into **bias²**, the average
+  model's systematic miss; **variance**, how much the model changes from survey to
+  survey; and **noise**, how far a count falls from its expected count.
+- More flexibility lowers the bias and raises the variance. The lowest error on new data
+  lies where one more step of flexibility would cost more in variance than it saves in
+  bias.
+- On the survey, the noise was larger than the bias² and variance of the best tree put
+  together. Most of the error in a count model can be chance that no model removes.
+- A random forest keeps the bias of its trees and cuts their variance by averaging them.
+- The split needs the expected counts, which no real survey has. In practice only the
+  total shows, as the error on new data.
 :::
 
 ## Try it yourself
 
-1. Replace the tree with `lm(abundance ~ depth_m)` and add it to the decomposition as a single
-   point. Where does it land, and is a straight line through a hump-shaped response high-bias,
-   high-variance, or both?
-2. Raise the replicate training-set size from 200 to 340. Predict first what should happen to
-   the variance curve and to the position of the minimum, then check. Which of the two moved
-   more?
+1. Give each replicate survey three quarters of the pool's sites instead of half, by
+   setting `prop = 0.75` in `group_mc_cv()`. Before running it, decide which part should
+   change most, bias² or variance, and whether the best tree should get bigger or smaller.
+2. Add a linear regression to the comparison of the tree and the forest: in the forest
+   code, replace `forest_model` with `linear_reg()`. Is a straight-line model's error
+   mostly bias or mostly variance?

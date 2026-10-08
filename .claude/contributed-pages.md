@@ -7,15 +7,25 @@ short paper, not as homework to be marked.
 
 ## Purpose
 
-These pages are the payoff of the course: they show the same tidymodels patterns
-applied to real, messy, domain-specific data. They are also the part readers arrive
-at from outside, so they carry the site's credibility.
+These pages are the payoff of the course: they show the same patterns the course
+teaches applied to real, messy, domain-specific data. They are also the part readers
+arrive at from outside, so they carry the site's credibility.
 
-Contributed pages are **R-only**. The site's build executes R and nothing else,
-and the Python tabs in sections 2, 3, 5, 7, 8 and 10 are displayed, never run, so a
-page whose results come from Python has no way to produce them here. If a
-contributor works in Python, that is a conversation to have before the page is
-written, not a tab to bolt on afterwards.
+A contributed page runs in **R or in Python, one language per page**. R is the site
+default and needs nothing declared. A Python page sets `engine: jupyter` in its front
+matter, which makes Quarto execute its ```` ```{python} ```` chunks through the
+jupyter engine, and uses `python/mlbasic_theme.py` for the house plotting style, as
+an R page uses `R/theme.R`.
+
+A Python contributed page runs under Jupyter, one language per page. The course pages'
+Python tabs run through knitr and `reticulate` instead, beside the R. A contributed
+page does not carry tabsets at all: it is one analysis in one language, not the same step shown
+twice.
+
+Rendering a Python page locally needs `jupyter` and `matplotlib` on top of
+`python/requirements.txt`. Nothing changes for CI, because `_freeze/` is committed,
+so the author must commit the freeze their render produces. A page whose freeze is
+missing forces a Python environment onto every later build.
 
 ## Where they live
 
@@ -23,7 +33,8 @@ written, not a tab to bolt on afterwards.
 contributed/
   index.qmd                       listing page
   writing-a-contributed-page.qmd  the reader-facing version of this doc
-  _template.qmd                   starting point for a new contribution
+  _template-r.qmd                 starting point, analysis in R
+  _template-python.qmd            starting point, analysis in Python
   2026-<author-slug>-<topic>.qmd  e.g. 2026-nakamura-otolith-ageing.qmd
   img/                            figures, prefixed with the author slug
 ```

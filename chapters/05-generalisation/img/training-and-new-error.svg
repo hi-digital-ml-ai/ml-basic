@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 610" width="100%" role="img" aria-label="Two models fitted to the same nine training points. A rigid model, a straight line, misses the training points and the new points by about as much, so its training error and its error on new data are about equal. A flexible model bends through every training point, so its training error is zero, but it misses the new points by more than the straight line does. A note says the gap between the two errors grows with flexibility and shrinks with more data.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Training error and error on new data</text>
+<rect class="box" x="0" y="48" width="455" height="430" rx="8"/><rect x="0" y="48" width="455" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">A rigid model</text>
+<text class="lab" x="22" y="114" fill="#0072B2">A STRAIGHT LINE</text>
+<path class="ax" d="M46 140 V300 H425"/>
+<text class="sm" x="425" y="320" text-anchor="end">input</text>
+<text class="sm" x="34" y="220.0" text-anchor="middle" transform="rotate(-90 34 220.0)">outcome</text>
+<path d="M54.0 265.3 L417.0 169.3" fill="none" stroke="#0072B2" stroke-width="3"/>
+<circle cx="72.2" cy="237.6" r="6" fill="#1f2933"/>
+<circle cx="113.0" cy="274.8" r="6" fill="#1f2933"/>
+<circle cx="153.8" cy="222.4" r="6" fill="#1f2933"/>
+<circle cx="194.7" cy="258.0" r="6" fill="#1f2933"/>
+<circle cx="235.5" cy="196.0" r="6" fill="#1f2933"/>
+<circle cx="276.3" cy="228.4" r="6" fill="#1f2933"/>
+<circle cx="317.2" cy="171.2" r="6" fill="#1f2933"/>
+<circle cx="358.0" cy="211.6" r="6" fill="#1f2933"/>
+<circle cx="398.8" cy="156.0" r="6" fill="#1f2933"/>
+<circle cx="126.6" cy="226.4" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="206.5" cy="203.7" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="290.0" cy="181.6" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="344.4" cy="168.8" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<text class="sm" x="190" y="357" text-anchor="end">training error</text>
+<rect x="202" y="344" width="102.0" height="16" fill="#0072B2" opacity="0.55"/>
+<text class="sm" x="190" y="389" text-anchor="end">error on new data</text>
+<rect x="202" y="376" width="89.9" height="16" fill="#0072B2" opacity="1"/>
+<text class="body" x="22" y="432">Misses the training points, and new</text>
+<text class="body" x="22" y="456">points by about as much.</text>
+<rect class="box" x="485" y="48" width="455" height="430" rx="8"/><rect x="485" y="48" width="455" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="507" y="90">A flexible model</text>
+<text class="lab" x="507" y="114" fill="#D55E00">BENDS THROUGH EVERY POINT</text>
+<path class="ax" d="M531 140 V300 H910"/>
+<text class="sm" x="910" y="320" text-anchor="end">input</text>
+<text class="sm" x="519" y="220.0" text-anchor="middle" transform="rotate(-90 519 220.0)">outcome</text>
+<path d="M539.0 237.6 L557.1 237.6 L598.0 274.8 L638.8 222.4 L679.7 258.0 L720.5 196.0 L761.3 228.4 L802.2 171.2 L843.0 211.6 L883.8 156.0 L902.0 156.0" fill="none" stroke="#D55E00" stroke-width="3"/>
+<circle cx="557.1" cy="237.6" r="6" fill="#1f2933"/>
+<circle cx="598.0" cy="274.8" r="6" fill="#1f2933"/>
+<circle cx="638.8" cy="222.4" r="6" fill="#1f2933"/>
+<circle cx="679.7" cy="258.0" r="6" fill="#1f2933"/>
+<circle cx="720.5" cy="196.0" r="6" fill="#1f2933"/>
+<circle cx="761.3" cy="228.4" r="6" fill="#1f2933"/>
+<circle cx="802.2" cy="171.2" r="6" fill="#1f2933"/>
+<circle cx="843.0" cy="211.6" r="6" fill="#1f2933"/>
+<circle cx="883.8" cy="156.0" r="6" fill="#1f2933"/>
+<circle cx="611.6" cy="226.4" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="691.5" cy="203.7" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="775.0" cy="181.6" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<circle cx="829.4" cy="168.8" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+<text class="sm" x="675" y="357" text-anchor="end">training error</text>
+<rect x="687" y="344" width="2.0" height="16" fill="#D55E00" opacity="0.55"/>
+<text class="sm" x="675" y="389" text-anchor="end">error on new data</text>
+<rect x="687" y="376" width="136.8" height="16" fill="#D55E00" opacity="1"/>
+<text class="body" x="507" y="432">Passes through every training point,</text>
+<text class="body" x="507" y="456">and misses new points by more.</text>
+<circle cx="300" cy="512" r="6" fill="#1f2933"/><text class="sm" x="314" y="517">training data</text>
+<circle cx="470" cy="512" r="6" fill="#ffffff" stroke="#1f2933" stroke-width="2"/><text class="sm" x="484" y="517">new data</text>
+<text class="note" x="470" y="560" text-anchor="middle">The gap between the two errors grows with flexibility and shrinks with more data.</text>
+</svg>

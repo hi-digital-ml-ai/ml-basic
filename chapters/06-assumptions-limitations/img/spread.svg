@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="What the distribution decides. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway. Log counts aim below the average: a histogram with a long right tail, a dashed line at the median marked log counts aim here and a solid line at the average marked a total needs this. Intervals follow the errors: the fan-shaped scatter with a grey band of one width reaching below zero, and a blue band from quantiles that starts narrow above zero and widens to the right. A note says the distribution decides what a prediction means and how sure it can be.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">What the distribution decides</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Skewed errors</text>
+<text class="lab" x="22" y="114" fill="#0072B2">WIDEN AS PREDICTIONS GROW</text>
+<text class="body" x="22" y="348">Most models predict well</text>
+<text class="body" x="22" y="372">anyway; the checks say</text>
+<text class="body" x="22" y="396">where to take care.</text>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Log counts</text>
+<text class="lab" x="345" y="114" fill="#D55E00">AIM BELOW THE AVERAGE</text>
+<text class="body" x="345" y="348">Squared error on log counts</text>
+<text class="body" x="345" y="372">aims at the typical catch,</text>
+<text class="body" x="345" y="396">so totals come out short.</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Intervals</text>
+<text class="lab" x="668" y="114" fill="#009E73">FOLLOW THE ERRORS</text>
+<text class="body" x="668" y="348">A Normal band has one width;</text>
+<text class="body" x="668" y="372">quantiles widen where the</text>
+<text class="body" x="668" y="396">catches do.</text>
+<path class="ax" d="M34 150 V295 H266"/>
+<line x1="34" y1="273" x2="266" y2="273" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text class="sm" x="28" y="278" text-anchor="end">0</text>
+<circle cx="42.5" cy="256.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="46.0" cy="252.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="52.9" cy="259.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="57.5" cy="255.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="60.1" cy="258.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="65.1" cy="253.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="71.4" cy="251.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="75.2" cy="255.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="81.8" cy="237.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="85.5" cy="252.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="92.9" cy="224.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="94.5" cy="240.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="98.5" cy="237.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="106.4" cy="235.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="108.2" cy="254.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="113.8" cy="248.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="119.4" cy="235.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="122.5" cy="237.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="129.5" cy="245.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="133.8" cy="229.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="137.9" cy="240.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="143.8" cy="203.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="146.4" cy="245.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="154.1" cy="237.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="158.2" cy="237.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="160.1" cy="174.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="166.2" cy="226.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="171.3" cy="233.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="173.9" cy="236.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="181.2" cy="243.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="187.3" cy="229.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="190.8" cy="187.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="195.4" cy="246.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="201.9" cy="204.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="204.4" cy="219.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="210.2" cy="219.6" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="214.7" cy="165.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="217.8" cy="214.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="223.0" cy="213.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="228.1" cy="213.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="231.5" cy="201.6" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="239.0" cy="200.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="240.8" cy="205.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="249.0" cy="174.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="250.0" cy="226.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="258.5" cy="188.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<line x1="34.0" y1="263.9" x2="266.0" y2="199.2" stroke="#0072B2" stroke-width="2.6"/>
+<text class="sm" x="266" y="315" text-anchor="end">prediction</text>
+<path class="ax" d="M357 150 V295 H589"/>
+<rect x="363" y="177" width="13" height="118" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="378" y="199" width="13" height="96" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="393" y="225" width="13" height="70" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="408" y="245" width="13" height="50" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="423" y="260" width="13" height="35" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="438" y="270" width="13" height="25" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="453" y="278" width="13" height="17" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="468" y="283" width="13" height="12" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="483" y="287" width="13" height="8" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="498" y="289" width="13" height="6" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="513" y="291" width="13" height="4" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="528" y="292" width="13" height="3" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="543" y="293" width="13" height="2" fill="#8a949c" fill-opacity="0.6"/>
+<rect x="558" y="293" width="13" height="2" fill="#8a949c" fill-opacity="0.6"/>
+<line x1="393.0" y1="152" x2="393.0" y2="295" stroke="#D55E00" stroke-width="2.6" stroke-dasharray="6 4"/>
+<line x1="417.0" y1="178" x2="417.0" y2="295" stroke="#0072B2" stroke-width="2.6"/>
+<text class="sm" x="399.0" y="160" fill="#D55E00">log counts aim here</text>
+<text class="sm" x="423.0" y="190" fill="#0072B2">a total needs this</text>
+<text class="sm" x="589" y="315" text-anchor="end">catch</text>
+<rect x="680" y="273" width="232" height="22" fill="#d9dee2" fill-opacity="0.7"/>
+<polygon points="680.0,288.5 912.0,223.8 912.0,174.6 680.0,239.3" fill="none" stroke="#8a949c" stroke-width="1.8" stroke-dasharray="6 4"/>
+<polygon points="680.0,256.2 685.8,253.4 691.6,250.6 697.4,247.8 703.2,245.0 709.0,242.2 714.8,239.5 720.6,236.7 726.4,233.9 732.2,231.1 738.0,228.3 743.8,225.5 749.6,222.8 755.4,220.0 761.2,217.2 767.0,214.4 772.8,211.6 778.6,208.8 784.4,206.1 790.2,203.3 796.0,200.5 801.8,197.7 807.6,194.9 813.4,192.1 819.2,189.4 825.0,186.6 830.8,183.8 836.6,181.0 842.4,178.2 848.2,175.4 854.0,172.7 859.8,169.9 865.6,167.1 871.4,164.3 877.2,161.5 883.0,158.7 888.8,156.0 894.6,153.2 900.4,150.4 906.2,147.6 912.0,144.8 912.0,218.6 906.2,219.9 900.4,221.1 894.6,222.3 888.8,223.5 883.0,224.8 877.2,226.0 871.4,227.2 865.6,228.5 859.8,229.7 854.0,230.9 848.2,232.2 842.4,233.4 836.6,234.6 830.8,235.8 825.0,237.1 819.2,238.3 813.4,239.5 807.6,240.8 801.8,242.0 796.0,243.2 790.2,244.5 784.4,245.7 778.6,246.9 772.8,248.1 767.0,249.4 761.2,250.6 755.4,251.8 749.6,253.1 743.8,254.3 738.0,255.5 732.2,256.8 726.4,258.0 720.6,259.2 714.8,260.4 709.0,261.7 703.2,262.9 697.4,264.1 691.6,265.4 685.8,266.6 680.0,267.8" fill="#0072B2" fill-opacity="0.22"/>
+<path class="ax" d="M680 150 V295 H912"/>
+<line x1="680" y1="273" x2="912" y2="273" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text class="sm" x="686" y="290">below zero</text>
+<circle cx="688.5" cy="256.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="692.0" cy="252.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="698.9" cy="259.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="703.5" cy="255.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="706.1" cy="258.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="711.1" cy="253.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="717.4" cy="251.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="721.2" cy="255.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="727.8" cy="237.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="731.5" cy="252.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="738.9" cy="224.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="740.5" cy="240.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="744.5" cy="237.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="752.4" cy="235.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="754.2" cy="254.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="759.8" cy="248.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="765.4" cy="235.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="768.5" cy="237.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="775.5" cy="245.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="779.8" cy="229.7" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="783.9" cy="240.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="789.8" cy="203.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="792.4" cy="245.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="800.1" cy="237.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="804.2" cy="237.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="806.1" cy="174.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="812.2" cy="226.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="817.3" cy="233.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="819.9" cy="236.1" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="827.2" cy="243.5" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="833.3" cy="229.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="836.8" cy="187.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="841.4" cy="246.4" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="847.9" cy="204.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="850.4" cy="219.2" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="856.2" cy="219.6" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="860.7" cy="165.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="863.8" cy="214.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="869.0" cy="213.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="874.1" cy="213.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="877.5" cy="201.6" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="885.0" cy="200.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="886.8" cy="205.8" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="895.0" cy="174.0" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="896.0" cy="226.3" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<circle cx="904.5" cy="188.9" r="3.4" fill="#55606a" fill-opacity="0.6"/>
+<text class="sm" x="912" y="315" text-anchor="end">prediction</text>
+<text class="sm" x="819.2" y="181.4" text-anchor="end" fill="#0072B2">quantiles</text>
+<text class="sm" x="907.4" y="245.1" text-anchor="end" fill="#55606a">Normal</text>
+<text class="note" x="470" y="452" text-anchor="middle">The distribution decides what a prediction means and how sure it can be.</text>
+</svg>

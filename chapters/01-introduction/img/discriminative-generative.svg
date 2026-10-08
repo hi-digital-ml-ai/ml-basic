@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 552" width="100%" role="img" aria-label="Two panels with the same two groups of points. On the left a discriminative model draws a boundary between them; on the right a generative model draws an outline around each group and adds a new example.">
+<defs><marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker><style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .axis { stroke: #8a949c; stroke-width: 1.2; }
+      .alab { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; }
+      .yes  { fill: #0072B2; }
+      .no   { fill: #E69F00; }
+      .grey { fill: #5A5A5A; opacity: 0.75; }
+      .cell { font: 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .ans  { font: bold 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #D55E00; }
+    </style></defs>
+<text class="title" x="470" y="26" text-anchor="middle">Two things a model can learn</text>
+<rect class="box" x="8" y="48" width="456" height="432" rx="8"/>
+<rect x="8" y="48" width="456" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="26" y="86">Discriminative</text>
+<text class="lab" x="26" y="110">LEARNS THE BOUNDARY</text>
+<text class="body" x="26" y="440">It draws the line between the groups,</text>
+<text class="body" x="26" y="462">and nothing else.</text>
+<rect class="box" x="476" y="48" width="456" height="432" rx="8"/>
+<rect x="476" y="48" width="456" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="494" y="86">Generative</text>
+<text class="lab" x="494" y="110">LEARNS EACH GROUP</text>
+<text class="body" x="494" y="440">It describes each group, so it can also</text>
+<text class="body" x="494" y="462">generate new, plausible examples.</text>
+<g transform="translate(0,78)">
+<line class="axis" x1="58" y1="296" x2="438" y2="296"/><line class="axis" x1="58" y1="56" x2="58" y2="296"/><text class="alab" x="248.0" y="314" text-anchor="middle">Temperature</text><text class="alab" transform="translate(48,176.0) rotate(-90)" text-anchor="middle">Depth</text>
+<path d="M 208 64 C 243 146, 273 206, 308 288" fill="none" stroke="#1f2933" stroke-width="2.2" stroke-dasharray="7 5"/>
+<circle class="yes" cx="181.3" cy="207.3" r="5"/><circle class="yes" cx="182.1" cy="189.1" r="5"/><circle class="yes" cx="163.8" cy="191.3" r="5"/><circle class="yes" cx="216.9" cy="205.3" r="5"/><circle class="yes" cx="215.0" cy="201.5" r="5"/><circle class="yes" cx="198.3" cy="200.1" r="5"/><circle class="yes" cx="144.7" cy="214.8" r="5"/><circle class="yes" cx="201.2" cy="207.0" r="5"/><circle class="yes" cx="144.0" cy="157.6" r="5"/><circle class="yes" cx="164.9" cy="185.7" r="5"/><circle class="yes" cx="195.9" cy="195.0" r="5"/><circle class="yes" cx="201.5" cy="181.9" r="5"/><circle class="yes" cx="196.0" cy="204.7" r="5"/><circle class="yes" cx="170.8" cy="233.8" r="5"/><circle class="yes" cx="202.5" cy="222.3" r="5"/><circle class="yes" cx="171.9" cy="179.7" r="5"/><circle class="yes" cx="179.1" cy="193.7" r="5"/><circle class="yes" cx="204.4" cy="201.5" r="5"/><circle class="yes" cx="176.4" cy="174.9" r="5"/><circle class="yes" cx="174.5" cy="222.9" r="5"/><circle class="yes" cx="167.0" cy="201.4" r="5"/><circle class="yes" cx="199.1" cy="163.2" r="5"/>
+<path class="no" d="M 319.3 173.7 L 325.3 184.5 L 313.3 184.5 Z"/><path class="no" d="M 265.6 137.9 L 271.6 148.7 L 259.6 148.7 Z"/><path class="no" d="M 315.2 127.0 L 321.2 137.8 L 309.2 137.8 Z"/><path class="no" d="M 330.9 143.6 L 336.9 154.4 L 324.9 154.4 Z"/><path class="no" d="M 279.9 163.2 L 285.9 174.0 L 273.9 174.0 Z"/><path class="no" d="M 335.4 165.8 L 341.4 176.6 L 329.4 176.6 Z"/><path class="no" d="M 355.5 153.0 L 361.5 163.8 L 349.5 163.8 Z"/><path class="no" d="M 321.1 116.4 L 327.1 127.2 L 315.1 127.2 Z"/><path class="no" d="M 334.0 131.5 L 340.0 142.3 L 328.0 142.3 Z"/><path class="no" d="M 306.2 117.2 L 312.2 128.0 L 300.2 128.0 Z"/><path class="no" d="M 292.8 133.3 L 298.8 144.1 L 286.8 144.1 Z"/><path class="no" d="M 351.5 100.3 L 357.5 111.1 L 345.5 111.1 Z"/><path class="no" d="M 280.1 150.3 L 286.1 161.1 L 274.1 161.1 Z"/><path class="no" d="M 355.5 157.7 L 361.5 168.5 L 349.5 168.5 Z"/><path class="no" d="M 268.6 89.6 L 274.6 100.4 L 262.6 100.4 Z"/><path class="no" d="M 327.3 128.8 L 333.3 139.6 L 321.3 139.6 Z"/><path class="no" d="M 288.9 166.5 L 294.9 177.3 L 282.9 177.3 Z"/><path class="no" d="M 346.6 148.5 L 352.6 159.3 L 340.6 159.3 Z"/><path class="no" d="M 324.4 154.6 L 330.4 165.4 L 318.4 165.4 Z"/><path class="no" d="M 359.4 158.6 L 365.4 169.4 L 353.4 169.4 Z"/>
+<line class="axis" x1="528" y1="296" x2="908" y2="296"/><line class="axis" x1="528" y1="56" x2="528" y2="296"/><text class="alab" x="718.0" y="314" text-anchor="middle">Temperature</text><text class="alab" transform="translate(518,176.0) rotate(-90)" text-anchor="middle">Depth</text>
+<ellipse cx="658" cy="196" rx="62" ry="52" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1.6"/>
+<ellipse cx="788" cy="151" rx="62" ry="52" fill="#E69F00" fill-opacity="0.15" stroke="#E69F00" stroke-width="1.6"/>
+<circle class="yes" cx="651.3" cy="207.3" r="5"/><circle class="yes" cx="652.1" cy="189.1" r="5"/><circle class="yes" cx="633.8" cy="191.3" r="5"/><circle class="yes" cx="686.9" cy="205.3" r="5"/><circle class="yes" cx="685.0" cy="201.5" r="5"/><circle class="yes" cx="668.3" cy="200.1" r="5"/><circle class="yes" cx="614.7" cy="214.8" r="5"/><circle class="yes" cx="671.2" cy="207.0" r="5"/><circle class="yes" cx="614.0" cy="157.6" r="5"/><circle class="yes" cx="634.9" cy="185.7" r="5"/><circle class="yes" cx="665.9" cy="195.0" r="5"/><circle class="yes" cx="671.5" cy="181.9" r="5"/><circle class="yes" cx="666.0" cy="204.7" r="5"/><circle class="yes" cx="640.8" cy="233.8" r="5"/><circle class="yes" cx="672.5" cy="222.3" r="5"/><circle class="yes" cx="641.9" cy="179.7" r="5"/><circle class="yes" cx="649.1" cy="193.7" r="5"/><circle class="yes" cx="674.4" cy="201.5" r="5"/><circle class="yes" cx="646.4" cy="174.9" r="5"/><circle class="yes" cx="644.5" cy="222.9" r="5"/><circle class="yes" cx="637.0" cy="201.4" r="5"/><circle class="yes" cx="669.1" cy="163.2" r="5"/>
+<path class="no" d="M 789.3 173.7 L 795.3 184.5 L 783.3 184.5 Z"/><path class="no" d="M 735.6 137.9 L 741.6 148.7 L 729.6 148.7 Z"/><path class="no" d="M 785.2 127.0 L 791.2 137.8 L 779.2 137.8 Z"/><path class="no" d="M 800.9 143.6 L 806.9 154.4 L 794.9 154.4 Z"/><path class="no" d="M 749.9 163.2 L 755.9 174.0 L 743.9 174.0 Z"/><path class="no" d="M 805.4 165.8 L 811.4 176.6 L 799.4 176.6 Z"/><path class="no" d="M 825.5 153.0 L 831.5 163.8 L 819.5 163.8 Z"/><path class="no" d="M 791.1 116.4 L 797.1 127.2 L 785.1 127.2 Z"/><path class="no" d="M 804.0 131.5 L 810.0 142.3 L 798.0 142.3 Z"/><path class="no" d="M 776.2 117.2 L 782.2 128.0 L 770.2 128.0 Z"/><path class="no" d="M 762.8 133.3 L 768.8 144.1 L 756.8 144.1 Z"/><path class="no" d="M 821.5 100.3 L 827.5 111.1 L 815.5 111.1 Z"/><path class="no" d="M 750.1 150.3 L 756.1 161.1 L 744.1 161.1 Z"/><path class="no" d="M 825.5 157.7 L 831.5 168.5 L 819.5 168.5 Z"/><path class="no" d="M 738.6 89.6 L 744.6 100.4 L 732.6 100.4 Z"/><path class="no" d="M 797.3 128.8 L 803.3 139.6 L 791.3 139.6 Z"/><path class="no" d="M 758.9 166.5 L 764.9 177.3 L 752.9 177.3 Z"/><path class="no" d="M 816.6 148.5 L 822.6 159.3 L 810.6 159.3 Z"/><path class="no" d="M 794.4 154.6 L 800.4 165.4 L 788.4 165.4 Z"/><path class="no" d="M 829.4 158.6 L 835.4 169.4 L 823.4 169.4 Z"/>
+<circle cx="633" cy="174" r="7" fill="#ffffff" stroke="#0072B2" stroke-width="2.4"/>
+<line x1="603" y1="114" x2="627" y2="164" stroke="#8a949c" stroke-width="1.3" marker-end="url(#arr1)"/>
+<text class="note" x="603" y="108" text-anchor="middle">a new example</text>
+</g>
+<g transform="translate(0,102)"><circle class="yes" cx="330" cy="404" r="6"/><text class="body" x="344" y="410">species found</text><path class="no" d="M 490 397 L 497 410 L 483 410 Z"/><text class="body" x="505" y="410">species not found</text></g>
+</svg>

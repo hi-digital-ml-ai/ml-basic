@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 702" width="100%" role="img" aria-label="Two definitions of R², each shown on eight predictions plotted against the observed values, with a dashed line where predicted equals observed. Left, right pattern, too low: the points lie on a straight line of half the slope, below the dashed line; squared correlation 1.00, R² 0.17. Right, right level, scattered: the points sit above and below the dashed line; squared correlation 0.73, R² 0.70. Squared correlation asks how closely the points follow some straight line; R² asks how close they come to the dashed line, one minus the squared misses divided by the squared spread of the observed values around their average.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .num  { font: bold 20px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Two definitions of R²</text>
+<rect class="box" x="0" y="56" width="450" height="512" rx="8"/><rect x="0" y="56" width="450" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="22" y="96">Right pattern, too low</text>
+<line x1="100" y1="416" x2="390" y2="416" stroke="#8a949c" stroke-width="1.4"/>
+<line x1="100" y1="126" x2="100" y2="416" stroke="#8a949c" stroke-width="1.4"/>
+<text class="lab" x="245.0" y="446" text-anchor="middle">OBSERVED</text>
+<text class="lab" x="82" y="271.0" text-anchor="middle" transform="rotate(-90 82 271.0)">PREDICTED</text>
+<line x1="109.15789473684211" y1="406.8421052631579" x2="380.84210526315786" y2="135.15789473684214" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text class="sm" x="376.84210526315786" y="125.15789473684214" text-anchor="end">predicted = observed</text>
+<line x1="109.15789473684211" y1="396.1578947368421" x2="380.84210526315786" y2="260.3157894736842" stroke="#E69F00" stroke-width="2"/>
+<circle cx="130.5" cy="385.5" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="161.1" cy="370.2" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="191.6" cy="354.9" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="222.1" cy="339.7" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="252.6" cy="324.4" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="283.2" cy="309.2" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="313.7" cy="293.9" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="344.2" cy="278.6" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<text class="body" x="40" y="494">Squared correlation</text><text class="num" x="410" y="494" text-anchor="end">1.00</text>
+<text class="body" x="40" y="530">R²</text><text class="num" x="410" y="530" text-anchor="end">0.17</text>
+<rect class="box" x="510" y="56" width="450" height="512" rx="8"/><rect x="510" y="56" width="450" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="532" y="96">Right level, scattered</text>
+<line x1="610" y1="416" x2="900" y2="416" stroke="#8a949c" stroke-width="1.4"/>
+<line x1="610" y1="126" x2="610" y2="416" stroke="#8a949c" stroke-width="1.4"/>
+<text class="lab" x="755.0" y="446" text-anchor="middle">OBSERVED</text>
+<text class="lab" x="592" y="271.0" text-anchor="middle" transform="rotate(-90 592 271.0)">PREDICTED</text>
+<line x1="619.1578947368421" y1="406.8421052631579" x2="890.8421052631579" y2="135.15789473684214" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="640.5" cy="342.7" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="671.1" cy="391.6" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="701.6" cy="293.9" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="732.1" cy="339.7" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="762.6" cy="223.7" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="793.2" cy="263.4" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="823.7" cy="165.7" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="854.2" cy="211.5" r="7" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<text class="body" x="550" y="494">Squared correlation</text><text class="num" x="920" y="494" text-anchor="end">0.73</text>
+<text class="body" x="550" y="530">R²</text><text class="num" x="920" y="530" text-anchor="end">0.70</text>
+<text class="note" x="470" y="608" text-anchor="middle">Squared correlation asks how closely the points follow some straight line, whatever its slope.</text>
+<text class="note" x="470" y="634" text-anchor="middle">R² asks how close they come to the dashed line: one minus the squared misses,</text>
+<text class="note" x="470" y="660" text-anchor="middle">divided by the squared spread of the observed values around their average.</text>
+</svg>

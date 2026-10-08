@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 490" width="100%" role="img" aria-label="Partial dependence in three steps. Set one input: every row gets the same value of it, and the other inputs keep their own. Predict each row: repeated along the input's range, each row traces a curve, its ICE curve. Average: the average of the curves is the partial dependence. A note says that where the rows' curves differ in shape the average hides it, so look at both.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Partial dependence</text>
+<rect class="box" x="0" y="48" width="294" height="384" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Set one input</text>
+<text class="lab" x="22" y="114" fill="#0072B2">EVERY ROW GETS ONE VALUE</text>
+<text class="body" x="22" y="356">Give every row the same</text>
+<text class="body" x="22" y="380">value of one input. The</text>
+<text class="body" x="22" y="404">others keep their own.</text>
+<rect class="box" x="323" y="48" width="294" height="384" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Predict each row</text>
+<text class="lab" x="345" y="114" fill="#E69F00">ONE ICE CURVE PER ROW</text>
+<text class="body" x="345" y="356">Predict, then move the</text>
+<text class="body" x="345" y="380">value along its range: each</text>
+<text class="body" x="345" y="404">row traces a curve.</text>
+<rect class="box" x="646" y="48" width="294" height="384" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Average</text>
+<text class="lab" x="668" y="114" fill="#009E73">THE PARTIAL DEPENDENCE</text>
+<text class="body" x="668" y="356">The average of the rows&#8217;</text>
+<text class="body" x="668" y="380">curves is the partial</text>
+<text class="body" x="668" y="404">dependence.</text>
+<text class="sm" x="77.0" y="150" text-anchor="middle">A</text>
+<rect x="52" y="160" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1"/>
+<text class="sm" x="77.0" y="176" text-anchor="middle">40</text>
+<rect x="52" y="186" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1"/>
+<text class="sm" x="77.0" y="202" text-anchor="middle">40</text>
+<rect x="52" y="212" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1"/>
+<text class="sm" x="77.0" y="228" text-anchor="middle">40</text>
+<rect x="52" y="238" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1"/>
+<text class="sm" x="77.0" y="254" text-anchor="middle">40</text>
+<rect x="52" y="264" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.12" stroke="#0072B2" stroke-width="1"/>
+<text class="sm" x="77.0" y="280" text-anchor="middle">40</text>
+<text class="sm" x="135.0" y="150" text-anchor="middle">B</text>
+<rect x="110" y="160" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="110" y="186" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.9"/>
+<rect x="110" y="212" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.5"/>
+<rect x="110" y="238" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.75"/>
+<rect x="110" y="264" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.15"/>
+<text class="sm" x="193.0" y="150" text-anchor="middle">C</text>
+<rect x="168" y="160" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.55"/>
+<rect x="168" y="186" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.25"/>
+<rect x="168" y="212" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.8"/>
+<rect x="168" y="238" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.4"/>
+<rect x="168" y="264" width="50" height="22" rx="3" fill="#0072B2" fill-opacity="0.65"/>
+<rect x="47" y="155" width="60" height="136" rx="5" fill="none" stroke="#0072B2" stroke-width="2.4"/>
+<text class="sm" x="77.0" y="312" text-anchor="middle" fill="#0072B2">all set to 40</text>
+<text class="sm" x="164" y="312" text-anchor="middle" fill="#55606a">kept</text>
+<path class="ax" d="M 369 150 V 300 H 585"/>
+<text class="sm" x="477.0" y="322" text-anchor="middle">Input A</text>
+<text class="sm" x="359" y="225.0" text-anchor="middle" transform="rotate(-90 359 225.0)">Prediction</text>
+<path d="M 377.0 281.6 L 380.3 279.9 L 383.7 278.0 L 387.0 275.9 L 390.3 273.6 L 393.7 271.1 L 397.0 268.4 L 400.3 265.5 L 403.7 262.4 L 407.0 259.2 L 410.3 255.9 L 413.7 252.4 L 417.0 249.0 L 420.3 245.4 L 423.7 242.0 L 427.0 238.5 L 430.3 235.2 L 433.7 232.1 L 437.0 229.2 L 440.3 226.5 L 443.7 224.2 L 447.0 222.2 L 450.3 220.6 L 453.7 219.4 L 457.0 218.6 L 460.3 218.3 L 463.7 218.4 L 467.0 219.0 L 470.3 220.1 L 473.7 221.5 L 477.0 223.4 L 480.3 225.6 L 483.7 228.1 L 487.0 230.9 L 490.3 234.0 L 493.7 237.2 L 497.0 240.6 L 500.3 244.0 L 503.7 247.6 L 507.0 251.1 L 510.3 254.5 L 513.7 257.9 L 517.0 261.2 L 520.3 264.3 L 523.7 267.2 L 527.0 270.0 L 530.3 272.6 L 533.7 275.0 L 537.0 277.2 L 540.3 279.2 L 543.7 281.0 L 547.0 282.6 L 550.3 284.0 L 553.7 285.2 L 557.0 286.3 L 560.3 287.2 L 563.7 288.1 L 567.0 288.7 L 570.3 289.3 L 573.7 289.8 L 577.0 290.2" fill="none" stroke="#E69F00" stroke-width="2"/>
+<path d="M 377.0 273.3 L 380.3 272.1 L 383.7 270.7 L 387.0 269.1 L 390.3 267.2 L 393.7 265.1 L 397.0 262.7 L 400.3 259.9 L 403.7 256.9 L 407.0 253.5 L 410.3 249.9 L 413.7 245.9 L 417.0 241.6 L 420.3 237.1 L 423.7 232.3 L 427.0 227.4 L 430.3 222.4 L 433.7 217.2 L 437.0 212.1 L 440.3 207.1 L 443.7 202.2 L 447.0 197.6 L 450.3 193.3 L 453.7 189.4 L 457.0 186.0 L 460.3 183.1 L 463.7 180.9 L 467.0 179.2 L 470.3 178.3 L 473.7 178.1 L 477.0 178.6 L 480.3 179.8 L 483.7 181.7 L 487.0 184.2 L 490.3 187.3 L 493.7 190.9 L 497.0 195.0 L 500.3 199.4 L 503.7 204.1 L 507.0 209.1 L 510.3 214.2 L 513.7 219.3 L 517.0 224.4 L 520.3 229.4 L 523.7 234.3 L 527.0 238.9 L 530.3 243.4 L 533.7 247.5 L 537.0 251.4 L 540.3 254.9 L 543.7 258.2 L 547.0 261.1 L 550.3 263.7 L 553.7 266.0 L 557.0 268.0 L 560.3 269.8 L 563.7 271.3 L 567.0 272.6 L 570.3 273.7 L 573.7 274.6 L 577.0 275.4" fill="none" stroke="#E69F00" stroke-width="2"/>
+<path d="M 377.0 223.7 L 380.3 221.8 L 383.7 219.8 L 387.0 217.6 L 390.3 215.3 L 393.7 212.9 L 397.0 210.4 L 400.3 207.8 L 403.7 205.1 L 407.0 202.4 L 410.3 199.7 L 413.7 197.1 L 417.0 194.5 L 420.3 191.9 L 423.7 189.5 L 427.0 187.3 L 430.3 185.2 L 433.7 183.4 L 437.0 181.8 L 440.3 180.4 L 443.7 179.4 L 447.0 178.6 L 450.3 178.2 L 453.7 178.1 L 457.0 178.3 L 460.3 178.9 L 463.7 179.8 L 467.0 180.9 L 470.3 182.4 L 473.7 184.1 L 477.0 186.0 L 480.3 188.2 L 483.7 190.5 L 487.0 192.9 L 490.3 195.5 L 493.7 198.1 L 497.0 200.8 L 500.3 203.5 L 503.7 206.2 L 507.0 208.8 L 510.3 211.4 L 513.7 213.8 L 517.0 216.2 L 520.3 218.5 L 523.7 220.6 L 527.0 222.6 L 530.3 224.4 L 533.7 226.1 L 537.0 227.6 L 540.3 229.0 L 543.7 230.3 L 547.0 231.4 L 550.3 232.4 L 553.7 233.3 L 557.0 234.1 L 560.3 234.8 L 563.7 235.4 L 567.0 235.9 L 570.3 236.3 L 573.7 236.7 L 577.0 237.0" fill="none" stroke="#E69F00" stroke-width="2"/>
+<path d="M 377.0 283.4 L 380.3 283.0 L 383.7 282.5 L 387.0 282.0 L 390.3 281.3 L 393.7 280.5 L 397.0 279.7 L 400.3 278.6 L 403.7 277.5 L 407.0 276.2 L 410.3 274.8 L 413.7 273.3 L 417.0 271.6 L 420.3 269.7 L 423.7 267.7 L 427.0 265.6 L 430.3 263.3 L 433.7 261.0 L 437.0 258.5 L 440.3 256.0 L 443.7 253.5 L 447.0 250.9 L 450.3 248.4 L 453.7 245.9 L 457.0 243.6 L 460.3 241.3 L 463.7 239.2 L 467.0 237.3 L 470.3 235.7 L 473.7 234.3 L 477.0 233.2 L 480.3 232.4 L 483.7 231.9 L 487.0 231.7 L 490.3 231.9 L 493.7 232.4 L 497.0 233.2 L 500.3 234.3 L 503.7 235.7 L 507.0 237.3 L 510.3 239.2 L 513.7 241.3 L 517.0 243.6 L 520.3 245.9 L 523.7 248.4 L 527.0 250.9 L 530.3 253.5 L 533.7 256.0 L 537.0 258.5 L 540.3 261.0 L 543.7 263.3 L 547.0 265.6 L 550.3 267.7 L 553.7 269.7 L 557.0 271.6 L 560.3 273.3 L 563.7 274.8 L 567.0 276.2 L 570.3 277.5 L 573.7 278.6 L 577.0 279.7" fill="none" stroke="#E69F00" stroke-width="2"/>
+<path d="M 377.0 258.2 L 380.3 257.1 L 383.7 255.8 L 387.0 254.4 L 390.3 252.6 L 393.7 250.6 L 397.0 248.3 L 400.3 245.7 L 403.7 242.8 L 407.0 239.5 L 410.3 236.0 L 413.7 232.1 L 417.0 228.0 L 420.3 223.6 L 423.7 219.0 L 427.0 214.3 L 430.3 209.5 L 433.7 204.8 L 437.0 200.1 L 440.3 195.6 L 443.7 191.3 L 447.0 187.4 L 450.3 183.9 L 453.7 181.0 L 457.0 178.6 L 460.3 176.8 L 463.7 175.8 L 467.0 175.4 L 470.3 175.8 L 473.7 176.8 L 477.0 178.6 L 480.3 181.0 L 483.7 183.9 L 487.0 187.4 L 490.3 191.3 L 493.7 195.6 L 497.0 200.1 L 500.3 204.8 L 503.7 209.5 L 507.0 214.3 L 510.3 219.0 L 513.7 223.6 L 517.0 228.0 L 520.3 232.1 L 523.7 236.0 L 527.0 239.5 L 530.3 242.8 L 533.7 245.7 L 537.0 248.3 L 540.3 250.6 L 543.7 252.6 L 547.0 254.4 L 550.3 255.8 L 553.7 257.1 L 557.0 258.2 L 560.3 259.0 L 563.7 259.8 L 567.0 260.4 L 570.3 260.8 L 573.7 261.2 L 577.0 261.5" fill="none" stroke="#E69F00" stroke-width="2"/>
+<line x1="437.0" y1="150" x2="437.0" y2="300" stroke="#0072B2" stroke-width="1.6" stroke-dasharray="5 4"/>
+<circle cx="437.0" cy="229.2" r="4.5" fill="#0072B2"/>
+<circle cx="437.0" cy="212.1" r="4.5" fill="#0072B2"/>
+<circle cx="437.0" cy="181.8" r="4.5" fill="#0072B2"/>
+<circle cx="437.0" cy="258.5" r="4.5" fill="#0072B2"/>
+<circle cx="437.0" cy="200.1" r="4.5" fill="#0072B2"/>
+<text class="sm" x="443.0" y="162" fill="#0072B2">40</text>
+<path class="ax" d="M 692 150 V 300 H 908"/>
+<text class="sm" x="800.0" y="322" text-anchor="middle">Input A</text>
+<text class="sm" x="682" y="225.0" text-anchor="middle" transform="rotate(-90 682 225.0)">Prediction</text>
+<path d="M 700.0 281.6 L 703.3 279.9 L 706.7 278.0 L 710.0 275.9 L 713.3 273.6 L 716.7 271.1 L 720.0 268.4 L 723.3 265.5 L 726.7 262.4 L 730.0 259.2 L 733.3 255.9 L 736.7 252.4 L 740.0 249.0 L 743.3 245.4 L 746.7 242.0 L 750.0 238.5 L 753.3 235.2 L 756.7 232.1 L 760.0 229.2 L 763.3 226.5 L 766.7 224.2 L 770.0 222.2 L 773.3 220.6 L 776.7 219.4 L 780.0 218.6 L 783.3 218.3 L 786.7 218.4 L 790.0 219.0 L 793.3 220.1 L 796.7 221.5 L 800.0 223.4 L 803.3 225.6 L 806.7 228.1 L 810.0 230.9 L 813.3 234.0 L 816.7 237.2 L 820.0 240.6 L 823.3 244.0 L 826.7 247.6 L 830.0 251.1 L 833.3 254.5 L 836.7 257.9 L 840.0 261.2 L 843.3 264.3 L 846.7 267.2 L 850.0 270.0 L 853.3 272.6 L 856.7 275.0 L 860.0 277.2 L 863.3 279.2 L 866.7 281.0 L 870.0 282.6 L 873.3 284.0 L 876.7 285.2 L 880.0 286.3 L 883.3 287.2 L 886.7 288.1 L 890.0 288.7 L 893.3 289.3 L 896.7 289.8 L 900.0 290.2" fill="none" stroke="#8a949c" stroke-width="1.6" stroke-opacity="0.8"/>
+<path d="M 700.0 273.3 L 703.3 272.1 L 706.7 270.7 L 710.0 269.1 L 713.3 267.2 L 716.7 265.1 L 720.0 262.7 L 723.3 259.9 L 726.7 256.9 L 730.0 253.5 L 733.3 249.9 L 736.7 245.9 L 740.0 241.6 L 743.3 237.1 L 746.7 232.3 L 750.0 227.4 L 753.3 222.4 L 756.7 217.2 L 760.0 212.1 L 763.3 207.1 L 766.7 202.2 L 770.0 197.6 L 773.3 193.3 L 776.7 189.4 L 780.0 186.0 L 783.3 183.1 L 786.7 180.9 L 790.0 179.2 L 793.3 178.3 L 796.7 178.1 L 800.0 178.6 L 803.3 179.8 L 806.7 181.7 L 810.0 184.2 L 813.3 187.3 L 816.7 190.9 L 820.0 195.0 L 823.3 199.4 L 826.7 204.1 L 830.0 209.1 L 833.3 214.2 L 836.7 219.3 L 840.0 224.4 L 843.3 229.4 L 846.7 234.3 L 850.0 238.9 L 853.3 243.4 L 856.7 247.5 L 860.0 251.4 L 863.3 254.9 L 866.7 258.2 L 870.0 261.1 L 873.3 263.7 L 876.7 266.0 L 880.0 268.0 L 883.3 269.8 L 886.7 271.3 L 890.0 272.6 L 893.3 273.7 L 896.7 274.6 L 900.0 275.4" fill="none" stroke="#8a949c" stroke-width="1.6" stroke-opacity="0.8"/>
+<path d="M 700.0 223.7 L 703.3 221.8 L 706.7 219.8 L 710.0 217.6 L 713.3 215.3 L 716.7 212.9 L 720.0 210.4 L 723.3 207.8 L 726.7 205.1 L 730.0 202.4 L 733.3 199.7 L 736.7 197.1 L 740.0 194.5 L 743.3 191.9 L 746.7 189.5 L 750.0 187.3 L 753.3 185.2 L 756.7 183.4 L 760.0 181.8 L 763.3 180.4 L 766.7 179.4 L 770.0 178.6 L 773.3 178.2 L 776.7 178.1 L 780.0 178.3 L 783.3 178.9 L 786.7 179.8 L 790.0 180.9 L 793.3 182.4 L 796.7 184.1 L 800.0 186.0 L 803.3 188.2 L 806.7 190.5 L 810.0 192.9 L 813.3 195.5 L 816.7 198.1 L 820.0 200.8 L 823.3 203.5 L 826.7 206.2 L 830.0 208.8 L 833.3 211.4 L 836.7 213.8 L 840.0 216.2 L 843.3 218.5 L 846.7 220.6 L 850.0 222.6 L 853.3 224.4 L 856.7 226.1 L 860.0 227.6 L 863.3 229.0 L 866.7 230.3 L 870.0 231.4 L 873.3 232.4 L 876.7 233.3 L 880.0 234.1 L 883.3 234.8 L 886.7 235.4 L 890.0 235.9 L 893.3 236.3 L 896.7 236.7 L 900.0 237.0" fill="none" stroke="#8a949c" stroke-width="1.6" stroke-opacity="0.8"/>
+<path d="M 700.0 283.4 L 703.3 283.0 L 706.7 282.5 L 710.0 282.0 L 713.3 281.3 L 716.7 280.5 L 720.0 279.7 L 723.3 278.6 L 726.7 277.5 L 730.0 276.2 L 733.3 274.8 L 736.7 273.3 L 740.0 271.6 L 743.3 269.7 L 746.7 267.7 L 750.0 265.6 L 753.3 263.3 L 756.7 261.0 L 760.0 258.5 L 763.3 256.0 L 766.7 253.5 L 770.0 250.9 L 773.3 248.4 L 776.7 245.9 L 780.0 243.6 L 783.3 241.3 L 786.7 239.2 L 790.0 237.3 L 793.3 235.7 L 796.7 234.3 L 800.0 233.2 L 803.3 232.4 L 806.7 231.9 L 810.0 231.7 L 813.3 231.9 L 816.7 232.4 L 820.0 233.2 L 823.3 234.3 L 826.7 235.7 L 830.0 237.3 L 833.3 239.2 L 836.7 241.3 L 840.0 243.6 L 843.3 245.9 L 846.7 248.4 L 850.0 250.9 L 853.3 253.5 L 856.7 256.0 L 860.0 258.5 L 863.3 261.0 L 866.7 263.3 L 870.0 265.6 L 873.3 267.7 L 876.7 269.7 L 880.0 271.6 L 883.3 273.3 L 886.7 274.8 L 890.0 276.2 L 893.3 277.5 L 896.7 278.6 L 900.0 279.7" fill="none" stroke="#8a949c" stroke-width="1.6" stroke-opacity="0.8"/>
+<path d="M 700.0 258.2 L 703.3 257.1 L 706.7 255.8 L 710.0 254.4 L 713.3 252.6 L 716.7 250.6 L 720.0 248.3 L 723.3 245.7 L 726.7 242.8 L 730.0 239.5 L 733.3 236.0 L 736.7 232.1 L 740.0 228.0 L 743.3 223.6 L 746.7 219.0 L 750.0 214.3 L 753.3 209.5 L 756.7 204.8 L 760.0 200.1 L 763.3 195.6 L 766.7 191.3 L 770.0 187.4 L 773.3 183.9 L 776.7 181.0 L 780.0 178.6 L 783.3 176.8 L 786.7 175.8 L 790.0 175.4 L 793.3 175.8 L 796.7 176.8 L 800.0 178.6 L 803.3 181.0 L 806.7 183.9 L 810.0 187.4 L 813.3 191.3 L 816.7 195.6 L 820.0 200.1 L 823.3 204.8 L 826.7 209.5 L 830.0 214.3 L 833.3 219.0 L 836.7 223.6 L 840.0 228.0 L 843.3 232.1 L 846.7 236.0 L 850.0 239.5 L 853.3 242.8 L 856.7 245.7 L 860.0 248.3 L 863.3 250.6 L 866.7 252.6 L 870.0 254.4 L 873.3 255.8 L 876.7 257.1 L 880.0 258.2 L 883.3 259.0 L 886.7 259.8 L 890.0 260.4 L 893.3 260.8 L 896.7 261.2 L 900.0 261.5" fill="none" stroke="#8a949c" stroke-width="1.6" stroke-opacity="0.8"/>
+<path d="M 700.0 264.0 L 703.3 262.8 L 706.7 261.4 L 710.0 259.8 L 713.3 258.0 L 716.7 256.0 L 720.0 253.9 L 723.3 251.5 L 726.7 248.9 L 730.0 246.2 L 733.3 243.3 L 736.7 240.2 L 740.0 236.9 L 743.3 233.6 L 746.7 230.1 L 750.0 226.6 L 753.3 223.1 L 756.7 219.7 L 760.0 216.3 L 763.3 213.1 L 766.7 210.1 L 770.0 207.4 L 773.3 204.9 L 776.7 202.8 L 780.0 201.0 L 783.3 199.7 L 786.7 198.8 L 790.0 198.4 L 793.3 198.4 L 796.7 199.0 L 800.0 199.9 L 803.3 201.4 L 806.7 203.2 L 810.0 205.4 L 813.3 208.0 L 816.7 210.8 L 820.0 213.9 L 823.3 217.2 L 826.7 220.6 L 830.0 224.1 L 833.3 227.7 L 836.7 231.2 L 840.0 234.7 L 843.3 238.0 L 846.7 241.3 L 850.0 244.4 L 853.3 247.3 L 856.7 250.1 L 860.0 252.6 L 863.3 254.9 L 866.7 257.1 L 870.0 259.0 L 873.3 260.7 L 876.7 262.3 L 880.0 263.6 L 883.3 264.8 L 886.7 265.9 L 890.0 266.8 L 893.3 267.5 L 896.7 268.2 L 900.0 268.8" fill="none" stroke="#009E73" stroke-width="4"/>
+<text class="note" x="470" y="464" text-anchor="middle">Where the rows&#8217; curves differ in shape, the average hides it, so look at both.</text>
+</svg>

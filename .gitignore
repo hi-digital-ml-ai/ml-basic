@@ -21,6 +21,9 @@ chapters/**/index-listing.json
 .Ruserdata
 .Renviron
 
+# Quarto environment for this machine: which Python runs the Python tabs
+_environment.local
+
 # renv library (renv.lock is committed)
 renv/library/
 renv/staging/
@@ -36,3 +39,21 @@ __pycache__/
 Thumbs.db
 
 **/*.quarto_ipynb
+
+# Video pipeline output (the scripts and code in _videos/ and tools/ are committed)
+_videos/*/audio/
+_videos/*/visuals/
+_videos/*/rough-cut.mp4
+_videos/*/captions.srt
+# Videos and recorded audio stay local, whatever they are called; they are large.
+# The intro music is the one exception: the pipeline needs it and it is small.
+_videos/**/*.mp4
+_videos/**/*.mov
+_videos/**/*.mkv
+_videos/**/*.webm
+_videos/**/*.wav
+_videos/**/*.mp3
+!_videos/intro-music.wav
+_videos/*/chapters.txt
+
+/_*.local

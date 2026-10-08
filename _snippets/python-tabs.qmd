@@ -1,3 +1,5 @@
+<!-- For pages whose Python tabs are only displayed. A page whose tabs run as
+     {python} chunks includes python-tabs-run.qmd instead. -->
 ::: {.callout-note collapse="true"}
 ## About the Python tabs
 Most code blocks on this page have an **R** and a **Python** tab, and picking one

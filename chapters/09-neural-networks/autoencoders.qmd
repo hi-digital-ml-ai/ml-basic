@@ -1,8 +1,8 @@
 ---
-title: "Autoencoders: PCA without the straight lines"
-description: "The one unsupervised network worth knowing, built from scratch on a community matrix: what it recovers that PCA does, what it does not, and why its axes cannot be reported."
-order: 5
-categories: [neural-networks, unsupervised, interpretation]
+title: "Autoencoders"
+description: "An autoencoder is a network that learns to rebuild its own input through a narrow middle, with no response to predict. On the community matrix it finds the plane that PCA finds and a little more of depth, and it shows why you report the plane rather than its axes."
+order: 6
+categories: [neural-networks, unsupervised]
 ---
 
 ```{r}
@@ -13,273 +13,308 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+f3 <- \(x) sub("-", "−", sprintf("%.3f", x))
+f4 <- \(x) sprintf("%.4f", x)
 ```
 
-## The unsupervised side of networks
+## An autoencoder learns a map without a response
 
-Everything so far in this section has been supervised: there was a response, and the
-network learned to predict it. Networks also do unsupervised work, and the form they take
-is the **autoencoder**, a network trained to reproduce its own input through a narrow
-middle.
+Every network so far in this section predicted a response. An **autoencoder** has none: it
+learns to rebuild its own input. That makes it an unsupervised method, like
+[Principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd),
+and it can draw the same kind of map of the stations, with bends where PCA has only
+straight lines. This page builds one from the passes of [Forward propagation and
+backpropagation](forward-and-backward.qmd), checks it against PCA, and shows what a map
+learned by a network can and cannot tell you.
 
-It is worth a page for two reasons. It is the direct generalisation of
-[principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd),
-which makes it the easiest network to understand and the easiest to check. And it inherits
-every interpretation problem §8 raised, in a sharper form, which makes it a good place to
-learn what "the network found a representation" is and is not worth.
+An autoencoder has two halves joined at a narrow middle. The **encoder** takes each row
+down to a few values, the **code**. The **decoder** rebuilds the row from the code.
+Training compares the rebuilt row with the input, and their mean squared difference, the
+**reconstruction error**, is the loss that gradient descent makes small. Nothing tells the
+code what to mean: whatever passes through the middle only has to be enough to rebuild
+the row.
+
+::: {.diagram}
+![An autoencoder in three parts. The encoder takes a row's many columns down to a few values, the code; the code places each row on a small map; the decoder rebuilds the row from the code, and the gap between the rebuilt row and the input is the reconstruction error that training makes small.](img/autoencoder.svg){fig-alt="Three cards joined by arrows. 1 Encoder, squeeze: six open input circles on the left, each joined by lines to both of two green code circles on the right; labelled input row and code. Weighted sums take each row down to a few values; many columns in, two out. 2 Code, a few values per row: a scatter plot of code value 2 against code value 1 with a large group of green points upper left and a smaller group lower right. The values place each row on a small map, like PCA's scores; nothing labels the code. 3 Decoder, rebuild and compare: the two green code circles joined to six orange output circles, each followed by a grey bar for the input and an orange bar for the rebuilt value, nearly the same length. Weighted sums rebuild the row; the gap is reconstruction error; training makes the gap small."}
+:::
+
+With the identity activation of [Neurons, layers and activations](what-a-network-is.qmd),
+the encoder and decoder are both weighted sums, and the best code of two values spans the
+same plane as the first two principal components. With tanh, the code can follow a curve.
+The worked example tests both.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-## The idea
+## Worked example
 
-An autoencoder has two halves. The **encoder** maps each row of your data down to a small
-number of values, the **code** or latent representation. The **decoder** maps the code
-back up to the original width. The network is trained with the input as its own target, so
-the loss is reconstruction error: how far the output is from what went in.
-
-Nothing supervises the code. The only pressure on it is that whatever survives the
-bottleneck has to be enough to rebuild the row. If two taxa always co-occur, the code does
-not need to carry both.
-
-Here is the claim that makes the method legible: **a linear autoencoder is PCA.** If both
-activations are the identity, the encoder is a matrix multiplication, the decoder is
-another, and minimising squared reconstruction error over a $k$-dimensional bottleneck has
-the same solution as taking the first $k$ principal components. Not a similar solution, but
-the same subspace. We can test that.
-
-## The data
-
-§8's community matrix: 800 stations, counts of 24 benthic taxa, with a genuine hard/soft
-substrate split and a genuine depth continuum built in.
+The data are the community matrix of *Principal component analysis*, counts of 24 taxa at
+each station, logged and put on a common scale by the same recipe.
 
 ```{r}
 #| label: data
+survey <- load_coastal_survey_clean()
 community <- load_coastal_community()
-survey    <- load_coastal_survey_clean()
+taxa_only <- community |> select(starts_with("tax"))
 
-X <- scale(log1p(as.matrix(select(community, starts_with("tax")))))
+X <- recipe(~ ., data = taxa_only) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors()) |>
+  prep() |>
+  bake(new_data = NULL) |>
+  as.matrix()
 
+# Each station's depth and seabed, to check the code against later
 stations <- community |>
   select(station_id) |>
-  left_join(select(survey, station_id, depth_m, substrate), by = "station_id") |>
-  mutate(bottom = factor(if_else(substrate %in% c("rock", "gravel"), "hard", "soft"),
-                         levels = c("hard", "soft")))
-
-dim(X)
+  inner_join(select(survey, station_id, depth_m, substrate),
+             by = "station_id") |>
+  mutate(bottom = factor(if_else(substrate %in% c("rock", "gravel"),
+                                 "Hard bottom", "Soft bottom")))
 ```
 
-## Building one
-
-The same forward/backward machinery as
-[two pages ago](forward-and-backward.qmd), with the input serving as the target and an
-activation we can switch between the identity and `tanh`.
+The autoencoder is the network of *Forward propagation and backpropagation* with the
+input as its own target. Its hidden layer is the code, and the activation can be switched
+between the identity and tanh.
 
 ```{r}
 #| label: autoencoder
 autoencoder <- function(X, code_size, activation = c("identity", "tanh"),
                         seed = 1, steps = 3000, learning_rate = 0.3) {
   activation <- match.arg(activation)
-  p <- ncol(X); n <- nrow(X)
+  p <- ncol(X)
+  n <- nrow(X)
 
   set.seed(seed)
-  par <- list(W1 = matrix(rnorm(p * code_size, 0, 0.1), p, code_size), b1 = rep(0, code_size),
-              W2 = matrix(rnorm(code_size * p, 0, 0.1), code_size, p), b2 = rep(0, p))
+  par <- list(W1 = matrix(rnorm(p * code_size, 0, 0.1), p, code_size),
+              b1 = rep(0, code_size),
+              W2 = matrix(rnorm(code_size * p, 0, 0.1), code_size, p),
+              b2 = rep(0, p))
 
-  pass <- function(par) {
+  forward <- function(par) {
     Z1 <- sweep(X %*% par$W1, 2, par$b1, "+")
-    A1 <- if (activation == "tanh") tanh(Z1) else Z1      # the code
-    list(A1 = A1, reconstruction = sweep(A1 %*% par$W2, 2, par$b2, "+"))
+    code <- if (activation == "tanh") tanh(Z1) else Z1     # the encoder
+    list(code = code,
+         rebuilt = sweep(code %*% par$W2, 2, par$b2, "+"))  # the decoder
   }
 
   for (step in seq_len(steps)) {
-    out <- pass(par)
-    d_out <- 2 * (out$reconstruction - X) / (n * p)
-    d_A1  <- d_out %*% t(par$W2)
-    d_Z1  <- if (activation == "tanh") d_A1 * (1 - out$A1^2) else d_A1
+    f <- forward(par)
+    d_rebuilt <- 2 * (f$rebuilt - X) / (n * p)
+    d_code <- d_rebuilt %*% t(par$W2)
+    d_Z1 <- if (activation == "tanh") d_code * (1 - f$code^2) else d_code
 
-    par$W2 <- par$W2 - learning_rate * (t(out$A1) %*% d_out)
-    par$b2 <- par$b2 - learning_rate * colSums(d_out)
+    par$W2 <- par$W2 - learning_rate * (t(f$code) %*% d_rebuilt)
+    par$b2 <- par$b2 - learning_rate * colSums(d_rebuilt)
     par$W1 <- par$W1 - learning_rate * (t(X) %*% d_Z1)
     par$b1 <- par$b1 - learning_rate * colSums(d_Z1)
   }
 
-  out <- pass(par)
-  list(code = out$A1, mse = mean((out$reconstruction - X)^2))
+  f <- forward(par)
+  list(code = f$code, error = mean((f$rebuilt - X)^2))
 }
 ```
 
-Twenty-four inputs, a code of two, twenty-four outputs: 98 weights in the encoder and 98 in
-the decoder.
+```{r}
+#| label: weight-count
+#| include: false
+p <- ncol(X)
+n_encoder <- p * 2 + 2
+n_decoder <- 2 * p + p
+```
 
-## Worked example: a linear autoencoder against PCA
+With `r p` taxa and a code of two values, the encoder has `r n_encoder` weights and
+biases and the decoder `r n_decoder`.
+
+### A linear autoencoder finds the plane that PCA finds
+
+PCA's first two components rebuild each row from two scores, so they have a
+reconstruction error too. To check whether a code spans the same plane as the components,
+each component is predicted from the code's two values with linear regression: an R² of 1
+for both means the code holds exactly the same information.
 
 ```{r}
 #| label: compare-pca
 components <- prcomp(X)
+pc_scores <- components$x[, 1:2]
+pca_rebuilt <- pc_scores %*% t(components$rotation[, 1:2])
 
-pca_reconstruction <- function(k) {
-  fitted <- components$x[, 1:k, drop = FALSE] %*% t(components$rotation[, 1:k, drop = FALSE])
-  mean((X - fitted)^2)
+linear <- autoencoder(X, 2, "identity")
+bent <- autoencoder(X, 2, "tanh")
+
+# The lower R² of the two components, each predicted from a code's two values
+plane_r2 <- function(code, target) {
+  min(apply(target, 2, \(y) rsq_vec(y, fitted(lm(y ~ code)))))
 }
 
-comparison <- map_dfr(c(2, 3), \(k) {
-  linear <- autoencoder(X, k, "identity")
-  bendy  <- autoencoder(X, k, "tanh")
-  tibble(`code size` = k,
-         PCA = pca_reconstruction(k),
-         `linear autoencoder` = linear$mse,
-         `tanh autoencoder`   = bendy$mse,
-         `subspace agreement with PCA (linear)` =
-           min(cancor(linear$code, components$x[, 1:k, drop = FALSE])$cor),
-         `subspace agreement with PCA (tanh)` =
-           min(cancor(bendy$code, components$x[, 1:k, drop = FALSE])$cor))
-})
+comparison <- tibble(
+  Method = c("PCA", "Linear autoencoder", "Tanh autoencoder"),
+  `Reconstruction error` =
+    c(mean((X - pca_rebuilt)^2), linear$error, bent$error),
+  `R² for the components` =
+    c(1, plane_r2(linear$code, pc_scores), plane_r2(bent$code, pc_scores)))
 
-comparison |> mutate(across(where(is.numeric), \(x) round(x, 4)))
+comparison |> mutate(across(where(is.double), \(x) round(x, 4)))
 ```
 
-The linear autoencoder's reconstruction error matches PCA's to four decimal places at both
-code sizes, and the **canonical correlation** between its code and the principal component
-scores, a measure of how much two sets of variables span the same space where 1 means
-identical, is exactly 1. Gradient descent on 196 weights arrived, from random starting
-values, at the subspace that `prcomp()` computes in closed form.
+The linear autoencoder's reconstruction error is `r f4(linear$error)`, the same as PCA's
+`r f4(comparison[[2]][1])`, and its code predicts both components with an R² of
+`r f3(comparison[[3]][2])`. From random starting weights, gradient descent found the
+plane that `prcomp()` computes directly. The tanh autoencoder rebuilds the rows a little
+less well, at `r f4(bent$error)`, and its code still predicts the components with an R² of
+`r f3(comparison[[3]][3])`: the bend found almost the same plane.
 
-That is a reassuring result about the method and a sobering one about the effort. PCA got
-there instantly and deterministically.
+### The tanh code predicts depth a little better
 
-Now the interesting half. Adding `tanh` makes the encoder nonlinear, which lets the code be
-a curved coordinate system rather than a flat one. On this data it reconstructs *slightly
-worse*, 0.7077 against 0.7056 at two dimensions, and its code still spans almost exactly
-the same space as the principal components, agreeing at 0.996.
-
-**The extra flexibility bought almost nothing here, and that is a finding, not a failure.**
-§8 established what is in this data: a substrate split and a depth gradient, both close to
-linear in log-transformed composition. There is no curved manifold for a nonlinear encoder
-to find, so it did not find one. As we are about to see, it found a slightly better handle
-on depth and nothing else.
-
-## Whether the code carries the same information
-
-Reconstruction error is not what you care about. What you care about is whether the two
-numbers per station are useful.
+Reconstruction error says how well the rows are rebuilt, not whether the code is useful.
+A useful map places the stations by what matters about them, so each code is checked
+against the recorded seabed and depth, which neither method was given. Logistic
+regression predicts hard bottom from the two values, scored by ROC AUC, and linear
+regression predicts depth, scored by R².
 
 ```{r}
-#| label: external-check
-bendy <- autoencoder(X, 2, "tanh")
+#| label: usefulness
+# What a code's two values predict about the stations
+predicts <- function(code, label) {
+  frame <- tibble(value_1 = code[, 1], value_2 = code[, 2],
+                  bottom = stations$bottom, depth_m = stations$depth_m)
+  bottom_fit <- glm(bottom ~ value_1 + value_2, data = frame,
+                    family = binomial)
+  depth_fit <- lm(depth_m ~ value_1 + value_2, data = frame)
 
-usefulness <- function(coordinates, label) {
-  frame <- as_tibble(coordinates, .name_repair = \(x) c("axis1", "axis2"))
-  frame$bottom <- stations$bottom
-  model <- glm(bottom ~ axis1 + axis2, data = frame, family = binomial)
-  frame$depth_m <- stations$depth_m
-  tibble(representation = label,
-         `AUC for hard vs soft bottom` = roc_auc_vec(frame$bottom, 1 - fitted(model)),
-         `R² for depth from both axes` =
-           summary(lm(depth_m ~ axis1 + axis2, data = frame))$r.squared)
+  # glm() models the second level, soft bottom, so hard bottom is 1 minus it
+  tibble(Code = label,
+         `Hard bottom (ROC AUC)` =
+           roc_auc_vec(frame$bottom, 1 - fitted(bottom_fit)),
+         `Depth (R²)` = rsq_vec(frame$depth_m, fitted(depth_fit)))
 }
 
-bind_rows(usefulness(components$x[, 1:2], "first two principal components"),
-          usefulness(bendy$code, "two-unit tanh autoencoder code")) |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+usefulness <- bind_rows(predicts(pc_scores, "PCA"),
+                        predicts(bent$code, "Tanh autoencoder"))
+usefulness |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
-On the substrate split they are identical to the third decimal. On depth the autoencoder
-is 0.016 ahead, and that gap is real: across five random seeds its depth R² lands between
-0.742 and 0.743 every time, always above PCA's 0.727. So the nonlinearity did find
-something: a slight curvature in the depth gradient, which is exactly the [mild arch §8
-measured and declined to
-overstate](../08-unsupervised-learning/principal-component-analysis.qmd). It is worth
-about one and a half percentage points of variance in depth, for 196 weights and 3,000
-gradient steps.
+Both codes separate hard from soft bottom almost perfectly, with a ROC AUC of
+`r f3(usefulness[[2]][1])` from PCA and `r f3(usefulness[[2]][2])` from the
+autoencoder. On depth the tanh code is ahead, with an R² of `r f3(usefulness[[3]][2])`
+against `r f3(usefulness[[3]][1])`. Along the depth gradient the stations bend slightly,
+the arch that [Principal component
+analysis](../08-unsupervised-learning/principal-component-analysis.qmd#pca-sees-straight-line-directions)
+calls the horseshoe effect, and the tanh bend follows a little of it. The gain is small
+because this community changes almost in straight lines, so PCA already holds nearly
+everything a two-value map can.
 
-Note that both quantities use *both* axes. Individual axes are not comparable between the
-two representations, for the reason the next section gives, so asking what the plane
-predicts is the only fair question. Two numbers from `prcomp()` and two numbers from a
-196-weight network trained for 3,000 steps tell you the same things about the seabed.
+### Each seed draws different axes in the same plane
 
-## Limits of a learned representation
-
-Here is the part that matters most, and it is the reason this page sits next to §10 rather
-than §8.
+The tanh autoencoder is trained five more times from different random starting weights.
+Each code is compared with seed 1's, and its first value with the two principal
+components.
 
 ```{r}
-#| label: seed-instability
-seeds <- map(1:5, \(s) autoencoder(X, 2, "tanh", seed = s)$code)
+#| label: seeds
+codes <- map(1:5, \(s) autoencoder(X, 2, "tanh", seed = s)$code)
 
-tibble(seed = 1:5,
-       `axis 1 vs PC1` = map_dbl(seeds, \(code) cor(code[, 1], components$x[, 1])),
-       `axis 1 vs PC2` = map_dbl(seeds, \(code) cor(code[, 1], components$x[, 2])),
-       `subspace agreement with seed 1` =
-         map_dbl(seeds, \(code) min(cancor(code, seeds[[1]])$cor))) |>
-  mutate(across(where(is.double), \(x) round(x, 3)))
+seed_table <- tibble(
+  Seed = 1:5,
+  `Plane shared with seed 1 (R²)` =
+    map_dbl(codes, \(code) plane_r2(code, codes[[1]])),
+  `Value 1 with PC1 (r)` =
+    map_dbl(codes, \(code) cor(code[, 1], pc_scores[, 1])),
+  `Value 1 with PC2 (r)` =
+    map_dbl(codes, \(code) cor(code[, 1], pc_scores[, 2])))
+
+seed_table |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
-Read the last column first: every seed finds the same **plane**, agreeing with seed 1 at
-0.996 or better. Then read the first two columns. Seed 1's first code axis is essentially
-PC1 (correlation 0.996) and has nothing to do with PC2. Seed 3's first code axis is
-essentially *minus PC2* (−0.966) and only weakly related to PC1. Seed 4's is a roughly
-even blend of both.
+```{r}
+#| label: seed-numbers
+#| include: false
+seed_depth <- map_dbl(codes, \(code) predicts(code, "")$`Depth (R²)`)
+pc_with <- \(s, k) f3(seed_table[[2 + k]][s])
+```
+
+Every seed finds the same plane: each code predicts seed 1's with an R² of at least
+`r f3(min(seed_table[[2]]))`, and each predicts depth equally well, with an R² between
+`r f3(min(seed_depth))` and `r f3(max(seed_depth))`. The axes inside the plane are
+another matter. Seed 1's first value is nearly PC1 (r = `r pc_with(1, 1)`), seed 3's is
+nearly PC2 turned the other way (r = `r pc_with(3, 2)`), and seed 4's is a blend of the
+two (`r pc_with(4, 1)` and `r pc_with(4, 2)`). The plot shows the same map turned and
+flipped.
 
 ```{r}
 #| label: fig-rotations
-#| fig-cap: "Stations in the two-dimensional code from three different random seeds, coloured by seabed type. The same cloud of points appears rotated and reflected in each panel: the plane is identical, the axes drawn in it are not."
-#| fig-alt: "Three scatter plots side by side, each showing the same 800 stations in two colours. Every panel shows the same shape: a large soft-bottom lobe and a smaller, clearly separated hard-bottom lobe, with only a handful of points between them. The pair sits at a different angle in each panel: soft upper-left and hard lower-right for seed 1, soft along the top and hard at the lower left for seed 3, soft on the left and hard on the right for seed 4. The shape, the relative sizes of the two lobes and the cleanness of their separation are identical throughout; only the orientation changes."
+#| fig-cap: "The stations on the two code values of three tanh autoencoders that differ only in their random start, coloured by seabed. Each panel shows the same map turned or flipped: the plane is the same, the axes drawn in it are not."
+#| fig-alt: "Three scatter plots side by side, each showing the same stations in two colours for hard and soft bottom. Every panel has the same shape: a large soft-bottom group and a smaller, clearly separate hard-bottom group. The pair sits at a different angle in each panel: soft upper left and hard lower right for seed 1, soft along the top and hard at the lower left for seed 3, soft on the left and hard on the right for seed 4. Only the orientation changes."
 #| fig-width: 9.5
 #| fig-height: 3.8
-panels <- imap(seeds[c(1, 3, 4)], \(code, i) {
-  tibble(axis1 = code[, 1], axis2 = code[, 2], bottom = stations$bottom) |>
-    ggplot(aes(axis1, axis2, colour = bottom)) +
+shown <- c(1, 3, 4)
+panels <- map(shown, \(s) {
+  tibble(value_1 = codes[[s]][, 1], value_2 = codes[[s]][, 2],
+         bottom = stations$bottom) |>
+    ggplot(aes(value_1, value_2, colour = bottom)) +
     geom_point(size = 1.2, alpha = 0.7) +
-    labs(x = "code axis 1", y = "code axis 2",
-         subtitle = paste("seed", c(1, 3, 4)[i]), colour = NULL)
+    scale_colour_ml() +
+    labs(x = "Code value 1", y = "Code value 2", colour = NULL,
+         subtitle = paste("Seed", s))
 })
 
 wrap_plots(panels, nrow = 1) + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 ```
 
-**The code axes are not a result.** They are one of infinitely many bases for a plane, and
-which one you get is decided by the random number generator. A sentence like "autoencoder
-axis 1 separates hard from soft bottom" is true for seed 1 and false for seed 3, on the same
-data with the same code.
+So a sentence such as "the first code value separates hard from soft bottom" is true for
+one seed and false for another, on the same data. *Principal component analysis* found
+that PCA gives a plane, not one driver per axis; an autoencoder goes further and gives
+different axes each run, where PCA at least returns the same ones, ordered by variance.
+What every run shares is the plane, so report what the code predicts, as the tables above
+do, and not what one of its axes means.
 
-This is §8's lesson about principal components with the guardrail removed. PCA's axes are
-also arbitrary in a sense, since [any rotation of them spans the same
-space](../08-unsupervised-learning/principal-component-analysis.qmd), but PCA at least
-picks a *canonical* rotation, orders it by variance, and returns the same answer every
-time. The autoencoder gives up all three. What survives is the subspace, so the subspace
-is what you can report.
+## Autoencoders earn their place on curved structure
 
-**Reconstruction error is not a measure of usefulness.** Nothing in the loss says the code
-should be interpretable, separate your groups, or correspond to anything ecological. It says
-the rows should be rebuildable, and a code that carries the two most abundant taxa very
-precisely will do well on that while telling you nothing.
+On this matrix PCA gave the same map at once and the same way every time, so it is the
+right first step. An autoencoder earns its place when the data are large and the
+structure is strongly curved, as in hyperspectral images, acoustic backscatter or DNA
+sequences; run PCA first and see how much is left to find. The reconstruction error is
+useful on its own too: a row that rebuilds badly is unlike the rows the network learned
+from, which makes autoencoders a common way to flag unusual records, such as a faulty
+sensor reading.
 
-**It is a lot of machinery for the same answer.** On 800 stations and 24 taxa, `prcomp()`
-gave identical external validity in milliseconds. An autoencoder starts earning its keep
-when the structure is genuinely curved and the data is large enough to identify the
-curvature, as with hyperspectral imagery, acoustic backscatter or sequence data, and even
-there the sensible first step is to run PCA and see how much is left over.
+::: {.callout-note collapse="true"}
+## The maths, if you want it
 
-::: {.callout-tip}
+With the identity activation and centred columns, the autoencoder rebuilds $X$ as
+$X W_1 W_2$ and minimises $\lVert X - X W_1 W_2 \rVert^2$. The product $W_1 W_2$ has rank
+at most $k$, the code size, and the best rank-$k$ approximation of $X$ is its projection
+onto the first $k$ principal components, $X V_k V_k^\top$, where $V_k$ holds their
+loadings (the Eckart–Young theorem). So at the minimum the code $X W_1$ spans the same
+plane as the first $k$ components. The weights are not unique: $W_1 = V_k A$ and
+$W_2 = A^{-1} V_k^\top$ give the same reconstruction for any invertible $k \times k$
+matrix $A$, which turns, stretches or flips the axes. That is why the axes depend on the
+random start and the plane does not.
+:::
+
 ## Key points
 
-- An **autoencoder** is a network trained to reproduce its own input through a narrow
-  bottleneck. The bottleneck values are the code.
-- **A linear autoencoder is PCA.** Ours matched `prcomp()`'s reconstruction error to four
-  decimal places and its subspace at a canonical correlation of exactly 1.
-- Adding a nonlinearity reconstructed slightly *worse* on this data and found the same
-  subspace, because there is no curved structure in it to find.
-- The code carried what the principal components did and very little more: AUC 0.998 for
-  the substrate split from both, and a depth R² of 0.743 against 0.727, a real but tiny
-  gain from the nonlinearity.
-- **Every seed found the same plane and a different pair of axes in it.** Report the
-  subspace, or what the code predicts. Never report an axis.
+::: {.key-points}
+- An **autoencoder** learns to rebuild its own input through a narrow middle. The values
+  in the middle are the **code**, and the loss is the **reconstruction error**.
+- **A linear autoencoder is PCA.** Its reconstruction error matched PCA's,
+  `r f4(linear$error)`, and its code predicted both principal components with an R² of
+  `r f3(comparison[[3]][2])`.
+- With tanh, the code predicted depth a little better than PCA's two components, an R² of
+  `r f3(usefulness[[3]][2])` against `r f3(usefulness[[3]][1])`. The community changes
+  almost in straight lines, so a bend has little to add.
+- **Every seed found the same plane and different axes in it.** Report what the code
+  predicts, not what one of its axes means.
+- Run PCA first. Autoencoders earn their place on large data with curved structure, and
+  their reconstruction error flags unusual rows.
 :::
 
 ## Try it yourself
 
-1. Add a third and fourth code dimension. How much does reconstruction error fall, and does
-   the extra capacity ever recover the three taxa (`tax22`–`tax24`) that respond to nothing?
-2. Train a tanh autoencoder on column-shuffled data, §8's structure-free null, and compare
-   its reconstruction error with the real matrix's. How much of the 0.708 is structure?
+1. Give PCA and the linear autoencoder a code of three values (`components$x[, 1:3]` and
+   `autoencoder(X, 3, "identity")`). Do their reconstruction errors still match, and how
+   far does the error fall from two values?
+2. Shuffle each column of `X` on its own, the baseline of [How many components to
+   keep](../08-unsupervised-learning/dimensionality-reduction.qmd), and train the tanh
+   autoencoder on the shuffled matrix. How much higher is its reconstruction error than on
+   the real one, and what does the gap say about the structure in the community?

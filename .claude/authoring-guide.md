@@ -14,7 +14,22 @@ new.
   opens with a code block has been written backwards.
 - Define each jargon term the first time it appears, in one sentence, inline.
   "A *feature* is simply one of the measured variables you feed the model: depth,
-  temperature, chlorophyll."
+  temperature, chlorophyll." Write the sentence for a first-year university student:
+  participants come from many backgrounds. Readers already know the mean, median,
+  standard deviation and variance, so do not define those; every modelling term (R²,
+  coefficient, confidence interval, standard error, ROC AUC ...) gets its sentence.
+  Videos follow the same rule.
+- **Machine learning first.** Lead with prediction, held-out data and the methods of
+  machine learning. Statistical machinery (coefficient intervals, standard errors,
+  p-values, likelihood values, dispersion checks) appears only as far as the lesson
+  needs it, and optional depth goes in a collapsed callout.
+- **New terms go in the glossary.** Every term a page bolds and defines gets an entry in
+  `_glossary.yml` (term, one plain sentence that agrees with the page's own, the page,
+  and optionally `more:` for a later page that covers it in full), and the page carries
+  `{{< new-terms >}}` straight after its setup chunk. Glossary definitions hold no links.
+- **Teach an idea once.** Each idea has one page that teaches it (the table in
+  `curriculum.md`, Site-wide revision); every other page names it and links there,
+  without re-explaining.
 - Short sentences. Active voice. Say "we" for what the page does together with the
   reader.
 - Equations are welcome but always follow a plain-English statement of the same
@@ -23,6 +38,16 @@ new.
 - Avoid ML folklore and unexplained rules of thumb ("use 80/20"). If a number is
   conventional rather than principled, say so.
 - British spelling: modelling, generalisation, centre, behaviour.
+- **Go easy on who, why, how and what.** A sentence that turns on one of them ("what
+  matters is", "why this happens", "how it works") usually says more when it names the
+  thing directly. They are not banned; they should not set the rhythm of a page.
+- **Introduce a method before using it.** A page that fits a random forest, k-means or a
+  network says in plain English how it works, or links to the page that does, the first
+  time it appears. Sections build up new concepts step by step, not only new ways to
+  select and evaluate models.
+- **Section 1 uses only familiar variables.** Before section 2 introduces the survey
+  properly, examples use temperature, salinity and depth as predictors, with abundance
+  or presence as the outcome.
 - **No em dashes (—) anywhere.** An em dash is always standing in for a comma, a
   colon, a semicolon, a full stop or a pair of brackets, and naming which one makes
   the sentence say what it means. A parenthetical pair becomes commas or brackets; an
@@ -47,7 +72,7 @@ categories: [...]
 ## Worked example              <- tidymodels on a dataset from data/
 ## <what the results say>      <- interpretation, and what would go wrong
 ## Limits of <this thing>      <- honest limitations; links to §6
-## Key points                  <- callout-tip, 3–5 bullets
+## Key points                  <- 3–5 bullets in a .key-points box
 ## Try it yourself             <- 1–2 small exercises (optional)
 ```
 
@@ -61,7 +86,10 @@ as a heading postpones the answer that the section is about to give. `The idea`,
 `Worked example`, `Key points` and `Try it yourself` stay fixed, because they are
 labels rather than claims.
 
-Aim for 1,000–1,800 words plus code. If a page runs longer, split it.
+Aim for 1,000–1,800 words plus code, and no more than about 2,000. If a page runs
+longer, cut what another page teaches before splitting it. Quote at most about three
+numbers in a paragraph; more belong in a table. Open with the page's own question, not
+a summary of the previous page.
 
 ### Further resources
 
@@ -136,15 +164,22 @@ Rules for what goes in it:
 - Load shared helpers with `source(here::here("R/theme.R"))`; paths are always
   `here::here()`, never relative or absolute.
 - Long-running fits: keep under ~30 s per page where possible and rely on
-  `freeze: auto`. If a fit is genuinely slow, cache its result into `data/` with a
-  script in `R/` rather than letting the page grind on every render.
+  `freeze: auto`. A reader runs the page's code too, so cut repeats and schemes until
+  each tab runs in about a minute. If a fit is genuinely slow, cache its result into
+  `data/` with a script in `R/` rather than letting the page grind on every render.
 
 ### Python tabs
 
-Pages in sections 2, 3, 5, 7, 8 and 10 show each modelling step twice, R and
+Pages in sections 2, 3, 4, 5, 7, 8 and 10 show each modelling step twice, R and
 scikit-learn, in a tabset. The two `toolkit/` pages are the exception: they are
-single-language orientation pages, one per library, and carry no tabsets. The R chunk is the one that runs, so its output
-appears under the R tab; the Python block is displayed only.
+single-language orientation pages, one per library, and carry no tabsets. Both tabs
+run: the R chunk directly, the Python as a `{python}` chunk that knitr hands to
+Python through `reticulate`, so each tab shows its own output. The two languages keep
+separate sessions for the whole page, so names do not clash.
+
+Pages not yet revised still display the Python as a plain ` ```python ` block that
+never runs. Convert them to `{python}` chunks as part of each section's revision (see
+`section-revision.md`).
 
 ````markdown
 ::: {.panel-tabset group="language"}
@@ -158,7 +193,7 @@ appears under the R tab; the Python block is displayed only.
 
 ## Python
 
-```python
+```{python}
 ...
 ```
 
@@ -167,9 +202,13 @@ appears under the R tab; the Python block is displayed only.
 
 - `group="language"` syncs every tabset on the page, so choosing Python once
   chooses it throughout.
-- Wrap the modelling steps, not the figures. Figures stay R-only, and so does
-  any step with no honest Python counterpart, such as `mgcv`'s smooth table.
-  A missing tab is information, not an omission to fill in.
+- Give the modelling steps a Python tab, not the figures. Figures stay R-only, and
+  so does any step with no honest Python counterpart, such as `mgcv`'s smooth table.
+  A missing Python tab is information, not an omission to fill in.
+- An R-only chunk that shows its code still sits in a tabset, with a single `## R`
+  tab and the same `group="language"`, so every code block on the page is labelled
+  with its language. Hidden chunks (`include: false`, `echo: false`) need no tab.
+  Section 3 was the first to do this.
 - The Python is cumulative down the page, exactly as the R chunks are, and must
   run: `python/check-snippets.py` executes every snippet in the site. Do not add
   a tab you have not run.
@@ -178,8 +217,13 @@ appears under the R tab; the Python block is displayed only.
 - Where a default differs between the two, whether regularisation, event level or the
   need for scaled inputs, say so in a comment in the Python block. That
   difference is usually the most useful thing on the page.
-- Add `{{< include ../../_snippets/python-tabs.qmd >}}` under the data note, so
-  the reader knows the Python is not what produced the numbers.
+- Load `R/python-tabs.R` in the setup chunk (after `R/data.R`). It shows a Python
+  chunk's final DataFrame as a table, as `df-print: kable` shows a tibble, so end
+  the chunk with the DataFrame itself, not `print(df)`. Other output stays text.
+- Add `{{< include ../../_snippets/python-tabs-run.qmd >}}` under the data note, so
+  the reader knows how the tabs work. An unconverted page, whose Python only
+  displays, includes `python-tabs.qmd` instead.
+- Rendering needs the Python environment; see `workflow.md`, Python for the tabs.
 
 ## Figures
 
@@ -236,9 +280,15 @@ than `#| label: chunk-6`. See `tools/README.md` for how the extraction works.
 | Callout | Use for |
 | --- | --- |
 | `callout-note` | Optional depth, maths, side remarks |
-| `callout-tip` | "Key points" summary at the end of every page |
+| `callout-tip` | Practical tips (no longer the "Key points" summary, see below) |
 | `callout-warning` | Common mistakes, leakage traps, misuse of a metric |
 | `callout-important` | Things that invalidate results if ignored |
+
+The *Key points* summary is not a callout: inside one, its heading becomes the box's
+title, so the summary reads as part of the section above and drops out of the table of
+contents. It is a `## Key points` heading followed by the list in a `::: {.key-points}`
+box. Pages not yet revised still use the old `callout-tip` form; see
+`section-revision.md`.
 
 ## Cross-references
 

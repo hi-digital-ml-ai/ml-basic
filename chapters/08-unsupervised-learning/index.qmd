@@ -1,6 +1,6 @@
 ---
 title: "8 · Unsupervised learning"
-description: "Finding structure when you have no labels, through clustering, PCA and dimensionality reduction, and how to tell a real group from a cut through a gradient."
+description: "Finding structure when there are no labels, with k-means, hierarchical clustering, PCA and UMAP, and checking whether a group is real or a cut through a gradient."
 categories: [unsupervised, interpretation]
 listing:
   id: pages
@@ -13,17 +13,17 @@ listing:
 toc: false
 ---
 
-Sometimes there is no answer key. You have hundreds of CTD profiles and no water-mass
-classification, or a community matrix with two dozen taxa and no hypothesis about how they
-group. Unsupervised methods look for structure in the data itself.
+Sometimes there is no answer column. You have hundreds of CTD profiles and no water-mass
+classification, or counts of two dozen taxa at every station and no list of the habitats
+they come from. Unsupervised methods find structure in the data itself: **clustering**
+sorts stations into groups, and **principal component analysis** turns many columns into
+a few that can be mapped or passed to a model.
 
-They are genuinely useful, and they are the easiest methods in the course to over-read.
-Every one of them always returns an answer: k-means returns $k$ clusters whether or not
-clusters exist, and a principal component is a direction of large variance, which is not
-the same thing as an ecological gradient. Nothing in the output says "nothing found".
-
-So this section runs the methods and then spends as long again asking whether what came
-back was real.
+[Types of learning](../01-introduction/types-of-learning.qmd) ran k-means on temperature,
+salinity and depth. This section takes clustering and PCA further on a community matrix
+of 24 taxa, and shows how to check what they find. Every one of these methods returns an
+answer for any table, so the checks matter as much as the methods: a shuffled copy of the
+data as a baseline, bootstrap samples, and variables the method never saw.
 
 ## Pages in this section
 
@@ -32,47 +32,39 @@ back was real.
 
 ## Findings from this section
 
-- Clustering 24 taxon counts recovered the **hard-bottom / soft-bottom** split of the
-  seabed with **15 stations out of 800** on the wrong side, from counts alone, having
-  never seen a substrate column.
-- Depth is **99.4%** of the variance of the raw environmental table. Clustering those
-  columns without standardising is clustering depth, and nothing else.
-- The average silhouette width of that successful clustering was **0.179**, which the
-  circulating rules of thumb call "no substantial structure". Against column-shuffled data
-  it is nearly **five times** the no-structure floor.
-- Four criteria for the number of clusters gave **two, three, six** and no answer at all.
-  `clusGap()`'s default reference chose six; a permutation reference chose two, which is
-  the truth.
-- One distance matrix and four linkage rules gave agreement with the true split ranging
-  from **0.005** (single linkage) to **0.889** (Ward). `hclust()`'s default scored 0.332 at
-  $k=2$.
-- Both real gradients in the data lie at about **45°** to the principal axes, 139° and
-  41°, because they carry almost the same variance and PCA has no way to choose between
-  rotations.
-- Rules for how many components to keep said **16**, **7** and **3**. Cross-validated
-  prediction said **two**: two components predicted station depth to 21.2 m, and all 24
-  did no better.
-- Bootstrap stability was **bimodal**, with 53 replicates finding the substrate split and 7 a
-  depth split and nothing in between, and its mean of 0.881 described neither.
+- Two k-means clusters recovered the **hard and soft seabed** from species counts alone,
+  with **15 of 800** stations in the other kind's cluster.
+- The average silhouette width of those clusters was **0.179**, below the rule-of-thumb
+  0.25 for "no substantial structure". Shuffled counts gave a baseline of about 0.05, and
+  two clusters stood furthest above it, at **3.5 times** the baseline.
+- One table and one set of distances gave agreement with the seabed from **0.005** to
+  **0.89**, depending only on the linkage rule. Ward's two groups matched k-means' at an
+  adjusted Rand index of 0.94.
+- The first two principal components held **29.4%** of the variance, which is usual for
+  species counts. Depth and hard bottom both ran about **39°** from the nearest axis,
+  because the two components held almost the same share.
+- Three rules for the number of components kept **16**, **3** and **2**: a share of the
+  variance, a shuffled baseline, and cross-validation for predicting depth. The third
+  component held real structure, rock against gravel, that depth did not need.
+- In **52 of 60** bootstrap samples the seabed split came back, and in 8 a depth split took
+  its place. The average adjusted Rand index, 0.87, described neither.
+- Splitting the soft-bottom stations came back in every bootstrap sample, yet **11%** of
+  them sat near the boundary between the clusters, against **2%** for the seabed split. It
+  was a cut through a depth gradient, not two groups.
 
 ::: {.callout-important}
-The most stable result in the section is the one that corresponds to nothing. Splitting
-the soft-bottom stations by depth reproduces at an adjusted Rand index of 0.890 and never
-drops below 0.71, and the data contains no soft-sediment assemblages, only a continuous
-turnover that k-means cut in the same place every time. **Stability is necessary and not
-sufficient.** A stable algorithm cuts a stable gradient in a stable place.
+A pattern that comes back in every bootstrap sample can still be a cut through a gradient,
+because k-means cuts a steady gradient in the same place every time. Look for a gap
+between the groups, and compare them with a recorded category, before calling them groups.
 :::
 
 ::: {.callout-note}
-Two habits run through every page here. **Put your data through a structure-free null**:
-shuffle each column independently, keeping every variable's own distribution and
-destroying co-occurrence, then run the identical pipeline on it, because almost no
-unsupervised statistic can be read on an absolute scale. And **check the result against a
-variable the method never saw**; agreement with a *categorical* one is evidence of groups,
-while agreement with a *binned continuous* one is only ever evidence of a gradient.
-
-A gradient is a finding. "Composition turns over continuously with depth" is a more honest
-sentence than any cluster count, and on this data it is the true one.
+Two habits run through these pages. **Run the same steps on a shuffled copy of the data**,
+each column shuffled on its own, so every column keeps its values and the groups are gone:
+silhouette widths and shares of the variance have no fixed scale, and the shuffled copy
+gives them one. And **compare the result with a variable the method never saw**, such as
+the recorded seabed. A gradient that turns up this way is a finding too: "composition
+changes steadily with depth" is worth reporting.
 :::
 
 

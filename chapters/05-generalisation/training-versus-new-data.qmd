@@ -1,6 +1,6 @@
 ---
-title: "Training error and the error that matters"
-description: "Why the number your model reports about itself is not an estimate of anything you care about."
+title: "Training error and the error on new data"
+description: "A model's error on the stations it was fitted to says little about new sites: five models ranked by it come out nearly upside down, and the gap depends on the model and on the amount of data."
 order: 1
 categories: [generalisation]
 ---
@@ -10,50 +10,63 @@ categories: [generalisation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
-library(rpart)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(501)
+source(here::here("R/python-tabs.R"))
+options(knitr.kable.NA = "")
+set.seed(123)
 ```
 
-## The number printed by default
+## Training error flatters a model
 
-A model will tell you how well it fits. That number is free, it is printed by default, and it
-is the single most misleading quantity in applied machine learning.
-
-The problem is not that training error is inaccurate. It is that it answers a question nobody
-asked: *how well does this model reproduce the stations it was built from?* You want to know
-how it will do on next year's survey, on the stations you could not reach, on the shelf to the
-north. Those are different questions, and on this page the two give opposite answers: not
-slightly different, opposite.
+Every fitted model can report its error on the data it was fitted to. That number comes
+free, and it is easy to read as a measure of how good the model is. This page shows that
+it is a poor guide to how a model will do on new sites, and that the more flexible the
+model, the poorer the guide. Five models from [section 3](../03-supervised-learning/index.qmd),
+ranked by that number, come out nearly upside down.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Training error and the error on new data
 
-Any model with enough flexibility can reproduce your data exactly. A tree grown until every
-leaf holds one station will predict every training station perfectly, and has learned nothing:
-it has stored the data, not a relationship.
+The **training error** is a model's error on the examples it was fitted to. The **error on
+new data** is its error on examples it has never seen, and it is the one that matters: a
+model is fitted to be used on new data.
 
-The useful mental separation is between **signal**, structure that will appear again in the
-next survey, and **noise**, the part specific to the stations you happened to visit, the day
-you visited them, and how the net behaved. Training error cannot tell them apart. Fitting the
-noise lowers training error just as effectively as fitting the signal, and lowers future
-performance just as effectively as fitting the signal raises it.
+Data hold two kinds of pattern. **Signal** is the part that will appear again in new data,
+such as warmer water holding more of a species. **Noise** is the part peculiar to the
+examples at hand: a lucky haul, a sensor reading slightly off. A model cannot tell the two
+apart, and fitting noise lowers the training error just as fitting signal does. But only the
+signal carries over to new data.
 
-The gap between the two is called **optimism**, and it is not a constant. It grows with model
-flexibility and shrinks with sample size, which is why "my training R² is 0.95" means nothing
-until you say how many stations and how many parameters.
+So the training error is usually lower than the error on new data, and the difference
+between them is called the **optimism**. A rigid model, such as a straight line, has little
+room to fit noise, so its two errors stay close. A flexible model can bend through every
+training example, so its training error can fall to zero while its error on new data does
+not. More data shrinks the optimism, since noise in many examples is harder to fit than
+noise in a few.
+
+::: {.diagram}
+![A rigid model misses training and new data by about as much. A flexible model passes through every training point, so its training error is zero, but it misses new data by more.](img/training-and-new-error.svg){fig-alt="Two cards, each showing the same nine training points and four new points. A rigid model, a straight line: it misses the training points and the new points by about as much, and two bars, training error and error on new data, are about the same length. A flexible model, bending through every point: its training error bar is empty and its error on new data bar is the longest. A note says the gap between the two errors grows with flexibility and shrinks with more data."}
+:::
 
 ## Worked example
 
-Five models, one split, one set of predictors. Nothing here is tuned, which is
-[a later page](hyperparameter-selection.qmd), and the default settings are exactly what makes
-the point.
+The data and the split by site are those of [Decision trees](../03-supervised-learning/decision-trees.qmd):
+three quarters of the monitoring sites for training and a quarter held back as test sites.
+This page uses only the training sites; the test sites are kept for the end of the
+section.
+
+Each model is fitted to some of the training sites and scored on the rest, which play the
+part of new sites. One such split leaves only a few dozen sites to score on, and by chance
+they can be easier or harder to predict than the others. So the training sites are split
+20 times at random, by site, three quarters for fitting and a quarter as new sites, and
+each error is averaged over the 20 splits.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -63,51 +76,74 @@ the point.
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-set.seed(501)
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na()
-
-split <- initial_split(d, prop = 0.75)
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
-test  <- testing(split)
 
-rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+# 20 random splits of the training sites: fitting sites and new sites
+splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
 
-c(training_stations = nrow(train), test_stations = nrow(test))
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+tree_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+boost_recipe <- tree_recipe |>
+  step_dummy(all_nominal_predictors())
+
+c(training_sites = n_distinct(train$site_id), splits = nrow(splits))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import (GradientBoostingRegressor, RandomForestRegressor)
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, PolynomialFeatures
 from sklearn.tree import DecisionTreeRegressor
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season"]
-d = pd.get_dummies(survey[columns].dropna(), drop_first=True)
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
 
-train, test = train_test_split(d, train_size=0.75, random_state=501)
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train = survey.iloc[train_rows]
 
-X_train, y_train = train.drop(columns="abundance"), train["abundance"]
-X_test, y_test = test.drop(columns="abundance"), test["abundance"]
+# scikit-learn's models need numbers, so one recipe serves all five.
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
+])
 
-rmse_of = root_mean_squared_error
+# 20 random splits of the training sites: fitting sites and new sites
+splitter = GroupShuffleSplit(n_splits=20, train_size=0.75, random_state=123)
+splits = list(splitter.split(train, groups=train["site_id"]))
 
-pd.Series({"training_stations": len(train), "test_stations": len(test)})
+{"training_sites": train["site_id"].nunique(), "splits": len(splits)}
 ```
 
 :::
+
+### Each model scored on its own stations and on new sites
+
+The five models run from rigid to flexible: linear regression; a decision tree three
+questions deep; a decision tree grown out until each leaf holds a single station; a random
+forest of 500 trees; and boosting with 500 trees, each six questions deep. The boosted model
+is deliberately large, so that it has room to fit the noise. Each is fitted to the fitting
+sites of every split and scored twice, on the stations it was fitted to and on the new sites.
+Predicting the fitting stations' average count everywhere, with no inputs at all, gives a
+baseline.
 
 ::: {.panel-tabset group="language"}
 
@@ -115,119 +151,165 @@ pd.Series({"training_stations": len(train), "test_stations": len(test)})
 
 ```{r}
 #| label: five-models
-linear     <- lm(abundance ~ ., data = train)
-small_tree <- rpart(abundance ~ ., data = train,
-                    control = rpart.control(maxdepth = 3, cp = 0))
-full_tree  <- rpart(abundance ~ ., data = train,
-                    control = rpart.control(minsplit = 2, minbucket = 1, cp = 0))
-forest     <- ranger(abundance ~ ., data = train, num.trees = 500, seed = 1)
+tree_model <- function(depth) {
+  decision_tree(mode = "regression", tree_depth = depth,
+                min_n = 2, cost_complexity = 0)
+}
+forest_model <- rand_forest(mode = "regression", trees = 500) |>
+  set_engine("ranger", seed = 123)
+boost_model <- boost_tree(mode = "regression", trees = 500,
+                          tree_depth = 6, learn_rate = 0.1)
 
-boosted <- workflow() |>
-  add_recipe(recipe(abundance ~ ., data = train) |> step_dummy(all_nominal_predictors())) |>
-  add_model(boost_tree(trees = 500, tree_depth = 6, learn_rate = 0.1) |>
-              set_engine("xgboost") |> set_mode("regression")) |>
-  fit(train)
+models <- list(
+  "Linear regression"        = workflow(tree_recipe, linear_reg()),
+  "Decision tree, depth 3"   = workflow(tree_recipe, tree_model(3)),
+  "Decision tree, grown out" = workflow(tree_recipe, tree_model(30)),
+  "Random forest"            = workflow(tree_recipe, forest_model),
+  "Boosting"                 = workflow(boost_recipe, boost_model)
+)
 
-predict_on <- function(model, newdata) {
-  if (inherits(model, "ranger")) predict(model, newdata)$predictions
-  else if (inherits(model, "workflow")) predict(model, newdata)$.pred
-  else predict(model, newdata)
+score_split <- function(s) {
+  fitting <- analysis(s)
+  new     <- assessment(s)
+  imap(models, \(w, model) {
+    fitted <- fit(w, fitting)
+    tibble(model    = model,
+           training = rmse_vec(fitting$abundance, predict(fitted, fitting)$.pred),
+           new      = rmse_vec(new$abundance, predict(fitted, new)$.pred),
+           # ranger's out-of-bag error, used further down
+           oob      = if (model == "Random forest")
+                        sqrt(extract_fit_engine(fitted)$prediction.error) else NA)
+  }) |>
+    list_rbind() |>
+    add_row(model = "Predict the average", training = NA,
+            new = rmse_vec(new$abundance, rep(mean(fitting$abundance), nrow(new))))
 }
 
-results <- tibble(
-  model = c("Linear regression", "Tree, depth 3", "Tree, grown out",
-            "Random forest", "Boosted trees"),
-  fit   = list(linear, small_tree, full_tree, forest, boosted)
-) |>
-  mutate(
-    training = map_dbl(fit, \(m) rmse_of(train$abundance, predict_on(m, train))),
-    test     = map_dbl(fit, \(m) rmse_of(test$abundance,  predict_on(m, test))),
-    optimism = test - training
-  ) |>
-  select(-fit)
+scores <- map(splits$splits, score_split) |> list_rbind()
 
-results |> mutate(across(where(is.numeric), \(x) round(x, 3)))
+results <- scores |>
+  group_by(model) |>
+  summarise(across(c(training, new, oob), mean)) |>
+  mutate(optimism = new - training) |>
+  arrange(training)
+
+results |> select(-oob) |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
+```{python}
+def pipeline(model):
+    return Pipeline([("recipe", tree_recipe), ("model", model)])
+
 models = {
-    "Linear regression": LinearRegression(),
-    "Tree, depth 3": DecisionTreeRegressor(max_depth=3, ccp_alpha=0.0,
-                                           random_state=1),
-    "Tree, grown out": DecisionTreeRegressor(min_samples_split=2,
-                                             min_samples_leaf=1,
-                                             ccp_alpha=0.0, random_state=1),
-    # oob_score gives the free honest estimate used a few lines below.
-    "Random forest": RandomForestRegressor(n_estimators=500, oob_score=True,
-                                           random_state=1),
-    "Boosted trees": GradientBoostingRegressor(n_estimators=500, max_depth=6,
-                                               learning_rate=0.1,
-                                               random_state=1),
+    "Linear regression": lambda: pipeline(LinearRegression()),
+    "Decision tree, depth 3": lambda: pipeline(
+        DecisionTreeRegressor(max_depth=3, random_state=123)),
+    "Decision tree, grown out": lambda: pipeline(
+        DecisionTreeRegressor(random_state=123)),
+    # oob_score keeps the out-of-bag predictions used further down.
+    "Random forest": lambda: pipeline(RandomForestRegressor(
+        n_estimators=500, max_features="sqrt", min_samples_leaf=5,
+        oob_score=True, random_state=123)),
+    "Boosting": lambda: pipeline(GradientBoostingRegressor(
+        n_estimators=500, max_depth=6, learning_rate=0.1, random_state=123)),
 }
 
-fitted = {name: model.fit(X_train, y_train) for name, model in models.items()}
+rmse = root_mean_squared_error
+rows = []
+for fit_rows, new_rows in splits:
+    fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
+    for name, make in models.items():
+        fitted = make().fit(fitting[predictors], fitting["abundance"])
+        forest = fitted["model"]
+        rows.append({
+            "model": name,
+            "training": rmse(fitting["abundance"],
+                             fitted.predict(fitting[predictors])),
+            "new": rmse(new["abundance"], fitted.predict(new[predictors])),
+            "oob": (rmse(fitting["abundance"], forest.oob_prediction_)
+                    if name == "Random forest" else np.nan),
+        })
+    rows.append({"model": "Predict the average", "training": np.nan,
+                 "new": rmse(new["abundance"],
+                             np.full(len(new), fitting["abundance"].mean()))})
 
-results = pd.DataFrame([
-    {"model": name,
-     "training": rmse_of(y_train, model.predict(X_train)),
-     "test": rmse_of(y_test, model.predict(X_test))}
-    for name, model in fitted.items()
-])
-results["optimism"] = results["test"] - results["training"]
+results = (pd.DataFrame(rows).groupby("model", as_index=False).mean()
+           .assign(optimism=lambda d: d["new"] - d["training"])
+           .sort_values("training", na_position="last")
+           .reset_index(drop=True))
 
-results.round(3)
+results.drop(columns="oob").round(2)
 ```
 
 :::
 
 ```{r}
+#| label: scores
+#| include: false
+at <- function(m, column = "new") results[[column]][results$model == m]
+baseline <- at("Predict the average")
+f2 <- function(x) sprintf("%.2f", x)
+in_words <- function(n) c("one", "two", "three", "four", "five")[n]
+beat_baseline <- results |>
+  filter(new < baseline, model != "Predict the average") |>
+  pull(model)
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
 #| label: fig-crossing
-#| fig-cap: "Training and test RMSE for the five models, joined by a line. Every line slopes upward, because test error is always worse, but the slopes are so different that the order reverses completely. The model that fits the training stations perfectly is the worst on new ones, and the dashed line marks the error from ignoring all predictors and predicting the training mean."
-#| fig-alt: "A slope chart with two vertical positions, Training on the left and Test on the right, and RMSE on the vertical axis from zero to about seven. Five lines connect a training value to a test value. Linear regression and the depth-3 tree start near 4.1 and rise gently to about 4.9. The random forest starts at 2.0 and rises to 5.0. Boosted trees start at almost zero and rise steeply to 5.7. The fully grown tree starts at exactly zero and rises most steeply of all to 6.9. A dashed horizontal line at 5.29 marks the baseline, and the two steepest lines finish above it."
+#| fig-cap: "Each model's RMSE on the stations it was fitted to and on new sites, averaged over 20 splits of the training sites. Every line rises, but by very different amounts, so the order changes. The dashed line is the error of predicting the fitting stations' average count."
+#| fig-alt: "A slope chart with two positions, training on the left and new sites on the right, and RMSE on the vertical axis. Five lines join each model's training error to its error on new sites. The grown-out tree and boosting start at zero and rise steeply; the grown-out tree ends highest of all. The random forest starts at about 2 and rises to the lowest point on the right. The depth-3 tree and linear regression start highest, about 4 to 4.5, and rise gently. A dashed line marks predicting the average, about 5."
 #| fig-width: 7
 #| fig-height: 4.8
-baseline <- rmse_of(test$abundance, mean(train$abundance))
-
 results |>
-  pivot_longer(c(training, test), names_to = "set", values_to = "rmse") |>
-  mutate(set = factor(set, levels = c("training", "test"),
-                      labels = c("Training", "Test"))) |>
+  filter(model != "Predict the average") |>
+  pivot_longer(c(training, new), names_to = "set", values_to = "rmse") |>
+  mutate(set = factor(set, levels = c("training", "new"),
+                      labels = c("Fitting stations", "New sites"))) |>
   ggplot(aes(set, rmse, group = model, colour = model)) +
   geom_hline(yintercept = baseline, linetype = "dashed",
              colour = ml_palette[["grey"]]) +
   geom_line(linewidth = 1) +
   geom_point(size = 2.6) +
-  annotate("text", x = 1.5, y = baseline + 0.18, label = "predict the mean",
+  annotate("text", x = 1.5, y = baseline + 0.25, label = "predict the average",
            colour = ml_palette[["grey"]], size = 3.4) +
+  guides(colour = guide_legend(nrow = 2)) +
   labs(x = NULL, y = "RMSE (individuals)", colour = NULL,
-       title = "The ranking reverses completely")
+       title = "The order on new sites is not the order on the fitting stations")
 ```
 
-## Reading the two columns
+:::
 
-Read the two columns in order.
+### The best fits to their own stations do worst on new sites
 
-By training error the ranking is: fully grown tree (0.000), boosted trees (0.046), random
-forest (2.045), depth-3 tree (4.138), linear regression (4.144).
+By training error, the grown-out tree comes first with an RMSE of exactly
+zero, and boosting second at
+`r f2(at("Boosting", "training"))`. Both have fitted their stations almost perfectly.
+On new sites they are among the worst. The grown-out tree comes last, at
+`r f2(at("Decision tree, grown out"))`, well above the
+`r f2(baseline)` from predicting the average with no inputs at all, and boosting, at
+`r f2(at("Boosting"))`, does no better than that average. Linear regression, last by
+training error at `r f2(at("Linear regression", "training"))`, is close to the best on
+new sites at `r f2(at("Linear regression"))`, behind only the random forest at
+`r f2(at("Random forest"))`. Only `r in_words(length(beat_baseline))` of the five models beat the
+baseline: `r str_to_lower(knitr::combine_words(beat_baseline))`.
 
-By test error it is: linear regression (4.867), depth-3 tree (4.918), random forest (4.994),
-boosted trees (5.747), fully grown tree (6.923).
+A tree with one station in each leaf predicts every fitting station as that station's own
+count, so its training error is zero. It has stored the data rather than learned a
+relationship from it, and the stored counts are mostly noise.
 
-**That is the same list, exactly reversed.** On this dataset, training error is not merely an
-unreliable guide to which model to choose; it is an almost perfect guide to choosing the wrong
-one.
+### The out-of-bag error estimates a forest's error on new sites
 
-Two details are worth more than the ordering.
-
-**A perfect fit.** The fully grown tree achieves a training RMSE of exactly zero. Every leaf
-contains one station, so every training prediction is that station's own count. It is a lookup
-table with a flowchart on the front, and on new stations it scores 6.923, considerably worse
-than 5.292, which is what you get by ignoring every predictor and guessing the training mean.
-Two of the five models are beaten by that baseline.
-
-**A useful free estimate.** The random forest has a third number available:
+A random forest has a third error to offer. Each of its trees is grown on a bootstrap sample
+of the fitting stations, which leaves out about a third of them. Predicting each station
+with only the trees that never saw it gives the **out-of-bag error**, and the forest
+computes it while it is fitted.
 
 ::: {.panel-tabset group="language"}
 
@@ -235,212 +317,186 @@ Two of the five models are beaten by that baseline.
 
 ```{r}
 #| label: oob
-c(training = rmse_of(train$abundance, predict(forest, train)$predictions),
-  out_of_bag = sqrt(forest$prediction.error),
-  test = rmse_of(test$abundance, predict(forest, test)$predictions)) |>
-  round(3)
+results |>
+  filter(model == "Random forest") |>
+  select(training, out_of_bag = oob, new) |>
+  mutate(across(everything(), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-forest = fitted["Random forest"]
-
-pd.Series({
-    "training": rmse_of(y_train, forest.predict(X_train)),
-    # the out-of-bag predictions, from the trees that never saw each row
-    "out_of_bag": rmse_of(y_train, forest.oob_prediction_),
-    "test": rmse_of(y_test, forest.predict(X_test)),
-}).round(3)
+```{python}
+(results.query("model == 'Random forest'").reset_index(drop=True)
+ [["training", "oob", "new"]].rename(columns={"oob": "out_of_bag"}).round(2))
 ```
 
 :::
 
-Each tree in a forest is fitted to a bootstrap sample, so about a third of the stations are
-unseen by any given tree. Scoring each station using only the trees that did not see it gives
-the **out-of-bag** estimate: 4.313 against a test value of 4.994. Not perfect, and still
-optimistic because all the trees saw the dataset as a whole, but it is a far better answer
-than 2.045, and it costs nothing. If you fit a forest and quote its training error, you have
-ignored a better number the model already computed.
+The forest's training error is `r f2(at("Random forest", "training"))`, but its
+out-of-bag error is `r f2(at("Random forest", "oob"))`, much closer to its
+`r f2(at("Random forest"))` on new sites. It is not a perfect stand-in, since stations
+from the same site share a tree's sample, but it costs nothing: when a forest is fitted, its
+out-of-bag error is the one to quote, not its training error.
 
-### Optimism is not a fixed quantity
+### More sites shrink the gap for regression but not for a forest
 
-Whether training error misleads you a little or catastrophically depends on how much data you
-have relative to how flexible the model is.
+The optimism depends on the amount of data as well as on the model. To see this, each split's
+fitting sites are cut down to a few at random, from 5 sites to 80, and two models are fitted
+to them: [polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
+with squared depth and temperature, and a random forest. Both use the four measured inputs
+only, so that a small sample cannot miss a category that the new sites contain.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: optimism-curve
-num <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu) |>
-  drop_na()
+#| label: by-sites
+measured <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu
 
-set.seed(5011)
-num_split <- initial_split(num, prop = 0.75)
-num_train <- training(num_split)
-num_test  <- testing(num_split)
+measured_recipe <- recipe(measured, data = train) |>
+  step_impute_median(all_numeric_predictors())
+curve_recipe <- measured_recipe |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
 
-flexible <- abundance ~ poly(depth_m, 3) + poly(temperature_c, 3) +
-  poly(chlorophyll_mg_m3, 2) + salinity_psu
+two_models <- list(
+  "Polynomial regression" = workflow(curve_recipe, linear_reg()),
+  "Random forest"         = workflow(measured_recipe,
+                                     rand_forest(mode = "regression", trees = 300))
+)
 
-optimism_at <- function(n, replicates = 40) {
-  map_dfr(seq_len(replicates), \(r) {
-    s <- num_train[sample(nrow(num_train), n), ]
-    fit_lm <- lm(flexible, data = s)
-    fit_rf <- ranger(abundance ~ ., data = s, num.trees = 300)
-    tibble(
-      `10-parameter model, training` = rmse_of(s$abundance, predict(fit_lm, s)),
-      `10-parameter model, test`     = rmse_of(num_test$abundance, predict(fit_lm, num_test)),
-      `Random forest, training`      = rmse_of(s$abundance, predict(fit_rf, s)$predictions),
-      `Random forest, test`          = rmse_of(num_test$abundance, predict(fit_rf, num_test)$predictions)
-    )
-  }) |>
-    summarise(across(everything(), mean)) |>
-    mutate(n = n)
-}
+site_counts <- c(5, 10, 20, 40, 80)
 
-curve <- map_dfr(c(15, 25, 50, 100, 200, 400, nrow(num_train)), optimism_at)
+by_sites <- map(splits$splits, \(s) {
+  fitting <- analysis(s)
+  new     <- assessment(s)
+  map(site_counts, \(n) {
+    some <- fitting |> filter(site_id %in% sample(unique(site_id), n))
+    imap(two_models, \(w, model) {
+      fitted <- fit(w, some)
+      tibble(model = model, sites = n,
+             training = rmse_vec(some$abundance, predict(fitted, some)$.pred),
+             new      = rmse_vec(new$abundance, predict(fitted, new)$.pred))
+    }) |> list_rbind()
+  }) |> list_rbind()
+}) |>
+  list_rbind() |>
+  group_by(model, sites) |>
+  summarise(across(c(training, new), mean), .groups = "drop") |>
+  mutate(optimism = new - training)
 
-curve |>
-  mutate(across(where(is.numeric), \(x) round(x, 2))) |>
-  select(n, everything())
+by_sites |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures
+```{python}
+measured = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
 
-numeric = ["abundance", "depth_m", "temperature_c",
-           "chlorophyll_mg_m3", "salinity_psu"]
-num = survey[numeric].dropna()
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
 
-num_train, num_test = train_test_split(num, train_size=0.75, random_state=5011)
-Xn_train, yn_train = num_train.drop(columns="abundance"), num_train["abundance"]
-Xn_test, yn_test = num_test.drop(columns="abundance"), num_test["abundance"]
-
-def curves(degree):
-    return PolynomialFeatures(degree=degree, include_bias=False)
-
-# poly() per variable, not PolynomialFeatures over all four at once: that
-# would add every interaction and this is meant to be a ten-parameter model.
-def flexible():
-    return Pipeline([
-        ("curves", ColumnTransformer([
-            ("depth", curves(3), ["depth_m"]),
-            ("temperature", curves(3), ["temperature_c"]),
-            ("chlorophyll", curves(2), ["chlorophyll_mg_m3"]),
-            ("salinity", "passthrough", ["salinity_psu"]),
+two_models = {
+    "Polynomial regression": lambda: Pipeline([
+        ("recipe", ColumnTransformer([
+            squared("depth_m"),
+            squared("temperature_c"),
+            ("numeric", SimpleImputer(strategy="median"),
+             ["chlorophyll_mg_m3", "salinity_psu"]),
         ])),
-        ("model", LinearRegression()),
-    ])
+        ("model", LinearRegression())]),
+    "Random forest": lambda: Pipeline([
+        ("recipe", SimpleImputer(strategy="median")),
+        ("model", RandomForestRegressor(n_estimators=300, max_features="sqrt",
+                                        min_samples_leaf=5, random_state=123))]),
+}
 
-rng = np.random.default_rng(5011)
+rng = np.random.default_rng(123)
+rows = []
+for fit_rows, new_rows in splits:
+    fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
+    for n in [5, 10, 20, 40, 80]:
+        chosen = rng.choice(fitting["site_id"].unique(), n, replace=False)
+        some = fitting[fitting["site_id"].isin(chosen)]
+        for name, make in two_models.items():
+            fitted = make().fit(some[measured], some["abundance"])
+            rows.append({
+                "model": name, "sites": n,
+                "training": rmse(some["abundance"], fitted.predict(some[measured])),
+                "new": rmse(new["abundance"], fitted.predict(new[measured])),
+            })
 
-def optimism_at(n, replicates=40):
-    rows = []
-    for _ in range(replicates):
-        take = rng.choice(len(num_train), n, replace=False)
-        Xs, ys = Xn_train.iloc[take], yn_train.iloc[take]
-        curved = flexible().fit(Xs, ys)
-        forest = RandomForestRegressor(n_estimators=300, random_state=1).fit(Xs, ys)
-        rows.append({
-            "10-parameter model, training": rmse_of(ys, curved.predict(Xs)),
-            "10-parameter model, test": rmse_of(yn_test, curved.predict(Xn_test)),
-            "Random forest, training": rmse_of(ys, forest.predict(Xs)),
-            "Random forest, test": rmse_of(yn_test, forest.predict(Xn_test)),
-        })
-    return {"n": n, **pd.DataFrame(rows).mean().to_dict()}
+by_sites = (pd.DataFrame(rows).groupby(["model", "sites"], as_index=False).mean()
+            .assign(optimism=lambda d: d["new"] - d["training"]))
 
-pd.DataFrame([optimism_at(n)
-              for n in [15, 25, 50, 100, 200, 400, len(num_train)]]).round(2)
+by_sites.round(2)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-by-sites
+#| fig-cap: "RMSE on the fitting stations and on new sites against the number of fitting sites, averaged over 20 splits. The polynomial model's two errors draw together as sites are added; the forest's stay apart."
+#| fig-alt: "Two panels sharing a horizontal axis of fitting sites from 5 to 80. In the polynomial regression panel, the error on new sites starts high at 5 sites and falls quickly, while the training error rises a little, so the two curves meet closely by 40 sites. In the random forest panel, the error on new sites falls slightly and the training error stays flat near 2, so a wide gap remains at every number of sites."
+#| fig-width: 7.5
+#| fig-height: 4
+by_sites |>
+  pivot_longer(c(training, new), names_to = "set", values_to = "rmse") |>
+  mutate(set = factor(set, levels = c("training", "new"),
+                      labels = c("Fitting stations", "New sites"))) |>
+  ggplot(aes(sites, rmse, colour = set)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 1.8) +
+  facet_wrap(~model) +
+  labs(x = "Fitting sites", y = "RMSE (individuals)", colour = NULL,
+       title = "More sites close the gap for one model but not the other")
 ```
 
 :::
 
 ```{r}
-#| label: fig-optimism
-#| fig-cap: "Training and test RMSE against the number of training stations, averaged over 40 random subsets at each size. Note the separate vertical scales. For the ten-parameter polynomial model the two curves converge as data accumulates. For the random forest they do not: its training error is fixed by how much the forest smooths, not by how many stations it has, so the gap only narrows from 3.4 to 2.9 across a thirty-six-fold increase in data."
-#| fig-alt: "Two panels sharing a logarithmic horizontal axis of training stations from 15 to 540, with separate vertical scales. In the left panel, labelled ten-parameter model, the test curve starts at 25.8 at fifteen stations and drops steeply, reaching about 5.8 by two hundred and 4.9 at the right-hand edge, while the training curve rises gently from 2.2 to 4.1; the two converge to a narrow gap. In the right panel, labelled random forest, the test curve declines only slightly from 5.5 to 4.9 across the whole range and the training curve is flat near 2.0, so the vertical gap between them barely closes."
-#| fig-width: 7.5
-#| fig-height: 4
-curve |>
-  pivot_longer(-n, names_to = "series", values_to = "rmse") |>
-  separate_wider_delim(series, delim = ", ", names = c("model", "set")) |>
-  mutate(set = str_to_title(set)) |>
-  ggplot(aes(n, rmse, colour = set)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 1.8) +
-  facet_wrap(~model, scales = "free_y") +
-  scale_x_log10() +
-  labs(x = "Training stations (log scale)", y = "RMSE (individuals)", colour = NULL,
-       title = "How badly training error misleads depends on both terms")
+#| label: gaps
+#| include: false
+gap <- function(m, n) by_sites$optimism[by_sites$model == m & by_sites$sites == n]
 ```
 
-At fifteen stations the polynomial model reports a training RMSE of 2.17 and achieves 25.8 on
-new data, worse by a factor of twelve. It is not a bad model that happens to look good; on
-fifteen stations with ten parameters there is almost nothing left over, so the fit is close to
-interpolation. The gap closes slowly: 3.3 at a hundred stations, 1.1 at four hundred, 0.8 at
-540. Even at the full training set it has not vanished.
+With 5 sites, polynomial regression's error on new sites is
+`r f2(gap("Polynomial regression", 5))` higher than its training error. With 80 sites
+the gap is `r f2(gap("Polynomial regression", 80))`: the model has a fixed number of
+coefficients, and the more stations they are fitted to, the less noise they can absorb.
 
-The forest panel is the more instructive one. Its training error is pinned near 2.0 at
-every sample size, because what determines it is how much each tree smooths within a leaf,
-not how many stations it has. So the gap barely moves, 3.40 at fifteen stations against
-2.91 at 540, while the polynomial model’s gap fell by a factor of nearly thirty over the
-same range. Waiting for a bigger survey will make a fixed-complexity model's training
-error honest. It will not do the same for a forest's.
+The forest's gap barely moves, from `r f2(gap("Random forest", 5))` at 5 sites to
+`r f2(gap("Random forest", 80))` at 80. Its trees split until their leaves hold only a
+few stations, however many stations there are, so it fits some noise at any sample size and
+its training error stays low. More data improves the forest on new sites, but its training
+error never becomes a fair estimate of that.
 
-::: {.callout-warning}
-Nothing on this page is an argument against flexible models. The random forest here is a
-perfectly respectable model, within 0.13 of the best of the five on test data, and
-[section 3 showed a tuned one doing better](../03-supervised-learning/choosing-a-method.qmd).
-The argument is only that its self-report is worthless. Judge it on held-out data, or
-out-of-bag, and it does fine.
-:::
-
-## Limits of a single split
-
-**One split is one number.** Everything above rests on a single random 75/25 division of 720
-stations. Re-split and the test values move, by rather more than the 0.13 separating the top
-three. That is what [cross-validation](../07-validation/index.qmd) is for, and until you get
-there, treat small differences in this table as noise. Section 4 measured the relevant scale:
-an [unseeded forest alone varies by about 0.04](../04-how-algorithms-learn/reading-a-fit.qmd).
-
-**A random split flatters everything here.** These 720 stations come from 160 monitoring sites
-visited repeatedly, so almost every test station has a sibling in the training set. The
-"unseen" data is not unseen at all. [Section 6](../06-assumptions-limitations/index.qmd) is
-about why this matters and section 7 about what to do instead; the honest reading of every
-number on this page is that it is the optimistic version.
-
-**Test error is only unbiased if the test set was used once.** Look at the test column, pick
-the winner, adjust, and look again, and the test set has become a second training set. This is
-the quiet failure mode of the whole enterprise, and the reason
-[section 2](../02-marine-data/splitting-data.qmd) insisted on a three-way split.
-
-::: {.callout-tip}
 ## Key points
 
-- Training error measures how well a model reproduces the data it was fitted to. It is not an
-  estimate of future performance and is not a basis for choosing between models.
-- Here the training ranking of five models was the **exact reverse** of the test ranking.
-- A fully grown tree scored 0.000 on training data and 6.923 on new data, against 5.292 for
-  predicting the mean and ignoring every predictor.
-- The **optimism** grows with flexibility and shrinks with sample size, but only for
-  fixed-complexity models. The forest's gap stayed near 3 from 15 stations to 540.
-- A random forest computes an out-of-bag estimate for free: 4.313 here, against a test value of
-  4.994 and a training value of 2.045. Quote that one, never the training error.
-
+::: {.key-points}
+- **Training error** is a model's error on the data it was fitted to. It is not an estimate of
+  its error on new data and not a basis for choosing between models.
+- The gap between the two errors is the **optimism**. It grows with the model's flexibility,
+  because a flexible model fits noise as well as signal.
+- On the survey, the two models that fitted their stations almost perfectly, the grown-out
+  tree and boosting, did no better on new sites than predicting the average count.
+- A random forest's **out-of-bag error** comes free with the fit and is far closer to its error
+  on new sites than its training error is.
+- More data shrinks the optimism of a model with a fixed number of coefficients, but not that
+  of a forest, whose leaves stay small however many stations there are.
 :::
 
 ## Try it yourself
 
-1. Change the split proportion from 0.75 to 0.5 and re-run. Which numbers move most, and does
-   the reversal of the ranking survive?
-2. Set the fully grown tree's `minbucket` to 5, 10 and 25. Plot training and test RMSE against
-   that setting. You have just drawn the figure that [the next page](underfitting-and-overfitting.qmd)
-   is about: where is its minimum?
+1. Change `times = 20` to `times = 5` and re-run. How much do the averages move, and does the
+   order of the five models on new sites stay the same?
+2. Give the grown-out tree `min_n = 20` in place of `min_n = 2`, so a node needs 20 stations
+   before it may split. What happens to its training error and to its error on new sites?
+   [The next page](underfitting-and-overfitting.qmd) turns this setting into a curve.

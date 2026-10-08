@@ -1,6 +1,6 @@
 ---
 title: "Model complexity"
-description: "What 'complex' actually means, why counting parameters stops working, and a model that achieves R² = 1 from 539 columns of pure noise."
+description: "A model's complexity is how freely it can bend to the data. Each method has its own setting for it, and only for a linear model does counting the parameters measure it: there, even a column of random numbers adds to it."
 order: 3
 categories: [generalisation]
 ---
@@ -13,64 +13,74 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
-set.seed(503)
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Defining flexibility
+## One setting moves each method from rigid to flexible
 
-[The previous page](underfitting-and-overfitting.qmd) drew a curve with "flexibility" on the
-horizontal axis and left the word undefined. It has to be defined, because the whole of model
-selection consists of moving along that axis, and you cannot move along an axis you cannot
-measure.
-
-The intuitive definition, counting the parameters, works for the models marine scientists learn
-first and fails for almost everything else. A random forest with 500 trees has hundreds of
-thousands of thresholds and is *less* prone to overfitting than one tree with 400. A ridge
-regression has exactly as many coefficients as an unpenalised one and behaves as though it has
-a quarter as many.
-
-This page is about what the axis really measures, and it ends with the most direct
-demonstration in the course of why it matters.
+[Underfitting and overfitting](underfitting-and-overfitting.qmd) placed models along an
+axis of flexibility, from too rigid to too flexible, and moved a decision tree along it
+with one setting. This page looks at the axis itself: the setting that moves each method
+of the course along it, and the one kind of model for which counting its parameters
+measures it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Complexity is how many datasets a model could fit
 
-Complexity is best understood as **how many different datasets a model could fit equally
-well**. A straight line can be dragged around by two numbers; there are many surveys it cannot
-describe at all. A tree with one station per leaf can describe any survey whatsoever, including
-one where abundance is assigned by dice.
+A model's **complexity**, or flexibility, is how freely it can bend to the data it is
+given. One way to picture it is to count the different sets of data the model could fit
+closely. A straight line fits only data that lie near a line. A tree with one station in
+each leaf fits any data at all, even counts drawn at random. When such a model fits the
+survey closely, that says nothing about the survey, because a close fit was never in
+doubt.
 
-That is the sense in which complexity is dangerous. A model that could fit anything tells you
-nothing when it fits your data, because fitting your data was never in doubt.
+Each method has [hyperparameters](../04-how-algorithms-learn/parameter-estimation.qmd),
+settings chosen before the fit, that fix how complex it can be. Turning them moves the
+model along the axis.
 
-The useful currency is **effective degrees of freedom**: roughly, how many independent
-quantities the model is actually estimating. For an ordinary linear model that is the number of
-coefficients. For everything else it is smaller than the raw count, sometimes far smaller, and
-it can be a fraction.
+::: {.diagram}
+![Each method has its own complexity setting. More terms, deeper trees with smaller nodes and more boosting trees make a model more flexible. A larger ridge penalty makes it simpler, and adding trees to a random forest makes it steadier, not more flexible.](img/model-complexity.svg){fig-alt="Five rows, one per method, each with an arrow from simpler on the left to more flexible on the right. Linear and polynomial regression: the terms in the model, from few terms to many terms. Ridge regression: the penalty lambda, from large penalty to small penalty, marked: raising it makes the model simpler. Decision tree: depth and minimum node size, from shallow with large nodes to deep with small nodes. Random forest: the node size of its trees, from large nodes to small nodes, marked: more trees, steadier, not more flexible. Boosting: number of trees, depth and learning rate, from few small trees to many deeper trees. A note says each setting orders models within one method, and counts of parameters do not compare across methods."}
+:::
 
-| Family | The knob | What raises complexity |
-| --- | --- | --- |
-| Linear regression | Number of terms | Polynomials, interactions, dummy levels |
-| Ridge / lasso | Penalty $\lambda$ | *Lowering* λ |
-| Decision tree | Depth, `minbucket`, `cp` | Deeper, smaller leaves |
-| Random forest | `mtry`, `min_n` | Smaller leaves; **not** more trees |
-| Boosting | Trees × depth × learning rate | More rounds, deeper trees, larger steps |
-| k-nearest neighbours | *k* | *Lowering* k |
-| Neural network | Layers, units | Wider, deeper, longer training |
+Two of these settings are easy to misread. In
+[ridge regression](../04-how-algorithms-learn/map-and-priors.qmd), raising the penalty
+makes the model simpler, since it pulls every coefficient towards zero. And the number of
+trees in a random forest is not a complexity setting at all.
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) found
+that adding trees to a forest stops helping but does no harm: each tree is as flexible as
+before, and averaging more of them steadies the prediction without letting it bend
+further. Boosting is different, because each new tree fits part of what the trees before
+it got wrong, so more trees do make it more flexible.
 
-Two rows of that table are backwards from the naive reading, and both catch people out. In
-ridge and in k-NN, the knob you turn *up* is the one that makes the model simpler. And adding
-trees to a random forest does not add complexity at all; it averages more copies of the same
-complexity, which is why a forest of 5,000 trees does not overfit more than one of 500.
+## Counting parameters works for a linear model
 
-### Effective degrees of freedom, measured
+In a linear model, each term adds one coefficient, and each coefficient gives the fitted
+surface one more way to bend. Its complexity is close to its number of coefficients.
 
-Ridge regression makes this concrete. The coefficients are all still there, twelve of them,
-but the penalty stops them moving freely, and the number of effectively free directions falls
-continuously as λ rises.
+For other methods the count is a poor guide. A forest of 500 trees has thousands of split
+points, far more than any linear model in the course has coefficients, yet adding more
+trees does not make it overfit. A ridge model keeps every one of its coefficients, but the
+penalty stops them moving freely; [Regularisation](regularisation.qmd) returns to this. So
+complexity is compared within one method, by turning its setting. Between methods, the
+fair comparison is the error on new data.
+
+## Worked example
+
+The data and splits are those of [the previous page](underfitting-and-overfitting.qmd):
+20 random splits of the training sites into fitting sites and new sites, with each error
+averaged over the 20. The test sites are still unused.
+
+The model is a linear regression on the four measured inputs: depth, temperature,
+chlorophyll and salinity. Columns of random numbers are then added to it as extra inputs.
+Each column holds one number per station, drawn at random, so it belongs to the stations
+just as a measurement does, but by construction it carries no information about the
+catch. Each column adds a coefficient, and so, on the count above, a little complexity.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -80,276 +90,236 @@ continuously as λ rises.
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  select(abundance, depth_m, temperature_c, chlorophyll_mg_m3,
-         salinity_psu, substrate, season) |>
-  drop_na()
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
 
-X <- scale(model.matrix(
-  ~ depth_m + I(depth_m^2) + temperature_c + I(temperature_c^2) +
-    chlorophyll_mg_m3 + salinity_psu + substrate + season,
-  data = d
-)[, -1])
+# 20 random splits of the training sites: fitting sites and new sites
+splits <- group_mc_cv(train, group = site_id, prop = 0.75, times = 20)
 
-singular_values <- svd(X)$d
+measured <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu")
 
-effective_df <- function(lambda) sum(singular_values^2 / (singular_values^2 + lambda))
-
-tibble(lambda = c(0, 1, 10, 100, 500, 1000, 5000)) |>
-  mutate(`effective degrees of freedom` = map_dbl(lambda, effective_df)) |>
-  mutate(across(everything(), \(x) round(x, 3)))
+# 460 columns of random numbers, one number per training station
+noise <- matrix(rnorm(nrow(train) * 460), nrow = nrow(train),
+                dimnames = list(NULL, paste0("noise", 1:460)))
+noise_columns <- bind_cols(select(train, station_id), as_tibble(noise))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, root_mean_squared_error
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season"]
-d = survey[columns].dropna()
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train = survey.iloc[train_rows].reset_index(drop=True)
 
-design = pd.get_dummies(
-    d.assign(depth_sq=d["depth_m"] ** 2,
-             temperature_sq=d["temperature_c"] ** 2)
-     .drop(columns="abundance"),
-    drop_first=True,
-).astype(float)
+# 20 random splits of the training sites: fitting sites and new sites
+splitter = GroupShuffleSplit(n_splits=20, train_size=0.75, random_state=123)
+splits = list(splitter.split(train, groups=train["site_id"]))
 
-X = StandardScaler().fit_transform(design)
+measured = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
 
-singular_values = np.linalg.svd(X, compute_uv=False)
-
-def effective_df(lam):
-    return (singular_values ** 2 / (singular_values ** 2 + lam)).sum()
-
-lambdas = [0, 1, 10, 100, 500, 1000, 5000]
-pd.DataFrame({
-    "lambda": lambdas,
-    "effective degrees of freedom": [effective_df(lam) for lam in lambdas],
-}).round(3)
+# 460 columns of random numbers, one number per training station
+rng = np.random.default_rng(123)
+noise = pd.DataFrame(rng.standard_normal((len(train), 460)),
+                     columns=[f"noise{i}" for i in range(1, 461)])
+noise_columns = pd.concat([train[["station_id"]], noise], axis=1)
 ```
 
 :::
 
-```{r}
-#| label: fig-edf
-#| fig-cap: "Effective degrees of freedom of a twelve-coefficient ridge regression, against the penalty λ. The model always has twelve coefficients. At λ = 1000 it is estimating the equivalent of about four free quantities; by λ = 100,000 it is estimating almost nothing and predicts the mean everywhere."
-#| fig-alt: "A curve descending from left to right on axes of lambda from 0.01 to 100,000 on a logarithmic scale against effective degrees of freedom from zero to twelve. The curve is flat at twelve until lambda reaches about 1, then falls steadily, passing eight at lambda 100 and four at lambda 1000, and flattening towards zero beyond lambda 20,000. A dotted horizontal line marks twelve, the number of coefficients the model has throughout."
-#| fig-width: 7
-#| fig-height: 4
-tibble(lambda = exp(seq(log(0.01), log(1e5), length.out = 200))) |>
-  mutate(edf = map_dbl(lambda, effective_df)) |>
-  ggplot(aes(lambda, edf)) +
-  geom_hline(yintercept = ncol(X), linetype = "dotted") +
-  geom_line(linewidth = 1, colour = ml_palette[["blue"]]) +
-  scale_x_log10(labels = scales::label_number()) +
-  labs(x = "λ (log scale)", y = "Effective degrees of freedom",
-       title = "Twelve coefficients, and between zero and twelve of them free",
-       subtitle = "Dotted line: the number of coefficients, which never changes")
-```
+### Random columns added to a linear regression
 
-This is what [MAP estimation](../04-how-algorithms-learn/map-and-priors.qmd) was doing when the
-prior pulled coefficients towards zero. The parameters remain in the model; what shrinks is how
-much independent information each is allowed to carry. Complexity is not a count of parameters
-but a measure of how free they are.
-
-## Worked example
-
-Here is the demonstration. We will take three genuine predictors and add columns of `rnorm()`:
-not weak predictors, not proxies, but *pure random numbers generated after the fact and
-known to contain nothing at all*. Then watch what the model reports about itself.
+For each split, the regression is fitted with no random columns, then with 5, 10 and on
+up to 400. The last setting adds as many as the fitting stations allow: one coefficient
+for every fitting station, counting the intercept. Each fit is scored on the fitting
+stations, by $R^2$ and by RMSE, and on the new sites by RMSE.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: noise-experiment
-set.seed(503)
-split <- initial_split(d, prop = 0.75)
-train <- training(split)
-test  <- testing(split)
+#| label: noise-sweep
+counts <- c(0, 5, 10, 25, 50, 100, 200, 300, 400, Inf)
 
-rmse_of <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
-
-with_noise <- function(k) {
-  set.seed(1000 + k)
-  noise_train <- matrix(rnorm(nrow(train) * k), nrow(train))
-  noise_test  <- matrix(rnorm(nrow(test) * k), nrow(test))
-  colnames(noise_train) <- colnames(noise_test) <-
-    if (k > 0) paste0("noise", seq_len(k)) else character(0)
-
-  a <- bind_cols(train |> select(abundance, depth_m, temperature_c, chlorophyll_mg_m3),
-                 as_tibble(noise_train))
-  b <- bind_cols(test  |> select(abundance, depth_m, temperature_c, chlorophyll_mg_m3),
-                 as_tibble(noise_test))
-
-  fit <- lm(abundance ~ ., data = a)
-  tibble(
-    `noise columns`   = k,
-    `training R²`     = summary(fit)$r.squared,
-    `training RMSE`   = rmse_of(a$abundance, predict(fit, a)),
-    `test RMSE`       = rmse_of(b$abundance, suppressWarnings(predict(fit, b)))
-  )
+score_split <- function(s) {
+  fitting <- analysis(s) |> left_join(noise_columns, by = "station_id")
+  new     <- assessment(s) |> left_join(noise_columns, by = "station_id")
+  map(counts, \(asked) {
+    # at most one coefficient per fitting station, counting the intercept
+    k <- min(asked, nrow(fitting) - length(measured) - 1)
+    columns <- c("abundance", measured, colnames(noise)[seq_len(k)])
+    line_recipe <- recipe(abundance ~ ., data = fitting[columns]) |>
+      step_impute_median(all_numeric_predictors())
+    fitted <- workflow(line_recipe, linear_reg()) |> fit(fitting[columns])
+    fitted_values <- predict(fitted, fitting)$.pred
+    tibble(asked,
+           noise     = k,
+           r_squared = rsq_vec(fitting$abundance, fitted_values),
+           training  = rmse_vec(fitting$abundance, fitted_values),
+           average   = rmse_vec(new$abundance, rep(mean(fitting$abundance), nrow(new))),
+           new       = rmse_vec(new$abundance, predict(fitted, new)$.pred))
+  }) |>
+    list_rbind()
 }
 
-noise_results <- map_dfr(c(0, 5, 10, 25, 50, 100, 200, 400, nrow(train) - 1), with_noise)
+noise_sweep <- map(splits$splits, score_split) |>
+  list_rbind() |>
+  group_by(asked) |>
+  summarise(across(c(noise, r_squared, training, average, new), mean)) |>
+  select(-asked)
 
-noise_results |> mutate(across(where(is.numeric), \(x) round(x, 3)))
+noise_sweep |>
+  select(-average) |>
+  mutate(noise = round(noise), r_squared = round(r_squared, 3),
+         across(c(training, new), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score, root_mean_squared_error
-from sklearn.model_selection import train_test_split
+```{python}
+counts = [0, 5, 10, 25, 50, 100, 200, 300, 400, np.inf]
 
-train, test = train_test_split(d, train_size=0.75, random_state=503)
+rows = []
+for fitting_rows, new_rows in splits:
+    fitting = train.iloc[fitting_rows].merge(noise_columns, on="station_id")
+    new = train.iloc[new_rows].merge(noise_columns, on="station_id")
+    for asked in counts:
+        # at most one coefficient per fitting station, counting the intercept
+        k = int(min(asked, len(fitting) - len(measured) - 1))
+        columns = measured + [f"noise{i}" for i in range(1, k + 1)]
+        model = Pipeline([("recipe", SimpleImputer(strategy="median")),
+                          ("model", LinearRegression())])
+        fitted = model.fit(fitting[columns], fitting["abundance"])
+        fitted_values = fitted.predict(fitting[columns])
+        rows.append({
+            "asked": asked,
+            "noise": k,
+            "r_squared": r2_score(fitting["abundance"], fitted_values),
+            "training": root_mean_squared_error(fitting["abundance"], fitted_values),
+            "new": root_mean_squared_error(new["abundance"],
+                                           fitted.predict(new[columns])),
+        })
 
-real = ["depth_m", "temperature_c", "chlorophyll_mg_m3"]
-
-def with_noise(k):
-    rng = np.random.default_rng(1000 + k)
-    names = [f"noise{i + 1}" for i in range(k)]
-
-    a = pd.concat([train[real].reset_index(drop=True),
-                   pd.DataFrame(rng.standard_normal((len(train), k)),
-                                columns=names)], axis=1)
-    b = pd.concat([test[real].reset_index(drop=True),
-                   pd.DataFrame(rng.standard_normal((len(test), k)),
-                                columns=names)], axis=1)
-
-    # Once k reaches n - 1 the design is saturated. lm() reports NA for the
-    # coefficients it cannot identify; LinearRegression solves the same system
-    # by least norm instead, so the numbers differ where R prints NA.
-    fit = LinearRegression().fit(a, train["abundance"])
-    return {
-        "noise columns": k,
-        "training R²": r2_score(train["abundance"], fit.predict(a)),
-        "training RMSE": root_mean_squared_error(train["abundance"], fit.predict(a)),
-        "test RMSE": root_mean_squared_error(test["abundance"], fit.predict(b)),
-    }
-
-pd.DataFrame([with_noise(k) for k in
-              [0, 5, 10, 25, 50, 100, 200, 400, len(train) - 1]]).round(3)
+noise_sweep = (pd.DataFrame(rows).groupby("asked", as_index=False).mean()
+               .drop(columns="asked"))
+noise_sweep.round({"noise": 0, "r_squared": 3, "training": 2, "new": 2})
 ```
 
 :::
 
 ```{r}
-#| label: fig-noise
-#| fig-cap: "Training R² and test RMSE against the number of pure-noise columns added to three real predictors, on 540 training stations. Training R² climbs from 0.137 to exactly 1.000. Test RMSE climbs from 4.39 to 185, against a response whose largest observed value is 40."
-#| fig-alt: "Two stacked panels sharing a horizontal axis of noise columns from zero to 539 on a square-root scale. The upper panel shows training R-squared rising from 0.14 at zero columns, slowly at first and then steeply, reaching exactly 1.0 at 539. The lower panel, on a logarithmic vertical axis, shows test RMSE almost flat near 4.4 up to about 25 columns, then rising through 5, 6 and 9.5, and jumping to 185 at 539 columns."
-#| fig-width: 7
-#| fig-height: 5
-p1 <- ggplot(noise_results, aes(`noise columns`, `training R²`)) +
-  geom_line(linewidth = 1, colour = ml_palette[["orange"]]) +
-  geom_point(size = 2, colour = ml_palette[["orange"]]) +
-  scale_x_sqrt(breaks = c(0, 25, 100, 200, 400, 539)) +
-  labs(x = NULL, y = "Training R²",
-       title = "What the model says about itself")
-
-p2 <- ggplot(noise_results, aes(`noise columns`, `test RMSE`)) +
-  geom_line(linewidth = 1, colour = ml_palette[["vermilion"]]) +
-  geom_point(size = 2, colour = ml_palette[["vermilion"]]) +
-  scale_x_sqrt(breaks = c(0, 25, 100, 200, 400, 539)) +
-  scale_y_log10() +
-  labs(x = "Columns of pure random noise added", y = "Test RMSE (log scale)",
-       title = "What it does on new stations")
-
-p1 / p2
+#| label: noise-numbers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+row_at <- function(n) filter(noise_sweep, noise == n)
+baseline <- mean(noise_sweep$average)
+none <- row_at(0)
+few <- row_at(10)
+full <- slice_max(noise_sweep, noise)
+# the fewest random columns with which the regression does worse than the average
+first_worse <- noise_sweep |> filter(new > baseline) |> slice_min(noise)
 ```
 
-## The cost of 539 noise columns
+::: {.panel-tabset group="language"}
 
-With no noise columns the model explains 13.7% of the training variance and scores 4.39 on new
-stations. Adding 539 columns of `rnorm()` takes the training R² to **1.000** and the test RMSE
-to **185**.
+## R
 
-Sit with the first of those numbers. A perfect fit. Not 0.98 but 1.000, and a training RMSE of
-exactly zero. Any reader shown that model's summary, without being told where the columns came
-from, would conclude that abundance on this shelf is completely determined and the study is
-finished.
+```{r}
+#| label: fig-noise
+#| fig-cap: "A linear regression on the four measured inputs, with columns of random numbers added, averaged over 20 splits of the training sites. Above, its R² on the fitting stations. Below, its RMSE on new sites, on a log scale; the dashed line is the error of predicting the fitting stations' average count."
+#| fig-alt: !expr glue::glue("Two stacked panels sharing a horizontal axis of random columns added, from 0 to about {round(full$noise)} on a square-root scale. Above, R-squared on the fitting stations rises from {sprintf('%.2f', none$r_squared)} with no random columns, slowly at first and then steeply, to exactly 1 at the right. Below, on a log scale, RMSE on new sites rises from {f2(none$new)} with no random columns, crosses a dashed line at {f2(baseline)} for predicting the average at about {first_worse$noise} columns, and climbs ever faster to {f2(full$new)} at the right.")
+#| fig-width: 7
+#| fig-height: 5.2
+breaks <- c(0, 25, 100, 200, 300, 400)
 
-The mechanism is simple arithmetic and worth stating because it is the general case, not a
-quirk: with 540 training stations and 540 coefficients, the model has exactly enough freedom to
-pass through every point. There is no residual left for it to report. The R² is 1 not because
-the model found something but because it ran out of data to be wrong about.
+fit_panel <- ggplot(noise_sweep, aes(noise, r_squared)) +
+  geom_line(linewidth = 1, colour = ml_palette[["blue"]]) +
+  geom_point(size = 2, colour = ml_palette[["blue"]]) +
+  scale_x_sqrt(breaks = breaks) +
+  labs(x = NULL, y = "R² on the\nfitting stations",
+       title = "The fit to the fitting stations only improves")
 
-Two more readings matter.
+new_panel <- ggplot(noise_sweep, aes(noise, new)) +
+  geom_hline(yintercept = baseline, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  geom_line(linewidth = 1, colour = ml_palette[["vermilion"]]) +
+  geom_point(size = 2, colour = ml_palette[["vermilion"]]) +
+  annotate("text", x = 150, y = baseline / 1.18, label = "predict the average",
+           hjust = 0, colour = ml_palette[["grey"]], size = 3.4) +
+  scale_x_sqrt(breaks = breaks) +
+  scale_y_log10() +
+  labs(x = "Columns of random numbers added", y = "RMSE on new sites\n(individuals)",
+       title = "The error on new sites only worsens",
+       subtitle = "Log scale")
 
-**The damage starts long before the collapse.** At 25 noise columns, 29 parameters on 540
-stations and a ratio most people would call comfortable, the training R² has already risen from
-0.137 to 0.177 and the test RMSE has begun to drift up from 4.39 to 4.50. Every junk column you
-add buys a little training fit and costs a little real performance, from the very first one.
-There is no threshold below which extra variables are free.
+fit_panel / new_panel
+```
 
-**This is what "more data" means.** The problem here is not 539 columns; it is 539 columns
-against 540 stations. The same 539 columns with 50,000 stations would be almost harmless. What
-governs overfitting is the ratio, which is why sample size and complexity have to be discussed
-together and why a survey design question is also a modelling question.
-
-::: {.callout-warning}
-R² never falls when you add a predictor. Not "rarely" but never, as a matter of algebra, however
-irrelevant the predictor is. This makes R² unusable for comparing models with different numbers
-of terms, and it is why adjusted R², AIC and cross-validation exist. If you have ever added a
-variable, seen R² rise, and taken that as evidence the variable matters, this table is the
-counter-example: it happens with random numbers, every time.
 :::
 
-## Limits of counting parameters
+### Random columns raise R² and the error on new sites
 
-**Parameter counts do not compare across families.** The 540-parameter model above is a
-catastrophe. A random forest here has hundreds of thousands of thresholds and is fine. The
-numbers are not on the same scale and should never be compared as though they were; the only
-comparison that means anything is performance on held-out data.
+**The fit only improves.** With no random columns, the regression's $R^2$ on the fitting
+stations is `r sprintf("%.3f", none$r_squared)`. Every column added raises it, and with
+`r round(full$noise)` columns, on average, it reaches `r sprintf("%.3f", full$r_squared)`.
+This is not chance: adding a column can never lower $R^2$ on the stations the model was
+fitted to. The fit could always give the new coefficient a value of zero and do exactly
+as well as before, so it takes whatever small match with the catch the random numbers
+happen to offer. A higher $R^2$ after adding an input is therefore no evidence that the
+input matters.
 
-**Effective degrees of freedom is not always computable.** The tidy formula used above exists
-for ridge and other linear smoothers. For trees, forests and boosting there is no equivalent,
-and the honest position is that their complexity can be *ordered* by turning a knob but not
-*measured* on a common scale.
+**Every column costs on new sites.** Ten random columns already raise the error on new
+sites from `r f2(none$new)` to `r f2(few$new)`. With about `r first_worse$noise` columns
+the regression does worse than predicting the average count, `r f2(baseline)`, and the
+error climbs ever faster from there. There is no number of useless inputs small enough to
+be free.
 
-**Complexity is not the only route to overfitting.** A simple model fitted after you have
-looked at the data twenty times and chosen the variables that worked is overfitted too, and
-nothing in its parameter count reveals it. This is selection bias rather than model complexity,
-it is invisible to every diagnostic on this page, and
-[section 2](../02-marine-data/information-leakage.qmd) named it as one of the four kinds of
-leakage.
+**The perfect fit is the worst model.** With one coefficient for every fitting station,
+the regression passes through every station: its $R^2$ is 1 and its training error
+`r f2(full$training)`. On new sites its error is `r f2(full$new)`, about
+`r round(full$new / baseline)` times that of predicting the average. It has found
+nothing; it has simply run out of stations to be wrong about.
 
-**Some complexity is required.** Nothing here argues for the simplest model available. The
-[previous page's](underfitting-and-overfitting.qmd) seven-leaf tree was underfitted, and a
-model too rigid to represent a thermal optimum will mislead you as reliably as one that fits
-noise, just more quietly, and with better-looking diagnostics.
+The damage depends on the number of coefficients set against the number of stations. The
+same columns fitted to many more stations would leave much less room to fit noise, which
+is why more data is one of the fixes for overfitting.
 
-::: {.callout-tip}
 ## Key points
 
-- Complexity means **how many different datasets the model could fit**, not how many parameters
-  it has.
-- **Effective degrees of freedom** is the useful measure. A twelve-coefficient ridge model has
-  twelve coefficients at every λ, and about four free directions at λ = 1000.
-- Two knobs run backwards: raising λ in ridge and raising *k* in k-NN both make the model
-  *simpler*. Adding trees to a forest changes complexity not at all.
-- Adding 539 columns of pure random noise to 540 training stations produced a training R² of
-  exactly **1.000** and a test RMSE of **185**.
-- R² cannot decrease when a predictor is added, whatever the predictor is. It is not a
-  model-comparison statistic.
+::: {.key-points}
+
+- A model's complexity is how freely it can bend to the data: how many different sets of
+  data it could fit closely.
+- Each method has hyperparameters that set its complexity. Raising a ridge penalty makes
+  a model simpler, and adding trees to a random forest makes it steadier, not more
+  flexible.
+- Only for a linear model does the number of coefficients measure complexity. Across
+  methods, compare the error on new data instead.
+- $R^2$ on the fitting data never falls when an input is added, even a column of random
+  numbers. It cannot show whether an input is worth having.
+- On the survey, every random column made the regression worse on new sites, and with one
+  coefficient per fitting station it fitted perfectly and predicted worst of all.
 
 :::
 
 ## Try it yourself
 
-1. Re-run the noise experiment with 200 noise columns but only 100 training stations. The ratio
-   is worse than any row in the table: what happens to the coefficient table, and what does
-   `lm()` do when it runs out of degrees of freedom entirely?
-2. Fit ridge regression at λ = 1000 to the 539-noise-column design matrix. Effective degrees of
-   freedom says it should behave like a four-parameter model. Does its test RMSE agree, and what
-   does that say about the difference between having parameters and using them?
+1. Give each split fewer fitting sites by adding
+   `fitting <- fitting |> filter(site_id %in% sample(unique(site_id), 30))` after the line
+   that sets `fitting`. With fewer stations, how many random columns does it take before
+   the regression does worse than predicting the average?
+2. Hold the random columns back with a ridge penalty: replace `linear_reg()` with
+   `linear_reg(penalty = 1, mixture = 0) |> set_engine("glmnet")`. Does $R^2$ on the
+   fitting stations still reach 1, and what happens to the error on new sites?

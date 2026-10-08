@@ -1,0 +1,418 @@
+---
+title: "Decision trees"
+description: "A decision tree predicts by asking yes-or-no questions about the inputs, and a short one reads like an identification key. Each extra level of questions fits the training stations more closely, and on the survey a single tree predicts new sites worse than their average count."
+order: 5
+categories: [supervised, trees-ensembles]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyverse)
+library(poissonreg)
+library(rpart.plot)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
+```
+
+{{< new-terms >}}
+
+## A tree predicts by asking questions
+
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#a-decision-tree-finds-its-own-shape)
+fitted a decision tree: it splits the stations in two at a threshold, then splits each
+half again, and predicts the average count in each final group. Like
+[k-nearest neighbours](nearest-neighbours.qmd), it assumes no shape. Unlike the
+neighbours, it does not keep the training set but a short list of yes-or-no questions,
+such as whether the water is colder than 6 °C, and a short tree can be printed and read
+like an identification key. Trees are also the building blocks of the random
+forests and boosting on the [next page](forests-and-boosting.qmd).
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## Each question is the best split at that step
+
+A tree starts with all the training data together. Its first question splits them in
+two on one input: every example below a threshold goes one way, every example above it
+the other. Each half is then split again with its own question, and so on. A group that
+is split no further is a **leaf**, and its prediction is the average outcome of the
+training examples in it. For a category, a leaf gives the share of each category
+instead, which serves as a probability, so the same method does classification.
+
+To choose each question, the algorithm tries every input and every threshold and keeps
+the split that brings the predictions closest to the training data: for a quantity,
+the smallest total of squared errors. It then moves on and never revisits a choice.
+The tree stops growing when it reaches a set **depth**, the number of questions from
+the top to a leaf, or when a group is too small to split.
+
+## The depth sets how closely the tree fits
+
+Each extra level of questions cuts the data into smaller groups, so the leaves follow
+the training data more closely. A tree grown until every leaf holds one station
+reproduces its training data exactly, the same
+[overfitting](nearest-neighbours.qmd#the-number-of-neighbours-sets-how-smooth-the-predictions-are)
+as k-nearest neighbours with one neighbour. The depth is a hyperparameter, like the
+number of neighbours, and is chosen on validation data in the same way. Every station
+on the same side of each threshold gets the same prediction, so the predictions change
+in steps and, past the last threshold, stay level beyond the data;
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+deals with predicting outside the data.
+
+::: {.diagram}
+![A decision tree asks yes-or-no questions; each leaf predicts the average of the examples that reach it. The questions cut the inputs into boxes, and the prediction changes in steps that stay level beyond the data.](img/decision-tree.svg){fig-alt="Three cards. Questions, a tree of yes-or-no questions: the first asks whether input 1 is below 6; if yes, a leaf predicts 2.1; if no, a second question asks whether input 2 is below 10, with leaves predicting 5.2 and 2.6. Each leaf predicts the average of the examples that reach it. Boxes, the questions cut up the inputs: a square of input 1 against input 2 is cut by a vertical line at 6, and its right part by a horizontal line at 10, giving three boxes labelled 2.1, 5.2 and 2.6; every example in a box gets the same prediction. Steps, flat beyond the data: the prediction against one input is a staircase, low, then high, then middle, and it stays level in the shaded regions beyond the data at either end. A note says a deeper tree asks more questions and fits its training data more closely, noise included."}
+:::
+
+## Worked example
+
+The data, the split by site and the fitting and validation sites are those of
+[k-nearest neighbours](nearest-neighbours.qmd#worked-example). A tree needs less
+preparation than the neighbours. Its questions look at one input at a time, so the
+inputs need no common scale, and they can find a peak, so no squared terms are needed.
+rpart, the package tidymodels uses for trees, also asks questions about a category
+directly, such as whether the seabed is mud or rock. The recipe only fills the gaps.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: prepare
+survey <- load_coastal_survey_clean()
+
+split <- group_initial_split(survey, group = site_id, prop = 0.75)
+train <- training(split)
+test  <- testing(split)
+
+fit_split  <- group_initial_split(train, group = site_id, prop = 0.75)
+fitting    <- training(fit_split)
+validation <- testing(fit_split)
+
+predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
+  salinity_psu + substrate + season
+
+tree_recipe <- recipe(predictors, data = train) |>
+  step_impute_median(all_numeric_predictors())
+```
+
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import r2_score, root_mean_squared_error
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeRegressor, export_text
+
+from mlbasic_data import load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
+predictors = numeric + categorical
+
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train, test = survey.iloc[train_rows], survey.iloc[test_rows]
+
+inner = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+fit_rows, val_rows = next(inner.split(train, groups=train["site_id"]))
+fitting, validation = train.iloc[fit_rows], train.iloc[val_rows]
+
+# scikit-learn's trees need numbers, so each category becomes 0/1 columns.
+tree_recipe = ColumnTransformer([
+    ("numeric", SimpleImputer(strategy="median"), numeric),
+    ("categorical", OneHotEncoder(sparse_output=False), categorical),
+], verbose_feature_names_out=False)
+```
+
+:::
+
+### A short tree reads like an identification key
+
+`decision_tree()` sets the depth. rpart normally also stops at a split that improves
+the fit only a little; `cost_complexity = 0` turns that off, and `min_n = 2` lets it
+split any group of two or more, so the depth alone sets the size of the tree.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fit-tree
+tree_model <- function(depth) {
+  decision_tree(mode = "regression", tree_depth = depth,
+                min_n = 2, cost_complexity = 0)
+}
+
+tree_fit <- workflow(tree_recipe, tree_model(3)) |> fit(train)
+```
+
+## Python
+
+```{python}
+def tree_model(depth, data):
+    model = DecisionTreeRegressor(max_depth=depth, random_state=123)
+    return Pipeline([("recipe", tree_recipe), ("model", model)]).fit(
+        data[predictors], data["abundance"])
+
+tree_fit = tree_model(3, train)
+print(export_text(tree_fit["model"], decimals=1,
+                  feature_names=list(tree_fit["recipe"].get_feature_names_out())))
+```
+
+:::
+
+```{r}
+#| label: tree-numbers
+#| include: false
+tree_engine <- extract_fit_engine(tree_fit)
+nodes <- tree_engine$frame |>
+  rownames_to_column("node") |>
+  mutate(node = as.integer(node),
+         cut  = as.numeric(str_extract(labels(tree_engine, digits = 4), "[0-9.]+$")))
+node <- function(k) filter(nodes, node == k)
+f2 <- function(x) sub("^-", "−", sprintf("%.2f", x))
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-tree
+#| fig-cap: "The depth-3 tree for the count. Each box shows the average count of the training stations that reach it, how many stations that is, and their share of all training stations. Follow the answer yes to the left and no to the right."
+#| fig-alt: !expr glue::glue("A decision tree three questions deep. The first question asks whether chlorophyll is below {round(node(2)$cut, 1)}; the {node(3)$n} stations above it average {round(node(3)$yval, 1)} animals. The rest are split on temperature at {round(node(4)$cut, 1)} and {round(node(10)$cut, 1)} degrees, giving leaves for cold, middle and warm water, with the most animals in the middle.")
+#| fig-width: 9
+#| fig-height: 5.5
+rpart.plot(tree_engine, roundint = FALSE, type = 2, extra = 101,
+           box.palette = "Blues", branch.lty = 3, cex = 0.8)
+```
+
+:::
+
+Read it from the top. The first question sets apart the `r node(3)$n` training
+stations with more than `r round(node(2)$cut, 1)` mg m⁻³ of chlorophyll, which average
+`r round(node(3)$yval, 1)` animals against `r round(node(2)$yval, 1)` for the rest.
+Squared errors weigh large counts heavily, so a question that sets apart a few stations
+with many animals can reduce them more than any other.
+
+The remaining stations are split twice on temperature. Below
+`r round(node(4)$cut, 1)` °C they average `r round(node(4)$yval, 1)` animals, above
+`r round(node(10)$cut, 1)` °C `r round(node(10)$yval, 1)`, and in between
+`r round(node(11)$yval, 1)`, across `r node(11)$n` stations. The tree has found a
+temperature band with the most animals, and it took two questions to do it: one
+threshold can only say "more above" or "more below", so a peak needs one question for
+each side. The thresholds are where this sample happened to split best, though, not
+values with a biological meaning; the first exercise below shows how much they move.
+
+### Validation sites choose the depth
+
+Trees of each depth from 1 to 15 are fitted on the fitting sites and scored with the
+[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+the typical miss in animals, on the stations they were fitted to and on the validation
+sites.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: depths
+score_depth <- function(depth) {
+  fitted <- workflow(tree_recipe, tree_model(depth)) |> fit(fitting)
+  error <- function(data) {
+    rmse_vec(data$abundance, predict(fitted, data)$.pred)
+  }
+  tibble(depth = depth, training = error(fitting),
+         validation = error(validation))
+}
+
+depths <- map(1:15, score_depth) |> list_rbind()
+depths |> slice_min(validation) |> mutate(across(-depth, \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+def rmse(fitted, data):
+    return root_mean_squared_error(data["abundance"],
+                                   fitted.predict(data[predictors]))
+
+rows = []
+for depth in range(1, 16):
+    fitted = tree_model(depth, fitting)
+    rows.append({"depth": depth, "training": rmse(fitted, fitting),
+                 "validation": rmse(fitted, validation)})
+depths = pd.DataFrame(rows)
+
+depths.loc[[depths["validation"].idxmin()]].round(2)
+```
+
+:::
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-depth
+#| fig-cap: "The RMSE of trees of each depth on the stations they were fitted to and on the validation sites. The dashed line marks the depth with the lowest validation error."
+#| fig-alt: "Two lines of RMSE against tree depth from 1 to 15. The training line falls steadily, close to zero at depth 15. The validation line falls a little over the first few depths, reaches its lowest point at a middle depth marked by a dashed line, then rises well above where it started."
+#| fig-width: 7
+#| fig-height: 4.2
+best_depth <- depths |> slice_min(validation) |> pull(depth)
+
+depths |>
+  pivot_longer(c(training, validation), names_to = "data", values_to = "rmse") |>
+  ggplot(aes(depth, rmse, colour = data)) +
+  geom_vline(xintercept = best_depth, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2) +
+  scale_colour_manual(values = c(training = ml_palette[["blue"]],
+                                 validation = ml_palette[["orange"]]),
+                      breaks = c("training", "validation"),
+                      labels = c("Fitting stations", "Validation sites")) +
+  scale_x_continuous(breaks = seq(1, 15, 2)) +
+  expand_limits(y = 0) +
+  labs(x = "Tree depth", y = "RMSE (individuals)", colour = NULL,
+       title = "Deeper trees fit their own stations better, new sites worse")
+```
+
+:::
+
+```{r}
+#| label: depth-numbers
+#| include: false
+at_depth <- function(d) filter(depths, depth == d)
+```
+
+The training error falls with every level, from `r f2(at_depth(1)$training)` at
+depth 1 to `r f2(at_depth(15)$training)` at depth 15, where the tree nearly
+reproduces the counts it was fitted to. The validation error falls only from
+`r f2(at_depth(1)$validation)` to `r f2(at_depth(best_depth)$validation)`
+at depth `r best_depth`, then climbs to `r f2(at_depth(15)$validation)`: past
+that depth, the extra questions fit chance patterns in the fitting sites.
+
+### One tree predicts new sites worse than their average
+
+The tree is refitted at depth `r best_depth` on all the training stations and scored
+once on the test sites, beside Poisson regression from
+[Regression for counts](count-regression.qmd), with its squared depth and temperature.
+[$R^2$](../02-marine-data/information-leakage.qmd#one-linear-regression-shows-each-kind)
+is the share of the variation in the test counts that the predictions follow.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: compare
+final_fit <- workflow(tree_recipe, tree_model(best_depth)) |> fit(train)
+
+curve_recipe <- tree_recipe |>
+  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+poisson_fit <- workflow(curve_recipe, poisson_reg()) |> fit(train)
+
+score <- function(fitted, label) {
+  predicted <- predict(fitted, test)$.pred
+  tibble(model = label,
+         rmse  = rmse_vec(test$abundance, predicted),
+         rsq   = rsq_trad_vec(test$abundance, predicted))
+}
+
+scores <- bind_rows(score(final_fit, "Decision tree"),
+                    score(poisson_fit, "Poisson regression"))
+scores |> mutate(across(-model, \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+from sklearn.linear_model import PoissonRegressor
+from sklearn.preprocessing import PolynomialFeatures
+
+best_depth = int(depths.loc[depths["validation"].idxmin(), "depth"])
+final_fit = tree_model(best_depth, train)
+
+def squared(column):
+    return (column, Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+    ]), [column])
+
+curve_recipe = ColumnTransformer([
+    squared("depth_m"),
+    squared("temperature_c"),
+    ("numeric", SimpleImputer(strategy="median"),
+     ["chlorophyll_mg_m3", "salinity_psu"]),
+    ("categorical", OneHotEncoder(drop=["gravel", "spring"], sparse_output=False),
+     categorical),
+])
+poisson_fit = Pipeline([
+    ("recipe", curve_recipe),
+    ("model", PoissonRegressor(alpha=0, solver="newton-cholesky")),
+]).fit(train[predictors], train["abundance"])
+
+def score(fitted, label):
+    predicted = fitted.predict(test[predictors])
+    return {"model": label,
+            "rmse": root_mean_squared_error(test["abundance"], predicted),
+            "rsq": r2_score(test["abundance"], predicted)}
+
+pd.DataFrame([score(final_fit, "Decision tree"),
+              score(poisson_fit, "Poisson regression")]).round(2)
+```
+
+:::
+
+```{r}
+#| label: compare-numbers
+#| include: false
+get_score <- function(label) scores |> filter(model == label)
+tree_score    <- get_score("Decision tree")
+poisson_score <- get_score("Poisson regression")
+```
+
+The tree misses by `r f2(tree_score$rmse)` animals on the test sites, worse than its
+validation error of `r f2(at_depth(best_depth)$validation)`, with an $R^2$ of
+`r f2(tree_score$rsq)`. Below zero means it misses by more than the test sites' own
+average count would. Poisson regression misses by `r f2(poisson_score$rmse)`, with
+`r f2(poisson_score$rsq)`. Two things are at work. A few validation sites are a noisy
+guide to the best depth, and
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chooses it
+by cross-validation instead. And a single tree is unstable: a small change in the
+training data can change the first question, and everything below it changes too. The
+[next page](forests-and-boosting.qmd) averages many trees to steady them.
+
+## Key points
+
+::: {.key-points}
+- A decision tree predicts by asking yes-or-no questions about the inputs; each leaf
+  predicts the average outcome of the training examples in it, or for a category the
+  share of each.
+- Each question is the best split at that step, and a short tree can be read like an
+  identification key. A peak takes two questions, one for each side.
+- Predictions change in steps and stay level beyond the data.
+- Deeper trees fit their training data ever more closely and new data worse, so the
+  depth is chosen on validation sites. On the survey's test sites, one tree predicted
+  worse than their average count and well behind Poisson regression.
+:::
+
+## Try it yourself
+
+1. Change the seed before the split to 124 and refit the depth-3 tree. Which question
+   comes first now, and how far do the temperature thresholds move?
+2. Fit a depth-3 classification tree to `present` with
+   `decision_tree(mode = "classification", tree_depth = 3)`. Which question comes
+   first, and what share of the stations in each leaf are present?

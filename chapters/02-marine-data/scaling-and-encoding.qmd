@@ -1,7 +1,7 @@
 ---
-title: "Scaling, transforming and encoding"
-description: "Putting features on terms a model can use, and why a recipe is a specification fitted on training data, not a table you edit."
-order: 5
+title: "Scaling and encoding"
+description: "Standardising, log transforms and dummy columns put columns in a form a model can use, and a recipe works out what they need from the training data alone."
+order: 4
 categories: [data-preparation]
 ---
 
@@ -13,86 +13,162 @@ library(tidyverse)
 library(patchwork)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## Units a model cannot see past
+{{< new-terms >}}
 
-Depth runs to 200, salinity sits near 34, chlorophyll is mostly under 2. To you these
-are three measurements in three units. To a distance-based or penalised model they are
-three numbers, and depth, simply by being large, dominates.
+## Different units give columns unequal weight
 
-Whether that matters depends entirely on the model, and the split is sharp enough to
-memorise:
-
-| Needs features on a common scale | Indifferent to scale |
-| --- | --- |
-| Penalised regression (ridge, lasso, elastic net) | Decision trees |
-| k-nearest neighbours | Random forests |
-| Principal component analysis, k-means | Boosted trees |
-| Neural networks | Plain linear and logistic regression* |
-| Support vector machines | |
-
-\* The coefficients change with scale, but the fit and the predictions do not.
+Depth runs to 200 m, salinity sits near 34 and chlorophyll is mostly under 2. To you
+these are three measurements in three units; to many models they are just three
+numbers, and depth, simply by being large, can drown out the other two. Preparing the
+columns first lets every input count, and doing the preparation inside a recipe keeps
+the test data from shaping it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Depth decides every distance before standardising
 
-### A recipe is a specification, not an edit
+**Standardising** a column subtracts its mean and divides by its standard deviation,
+so every column ends up centred on 0 with a spread of 1, whatever its units. It is the
+usual form of the scaling that
+[k-nearest neighbours](../01-introduction/types-of-learning.qmd) needed.
 
-This is the part worth slowing down for, because it is the design decision that makes
-everything else in tidymodels safe.
+The distance between two stations adds up the squared difference in each column.
+Averaged over every pair of stations, each column's part of that sum is proportional
+to its variance, so the spreads alone show which column decides:
 
-You might reasonably standardise your data by computing the mean and standard deviation
-of each column and subtracting. That works, and it is wrong, because those means were
-computed from every row, including the rows you intend to hold back for testing. Your
-"unseen" test data has already influenced the training data's scaling.
+::: {.panel-tabset group="language"}
 
-A `recipe` separates the two things people usually do at once:
+## R
 
-1. **Specify** the steps: impute, log, dummy, normalise.
-2. **Estimate** the quantities each step needs, the medians, the means, the standard
-   deviations and the set of category levels, from *training data only*.
-3. **Apply** those stored quantities to any new data.
+```{r}
+#| label: distance-shares
+survey <- load_coastal_survey_clean()
 
-Which is why a recipe is written before the data is split, estimated after, and applied
-to the test set using training-set numbers. The mechanism carries through to
-cross-validation automatically, and it is the single most effective guard against
-[leakage](information-leakage.qmd) available to you.
+survey |>
+  summarise(across(c(depth_m, temperature_c, salinity_psu),
+                   \(x) sd(x, na.rm = TRUE))) |>
+  pivot_longer(everything(), names_to = "input", values_to = "sd") |>
+  mutate(
+    share_raw          = round(100 * sd^2 / sum(sd^2), 1),
+    share_standardised = round(100 * 1 / n(), 1),
+    sd                 = round(sd, 2)
+  )
+```
 
-### Transformation
+## Python
 
-Marine variables are often strongly skewed. Chlorophyll here spans two orders of
-magnitude with a long right tail, which drags means around and gives extreme values
-disproportionate influence on anything that squares a residual.
+```{python}
+import numpy as np
+import pandas as pd
 
-A log transform makes the distribution roughly symmetric and turns multiplicative
-relationships into additive ones, usually closer to how the ecology works. Counts
-often take a square root; `step_YeoJohnson()` will choose a transformation for you if
-you have no reason to prefer one, at the cost of interpretability.
+from mlbasic_data import load_coastal_survey_clean
 
-### Encoding
+survey = load_coastal_survey_clean()
 
-Models need numbers, so categories must be converted.
+sd = survey[["depth_m", "temperature_c", "salinity_psu"]].std()
+shares = pd.DataFrame({
+    "input": sd.index,
+    "sd": sd.round(2).values,
+    # Each column's share of the squared distance, in per cent; standardising
+    # gives every column a standard deviation of 1, so equal shares.
+    "share_raw": (100 * sd**2 / (sd**2).sum()).round(1).values,
+    "share_standardised": round(100 / len(sd), 1),
+})
+shares
+```
 
-**Dummy (one-hot) encoding** turns four substrate types into three (or four) 0/1
-columns. Fine for a handful of levels.
+:::
 
-**Ordinal encoding** maps ordered categories to integers, and asserts equal spacing.
-Only do this when equal spacing is defensible.
+```{r}
+#| label: distance-facts
+#| include: false
+sds <- map_dbl(survey[c("depth_m", "temperature_c", "salinity_psu")], sd, na.rm = TRUE)
+depth_share <- round(100 * sds[["depth_m"]]^2 / sum(sds^2), 1)
+```
 
-**High cardinality is the real problem.** Our `site_id` has 160 levels. Dummy-encoding
-it adds 159 columns, most of which are almost entirely zero. Options are to group rare
-levels together (`step_other()`), or to encode each level by something numeric about
-it, which is target encoding, in the `embed` package. That is powerful and a leakage
-trap in its own right, because it uses the response.
+In metres, degrees and PSU, depth makes up `r depth_share`% of every distance, so the
+"nearest" stations are simply those of similar depth, whatever their temperature and
+salinity. After standardising, each input has an equal share.
 
-## Worked example
+Whether this matters depends on the method. Methods that measure distances between
+rows, such as k-nearest neighbours and k-means, need it, and so do methods that
+penalise large coefficients. Methods that split a column at a threshold, such as
+decision trees, do not: standardising keeps every value in the same order, so the
+splits are the same. Linear regression makes the same predictions either way; only its
+coefficients change units. Later sections say which kind each method is as it appears.
 
-Start from the cleaned data, and split before doing anything else.
+## Skewed columns are logged
+
+Many marine variables have a long right tail: most chlorophyll values are small, and a
+few are ten times larger. Those few pull averages around and dominate any method that
+squares its errors. A **log transform** replaces each value by its logarithm, which
+pulls the tail in:
+
+```{r}
+#| label: fig-transform
+#| fig-cap: "Chlorophyll before and after a log transform. The raw values have a long right tail; on a log scale they are close to symmetric."
+#| fig-alt: "Two histograms of chlorophyll. The left is strongly right-skewed with most values below 2 and a long thin tail reaching past 10. The right, after a log transform, is broadly symmetric and bell-shaped."
+#| fig-width: 8.5
+#| fig-height: 3.8
+chl <- load_coastal_survey_clean() |> drop_na(chlorophyll_mg_m3)
+
+p_raw <- ggplot(chl, aes(chlorophyll_mg_m3)) +
+  geom_histogram(bins = 45, fill = ml_palette[["blue"]]) +
+  labs(x = "Chlorophyll (mg m⁻³)", y = "Stations", title = "As measured")
+
+p_log <- ggplot(chl, aes(log(chlorophyll_mg_m3 + 0.01))) +
+  geom_histogram(bins = 45, fill = ml_palette[["green"]]) +
+  labs(x = "Log chlorophyll", y = NULL, title = "After a log transform")
+
+p_raw + p_log
+```
+
+A log also turns effects that multiply into effects that add, which is often closer to
+how the ecology works. The log of zero does not exist, so a small constant is added
+first; its size changes the low end of the scale, so choose it deliberately.
+
+## Categories become columns of 0s and 1s
+
+Models need numbers, so a category is turned into **dummy columns**: one column of 0s
+and 1s for each level except the first, which becomes the baseline. Four substrates,
+in alphabetical order, become three columns:
+
+| substrate | substrate_mud | substrate_rock | substrate_sand |
+| --- | --- | --- | --- |
+| gravel | 0 | 0 | 0 |
+| mud | 1 | 0 | 0 |
+| rock | 0 | 1 | 0 |
+| sand | 0 | 0 | 1 |
+
+That works for a handful of levels. A column with hundreds, such as the observer or
+the fishing vessel in a national logbook, becomes hundreds of mostly-zero columns.
+Rare levels can be grouped into one "other" level, or each level replaced by a number
+summarising its outcome (**target encoding**), which uses the outcome and so risks the
+leakage described in [Avoiding information leakage](information-leakage.qmd). An
+ordinal category is coded 1, 2, 3 only if equal steps between its levels make sense
+([Kinds of marine data](marine-data-types.qmd)).
+
+## A recipe learns its numbers from the training set
+
+Standardising needs a mean and a standard deviation, and filling gaps needs a median.
+Compute those from every row and the rows set aside to test the model have shaped the
+data it learned from. A **recipe** from the `recipes` package, the list of a model's
+inputs and the steps that prepare them, avoids this by keeping three stages apart:
+
+::: {.diagram}
+![A recipe's three stages. The steps are specified first; prep() estimates the numbers they need from the training data only; bake() applies those stored numbers to any data, so the test data is prepared with numbers it never influenced.](img/recipe-steps.svg){fig-alt="Three cards joined by arrows. 1 Specify, recipe(): the steps, such as fill gaps, take logs, make dummy columns and standardise. 2 Estimate, prep(): the numbers each step needs, such as medians, means, spreads and category levels; an arrow from a label reading training data only points into it. 3 Apply, bake(): the stored numbers, unchanged, applied to whatever data it is given; an arrow from a label reading training or test data points into it. A note says the test data is prepared with numbers it never influenced."}
+:::
+
+The worked example uses the cleaned survey from
+[Exploring and cleaning the data](exploring-and-cleaning.qmd), loaded above, and sets
+a quarter of the stations aside for testing before anything else.
+[Splitting the data](splitting-data.qmd) explains the split itself.
 
 ::: {.panel-tabset group="language"}
 
@@ -100,21 +176,6 @@ Start from the cleaned data, and split before doing anything else.
 
 ```{r}
 #| label: prepare
-raw <- load_coastal_survey_raw()
-
-survey <- raw |>
-  distinct() |>
-  mutate(
-    salinity_psu  = na_if(salinity_psu, -999),
-    temperature_c = na_if(temperature_c, -999),
-    depth_m       = if_else(depth_m > 250, depth_m / 10, depth_m),
-    substrate     = factor(str_to_lower(str_trim(substrate))),
-    substrate     = fct_collapse(substrate, sand = c("sand", "sandy"),
-                                 mud = c("mud", "muddy"), gravel = "gravel",
-                                 rock = c("rock", "rocky")),
-    season        = factor(season, levels = c("spring", "summer", "autumn", "winter"))
-  )
-
 split <- initial_split(survey, prop = 0.75)
 train <- training(split)
 test  <- testing(split)
@@ -122,18 +183,12 @@ test  <- testing(split)
 
 ## Python
 
-```python
-import numpy as np
-import pandas as pd
+```{python}
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
-
-from mlbasic_data import load_coastal_survey_clean
-
-survey = load_coastal_survey_clean()
 
 predictors = ["depth_m", "temperature_c", "salinity_psu",
               "chlorophyll_mg_m3", "substrate", "season"]
@@ -145,8 +200,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 :::
 
-Now the recipe. Read it as a list of instructions, not as something that has happened
-yet.
+The recipe lists the steps. Nothing is computed yet:
 
 ::: {.panel-tabset group="language"}
 
@@ -167,7 +221,7 @@ prep_recipe
 
 ## Python
 
-```python
+```{python}
 numeric = ["depth_m", "temperature_c", "salinity_psu"]
 categorical = ["substrate", "season"]
 
@@ -196,7 +250,8 @@ prep_recipe
 
 :::
 
-Nothing has been computed. `prep()` estimates the quantities from the training data:
+`prep()` estimates the numbers from the training data. The first step's medians, which
+will fill gaps in the training *and* the test data:
 
 ::: {.panel-tabset group="language"}
 
@@ -211,7 +266,7 @@ tidy(estimated, number = 1)
 
 ## Python
 
-```python
+```{python}
 # prep() is fit(): it is where the medians, means and standard deviations are
 # estimated, and it must see the training rows only.
 estimated = prep_recipe.fit(X_train)
@@ -222,8 +277,7 @@ pd.DataFrame({"terms": numeric, "value": imputer.statistics_})
 
 :::
 
-Those are the medians that will be used to fill gaps, in the training data *and*, later,
-in the test data. They came only from `train`.
+`bake()` applies them. The first few prepared training rows:
 
 ::: {.panel-tabset group="language"}
 
@@ -231,175 +285,64 @@ in the test data. They came only from `train`.
 
 ```{r}
 #| label: bake
-bake(estimated, new_data = NULL) |> slice_head(n = 5)
+bake(estimated, new_data = NULL) |>
+  slice_head(n = 5) |>
+  mutate(across(everything(), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
+```{python}
 # bake() is transform(). get_feature_names_out() recovers the column names that
 # the array on its own has lost.
 baked = pd.DataFrame(
     estimated.transform(X_train),
     columns=estimated[:-1].get_feature_names_out(),
-)
+).round(2)
 
 baked.head()
 ```
 
 :::
 
-Four substrate levels have become three `substrate_*` columns, four seasons three
-`season_*` columns, and every numeric predictor now has mean zero and standard
-deviation one.
+Four substrates have become three `substrate_*` columns and four seasons three
+`season_*` columns, and every input now has mean 0 and standard deviation 1 in the
+training data. The same call with `new_data = test` prepares the test data with the
+training numbers.
 
-### The effect of the log
+## Preparation travels with the model
 
-```{r}
-#| label: fig-transform
-#| fig-cap: "Chlorophyll before and after a log transform. The raw distribution is dominated by a long right tail; on a log scale it is close to symmetric, which is what most models assume without telling you."
-#| fig-alt: "Two histograms of chlorophyll. The left is strongly right-skewed with most values below 2 and a long thin tail reaching past 10. The right, after log transformation, is broadly symmetric and bell-shaped."
-#| fig-width: 8.5
-#| fig-height: 3.8
-chl <- tibble(raw_value = train$chlorophyll_mg_m3) |> drop_na()
+A recipe and a model are usually joined in a **workflow**, which fits them together and
+applies both to new data together; later sections do this throughout. In scikit-learn
+the same job is done by a `Pipeline` that ends in the model. Any
+transformation done by hand to the whole table beforehand escapes that protection.
 
-p_raw <- ggplot(chl, aes(raw_value)) +
-  geom_histogram(bins = 45, fill = ml_palette[["blue"]]) +
-  labs(x = "Chlorophyll (mg m⁻³)", y = "Stations", title = "As measured")
+Two costs to keep in mind. Every transformation makes a model harder to read: a
+coefficient on standardised log chlorophyll is a change per standard deviation of log
+chlorophyll, which is fine for prediction and awkward for explanation (see
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd)). And
+a category level that never appears in the training data has no dummy column;
+`step_novel()` handles it, which matters in surveys where rare habitats are genuinely
+rare.
 
-p_log <- ggplot(chl, aes(log(raw_value + 0.01))) +
-  geom_histogram(bins = 45, fill = ml_palette[["green"]]) +
-  labs(x = "log chlorophyll", y = NULL, title = "After step_log()")
-
-p_raw + p_log
-```
-
-### Whether it changes the answer
-
-For a random forest, no, and this is worth seeing rather than taking on trust.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: trees-dont-care
-forest <- rand_forest(trees = 300) |>
-  set_engine("ranger", seed = 99) |>
-  set_mode("regression")
-
-plain_recipe <- recipe(abundance ~ depth_m + temperature_c + salinity_psu +
-                         chlorophyll_mg_m3 + substrate + season, data = train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors())
-
-compare <- function(rec, label) {
-  workflow() |>
-    add_recipe(rec) |>
-    add_model(forest) |>
-    fit(train) |>
-    augment(test) |>
-    rmse(truth = abundance, estimate = .pred) |>
-    transmute(recipe = label, rmse = round(.estimate, 4))
-}
-
-bind_rows(
-  compare(plain_recipe, "No scaling or log"),
-  compare(prep_recipe, "Scaled and logged")
-)
-```
-
-## Python
-
-```python
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import root_mean_squared_error
-
-plain_recipe = ColumnTransformer([
-    ("numeric", SimpleImputer(strategy="median"), numeric + ["chlorophyll_mg_m3"]),
-    ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
-])
-
-def compare(recipe, label):
-    forest = Pipeline([
-        ("recipe", recipe),
-        ("model", RandomForestRegressor(n_estimators=300, random_state=99)),
-    ]).fit(X_train, y_train)
-    return {"recipe": label,
-            "rmse": round(root_mean_squared_error(y_test, forest.predict(X_test)), 4)}
-
-pd.DataFrame([
-    compare(plain_recipe, "No scaling or log"),
-    compare(prep_recipe, "Scaled and logged"),
-])
-```
-
-:::
-
-Essentially identical: they differ in the fourth decimal place, from floating-point
-tie-breaking as the forest searches for split points, not from anything meaningful. The
-reason is that a tree splits on *order*, and neither standardising nor taking logs
-changes the order of any column. Scaling a random forest
-is harmless, pointless, and makes the model harder to interpret.
-
-Swap in a penalised regression and the picture reverses. Without normalisation, the
-penalty falls almost entirely on the small-numbered variables, and the model is decided
-by your choice of units.
-
-## Three consequences
-
-Three things follow.
-
-**Preprocessing is part of the model, not preparation for it.** The recipe and the model
-travel together in a `workflow()`, get fitted together, and get applied to new data
-together. Any transformation you do by hand beforehand escapes that protection.
-
-**Match the preprocessing to the model.** Normalising for a forest is wasted effort;
-skipping it for a lasso or a neural network invalidates the result.
-
-**Every transformation costs interpretability.** A coefficient on standardised log
-chlorophyll is a change per standard deviation of log chlorophyll, which is not a
-sentence anyone can say out loud. That is a fair price when predicting and a real cost
-when explaining, which is the trade-off from
-[section 1](../01-introduction/prediction-and-explanation.qmd).
-
-## Limits of these steps
-
-**`step_log()` fails on zeros and negatives.** Chlorophyll can be zero; hence the
-`offset`. The offset is arbitrary and it changes the shape of the low end, so choose it
-deliberately rather than copying 0.01 from an example.
-
-**Normalising uses the training mean and standard deviation, which are estimates.** With
-a small training set, or one that happens to miss a range of conditions, those numbers
-are wrong, and every prediction inherits the error.
-
-**A category absent from the training data has no encoding.** If `rock` appears only in
-the test set, `step_dummy()` has never seen it. `step_novel()` and `step_unknown()`
-exist for this, and they are needed more often than people expect in surveys where rare
-habitats are genuinely rare.
-
-**Target encoding uses the response.** It is one of the most effective ways to handle
-160 site levels and one of the easiest ways to leak, because the encoding of each site
-carries that site's outcomes. It must be estimated inside the resampling, every time.
-
-::: {.callout-tip}
 ## Key points
-- A recipe specifies steps, estimates their quantities from training data only, and
-  applies those stored quantities to new data. That sequence is what keeps the test set
-  clean.
-- Trees and forests are indifferent to scale; penalised regression, k-NN, PCA, k-means
-  and neural networks are not.
-- Skewed marine variables usually want a log or square-root transform before any model
-  that squares residuals.
-- One-hot encoding is fine for a few levels and unworkable for 160. Group rare levels,
-  or use target encoding and treat it as a leakage risk.
-- Preprocessing belongs inside the workflow. A transformation applied by hand to the
-  whole table has left the safe path.
+
+::: {.key-points}
+- Unstandardised, the column with the largest spread decides every distance: depth
+  makes up nearly all of it in the survey.
+- Standardising puts every column on a mean of 0 and a spread of 1. Methods based on
+  distances or penalties need it; tree methods do not.
+- A log transform pulls in a long right tail; categories become dummy columns, one
+  per level after the first.
+- A recipe is specified, then estimated on the training data (`prep()`), then applied
+  to any data (`bake()`), so the test data never shapes the preparation.
+- Preparation belongs with the model in a workflow, not done by hand beforehand.
 :::
 
 ## Try it yourself
 
-1. Replace the forest with `linear_reg(penalty = 0.1, mixture = 1) |> set_engine("glmnet")`
-   and run the same comparison. How much does normalisation matter now?
-2. Add `step_other(site_id, threshold = 0.01)` to a recipe that includes `site_id`. How
-   many levels survive, and how many columns does `step_dummy()` then create?
+1. Change the constant added before the log from 0.01 to 1 and plot `log(chlorophyll_mg_m3 + 1)`. What
+   happens to the low end of the distribution?
+2. Run `prep()` on the test data instead of the training data and compare the medians
+   from `tidy(..., number = 1)`. They differ only a little; why does it still matter
+   which rows they come from?

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 740" width="100%" role="img" aria-label="Five rows, one per method, each with an arrow from simpler on the left to more flexible on the right. Linear and polynomial regression: the terms in the model, from few terms to many terms. Ridge regression: the penalty lambda, from large penalty to small penalty, marked: raising it makes the model simpler. Decision tree: depth and minimum node size, from shallow with large nodes to deep with small nodes. Random forest: the node size of its trees, from large nodes to small nodes, marked: more trees, steadier, not more flexible. Boosting: number of trees, depth and learning rate, from few small trees to many deeper trees. A note says each setting orders models within one method, and counts of parameters do not compare across methods.">
+<defs>
+<linearGradient id="ramp" gradientUnits="userSpaceOnUse" x1="450" x2="920" y1="0" y2="0">
+  <stop offset="0" stop-color="#0072B2"/><stop offset="1" stop-color="#D55E00"/>
+</linearGradient>
+<marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+  <path d="M0 0 L10 5 L0 10 z" fill="#D55E00"/>
+</marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Each method has its own complexity setting</text>
+<text class="lab" x="450" y="72" style="fill:#0072B2">SIMPLER</text>
+<text class="lab" x="920" y="72" style="fill:#D55E00" text-anchor="end">MORE FLEXIBLE</text>
+<rect class="box" x="0" y="86" width="960" height="104" rx="8"/><rect x="0" y="86" width="6" height="104" rx="3" fill="#1b6a87"/>
+<text class="head" x="24" y="126">Linear and polynomial regression</text>
+<text class="body" x="24" y="154">The terms in the model</text>
+<path d="M450 128 H916" stroke="url(#ramp)" stroke-width="5" fill="none" marker-end="url(#arrow)"/>
+<circle cx="450" cy="128" r="6" fill="#0072B2"/>
+<text class="sm" x="450" y="156">few terms</text>
+<text class="sm" x="920" y="156" text-anchor="end">many terms</text>
+<rect class="box" x="0" y="204" width="960" height="104" rx="8"/><rect x="0" y="204" width="6" height="104" rx="3" fill="#1b6a87"/>
+<text class="head" x="24" y="244">Ridge regression</text>
+<text class="body" x="24" y="272">The penalty λ</text>
+<path d="M450 246 H916" stroke="url(#ramp)" stroke-width="5" fill="none" marker-end="url(#arrow)"/>
+<circle cx="450" cy="246" r="6" fill="#0072B2"/>
+<text class="sm" x="450" y="274">large penalty</text>
+<text class="sm" x="920" y="274" text-anchor="end">small penalty</text>
+<text class="lab" x="685.0" y="232" style="fill:#D55E00" text-anchor="middle">RAISING IT MAKES THE MODEL SIMPLER</text>
+<rect class="box" x="0" y="322" width="960" height="104" rx="8"/><rect x="0" y="322" width="6" height="104" rx="3" fill="#1b6a87"/>
+<text class="head" x="24" y="362">Decision tree</text>
+<text class="body" x="24" y="390">Depth and minimum node size</text>
+<path d="M450 364 H916" stroke="url(#ramp)" stroke-width="5" fill="none" marker-end="url(#arrow)"/>
+<circle cx="450" cy="364" r="6" fill="#0072B2"/>
+<text class="sm" x="450" y="392">shallow, large nodes</text>
+<text class="sm" x="920" y="392" text-anchor="end">deep, small nodes</text>
+<rect class="box" x="0" y="440" width="960" height="104" rx="8"/><rect x="0" y="440" width="6" height="104" rx="3" fill="#1b6a87"/>
+<text class="head" x="24" y="480">Random forest</text>
+<text class="body" x="24" y="508">The node size of its trees</text>
+<path d="M450 482 H916" stroke="url(#ramp)" stroke-width="5" fill="none" marker-end="url(#arrow)"/>
+<circle cx="450" cy="482" r="6" fill="#0072B2"/>
+<text class="sm" x="450" y="510">large nodes</text>
+<text class="sm" x="920" y="510" text-anchor="end">small nodes</text>
+<text class="lab" x="685.0" y="468" style="fill:#6b7680" text-anchor="middle">MORE TREES: STEADIER, NOT MORE FLEXIBLE</text>
+<rect class="box" x="0" y="558" width="960" height="104" rx="8"/><rect x="0" y="558" width="6" height="104" rx="3" fill="#1b6a87"/>
+<text class="head" x="24" y="598">Boosting</text>
+<text class="body" x="24" y="626">Number of trees, depth, learning rate</text>
+<path d="M450 600 H916" stroke="url(#ramp)" stroke-width="5" fill="none" marker-end="url(#arrow)"/>
+<circle cx="450" cy="600" r="6" fill="#0072B2"/>
+<text class="sm" x="450" y="628">few small trees</text>
+<text class="sm" x="920" y="628" text-anchor="end">many deeper trees</text>
+<text class="note" x="470" y="694" text-anchor="middle">Each setting orders models within one method. Counts of parameters do not compare across methods.</text>
+</svg>

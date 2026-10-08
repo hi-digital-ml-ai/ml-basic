@@ -1,6 +1,6 @@
 ---
 title: "7 · Model validation and performance assessment"
-description: "Cross-validation done properly for spatial and temporal data, and choosing measures that match the scientific objective."
+description: "Cross-validation scores a model on sites it was not fitted to. The section matches the folds to how far the predictions must reach, chooses the measure from the use the predictions are put to, and puts an interval on the score."
 categories: [validation, metrics, spatial-temporal, uncertainty]
 listing:
   id: pages
@@ -13,59 +13,59 @@ listing:
 toc: false
 ---
 
-A performance number is a claim about the future: *this is roughly how well the model will do
-on data it has not seen.* Validation is the process of earning the right to make that claim.
+A score is a claim about the future: roughly how well a model will predict data it has not
+seen. This section asks what such a score can claim and what it should measure, on the
+same simulated survey as the rest of the course.
+The first two pages cover the folds:
 
-Done casually it produces flattering nonsense. Randomly splitting autocorrelated survey data
-puts near-identical observations on both sides of the split, so the model is tested on what it
-has effectively already seen. Reporting a measure chosen by default rewards whichever model
-happens to suit that default.
+- **cross-validation**: five or ten folds of sites are enough, their out-of-fold
+  predictions are pooled into one score, and nested cross-validation scores a search for
+  the best model as well as the model it picks;
+- **spatial and temporal cross-validation**: a score says how well a model predicts
+  stations as far from its fitted data as the held-out ones were, so blocks as wide as the
+  patches in its errors test new areas, and a forecast is tested on later years.
 
-[Section 5](../05-generalisation/index.qmd) chose complexity by looking at the test set on
-every page, and said so each time. [Section 6](../06-assumptions-limitations/index.qmd)
-diagnosed dependence and deferred the remedy. This section settles both debts, and then asks
-the question neither of them did: what should the number have been measuring in the first
-place?
+The next two cover the measures:
+
+- **regression performance measures**: RMSE, MAE, the Poisson deviance and R² weigh misses
+  their own way and can choose different models, and the squared correlation often
+  reported as R² cannot see predictions that run low;
+- **classification performance measures**: presence can be scored on the calls at one
+  threshold, on how well the probabilities rank the stations, or on the probabilities
+  themselves.
+
+The last two cover what to report:
+
+- **uncertainty and stability**: a bootstrap of the sites puts an interval on a score, and
+  a paired comparison says how sure a ranking of two models is;
+- **choosing measures that match the objective**: the use of the predictions decides the
+  measure, a shortlist is scored on the animals it finds, and the costs of misses and
+  false alarms set the threshold.
+
+The section picks up threads from earlier ones.
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
+setting by cross-validation by site; [Cross-validation](cross-validation.qmd) shows that
+the folds that choose a model cannot also score it.
+[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+compared folds of sites with spatial blocks, and
+[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) sets the width of the
+blocks from the model's errors.
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
+showed that each loss aims at a different middle of the data;
+[Regression performance measures](regression-metrics.qmd) shows what that does to the
+scores. [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) counted
+misses and false alarms apart at one threshold;
+[Classification performance measures](classification-metrics.qmd) scores the ranking and
+the probabilities, and [Choosing measures that match the objective](choosing-a-metric.qmd)
+chooses the threshold from the costs.
+[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd)
+resampled whole sites to measure what repeat visits are worth;
+[Uncertainty and stability](uncertainty-and-stability.qmd) resamples them to put an
+interval on a score.
 
 ## Pages in this section
 
 ::: {#pages}
-:::
-
-## Findings from this section
-
-- Forty different 75/25 splits of the same 720 stations put the same model's R² anywhere
-  between **0.079 and 0.346**. Ten-fold cross-validation put it between 0.195 and 0.239.
-- A search over 100 candidate models reported a cross-validated RMSE of 4.472. Nested
-  cross-validation put the honest figure at **4.851**, and a fixed model with no search at all
-  beat the searched one on **all five** outer folds.
-- Scores fall steadily with the distance between held-out and training stations: R² 0.200 when
-  the nearest training station is four kilometres away, **0.114** at twenty-five. There is no
-  single true score, only the question you chose.
-- The same negative binomial model scored RMSE between **3.51 and 5.92** across ten folds, and
-  R² between **−0.42 and +0.46**. Fold RMSE correlated 0.78 with how spread out that fold's
-  counts were.
-- Ten classification measures from one confusion matrix ranged from **0.058 to 0.995**, and F1
-  scored a rule that flags every station at 0.878 against the fitted model's 0.882.
-- Comparing two models unpaired gave a confidence interval **1.54 wide** that covered zero.
-  Pairing the identical numbers fold by fold gave one **0.33 wide**.
-- A model that lost on RMSE won the fifty-station shortlist, 481 individuals against 456, and
-  leaving a decision threshold at 0.5 cost up to **eight times** the cheapest threshold.
-
-::: {.callout-important}
-The three numbers in any tuned analysis are different: the winner's score tells you which
-candidate to use, a nested estimate tells you how the procedure will perform, and the final
-model refitted on everything has no score of its own. Quoting the first as the second is the
-most common validation error in applied work.
-:::
-
-::: {.callout-note}
-Two habits make everything on these pages comparable, and nothing here works without them.
-**Pool the out-of-fold predictions before computing a metric**, so every scheme is scored on
-identical rows. This is the proper fix for the trap
-[section 6 hit three times](../06-assumptions-limitations/index.qmd). And **use the same
-resamples object for every model you intend to compare**, so the fold cancels out of the
-difference.
 :::
 
 
@@ -75,7 +75,7 @@ difference.
 
 - [Evaluate your model with resampling](https://www.tidymodels.org/start/resampling/), tidymodels.
 - [rsample](https://rsample.tidymodels.org/) and [yardstick](https://yardstick.tidymodels.org/), tidymodels. Every resampling scheme, and every metric with its definition.
-- [Cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html) and [metrics and scoring](https://scikit-learn.org/stable/modules/model_evaluation.html), scikit-learn user guide. The cross-validation page's section on grouped data is the one to read alongside section 6.
+- [Cross-validation](https://scikit-learn.org/stable/modules/cross_validation.html) and [metrics and scoring](https://scikit-learn.org/stable/modules/model_evaluation.html), scikit-learn user guide. Its section on grouped data covers cross-validation by site.
 
 **Video**
 

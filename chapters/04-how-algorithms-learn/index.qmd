@@ -1,6 +1,6 @@
 ---
 title: "4 · How machine-learning algorithms learn"
-description: "What is actually happening when a model 'fits': loss functions, gradient descent, and the link back to maximum likelihood."
+description: "Fitting a model means searching for the parameters that make one number, the loss, as small as possible. Where that number comes from, how the search finds it, and how to check that the search worked."
 categories: [optimisation]
 listing:
   id: pages
@@ -13,36 +13,31 @@ listing:
 toc: false
 ---
 
-"Fitting a model" sounds like a single act. It is really a search. The algorithm has a
-way of scoring how wrong it currently is, and a rule for changing its parameters to be
-slightly less wrong, and it repeats until further changes stop helping.
+"Fitting a model" sounds like a single act. It is really a search. The algorithm scores
+how wrong the model currently is, changes the parameters to make that score a little
+smaller, and repeats until further changes stop helping. Each page in this section takes
+one part of that loop, on the same simulated survey as the rest of the course:
 
-Understanding that loop is worth an hour of your time, because it explains a great
-deal that otherwise looks arbitrary: why models need scaled inputs, why fits
-sometimes fail to converge, why two runs give different answers, and what a
-regularisation penalty is actually penalising.
+- **loss functions**, the score being made smaller, and how squared and absolute error
+  draw different lines through the same stations;
+- **finding the parameters**, by a formula for a few models and by a search for the rest;
+- **gradient descent**, the simplest search, and why it needs standardised inputs;
+- **maximum likelihood**, where each loss comes from: name the distribution behind the
+  data, and the loss follows;
+- **priors and ridge regression**, a penalty on the parameters that is a belief about
+  them written into the loss;
+- **checking a fit**, the signs that a search stopped early, had no lowest point or gives
+  a different answer each run.
 
-It also connects to ground you may already stand on. Least-squares regression and
-maximum likelihood are not a separate world from machine learning: they are the same
-machinery with a different scorecard.
-
-This section settles three debts. Section 2 asked you to [scale your
-predictors](../02-marine-data/scaling-and-encoding.qmd) without giving the real reason;
-[gradient descent](gradient-descent.qmd) supplies it, and it is worth a factor of about
-ninety in computing. [Section
-3](../03-supervised-learning/linear-and-polynomial-regression.qmd) showed a linear model
-predicting negative fish; [maximum likelihood](maximum-likelihood.qmd) explains that this
-was a distributional assumption made silently, not a flaw in the method. And the
-regularisation that [section 5](../05-generalisation/regularisation.qmd) is about to
-introduce as a technique turns out, on the [MAP page](map-and-priors.qmd), to be a
-statement of prior belief with the Bayesian label removed.
-
-::: {.callout-note}
-There is more arithmetic here than elsewhere in the course, and it is all optional depth.
-If you read only two pages, read [loss functions](loss-functions.qmd), because the loss is
-a scientific choice your software makes for you by default, and
-[reading a fit](reading-a-fit.qmd), which is the practical one.
-:::
+The section also pays back debts from earlier ones.
+[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) asked you to
+standardise inputs without giving the full reason, and
+[Gradient descent](gradient-descent.qmd) supplies it. Section 3's
+[polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
+predicted a negative count, and [Maximum likelihood](maximum-likelihood.qmd) shows that
+squared error assumes a Normal response, which allows one. The penalty that
+[5 · Generalisation and model complexity](../05-generalisation/index.qmd) uses to stop models overfitting
+is the prior from [Priors and ridge regression](map-and-priors.qmd).
 
 ## Pages in this section
 
@@ -54,7 +49,7 @@ a scientific choice your software makes for you by default, and
 
 **Documentation**
 
-- [Stochastic gradient descent](https://scikit-learn.org/stable/modules/sgd.html), scikit-learn user guide. Includes the practical-tips section on why these methods need scaled inputs, which is the point this section makes with a factor of ninety.
+- [Stochastic gradient descent](https://scikit-learn.org/stable/modules/sgd.html), scikit-learn user guide. Includes practical tips on why these methods need standardised inputs, the point [Gradient descent](gradient-descent.qmd) makes on the survey.
 
 **Video**
 

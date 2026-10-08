@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 500" width="100%" role="img" aria-label="From a miss to a fit. The residual is how far one prediction missed: observed minus predicted, positive above the line and negative below. The loss is the penalty for one miss: squared error grows fast with the miss, absolute error grows in step with it. The objective is the average loss over all the data, and the fit is the parameter value that makes it smallest. A note says: change the loss, and the fit changes with it.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .eq   { font: italic 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">From a miss to a fit</text>
+<rect class="box" x="0" y="48" width="294" height="362" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Residual</text>
+<text class="lab" x="22" y="114" fill="#0072B2">THE SIZE OF ONE MISS</text>
+<text class="eq" x="22" y="146">residual = observed − predicted</text>
+<path class="ax" d="M34 168 V295 H266"/>
+<text class="sm" x="266" y="315" text-anchor="end">input</text>
+<text class="sm" x="26" y="231.5" text-anchor="middle" transform="rotate(-90 26 231.5)" dy="-4">outcome</text>
+<text class="body" x="22" y="348">Positive above the line,</text>
+<text class="body" x="22" y="372">negative below it.</text>
+<rect class="box" x="323" y="48" width="294" height="362" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Loss</text>
+<text class="lab" x="345" y="114" fill="#D55E00">THE PENALTY FOR ONE MISS</text>
+<text class="eq" x="345" y="146">squared or absolute error</text>
+<path class="ax" d="M357 168 V295 H589"/>
+<text class="sm" x="589" y="315" text-anchor="end">residual</text>
+<text class="sm" x="349" y="231.5" text-anchor="middle" transform="rotate(-90 349 231.5)" dy="-4">penalty</text>
+<text class="body" x="345" y="348">Squared error grows fast</text>
+<text class="body" x="345" y="372">with the miss; absolute</text>
+<text class="body" x="345" y="396">error grows in step.</text>
+<rect class="box" x="646" y="48" width="294" height="362" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Objective</text>
+<text class="lab" x="668" y="114" fill="#009E73">THE AVERAGE OVER ALL DATA</text>
+<text class="eq" x="668" y="146">objective = average loss</text>
+<path class="ax" d="M680 168 V295 H912"/>
+<text class="sm" x="912" y="315" text-anchor="end">parameter</text>
+<text class="sm" x="672" y="231.5" text-anchor="middle" transform="rotate(-90 672 231.5)" dy="-4">objective</text>
+<text class="body" x="668" y="348">The fit is the parameter</text>
+<text class="body" x="668" y="372">value that makes the</text>
+<text class="body" x="668" y="396">average smallest.</text>
+<circle cx="52.0" cy="260.2" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="72.0" cy="247.9" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="92.0" cy="250.9" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="112.0" cy="234.7" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="132.0" cy="223.9" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="152.0" cy="228.5" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="192.0" cy="232.0" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="212.0" cy="220.2" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="232.0" cy="211.4" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<circle cx="252.0" cy="184.3" r="3.6" fill="#0072B2" fill-opacity="0.35"/>
+<path d="M46 272.0 L258 192.0" stroke="#0072B2" stroke-width="3"/>
+<line x1="172" y1="182" x2="172" y2="224.5" stroke="#D55E00" stroke-width="2.4" stroke-dasharray="5 3"/>
+<circle cx="172" cy="182" r="5" fill="#D55E00"/>
+<text class="sm" x="164" y="192" text-anchor="end" fill="#D55E00">residual</text>
+<path d="M365.0 178.0 L366.8 181.9 L368.6 185.7 L370.4 189.4 L372.2 193.1 L374.0 196.7 L375.8 200.2 L377.6 203.7 L379.4 207.1 L381.2 210.5 L383.0 213.8 L384.8 217.0 L386.6 220.1 L388.4 223.2 L390.2 226.2 L392.0 229.2 L393.8 232.1 L395.6 234.9 L397.4 237.7 L399.2 240.4 L401.0 243.0 L402.8 245.6 L404.6 248.1 L406.4 250.5 L408.2 252.9 L410.0 255.2 L411.8 257.4 L413.6 259.6 L415.4 261.7 L417.2 263.8 L419.0 265.8 L420.8 267.7 L422.6 269.5 L424.4 271.3 L426.2 273.0 L428.0 274.7 L429.8 276.3 L431.6 277.8 L433.4 279.3 L435.2 280.7 L437.0 282.0 L438.8 283.3 L440.6 284.5 L442.4 285.6 L444.2 286.7 L446.0 287.7 L447.8 288.6 L449.6 289.5 L451.4 290.3 L453.2 291.1 L455.0 291.8 L456.8 292.4 L458.6 292.9 L460.4 293.4 L462.2 293.8 L464.0 294.2 L465.8 294.5 L467.6 294.7 L469.4 294.9 L471.2 295.0 L473.0 295.0 L474.8 295.0 L476.6 294.9 L478.4 294.7 L480.2 294.5 L482.0 294.2 L483.8 293.8 L485.6 293.4 L487.4 292.9 L489.2 292.4 L491.0 291.8 L492.8 291.1 L494.6 290.3 L496.4 289.5 L498.2 288.6 L500.0 287.7 L501.8 286.7 L503.6 285.6 L505.4 284.5 L507.2 283.3 L509.0 282.0 L510.8 280.7 L512.6 279.3 L514.4 277.8 L516.2 276.3 L518.0 274.7 L519.8 273.0 L521.6 271.3 L523.4 269.5 L525.2 267.7 L527.0 265.8 L528.8 263.8 L530.6 261.7 L532.4 259.6 L534.2 257.4 L536.0 255.2 L537.8 252.9 L539.6 250.5 L541.4 248.1 L543.2 245.6 L545.0 243.0 L546.8 240.4 L548.6 237.7 L550.4 234.9 L552.2 232.1 L554.0 229.2 L555.8 226.2 L557.6 223.2 L559.4 220.1 L561.2 217.0 L563.0 213.8 L564.8 210.5 L566.6 207.1 L568.4 203.7 L570.2 200.2 L572.0 196.7 L573.8 193.1 L575.6 189.4 L577.4 185.7 L579.2 181.9 L581.0 178.0" fill="none" stroke="#D55E00" stroke-width="3"/>
+<path d="M365.0 256.0 L366.8 256.6 L368.6 257.3 L370.4 257.9 L372.2 258.6 L374.0 259.2 L375.8 259.9 L377.6 260.6 L379.4 261.2 L381.2 261.9 L383.0 262.5 L384.8 263.1 L386.6 263.8 L388.4 264.4 L390.2 265.1 L392.0 265.8 L393.8 266.4 L395.6 267.1 L397.4 267.7 L399.2 268.4 L401.0 269.0 L402.8 269.6 L404.6 270.3 L406.4 270.9 L408.2 271.6 L410.0 272.2 L411.8 272.9 L413.6 273.6 L415.4 274.2 L417.2 274.9 L419.0 275.5 L420.8 276.1 L422.6 276.8 L424.4 277.4 L426.2 278.1 L428.0 278.8 L429.8 279.4 L431.6 280.1 L433.4 280.7 L435.2 281.4 L437.0 282.0 L438.8 282.6 L440.6 283.3 L442.4 283.9 L444.2 284.6 L446.0 285.2 L447.8 285.9 L449.6 286.6 L451.4 287.2 L453.2 287.9 L455.0 288.5 L456.8 289.1 L458.6 289.8 L460.4 290.4 L462.2 291.1 L464.0 291.8 L465.8 292.4 L467.6 293.1 L469.4 293.7 L471.2 294.4 L473.0 295.0 L474.8 294.4 L476.6 293.7 L478.4 293.1 L480.2 292.4 L482.0 291.8 L483.8 291.1 L485.6 290.4 L487.4 289.8 L489.2 289.1 L491.0 288.5 L492.8 287.9 L494.6 287.2 L496.4 286.6 L498.2 285.9 L500.0 285.2 L501.8 284.6 L503.6 283.9 L505.4 283.3 L507.2 282.6 L509.0 282.0 L510.8 281.4 L512.6 280.7 L514.4 280.1 L516.2 279.4 L518.0 278.8 L519.8 278.1 L521.6 277.4 L523.4 276.8 L525.2 276.1 L527.0 275.5 L528.8 274.9 L530.6 274.2 L532.4 273.6 L534.2 272.9 L536.0 272.2 L537.8 271.6 L539.6 270.9 L541.4 270.3 L543.2 269.6 L545.0 269.0 L546.8 268.4 L548.6 267.7 L550.4 267.1 L552.2 266.4 L554.0 265.8 L555.8 265.1 L557.6 264.4 L559.4 263.8 L561.2 263.1 L563.0 262.5 L564.8 261.9 L566.6 261.2 L568.4 260.6 L570.2 259.9 L572.0 259.2 L573.8 258.6 L575.6 257.9 L577.4 257.3 L579.2 256.6 L581.0 256.0" fill="none" stroke="#0072B2" stroke-width="3"/>
+<text class="sm" x="553" y="190" text-anchor="end" fill="#D55E00">squared</text>
+<text class="sm" x="585" y="248" text-anchor="end" fill="#0072B2">absolute</text>
+<line x1="473" y1="295" x2="473" y2="301" stroke="#8a949c" stroke-width="1.6"/>
+<text class="sm" x="473" y="315" text-anchor="middle">0</text>
+<path d="M694.0 195.0 L698.0 200.6 L702.0 206.0 L706.0 211.2 L710.0 216.2 L714.0 221.0 L718.0 225.6 L722.0 230.0 L726.0 234.2 L730.0 238.2 L734.0 241.9 L738.0 245.5 L742.0 248.9 L746.0 252.0 L750.0 255.0 L754.0 257.8 L758.0 260.3 L762.0 262.7 L766.0 264.8 L770.0 266.7 L774.0 268.5 L778.0 270.0 L782.0 271.3 L786.0 272.4 L790.0 273.4 L794.0 274.1 L798.0 274.6 L802.0 274.9 L806.0 275.0 L810.0 274.9 L814.0 274.6 L818.0 274.1 L822.0 273.4 L826.0 272.4 L830.0 271.3 L834.0 270.0 L838.0 268.5 L842.0 266.7 L846.0 264.8 L850.0 262.7 L854.0 260.3 L858.0 257.8 L862.0 255.0 L866.0 252.0 L870.0 248.9 L874.0 245.5 L878.0 241.9 L882.0 238.2 L886.0 234.2 L890.0 230.0 L894.0 225.6 L898.0 221.0 L902.0 216.2 L906.0 211.2 L910.0 206.0 L914.0 200.6 L918.0 195.0" fill="none" stroke="#009E73" stroke-width="3"/>
+<line x1="806" y1="275" x2="806" y2="295" stroke="#009E73" stroke-width="1.4" stroke-dasharray="5 4"/>
+<circle cx="806" cy="275" r="5.5" fill="#009E73"/>
+<text class="sm" x="806" y="260" text-anchor="middle" fill="#009E73">the fit</text>
+<text class="note" x="470" y="452" text-anchor="middle">Change the loss, and the fit changes with it.</text>
+</svg>

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 786" width="100%" role="img" aria-label="Prediction and explanation compared. One fitted model can serve either aim. Prediction is the usual aim of machine learning, which usually finds the shape of the relationship; explanation is the usual aim of statistical modelling, where you usually write the shape down. Prediction gives a value for a new case and is checked on held-back cases. Explanation makes a claim about cause and rests on study design and knowledge of the system. Explanation asks more of the model and is harder to check.">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#55606a"/></marker>
+  <marker id="arrow-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#009E73"/></marker>
+  <linearGradient id="aims" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#E69F00"/><stop offset="1" stop-color="#009E73"/></linearGradient>
+  <style>
+    .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+    .node { fill: #ffffff; stroke: #1b6a87; stroke-width: 1.4; }
+    .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+    .top  { font: 19px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #77818a; letter-spacing: 0.5px; }
+    .small{ font: 16px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+    .rule { stroke: #d5dde2; stroke-width: 1; }
+    .axis { stroke: #8a949c; stroke-width: 1.2; }
+    .link { stroke: #55606a; stroke-width: 1.5; fill: none; }
+  </style>
+</defs>
+
+<text class="title" x="470" y="30" text-anchor="middle">One fitted model, two uses</text>
+
+<!-- The shared model feeding both aims -->
+<rect class="node" x="270" y="46" width="400" height="42" rx="8"/>
+<text class="top" x="470" y="73" text-anchor="middle">One model fitted to the data</text>
+<path class="link" d="M470,88 V102 M236,102 H704"/>
+<path class="link" d="M236,102 V122" marker-end="url(#arrow)"/>
+<path class="link" d="M704,102 V122" marker-end="url(#arrow)"/>
+
+<!-- Prediction -->
+<rect class="box" x="8" y="124" width="456" height="536" rx="8"/>
+<rect x="8" y="124" width="456" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="28" y="160">Prediction</text>
+<text class="note" x="28" y="184">The usual aim of machine learning</text>
+<text class="lab" x="28" y="356">QUESTION</text>
+<text class="body" x="28" y="380">The outcome for a case</text>
+<text class="body" x="28" y="404">the model has not seen</text>
+<line class="rule" x1="28" y1="422" x2="444" y2="422"/>
+<text class="lab" x="28" y="448">ANSWER</text>
+<text class="body" x="28" y="472">A value for each new case</text>
+<line class="rule" x1="28" y1="490" x2="444" y2="490"/>
+<text class="lab" x="28" y="516">CHECKED BY</text>
+<text class="body" x="28" y="540">The error on cases</text>
+<text class="body" x="28" y="564">held back from fitting</text>
+<line class="rule" x1="28" y1="582" x2="444" y2="582"/>
+<text class="lab" x="28" y="608">SHAPE OF THE RELATIONSHIP</text>
+<text class="body" x="28" y="632">Usually found by the algorithm</text>
+<g transform="translate(80,30)">
+<line class="axis" x1="36" y1="270" x2="276" y2="270"/>
+<g fill="#8a949c" fill-opacity="0.6"><circle cx="58" cy="253" r="3.5"/><circle cx="76" cy="232" r="3.5"/><circle cx="94" cy="241" r="3.5"/><circle cx="111" cy="205" r="3.5"/><circle cx="128" cy="220" r="3.5"/><circle cx="146" cy="188" r="3.5"/><circle cx="164" cy="210" r="3.5"/><circle cx="181" cy="198" r="3.5"/><circle cx="244" cy="246" r="3.5"/><circle cx="258" cy="234" r="3.5"/></g>
+<path d="M46,258 Q146,155 266,253" fill="none" stroke="#E69F00" stroke-width="2.6"/>
+<line x1="211" y1="270" x2="211" y2="226" stroke="#E69F00" stroke-width="1.4" stroke-dasharray="4 3"/>
+<circle cx="211" cy="218" r="7" fill="#E69F00" stroke="#ffffff" stroke-width="1.5"/>
+<text class="small" x="211" y="296" text-anchor="middle">a new case</text>
+</g>
+
+<!-- Explanation -->
+<rect class="box" x="476" y="124" width="456" height="536" rx="8"/>
+<rect x="476" y="124" width="456" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="496" y="160">Explanation</text>
+<text class="note" x="496" y="184">The usual aim of statistical modelling</text>
+<text class="lab" x="496" y="356">QUESTION</text>
+<text class="body" x="496" y="380">Does changing an input</text>
+<text class="body" x="496" y="404">change the outcome?</text>
+<line class="rule" x1="496" y1="422" x2="912" y2="422"/>
+<text class="lab" x="496" y="448">ANSWER</text>
+<text class="body" x="496" y="472">A claim about cause and effect</text>
+<line class="rule" x1="496" y1="490" x2="912" y2="490"/>
+<text class="lab" x="496" y="516">CHECKED BY</text>
+<text class="body" x="496" y="540">Study design and knowledge of</text>
+<text class="body" x="496" y="564">the system, not the data alone</text>
+<line class="rule" x1="496" y1="582" x2="912" y2="582"/>
+<text class="lab" x="496" y="608">SHAPE OF THE RELATIONSHIP</text>
+<text class="body" x="496" y="632">Usually written down by you</text>
+<g transform="translate(-80,30)">
+<rect class="node" x="739" y="180" width="90" height="32" rx="6"/>
+<text class="small" x="784" y="201" text-anchor="middle">Depth</text>
+<rect class="node" x="650" y="244" width="100" height="32" rx="6"/>
+<text class="small" x="700" y="265" text-anchor="middle">Salinity</text>
+<rect class="node" x="818" y="244" width="100" height="32" rx="6"/>
+<text class="small" x="868" y="265" text-anchor="middle">Outcome</text>
+<line x1="764" y1="212" x2="716" y2="241" stroke="#009E73" stroke-width="1.8" marker-end="url(#arrow-end)"/>
+<line x1="804" y1="212" x2="852" y2="241" stroke="#009E73" stroke-width="1.8" marker-end="url(#arrow-end)"/>
+<line x1="752" y1="260" x2="816" y2="260" stroke="#8a949c" stroke-width="1.5" stroke-dasharray="3 3"/>
+<path d="M775,253 L787,267 M787,253 L775,267" stroke="#D55E00" stroke-width="2.2"/>
+<text class="small" x="784" y="296" text-anchor="middle">salinity travels with depth</text>
+</g>
+
+<!-- The direction across the two -->
+<text class="note" x="470" y="696" text-anchor="middle">Explanation asks more of the model and is harder to check</text>
+<rect x="40" y="712" width="836" height="10" rx="5" fill="url(#aims)"/>
+<path d="M876,706 L898,717 L876,728 z" fill="#009E73"/>
+</svg>

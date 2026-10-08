@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 506" width="100%" role="img" aria-label="ROC AUC sees the order, log loss the probabilities, each shown on four stations with the species present, drawn filled, and four without it, drawn open, placed along an axis of predicted probability of presence from 0 to 1. Left, right order, too sure of presence: every present station sits at 0.85 or above and every absent station between 0.6 and 0.8, so every present station is ranked above every absent one; ROC AUC 1.00, log loss 0.66. Right, some order wrong, honest: the present stations sit between 0.4 and 0.9 and the absent ones between 0.1 and 0.6, so one absent station is ranked above one present station; ROC AUC 0.94, log loss 0.40. ROC AUC is the share of present–absent pairs in which the present station has the higher probability. Log loss charges each station for the probability it gave to what happened, most for a confident miss.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .num  { font: bold 20px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">ROC AUC sees the order, log loss the probabilities</text>
+<rect class="box" x="0" y="56" width="450" height="330" rx="8"/><rect x="0" y="56" width="450" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="22" y="96">Right order, too sure of presence</text>
+<text class="lab" x="84" y="153" text-anchor="end">PRESENT</text>
+<text class="lab" x="84" y="203" text-anchor="end">ABSENT</text>
+<line x1="100" y1="148" x2="420" y2="148" stroke="#d5dde2" stroke-width="1"/>
+<line x1="100" y1="198" x2="420" y2="198" stroke="#d5dde2" stroke-width="1"/>
+<line x1="100" y1="236" x2="420" y2="236" stroke="#8a949c" stroke-width="1.4"/>
+<line x1="100" y1="236" x2="100" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="100" y="260" text-anchor="middle">0</text>
+<line x1="260.0" y1="236" x2="260.0" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="260.0" y="260" text-anchor="middle">0.5</text>
+<line x1="420" y1="236" x2="420" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="420" y="260" text-anchor="middle">1</text>
+<text class="lab" x="260.0" y="284" text-anchor="middle">PROBABILITY OF PRESENCE</text>
+<circle cx="372.0" cy="148" r="6.5" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="388.0" cy="148" r="6.5" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="404.0" cy="148" r="6.5" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="416.8" cy="148" r="6.5" fill="#E69F00" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="292.0" cy="198" r="6.5" fill="#ffffff" stroke="#E69F00" stroke-width="2.2"/>
+<circle cx="314.4" cy="198" r="6.5" fill="#ffffff" stroke="#E69F00" stroke-width="2.2"/>
+<circle cx="336.8" cy="198" r="6.5" fill="#ffffff" stroke="#E69F00" stroke-width="2.2"/>
+<circle cx="356.0" cy="198" r="6.5" fill="#ffffff" stroke="#E69F00" stroke-width="2.2"/>
+<text class="body" x="40" y="328">ROC AUC (higher is better)</text><text class="num" x="410" y="328" text-anchor="end">1.00</text>
+<text class="body" x="40" y="364">Log loss (lower is better)</text><text class="num" x="410" y="364" text-anchor="end">0.66</text>
+<rect class="box" x="510" y="56" width="450" height="330" rx="8"/><rect x="510" y="56" width="450" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="532" y="96">Some order wrong, honest</text>
+<text class="lab" x="594" y="153" text-anchor="end">PRESENT</text>
+<text class="lab" x="594" y="203" text-anchor="end">ABSENT</text>
+<line x1="610" y1="148" x2="930" y2="148" stroke="#d5dde2" stroke-width="1"/>
+<line x1="610" y1="198" x2="930" y2="198" stroke="#d5dde2" stroke-width="1"/>
+<line x1="610" y1="236" x2="930" y2="236" stroke="#8a949c" stroke-width="1.4"/>
+<line x1="610" y1="236" x2="610" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="610" y="260" text-anchor="middle">0</text>
+<line x1="770.0" y1="236" x2="770.0" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="770.0" y="260" text-anchor="middle">0.5</text>
+<line x1="930" y1="236" x2="930" y2="242" stroke="#8a949c" stroke-width="1.4"/><text class="sm" x="930" y="260" text-anchor="middle">1</text>
+<text class="lab" x="770.0" y="284" text-anchor="middle">PROBABILITY OF PRESENCE</text>
+<circle cx="738.0" cy="148" r="6.5" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="834.0" cy="148" r="6.5" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="866.0" cy="148" r="6.5" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="898.0" cy="148" r="6.5" fill="#0072B2" stroke="#ffffff" stroke-width="1.2"/>
+<circle cx="642.0" cy="198" r="6.5" fill="#ffffff" stroke="#0072B2" stroke-width="2.2"/>
+<circle cx="674.0" cy="198" r="6.5" fill="#ffffff" stroke="#0072B2" stroke-width="2.2"/>
+<circle cx="706.0" cy="198" r="6.5" fill="#ffffff" stroke="#0072B2" stroke-width="2.2"/>
+<circle cx="802.0" cy="198" r="6.5" fill="#ffffff" stroke="#0072B2" stroke-width="2.2"/>
+<text class="body" x="550" y="328">ROC AUC (higher is better)</text><text class="num" x="920" y="328" text-anchor="end">0.94</text>
+<text class="body" x="550" y="364">Log loss (lower is better)</text><text class="num" x="920" y="364" text-anchor="end">0.40</text>
+<text class="note" x="470" y="430" text-anchor="middle">ROC AUC is the share of present–absent pairs in which the present station has the higher probability.</text>
+<text class="note" x="470" y="456" text-anchor="middle">Log loss charges each station for the probability it gave to what happened, most for a confident miss.</text>
+</svg>

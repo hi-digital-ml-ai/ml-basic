@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 466" width="100%" role="img" aria-label="Four kinds of information leakage. Target leakage: a column made from the outcome, such as catch weight when predicting a count; drop columns made from the outcome. Group leakage: the same unit in training and test, such as repeat visits to one site; split by the unit, by site. Selection leakage: columns chosen by looking at all rows, such as keeping the ten best correlated; choose using training rows only. Preprocessing leakage: numbers worked out from all rows, such as a median used to fill gaps; put every step in a recipe. Each lets the test set shape the model before it is tested.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Four kinds of leakage</text>
+<rect class="box" x="0" y="56" width="460" height="150" rx="8"/><rect x="0" y="56" width="460" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="20" y="96">Target leakage</text>
+<text class="body" x="20" y="128">a column made from the outcome,</text>
+<text class="body" x="20" y="152">such as catch weight when predicting a count</text>
+<text class="note" x="20" y="186">→ drop columns made from the outcome</text>
+<rect class="box" x="480" y="56" width="460" height="150" rx="8"/><rect x="480" y="56" width="460" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="500" y="96">Group leakage</text>
+<text class="body" x="500" y="128">the same unit in training and test,</text>
+<text class="body" x="500" y="152">such as repeat visits to one site</text>
+<text class="note" x="500" y="186">→ split by the unit: by site</text>
+<rect class="box" x="0" y="226" width="460" height="150" rx="8"/><rect x="0" y="226" width="460" height="6" rx="3" fill="#CC79A7"/>
+<text class="head" x="20" y="266">Selection leakage</text>
+<text class="body" x="20" y="298">columns chosen by looking at all rows,</text>
+<text class="body" x="20" y="322">such as keeping the ten best correlated</text>
+<text class="note" x="20" y="356">→ choose using training rows only</text>
+<rect class="box" x="480" y="226" width="460" height="150" rx="8"/><rect x="480" y="226" width="460" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="500" y="266">Preprocessing leakage</text>
+<text class="body" x="500" y="298">numbers worked out from all rows,</text>
+<text class="body" x="500" y="322">such as a median used to fill gaps</text>
+<text class="note" x="500" y="356">→ put every step in a recipe</text>
+<text class="note" x="470" y="416" text-anchor="middle">Each lets the test set shape the model before it is tested</text>
+</svg>

@@ -1,6 +1,6 @@
 ---
 title: "Regression performance measures"
-description: "RMSE, MAE, R² and MAPE disagree about which model is best, and each disagreement tells you something specific about your counts."
+description: "RMSE, MAE, the Poisson deviance and R² each weigh misses their own way, and on skewed counts they can choose different models. The squared correlation often reported as R² cannot see predictions that run low."
 order: 3
 categories: [validation, metrics, regression]
 ---
@@ -10,48 +10,93 @@ categories: [validation, metrics, regression]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
-library(MASS, include.only = "glm.nb")
+library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## A measure states which mistakes you mind
+## Measures can rank the same models differently
 
-A performance measure is a statement about which mistakes you mind. RMSE says a single station
-predicted ten out is worse than a hundred stations predicted one out. MAE says they are the
-same. Neither is correct in the abstract; they are answers to different questions, and on
-marine count data they routinely disagree about which model wins.
-
-That disagreement is not a nuisance to be resolved by picking a default. It is diagnostic
-information, and this page reads it.
+Most pages so far have scored models by the RMSE, with R² beside it now and then. Both are
+**performance measures**: numbers that sum up how far a model's predictions fall from the
+observed values. Each measure weighs the misses its own way, so two measures can rank the
+same models differently, and a model can win on one by being wrong in a way the other
+ignores. This page sets four measures side by side, shows why they part on skewed counts,
+and shows which of them can see predictions that are too low across the board.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Four measures weigh misses differently
 
-For a continuous or count response, with $y_i$ observed and $\hat y_i$ predicted at station
-$i$:
+A **miss** is the observed value minus the prediction, at one station. The four measures
+below turn a set of misses into one number.
 
-| Measure | What it is | What it minds |
+| Measure | What it is | What it minds most |
 | --- | --- | --- |
-| **RMSE** | root of the mean squared error | large misses, quadratically |
-| **MAE** | mean absolute error | every unit of error equally |
-| **R²** (`rsq`) | squared correlation of $y$ and $\hat y$ | *pattern* only, blind to bias |
-| **R²** (`rsq_trad`) | $1 - \text{SSE}/\text{SST}$ | pattern and bias, relative to the response's own spread |
-| **MAPE** | mean absolute *percentage* error | errors relative to the observed value |
+| **RMSE** | the square root of the average squared miss | large misses |
+| **MAE**, the mean absolute error | the average size of a miss | every unit of a miss the same |
+| **Poisson deviance** | the average Poisson loss | a miss compared with the count predicted |
+| **R²** | one minus the squared misses over the squared spread of the observed values around their average | the same misses as the RMSE, compared with predicting the average |
 
-The two R²s are not a typo. `yardstick::rsq()` is the squared correlation and `rsq_trad()` is
-the proportion of variance explained. For an ordinary least-squares fit on its own training
-data they are identical, which is why most people have never had to notice. On held-out
-predictions from anything else they are not, and the gap between them is worth reading.
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+built the RMSE by hand. MAE and the Poisson deviance appeared in
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd) as losses, the quantities a
+fit makes small. The same formula can serve as a loss during fitting and as a measure
+afterwards, and the two need not match: a forest fitted with squared error can be scored by
+MAE. For the first three measures, lower is better. R² is 1 for perfect predictions, 0 for
+predictions no better than the average of the observed values, and below 0 for worse.
+
+Each measure is smallest at a different prediction, as each loss is in
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#each-loss-aims-at-a-different-middle-of-the-data).
+The RMSE and the Poisson deviance are smallest when a model predicts the **average** of
+the values it could observe, and MAE when it predicts the **median**, the middle value.
+For counts with a long right tail the median sits below the average, so MAE favours
+models that predict low.
+
+The **mean absolute percentage error** (MAPE), common in forecasting, divides each miss
+by the observed value. A count of zero makes it undefined, and on the other counts it
+punishes a prediction that is too high far more than one that is too low, so it does not
+suit counts.
+
+## R² has two definitions
+
+The R² reported so far in this course is yardstick's `rsq()`, the **squared
+correlation** between the observed and predicted values. The textbook R² in the table
+above is `rsq_trad()` in yardstick and `r2_score()` in scikit-learn. For a linear
+regression scored on the data it was fitted to, the two are equal. On new data, or for
+any other model, they are not, because the squared correlation asks only whether the
+predictions rise and fall with the observed values. Predictions that are all too low
+by the same proportion keep a perfect correlation.
+
+::: {.diagram}
+![Two definitions of R². Left, predictions in the right pattern but too low: the squared correlation is perfect, and R² is low because it counts the gap to the line where the predicted value equals the observed one. Right, predictions at the right level with scatter: both measures agree. The two definitions rank the two sets of predictions in opposite orders.](img/two-r-squared.svg){fig-alt="Two cards, each a scatter of eight predicted values against observed values, with a dashed line where predicted equals observed. Left, right pattern, too low: the points lie on a straight line of half the slope, below the dashed line; squared correlation 1.00, R² 0.17. Right, right level, scattered: the points sit above and below the dashed line; squared correlation 0.73, R² 0.70. A note says squared correlation asks how closely the points follow some straight line, whatever its slope, and R² asks how close they come to the dashed line: one minus the squared misses, divided by the squared spread of the observed values around their average."}
+:::
 
 ## Worked example
 
-Five models of the same counts, each scored on pooled out-of-fold predictions from the same
-ten folds so the comparison is exact.
+Four models predict the survey's counts:
+
+- **Predicting the average**: every station gets the average count of the fitted
+  stations. It has no skill, and the other three should beat it.
+- **Poisson regression**, from
+  [Regression for counts](../03-supervised-learning/count-regression.qmd), with each input
+  entered as a straight line.
+- **Random forest**, from
+  [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+- **Random forest on log counts**, the same forest fitted to the log of the count plus 1,
+  each prediction turned back into animals, as in
+  [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#training-on-log-counts-predicts-far-fewer-animals-than-were-caught).
+
+Every model is cross-validated on the same ten folds of sites, and each measure is worked
+out from the pooled out-of-fold predictions, as on
+[Cross-validation](cross-validation.qmd). Every measure therefore scores the same
+predictions of the same stations.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -59,394 +104,373 @@ ten folds so the comparison is exact.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean()
-
-d <- survey |>
-  dplyr::select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-                substrate, season, longitude, latitude) |>
-  drop_na()
-
-formula_env <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
-  log1p(chlorophyll_mg_m3) + salinity_psu + substrate + season + longitude + latitude
-
-fitters <- list(
-  `mean only`          = \(tr, te) rep(mean(tr$abundance), nrow(te)),
-  `Poisson GLM`        = \(tr, te) predict(glm(formula_env, tr, family = poisson),
-                                           te, type = "response"),
-  `negative binomial`  = \(tr, te) predict(glm.nb(formula_env, tr), te, type = "response"),
-  `log-transformed lm` = \(tr, te) expm1(predict(lm(update(formula_env, log1p(abundance) ~ .),
-                                                    tr), te)),
-  `random forest`      = \(tr, te) predict(ranger(abundance ~ ., tr, num.trees = 500,
-                                                  seed = 1), te)$predictions
-)
+survey <- load_coastal_survey_clean() |>
+  mutate(log_abundance = log1p(abundance))
 
 set.seed(61)
-folds <- vfold_cv(d, v = 10)
+folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
-out_of_fold <- imap_dfr(fitters, \(f, name) {
-  imap_dfr(folds$splits, \(s, i) {
-    tr <- analysis(s); te <- assessment(s)
-    tibble(model = name, fold = i, obs = te$abundance, pred = f(tr, te))
-  })
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season", "longitude", "latitude")
+
+with_inputs <- function(outcome, model) {
+  recipe(reformulate(inputs, outcome), data = survey) |>
+    step_impute_median(all_numeric_predictors()) |>
+    step_dummy(all_nominal_predictors()) |>
+    workflow(model)
+}
+
+forest <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 1) |>
+  set_mode("regression")
+
+average <- null_model(mode = "regression")
+log_forest <- "Random forest on log counts"
+
+models <- list(
+  "Predicting the average" = with_inputs("abundance", average),
+  "Poisson regression"     = with_inputs("abundance", poisson_reg()),
+  "Random forest"          = with_inputs("abundance", forest),
+  "Random forest on log counts" = with_inputs("log_abundance", forest)
+)
+
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold <- map(models, \(model) {
+  fit_resamples(model, folds, metrics = metric_set(rmse),
+                control = control_resamples(save_pred = TRUE)) |>
+    collect_predictions() |>
+    arrange(.row) |>
+    pull(.pred)
 })
+# back from log counts to animals
+out_of_fold[[log_forest]] <- expm1(out_of_fold[[log_forest]])
 
-nrow(out_of_fold)
+predictions <- as_tibble(out_of_fold) |>
+  mutate(caught = survey$abundance) |>
+  pivot_longer(-caught, names_to = "model", values_to = "predicted") |>
+  mutate(model = fct_inorder(model))
+
+tibble(stations = nrow(survey),
+       `average catch` = round(mean(survey$abundance), 2),
+       `median catch` = median(survey$abundance),
+       `stations with none` = mean(survey$abundance == 0))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import KFold
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import PoissonRegressor
+from sklearn.metrics import (mean_absolute_error, mean_poisson_deviance, r2_score,
+                             root_mean_squared_error)
+from sklearn.model_selection import GroupKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
+caught = survey["abundance"]
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-d = survey[columns].dropna().reset_index(drop=True)
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=61)
 
-# patsy has no poly(), so the squared terms are written out. C() is factor().
-formula_env = ("abundance ~ depth_m + I(depth_m**2)"
-               " + temperature_c + I(temperature_c**2)"
-               " + np.log1p(chlorophyll_mg_m3) + salinity_psu"
-               " + C(substrate) + C(season) + longitude + latitude")
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+          "substrate", "season", "longitude", "latitude"]
+categorical = ["substrate", "season"]
+numeric = [c for c in inputs if c not in categorical]
 
-forest_columns = pd.get_dummies(d.drop(columns="abundance"), drop_first=True)
+def with_inputs(model):
+    recipe = ColumnTransformer([
+        # scaling leaves an unpenalised fit unchanged and helps the solver
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]), numeric),
+        ("nominal", OneHotEncoder(drop="first", sparse_output=False), categorical),
+    ])
+    return Pipeline([("recipe", recipe), ("model", model)])
 
-def forest_predict(tr, te):
-    model = RandomForestRegressor(n_estimators=500, random_state=1).fit(
-        forest_columns.loc[tr.index], tr["abundance"])
-    return model.predict(forest_columns.loc[te.index])
+# max_features="sqrt" draws a few inputs at each question, as ranger does.
+forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                               min_samples_leaf=5, random_state=1)
 
-fitters = {
-    "mean only": lambda tr, te: np.repeat(tr["abundance"].mean(), len(te)),
-    "Poisson GLM": lambda tr, te: smf.glm(
-        formula_env, tr, family=sm.families.Poisson()).fit().predict(te),
-    # negativebinomial() estimates the dispersion with the coefficients, as
-    # MASS::glm.nb() does; statsmodels' GLM family wants it fixed in advance.
-    "negative binomial": lambda tr, te: smf.negativebinomial(
-        formula_env, tr).fit(method="bfgs", maxiter=2000, disp=0).predict(te),
-    "log-transformed lm": lambda tr, te: np.expm1(
-        smf.ols(formula_env.replace("abundance ~", "np.log1p(abundance) ~"), tr)
-        .fit().predict(te)),
-    "random forest": forest_predict,
+models = {
+    "Predicting the average": DummyRegressor(),
+    "Poisson regression": PoissonRegressor(alpha=0, max_iter=1000),
+    "Random forest": forest,
+    # fitted to log counts, each prediction turned back into animals
+    "Random forest on log counts": TransformedTargetRegressor(
+        forest, func=np.log1p, inverse_func=np.expm1),
 }
 
-import statsmodels.api as sm
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold = {name: cross_val_predict(with_inputs(model), survey[inputs], caught,
+                                       cv=folds, groups=survey["site_id"])
+               for name, model in models.items()}
 
-folds = KFold(n_splits=10, shuffle=True, random_state=61)
+predictions = (pd.DataFrame(out_of_fold).assign(caught=caught)
+               .melt(id_vars="caught", var_name="model", value_name="predicted"))
 
-out_of_fold = pd.concat([
-    pd.DataFrame({"model": name, "fold": i,
-                  "obs": d.iloc[held]["abundance"].to_numpy(),
-                  "pred": np.asarray(fit(d.iloc[rows], d.iloc[held]))})
-    for name, fit in fitters.items()
-    for i, (rows, held) in enumerate(folds.split(d), start=1)
-], ignore_index=True)
-
-len(out_of_fold)
+pd.DataFrame({"stations": [len(survey)],
+              "average catch": [round(caught.mean(), 2)],
+              "median catch": [caught.median()],
+              "stations with none": [(caught == 0).mean()]})
 ```
 
 :::
 
-The `log-transformed lm` is the common shortcut for skewed counts: fit an ordinary linear model
-to `log1p(abundance)`, then undo the transformation with `expm1()`. Keep an eye on it.
+```{r}
+#| label: helpers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+f3 <- function(x) sprintf("%.3f", x)
+pct <- function(x) scales::percent(x, accuracy = 1)
+```
+
+The counts are skewed: the average station caught `r f2(mean(survey$abundance))` animals,
+the median station `r median(survey$abundance)`, and `r pct(mean(survey$abundance == 0))`
+of the stations caught none.
+
+### RMSE and MAE choose different forests
+
+The Poisson deviance has no yardstick function, so it is written out as in
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd#counts-and-presence-have-their-own-losses).
+The last column adds up each model's predictions over all the stations and divides by the
+number of animals caught: 1 means the model predicts the right total.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: metrics
-scores <- out_of_fold |>
-  summarise(RMSE    = rmse_vec(obs, pred),
-            MAE     = mae_vec(obs, pred),
-            rsq     = rsq_vec(obs, pred),
-            rsq_trad = rsq_trad_vec(obs, pred),
-            `total predicted / total observed` = sum(pred) / sum(obs),
+#| label: measures
+# a station with no catch adds only its prediction
+poisson_deviance <- function(caught, predicted) {
+  per_station <- ifelse(caught > 0, caught * log(caught / predicted), 0) -
+    (caught - predicted)
+  2 * mean(per_station)
+}
+
+scores <- predictions |>
+  summarise(RMSE = rmse_vec(caught, predicted),
+            MAE = mae_vec(caught, predicted),
+            `Poisson deviance` = poisson_deviance(caught, predicted),
+            `predicted / caught` = sum(predicted) / sum(caught),
             .by = model)
 
-scores |> mutate(across(where(is.double), \(x) round(x, 3)))
+scores |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
-```python
-from sklearn.metrics import (mean_absolute_error, r2_score,
-                             root_mean_squared_error)
+```{python}
+scores = (predictions.groupby("model", sort=False)
+          .apply(lambda g: pd.Series({
+              "RMSE": root_mean_squared_error(g.caught, g.predicted),
+              "MAE": mean_absolute_error(g.caught, g.predicted),
+              "Poisson deviance": mean_poisson_deviance(g.caught, g.predicted),
+              "predicted / caught": g.predicted.sum() / g.caught.sum(),
+          }), include_groups=False)
+          .reset_index())
 
-def score(group):
-    return pd.Series({
-        "RMSE": root_mean_squared_error(group["obs"], group["pred"]),
-        "MAE": mean_absolute_error(group["obs"], group["pred"]),
-        # yardstick's rsq is the squared correlation; rsq_trad is r2_score.
-        "rsq": np.corrcoef(group["obs"], group["pred"])[0, 1] ** 2,
-        "rsq_trad": r2_score(group["obs"], group["pred"]),
-        "total predicted / total observed":
-            group["pred"].sum() / group["obs"].sum(),
-    })
-
-scores = out_of_fold.groupby("model", sort=False).apply(
-    score, include_groups=False).reset_index()
-
-scores.round(3)
+scores.round(2)
 ```
 
 :::
 
-## Two measures, two winners
+```{r}
+#| label: measure-numbers
+#| include: false
+score_of <- function(name, measure) scores[[measure]][scores$model == name]
+best_on <- function(measure) as.character(scores$model[which.min(scores[[measure]])])
+rmse_rank <- rank(scores$RMSE)[scores$model == log_forest]
+```
 
-**RMSE and MAE pick different winners.** The negative binomial has the lowest RMSE at 4.215.
-The log-transformed linear model has the lowest MAE at 2.783, and it is *fourth* of five on
-RMSE. That is not noise; it is the two measures doing their jobs.
+The RMSE picks the **`r str_to_lower(best_on("RMSE"))`**, at
+`r f2(score_of(best_on("RMSE"), "RMSE"))`, and the Poisson deviance agrees. MAE picks the
+**`r str_to_lower(best_on("MAE"))`**, at `r f2(score_of(best_on("MAE"), "MAE"))`, a model
+that comes `r c("first", "second", "third", "fourth")[rmse_rank]` of four on the RMSE,
+behind Poisson regression.
 
-The log model was fitted to minimise error on the log scale, where the crowded low counts
-dominate. Back on the count scale it predicts low almost everywhere, which is cheap under MAE
-(most stations really do hold a handful of individuals) and expensive under RMSE (the few
-stations holding thirty are missed badly). The last column shows the damage: **it predicts
-69% of the total abundance actually observed.** For a survey whose purpose is a stock estimate,
-that is a disqualifying flaw that MAE rewarded.
+The last column shows why. The forest on log counts predicts
+`r pct(score_of(log_forest, "predicted / caught"))` of the animals caught; the other models
+predict close to all of them. Fitted to log counts, it aims at the median catch, below the
+average, and MAE rewards exactly that. For a stock estimate or a map total, MAE has picked
+the model that misses `r pct(1 - score_of(log_forest, "predicted / caught"))` of the animals.
 
-::: {.callout-warning}
-## `rsq()` cannot see that
-
-The log model's `rsq` is 0.224, close to the best in the table. Its `rsq_trad` is 0.143. The
-gap is the bias: squared correlation is unchanged if you multiply every prediction by 0.69,
-because correlation does not care about scale or offset.
-
-If you report `rsq()`, which is what `metric_set(rsq)` and `collect_metrics()` give you by
-default, you can publish a model that under-counts the stock by a third and still show a
-respectable R². Report `rsq_trad()` as well, or report the ratio of totals directly.
-:::
-
-### RMSE is mostly a measurement of a few stations
+### The squared correlation cannot see the shortfall
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: concentration
-worst_share <- function(data, error, fractions = c(0.01, 0.02, 0.05, 0.10, 0.25)) {
-  e <- sort(error(data$obs, data$pred), decreasing = TRUE)
-  tibble(`worst stations` = scales::percent(fractions, accuracy = 1),
-         share = map_dbl(fractions, \(p) sum(e[seq_len(round(p * length(e)))]) / sum(e)))
-}
+#| label: r-squared
+r_squared <- predictions |>
+  summarise(`squared correlation` = rsq_vec(caught, predicted),
+            `R²` = rsq_trad_vec(caught, predicted),
+            .by = model)
 
-nb <- filter(out_of_fold, model == "negative binomial")
-
-left_join(
-  worst_share(nb, \(o, p) (o - p)^2)  |> rename(`share of squared error` = share),
-  worst_share(nb, \(o, p) abs(o - p)) |> rename(`share of absolute error` = share),
-  by = "worst stations"
-) |>
-  mutate(across(where(is.double), \(x) scales::percent(x, accuracy = 0.1)))
+r_squared |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-def worst_share(data, error, fractions=(0.01, 0.02, 0.05, 0.10, 0.25)):
-    e = np.sort(error(data["obs"], data["pred"]))[::-1]
-    return pd.DataFrame({
-        "worst stations": [f"{p:.0%}" for p in fractions],
-        "share": [e[:round(p * len(e))].sum() / e.sum() for p in fractions],
-    })
+```{python}
+r_squared = (predictions.groupby("model", sort=False)
+             .apply(lambda g: pd.Series({
+                 # yardstick's rsq() is the squared correlation,
+                 # and its rsq_trad() is r2_score()
+                 "squared correlation": np.corrcoef(g.caught, g.predicted)[0, 1] ** 2,
+                 "R²": r2_score(g.caught, g.predicted),
+             }), include_groups=False)
+             .reset_index())
 
-nb = out_of_fold[out_of_fold["model"] == "negative binomial"]
-
-concentration = worst_share(nb, lambda o, p: (o - p) ** 2).rename(
-    columns={"share": "share of squared error"})
-concentration["share of absolute error"] = worst_share(
-    nb, lambda o, p: (o - p).abs())["share"]
-
-shares = concentration.columns[1:]
-concentration[shares] = concentration[shares].map("{:.1%}".format)
-
-concentration
+r_squared.round(3)
 ```
 
 :::
 
-Seven stations out of 720, the worst 1%, account for about a quarter of the squared error
-the RMSE is built from. The worst 5% account for half of it. Under absolute error the same 5%
-account for a fifth.
+```{r}
+#| label: r-squared-numbers
+#| include: false
+r2_of <- function(name, measure) r_squared[[measure]][r_squared$model == name]
+```
 
-So when you compare two models by RMSE on aggregating species, you are largely comparing
-how they handle a handful of big hauls. That may be exactly right, since a model for
-fishery management had better get the dense patches right, but it should be a decision,
-not an accident.
+The forest on log counts has a squared correlation of
+`r f3(r2_of(log_forest, "squared correlation"))`, about as high as the random forest's
+`r f3(r2_of("Random forest", "squared correlation"))`: its predictions rise and fall with
+the catch as well as any model's do. Its R² is `r f3(r2_of(log_forest, "R²"))`, the lowest
+of the three fitted models, because R² also counts how far below the catch they sit. This
+is the left card of the diagram above, in real predictions. Predicting the average scores
+an R² of `r f3(r2_of("Predicting the average", "R²"))`, about zero, as R² is defined
+against it.
 
-### The model MAPE would prefer
+### MAE would scale the forest's predictions down
 
-MAPE divides each error by the observed value, which has two consequences on count data.
+Multiplying every prediction of the random forest by the same number shows where each
+measure wants the predictions to be. The measure is lowest at the scaling it prefers.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: mape-zeros
-c(stations = nrow(nb),
-  `stations with zero caught` = sum(nb$obs == 0),
-  `MAPE on the rest (%)` = mape_vec(nb$obs[nb$obs > 0], nb$pred[nb$obs > 0]))  |> round(1)
+#| label: scaling
+forest_only <- filter(predictions, model == "Random forest")
+
+curves <- tibble(scaling = seq(0.5, 1.5, by = 0.01)) |>
+  mutate(RMSE = map_dbl(scaling, \(k) rmse_vec(forest_only$caught,
+                                                k * forest_only$predicted)),
+         MAE = map_dbl(scaling, \(k) mae_vec(forest_only$caught,
+                                              k * forest_only$predicted)),
+         `Poisson deviance` = map_dbl(scaling, \(k) poisson_deviance(
+           forest_only$caught, k * forest_only$predicted))) |>
+  pivot_longer(-scaling, names_to = "measure") |>
+  mutate(measure = fct_inorder(measure))
+
+# the scaling at which each measure is lowest
+lowest <- slice_min(curves, value, by = measure)
+lowest |> mutate(value = round(value, 2))
 ```
 
 ## Python
 
-```python
-caught = nb[nb["obs"] > 0]
+```{python}
+forest_only = predictions[predictions["model"] == "Random forest"]
+scalings = np.round(np.arange(0.5, 1.505, 0.01), 2)
 
-pd.Series({
-    "stations": len(nb),
-    "stations with zero caught": int((nb["obs"] == 0).sum()),
-    "MAPE on the rest (%)": 100 * np.mean(
-        np.abs((caught["obs"] - caught["pred"]) / caught["obs"])),
-}).round(1)
+measures = {"RMSE": root_mean_squared_error, "MAE": mean_absolute_error,
+            "Poisson deviance": mean_poisson_deviance}
+curves = pd.DataFrame([
+    {"scaling": k, "measure": name,
+     "value": measure(forest_only["caught"], k * forest_only["predicted"])}
+    for name, measure in measures.items() for k in scalings])
+
+# the scaling at which each measure is lowest
+lowest = curves.loc[curves.groupby("measure", sort=False)["value"].idxmin()]
+lowest.reset_index(drop=True).round(2)
 ```
 
 :::
 
-The first consequence is that it does not exist. Dividing by an observed count of zero is
-undefined, and 157 of these 720 stations caught nothing, so MAPE can only be computed after
-silently discarding the fifth of the survey that is most informative about where the species
-is not.
+```{r}
+#| label: scaling-numbers
+#| include: false
+best_scaling <- function(name) lowest$scaling[lowest$measure == name]
+```
 
-The second is worse. Under-prediction can cost at most 100% per station; over-prediction is
-unbounded. We can see which way that pushes by taking one model's predictions and multiplying
-them all by a constant.
+::: {.panel-tabset group="language"}
+
+## R
 
 ```{r}
 #| label: fig-scaling
-#| fig-cap: "What happens to three measures when every prediction from the negative binomial model is multiplied by a constant. Each panel is scaled to its own best value. RMSE bottoms out at 0.98, essentially where the model already is. MAE bottoms out at 0.74. MAPE, computed on the 563 non-zero stations, bottoms out at 0.47, so it would have you halve every prediction you believe in."
-#| fig-alt: "Three curves on a shared horizontal axis labelled multiply every prediction by, running from 0.3 to 1.6, each in its own panel stacked vertically and each scaled so its lowest value is 1. The top panel, RMSE, is a symmetric U with a dot at its base at 0.98. The middle panel, MAE, is a shallower U with its dot at 0.74. The bottom panel, MAPE, is almost flat from 0.3 to 0.6 with its dot at 0.47, then climbs steeply and without turning to 2.6 times its best value by the right-hand edge: an asymmetric curve, punishing over-prediction far more than under-prediction."
-#| fig-width: 7
-#| fig-height: 5
-non_zero <- filter(nb, obs > 0)
-scales_tried <- seq(0.3, 1.6, by = 0.01)
+#| fig-cap: !expr glue::glue("The three measures for the random forest's predictions, each multiplied by the same number, and each drawn relative to its own lowest value. The RMSE and the Poisson deviance are lowest close to 1, where the forest already is; MAE is lowest where every prediction is multiplied by {f2(best_scaling('MAE'))}.")
+#| fig-alt: !expr glue::glue("Three panels side by side, for RMSE, MAE and Poisson deviance, each with the number every prediction is multiplied by along the bottom, from 0.5 to 1.5, and the measure relative to its lowest value up the side. Each is a U-shaped curve with a point at its lowest value. The RMSE is lowest at {f2(best_scaling('RMSE'))}, the Poisson deviance at {f2(best_scaling('Poisson deviance'))}, and MAE at {f2(best_scaling('MAE'))}, further left than the other two.")
+#| fig-width: 8.5
+#| fig-height: 3.4
+curves <- mutate(curves, relative = value / min(value), .by = measure)
+at_lowest <- semi_join(curves, lowest, by = c("measure", "scaling"))
 
-curves <- tibble(
-  scale = scales_tried,
-  RMSE  = map_dbl(scales_tried, \(k) rmse_vec(nb$obs, nb$pred * k)),
-  MAE   = map_dbl(scales_tried, \(k) mae_vec(nb$obs, nb$pred * k)),
-  MAPE  = map_dbl(scales_tried, \(k) mape_vec(non_zero$obs, non_zero$pred * k))
-) |>
-  pivot_longer(-scale, names_to = "measure", values_to = "value") |>
-  mutate(measure = factor(measure, c("RMSE", "MAE", "MAPE")),
-         relative = value / min(value), .by = measure)
-
-minima <- slice_min(curves, relative, by = measure)
-
-ggplot(curves, aes(scale, relative)) +
-  geom_line(aes(colour = measure), linewidth = 0.9) +
-  geom_point(data = minima, aes(colour = measure), size = 3) +
-  geom_text(data = minima, aes(label = sprintf("best at %.2f", scale)),
-            vjust = -1.1, size = 3.4) +
-  facet_wrap(~measure, ncol = 1, scales = "free_y") +
-  scale_x_continuous(breaks = seq(0.4, 1.6, 0.2)) +
+ggplot(curves, aes(scaling, relative, colour = measure)) +
+  geom_vline(xintercept = 1, colour = "grey70", linetype = "dashed") +
+  geom_line(linewidth = 1) +
+  geom_point(data = at_lowest, size = 3) +
+  geom_text(data = at_lowest,
+            aes(y = Inf, label = sprintf("lowest at %.2f", scaling)),
+            vjust = 1.5, size = 3.6, show.legend = FALSE) +
+  facet_wrap(~measure, nrow = 1) +
   scale_colour_ml() +
-  labs(x = "multiply every prediction by", y = "measure, relative to its own best",
-       title = "Three measures, three different ideal predictions") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  labs(x = "Every prediction multiplied by",
+       y = "Measure relative\nto its lowest") +
   theme(legend.position = "none")
 ```
 
-MAPE prefers a model that predicts 47% of what the negative binomial believes. MAE prefers
-74%. RMSE is minimised at 0.98, essentially where the model already is. Notice the shape as
-well as the minimum: MAPE is nearly flat to the left of its best point and climbs steeply to
-the right, which is the asymmetry made visible. A measure that systematically rewards
-under-prediction has no place in abundance work, and this is why.
-
-::: {.callout-important}
-## The fold-to-fold spread, and comparing across schemes
-
-Section 6 ran into this three times. Here it is directly: the *same* negative binomial model,
-scored fold by fold on the same ten folds.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: per-fold
-by_fold <- nb |>
-  summarise(`sd of counts in fold` = sd(obs),
-            RMSE = rmse_vec(obs, pred),
-            rsq_trad = rsq_trad_vec(obs, pred), .by = fold)
-
-by_fold |>
-  summarise(lowest_rmse = min(RMSE), highest_rmse = max(RMSE),
-            lowest_rsq_trad = min(rsq_trad), highest_rsq_trad = max(rsq_trad),
-            `correlation of fold sd with fold RMSE` = cor(`sd of counts in fold`, RMSE)) |>
-  round(3)
-```
-
-## Python
-
-```python
-by_fold = nb.groupby("fold").apply(lambda g: pd.Series({
-    "sd of counts in fold": g["obs"].std(),
-    "RMSE": root_mean_squared_error(g["obs"], g["pred"]),
-    "rsq_trad": r2_score(g["obs"], g["pred"]),
-}), include_groups=False)
-
-pd.Series({
-    "lowest_rmse": by_fold["RMSE"].min(),
-    "highest_rmse": by_fold["RMSE"].max(),
-    "lowest_rsq_trad": by_fold["rsq_trad"].min(),
-    "highest_rsq_trad": by_fold["rsq_trad"].max(),
-    "correlation of fold sd with fold RMSE":
-        by_fold["sd of counts in fold"].corr(by_fold["RMSE"]),
-}).round(3)
-```
-
 :::
 
-One model, one dataset: RMSE between 3.51 and 5.92, and `rsq_trad` between **−0.42 and
-+0.46**, from worse than predicting the fold's own mean to explaining nearly half its
-variance. The last number explains it. Fold RMSE correlates 0.78 with how spread out that
-fold's counts happen to be.
+The RMSE is lowest at `r f2(best_scaling("RMSE"))` and the Poisson deviance at
+`r f2(best_scaling("Poisson deviance"))`: both would leave the forest's predictions
+close to where they are. MAE is lowest at `r f2(best_scaling("MAE"))`, close to the
+`r f2(score_of(log_forest, "predicted / caught"))` at which the forest on log counts
+predicts the catch. MAE preferred that forest because it predicts low, not because it
+follows the catch better.
 
-So an RMSE is a property of the model *and* of the rows it was scored on. Compare RMSEs only
-when both models saw exactly the same rows, which is why every comparison in this section
-pools the out-of-fold predictions first.
-:::
+## A total needs a measure aimed at the average
 
-## Limits of a single-number prediction
+When predictions are summed into a total, such as a stock estimate, a map of abundance or
+a bycatch figure, score them with a measure aimed at the average: the RMSE, or the
+Poisson deviance, which compares each miss with the count predicted. Report R² as
+`rsq_trad()` or `r2_score()`, not the squared correlation, and check the predicted total
+against the observed one. MAE suits a question about the typical station, where totals do
+not matter. [Choosing measures that match the objective](choosing-a-metric.qmd) takes
+this further.
 
-Every measure here treats a prediction as a single number. Count models produce a whole
-predicted distribution, and collapsing it to its mean throws away the part a survey often cares
-about most: the chance of finding nothing at all. The *proper scoring rules* that grade a
-whole predicted distribution (log score, CRPS, Poisson deviance) are the right tool there, and
-`yardstick::poisson_log_loss()` is the easiest entry point.
-
-None of these measures is on the scale of a decision either. "RMSE 4.2" does not say whether
-the survey design is adequate. Turning a measure into a decision is
-[the last page of this section](choosing-a-metric.qmd).
-
-::: {.callout-tip}
 ## Key points
 
-- RMSE and MAE disagreed about the best of five models here, and the disagreement was
-  informative: the MAE winner under-predicted total abundance by 31%.
-- `rsq()` is a squared correlation and cannot see bias. Report `rsq_trad()`, or the ratio of
-  predicted to observed totals, alongside it.
-- On these counts the worst 1% of stations carry a quarter of the squared error and the worst
-  5% carry half. RMSE is mostly about the big hauls.
-- MAPE is undefined wherever the count is zero, and on the rest it is minimised by predicting
-  47% of what you believe. Do not use it for abundance.
-- The same model scored 3.51 to 5.92 RMSE across ten folds. Compare metrics only on identical
-  rows.
+::: {.key-points}
+- **RMSE, MAE, the Poisson deviance and R²** weigh misses differently. The RMSE and the
+  Poisson deviance are lowest at the average of what could be observed, MAE at the median.
+- On these skewed counts the RMSE picked the `r str_to_lower(best_on("RMSE"))` and MAE the
+  `r str_to_lower(best_on("MAE"))`, which predicts only
+  `r pct(score_of(log_forest, "predicted / caught"))` of the animals caught.
+- The **squared correlation**, yardstick's `rsq()`, cannot see predictions that are too
+  low across the board. The textbook **R²**, `rsq_trad()` or `r2_score()`, can: it put the
+  forest on log counts last of the fitted models.
+- MAE would scale the random forest's predictions down to `r f2(best_scaling("MAE"))` of
+  their size; the RMSE and the Poisson deviance would leave them close to where they are.
+- MAPE is undefined for a count of zero and favours low predictions. Do not use it for
+  counts.
 :::
 
 ## Try it yourself
 
-1. Refit the log-transformed model with the standard smearing correction
-   (multiply the back-transformed prediction by the mean of `exp(residual)`). How much of the
-   31% shortfall does it recover, and what does it cost on MAE?
-2. Add `poisson_log_loss()` to the scores table. Does it rank the five models like RMSE, like
-   MAE, or like neither?
+1. Add MAPE (`mape_vec()`) to the scaling curves, scored on the stations that caught
+   something. Predict first: is it lowest above or below MAE's scaling?
+2. Multiply the forest on log counts' predictions by one number, chosen so that their
+   total matches the catch of the fitted stations in each fold. How much do its RMSE, MAE
+   and R² change?

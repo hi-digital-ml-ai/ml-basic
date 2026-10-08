@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 476" width="100%" role="img" aria-label="Three cards show the same twenty cases in two rows: four truly yes, drawn filled, and sixteen truly no, drawn open. A dashed box marks the six the model called yes: three true yeses and three noes. One true yes lies outside the box. Sensitivity, lowered by misses: of the four true yeses, three were called yes and one, the miss, was not; 3 of 4. Specificity, lowered by false alarms: of the sixteen true noes, thirteen were called no and three, the false alarms, sit in the box; 13 of 16. Precision, lowered by false alarms: of the six yes calls, three are true and three are false alarms; 3 of 6. A note says accuracy, 16 of 20, hides the miss, because when yeses are few it mostly counts the noes.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .big  { font: bold 26px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .tiny { font: bold 12px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="10" text-anchor="middle">Three measures from the two kinds of mistake</text>
+<circle cx="214" cy="40" r="8" fill="#3d4852"/><text class="sm" x="228" y="45">truly yes</text><circle cx="320" cy="40" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4"/><text class="sm" x="334" y="45">truly no</text><rect x="418" y="30" width="30" height="20" rx="4" fill="none" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 4"/><text class="sm" x="456" y="45">called yes</text><circle cx="560" cy="40" r="8" fill="#D55E00"/><circle cx="582" cy="40" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4"/><text class="sm" x="596" y="45">a miss or a false alarm</text>
+<rect class="box" x="0" y="62" width="296" height="330" rx="8"/><rect x="0" y="62" width="296" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="104">Sensitivity</text>
+<text class="lab" x="22" y="128" fill="#D55E00">MISSES LOWER IT</text>
+<rect x="8.0" y="176" width="84" height="68" rx="6" fill="none" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text class="tiny" x="8.0" y="168">CALLED YES</text>
+<circle cx="22.0" cy="196" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="50.0" cy="196" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="78.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="106.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="134.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="162.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="190.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="218.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="246.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="274.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="22.0" cy="224" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="50.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="78.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="106.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="134.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="162.0" cy="224" r="8" fill="#D55E00" opacity="1"/>
+<circle cx="190.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="218.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="246.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="274.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<text class="big" x="22" y="290">3 of 4</text>
+<text class="body" x="22" y="326">Of the true yeses,</text>
+<text class="body" x="22" y="352">the share called yes.</text>
+<rect class="box" x="322" y="62" width="296" height="330" rx="8"/><rect x="322" y="62" width="296" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="344" y="104">Specificity</text>
+<text class="lab" x="344" y="128" fill="#D55E00">FALSE ALARMS LOWER IT</text>
+<rect x="330.0" y="176" width="84" height="68" rx="6" fill="none" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text class="tiny" x="330.0" y="168">CALLED YES</text>
+<circle cx="344.0" cy="196" r="8" fill="#3d4852" opacity="0.22"/>
+<circle cx="372.0" cy="196" r="8" fill="#3d4852" opacity="0.22"/>
+<circle cx="400.0" cy="196" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="428.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="456.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="484.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="512.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="540.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="568.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="596.0" cy="196" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="344.0" cy="224" r="8" fill="#3d4852" opacity="0.22"/>
+<circle cx="372.0" cy="224" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="400.0" cy="224" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="428.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="456.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="484.0" cy="224" r="8" fill="#3d4852" opacity="0.22"/>
+<circle cx="512.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="540.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="568.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<circle cx="596.0" cy="224" r="6.8" fill="#ffffff" stroke="#009E73" stroke-width="2.4" opacity="1"/>
+<text class="big" x="344" y="290">13 of 16</text>
+<text class="body" x="344" y="326">Of the true noes,</text>
+<text class="body" x="344" y="352">the share called no.</text>
+<rect class="box" x="644" y="62" width="296" height="330" rx="8"/><rect x="644" y="62" width="296" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="666" y="104">Precision</text>
+<text class="lab" x="666" y="128" fill="#D55E00">FALSE ALARMS LOWER IT</text>
+<rect x="652.0" y="176" width="84" height="68" rx="6" fill="none" stroke="#1f2933" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text class="tiny" x="652.0" y="168">CALLED YES</text>
+<circle cx="666.0" cy="196" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="694.0" cy="196" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="722.0" cy="196" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="750.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="778.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="806.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="834.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="862.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="890.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="918.0" cy="196" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="666.0" cy="224" r="8" fill="#0072B2" opacity="1"/>
+<circle cx="694.0" cy="224" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="722.0" cy="224" r="6.8" fill="#ffffff" stroke="#D55E00" stroke-width="2.4" opacity="1"/>
+<circle cx="750.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="778.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="806.0" cy="224" r="8" fill="#3d4852" opacity="0.22"/>
+<circle cx="834.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="862.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="890.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<circle cx="918.0" cy="224" r="6.8" fill="#ffffff" stroke="#3d4852" stroke-width="2.4" opacity="0.22"/>
+<text class="big" x="666" y="290">3 of 6</text>
+<text class="body" x="666" y="326">Of the yes calls,</text>
+<text class="body" x="666" y="352">the share that are true.</text>
+<text class="note" x="470" y="430" text-anchor="middle">Accuracy, 16 of 20, hides the miss: when yeses are few, it mostly counts the noes.</text>
+</svg>

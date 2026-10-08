@@ -71,15 +71,15 @@ from different generators. The conclusions match; the digits do not.
 
 | | Section | What it answers |
 | --- | --- | --- |
-| 1 | [Introduction](chapters/01-introduction/index.qmd) | What is machine learning, and how is it different from what I already do? |
-| 2 | [Marine datasets](chapters/02-marine-data/index.qmd) | How do I get my data into a state a model can use, without cheating? |
+| 1 | [Introduction](chapters/01-introduction/index.qmd) | What is machine learning, and what can it do for marine science? |
+| 2 | [Marine data](chapters/02-marine-data/index.qmd) | How do I get my data into a state a model can use, without cheating? |
 | 3 | [Supervised learning](chapters/03-supervised-learning/index.qmd) | Which method fits my question: regression, classification, trees? |
 | 4 | [How algorithms learn](chapters/04-how-algorithms-learn/index.qmd) | What is actually happening when a model "fits"? |
 | 5 | [Generalisation](chapters/05-generalisation/index.qmd) | Why does a model that fits beautifully fail on new data? |
 | 6 | [Assumptions & limitations](chapters/06-assumptions-limitations/index.qmd) | What is my model quietly assuming about the ocean? |
 | 7 | [Validation](chapters/07-validation/index.qmd) | How do I know how good it really is? |
 | 8 | [Unsupervised learning](chapters/08-unsupervised-learning/index.qmd) | What if I have no labels, only patterns? |
-| 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and do I need one? (Usually not.) |
+| 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and when do they help? |
 | 10 | [Interpretation & responsible use](chapters/10-interpretation/index.qmd) | What can I honestly claim from this model? |
 
 ## Work by participants

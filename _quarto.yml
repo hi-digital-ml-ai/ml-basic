@@ -43,64 +43,66 @@ website:
       - section: "1 · Introduction"
         href: chapters/01-introduction/index.qmd
         contents:
-          - href: chapters/01-introduction/what-is-machine-learning.qmd
-            text: "The same data, fitted two ways"
-          - href: chapters/01-introduction/applications-in-marine-science.qmd
-            text: "Applications, grouped by task shape"
           - href: chapters/01-introduction/types-of-learning.qmd
-            text: "The main types of learning"
+            text: "Types of learning"
           - href: chapters/01-introduction/prediction-and-explanation.qmd
-            text: "Prediction versus explanation"
-      - section: "2 · Marine datasets"
+            text: "Prediction and explanation"
+          - href: chapters/01-introduction/applications-in-marine-science.qmd
+            text: "Applications in marine science"
+          - href: chapters/01-introduction/discriminative-and-generative-models.qmd
+            text: "Discriminative and generative models"
+      - section: "2 · Marine data"
         href: chapters/02-marine-data/index.qmd
         contents:
-          - href: chapters/02-marine-data/observations-and-features.qmd
-            text: "One row is a decision"
+          - href: chapters/02-marine-data/the-coastal-survey.qmd
+            text: "The coastal survey"
           - href: chapters/02-marine-data/marine-data-types.qmd
             text: "Kinds of marine data"
-          - href: chapters/02-marine-data/exploratory-analysis.qmd
-            text: "Looking before modelling"
-          - href: chapters/02-marine-data/missing-values-and-outliers.qmd
-            text: "Missing values, outliers and imbalance"
+          - href: chapters/02-marine-data/exploring-and-cleaning.qmd
+            text: "Exploring and cleaning the data"
           - href: chapters/02-marine-data/scaling-and-encoding.qmd
-            text: "Scaling, transforming and encoding"
+            text: "Scaling and encoding"
           - href: chapters/02-marine-data/splitting-data.qmd
-            text: "Training, validation and test data"
+            text: "Splitting the data"
           - href: chapters/02-marine-data/information-leakage.qmd
             text: "Avoiding information leakage"
       - section: "3 · Supervised learning"
         href: chapters/03-supervised-learning/index.qmd
         contents:
-          - href: chapters/03-supervised-learning/regression-and-classification.qmd
-            text: "Regression or classification?"
           - href: chapters/03-supervised-learning/linear-and-polynomial-regression.qmd
-            text: "Linear, polynomial and count regression"
+            text: "Linear and polynomial regression"
+          - href: chapters/03-supervised-learning/count-regression.qmd
+            text: "Regression for counts"
           - href: chapters/03-supervised-learning/logistic-regression.qmd
             text: "Logistic regression"
-          - href: chapters/03-supervised-learning/trees-forests-boosting.qmd
-            text: "Trees, forests and boosting"
+          - href: chapters/03-supervised-learning/nearest-neighbours.qmd
+            text: "k-nearest neighbours"
+          - href: chapters/03-supervised-learning/decision-trees.qmd
+            text: "Decision trees"
+          - href: chapters/03-supervised-learning/forests-and-boosting.qmd
+            text: "Random forests and boosting"
           - href: chapters/03-supervised-learning/choosing-a-method.qmd
             text: "Choosing a method"
       - section: "4 · How algorithms learn"
         href: chapters/04-how-algorithms-learn/index.qmd
         contents:
           - href: chapters/04-how-algorithms-learn/loss-functions.qmd
-            text: "Loss and objective functions"
+            text: "Loss functions"
           - href: chapters/04-how-algorithms-learn/parameter-estimation.qmd
-            text: "Parameter estimation"
+            text: "Finding the parameters"
           - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
             text: "Gradient descent"
           - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
             text: "Maximum likelihood"
           - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
-            text: "MAP estimation and priors"
+            text: "Priors and ridge regression"
           - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
-            text: "Reading a fit"
+            text: "Checking a fit"
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:
           - href: chapters/05-generalisation/training-versus-new-data.qmd
-            text: "Training error vs the error that matters"
+            text: "Training error and the error on new data"
           - href: chapters/05-generalisation/underfitting-and-overfitting.qmd
             text: "Underfitting and overfitting"
           - href: chapters/05-generalisation/model-complexity.qmd
@@ -114,12 +116,12 @@ website:
       - section: "6 · Assumptions & limitations"
         href: chapters/06-assumptions-limitations/index.qmd
         contents:
-          - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
-            text: "Independence of observations"
           - href: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
             text: "Linearity and nonlinearity"
           - href: chapters/06-assumptions-limitations/distributional-assumptions.qmd
             text: "Distributional assumptions"
+          - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
+            text: "Independence of observations"
           - href: chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd
             text: "Spatial and temporal dependence"
           - href: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
@@ -136,7 +138,7 @@ website:
           - href: chapters/07-validation/regression-metrics.qmd
             text: "Regression performance measures"
           - href: chapters/07-validation/classification-metrics.qmd
-            text: "Classification measures and the confusion matrix"
+            text: "Classification performance measures"
           - href: chapters/07-validation/uncertainty-and-stability.qmd
             text: "Uncertainty and stability"
           - href: chapters/07-validation/choosing-a-metric.qmd
@@ -145,17 +147,17 @@ website:
         href: chapters/08-unsupervised-learning/index.qmd
         contents:
           - href: chapters/08-unsupervised-learning/clustering.qmd
-            text: "Clustering"
+            text: "Clustering with k-means"
           - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
             text: "Choosing the number of clusters"
           - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
-            text: "Hierarchical and model-based clustering"
+            text: "Hierarchical clustering"
           - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
             text: "Principal component analysis"
           - href: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
-            text: "Dimensionality reduction in practice"
+            text: "How many components to keep"
           - href: chapters/08-unsupervised-learning/interpreting-patterns.qmd
-            text: "Interpreting patterns, and their limits"
+            text: "Checking a pattern before reporting it"
       - section: "9 · Neural networks"
         href: chapters/09-neural-networks/index.qmd
         contents:
@@ -167,10 +169,10 @@ website:
             text: "Training a network"
           - href: chapters/09-neural-networks/how-much-data.qmd
             text: "How much data a network needs"
-          - href: chapters/09-neural-networks/autoencoders.qmd
-            text: "Autoencoders"
           - href: chapters/09-neural-networks/when-to-use-one.qmd
             text: "When a network is the right tool"
+          - href: chapters/09-neural-networks/autoencoders.qmd
+            text: "Autoencoders"
       - section: "10 · Interpretation"
         href: chapters/10-interpretation/index.qmd
         contents:
@@ -180,14 +182,16 @@ website:
             text: "Partial effects"
           - href: chapters/10-interpretation/black-box-or-not.qmd
             text: "Black boxes and interpretable models"
-          - href: chapters/10-interpretation/reproducibility.qmd
-            text: "Reproducibility and reporting"
           - href: chapters/10-interpretation/communicating-uncertainty.qmd
             text: "Communicating uncertainty"
+          - href: chapters/10-interpretation/reproducibility.qmd
+            text: "Reproducibility and reporting"
           - href: chapters/10-interpretation/from-model-to-claim.qmd
             text: "From a model to a claim"
       - section: "More"
         contents:
+          - href: glossary.qmd
+            text: Glossary
           - href: chapters/index.qmd
             text: All pages
           - href: contributed/index.qmd
@@ -219,6 +223,9 @@ format:
 # Adds the "Code from this page" line to every page that has code.
 filters:
   - tools/code-downloads.lua
+
+shortcodes:
+  - tools/glossary.lua
 
 execute:
   freeze: auto

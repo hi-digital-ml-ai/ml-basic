@@ -1,6 +1,6 @@
 ---
 title: "Uncertainty and stability"
-description: "A performance number without an interval is not a result, and the interval you need for comparing two models is not the one you need for reporting either."
+description: "A cross-validated score comes from one survey, and would move if other sites had been sampled. Drawing the sites again puts an interval on each model's score, and a paired comparison on the same draws says how sure a ranking of two models is."
 order: 5
 categories: [validation, uncertainty]
 ---
@@ -10,47 +10,74 @@ categories: [validation, uncertainty]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(ranger)
-library(patchwork)
+library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+set.seed(123)
 ```
 
-## Numbers reported without an interval
+## A score from one survey is an estimate
 
-No marine scientist would report a mean abundance of 4.2 individuals per station without a
-standard error. The same people will report "RMSE 4.2" or "R² 0.24" as though those were
-measured with a ruler.
-
-They are estimates from a sample, and they have the usual problems: they move when the sample
-moves, they move when the folds move, and for some algorithms they move when nothing moves at
-all. This page puts numbers on all three, and then shows why comparing two models needs a
-*different* and much narrower interval than reporting either one.
+Most pages so far have reported a model's score as a single number. That number comes from
+one survey: had other sites on the same coast been sampled, the cross-validated RMSE would
+have come out higher or lower, and two models might have swapped places. Before a score is
+reported, or used to choose between models, it is worth knowing how far it could move. This
+page puts an interval on a cross-validated score, and shows that comparing two models needs
+an interval of its own, much narrower than either model's.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
-{{< include ../../_snippets/python-tabs.qmd >}}
+{{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Resampling the sites gives a score its interval
 
-Three separate things wobble.
+[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd#resampling-whole-sites-measures-the-effective-sample-size)
+drew **bootstrap samples** of whole sites to see how far an estimate moves from one sample
+to the next. A score can be treated the same way. Cross-validation has already given every
+station an out-of-fold prediction, as on
+[Cross-validation](cross-validation.qmd#out-of-fold-predictions-are-pooled-into-one-score).
+A bootstrap sample draws the sites again, with replacement, keeps each drawn site's
+stations with their predictions, and works out the RMSE on them. Repeated a thousand times,
+this gives a thousand RMSEs. The middle 95% of them, from the 2.5th to the 97.5th
+percentile, is a **95% interval** for the score.
 
-1. **Which stations you have.** Another 720 stations from the same shelf would give a different
-   score. This is ordinary sampling uncertainty, and the bootstrap estimates it.
-2. **Which folds you drew.** The [first page of this section](cross-validation.qmd) showed a
-   single split moving R² between 0.079 and 0.346. Repeating the cross-validation averages it
-   down.
-3. **The algorithm itself.** A random forest fitted twice to identical data gives different
-   answers, because the trees and the variable subsets are drawn at random.
+Nothing is refitted, so a thousand samples take a second or two. The models are held fixed,
+though: the interval shows how much the score depends on which sites were scored, not how
+the models themselves would change if fitted to other sites. Refitting in every sample would
+add that, at a thousand times the cost.
 
-The third is the smallest, and it is still the one worth measuring first, because it is a
-*floor*: no difference between two models smaller than the algorithm's own run-to-run noise
-means anything at all.
+## Two models are compared in pairs
+
+Two models scored on the same sites share most of what makes a score high or low. A site
+with a few very large catches raises every model's RMSE, and a site of near-empty stations
+lowers them all. So when the sites are drawn again, the two scores rise and fall together,
+and their intervals can overlap widely even when one model is better in almost every
+sample. A **paired comparison** works out the difference between the two scores within each
+bootstrap sample, so that what they share cancels. The interval of that difference says how
+sure the ranking is.
+
+::: {.diagram}
+![Two models scored on five resamples. Scored alone, each model's error moves widely from one resample to the next, and the two intervals overlap almost entirely. In pairs, the difference between the two errors is nearly the same in every resample, and its interval is short and clear of zero.](img/paired-comparison.svg){fig-alt="Two cards. Left, scored alone, the intervals overlap: five resamples, each with the error of model A, a blue dot, and of model B, an orange dot, joined by a short line. From one resample to the next both errors move together, between 3.4 and 5.3, and B is always a little lower. Below, model A's interval runs from 3.6 to 5.3 and model B's from 3.4 to 5.0, so the two overlap almost entirely. Right, in pairs, the difference is clear: the same five resamples give one green dot each, the error of B minus the error of A, between minus 0.4 and minus 0.2, all to the left of a dashed line at zero. Its interval is short and clear of zero. A note says a hard resample is hard for both models, so their errors rise and fall together; their difference cancels what they share, so it is far more certain than either error."}
+:::
+
+Pairing needs both models to have predicted the same stations from the same folds, which
+is why every page in this section fits all its models on one set of folds.
 
 ## Worked example
 
-Two models of the same counts, the Poisson GLM and a random forest, compared on the same
-folds throughout.
+The models are three of the four on
+[Regression performance measures](regression-metrics.qmd):
+
+- **Predicting the average**, with no skill.
+- **Poisson regression**, with each input entered as a straight line.
+- **Random forest**.
+
+They are cross-validated on the same ten folds of sites as on that page, so their
+out-of-fold predictions and RMSEs are the same. A thousand bootstrap samples of the sites
+then give each score its interval, and give each pair of models a paired difference.
+
+### Preparing the data
 
 ::: {.panel-tabset group="language"}
 
@@ -60,205 +87,196 @@ folds throughout.
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
-d <- survey |>
-  dplyr::select(abundance, depth_m, temperature_c, chlorophyll_mg_m3, salinity_psu,
-                substrate, season, longitude, latitude) |>
-  drop_na()
+set.seed(61)
+folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
-formula_env <- abundance ~ poly(depth_m, 2) + poly(temperature_c, 2) +
-  log1p(chlorophyll_mg_m3) + salinity_psu + substrate + season + longitude + latitude
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season", "longitude", "latitude")
 
-score_fold <- function(split) {
-  tr <- analysis(split); te <- assessment(split)
-  tibble(
-    glm    = rmse_vec(te$abundance,
-                      predict(glm(formula_env, tr, family = poisson), te, type = "response")),
-    forest = rmse_vec(te$abundance,
-                      predict(ranger(abundance ~ ., tr, num.trees = 500, seed = 1), te)$predictions)
-  )
+with_inputs <- function(model) {
+  recipe(reformulate(inputs, "abundance"), data = survey) |>
+    step_impute_median(all_numeric_predictors()) |>
+    step_dummy(all_nominal_predictors()) |>
+    workflow(model)
 }
 
-set.seed(81)
-folds <- vfold_cv(d, v = 10)
-per_fold <- imap_dfr(folds$splits, \(s, i) mutate(score_fold(s), fold = i))
+forest <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 1) |>
+  set_mode("regression")
 
-per_fold |>
-  summarise(across(c(glm, forest), list(mean = mean, sd = sd)),
-            .by = NULL) |>
-  mutate(across(everything(), \(x) round(x, 3)))
+models <- list(
+  "Predicting the average" = with_inputs(null_model(mode = "regression")),
+  "Poisson regression"     = with_inputs(poisson_reg()),
+  "Random forest"          = with_inputs(forest)
+)
+
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold <- map(models, \(model) {
+  fit_resamples(model, folds, metrics = metric_set(rmse),
+                control = control_resamples(save_pred = TRUE)) |>
+    collect_predictions() |>
+    arrange(.row) |>
+    pull(.pred)
+})
+
+scored <- as_tibble(out_of_fold) |>
+  mutate(site_id = survey$site_id, caught = survey$abundance)
+
+rmse_by_model <- function(data) {
+  map_dbl(set_names(names(models)), \(m) rmse_vec(data$caught, data[[m]]))
+}
+
+tibble(stations = nrow(survey), sites = n_distinct(survey$site_id))
 ```
 
 ## Python
 
-```python
+```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
+from sklearn.compose import ColumnTransformer
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score, root_mean_squared_error
-from sklearn.model_selection import KFold
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import PoissonRegressor
+from sklearn.metrics import root_mean_squared_error
+from sklearn.model_selection import GroupKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
+caught = survey["abundance"].to_numpy()
 
-columns = ["abundance", "depth_m", "temperature_c", "chlorophyll_mg_m3",
-           "salinity_psu", "substrate", "season", "longitude", "latitude"]
-d = survey[columns].dropna().reset_index(drop=True)
+folds = GroupKFold(n_splits=10, shuffle=True, random_state=61)
 
-formula_env = ("abundance ~ depth_m + I(depth_m**2)"
-               " + temperature_c + I(temperature_c**2)"
-               " + np.log1p(chlorophyll_mg_m3) + salinity_psu"
-               " + C(substrate) + C(season) + longitude + latitude")
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+          "substrate", "season", "longitude", "latitude"]
+categorical = ["substrate", "season"]
+numeric = [c for c in inputs if c not in categorical]
 
-features = pd.get_dummies(d.drop(columns="abundance"), drop_first=True)
+def with_inputs(model):
+    recipe = ColumnTransformer([
+        # scaling leaves an unpenalised fit unchanged and helps the solver
+        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
+                              ("scale", StandardScaler())]), numeric),
+        ("nominal", OneHotEncoder(drop="first", sparse_output=False), categorical),
+    ])
+    return Pipeline([("recipe", recipe), ("model", model)])
 
-def glm_predictions(rows, held):
-    model = smf.glm(formula_env, d.iloc[rows], family=sm.families.Poisson()).fit()
-    return model.predict(d.iloc[held])
+# max_features="sqrt" draws a few inputs at each question, as ranger does.
+forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                               min_samples_leaf=5, random_state=1)
 
-def forest_predictions(rows, held, seed=1):
-    model = RandomForestRegressor(n_estimators=500, random_state=seed).fit(
-        features.iloc[rows], d["abundance"].iloc[rows])
-    return model.predict(features.iloc[held])
+models = {
+    "Predicting the average": DummyRegressor(),
+    "Poisson regression": PoissonRegressor(alpha=0, max_iter=1000),
+    "Random forest": forest,
+}
 
-def score_fold(rows, held):
-    observed = d["abundance"].iloc[held]
-    return {"glm": root_mean_squared_error(observed, glm_predictions(rows, held)),
-            "forest": root_mean_squared_error(observed,
-                                              forest_predictions(rows, held))}
+# every station's out-of-fold prediction from each model, in the survey's order
+out_of_fold = {name: cross_val_predict(with_inputs(model), survey[inputs], caught,
+                                       cv=folds, groups=survey["site_id"])
+               for name, model in models.items()}
 
-folds = list(KFold(n_splits=10, shuffle=True, random_state=81).split(d))
-per_fold = pd.DataFrame([{**score_fold(rows, held), "fold": i}
-                         for i, (rows, held) in enumerate(folds, start=1)])
+def rmse_by_model(rows):
+    return {name: root_mean_squared_error(caught[rows], predicted[rows])
+            for name, predicted in out_of_fold.items()}
 
-per_fold[["glm", "forest"]].agg(["mean", "std"]).round(3)
+pd.DataFrame({"stations": [len(survey)], "sites": [survey["site_id"].nunique()]})
 ```
 
 :::
 
-### The algorithm's own noise
+```{r}
+#| label: helpers
+#| include: false
+f2 <- function(x) sprintf("%.2f", x)
+pct <- function(x) scales::percent(x, accuracy = 1)
+n_sites <- n_distinct(survey$site_id)
+```
 
-Before comparing anything, measure the floor. We refit the same forest to the same folds ten
-times, changing nothing but the seed.
+The survey's `r nrow(survey)` stations come from `r n_sites` sites, so each bootstrap
+sample draws `r n_sites` sites with replacement, some of them twice or more and others not
+at all.
+
+### Each model's interval is wider than the gaps between the models
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: seed-noise
-seed_runs <- map_dbl(1:10, \(k) {
-  pooled <- map_dfr(folds$splits, \(s) {
-    te <- assessment(s)
-    tibble(obs = te$abundance,
-           pred = predict(ranger(abundance ~ ., analysis(s), num.trees = 500, seed = k),
-                          te)$predictions)
-  })
-  rmse_vec(pooled$obs, pooled$pred)
-})
+#| label: intervals
+set.seed(62)
+site_samples <- group_bootstraps(scored, group = site_id, times = 1000)
 
-c(mean = mean(seed_runs), sd = sd(seed_runs),
-  `range across seeds` = diff(range(seed_runs))) |> round(4)
+# one row per bootstrap sample, one column per model
+scores <- map(site_samples$splits, \(s) as_tibble_row(rmse_by_model(analysis(s)))) |>
+  list_rbind()
+
+intervals <- tibble(
+  model = names(models),
+  RMSE  = rmse_by_model(scored),
+  lower = map_dbl(scores, \(x) quantile(x, 0.025)),
+  upper = map_dbl(scores, \(x) quantile(x, 0.975))
+) |>
+  mutate(width = upper - lower)
+
+intervals |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-def pooled_forest_rmse(seed):
-    pieces = [(d["abundance"].iloc[held], forest_predictions(rows, held, seed))
-              for rows, held in folds]
-    observed = np.concatenate([np.asarray(o) for o, _ in pieces])
-    predicted = np.concatenate([p for _, p in pieces])
-    return root_mean_squared_error(observed, predicted)
+```{python}
+sites = survey["site_id"].to_numpy()
+site_rows = [np.flatnonzero(sites == s) for s in np.unique(sites)]
 
-seed_runs = np.array([pooled_forest_rmse(k) for k in range(1, 11)])
+# draw the sites again, with replacement, and score every model on their stations
+rng = np.random.default_rng(62)
+samples = []
+for sample in range(1000):
+    drawn = rng.integers(len(site_rows), size=len(site_rows))
+    rows = np.concatenate([site_rows[i] for i in drawn])
+    samples.append(rmse_by_model(rows))
+scores = pd.DataFrame(samples)
 
-pd.Series({"mean": seed_runs.mean(), "sd": seed_runs.std(ddof=1),
-           "range across seeds": np.ptp(seed_runs)}).round(4)
+intervals = pd.DataFrame({
+    "model": list(models),
+    "RMSE": list(rmse_by_model(np.arange(len(survey))).values()),
+    "lower": scores.quantile(0.025).to_numpy(),
+    "upper": scores.quantile(0.975).to_numpy(),
+})
+intervals["width"] = intervals["upper"] - intervals["lower"]
+
+intervals.round(3)
 ```
 
 :::
-
-Pure algorithmic noise moves the pooled RMSE by less than 0.03. Anything larger than that is at
-least potentially real; anything smaller is the random number generator.
-
-### The interval on the headline number
-
-The fold-to-fold standard deviation divided by $\sqrt{10}$ is the obvious standard error, and
-it is not the right one: the ten training sets overlap heavily, so the fold scores are not
-independent and that formula is optimistic. A bootstrap over the *stations*, applied to the
-pooled out-of-fold predictions, answers the question people actually mean: how much would this
-number move if we had surveyed a different 720 stations?
-
-::: {.panel-tabset group="language"}
-
-## R
 
 ```{r}
-#| label: bootstrap
-set.seed(84)
-pooled_glm <- map_dfr(folds$splits, \(s) {
-  te <- assessment(s)
-  tibble(obs  = te$abundance,
-         pred = predict(glm(formula_env, analysis(s), family = poisson), te, type = "response"))
-})
-
-set.seed(85)
-boot <- map_dfr(1:2000, \(k) {
-  i <- sample(nrow(pooled_glm), replace = TRUE)
-  tibble(rmse = rmse_vec(pooled_glm$obs[i], pooled_glm$pred[i]),
-         rsq_trad = rsq_trad_vec(pooled_glm$obs[i], pooled_glm$pred[i]))
-})
-
-tibble(measure   = c("RMSE", "rsq_trad"),
-       estimate  = c(rmse_vec(pooled_glm$obs, pooled_glm$pred),
-                     rsq_trad_vec(pooled_glm$obs, pooled_glm$pred)),
-       lower     = c(quantile(boot$rmse, 0.025), quantile(boot$rsq_trad, 0.025)),
-       upper     = c(quantile(boot$rmse, 0.975), quantile(boot$rsq_trad, 0.975))) |>
-  mutate(across(where(is.double), \(x) round(x, 3)))
+#| label: interval-numbers
+#| include: false
+interval_of <- function(m) {
+  row <- filter(intervals, model == m)
+  glue::glue("{f2(row$RMSE)} ({f2(row$lower)} to {f2(row$upper)})")
+}
+score_of <- function(m) intervals$RMSE[intervals$model == m]
+gap_average <- score_of("Predicting the average") - score_of("Random forest")
+gap_poisson <- score_of("Poisson regression") - score_of("Random forest")
 ```
 
-## Python
+Each RMSE is shown with its 95% interval: predicting the average
+`r interval_of("Predicting the average")`, Poisson regression
+`r interval_of("Poisson regression")` and the random forest
+`r interval_of("Random forest")`. The intervals are `r f2(min(intervals$width))` to
+`r f2(max(intervals$width))` wide, more than twice the forest's lead of `r f2(gap_average)`
+over predicting the average, and many times its lead of `r f2(gap_poisson)` over Poisson
+regression. Read alone, the three intervals overlap, and cannot say which model is better:
+not even whether either model beats predicting the average.
 
-```python
-pieces = [(d["abundance"].iloc[held], glm_predictions(rows, held))
-          for rows, held in folds]
-pooled_glm = pd.DataFrame({
-    "obs": np.concatenate([np.asarray(o) for o, _ in pieces]),
-    "pred": np.concatenate([np.asarray(p) for _, p in pieces]),
-})
-
-rng = np.random.default_rng(85)
-boot = pd.DataFrame([
-    {"rmse": root_mean_squared_error(sample["obs"], sample["pred"]),
-     "rsq_trad": r2_score(sample["obs"], sample["pred"])}
-    for sample in (pooled_glm.iloc[rng.integers(len(pooled_glm),
-                                                size=len(pooled_glm))]
-                   for _ in range(2000))
-])
-
-pd.DataFrame({
-    "measure": ["RMSE", "rsq_trad"],
-    "estimate": [root_mean_squared_error(pooled_glm["obs"], pooled_glm["pred"]),
-                 r2_score(pooled_glm["obs"], pooled_glm["pred"])],
-    "lower": [boot["rmse"].quantile(0.025), boot["rsq_trad"].quantile(0.025)],
-    "upper": [boot["rmse"].quantile(0.975), boot["rsq_trad"].quantile(0.975)],
-}).round(3)
-```
-
-:::
-
-The honest report is **RMSE 4.14 (95% CI 3.70 to 4.58)** and **R² 0.26 (0.18 to 0.33)**. That
-interval is 0.88 of an RMSE unit wide, thirty times the algorithm's own noise. Any claim that
-rests on a difference of 0.1 between two published models is not supported by data of this size.
-
-### But comparing the two models is a much sharper question
-
-Here is the trap. The forest's mean fold RMSE and the GLM's mean fold RMSE both carry that
-large uncertainty, so it looks as though we cannot tell them apart. We can, because their
-errors move together.
+### Pairing separates the forest from the average but not from Poisson regression
 
 ::: {.panel-tabset group="language"}
 
@@ -266,261 +284,132 @@ errors move together.
 
 ```{r}
 #| label: paired
-differences <- per_fold |> mutate(difference = forest - glm)
+full <- rmse_by_model(scored)
 
-unpaired <- t.test(per_fold$forest, per_fold$glm)
-paired   <- t.test(per_fold$forest, per_fold$glm, paired = TRUE)
-
-tibble(comparison = c("treating the two sets of fold scores as independent",
-                      "pairing them fold by fold"),
-       difference = c(diff(rev(unpaired$estimate)), paired$estimate),
-       lower = c(unpaired$conf.int[1], paired$conf.int[1]),
-       upper = c(unpaired$conf.int[2], paired$conf.int[2])) |>
-  mutate(width = upper - lower,
-         across(where(is.double), \(x) round(x, 3)))
-```
-
-## Python
-
-```python
-from scipy import stats
-
-unpaired = stats.ttest_ind(per_fold["forest"], per_fold["glm"])
-paired = stats.ttest_rel(per_fold["forest"], per_fold["glm"])
-
-difference = per_fold["forest"] - per_fold["glm"]
-
-comparison = pd.DataFrame({
-    "comparison": ["treating the two sets of fold scores as independent",
-                   "pairing them fold by fold"],
-    "difference": [per_fold["forest"].mean() - per_fold["glm"].mean(),
-                   difference.mean()],
-    "lower": [unpaired.confidence_interval().low,
-              paired.confidence_interval().low],
-    "upper": [unpaired.confidence_interval().high,
-              paired.confidence_interval().high],
-})
-comparison["width"] = comparison["upper"] - comparison["lower"]
-
-comparison.round(3)
-```
-
-:::
-
-```{r}
-#| label: fig-paired
-#| fig-cap: "Left: RMSE of each model on each of the ten folds, joined fold by fold. The two columns overlap almost completely: what separates the points is which fold they came from, not which model. Right: the same numbers as one within-fold difference per fold. Eight of the ten are positive, and the 95% interval (shaded) sits almost entirely above zero once the fold effect is removed."
-#| fig-alt: "Two panels side by side. The left panel has the two model names on the horizontal axis and RMSE from about 3 to 5.8 on the vertical; ten thin grey lines connect each model's fold score to the other's, spread over the whole vertical range with heavy overlap between the two columns, most sloping gently upwards from the GLM to the forest. The right panel lists the ten folds down its side and plots one point per fold against a horizontal axis of forest RMSE minus GLM RMSE, from about minus 0.2 to 0.7. A vertical line marks zero and a pale shaded band spans the confidence interval from just below zero to 0.33. Eight of the ten points fall to the right of zero, one of them far out at 0.65 for fold 6; fold 1 sits essentially on zero and fold 5 clearly to its left at minus 0.15. A vertical line and a diamond above the plot mark the mean at 0.162."
-#| fig-width: 7.6
-#| fig-height: 4.2
-long <- differences |>
-  pivot_longer(c(glm, forest), names_to = "model", values_to = "rmse") |>
-  mutate(model = factor(model, c("glm", "forest"), c("Poisson GLM", "random forest")))
-
-left <- ggplot(long, aes(model, rmse)) +
-  geom_line(aes(group = fold), colour = ml_palette[["grey"]], alpha = 0.6) +
-  geom_point(aes(colour = model), size = 2.6) +
-  scale_colour_ml() +
-  labs(x = NULL, y = "RMSE on that fold", subtitle = "Each fold, both models") +
-  theme(legend.position = "none")
-
-right <- ggplot(differences, aes(difference, factor(fold))) +
-  annotate("rect", xmin = paired$conf.int[1], xmax = paired$conf.int[2],
-           ymin = -Inf, ymax = Inf, fill = ml_palette[["blue"]], alpha = 0.15) +
-  geom_vline(xintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.5) +
-  geom_point(size = 2.8, colour = ml_palette[["vermilion"]]) +
-  geom_vline(xintercept = mean(differences$difference),
-             colour = ml_palette[["blue"]], linewidth = 0.6) +
-  annotate("point", x = mean(differences$difference), y = 10.7, shape = 18,
-           size = 4, colour = ml_palette[["blue"]]) +
-  coord_cartesian(ylim = c(1, 11), clip = "off") +
-  labs(x = "forest RMSE − GLM RMSE, within fold", y = "fold",
-       subtitle = "The same numbers, paired")
-
-left + right + plot_layout(widths = c(1, 1.4))
-```
-
-Treating the fold scores as two independent samples gives a confidence interval 1.54 wide,
-straddling zero: no conclusion. Pairing them gives an interval 0.33 wide, **nearly five times
-sharper on identical numbers**, and narrower even than the 0.88-wide bootstrap interval on
-either model alone. Most of what makes a fold score high or low is the fold, and in the paired
-difference the fold cancels.
-
-This is why the same folds must be used for every model you intend to compare, and why
-`fit_resamples()` and `workflow_map()` take a resamples object rather than making their own.
-
-### Ten folds was still not enough
-
-The paired interval above runs from −0.002 to 0.327, so it just touches zero. Repeating the
-cross-validation five times settles it.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: repeated
-set.seed(82)
-repeated <- vfold_cv(d, v = 10, repeats = 5)
-
-repeated_scores <- imap_dfr(repeated$splits, \(s, i) {
-  mutate(score_fold(s), repeat_id = repeated$id[i])
+differences <- map(c("Predicting the average", "Poisson regression"), \(other) {
+  in_each_sample <- scores$`Random forest` - scores[[other]]
+  tibble(`forest minus` = other,
+         difference = full[["Random forest"]] - full[[other]],
+         lower = quantile(in_each_sample, 0.025),
+         upper = quantile(in_each_sample, 0.975),
+         `samples with the forest lower` = mean(in_each_sample < 0))
 }) |>
-  mutate(difference = forest - glm)
+  list_rbind()
 
-repeated_scores |>
-  summarise(mean_difference = mean(difference),
-            se = sd(difference) / sqrt(n()),
-            folds_where_forest_worse = sum(difference > 0),
-            folds = n())  |>
-  mutate(lower = mean_difference - qt(0.975, folds - 1) * se,
-         upper = mean_difference + qt(0.975, folds - 1) * se,
-         across(where(is.double), \(x) round(x, 4)))
+differences |> mutate(across(where(is.double), \(x) round(x, 3)))
 ```
 
 ## Python
 
-```python
-# scikit-learn's RepeatedKFold is vfold_cv(repeats = 5), but it hands back a
-# flat list of splits, so the repeat each fold belongs to is counted out here.
-from sklearn.model_selection import RepeatedKFold
+```{python}
+full = rmse_by_model(np.arange(len(survey)))
 
-repeated = RepeatedKFold(n_splits=10, n_repeats=5, random_state=82)
+table_rows = []
+for other in ["Predicting the average", "Poisson regression"]:
+    in_each_sample = scores["Random forest"] - scores[other]
+    table_rows.append({"forest minus": other,
+                       "difference": full["Random forest"] - full[other],
+                       "lower": in_each_sample.quantile(0.025),
+                       "upper": in_each_sample.quantile(0.975),
+                       "samples with the forest lower": (in_each_sample < 0).mean()})
+differences = pd.DataFrame(table_rows)
 
-repeated_scores = pd.DataFrame([
-    {**score_fold(rows, held), "repeat_id": f"Repeat{i // 10 + 1}"}
-    for i, (rows, held) in enumerate(repeated.split(d))
-])
-repeated_scores["difference"] = (repeated_scores["forest"]
-                                 - repeated_scores["glm"])
-
-n = len(repeated_scores)
-mean_difference = repeated_scores["difference"].mean()
-se = repeated_scores["difference"].std(ddof=1) / np.sqrt(n)
-half_width = stats.t.ppf(0.975, n - 1) * se
-
-pd.Series({
-    "mean_difference": mean_difference,
-    "se": se,
-    "folds_where_forest_worse": int((repeated_scores["difference"] > 0).sum()),
-    "folds": n,
-    "lower": mean_difference - half_width,
-    "upper": mean_difference + half_width,
-}).round(4)
+differences.round(3)
 ```
 
 :::
+
+```{r}
+#| label: paired-numbers
+#| include: false
+paired_of <- function(m) filter(differences, `forest minus` == m)
+vs_average <- paired_of("Predicting the average")
+vs_poisson <- paired_of("Poisson regression")
+signed <- function(x) sub("^-", "−", f2(x))
+paired_width <- vs_poisson$upper - vs_poisson$lower
+together <- cor(scores$`Random forest`, scores$`Poisson regression`)
+```
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: repeat-spread
-repeated_scores |>
-  summarise(mean_difference = mean(difference), .by = repeat_id) |>
-  mutate(mean_difference = round(mean_difference, 3))
-```
+#| label: fig-pairs
+#| fig-cap: !expr glue::glue("The forest's RMSE against another model's in each of the 1,000 bootstrap samples of sites. Points below the dashed diagonal are samples in which the forest scored better. Against predicting the average, it did in {pct(vs_average[[5]])} of samples. Against Poisson regression the points hug the diagonal, as the two scores rise and fall together, and the forest did better in {pct(vs_poisson[[5]])}.")
+#| fig-alt: !expr glue::glue("Two square scatter plots side by side, each with a dashed diagonal line. Each has 1,000 points, one per bootstrap sample, with the forest's RMSE on the vertical axis. In the left panel the horizontal axis is the RMSE of predicting the average; the points form a long cloud running from about {f2(min(scores[[1]]))} to {f2(max(scores[[1]]))} along it, almost all of them below the diagonal. In the right panel the horizontal axis is the RMSE of Poisson regression; the points form a long, narrow band lying along the diagonal, most of them just below it and some just above.")
+#| fig-width: 8
+#| fig-height: 4.6
+paired_scores <- scores |>
+  pivot_longer(c(`Predicting the average`, `Poisson regression`),
+               names_to = "other", values_to = "other_rmse") |>
+  mutate(other = str_replace(other, "^Predicting", "predicting"),
+         other = fct_inorder(paste("Against", other)),
+         better = if_else(`Random forest` < other_rmse,
+                          "Forest lower", "Forest higher"))
 
-## Python
+limits <- range(c(scores$`Random forest`, paired_scores$other_rmse))
 
-```python
-(repeated_scores.groupby("repeat_id")["difference"]
-    .mean()
-    .round(3)
-    .reset_index(name="mean_difference"))
+ggplot(paired_scores, aes(other_rmse, `Random forest`, colour = better)) +
+  geom_abline(colour = "grey50", linetype = "dashed") +
+  geom_point(size = 0.9, alpha = 0.5) +
+  facet_wrap(~other) +
+  scale_colour_manual(values = c("Forest lower" = ml_palette[["blue"]],
+                                 "Forest higher" = ml_palette[["vermilion"]]),
+                      breaks = c("Forest lower", "Forest higher")) +
+  coord_equal(xlim = limits, ylim = limits) +
+  labs(x = "RMSE of the other model (individuals)",
+       y = "RMSE of the forest (individuals)", colour = NULL) +
+  guides(colour = guide_legend(override.aes = list(size = 3, alpha = 1))) +
+  theme(legend.position = "bottom")
 ```
 
 :::
 
-Across fifty folds the forest is worse by 0.152 (95% CI 0.105 to 0.198), and it loses in 42 of
-them. Note the last table: the five individual ten-fold runs put the difference anywhere
-between 0.099 and 0.200. A single ten-fold comparison would have reported any of those.
+Against predicting the average, the forest's RMSE is lower by `r f2(-vs_average$difference)`,
+with a paired 95% interval from `r signed(vs_average$lower)` to `r signed(vs_average$upper)`.
+The interval lies clear of zero, and the forest scored better in
+`r pct(vs_average[[5]])` of the samples, although the two models' own intervals overlap.
 
-### The predictors that survive resampling
+Against Poisson regression the paired interval runs from `r signed(vs_poisson$lower)` to
+`r signed(vs_poisson$upper)`. At `r f2(paired_width)` wide, against
+`r f2(min(intervals$width))` for the narrowest of the models' own intervals, it is far
+sharper, because the two scores move almost in step (their correlation across the samples
+is `r f2(together)`). It still covers zero. The forest
+did better in `r pct(vs_poisson[[5]])` of the samples, so the order on
+[Regression performance measures](regression-metrics.qmd) is not stable: on this survey,
+RMSE cannot tell the forest from Poisson regression.
 
-The same question applies to anything else a model tells you. We refit the forest on 25
-bootstrap resamples and record where each predictor ranks on permutation importance.
+## Overlapping intervals do not show that two models are alike
 
-```{r}
-#| label: fig-importance
-#| fig-cap: "Permutation-importance rank of each predictor across 25 bootstrap resamples, with the point at the median rank and the bar spanning best to worst. Temperature is top-ranked in most resamples. Depth and longitude trade places constantly, since they are nearly the same variable in this survey as depth increases offshore, so neither has a stable rank despite depth being a genuine driver. Salinity, season and substrate never reach the top three."
-#| fig-alt: "A horizontal chart with eight predictor names down the left and importance rank from 1 to 8 across the bottom, rank 1 at the left. Each predictor has a thin grey horizontal bar spanning its best and worst rank across 25 resamples, with a dot at its median coloured on a dark-to-bright scale by how often it reached the top three. Temperature sits at rank 1 with a bar reaching to 4; chlorophyll at 2 with a bar from 1 to 5; depth and longitude both have medians at 3 with bars spanning 1 or 2 to 5, overlapping each other almost entirely; latitude sits at 5; and salinity, season and substrate sit at 6, 7 and 8 with short bars that never reach the left-hand end."
-#| fig-width: 7
-#| fig-height: 4.2
-set.seed(86)
-resamples <- bootstraps(d, times = 25)
+Report each score with its interval and the number of sites behind it. Compare two models by
+their paired difference, never by whether their own intervals overlap: here every interval
+overlapped the others, and the forest still beat predicting the average in nearly every
+sample. A lead that holds in `r pct(vs_poisson[[5]])` of samples is not yet a result. For a method with
+random choices in the fit, a difference must also be larger than the spread from one run to
+the next, which [Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured by
+leaving the seed out.
 
-importance_ranks <- map_dfr(seq_along(resamples$splits), \(i) {
-  m <- ranger(abundance ~ ., analysis(resamples$splits[[i]]), num.trees = 500,
-              importance = "permutation", seed = 1)
-  tibble(resample = i, variable = names(m$variable.importance),
-         rank = rank(-m$variable.importance))
-})
-
-summary_ranks <- importance_ranks |>
-  summarise(median_rank = median(rank), best = min(rank), worst = max(rank),
-            in_top_three = mean(rank <= 3), .by = variable) |>
-  arrange(median_rank, variable)
-
-ggplot(summary_ranks, aes(median_rank, fct_rev(fct_inorder(variable)))) +
-  geom_segment(aes(x = best, xend = worst, yend = fct_rev(fct_inorder(variable))),
-               colour = ml_palette[["grey"]], linewidth = 1.1, alpha = 0.6) +
-  geom_point(aes(colour = in_top_three), size = 4) +
-  scale_x_continuous(breaks = 1:8) +
-  scale_colour_viridis_c(name = "share of resamples in the top three",
-                         limits = c(0, 1), breaks = c(0, 0.5, 1),
-                         labels = scales::percent) +
-  labs(x = "importance rank (1 = most important)", y = NULL,
-       title = "How stable is the importance ranking?")
-```
-
-```{r}
-#| label: importance-table
-summary_ranks |> mutate(in_top_three = scales::percent(in_top_three, accuracy = 1))
-```
-
-Temperature is in the top three in 88% of resamples and chlorophyll in 72%. Depth manages only
-52%, not because depth does not matter (the simulation gives it a strong quadratic effect) but
-because in this survey depth is almost a function of longitude, and the forest can use either.
-Splitting credit between two collinear predictors is not a defect in the method; it is what
-"importance" means when two variables carry the same information.
-
-Salinity, season and substrate never reach the top three. Salinity genuinely has no effect in
-the simulation, so that is the right answer for the right reason.
-
-## Limits of these intervals
-
-The paired *t*-test above is convenient and mildly wrong. Cross-validation folds share training
-data, so the fold differences are positively correlated, the variance is underestimated, and
-the interval is too narrow. Nadeau and Bengio's corrected resampled *t*-test inflates the
-variance to account for the overlap; where a decision hangs on the result, use it, and treat
-the intervals here as optimistic rather than conservative.
-
-The bootstrap interval has its own version of the problem. Resampling stations independently
-assumes stations are independent, which
-[section 6 showed they are not](../06-assumptions-limitations/independence-of-observations.qmd):
-720 visits were worth about 549 independent observations. Bootstrap the *sites*, not the
-rows, and the interval widens accordingly.
-
-::: {.callout-tip}
 ## Key points
 
-- Measure the algorithm's run-to-run noise first. Here it was 0.03 RMSE, which sets the floor
-  below which no difference is real.
-- Report an interval with the headline number. Bootstrapping the pooled out-of-fold predictions
-  gave RMSE 4.14 (3.70–4.58) and R² 0.26 (0.18–0.33) on 720 stations.
-- Compare models *paired on identical folds*. Unpaired, the interval here was 1.54 wide and
-  covered zero; paired, it was 0.33 wide. Use the same resamples object for every candidate.
-- Ten folds still was not enough: five repeats of the comparison put the difference between
-  0.099 and 0.200. Use `repeats =` and report the spread.
-- Importance rankings are estimates too. Depth reached the top three in only 52% of resamples
-  because it is collinear with longitude.
+::: {.key-points}
+- A cross-validated score comes from one survey, and would move if other sites had been
+  sampled. Here each model's 95% interval was `r f2(min(intervals$width))` to
+  `r f2(max(intervals$width))` wide.
+- A **bootstrap of the sites** over the pooled out-of-fold predictions gives that interval
+  without refitting. It holds the fitted models fixed.
+- Two models are compared by a **paired comparison**: the difference in score within each
+  bootstrap sample, on the same folds. What the two share cancels, so the paired interval
+  is much narrower than either model's own.
+- The forest beat predicting the average in `r pct(vs_average[[5]])` of samples, although
+  their own intervals overlapped. It beat Poisson regression in only
+  `r pct(vs_poisson[[5]])`, and the paired interval covered zero.
 :::
 
 ## Try it yourself
 
-1. Redo the bootstrap by site rather than by row (`group_bootstraps()` in rsample). How much
-   wider does the RMSE interval become?
-2. Add a third model and compare all three. What happens to the paired intervals when you test
-   three pairs instead of one, and what would you do about it?
+1. Score the models with the MAE (`mae_vec()`) instead of the RMSE. Can the forest and
+   Poisson regression be told apart now?
+2. Draw single stations instead of whole sites (`bootstraps()` in place of
+   `group_bootstraps()`). How much narrower do the intervals become, and why are they
+   too narrow?
