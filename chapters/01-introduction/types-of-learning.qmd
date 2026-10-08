@@ -225,7 +225,7 @@ no surprise, because in this survey the three variables move together: salinity 
 with depth, and temperature falls with it. The cluster numbers themselves mean nothing;
 k-means numbers its groups in whatever order it happens to find them.
 
-## The groups differ in a species k-means never saw
+## k-means groups differ in a species they never saw
 
 Ask both kinds of model about the three new stations. The supervised classifier gives a
 chance of presence; k-means gives a group.
@@ -308,7 +308,7 @@ you get six, each just as confidently defined.
 [Checking a pattern before reporting it](../08-unsupervised-learning/interpreting-patterns.qmd)
 covers the checks that tell a real structure from an artefact of the method.
 
-## Labels and groups both need care
+## Labels can be wrong, and groups depend on the set-up
 
 **Unsupervised does not mean assumption-free.** Choosing k-means, choosing three groups,
 choosing the variables and their scaling: each is a modelling decision, and each shapes

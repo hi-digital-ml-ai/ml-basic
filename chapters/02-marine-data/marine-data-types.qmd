@@ -191,7 +191,7 @@ No date is left unparsed, and `day_of_year` is ready for the sine and cosine abo
 Time and position can be inputs, but they matter more for another reason: they say
 which rows are close to each other, and so likely to be alike. Samples a day apart, or
 a few kilometres apart, share information, as repeat visits to one site do
-([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)).
+([The coastal survey](the-coastal-survey.qmd#repeat-visits-to-the-same-sites-are-not-independent)).
 That limits how the data can be split to test a model, which
 [Splitting the data](splitting-data.qmd) takes up.
 
@@ -215,7 +215,7 @@ this can report links between shares that come from the arithmetic, not the ecol
 The usual remedy is a **log-ratio**, the log of each share divided by another share or
 by their average, which removes the sum-to-one constraint.
 
-## The kinds in the survey
+## The survey holds five of the seven kinds
 
 The raw survey file holds five of the seven kinds in its `r ncol(raw)` columns, plus
 identifiers and outcomes:

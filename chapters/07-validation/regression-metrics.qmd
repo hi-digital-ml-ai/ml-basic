@@ -42,7 +42,7 @@ below turn a set of misses into one number.
 | **Poisson deviance** | the average Poisson loss | a miss compared with the count predicted |
 | **R²** | one minus the squared misses over the squared spread of the observed values around their average | the same misses as the RMSE, compared with predicting the average |
 
-[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations)
 built the RMSE by hand. MAE and the Poisson deviance appeared in
 [Loss functions](../04-how-algorithms-learn/loss-functions.qmd) as losses, the quantities a
 fit makes small. The same formula can serve as a loss during fitting and as a measure

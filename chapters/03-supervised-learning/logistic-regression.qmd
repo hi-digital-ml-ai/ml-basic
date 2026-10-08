@@ -60,7 +60,7 @@ on the odds: the **odds ratio**. What it does to the probability depends on wher
 probability starts. An odds ratio of 2 takes a probability of 0.5 to
 `r round(2 / 3, 2)`, but 0.9 only to `r round(0.9 * 2 / (0.1 + 0.9 * 2), 2)`.
 
-## A probability is not yet an answer
+## A threshold turns a probability into yes or no
 
 Many uses need yes or no: survey a site or not, protect an area or not. A **threshold**
 turns the probability into an answer: yes if the probability reaches it, no if not.

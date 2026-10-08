@@ -18,7 +18,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Downhill one step at a time
+## Gradient descent walks downhill one step at a time
 
 [Finding the parameters](parameter-estimation.qmd) ended with a search problem: trying
 every combination of parameter values is out of reach once a model has more than a few.
@@ -276,7 +276,7 @@ fails, and nothing on the way warns you. A fit whose loss suddenly becomes enorm
 `NaN`, has usually crossed this limit, and a smaller learning rate is the first thing to
 try.
 
-### The units of the inputs set the work
+### Inputs in raw units make the walk far longer
 
 The limit depends on the shape of the objective, and the shape depends on the units of
 the inputs. Depth varies with a standard deviation of `r round(sd(d$depth_m), 1)` m,

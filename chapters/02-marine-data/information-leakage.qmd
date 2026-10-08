@@ -50,7 +50,7 @@ If it does, it belongs after the split, or inside the recipe.
 
 Each kind below is shown on the same linear regression of `abundance` on the
 environment, fitted to a training set and scored on a test set with two measures. The
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations)
 is the typical miss, in animals. **$R^2$** is the share of the variation in the test
 counts that the predictions follow: 1 means every prediction is exact, 0 means no better
 than predicting the test counts' own average, and below 0 means worse than that.

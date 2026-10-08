@@ -140,7 +140,7 @@ p_missing <- raw |>
 p_sentinel + p_missing
 ```
 
-## Counts find the spellings, groups find the faulty instrument
+## Counts find misspellings, and vessel comparisons find a faulty instrument
 
 Count every level of every category, not a sample of them, and compare the groups the
 data were collected in, here the two vessels, with the sentinel values left out:
@@ -205,7 +205,7 @@ the data were collected:
 | A rare species at `r rare_pct`% of stations | Always answering "absent" already scores `r 100 - rare_pct`%; see [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) |
 | One vessel reads `r vessel_gap` PSU high | Correct it, give the model `vessel` as an input, or leave salinity out |
 
-## Ask why before fixing
+## The reason a value is missing decides the fix
 
 Every quick fix has a default that sometimes does damage. Dropping incomplete rows can
 quietly delete much of a season; filling gaps with the average invents data nobody
@@ -232,7 +232,7 @@ what is wrong with it.
 ## Four fixes, each with a judgement
 
 One pipeline makes the fixes for the problems that have a clear answer. It removes
-the duplicated rows ([The coastal survey](the-coastal-survey.qmd#the-stations-come-from-far-fewer-sites)),
+the duplicated rows ([The coastal survey](the-coastal-survey.qmd#repeat-visits-to-the-same-sites-are-not-independent)),
 turns `-999` into a missing value, merges the spellings, and corrects the deep
 stations:
 

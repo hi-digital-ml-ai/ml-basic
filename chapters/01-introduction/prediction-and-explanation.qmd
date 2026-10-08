@@ -91,7 +91,7 @@ The temperature slope is close to zero: one degree warmer lowers the predicted c
 by only `r num(abs(tidy(linear)$estimate[2]), 2)` animals. Read as an explanation, temperature
 hardly matters to this species.
 
-### A decision tree finds its own shape
+### A decision tree finds the optimum without being told
 
 A **decision tree** splits the training stations in two at the threshold that best
 separates high counts from low ones, then splits each half again. Here it stops after
@@ -142,7 +142,7 @@ The species does best in middling water and thins out in colder and warmer water
 straight line through a hump is flat, so the linear regression reports almost no
 effect. The tree was never asked for a slope, so the hump costs it nothing.
 
-## The test error is a typical miss
+## RMSE measures a typical miss on the test stations
 
 To say which model predicts better, we need one number for how far its predictions
 miss on the test stations. The course uses the **root mean squared error**, or
