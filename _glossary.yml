@@ -469,3 +469,16 @@ terms:
   - term: "One-standard-error rule"
     definition: "Among the settings whose cross-validated error is within one standard error of the lowest, choosing the simplest."
     page: chapters/05-generalisation/hyperparameter-selection.qmd
+
+  # 6 · Assumptions: Linearity and nonlinearity
+  - term: "Linear model"
+    definition: "A model that predicts from a starting value plus a fixed amount for each input, added up; linear, polynomial, Poisson and logistic regression are linear models."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+  - term: "Interaction"
+    definition: "An effect of one input that depends on the value of another, such as a preferred temperature that shifts with depth."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+
+  # 10 · Interpretation: Black boxes and interpretable models
+  - term: "Generalised additive model (GAM)"
+    definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
+    page: chapters/10-interpretation/black-box-or-not.qmd

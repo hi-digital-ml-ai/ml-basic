@@ -50,7 +50,7 @@ The section picks up threads from earlier ones.
 the forest that [Feature importance](feature-importance.qmd) and
 [Partial effects](partial-effects.qmd) read from outside.
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-fitted the GAM and found its depth curve wrong; [Partial effects](partial-effects.qmd)
+found a random forest's depth curve wrong; [Partial effects](partial-effects.qmd)
 shows why no model gets it right on this survey, and
 [Black boxes and interpretable models](black-box-or-not.qmd) reads the GAM's parts with
 the multipliers of
