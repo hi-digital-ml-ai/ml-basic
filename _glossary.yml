@@ -406,3 +406,20 @@ terms:
   - term: "Posterior"
     definition: "The likelihood combined with the prior: what is believed about the parameters after seeing the data."
     page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+
+  # 5 · Generalisation: Underfitting and overfitting
+  - term: "Training error"
+    definition: "A model's error on the examples it was fitted to; fitting noise lowers it, so it flatters the model."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Flexibility"
+    definition: "How wide a family of shapes a model can take: a straight line has little, a tree with many leaves a lot."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Underfitting"
+    definition: "A model too rigid to follow the pattern in the data, so its errors on the training data and on new data are both high and close together."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "U-shaped error curve"
+    definition: "The error on new data plotted against flexibility: it falls while the model picks up the pattern, then rises as it fits noise."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Minimum node size"
+    definition: "The smallest group of examples a decision tree may split in two (min_n); smaller values let the tree grow larger."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd

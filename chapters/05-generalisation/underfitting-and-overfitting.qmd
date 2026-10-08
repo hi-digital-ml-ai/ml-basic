@@ -1,7 +1,7 @@
 ---
 title: "Underfitting and overfitting"
-description: "A model can fail on new data by being too rigid or too flexible. The two failures leave different signs in its two errors, and on the survey the flexible one costs far more."
-order: 2
+description: "A model's error on the stations it was fitted to says little about new sites. A model can be too rigid to follow the pattern or so flexible that it follows the noise, and on the survey the flexible failure costs far more."
+order: 1
 categories: [generalisation]
 ---
 
@@ -13,22 +13,47 @@ library(tidyverse)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
+options(knitr.kable.NA = "")
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Two ways to fail on new data
 
-[Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
-validation sites: as the tree grew deeper, its error on those sites fell a little and then
-rose. This page names the two ends of that curve. A model can be too rigid to follow the
-pattern in the data, or so flexible that it follows the noise as well, and the two failures
-need opposite fixes. Setting the model's training error beside its error on new data, the
-two errors of [the previous page](training-versus-new-data.qmd), tells you which one you
-have.
+Every fitted model can report its error on the data it was fitted to. That number comes
+free, and it is easy to read as a measure of how good the model is. This page shows why
+it is a poor guide to how a model will do on new sites, and names the two ways a model
+fails there: too rigid to follow the pattern, or so flexible that it follows the noise as
+well. The two failures need opposite fixes, and the model's two errors, side by side, tell
+you which one you have.
+
+[k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd) met overfitting
+with a single neighbour, and [Decision trees](../03-supervised-learning/decision-trees.qmd)
+watched the error on validation sites fall and then rise as a tree grew deeper. This page
+names the two ends of that curve and finds which end costs more on the survey.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## Training error and the error on new data
+
+The **training error** is a model's error on the examples it was fitted to. The error on
+new data is its error on examples it has never seen, and it is the one that matters: a
+model is fitted to be used on new data.
+
+Data hold a pattern that will appear again in new data, such as warmer water holding more
+of a species, and [noise](../04-how-algorithms-learn/loss-functions.qmd#averaging-the-misses-gives-the-objective)
+that will not: a lucky haul, a sensor reading slightly off. A model cannot tell the two
+apart, and fitting noise lowers the training error just as fitting the pattern does. Only
+the pattern carries over to new data.
+
+So the training error is usually lower than the error on new data. A rigid model, such as
+a straight line, has little room to fit noise, so its two errors stay close. A flexible
+model can bend through every training example, so its training error can fall to zero
+while its error on new data does not. More data narrows the gap, since noise spread over
+many examples is harder to fit than noise in a few.
 
 ## The U-shaped error curve and its two failures
 
@@ -39,7 +64,7 @@ wide that family is, is the model's **flexibility**.
 - **Underfitting** is a model too rigid to follow the pattern. It misses the training data
   and new data by about as much, so its two errors are both high and close together. It is
   not fooled by noise; it simply cannot bend enough.
-- **Overfitting** is a model flexible enough to follow the noise as well as the signal. Its
+- **Overfitting** is a model flexible enough to follow the noise as well as the pattern. Its
   training error is low and its error on new data high, and the wide gap between them is
   the sign.
 
@@ -60,14 +85,16 @@ inputs. An overfitted one needs less flexibility or more data, and
 
 ## Worked example
 
-The data and split are those of [the previous page](training-versus-new-data.qmd): the
-training sites are split 20 times at random, by site, into fitting sites and new sites,
-and each error is averaged over the 20 splits. The test sites are still unused.
+The data and the split by site are those of [Decision trees](../03-supervised-learning/decision-trees.qmd):
+three quarters of the monitoring sites for training and a quarter held back as test sites.
+This page uses only the training sites; the test sites are kept for the end of the
+section.
 
-The setting varied here is a tree's **minimum node size**, `min_n`: the smallest group of
-stations the tree may split into two. [Decision trees](../03-supervised-learning/decision-trees.qmd)
-varied the depth instead. Set large, it lets the tree split only a few times; set to 2, it lets
-the tree go on splitting until each leaf holds a single station.
+Each model is fitted to some of the training sites and scored on the rest, which play the
+part of new sites. One such split leaves only a few dozen sites to score on, and by chance
+they can be easier or harder to predict than the others. So the training sites are split
+20 times at random, by site, three quarters for fitting and a quarter as new sites, and
+each error is averaged over the 20 splits.
 
 ### Preparing the data
 
@@ -90,13 +117,18 @@ predictors <- abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
 
 tree_recipe <- recipe(predictors, data = train) |>
   step_impute_median(all_numeric_predictors())
+boost_recipe <- tree_recipe |>
+  step_dummy(all_nominal_predictors())
 
-# The depth limit is set high so that min_n alone sets the size of the tree.
-tree_model <- function(min_n) {
-  decision_tree(mode = "regression", tree_depth = 30, min_n = min_n,
+# A tree that stops splitting at a depth, or when a node holds fewer than
+# min_n stations. The default depth is high, so that min_n alone sets its size.
+tree_model <- function(min_n, depth = 30) {
+  decision_tree(mode = "regression", tree_depth = depth, min_n = min_n,
                 cost_complexity = 0)
 }
 leaves_of <- function(fitted) sum(extract_fit_engine(fitted)$frame$var == "<leaf>")
+
+c(training_sites = n_distinct(train$site_id), splits = nrow(splits))
 ```
 
 ## Python
@@ -105,7 +137,9 @@ leaves_of <- function(fitted) sum(extract_fit_engine(fitted)$frame$var == "<leaf
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
@@ -124,6 +158,7 @@ grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
 train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
 train = survey.iloc[train_rows]
 
+# scikit-learn's models need numbers, so one recipe serves them all.
 tree_recipe = ColumnTransformer([
     ("numeric", SimpleImputer(strategy="median"), numeric),
     ("categorical", OneHotEncoder(drop="first", sparse_output=False), categorical),
@@ -134,18 +169,178 @@ splitter = GroupShuffleSplit(n_splits=20, train_size=0.75, random_state=123)
 splits = list(splitter.split(train, groups=train["site_id"]))
 
 # rpart also keeps every leaf at a third of min_n or more; this matches it.
-def tree_model(min_n):
-    return DecisionTreeRegressor(min_samples_split=min_n,
+def tree_model(min_n, depth=None):
+    return DecisionTreeRegressor(max_depth=depth, min_samples_split=min_n,
                                  min_samples_leaf=max(1, round(min_n / 3)),
                                  random_state=123)
+
+{"training_sites": train["site_id"].nunique(), "splits": len(splits)}
 ```
 
 :::
 
+### The best fits to their own stations do worst on new sites
+
+Five models from [Supervised learning](../03-supervised-learning/index.qmd) run from rigid
+to flexible: linear regression; a decision tree three questions deep; a decision tree grown
+out until each leaf holds a single station; a random forest of 500 trees; and boosting with
+500 trees, each six questions deep. The boosted model is deliberately large, so that it has
+room to fit the noise. Each is fitted to the fitting sites of every split and scored twice,
+on the stations it was fitted to and on the new sites. Predicting the fitting stations'
+average count everywhere, with no inputs at all, gives a baseline.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: five-models
+forest_model <- rand_forest(mode = "regression", trees = 500) |>
+  set_engine("ranger", seed = 123)
+boost_model <- boost_tree(mode = "regression", trees = 500,
+                          tree_depth = 6, learn_rate = 0.1)
+
+models <- list(
+  "Linear regression"        = workflow(tree_recipe, linear_reg()),
+  "Decision tree, depth 3"   = workflow(tree_recipe, tree_model(2, depth = 3)),
+  "Decision tree, grown out" = workflow(tree_recipe, tree_model(2)),
+  "Random forest"            = workflow(tree_recipe, forest_model),
+  "Boosting"                 = workflow(boost_recipe, boost_model)
+)
+
+score_models <- function(s) {
+  fitting <- analysis(s)
+  new     <- assessment(s)
+  imap(models, \(w, model) {
+    fitted <- fit(w, fitting)
+    tibble(model    = model,
+           training = rmse_vec(fitting$abundance, predict(fitted, fitting)$.pred),
+           new      = rmse_vec(new$abundance, predict(fitted, new)$.pred))
+  }) |>
+    list_rbind() |>
+    add_row(model = "Predict the average", training = NA,
+            new = rmse_vec(new$abundance, rep(mean(fitting$abundance), nrow(new))))
+}
+
+results <- map(splits$splits, score_models) |>
+  list_rbind() |>
+  group_by(model) |>
+  summarise(across(c(training, new), mean)) |>
+  mutate(gap = new - training) |>
+  arrange(training)
+
+results |> mutate(across(where(is.double), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+def pipeline(model):
+    return Pipeline([("recipe", tree_recipe), ("model", model)])
+
+models = {
+    "Linear regression": lambda: pipeline(LinearRegression()),
+    "Decision tree, depth 3": lambda: pipeline(tree_model(2, depth=3)),
+    "Decision tree, grown out": lambda: pipeline(tree_model(2)),
+    "Random forest": lambda: pipeline(RandomForestRegressor(
+        n_estimators=500, max_features="sqrt", min_samples_leaf=5,
+        random_state=123)),
+    "Boosting": lambda: pipeline(GradientBoostingRegressor(
+        n_estimators=500, max_depth=6, learning_rate=0.1, random_state=123)),
+}
+
+rmse = root_mean_squared_error
+rows = []
+for fit_rows, new_rows in splits:
+    fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
+    for name, make in models.items():
+        fitted = make().fit(fitting[predictors], fitting["abundance"])
+        rows.append({
+            "model": name,
+            "training": rmse(fitting["abundance"],
+                             fitted.predict(fitting[predictors])),
+            "new": rmse(new["abundance"], fitted.predict(new[predictors])),
+        })
+    rows.append({"model": "Predict the average", "training": np.nan,
+                 "new": rmse(new["abundance"],
+                             np.full(len(new), fitting["abundance"].mean()))})
+
+results = (pd.DataFrame(rows).groupby("model", as_index=False).mean()
+           .assign(gap=lambda d: d["new"] - d["training"])
+           .sort_values("training", na_position="last")
+           .reset_index(drop=True))
+
+results.round(2)
+```
+
+:::
+
+```{r}
+#| label: scores
+#| include: false
+at <- function(m, column = "new") results[[column]][results$model == m]
+baseline_five <- at("Predict the average")
+f2 <- function(x) sprintf("%.2f", x)
+in_words <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
+beat_baseline <- results |>
+  filter(new < baseline_five, model != "Predict the average") |>
+  pull(model)
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-crossing
+#| fig-cap: "Each model's RMSE on the stations it was fitted to and on new sites, averaged over 20 splits of the training sites. Every line rises, but by very different amounts, so the order changes. The dashed line is the error of predicting the fitting stations' average count."
+#| fig-alt: "A slope chart with two positions, training on the left and new sites on the right, and RMSE on the vertical axis. Five lines join each model's training error to its error on new sites. The grown-out tree and boosting start at zero and rise steeply; the grown-out tree ends highest of all. The random forest starts at about 2 and rises to the lowest point on the right. The depth-3 tree and linear regression start highest, about 4 to 4.5, and rise gently. A dashed line marks predicting the average, about 5."
+#| fig-width: 7
+#| fig-height: 4.8
+results |>
+  filter(model != "Predict the average") |>
+  pivot_longer(c(training, new), names_to = "set", values_to = "rmse") |>
+  mutate(set = factor(set, levels = c("training", "new"),
+                      labels = c("Fitting stations", "New sites"))) |>
+  ggplot(aes(set, rmse, group = model, colour = model)) +
+  geom_hline(yintercept = baseline_five, linetype = "dashed",
+             colour = ml_palette[["grey"]]) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.6) +
+  annotate("text", x = 1.5, y = baseline_five + 0.25, label = "predict the average",
+           colour = ml_palette[["grey"]], size = 3.4) +
+  guides(colour = guide_legend(nrow = 2)) +
+  labs(x = NULL, y = "RMSE (individuals)", colour = NULL,
+       title = "The order on new sites is not the order on the fitting stations")
+```
+
+:::
+
+By training error, the grown-out tree comes first with an RMSE of
+`r if (at("Decision tree, grown out", "training") < 0.005) "exactly zero" else f2(at("Decision tree, grown out", "training"))`,
+and boosting second at `r f2(at("Boosting", "training"))`. Both have fitted their
+stations almost perfectly. On new sites they are among the worst. The grown-out tree comes
+last, at `r f2(at("Decision tree, grown out"))`, well above the `r f2(baseline_five)` from
+predicting the average with no inputs at all, and boosting, at `r f2(at("Boosting"))`,
+does no better than that average. Linear regression, last by training error at
+`r f2(at("Linear regression", "training"))`, is close to the best on new sites at
+`r f2(at("Linear regression"))`, behind only the random forest at
+`r f2(at("Random forest"))`. Only `r in_words(length(beat_baseline))` of the five models
+beat the baseline: `r str_to_lower(knitr::combine_words(beat_baseline))`.
+
+A tree with one station in each leaf predicts every fitting station as that station's own
+count, so its training error is zero. It has stored the data rather than learned a
+relationship from it, and the stored counts are mostly noise.
+
 ### Node size sets how closely a tree follows temperature
 
-To see what the setting does, three trees are fitted to all the training stations with
-temperature as their only input, so that each tree's predictions can be drawn as a line.
+The setting varied in the rest of the example is a tree's **minimum node size**, `min_n`:
+the smallest group of stations the tree may split into two.
+[Decision trees](../03-supervised-learning/decision-trees.qmd) varied the depth instead.
+Set large, it lets the tree split only a few times; set to 2, it lets the tree go on
+splitting until each leaf holds a single station. To see what it does, three trees are
+fitted to all the training stations with temperature as their only input, so that each
+tree's predictions can be drawn as a line.
 
 ::: {.panel-tabset group="language"}
 
@@ -229,8 +424,7 @@ station at the same temperature is unlikely to repeat them.
 
 Now the trees use all six inputs, as in [Decision trees](../03-supervised-learning/decision-trees.qmd).
 For each split, trees with 12 minimum node sizes, from 300 down to 2, are fitted to the
-fitting sites and scored on the fitting stations and on the new sites. Predicting the
-fitting stations' average count everywhere gives a baseline.
+fitting sites and scored on the fitting stations and on the new sites.
 
 ::: {.panel-tabset group="language"}
 
@@ -240,7 +434,7 @@ fitting stations' average count everywhere gives a baseline.
 #| label: sweep
 sizes <- c(300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2)
 
-score_split <- function(s) {
+score_sizes <- function(s) {
   fitting <- analysis(s)
   new     <- assessment(s)
   map(sizes, \(n) {
@@ -254,7 +448,7 @@ score_split <- function(s) {
     list_rbind()
 }
 
-sweep <- map(splits$splits, score_split) |>
+sweep <- map(splits$splits, score_sizes) |>
   list_rbind() |>
   group_by(min_n) |>
   summarise(across(c(leaves, training, average, new), mean)) |>
@@ -269,13 +463,11 @@ sweep |> select(-average) |> mutate(across(-min_n, \(x) round(x, 2)))
 ```{python}
 sizes = [300, 200, 130, 80, 50, 30, 20, 13, 8, 5, 3, 2]
 
-rmse = root_mean_squared_error
 rows = []
 for fit_rows, new_rows in splits:
     fitting, new = train.iloc[fit_rows], train.iloc[new_rows]
     for n in sizes:
-        fitted = (Pipeline([("recipe", tree_recipe), ("model", tree_model(n))])
-                  .fit(fitting[predictors], fitting["abundance"]))
+        fitted = pipeline(tree_model(n)).fit(fitting[predictors], fitting["abundance"])
         rows.append({
             "min_n": n,
             "leaves": fitted["model"].get_n_leaves(),
@@ -288,7 +480,8 @@ for fit_rows, new_rows in splits:
 
 sweep = (pd.DataFrame(rows).groupby("min_n", as_index=False).mean()
          .assign(gap=lambda d: d["new"] - d["training"])
-         .sort_values("min_n", ascending=False))
+         .sort_values("min_n", ascending=False)
+         .reset_index(drop=True))
 
 sweep.drop(columns="average").round(2)
 ```
@@ -298,8 +491,6 @@ sweep.drop(columns="average").round(2)
 ```{r}
 #| label: sweep-numbers
 #| include: false
-f2 <- function(x) sprintf("%.2f", x)
-in_words <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
 row_at <- function(n) filter(sweep, min_n == n)
 baseline <- mean(sweep$average)
 best <- slice_min(sweep, new)
@@ -346,9 +537,9 @@ sweep |>
 
 **The rigid end.** With a node size of `r max(sizes)`, the largest here, the tree has
 about `r round(stiff$leaves)` leaves. Its training error is `r f2(stiff$training)` and its
-error on new sites `r f2(stiff$new)`, within `r f2(abs(stiff$gap))` of each other. That is the sign of
-underfitting: both errors high and close together. A tree that never splits at all would
-predict the average count everywhere, the dashed line at `r f2(baseline)`.
+error on new sites `r f2(stiff$new)`, within `r f2(abs(stiff$gap))` of each other. That is
+the sign of underfitting: both errors high and close together. A tree that never splits at
+all would predict the average count everywhere, the dashed line at `r f2(baseline)`.
 
 **The lowest point.** The error on new sites is lowest, at `r f2(best$new)`, for a node size
 of `r best$min_n`, which gives trees of about `r round(best$leaves)` leaves. That is better
@@ -364,9 +555,9 @@ good. The training error gives no sign of that point: it falls smoothly through 
 
 **The two costs are lopsided.** On new sites, a tree that never splits, the most rigid
 there can be, is `r f2(cost_rigid)` worse than the best one. The most flexible is
-`r f2(cost_flexible)` worse, about `r in_words(round(cost_flexible / cost_rigid))` times as much. With counts this noisy there is much
-more noise to fit than signal to miss, so on these data too much flexibility is the
-costlier mistake.
+`r f2(cost_flexible)` worse, about `r in_words(round(cost_flexible / cost_rigid))` times as
+much. With counts this noisy there is much more noise to fit than pattern to miss, so on
+these data too much flexibility is the costlier mistake.
 
 The best node size here was found by averaging over 20 splits of the training sites.
 [Hyperparameter selection](hyperparameter-selection.qmd) turns that idea into the standard
@@ -375,16 +566,17 @@ method, cross-validation, and shows why a single split is not enough.
 ## Key points
 
 ::: {.key-points}
+- The **training error** is a model's error on the data it was fitted to. Fitting noise
+  lowers it as much as fitting the pattern does, so it is no basis for choosing between
+  models.
 - A model's **flexibility** is how wide a family of shapes it can take. Too little and it
-  **underfits**; too much and it **overfits**.
-- Underfitting shows as two errors that are both high and close together. Overfitting shows
-  as a low training error and a much higher error on new data.
-- The training error falls with every gain in flexibility, so it cannot locate the best
-  setting. The error on new data traces the **U-shaped error curve**, and its lowest point,
-  in between, is the target.
-- On the survey, a tree with a station in every leaf did worse on new sites than predicting
-  the average, and the cost of too much flexibility was several times the cost of too
-  little.
+  **underfits**: both errors are high and close together. Too much and it **overfits**: a
+  low training error and a much higher error on new data.
+- The training error falls with every gain in flexibility. The error on new data traces the
+  **U-shaped error curve**, and its lowest point, in between, is the target.
+- On the survey, the grown-out tree and boosting fitted their stations almost perfectly and
+  did no better on new sites than predicting the average count; too much flexibility cost
+  several times as much as too little.
 - The fixes are opposite: more flexibility or better inputs for underfitting; less
   flexibility, regularisation or more data for overfitting.
 :::
@@ -392,10 +584,10 @@ method, cross-validation, and shows why a single split is not enough.
 ## Try it yourself
 
 1. Sweep the depth instead, as [Decision trees](../03-supervised-learning/decision-trees.qmd)
-   did. In `tree_model()`, write `tree_depth = min_n, min_n = 2` in place of
-   `tree_depth = 30, min_n = min_n`, then set `sizes <- 1:15`. Averaged over 20 splits, is the lowest
-   point at the same depth that one validation split chose in section 3?
+   did. In the sweep, write `tree_model(2, depth = n)` in place of `tree_model(n)`, then set
+   `sizes <- 1:15`. Averaged over 20 splits, is the lowest point at the same depth that one
+   validation split chose on Decision trees?
 2. Give each split fewer fitting sites by adding
    `fitting <- fitting |> filter(site_id %in% sample(unique(site_id), 30))` after the line
-   that sets `fitting`. Does the lowest point move to smaller or larger trees, and why
-   should less data change where it lies?
+   that sets `fitting` in `score_sizes()`. Does the lowest point move to smaller or larger
+   trees, and why should less data change where it lies?
