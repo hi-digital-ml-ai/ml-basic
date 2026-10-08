@@ -1,7 +1,7 @@
 ---
 title: "Regression for counts"
 description: "A count never falls below zero, and the larger it is, the more it varies. Poisson regression is built for the first, the negative binomial for the second, and both still give one number per input."
-order: 3
+order: 2
 categories: [supervised, regression]
 ---
 

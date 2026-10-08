@@ -347,7 +347,7 @@ large part of its evidence, without a warning.
 The alternative is **imputation**: predicting each missing value from the columns that
 were recorded. The `recipes` package has steps for it, such as `step_impute_median()`
 and `step_impute_knn()`, which fills a gap from the most similar stations, as
-[k-nearest neighbours](../01-introduction/types-of-learning.qmd) does. Two rules apply:
+[k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd) does. Two rules apply:
 
 - **Impute as part of the model, not beforehand.** Filling gaps with the average of the
   whole dataset lets the data that will test the model shape the data that trains it;

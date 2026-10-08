@@ -1,7 +1,7 @@
 ---
 title: "k-nearest neighbours"
 description: "k-nearest neighbours predicts a new station from the training stations most like it, with no shape assumed. How many to average decides between copying noise and blurring the pattern, and on the survey an assumed curve still predicts new sites better."
-order: 5
+order: 4
 categories: [supervised, regression, classification]
 ---
 

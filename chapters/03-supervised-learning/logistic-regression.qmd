@@ -1,7 +1,7 @@
 ---
 title: "Logistic regression"
 description: "Whether a species is there is a yes-or-no question, best answered with a probability. Logistic regression keeps that probability between 0 and 1, and turning it into yes or no is a choice the data cannot make for you."
-order: 4
+order: 3
 categories: [supervised, classification]
 ---
 
