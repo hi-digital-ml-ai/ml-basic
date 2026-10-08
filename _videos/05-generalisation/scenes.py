@@ -290,7 +290,7 @@ def signal_and_noise():
                          for a, b in zip(x, y)])
     zigzag = VMobject(color=VERMILION, stroke_width=5).set_points_as_corners(
         [axes.c2p(a, b) for a, b in zip(x, y)])
-    signal_tag = label("signal: turns up again", 30, GREEN, weight=BOLD).next_to(axes.c2p(0.05, 1.3), RIGHT, 0)
+    signal_tag = label("pattern: turns up again", 30, GREEN, weight=BOLD).next_to(axes.c2p(0.05, 1.3), RIGHT, 0)
     noise_tag = label("noise: these stations only", 30, PURPLE, weight=BOLD).next_to(signal_tag, DOWN, 0.2,
                                                                                       aligned_edge=LEFT)
     return dict(axes=axes, names=names, dots=dots, trend=trend, residuals=residuals, zigzag=zigzag,
@@ -302,12 +302,12 @@ class Scene07(VideoScene):
 
     def construct(self):
         p = signal_and_noise()
-        # "Why? Data hold two kinds of pattern."
+        # "Why? Data hold a pattern and noise."
         self.play(FadeIn(p["axes"]), FadeIn(p["names"]), run_time=self.share(0.08))
         self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in p["dots"]], lag_ratio=0.05),
                   run_time=self.share(0.15))
-        # "Signal, such as warmer water holding more of a species, turns up again at new sites."
-        cue(self, "Signal")
+        # "The pattern, such as warmer water holding more of a species, turns up again at new sites."
+        cue(self, "The pattern")
         self.play(Create(p["trend"]), FadeIn(p["signal_tag"]), run_time=self.share(0.25))
         # "Noise, such as one lucky haul, does not."
         cue(self, "Noise")
@@ -739,7 +739,7 @@ class Scene20(VideoScene):
         cue(self, "Averaging many")
         self.play(FadeIn(groups[1][2]), GrowFromEdge(groups[1][0][0], DOWN), FadeIn(groups[1][0][1]),
                   FadeIn(start), run_time=self.share(0.15))
-        # "... but cuts their variance, here about fifteen-fold."
+        # "... but cuts their variance, here about thirteen-fold."
         cue(self, "but cuts")
         self.play(ReplacementTransform(start, groups[1][1]), run_time=self.share(0.2))
         self.finish()
@@ -978,7 +978,8 @@ def repeats_layout(scene):
         head = label(method.lower(), 30, METHOD_COLOURS[method], weight=BOLD).move_to([x, y + 0.3, 0],
                                                                                    aligned_edge=LEFT)
         rows[method] = VGroup(head, dots, span, ends)
-    caption = label("40 repeats, each with different sites held back", 28, SUBDUED).to_edge(UP, buff=0.3)
+    runs_each = int((runs["method"] == "One validation split").sum())
+    caption = label(f"{runs_each} repeats, each with different sites held back", 28, SUBDUED).to_edge(UP, buff=0.3)
     return VGroup(axis, ticks, name), rows, caption
 
 
@@ -993,8 +994,8 @@ class Scene26(VideoScene):
         # "But it depends on which sites were held back."
         cue(self, "But it depends")
         self.play(FadeIn(frame), FadeIn(caption), run_time=self.share(0.08))
-        # "In 40 repeats, the error it claimed ranged from 3.52 to 6.36."
-        cue(self, "In 40 repeats")
+        # "In 20 repeats, the error it claimed ranged from 3.72 to 5.37."
+        cue(self, "In 20 repeats")
         self.play(LaggedStart(*[FadeIn(d, shift=0.3 * DOWN) for d in one[1]], lag_ratio=0.05),
                   run_time=self.share(0.15))
         cue(self, "ranged from")
@@ -1056,8 +1057,8 @@ class Scene28(VideoScene):
         self.play(FadeIn(cv[0]), run_time=self.share(0.1))
         self.play(LaggedStart(*[FadeIn(d, shift=0.3 * DOWN) for d in cv[1]], lag_ratio=0.03),
                   run_time=self.share(0.25))
-        # "... in 40 repeats, from 4.45 to 4.70."
-        cue(self, "in 40 repeats")
+        # "... in 20 repeats, from 4.45 to 4.64."
+        cue(self, "in 20 repeats")
         self.play(Create(cv[2]), FadeIn(cv[3]), run_time=self.share(0.12))
         self.finish()
 
@@ -1101,7 +1102,7 @@ class Scene29(VideoScene):
         cue(self, "are scored once")
         hinge = box[1].get_corner(DL)
         self.play(Rotate(box[1], angle=0.4, about_point=hinge), run_time=self.share(0.08))
-        # "The chosen tree beats predicting the average by 0.29, ..."
+        # "The chosen tree beats predicting the average by 0.28, ..."
         cue(self, "The chosen tree")
         self.play(FadeIn(head), FadeIn(base), run_time=self.share(0.06))
         self.play(FadeIn(rows[1][0]), GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.1))

@@ -197,8 +197,8 @@ happening changes what "imputation" contributed to your score.
 **Nothing here was tuned or resampled.** One split, default settings, two models.
 `GridSearchCV` and `cross_val_score` are the equivalents of `tune_grid()` and
 `vfold_cv()`, and the reasons to use them are in
-[section 5](../chapters/05-generalisation/hyperparameter-selection.qmd) and
-[section 7](../chapters/07-validation/cross-validation.qmd).
+[Hyperparameter selection](../chapters/05-generalisation/hyperparameter-selection.qmd)
+and [Cross-validation](../chapters/07-validation/cross-validation.qmd).
 
 **Some pages have no Python tab, deliberately.** There is no scikit-learn equivalent of
 `mgcv`'s smooth table, and `statsmodels` appears in the course only where scikit-learn

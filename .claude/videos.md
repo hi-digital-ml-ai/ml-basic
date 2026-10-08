@@ -955,3 +955,22 @@ finished). The third is now "the assumptions inside the loss":
   0.348, 23 per cent out.
 - The Gemini takes ran 0.89 to 1.17 of the draft's length; the scenes follow their
   cues, so the layout reviewed on the draft should hold.
+
+## §5 Generalisation second pass (2026-10-08)
+
+Rebuilt from the second-pass pages (`feature/revise-generalisation`), where six pages
+became four: *Underfitting and overfitting*, *The bias–variance trade-off*,
+*Regularisation* and *Hyperparameter selection*. The three points and 37 scenes stay;
+7:23, all narrated with Gemini. Five scenes change their words (7, 20, 26, 28, 29)
+and got new takes (about $0.01); the other 32 kept theirs.
+
+- `exports.R` reads the four pages: the five models now come from *Underfitting and
+  overfitting*, the random columns from *Regularisation*.
+- Scene 7 says "pattern", the page's word, instead of "signal".
+- The forest on *The bias–variance trade-off* now has 100 trees (render time), so it
+  cuts the tree's variance about thirteen-fold (10.89 against 0.82).
+- *Hyperparameter selection* runs 20 repeats instead of 40: one validation split
+  claimed 3.72–5.37, cross-validation 4.45–4.64. The repeats caption counts the runs
+  from the data.
+- Both leads are taken from the rounded errors (0.28 on the test sites against the
+  0.26 cross-validation promised), so the video and page agree with the table.

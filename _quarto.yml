@@ -97,12 +97,8 @@ website:
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:
-          - href: chapters/05-generalisation/training-versus-new-data.qmd
-            text: "Training error and the error on new data"
           - href: chapters/05-generalisation/underfitting-and-overfitting.qmd
             text: "Underfitting and overfitting"
-          - href: chapters/05-generalisation/model-complexity.qmd
-            text: "Model complexity"
           - href: chapters/05-generalisation/bias-variance.qmd
             text: "The bias–variance trade-off"
           - href: chapters/05-generalisation/regularisation.qmd

@@ -147,13 +147,13 @@ AUC rather than alone. See
 ## Limits of this tour
 
 **Two models on one split is not a comparison.** A single 75/25 split has enough noise
-in it to reverse that ordering. Cross-validation, in
-[section 7](../chapters/07-validation/cross-validation.qmd), is what makes the
+in it to reverse that ordering.
+[Cross-validation](../chapters/07-validation/cross-validation.qmd) is what makes the
 difference measurable.
 
 **Nothing here was tuned.** Both models ran on defaults. `tune` and the grid search that
 goes with it arrive in
-[section 5](../chapters/05-generalisation/hyperparameter-selection.qmd).
+[Hyperparameter selection](../chapters/05-generalisation/hyperparameter-selection.qmd).
 
 **Random splitting assumes independent rows.** Survey stations near each other are not
 independent, so a random split flatters every model on this page.

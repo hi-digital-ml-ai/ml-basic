@@ -406,3 +406,66 @@ terms:
   - term: "Posterior"
     definition: "The likelihood combined with the prior: what is believed about the parameters after seeing the data."
     page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+
+  # 5 · Generalisation: Underfitting and overfitting
+  - term: "Training error"
+    definition: "A model's error on the examples it was fitted to; fitting noise lowers it, so it flatters the model."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Flexibility (complexity)"
+    definition: "How wide a family of shapes a model can take: a straight line has little, a tree with many leaves a lot."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+    more: chapters/05-generalisation/regularisation.qmd
+  - term: "Underfitting"
+    definition: "A model too rigid to follow the pattern in the data, so its errors on the training data and on new data are both high and close together."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "U-shaped error curve"
+    definition: "The error on new data plotted against flexibility: it falls while the model picks up the pattern, then rises as it fits noise."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Minimum node size"
+    definition: "The smallest group of examples a decision tree may split in two (min_n); smaller values let the tree grow larger."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+
+  # 5 · Generalisation: The bias–variance trade-off
+  - term: "Bias"
+    definition: "How far a model's average prediction, over many surveys, sits from the expected value: the miss a model makes in the same direction every time."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Variance (of a model)"
+    definition: "How much a model's predictions change when it is fitted to a different survey of the same place."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Bias–variance trade-off"
+    definition: "More flexibility lowers a model's bias and raises its variance, so the lowest error on new data lies in between."
+    page: chapters/05-generalisation/bias-variance.qmd
+
+  # 5 · Generalisation: Regularisation
+  - term: "Regularisation"
+    definition: "Adding a penalty to the loss so that a model fits its own data a little worse and new data better."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Penalty"
+    definition: "A second term added to the loss that grows with the size of the coefficients, weighted by λ (lambda): the larger λ, the harder it pulls them towards zero."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Ridge regression"
+    definition: "A linear regression with a penalty on the sum of its squared coefficients, which shrinks every coefficient but sets none to zero."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Lasso"
+    definition: "A linear regression with a penalty on the sum of the absolute values of its coefficients, which sets the smallest to exactly zero and so drops their inputs."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Elastic net"
+    definition: "A linear regression whose penalty mixes ridge regression's and the lasso's; mixture sets the share, from 0 for ridge to 1 for the lasso."
+    page: chapters/05-generalisation/regularisation.qmd
+
+  # 5 · Generalisation: Hyperparameter selection
+  - term: "k-fold cross-validation"
+    definition: "Cutting the training data into k folds and letting each take a turn as new data while the model is fitted to the rest; the k errors are averaged."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Fold"
+    definition: "One of the k groups the training data are cut into for cross-validation; with data in sites, each fold holds whole sites."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Cross-validated error"
+    definition: "The average of the errors on the held-out folds, used to compare candidate settings."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Standard error"
+    definition: "How far an average could move with a different draw of data; for a cross-validated error, the spread of the fold errors over the square root of the number of folds."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "One-standard-error rule"
+    definition: "Among the settings whose cross-validated error is within one standard error of the lowest, choosing the simplest."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
