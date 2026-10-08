@@ -18,7 +18,7 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Every fit makes one number small
+## Every fit makes a measure of its misses as small as possible
 
 Each model in [Supervised learning](../03-supervised-learning/index.qmd) was fitted by
 an algorithm that tried values for the model's parameters until one number was as small
@@ -256,7 +256,7 @@ The `r length(worst)` stations with the largest misses, 5% of the data, supply
 `r scales::percent(share[["squared"]], 1)` of the total squared error but only
 `r scales::percent(share[["absolute"]], 1)` of the total absolute error.
 
-### One station moves the slope
+### One station moves the squared-error slope far more than the absolute one
 
 A large share of the objective matters only if the answer rests on those few stations.
 The answer here is the slope, the number you would report as the effect of chlorophyll,

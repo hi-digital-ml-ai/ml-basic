@@ -21,7 +21,7 @@ num <- function(x, digits) sub("^-", "−", format(round(x, digits), nsmall = di
 
 {{< new-terms >}}
 
-## Solved in one step or found by searching
+## Parameters are solved in one step or found by searching
 
 [Loss functions](loss-functions.qmd) gave each fit a number to make as small as possible.
 This page shows the two ways a model finds the parameter values that do it. Linear
