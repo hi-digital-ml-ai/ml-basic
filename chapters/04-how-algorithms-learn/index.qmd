@@ -15,29 +15,28 @@ toc: false
 
 "Fitting a model" sounds like a single act. It is really a search. The algorithm scores
 how wrong the model currently is, changes the parameters to make that score a little
-smaller, and repeats until further changes stop helping. Each page in this section takes
-one part of that loop, on the same simulated survey as the rest of the course:
+smaller, and repeats until further changes stop helping. The four pages in this section
+take that loop apart, on the same simulated survey as the rest of the course:
 
 - **loss functions**, the score being made smaller, and how squared and absolute error
   draw different lines through the same stations;
-- **finding the parameters**, by a formula for a few models and by a search for the rest;
-- **gradient descent**, the simplest search, and why it needs standardised inputs;
-- **maximum likelihood**, where each loss comes from: name the distribution behind the
-  data, and the loss follows;
-- **priors and ridge regression**, a penalty on the parameters that is a belief about
-  them written into the loss;
-- **checking a fit**, the signs that a search stopped early, had no lowest point or gives
-  a different answer each run.
+- **finding the parameters**, by a formula for a few models and by a search for the
+  rest, and how to tell whether a search finished;
+- **gradient descent**, the simplest search, and why the units of the inputs decide how
+  long it takes;
+- **likelihood and priors**, where each loss and penalty comes from: name the
+  distribution behind the data and the loss follows, add a belief about the size of the
+  coefficients and the penalty follows.
 
 The section also pays back debts from earlier ones.
 [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) asked you to
 standardise inputs without giving the full reason, and
-[Gradient descent](gradient-descent.qmd) supplies it. Section 3's
-[polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-predicted a negative count, and [Likelihood and priors](likelihood-and-priors.qmd) shows that
-squared error assumes a Normal response, which allows one. The penalty that
-[5 · Generalisation and model complexity](../05-generalisation/index.qmd) uses to stop models overfitting
-is a prior, as the same page shows.
+[Gradient descent](gradient-descent.qmd) supplies it.
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
+predicted a negative count, and [Likelihood and priors](likelihood-and-priors.qmd) shows
+that squared error assumes a Normal outcome, which allows one. The same page shows that
+the penalty [5 · Generalisation and model complexity](../05-generalisation/index.qmd)
+uses to stop models overfitting is a prior.
 
 ## Pages in this section
 

@@ -169,7 +169,7 @@ Found during this pass, to fix when those sections are revised:
 
 - **Poisson intervals called too narrow.** Pages still say Poisson regression's
   intervals are too narrow for the survey's counts, a statistical-modelling point the
-  revised §3 no longer makes: `reading-a-fit.qmd:385`, `maximum-likelihood.qmd:390`,
+  revised §3 no longer makes (the two §4 cases went with their pages):
   `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
   `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
 - **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
@@ -195,17 +195,23 @@ same order, retitled *Loss functions*, *Finding the parameters*, *Gradient desce
 *Maximum likelihood*, *Priors and ridge regression* and *Checking a fit*. The file names
 are unchanged, since sections 5, 6 and 9 link to them.
 
-Three deliberate spillovers outside the section's own subject:
+**Second pass 2026-10-08** (`feature/revise-how-algorithms-learn`): four pages, in order
+*Loss functions*, *Finding the parameters*, *Gradient descent*, *Likelihood and priors*.
+*Checking a fit* (`reading-a-fit.qmd`) folded into *Finding the parameters* (separation and
+a table of failure signs and fixes); its seeds part went to §10 *Reproducibility*.
+*Maximum likelihood* and *Priors and ridge regression* merged into
+`likelihood-and-priors.qmd`, statistics kept to the maths callouts; the negative binomial,
+standard errors and posterior figure were cut.
+
+Spillovers outside the section's own subject:
 
 - *Gradient descent* carries the real justification for §2's scaling advice: the same
-  model takes many times more steps in raw units. §2 could only assert it.
-- *Priors and ridge regression* derives ridge from a Normal prior, which §5 then presents
-  as a technique. The two pages must stay consistent: §5 should refer back rather than
-  re-deriving.
-- *Checking a fit* uses §2's leaked `catch_weight_kg` column to produce separation, and
-  measures the spread of ten unseeded forests as the resolution limit for comparing
-  models, which §3's two count models fall inside. §5's *Training versus new data* points
-  to it without quoting a number.
+  model takes many times more steps in raw units. §2 could only assert it. Its learning
+  rate is tied to boosting's.
+- *Likelihood and priors* derives ridge from a Normal prior, which §5 then presents as a
+  technique. The two pages must stay consistent: §5 refers back rather than re-deriving.
+- *Finding the parameters* uses separation in logistic regression to show a search with
+  no lowest point.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -234,7 +240,7 @@ deliberately chooses its complexity by looking at the test set"):
   here; §7's *Cross-validation* page builds on it with spatial and temporal versions.
 
 `regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
-[Priors and ridge regression](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
+[Likelihood and priors](../chapters/04-how-algorithms-learn/likelihood-and-priors.qmd) derives them from priors,
 and §5 refers back. The same applies in reverse if §4 is edited.
 
 ### New dataset: `data/coastal-survey-truth.csv`
