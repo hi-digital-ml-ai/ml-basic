@@ -173,7 +173,7 @@ Found during this pass, to fix when those sections are revised:
   `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
   `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
 - **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
-  §5 `model-complexity.qmd`, §6 `spatial-and-temporal-dependence.qmd`, §9
+  §6 `spatial-and-temporal-dependence.qmd`, §9
   `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
 
 ## 4. How machine-learning algorithms learn
@@ -239,9 +239,10 @@ deliberately chooses its complexity by looking at the test set"):
   that one validation split picks unstable winners. §2's pointer to cross-validation points
   here; §7's *Cross-validation* page builds on it with spatial and temporal versions.
 
-`regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
-[Likelihood and priors](../chapters/04-how-algorithms-learn/likelihood-and-priors.qmd) derives them from priors,
-and §5 refers back. The same applies in reverse if §4 is edited.
+*Regularisation* teaches ridge regression, the lasso and λ as tools for prediction. §4's
+[Likelihood and priors](../chapters/04-how-algorithms-learn/likelihood-and-priors.qmd) only
+shows that each penalty is a prior's negative log, and *Regularisation* links there rather
+than repeating it. The same applies in reverse if §4 is edited.
 
 ### New dataset: `data/coastal-survey-truth.csv`
 
