@@ -1,6 +1,6 @@
 ---
 title: "9 · Introduction to neural networks"
-description: "A neural network is a stack of regressions, each followed by a bend, trained by gradient descent. The section builds one in base R, trains it with tidymodels, measures how much data it needs, and shows where networks lead: combinations of inputs that nobody has named, and maps learned without a response."
+description: "A neural network is a stack of regressions, each followed by a bend, trained by gradient descent. The section builds one in base R, trains it with tidymodels, and shows when it pays off: when the response carries more signal than noise and the inputs matter in combinations nobody has named."
 categories: [neural-networks, optimisation]
 listing:
   id: pages
@@ -26,19 +26,17 @@ one with tidymodels on the simulated survey. The first two pages open the networ
   and a backward pass gives every weight its slope, which small nudges of each weight
   confirm.
 
-The next two cover training:
+The next two train a network and ask when it is worth it:
 
-- **training a network**: the learning rate, when to stop and the random start each
-  change the result, and the validation error shows how to set them;
-- **how much data a network needs**: learning curves compare the network with linear
-  regression and a random forest as the survey grows, and the expected counts show that
-  the network is short of signal rather than of rows.
+- **training a network**: the training error keeps falling after the validation error
+  turns, so training stops early, and runs from different random starts end in
+  different places;
+- **when a network pays off**: on the survey's noisy counts a random forest beats the
+  network, which comes first once the noise is removed; on a water mass that forms a
+  diagonal band in temperature and salinity, two hidden units beat every other model.
 
-The last two show where networks lead:
+The last page drops the response:
 
-- **when a network is the right tool**: a water mass forms a diagonal band in
-  temperature and salinity, a combination nobody has named, and the network draws it
-  from a few hundred stations;
 - **autoencoders**: a network that rebuilds its own input through a narrow middle finds
   the plane that principal component analysis finds, with no response to predict.
 
@@ -47,13 +45,15 @@ The section picks up threads from earlier ones.
 [Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
 and [Forward propagation and backpropagation](forward-and-backward.qmd) applies
 [Gradient descent](../04-how-algorithms-learn/gradient-descent.qmd) to every weight at
-once. [Training a network](training-a-network.qmd) sets its settings on validation data,
+once. [Training a network](training-a-network.qmd) watches the error on validation data,
 as [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) does,
 and finds that stopping early restrains the weights as
 [Regularisation](../05-generalisation/regularisation.qmd) does.
 [When a network pays off](when-a-network-pays-off.qmd) compares the network with the
-forest of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
-and [Autoencoders](autoencoders.qmd) sets a network beside
+forest of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd)
+and checks it against the true mean counts of [Uneven sampling and
+extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd), and
+[Autoencoders](autoencoders.qmd) sets a network beside
 [Principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd).
 
 ## Pages in this section
