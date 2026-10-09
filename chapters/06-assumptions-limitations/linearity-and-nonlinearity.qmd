@@ -48,7 +48,7 @@ Two assumptions follow:
   its effects up, so the effect of depth is the same in cold water and in warm, unless
   the combination is given to it as an input of its own.
 
-## Trees and forests make neither assumption
+## Trees and forests assume neither straight lines nor added-up effects
 
 A [decision tree](../03-supervised-learning/decision-trees.qmd) splits the stations by
 one input at a time, so its prediction can rise and fall with depth however the data
@@ -215,6 +215,10 @@ others <- filter(checks, input != "temperature_c")
 per_group <- round(sum(!is.na(train$temperature_c)) / 10)
 ```
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-errors
 #| fig-cap: "Linear regression's average error (animals caught minus predicted) for ten equal groups of training stations along each input. An average of 0 (dashed) means the line is right there. Temperature shows a hump: the line predicts too many animals in the coldest and warmest water and too few in between. The other inputs wander around 0 with no trend."
@@ -235,6 +239,8 @@ checks |>
   facet_wrap(~ input, scales = "free_x") +
   labs(x = NULL, y = "Average error (individuals)")
 ```
+
+:::
 
 In @fig-errors, temperature fails the check. The line predicts too many animals in the
 coldest tenth of stations, where the average error is

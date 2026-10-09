@@ -160,7 +160,7 @@ The survey has `r n_distinct(shallow$site_id)` of the `r n_distinct(survey$site_
 sites. The other `r n_distinct(deep$site_id)` sites, down to
 `r round(max(deep$depth_m, na.rm = TRUE))` m, are the area to map.
 
-### Methods that agree within the survey's depths disagree below them
+### Below the survey's depths the forest stays level and the polynomial fans out
 
 Each of the ten surveys fits both methods, which then predict every station at
 the left-out shallow sites and at the deep sites.
@@ -540,7 +540,7 @@ factor of `r round(off_near, 1)`. At the furthest quarter it is typically off by
 `r round(off_far, 1)`. The forest reports nothing different at the far stations; the
 distance is the only sign that its predictions there deserve less trust.
 
-## The distance to the nearest station belongs on a prediction map
+## A prediction map should show where it extrapolates
 
 Mapped alongside a prediction, the distance to the nearest surveyed station shows
 where the map rests on the survey and where it is extrapolating; areas far from the
@@ -555,15 +555,15 @@ measured.
 ## Key points
 
 ::: {.key-points}
-- A model answers for conditions its survey never covered, and nothing in its
-  predictions shows that it has left the data.
+- In **extrapolation** a model answers for conditions its survey never covered, and
+  nothing in its predictions shows that it has left the data.
 - Methods that agree within the survey's range part company past it. Below 140 m the
   random forest stayed level and was too high on all ten shallow surveys, at
   `r spread_of("Random forest", "below")` times the true mean count; polynomial
   regression ranged from `r spread_of("Polynomial regression", "below")` times it.
 - A range check on each input misses new combinations: of the `r n_range` spring and
   winter stations that passed it, `r n_hidden` were far from every surveyed station.
-- The distance to the nearest surveyed station, on standardised inputs, flags such
+- The **distance to the nearest surveyed station**, on standardised inputs, flags such
   stations. The forest's typical error grew from a factor of `r round(off_near, 1)` at
   the nearest quarter of stations to `r round(off_far, 1)` at the furthest.
 - Map that distance with the predictions, and treat areas far from the survey as

@@ -235,7 +235,7 @@ largest, `r one(last(spread$error_sd))`: `r one(sd_ratio)` times as wide.
 ```{r}
 #| label: fig-errors
 #| fig-cap: "The random forest's errors on sites it did not see, one for each training station. Left: their histogram, against a Normal curve with the same mean and spread; the errors bunch below zero and trail far above it. Right: each error against the prediction, with the middle 90% of the errors in each fifth of the predictions shaded; the errors spread wider as the prediction grows."
-#| fig-alt: !expr 'glue::glue("Two panels. Left, a histogram of the errors in animals, with a Normal curve of the same mean and standard deviation drawn over it: the histogram peaks just below zero, where {percent(below)} of the errors lie, and has a long tail to the right reaching {round(max(errors$error))}, which the symmetric Normal curve does not follow. Right, the errors against the predicted count, with five shaded boxes, one for each fifth of the predictions, covering the middle 90% of the errors: the box for the smallest predictions is narrow and the boxes grow taller to the right, where the standard deviation reaches {one(last(spread$error_sd))} animals against {one(first(spread$error_sd))} on the left.")'
+#| fig-alt: !expr 'glue::glue("Two panels. Left, a histogram of the errors in individuals, with a Normal curve of the same mean and standard deviation drawn over it: the histogram peaks just below zero, where {percent(below)} of the errors lie, and has a long tail to the right reaching {round(max(errors$error))}, which the symmetric Normal curve does not follow. Right, the errors against the predicted count, with five shaded boxes, one for each fifth of the predictions, covering the middle 90% of the errors: the box for the smallest predictions is narrow and the boxes grow taller to the right, where the standard deviation reaches {one(last(spread$error_sd))} animals against {one(first(spread$error_sd))} on the left.")'
 #| fig-width: 8.5
 #| fig-height: 3.8
 middle_90 <- errors |>
@@ -246,7 +246,7 @@ shape_plot <- ggplot(errors, aes(error)) +
   geom_histogram(binwidth = 1, fill = ml_palette[["blue"]], alpha = 0.7) +
   geom_function(fun = \(x) nrow(errors) * dnorm(x, mean(errors$error), sd(errors$error)),
                 colour = ml_palette[["vermilion"]], linewidth = 1) +
-  labs(x = "Error (animals caught − predicted)", y = "Stations",
+  labs(x = "Error, caught − predicted (individuals)", y = "Stations",
        title = "Skewed, not bell-shaped")
 
 spread_plot <- ggplot(errors, aes(predicted, error)) +
@@ -254,7 +254,7 @@ spread_plot <- ggplot(errors, aes(predicted, error)) +
             inherit.aes = FALSE, fill = ml_palette[["blue"]], alpha = 0.15) +
   geom_hline(yintercept = 0, colour = "grey50") +
   geom_point(alpha = 0.4, size = 1.2) +
-  labs(x = "Predicted count", y = "Error (animals)",
+  labs(x = "Predicted count", y = "Error (individuals)",
        title = "Wider where more is predicted")
 
 shape_plot + spread_plot
@@ -363,7 +363,7 @@ with no warning.
 ```{r}
 #| label: fig-log
 #| fig-cap: "The average catch per station in each fifth of the forest's predictions, against the average each forest predicts there. The forest on raw counts follows the catch; the forest on log counts falls short in every fifth."
-#| fig-alt: !expr 'glue::glue("Points joined by lines for five groups of training stations, ordered by the forest prediction, with the average animals per station on the vertical axis. The caught averages, in grey, rise from {one(by_fifth$Caught[1])} to {one(by_fifth$Caught[5])}. The forest on raw counts, in blue, lies close to them. The forest on log counts, in vermilion, lies below them in every group, from {one(log_series[1])} to {one(log_series[5])}.")'
+#| fig-alt: !expr 'glue::glue("Points joined by lines for five groups of training stations, ordered by the forest prediction, with the average count per station on the vertical axis. The caught averages, in grey, rise from {one(by_fifth$Caught[1])} to {one(by_fifth$Caught[5])}. The forest on raw counts, in blue, lies close to them. The forest on log counts, in vermilion, lies below them in every group, from {one(log_series[1])} to {one(log_series[5])}.")'
 #| fig-width: 7
 #| fig-height: 3.8
 by_fifth |>
@@ -378,7 +378,7 @@ by_fifth |>
     "Random forest on log counts" = ml_palette[["vermilion"]])) +
   scale_y_continuous(limits = c(0, NA)) +
   labs(x = "Fifth of the stations, by the forest's prediction",
-       y = "Animals per station", colour = NULL)
+       y = "Average count (individuals)", colour = NULL)
 ```
 
 :::

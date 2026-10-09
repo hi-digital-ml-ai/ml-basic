@@ -450,7 +450,7 @@ A rebalanced model can still rank stations, but its probabilities are no longer 
 To report "a 10% chance of the species here", leave the data alone and move the
 threshold.
 
-## The costs of the two mistakes set the threshold
+## A threshold set from the costs does the work of rebalancing
 
 Neither rebalancing nor a lower threshold makes the model better at telling presence
 from absence. Both choose where on the same curve to work, and the threshold does it
@@ -473,8 +473,8 @@ turns the costs of the two mistakes into a threshold.
 - With a rare class, accuracy mostly measures a model's success on the common class.
   Logistic regression without rebalancing was `r round(100 * plain$accuracy)`% accurate
   and found `r plain$called_present - plain$false_alarms` of `r presences` presences.
-- Sensitivity, specificity and precision count misses and false alarms apart; report
-  them, not accuracy alone.
+- **Sensitivity**, **specificity** and **precision** count misses and false alarms
+  apart; report them, not accuracy alone.
 - Rebalancing, done in the recipe so that it changes only the stations a model is
   fitted to, moves a model along the curve the threshold traces. Upsampling at 0.5
   matched no rebalancing at a threshold of `r round(prevalence, 3)`, and downsampling

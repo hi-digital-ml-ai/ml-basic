@@ -65,7 +65,7 @@ of stations.
 
 ## The costs of the two mistakes set the threshold
 
-[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#the-costs-of-the-two-mistakes-set-the-threshold)
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#a-threshold-set-from-the-costs-does-the-work-of-rebalancing)
 said that the threshold should come from what each mistake costs. This can be made exact.
 Call a **false alarm** a station called present where the species is absent, and a **miss** a
 station called absent where it is present. If a false alarm costs $k$ times as much as a
