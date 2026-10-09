@@ -412,6 +412,28 @@ in three pairs: the folds (cross-validation, spatial and temporal), the measures
   expected cost of the calls, with the cheapest threshold at k/(1+k) for calibrated
   probabilities. The mean-only total argument is on page 3 and is not repeated.
 
+**Second pass from 2026-10-09** (`feature/revise-validation`): the same six pages.
+Decisions agreed with the user:
+
+- Poisson regression leaves the section. Counts use predicting the average (no skill),
+  linear regression (the simple baseline) and the random forest, with the forest on log
+  counts only where a measure's point needs it (*Regression performance measures*,
+  *Choosing measures*). Presence keeps the share present, logistic regression and the
+  forest.
+- *Cross-validation*: the search and nested cross-validation use linear regression. Its
+  selection optimism on the full survey is small (nested 4.46 against a claim of 4.43),
+  and the page says so: the search still keeps noise columns and loses to the eight
+  inputs, and optimism grows with more candidates, flexible models and fewer sites
+  (user, 2026-10-09: show the honest small effect, not a 40-site subset or Poisson).
+- *Regression performance measures*: two parts; the Poisson deviance leaves the table
+  (linear regression can predict below zero) and the scaling curves go (they restate
+  *Distributional assumptions*). The R² section says other software often reports the
+  squared correlation; the course uses the textbook R² throughout.
+- *Spatial and temporal cross-validation* keeps the correlogram but drops "patches": the
+  errors' correlations are weak (about 0.04 up to 40 km).
+- *Choosing measures*' table is the one place that matches a use to a measure; pages 3
+  and 4 link to it. False alarm and miss link to *Logistic regression*.
+
 ### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
