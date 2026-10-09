@@ -789,6 +789,23 @@ terms:
     definition: "Starting from a network already trained on a large general dataset, such as millions of photographs, and retraining it on a few hundred examples of your own."
     page: chapters/09-neural-networks/when-a-network-pays-off.qmd
 
+  # 9 · Neural networks: Autoencoders
+  - term: "Autoencoder"
+    definition: "A network trained to rebuild its own input through a narrow middle, so it learns a small map of the rows with no response to predict."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Encoder"
+    definition: "The half of an autoencoder that takes each row's many columns down to a few values, the code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Code (autoencoder)"
+    definition: "The few values in an autoencoder's narrow middle; they place each row on a small map, like PCA's scores, but nothing says what each value means."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Decoder"
+    definition: "The half of an autoencoder that rebuilds the row from its code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Reconstruction error"
+    definition: "The mean squared difference between a row and its rebuilt version; the loss an autoencoder makes small, and large for rows unlike the training data."
+    page: chapters/09-neural-networks/autoencoders.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

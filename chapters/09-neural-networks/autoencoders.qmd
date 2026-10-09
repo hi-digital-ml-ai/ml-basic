@@ -17,6 +17,8 @@ f3 <- \(x) sub("-", "−", sprintf("%.3f", x))
 f4 <- \(x) sprintf("%.4f", x)
 ```
 
+{{< new-terms >}}
+
 ## An autoencoder learns a map without a response
 
 Every network so far in this section predicted a response. An **autoencoder** has none: it
@@ -143,7 +145,7 @@ bent <- autoencoder(X, 2, "tanh")
 
 # The lower R² of the two components, each predicted from a code's two values
 plane_r2 <- function(code, target) {
-  min(apply(target, 2, \(y) rsq_vec(y, fitted(lm(y ~ code)))))
+  min(apply(target, 2, \(y) rsq_trad_vec(y, fitted(lm(y ~ code)))))
 }
 
 comparison <- tibble(
@@ -185,7 +187,7 @@ predicts <- function(code, label) {
   tibble(Code = label,
          `Hard bottom (ROC AUC)` =
            roc_auc_vec(frame$bottom, 1 - fitted(bottom_fit)),
-         `Depth (R²)` = rsq_vec(frame$depth_m, fitted(depth_fit)))
+         `Depth (R²)` = rsq_trad_vec(frame$depth_m, fitted(depth_fit)))
 }
 
 usefulness <- bind_rows(predicts(pc_scores, "PCA"),
@@ -297,13 +299,13 @@ random start and the plane does not.
 ::: {.key-points}
 - An **autoencoder** learns to rebuild its own input through a narrow middle. The values
   in the middle are the **code**, and the loss is the **reconstruction error**.
-- **A linear autoencoder is PCA.** Its reconstruction error matched PCA's,
+- A linear autoencoder is PCA. Its reconstruction error matched PCA's,
   `r f4(linear$error)`, and its code predicted both principal components with an R² of
   `r f3(comparison[[3]][2])`.
 - With tanh, the code predicted depth a little better than PCA's two components, an R² of
   `r f3(usefulness[[3]][2])` against `r f3(usefulness[[3]][1])`. The community changes
   almost in straight lines, so a bend has little to add.
-- **Every seed found the same plane and different axes in it.** Report what the code
+- Every seed found the same plane and different axes in it. Report what the code
   predicts, not what one of its axes means.
 - Run PCA first. Autoencoders earn their place on large data with curved structure, and
   their reconstruction error flags unusual rows.
