@@ -18,13 +18,16 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 ```
 
+{{< new-terms >}}
+
 ## A dendrogram nests groups within groups
 
-[Clustering with k-means](clustering.qmd) returns one grouping for one $k$. Seabed
-communities are often described at more than one level, though: hard and soft bottom
-first, then finer assemblages within each. **Hierarchical clustering** gives every level
-at once. It builds a tree, the **dendrogram** familiar from many benthic survey reports,
-and the tree can be cut afterwards into two groups, three, or any number.
+Groups in data often sit inside larger groups. **Hierarchical clustering** gives every
+level at once: it builds a tree, the **dendrogram**, which can be cut afterwards into two
+groups, three, or any number. Benthic survey reports often show one, with hard and soft
+bottom split first and finer assemblages within each.
+[Clustering with k-means](clustering.qmd) returns one grouping for one $k$; the tree holds
+them all.
 
 This page builds that tree for the community matrix, shows the one setting that decides
 what it finds, and introduces a score for how far two groupings agree, which the rest of
@@ -34,7 +37,7 @@ the section uses to compare clusterings.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## The tree records every join of the two closest groups
 
 Hierarchical clustering starts with every station in a group of its own. It joins the two
 closest groups, then the two closest of what remains, and carries on until everything is
@@ -45,6 +48,8 @@ grouping: a high cut gives a few large groups, a lower cut more and smaller ones
 ::: {.diagram}
 ![Hierarchical clustering joins the two closest groups again and again, and records the joins as a tree; cutting the tree at a height gives groups. How far apart two groups are is set by the linkage rule: the nearest members (single), the furthest members (complete), all pairs on average (average), or the rise in the sum of squares if they were joined (Ward).](img/hierarchical-tree.svg){fig-alt="Two cards joined by an arrow, with four small cards below. 1 Join: six points, a to f, in two loose groups; dashed outlines numbered 1 to 4 show the order of joins, a with b first, then d with e, then c joins a and b, then f joins d and e. 2 Cut: the same joins drawn as a tree over the leaves a to f, each join at the height of the distance it bridged; a dashed line high on the tree cuts it into 2 groups, a lower one into 4. Below, under the heading how far apart are two groups, the linkage rule decides, four cards each show a blue and an orange group of three points. Single draws one line between the two nearest members; complete one line between the two furthest; average draws all nine lines between the groups; Ward marks each group's centre and dashed lines from every point to the centre of the two joined, with the caption how much the sum of squares rises if joined."}
 :::
+
+## The linkage rule sets the distance between two groups
 
 Distance between two stations is the same straight-line distance k-means uses, so the
 counts need the same log and common scale. Once groups hold more than one station,
@@ -186,14 +191,14 @@ Ward's two groups look much like k-means' two groups from the first page. A sing
 for "how alike" makes that precise, and makes it possible to compare any two groupings,
 including a grouping with the recorded seabed.
 
-Take every pair of stations. Two groupings **agree** about a pair if both put the pair in
+Take every pair of stations. Two groupings agree about a pair if both put the pair in
 the same group, or both put it in different groups. The share of pairs they agree about is
 the **Rand index**. Even two random groupings agree about many pairs, so the **adjusted
 Rand index** (ARI) subtracts the agreement expected by chance and rescales:
 
-- **1** means the groupings are identical. The group numbers do not matter, only which
+- 1 means the groupings are identical. The group numbers do not matter, only which
   stations are together.
-- **0** means no more agreement than chance.
+- 0 means no more agreement than chance.
 - The groupings can have different numbers of groups.
 
 `adjustedRandIndex()` from the mclust package computes it in R, `adjusted_rand_score()` in
@@ -356,7 +361,7 @@ linkage_panel <- function(column, label) {
 `r floor(100 * single_share)`% of stations in one group and peels off the rest one or two at
 a time. This is **chaining**. Single linkage joins two groups as soon as any two of their
 members are close, so a thread of in-between stations links everything into one. Wherever a
-gradient runs through the data, such a thread exists. **Average linkage** chains more
+gradient runs through the data, such a thread exists. Average linkage chains more
 slowly, and still holds `r round(100 * average_share)`% of stations in one group at six
 groups.
 
@@ -391,7 +396,7 @@ profiles.
   `r round(max(linkages$ARI), 2)` (Ward).
 - Single and average linkage **chain**, leaving nearly every station in one group. A
   group that holds almost everything is the sign to look for.
-- **Ward** uses k-means' own measure, and its two groups matched k-means' with an ARI of
+- Ward's linkage uses k-means' own measure, and its two groups matched k-means' with an ARI of
   `r round(ari[["methods"]], 2)`.
 - The **adjusted Rand index** compares two groupings pair by pair: 1 is identical, 0 is
   chance.

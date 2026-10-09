@@ -421,7 +421,7 @@ Built like §7, to a rough cut on the draft voice: `_videos/08-unsupervised-lear
   and 41° directions, 16/7/3 against two by cross-validation, the UMAP null), stable
   is not the same as real (bimodal bootstrap 53/7, the continuum, external checks).
 - `exports.R` writes 19 CSVs from the six pages (under a minute). Every spoken number
-  was checked against them. `beyond-k-means.qmd` must knit first: the pages attach
+  was checked against them. `hierarchical-clustering.qmd` must knit first: the pages attach
   `mclust` with `include.only`, and a later `library()` call cannot add
   `adjustedRandIndex` to a package already attached. `tools/figures-for-video.R` now
   knits with `error = FALSE`, so a failing chunk stops the export instead of leaving
@@ -794,7 +794,7 @@ narrated. The old 52-scene puzzle (the soft-bottom split) became the quiz.
   1,146 words); merging four pairs of scenes and dropping UMAP brought it to 7:35. The
   user asked for UMAP back, as one scene: 7:48.
 - The page names its linkages `Ward`, `single`, `average`, `complete` (`trees` in
-  `beyond-k-means.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
+  `hierarchical-clustering.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
 - A chart whose x axis starts at k = 2 keeps Manim's zero-based axes and hides the
   empty stretch with a white strip (`axis_mask()`).
 - A dot stack sizes its dots from its tallest bin (`dot_stack()`): 52 bootstrap

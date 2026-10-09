@@ -461,7 +461,7 @@ reproduces the bias, and no validation scheme detects it. That is the handover t
 
 **Written as six pages, splitting one subtopic and merging two.** "Clustering" became three
 pages: k-means (`clustering.qmd`), the number of clusters (`choosing-the-number-of-clusters.qmd`)
-and hierarchical clustering (`beyond-k-means.qmd`, which also introduces the adjusted Rand
+and hierarchical clustering (`hierarchical-clustering.qmd`, which also introduces the adjusted Rand
 index the later pages use). PCA is `principal-component-analysis.qmd`; "dimensionality
 reduction" is `dimensionality-reduction.qmd`, on how many components to keep, ending with
 UMAP briefly. "Pattern detection in marine datasets" and "interpretation and limitations"

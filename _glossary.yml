@@ -659,6 +659,26 @@ terms:
     definition: "The score the same steps reach on a copy of the data with each column shuffled on its own, so every column keeps its values and any groups are gone."
     page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
 
+  # 8 · Unsupervised learning: Hierarchical clustering
+  - term: "Hierarchical clustering"
+    definition: "Clustering that starts from single rows, joins the two closest groups again and again, and records the joins as a tree that can be cut into any number of groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Dendrogram"
+    definition: "The tree that hierarchical clustering draws, each join at the height of the distance it bridged; a cut across it gives a grouping."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Linkage"
+    definition: "The rule for the distance between two groups in hierarchical clustering: their nearest members (single), their furthest (complete), all pairs on average (average), or the rise in the sum of squares if joined (Ward)."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Rand index"
+    definition: "The share of pairs of rows that two groupings agree about, both putting the pair in one group or both putting it in different groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Adjusted Rand index (ARI)"
+    definition: "The Rand index corrected for the agreement expected by chance: 1 for identical groupings, about 0 for no more agreement than chance."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Chaining"
+    definition: "Linkage joining groups through threads of in-between rows, so that nearly every row ends up in one group and the rest are peeled off one or two at a time."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
