@@ -300,7 +300,7 @@ yardstick reports it as missing, and scikit-learn as 0, the value for calls unre
 the truth. Both models are only a little better than the rule at this threshold, and the
 forest is the better of the two.
 
-### The forest ranks the stations better
+### The forest ranks the stations better than logistic regression
 
 Predicting the share present is left out here. Within a fold it gives every station the
 same probability, so it ranks nothing.

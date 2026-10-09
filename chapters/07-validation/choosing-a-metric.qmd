@@ -445,7 +445,7 @@ cheapest threshold costs `r f2(cost_of(5, "cost there"))`, a saving of
 A model is worth using only at a threshold that suits the costs, and only if it beats the
 rules that need none.
 
-## Say what the measure assumes
+## The report states what the measure assumes
 
 A measure carries assumptions, and the report should state them. A shortlist measure assumes
 a budget, and the order of the models can change with it, so compute it at the budget the

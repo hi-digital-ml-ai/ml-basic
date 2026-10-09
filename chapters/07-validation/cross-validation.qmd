@@ -340,7 +340,7 @@ The winner scores `r f2(min(searched))`, the lowest of the 100, and
 How much of its lead over the median candidate, `r f2(median(searched))`, is luck is
 what the next part measures.
 
-### Nested cross-validation shows what the search is worth
+### Linear regression on the eight inputs beats the search's choice
 
 The search is now run inside an outer five-fold cross-validation by site, with five inner
 folds. For comparison, linear regression on the eight measured inputs, with no search, is

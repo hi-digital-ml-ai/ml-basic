@@ -34,7 +34,7 @@ to match the model's use.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The score falls with distance to the fitted data
+## Held-out stations further from the fitted data are predicted worse
 
 For every held-out station, the **distance to the nearest fitted station** is how far
 away the closest station the model was fitted to lies. Folds of single stations often
@@ -54,7 +54,7 @@ whose distance matches the use, and report the distance with the score. Each sch
 this page holds out every station once, so its pooled score, from
 [Cross-validation](cross-validation.qmd), can be compared with the others'.
 
-## Blocks should be wider than the distance over which errors are linked
+## Blocks are at least as wide as the distance over which errors are linked
 
 A held-out site is predicted too well when a fitted site nearby shares what the inputs
 miss. Blocks take that help away only if each is at least as wide as the distance over
