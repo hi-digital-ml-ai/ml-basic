@@ -699,6 +699,14 @@ terms:
     definition: "The arch that rows along a long gradient bend into on a PCA map, because PCA can follow only straight-line directions."
     page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
 
+  # 8 · Unsupervised learning: How many components to keep
+  - term: "Parallel analysis"
+    definition: "Choosing how many principal components to keep by comparing each component's share of the variance with the share it reaches in copies of the table with every column shuffled, and keeping those above it."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+  - term: "UMAP"
+    definition: "Uniform manifold approximation and projection: a method that draws a flat map on which each row's nearest neighbours stay close to it; distances between groups and the sizes of groups on the map carry no meaning."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
