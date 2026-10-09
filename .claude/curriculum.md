@@ -169,12 +169,10 @@ Found during this pass, to fix when those sections are revised:
 
 - **Poisson intervals called too narrow.** Pages still say Poisson regression's
   intervals are too narrow for the survey's counts, a statistical-modelling point the
-  revised §3 no longer makes (the two §4 cases went with their pages):
-  `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
-  `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
+  revised §3 no longer makes (the §4 and §6 cases went with their pages):
+  `black-box-or-not.qmd:66`.
 - **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
-  §6 `spatial-and-temporal-dependence.qmd`, §9
-  `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
+  §9 `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`
@@ -319,24 +317,48 @@ it does not.
 - Running Python tabs on every page. scikit-learn has no GAM: its tab uses
   `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
 
+**Second pass 2026-10-09** (`feature/revise-assumptions`): five pages, as in the target
+table. The default models are a random forest and one simple baseline; statistics stay
+out unless the lesson needs them.
+
+- *Linearity and nonlinearity*: linear regression's errors averaged along each input
+  show where a straight line fails, and a random forest finds the temperature curve.
+  The GAM moved to §10 *Black boxes and interpretable models* (with `gam.svg`). The
+  linear model scored no worse than the forest on the test sites (RMSE 3.75 against
+  3.98), so the page claims no win for the forest.
+- *Distributional assumptions*: two parts, the forest's errors skewed and widening, and
+  log counts aiming at the median (about 30% too few animals in total). The quantile
+  forest's intervals moved to §10 *Communicating uncertainty*.
+- *Dependent data* merges *Independence of observations* and *Spatial and temporal
+  dependence*: resampling stations, whole sites and half-degree spatial blocks measures
+  the effective sample size of the average catch and of the forest's errors. Cut: the
+  negative binomial, the patches map and a position-only forest (a permutation check
+  found no clustering of errors beyond chance). The spatial-blocks diagram moved to §7
+  *Spatial and temporal cross-validation*, which now owns the folds.
+- *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
+  (*Choosing a method* draws it), so the page links there and gives its own diagram to
+  the range check against the distance to the nearest surveyed station, which it ties
+  to k-nearest neighbours.
+- *Class imbalance*: false alarm and miss are §3's terms and are linked, not bolded.
+
+Every page has glossary entries and a new-terms box.
+
 ### Two threads that must be kept if these pages are edited
 
 **RMSE is not comparable across resampling schemes.** Different folds or splits hold
 different distributions of the response, so a "harder" scheme can report a *lower* RMSE.
-Use R², or the same test set for both. §2's leakage page found it first;
-`spatial-and-temporal-dependence.qmd` meets it when it compares cross-validation by site
-with spatial blocks, says so in the prose and repeats it in its Key points.
+Use R², or the same test set for both. §2's leakage page found it first. No §6 page
+compares schemes any more; §7's `spatial-and-temporal-cv.qmd` does, and must keep it.
 
 **A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
-the forest and the GAM
-recover the temperature hump, but both put depth's peak in shallow water, because depth
+the forest recovers the temperature hump but puts depth's peak in shallow water, because depth
 is confounded with position, which carries an unmodelled spatial field. The page keeps
 this to one paragraph and links to §1 and §10's partial-effects page, which teach
 confounding; the page itself stays on linearity.
 
 ### Uses of `coastal-survey-truth.csv`
 
-`linearity-and-nonlinearity.qmd` compares fitted smooths against the true generating curves,
+`linearity-and-nonlinearity.qmd` compares the forest's curves against the true generating curves,
 and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
 than observed counts. Both say in the text that no real study could do this.
 
