@@ -489,6 +489,21 @@ terms:
     definition: "A loss that is smallest at a chosen point of the outcomes, such as the value only 1 in 20 exceed, rather than at their average or median."
     page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
 
+  # 6 · Assumptions: Dependent data
+  - term: "Dependent data"
+    definition: "Observations that share conditions, such as visits to one site or neighbouring sites, so one says something about another beyond what their inputs say."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+  - term: "Spatial block"
+    definition: "A square of the map with every site in it, resampled or held out as one group so that neighbouring sites stay together."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+    more: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Effective sample size"
+    definition: "The number of independent observations a set of dependent rows is worth for an estimate; if resampling groups spreads the estimate k times wider than resampling rows, the rows are worth k² times fewer."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+  - term: "Mixed model"
+    definition: "A statistical model that fits a separate shift for each group, such as each site, used when there are too few groups to resample."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

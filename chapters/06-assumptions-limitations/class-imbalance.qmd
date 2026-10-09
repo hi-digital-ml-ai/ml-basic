@@ -76,7 +76,7 @@ The outcome is `rare_species`, a second species caught at only a few stations. T
 model is logistic regression on the six inputs, each entering the log-odds as a
 straight line: with so few presences, squared terms would leave too little data for
 each coefficient. The split by site is that of
-[Independence of observations](independence-of-observations.qmd), and the scores come
+[Linearity and nonlinearity](linearity-and-nonlinearity.qmd), and the scores come
 from cross-validation by site, introduced in
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). One
 round of ten folds holds only a few presences in each, so the round is repeated five

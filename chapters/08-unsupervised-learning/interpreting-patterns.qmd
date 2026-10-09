@@ -57,7 +57,7 @@ A **bootstrap sample**, from
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), draws
 rows at random with replacement. Stations at the same site are more alike than stations
 from different sites, so here whole sites are drawn, as in
-[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd);
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd);
 `group_bootstraps()` in rsample does this. k-means, with the recipe of
 [Clustering with k-means](clustering.qmd), is refitted on each of 60 samples, and the
 refitted model assigns every station of the survey to its nearest centre. Each grouping is

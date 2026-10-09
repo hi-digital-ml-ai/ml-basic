@@ -48,13 +48,9 @@ in [Regularisation](../05-generalisation/regularisation.qmd).
 [Loss functions](../04-how-algorithms-learn/loss-functions.qmd) aims at, and what that
 does to a total.
 [Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
-side of the split; [Independence of observations](independence-of-observations.qmd)
-measures what those visits are worth. Cross-validation by site from
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) scores every
-model here, and [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd)
-compares it with spatial blocks, which
-[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-develops. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
+side of the split; [Dependent data](dependent-data.qmd) measures what those visits are
+worth, and [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+holds out whole areas. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
 [Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves
 whole-curve scores to
 [Classification performance measures](../07-validation/classification-metrics.qmd).

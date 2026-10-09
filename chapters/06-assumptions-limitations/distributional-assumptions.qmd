@@ -389,7 +389,7 @@ for it, such as the Poisson deviance of
 without changing what the prediction aims at.
 
 Every check on this page also treats the stations as independent, which
-[Independence of observations](independence-of-observations.qmd) tests.
+[Dependent data](dependent-data.qmd) tests.
 
 ## Key points
 

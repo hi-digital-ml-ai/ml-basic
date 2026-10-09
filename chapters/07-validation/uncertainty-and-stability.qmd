@@ -32,7 +32,7 @@ an interval of its own, much narrower than either model's.
 
 ## Resampling the sites gives a score its interval
 
-[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd#resampling-whole-sites-measures-the-effective-sample-size)
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd#resampling-whole-groups-measures-the-effective-sample-size)
 drew **bootstrap samples** of whole sites to see how far an estimate moves from one sample
 to the next. A score can be treated the same way. Cross-validation has already given every
 station an out-of-fold prediction, as on

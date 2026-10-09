@@ -393,9 +393,7 @@ shows where the hump lies; how large it is depends on the station.
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
 traced the depth curve to position: the shelf deepens offshore, so depth carries an
 effect that belongs to something about position. A second forest is given longitude
-and latitude as well, as in
-[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd),
-and both are scored on the test sites.
+and latitude as well, and both are scored on the test sites.
 
 ::: {.panel-tabset group="language"}
 
