@@ -561,6 +561,20 @@ terms:
     definition: "Running a whole search inside each round of an outer cross-validation and scoring its choice on the outer fold, which scores the search as well as the model it picks."
     page: chapters/07-validation/cross-validation.qmd
 
+  # 7 · Validation: Spatial and temporal cross-validation
+  - term: "Distance to the nearest fitted station"
+    definition: "For a held-out station, how far away the closest station the model was fitted to lies; the folds set it, and a score holds only for predictions that far from the data."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Correlogram"
+    definition: "The correlation between the errors of pairs of sites, drawn against the distance between them; it shows how far apart sites still share what a model misses."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Range"
+    definition: "In a correlogram, the distance beyond which the errors of two sites are unrelated; spatial blocks should be at least that wide."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Expanding window"
+    definition: "Cross-validation for forecasts that fits each round only to the years before the year it tests, adding a year each round."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
