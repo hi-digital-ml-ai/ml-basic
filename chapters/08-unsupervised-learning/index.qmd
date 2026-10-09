@@ -1,6 +1,6 @@
 ---
 title: "8 · Unsupervised learning"
-description: "Finding structure when there are no labels, with k-means, hierarchical clustering, PCA and UMAP, and checking whether a group is real or a cut through a gradient."
+description: "Finding structure when there is no answer to learn from. Clustering sorts stations into groups, principal components turn many columns into a map, and three checks say whether a pattern is a real group, a cut through a gradient, or nothing at all."
 categories: [unsupervised, interpretation]
 listing:
   id: pages
@@ -13,58 +13,55 @@ listing:
 toc: false
 ---
 
-Sometimes there is no answer column. You have hundreds of CTD profiles and no water-mass
+Sometimes there is no answer to learn from: hundreds of CTD profiles and no water-mass
 classification, or counts of two dozen taxa at every station and no list of the habitats
-they come from. Unsupervised methods find structure in the data itself: **clustering**
-sorts stations into groups, and **principal component analysis** turns many columns into
-a few that can be mapped or passed to a model.
+they come from. Unsupervised methods look for structure in the data itself, and they
+return an answer for any table, so checking what they find matters as much as finding
+it. This section works on a community matrix of taxon counts from the same simulated
+survey as the rest of the course. The first three pages cover clustering:
 
-[Types of learning](../01-introduction/types-of-learning.qmd) ran k-means on temperature,
-salinity and depth. This section takes clustering and PCA further on a community matrix
-of 24 taxa, and shows how to check what they find. Every one of these methods returns an
-answer for any table, so the checks matter as much as the methods: a shuffled copy of the
-data as a baseline, bootstrap samples, and variables the method never saw.
+- **clustering with k-means**: k-means sorts the stations into a set number of groups,
+  each round making them tighter, and where it ends depends on where it starts;
+- **choosing the number of clusters**: the sum of squares always falls as groups are
+  added, so the silhouette width and a shuffled copy of the data with the groups removed
+  judge how many to keep;
+- **hierarchical clustering**: a tree of joins holds every number of groups at once, the
+  linkage rule decides what it finds, and the adjusted Rand index scores how far two
+  groupings agree.
+
+The next two cover components:
+
+- **principal component analysis**: new axes built from the columns make a map of the
+  stations, read from their loadings, on which nothing makes an axis line up with one
+  driver;
+- **how many components to keep**: a set share of the variance keeps noise as well,
+  parallel analysis keeps the components that hold structure, and cross-validation keeps
+  those a model needs; UMAP makes a map for looking at.
+
+The last page checks what the others found:
+
+- **checking a pattern before reporting it**: a pattern should come back in bootstrap
+  samples, leave a gap between its groups rather than cut a gradient, and match a
+  recorded variable the method never saw.
+
+The section picks up threads from earlier ones.
+[Types of learning](../01-introduction/types-of-learning.qmd) ran k-means on
+temperature, salinity and depth; [Clustering with k-means](clustering.qmd) runs it on
+species counts and shows why one run is not enough.
+[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) put the columns on a
+common scale; every method in this section measures distance or spread, so each needs it.
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
+setting by cross-validation, and [Avoiding information
+leakage](../02-marine-data/information-leakage.qmd) kept each step inside the folds;
+[How many components to keep](dimensionality-reduction.qmd) tunes the number of
+components the same way. [Uncertainty and
+stability](../07-validation/uncertainty-and-stability.qmd) resampled the sites to put an
+interval on a score; [Checking a pattern before reporting it](interpreting-patterns.qmd)
+resamples them to see whether a grouping comes back.
 
 ## Pages in this section
 
 ::: {#pages}
-:::
-
-## Findings from this section
-
-- Two k-means clusters recovered the **hard and soft seabed** from species counts alone,
-  with **15 of 800** stations in the other kind's cluster.
-- The average silhouette width of those clusters was **0.179**, below the rule-of-thumb
-  0.25 for "no substantial structure". Shuffled counts gave a baseline of about 0.05, and
-  two clusters stood furthest above it, at **3.5 times** the baseline.
-- One table and one set of distances gave agreement with the seabed from **0.005** to
-  **0.89**, depending only on the linkage rule. Ward's two groups matched k-means' at an
-  adjusted Rand index of 0.94.
-- The first two principal components held **29.4%** of the variance, which is usual for
-  species counts. Depth and hard bottom both ran about **39°** from the nearest axis,
-  because the two components held almost the same share.
-- Three rules for the number of components kept **16**, **3** and **2**: a share of the
-  variance, a shuffled baseline, and cross-validation for predicting depth. The third
-  component held real structure, rock against gravel, that depth did not need.
-- In **52 of 60** bootstrap samples the seabed split came back, and in 8 a depth split took
-  its place. The average adjusted Rand index, 0.87, described neither.
-- Splitting the soft-bottom stations came back in every bootstrap sample, yet **11%** of
-  them sat near the boundary between the clusters, against **2%** for the seabed split. It
-  was a cut through a depth gradient, not two groups.
-
-::: {.callout-important}
-A pattern that comes back in every bootstrap sample can still be a cut through a gradient,
-because k-means cuts a steady gradient in the same place every time. Look for a gap
-between the groups, and compare them with a recorded category, before calling them groups.
-:::
-
-::: {.callout-note}
-Two habits run through these pages. **Run the same steps on a shuffled copy of the data**,
-each column shuffled on its own, so every column keeps its values and the groups are gone:
-silhouette widths and shares of the variance have no fixed scale, and the shuffled copy
-gives them one. And **compare the result with a variable the method never saw**, such as
-the recorded seabed. A gradient that turns up this way is a finding too: "composition
-changes steadily with depth" is worth reporting.
 :::
 
 
