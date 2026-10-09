@@ -41,7 +41,7 @@ RECAP = ["A score is only as honest as its folds",
 # misleading result in vermilion. Model names are the pages' own labels.
 LIGHT = "#C9CED2"
 FOREST, LOG_FOREST = "Random forest", "Random forest on log counts"
-POISSON, AVERAGE = "Poisson regression", "Predicting the average"
+LINEAR, AVERAGE = "Linear regression", "Predicting the average"
 
 
 # Helpers ----------------------------------------------------------------------------------
@@ -191,7 +191,7 @@ class Scene02(VideoScene):
         self.finish()
 
 
-# Folds and their reach (scenes 3–6) --------------------------------------------------------
+# Folds and their reach (scenes 3–4) --------------------------------------------------------
 
 FOLD_COLOURS = [BLUE, ORANGE, GREEN, PURPLE, SKY]
 
@@ -228,77 +228,12 @@ class Scene03(VideoScene):
         self.finish()
 
 
-def reach_panel(kind, x):
-    """One fold scheme, drawn as nine sites of five stations: which stations are held out,
-    and the line from one held-out station to the nearest fitted one (schematic)."""
-    rng = np.random.default_rng(4)
-    box = RoundedRectangle(width=4.1, height=4.1, corner_radius=0.15, stroke_color=GRID,
-                           stroke_width=3).move_to([x, -0.4, 0])
-    centres = [np.array([x + 1.25 * (i - 1), -0.4 + 1.25 * (1 - j), 0]) for j in range(3) for i in range(3)]
-    stations, held = VGroup(), []
-    for s, c in enumerate(centres):
-        for k in range(5):
-            offset = np.array([rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3), 0])
-            if kind == "stations":
-                out = s == 4 and k == 0
-            elif kind == "sites":
-                out = s == 4
-            else:
-                out = s in (0, 1, 3, 4)
-            stations.add(Dot(c + offset, radius=0.08, color=ORANGE if out else BLUE))
-            held.append(out)
-    fitted = [i for i, h in enumerate(held) if not h]
-
-    def nearest_to(i):
-        here = stations[i].get_center()
-        return min(fitted, key=lambda j: np.linalg.norm(stations[j].get_center() - here))
-
-    def reach_of(i):
-        return np.linalg.norm(stations[nearest_to(i)].get_center() - stations[i].get_center())
-
-    # a station of the middle site; in a block, the held-out station furthest from any fitted one
-    target = 20 if kind != "blocks" else max((i for i, h in enumerate(held) if h), key=reach_of)
-    here = stations[target].get_center()
-    nearest = nearest_to(target)
-    reach = Line(here, stations[nearest].get_center(), color=INK, stroke_width=5)
-    ring = Circle(0.17, color=INK, stroke_width=4).move_to(here)
-    block = VGroup()
-    if kind == "blocks":
-        block = Square(2.55, stroke_color=ORANGE, stroke_width=4, fill_color=ORANGE, fill_opacity=0.08
-                       ).move_to((centres[0] + centres[4]) / 2)
-    name = label({"stations": "folds of stations", "sites": "folds of sites",
-                  "blocks": "spatial blocks"}[kind], 32, INK, weight=BOLD).next_to(box, UP, 0.25)
-    return VGroup(box, block, stations, name), VGroup(ring, reach)
-
-
-class Scene04(VideoScene):
-    number = 4
-
-    def construct(self):
-        panels = [reach_panel(k, x) for k, x in (("stations", -4.6), ("sites", 0), ("blocks", 4.6))]
-        head = label("held out", 28, ORANGE, weight=BOLD)
-        fitted = label("fitted", 28, BLUE, weight=BOLD)
-        line_name = label("to the nearest fitted station", 28, INK)
-        key = VGroup(VGroup(Dot(radius=0.1, color=ORANGE), head).arrange(RIGHT, buff=0.15),
-                     VGroup(Dot(radius=0.1, color=BLUE), fitted).arrange(RIGHT, buff=0.15),
-                     VGroup(Line(ORIGIN, 0.6 * RIGHT, color=INK, stroke_width=5), line_name
-                            ).arrange(RIGHT, buff=0.15)).arrange(RIGHT, buff=0.7).to_edge(DOWN, buff=0.35)
-        # "What a score claims depends on what the folds hold out."
-        self.play(FadeIn(key), run_time=self.share(0.1))
-        for (panel, reach), phrase in zip(panels, ("Folds of single stations", "Folds of sites",
-                                                   "spatial blocks")):
-            cue(self, phrase)
-            self.play(FadeIn(panel), run_time=self.share(0.08))
-            self.play(Create(reach[0]), Create(reach[1]), run_time=self.share(0.08))
-        self.finish()
-
-
 SCHEME_NAMES = {"Stations": "folds of stations", "Sites": "folds of sites",
                 "Half-degree blocks": "half-degree blocks"}
 
 
-class Scene05(VideoScene):
-    number = 5
+class Scene04(VideoScene):
+    number = 4
 
     def construct(self):
         runs, means = self.data("distance-runs"), self.data("distance")
@@ -321,10 +256,13 @@ class Scene05(VideoScene):
         trend = VMobject(color=GREY, stroke_width=4).set_points_as_corners(
             [big[s].get_center() for s in SCHEME_NAMES])
         head = label("The same random forest, scored three ways", 34, SUBDUED).to_edge(UP, buff=0.35)
+        advice = label("hold out what the model will face", 36, ORANGE, weight=BOLD).move_to(head)
 
-        # "A random forest was scored all three ways, ten times each."
-        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.12))
-        self.play(*[FadeIn(small[s], lag_ratio=0.1) for s in SCHEME_NAMES], run_time=self.share(0.2))
+        # "What a score claims depends on what the folds hold out."
+        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.1))
+        # "A random forest was scored with folds of single stations, folds of sites and spatial blocks."
+        cue(self, "A random forest was scored")
+        self.play(*[FadeIn(small[s], lag_ratio=0.1) for s in SCHEME_NAMES], run_time=self.share(0.15))
         # "The further away its fitted data, the larger its error: ..."
         cue(self, "The further away")
         self.play(*[FadeIn(big[s], scale=1.6) for s in SCHEME_NAMES], Create(trend), run_time=self.share(0.15))
@@ -334,55 +272,14 @@ class Scene05(VideoScene):
         # "... to 4.41 with blocks."
         cue(self, "to 4.41")
         self.play(FadeIn(names["Half-degree blocks"]), Indicate(big["Half-degree blocks"], color=ORANGE),
-                  run_time=self.share(0.12))
+                  run_time=self.share(0.1))
+        # "So choose folds that hold out what the model will face."
+        cue(self, "So choose folds")
+        self.play(FadeOut(head, shift=0.2 * UP), FadeIn(advice, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
-class Scene06(VideoScene):
-    number = 6
-
-    def construct(self):
-        def panel(x, heading, answer, gap_side):
-            box = RoundedRectangle(width=5.8, height=4.4, corner_radius=0.2, stroke_color=GRID,
-                                   stroke_width=3).move_to([x, 0.1, 0])
-            rng = np.random.default_rng(6 if gap_side else 7)
-            dots, marks = VGroup(), VGroup()
-            for _ in range(36):
-                p = np.array([x + rng.uniform(-2.5, 2.5), rng.uniform(-1.4, 1.6), 0])
-                if gap_side and p[0] > x + 0.2:
-                    continue
-                dots.add(Dot(p, radius=0.08, color=BLUE))
-            if gap_side:
-                area = Rectangle(width=2.5, height=3.3, stroke_color=ORANGE, stroke_width=3, fill_color=ORANGE,
-                                 fill_opacity=0.1).move_to([x + 1.4, 0.1, 0])
-                marks.add(area, label("?", 60, ORANGE, weight=BOLD).move_to(area))
-            else:
-                for p in ([x - 1.1, 0.5, 0], [x + 0.9, -0.6, 0], [x + 0.3, 1.0, 0]):
-                    marks.add(label("?", 40, ORANGE, weight=BOLD).move_to(p))
-            title_ = lines_of(heading, 30, INK, BOLD, 0.06).next_to(box, UP, 0.25)
-            use = label(answer, 34, ORANGE, weight=BOLD).next_to(box, DOWN, 0.3)
-            return VGroup(box, dots, title_), marks, use
-
-        gaps = panel(-3.3, "fill the gaps between\nmonitored sites", "use folds of sites", False)
-        new = panel(3.3, "map an area\nnobody has surveyed", "use blocks", True)
-        report = label("Report the distance with the score", 36, INK, weight=BOLD).to_edge(DOWN, buff=0.3)
-        # "No distance is right in general."
-        self.play(FadeIn(gaps[0]), FadeIn(new[0]), run_time=self.share(0.15))
-        # "To fill the gaps between monitored sites, use folds of sites; ..."
-        cue(self, "To fill the gaps")
-        self.play(FadeIn(gaps[1]), run_time=self.share(0.1))
-        self.play(FadeIn(gaps[2], shift=0.2 * UP), run_time=self.share(0.1))
-        # "... to map an area nobody has surveyed, use blocks."
-        cue(self, "to map an area")
-        self.play(FadeIn(new[1]), run_time=self.share(0.1))
-        self.play(FadeIn(new[2], shift=0.2 * UP), run_time=self.share(0.1))
-        # "Report the distance with the score."
-        cue(self, "Report the distance")
-        self.play(FadeIn(report), run_time=self.share(0.1))
-        self.finish()
-
-
-# A search flatters its winner (scenes 7–11) ------------------------------------------------
+# A search flatters its winner (scenes 5–9) ------------------------------------------------
 
 def column_cells(n, colour, size=0.32):
     return VGroup(*[Square(size, stroke_width=0, fill_color=colour, fill_opacity=1) for _ in range(n)]
@@ -408,8 +305,8 @@ def search_layout(scene):
     return search, cards, VGroup(axis, axis_name), dots, winner
 
 
-class Scene07(VideoScene):
-    number = 7
+class Scene05(VideoScene):
+    number = 5
 
     def construct(self):
         search, cards, axis, dots, winner = search_layout(self)
@@ -418,14 +315,14 @@ class Scene07(VideoScene):
         columns = VGroup(real, noise).arrange(RIGHT, buff=0.5).move_to([0, 2.6, 0])
         real_name = label("8 measured inputs", 28, BLUE, weight=BOLD).next_to(real, UP, 0.2)
         noise_name = label("20 columns of random numbers", 28, GREY, weight=BOLD).next_to(noise, UP, 0.2)
-        model_name = label("100 models: Poisson regression on five columns each", 30, INK).move_to([0, 1.5, 0])
+        model_name = label("100 models: linear regression on five columns each", 30, INK).move_to([0, 1.5, 0])
         keep = label("keep the lowest cross-validated error", 34, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.4)
         # "Folds can also flatter a model they helped to choose."
         self.play(FadeIn(real), FadeIn(real_name), run_time=self.share(0.15))
         # "Add twenty columns of random numbers to the survey, ..."
         cue(self, "Add twenty columns")
         self.play(FadeIn(noise, lag_ratio=0.05), FadeIn(noise_name), run_time=self.share(0.12))
-        # "... try a hundred models, each Poisson regression on five columns, ..."
+        # "... try a hundred models, each linear regression on five columns, ..."
         cue(self, "try a hundred")
         self.play(FadeIn(model_name), LaggedStart(*[FadeIn(c, scale=0.6) for c in cards], lag_ratio=0.02),
                   run_time=self.share(0.3))
@@ -435,8 +332,8 @@ class Scene07(VideoScene):
         self.finish()
 
 
-class Scene08(VideoScene):
-    number = 8
+class Scene06(VideoScene):
+    number = 6
 
     def construct(self):
         search, cards, axis, dots, winner = search_layout(self)
@@ -451,7 +348,7 @@ class Scene08(VideoScene):
         names = VGroup(*[label("noise" if i < noise else "measured", 24, SUBDUED).next_to(c, DOWN, 0.12)
                          for i, c in enumerate(cells)])
         head = label("the winner's five columns", 30, VERMILION, weight=BOLD).next_to(cells, UP, 0.25)
-        # "The winner scores 4.50, the lowest of the hundred."
+        # "The winner scores 4.51, the lowest of the hundred."
         self.play(*[ReplacementTransform(c, d) for c, d in zip(cards, dots)], FadeIn(axis),
                   run_time=self.share(0.25))
         self.play(best.animate.scale(1.7), FadeIn(value, shift=0.2 * DOWN), run_time=self.share(0.12))
@@ -462,8 +359,8 @@ class Scene08(VideoScene):
         self.finish()
 
 
-class Scene09(VideoScene):
-    number = 9
+class Scene07(VideoScene):
+    number = 7
 
     def construct(self):
         axis = Line([-5.5, -1.6, 0], [5.5, -1.6, 0], color=GRID, stroke_width=3)
@@ -508,8 +405,8 @@ class Scene09(VideoScene):
         self.finish()
 
 
-class Scene10(VideoScene):
-    number = 10
+class Scene08(VideoScene):
+    number = 8
 
     def construct(self):
         blocks = VGroup(*[Rectangle(width=2.2, height=0.9, stroke_color=BACKGROUND, stroke_width=4,
@@ -526,7 +423,7 @@ class Scene10(VideoScene):
                                ).next_to(mini, LEFT, 0.5)
         held_name = lines_of("its choice is scored here:\nno part in choosing", 30, ORANGE, BOLD, 0.06
                              ).move_to([3.4, -1.0, 0])
-        # "Nested cross-validation measures what the search is worth."
+        # "Nested cross-validation scores the search as well."
         self.play(FadeIn(head), FadeIn(blocks), FadeIn(fold_name), run_time=self.share(0.12))
         arrow = None
         for f in range(3):
@@ -553,14 +450,14 @@ class Scene10(VideoScene):
         self.finish()
 
 
-class Scene11(VideoScene):
-    number = 11
+class Scene09(VideoScene):
+    number = 9
 
     def construct(self):
         n = self.data("nested").iloc[0]
-        axis, to_x = number_line(4.2, 5.0, -5.0, 5.5, -2.2, [4.2, 4.4, 4.6, 4.8, 5.0], 1)
+        axis, to_x = number_line(4.2, 4.7, -5.0, 5.5, -2.2, [4.2, 4.3, 4.4, 4.5, 4.6, 4.7], 1)
         axis_name = label("RMSE (individuals)", 28, SUBDUED).next_to(axis, DOWN, 0.15)
-        head = label("Poisson regression, chosen by the search", 34, SUBDUED).to_edge(UP, buff=0.5)
+        head = label("Linear regression, chosen by the search", 34, SUBDUED).to_edge(UP, buff=0.5)
 
         def mark(value, y, colour, text, hollow=False):
             dot = Circle(0.17, color=colour, stroke_width=5).move_to([to_x(value), y, 0]) if hollow else \
@@ -574,28 +471,28 @@ class Scene11(VideoScene):
         honest = mark(n["nested"], 0.0, VERMILION, "its choices, outer folds")
         honest[2].next_to(honest[1], LEFT, 0.3)
         plain = mark(n["eight_inputs"], -1.3, BLUE, "eight measured inputs, no search")
-        # "Inside each round, the search claimed an error of 4.42."
+        # "Inside each round, the search claimed an error of 4.43."
         self.play(FadeIn(head), FadeIn(axis), FadeIn(axis_name), run_time=self.share(0.12))
         self.play(FadeIn(claimed), run_time=self.share(0.12))
-        # "On the outer folds, its choices scored 4.86."
+        # "On the outer folds, its choices scored 4.46, a little worse."
         cue(self, "On the outer folds")
         self.play(TransformFromCopy(claimed[1], honest[1]), FadeIn(honest[0]), FadeIn(honest[2]),
                   run_time=self.share(0.15))
-        # "Poisson regression on the eight measured inputs, with no search at all, scored 4.37."
-        cue(self, "Poisson regression on")
+        # "Linear regression on the eight measured inputs, with no search at all, scored 4.37, ..."
+        cue(self, "Linear regression on")
         self.play(FadeIn(plain), run_time=self.share(0.15))
         self.finish()
 
 
-class Scene12(KeyPointScene):
-    number = 12
+class Scene10(KeyPointScene):
+    number = 10
     point = 1
 
 
-# The measure follows the use (scenes 13–20) ------------------------------------------------
+# The measure follows the use (scenes 11–17) ------------------------------------------------
 
-class Scene13(VideoScene):
-    number = 13
+class Scene11(VideoScene):
+    number = 11
 
     def construct(self):
         misses = [0.5, -0.4, 0.8, -0.3, 2.4, 0.6]
@@ -611,11 +508,11 @@ class Scene13(VideoScene):
                             ).arrange(RIGHT, buff=0.2)).arrange(RIGHT, buff=0.6).move_to([-2.5, 3.3, 0])
         squares = VGroup(*[Square(abs(m) * 0.55, stroke_width=0, fill_color=VERMILION, fill_opacity=0.6)
                            for m in misses]).arrange(RIGHT, buff=0.15, aligned_edge=DOWN).move_to([3.6, 1.6, 0])
-        rmse_name = lines_of("RMSE: squares each miss,\nso a large one dominates", 30, INK, BOLD, 0.06
+        rmse_name = lines_of("RMSE: squares each miss,\nlowest at the average", 30, INK, BOLD, 0.06
                              ).next_to(squares, DOWN, 0.3)
         bars = VGroup(*[Rectangle(width=abs(m) * 0.55, height=0.28, stroke_width=0, fill_color=VERMILION,
                                   fill_opacity=0.6) for m in misses]).arrange(RIGHT, buff=0.08).move_to([-2.5, -2.0, 0])
-        mae_name = lines_of("MAE: adds the misses\nas they are", 30, INK, BOLD, 0.06).next_to(bars, DOWN, 0.3)
+        mae_name = lines_of("MAE: adds the misses\nas they are, lowest\nat the median", 30, INK, BOLD, 0.06).next_to(bars, DOWN, 0.3)
         # "A performance measure turns every miss into one number."
         self.play(FadeIn(key), FadeIn(caught), FadeIn(predicted), run_time=self.share(0.12))
         self.play(LaggedStart(*[Create(g) for g in gaps], lag_ratio=0.15), run_time=self.share(0.15))
@@ -630,47 +527,8 @@ class Scene13(VideoScene):
         self.finish()
 
 
-class Scene14(VideoScene):
-    number = 14
-
-    def construct(self):
-        catch = self.data("catch").iloc[0]
-        counts = load_coastal_survey_clean()["abundance"].clip(upper=25).value_counts().sort_index()
-        counts = counts.reindex(range(26), fill_value=0)
-        top = int(np.ceil(counts.max() / 50) * 50)
-        axes, frame = chart([0, 26, 5], [0, top, 50], 11.0, 4.6, [0.5, 5.5, 10.5, 15.5, 20.5, 25.5],
-                            range(0, top + 1, 50), "animals caught at a station", "stations",
-                            x_text=lambda v: f"{v - 0.5:g}" if v < 25 else "25+")
-        frame.move_to([0.3, -0.9, 0])
-        bars = VGroup(*[Rectangle(width=axes.x_length / 26 * 0.85, height=max(c / top * axes.y_length, 0.001),
-                                  stroke_width=0, fill_color=GREY, fill_opacity=0.7
-                                  ).move_to(axes.c2p(k + 0.5, 0), aligned_edge=DOWN)
-                        for k, c in counts.items()])
-
-        def marker(value, colour, text, height, side):
-            # the median's words stand above its line, clear of the y axis; the average's beside it
-            line = DashedLine(axes.c2p(value + 0.5, 0), axes.c2p(value + 0.5, top * height), color=colour,
-                              stroke_width=5)
-            words = VGroup(label(text, 30, colour, weight=BOLD), label(f"{value:g}", 40, colour, weight=BOLD)
-                           ).arrange(DOWN if side is RIGHT else RIGHT, buff=0.12).next_to(line.get_end(), side, 0.15)
-            return VGroup(line, words)
-
-        median = marker(catch["median"], GREEN, "median, for MAE", 1.2, UP)
-        mean = marker(round(catch["average"], 1), BLUE, "average, for the RMSE", 1.0, RIGHT)
-        # "On skewed counts, the two aim at different targets."
-        self.play(FadeIn(frame), run_time=self.share(0.12))
-        self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.03), run_time=self.share(0.2))
-        # "The RMSE is lowest when a model predicts the average catch, 3.9 animals."
-        cue(self, "The RMSE is lowest")
-        self.play(Create(mean[0]), FadeIn(mean[1]), run_time=self.share(0.15))
-        # "MAE is lowest at the median, just 2."
-        cue(self, "MAE is lowest")
-        self.play(Create(median[0]), FadeIn(median[1]), run_time=self.share(0.15))
-        self.finish()
-
-
-MODEL_ORDER = [AVERAGE, POISSON, FOREST, LOG_FOREST]
-MODEL_NAMES = {AVERAGE: "predicting the average", POISSON: "Poisson regression",
+MODEL_ORDER = [AVERAGE, LINEAR, FOREST, LOG_FOREST]
+MODEL_NAMES = {AVERAGE: "predicting the average", LINEAR: "linear regression",
                FOREST: "random forest", LOG_FOREST: "random forest on log counts"}
 
 
@@ -695,8 +553,8 @@ def picks_layout(scene):
     return measures, names, columns, ys
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene12(VideoScene):
+    number = 12
 
     def construct(self):
         measures, names, columns, ys = picks_layout(self)
@@ -713,8 +571,8 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene13(VideoScene):
+    number = 13
 
     def construct(self):
         measures = self.data("measures").set_index("model").loc[MODEL_ORDER]
@@ -758,8 +616,8 @@ def ranked_bars(n=20, seed=17):
     return bars
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         bars = ranked_bars().move_to([-0.6, -0.6, 0], aligned_edge=DOWN).shift(1.8 * DOWN)
@@ -787,8 +645,8 @@ class Scene17(VideoScene):
         self.finish()
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         lists = self.data("shortlists").set_index("model")
@@ -806,7 +664,7 @@ class Scene18(VideoScene):
         rand = bench(at_random, "random", GREY)
         best = bench(perfect, "perfect", INK)
         rows = VGroup()
-        for i, m in enumerate([POISSON, FOREST, LOG_FOREST]):
+        for i, m in enumerate([LINEAR, FOREST, LOG_FOREST]):
             y = 2.2 - 0.85 * i
             colour = VERMILION if m == LOG_FOREST else BLUE
             dot = Dot([to_x(lists.loc[m, "animals found"]), y, 0], radius=0.15, color=colour)
@@ -816,7 +674,7 @@ class Scene18(VideoScene):
         ratio = lists["animals found"].mean() / at_random
         times = label(f"{ratio:.1f} times random", 36, BLUE, weight=BOLD).move_to([to_x(at_random) + 0.3, -1.65, 0],
                                                                                   aligned_edge=LEFT)
-        # "The forest on log counts finds 847 animals, as many as the other models."
+        # "The forest on log counts finds 847 animals, about as many as the other models."
         self.play(FadeIn(axis), FadeIn(axis_name), run_time=self.share(0.1))
         self.play(FadeIn(rows[2], scale=1.3), run_time=self.share(0.12))
         cue(self, "as many as")
@@ -831,8 +689,8 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         size = 3.0
@@ -859,8 +717,8 @@ class Scene19(VideoScene):
         self.finish()
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         alarm = VGroup(Square(1.8, stroke_width=0, fill_color=VERMILION, fill_opacity=0.8),
@@ -890,15 +748,15 @@ class Scene20(VideoScene):
         self.finish()
 
 
-class Scene21(KeyPointScene):
-    number = 21
+class Scene18(KeyPointScene):
+    number = 18
     point = 2
 
 
-# A score needs an interval (scenes 22–27) --------------------------------------------------
+# A score needs an interval (scenes 19–24) --------------------------------------------------
 
-class Scene22(VideoScene):
-    number = 22
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         points, dots = site_map(width=6.0, height=5.4, centre=(-3.6, -0.3))
@@ -943,8 +801,8 @@ def site_squares():
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -991,12 +849,12 @@ class Scene23(VideoScene):
         self.finish()
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
-        order = [FOREST, POISSON, AVERAGE]
+        order = [FOREST, LINEAR, AVERAGE]
         axis, to_x = number_line(3.5, 5.75, -3.0, 6.2, -2.4, [3.5, 4.0, 4.5, 5.0, 5.5], 1)
         axis_name = label("RMSE on new sites (individuals)", 28, SUBDUED).next_to(axis, DOWN, 0.15)
         rows = VGroup()
@@ -1035,8 +893,8 @@ class Scene24(VideoScene):
         self.finish()
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         a = np.array([4.6, 3.8, 5.3, 4.2, 4.9])
@@ -1091,8 +949,8 @@ def pair_panel(scores, other, x, paired):
     return VGroup(box, diagonal, x_name, y_name), dots, result
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -1109,25 +967,25 @@ class Scene26(VideoScene):
         self.finish()
 
 
-class Scene27(VideoScene):
-    number = 27
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         scores = self.data("bootstrap-scores")
         paired = self.data("paired").set_index("forest minus")
         left = pair_panel(scores, AVERAGE, -3.4, paired)
-        frame, dots, result = pair_panel(scores, POISSON, 3.4, paired)
+        frame, dots, result = pair_panel(scores, LINEAR, 3.4, paired)
         self.add(*left)
-        p = paired.loc[POISSON]
+        p = paired.loc[LINEAR]
         axis, to_x = number_line(-0.4, 0.2, 1.4, 5.4, -3.3, [-0.4, -0.2, 0, 0.2], 1, 22)
         bar = Line([to_x(p["lower"]), -3.05, 0], [to_x(p["upper"]), -3.05, 0], color=VERMILION, stroke_width=12)
         zero = DashedLine([to_x(0), -2.8, 0], [to_x(0), -3.3, 0], color=INK, stroke_width=4)
-        interval_name = label("paired interval, forest minus Poisson", 24, VERMILION, weight=BOLD
+        interval_name = label("paired interval, forest minus linear", 24, VERMILION, weight=BOLD
                               ).next_to(axis, LEFT, 0.2)
-        # "Against Poisson regression, it wins in only 79 per cent, ..."
+        # "Against linear regression, it wins in only 80 per cent, ..."
         self.play(FadeIn(frame), run_time=self.share(0.12))
         self.play(FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.2))
-        cue(self, "in only 79")
+        cue(self, "in only 80")
         self.play(FadeIn(result, shift=0.2 * DOWN), run_time=self.share(0.1))
         # "... and the paired interval covers zero."
         cue(self, "and the paired interval")
@@ -1138,22 +996,22 @@ class Scene27(VideoScene):
         self.finish()
 
 
-class Scene28(KeyPointScene):
-    number = 28
+class Scene25(KeyPointScene):
+    number = 25
     point = 3
 
 
-# Quiz (scenes 29–30) ----------------------------------------------------------------------
+# Quiz (scenes 26–27) ----------------------------------------------------------------------
 
-class Scene29(QuizScene):
-    number = 29
+class Scene26(QuizScene):
+    number = 26
     question = ("A false alarm costs three misses.",
                 "The probabilities can be trusted.",
                 "Where should the threshold be?")
 
 
-class Scene30(VideoScene):
-    number = 30
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
         thresholds = self.data("thresholds").set_index("k")
@@ -1207,22 +1065,22 @@ class Scene30(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 31–34) ---------------------------------------------------
+# Key points and end card (scenes 28–31) ---------------------------------------------------
 
-class Scene31(RecapScene):
-    number = 31
+class Scene28(RecapScene):
+    number = 28
     point = 1
 
 
-class Scene32(RecapScene):
-    number = 32
+class Scene29(RecapScene):
+    number = 29
     point = 2
 
 
-class Scene33(RecapScene):
-    number = 33
+class Scene30(RecapScene):
+    number = 30
     point = 3
 
 
-class Scene34(EndCardScene):
-    number = 34
+class Scene31(EndCardScene):
+    number = 31

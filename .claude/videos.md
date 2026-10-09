@@ -998,3 +998,25 @@ draft voice. Six scenes kept their Gemini takes and 13 renumbered scenes reused 
   survey (0.7 to 3.7 times the truth), as the page's figure now shows beside the
   forests. Both methods share the axes in `beyond_layout(scene, model)`.
 - The end card names forecasts and rare species; prediction intervals left the pages.
+
+## §7 Validation second pass (2026-10-09)
+
+Rebuilt from the second-pass pages (`feature/revise-validation`) as the middle version
+the user chose after the page review: the 7:32 cut updated, not the short version. Same
+three points; 31 scenes, about 900 words, 7:09 on the draft voice. Not yet narrated with
+Gemini (scenes 1–3 keep their earlier takes).
+
+- The spatial part is one scene (4): the pooled RMSE against the distance to the
+  nearest fitted station (4.23 to 4.41), closing on "hold out what the model will
+  face". The reach schematic and the two-uses scene left, as Dependent data now
+  introduces the distance.
+- The search and nested cross-validation use linear regression, as the page does: the
+  winner scores 4.51 with two noise columns; claimed 4.43, nested 4.46, the eight
+  measured inputs with no search 4.37. The narration calls the gap small and says it
+  grows with fewer sites or more flexible models. Scene 9's axis runs 4.2 to 4.7.
+- The skewed-catch histogram (average 3.9, median 2) left as a repeat of
+  Distributional assumptions; scene 11 says where each measure is lowest, and
+  `catch.csv` is no longer exported.
+- Poisson regression is linear regression throughout: the shortlist (860, 784 and 847
+  animals, "about as many"), the intervals, and the paired comparison (80%, the
+  interval covering zero).
