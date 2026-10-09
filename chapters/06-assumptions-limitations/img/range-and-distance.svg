@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 512" width="100%" role="img" aria-label="Two ways to check whether a new station lies within a survey, each drawn on the same chart of depth across and temperature down, where the surveyed stations form a band from warm, shallow water to cold, deep water. Range check, each input alone: a dashed box spans the survey's range of depth and of temperature, and a new shallow, cold station sits inside it, so it passes. Distance to the survey, all inputs together: a line joins the same station to its nearest surveyed station, a long way off across empty space, so it is flagged; a second new station inside the band has a short line and is close. A note says the inputs are standardised first, as for k-nearest neighbours.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .tiny { font: bold 12px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; fill: #55606a; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+    </style>
+</defs>
+<text class="title" x="470" y="10" text-anchor="middle">Is a new station within the survey?</text>
+<rect class="box" x="0" y="32" width="455" height="400" rx="8"/><rect x="0" y="32" width="455" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="74">Range check</text>
+<text class="lab" x="22" y="98" fill="#0072B2">EACH INPUT ALONE</text>
+<rect x="24" y="120" width="407" height="196" rx="4" fill="#ffffff" stroke="#c9d3da"/>
+<text class="tiny" x="425" y="332" text-anchor="end">DEEPER →</text>
+<text class="tiny" x="30" y="332">COLDER ↓</text>
+<rect x="45.0" y="129.9" width="359.6" height="163.2" fill="none" stroke="#0072B2" stroke-width="1.8" stroke-dasharray="7 5"/>
+<circle cx="51.0" cy="151.6" r="5" fill="#8a949c"/>
+<circle cx="62.1" cy="152.9" r="5" fill="#8a949c"/>
+<circle cx="77.1" cy="135.9" r="5" fill="#8a949c"/>
+<circle cx="67.0" cy="154.0" r="5" fill="#8a949c"/>
+<circle cx="90.8" cy="164.9" r="5" fill="#8a949c"/>
+<circle cx="112.9" cy="148.0" r="5" fill="#8a949c"/>
+<circle cx="116.6" cy="179.7" r="5" fill="#8a949c"/>
+<circle cx="120.2" cy="150.5" r="5" fill="#8a949c"/>
+<circle cx="147.8" cy="186.6" r="5" fill="#8a949c"/>
+<circle cx="138.1" cy="181.2" r="5" fill="#8a949c"/>
+<circle cx="173.2" cy="199.2" r="5" fill="#8a949c"/>
+<circle cx="159.9" cy="187.1" r="5" fill="#8a949c"/>
+<circle cx="160.4" cy="183.4" r="5" fill="#8a949c"/>
+<circle cx="179.0" cy="197.2" r="5" fill="#8a949c"/>
+<circle cx="192.1" cy="203.7" r="5" fill="#8a949c"/>
+<circle cx="206.3" cy="200.3" r="5" fill="#8a949c"/>
+<circle cx="207.4" cy="199.6" r="5" fill="#8a949c"/>
+<circle cx="220.0" cy="214.2" r="5" fill="#8a949c"/>
+<circle cx="248.5" cy="229.4" r="5" fill="#8a949c"/>
+<circle cx="241.7" cy="211.8" r="5" fill="#8a949c"/>
+<circle cx="259.4" cy="213.0" r="5" fill="#8a949c"/>
+<circle cx="276.4" cy="225.0" r="5" fill="#8a949c"/>
+<circle cx="280.3" cy="249.8" r="5" fill="#8a949c"/>
+<circle cx="295.4" cy="246.6" r="5" fill="#8a949c"/>
+<circle cx="297.8" cy="239.2" r="5" fill="#8a949c"/>
+<circle cx="337.2" cy="226.5" r="5" fill="#8a949c"/>
+<circle cx="330.2" cy="247.8" r="5" fill="#8a949c"/>
+<circle cx="351.5" cy="246.2" r="5" fill="#8a949c"/>
+<circle cx="359.6" cy="249.2" r="5" fill="#8a949c"/>
+<circle cx="359.7" cy="267.8" r="5" fill="#8a949c"/>
+<circle cx="374.8" cy="271.6" r="5" fill="#8a949c"/>
+<circle cx="383.9" cy="270.2" r="5" fill="#8a949c"/>
+<circle cx="394.1" cy="287.1" r="5" fill="#8a949c"/>
+<circle cx="398.6" cy="279.4" r="5" fill="#8a949c"/>
+<circle cx="72.8" cy="265.0" r="8" fill="#D55E00" stroke="#1f2933" stroke-width="1.4"/>
+<text class="sm" x="86.8" y="270.0">new station: inside both ranges</text>
+<text class="body" x="22" y="372">The new station lies inside the</text>
+<text class="body" x="22" y="396">survey's range of depth and of</text>
+<text class="body" x="22" y="420">temperature, so it passes.</text>
+<rect class="box" x="485" y="32" width="455" height="400" rx="8"/><rect x="485" y="32" width="455" height="6" rx="3" fill="#D55E00"/>
+<text class="head" x="507" y="74">Distance to the survey</text>
+<text class="lab" x="507" y="98" fill="#D55E00">ALL INPUTS TOGETHER</text>
+<rect x="509" y="120" width="407" height="196" rx="4" fill="#ffffff" stroke="#c9d3da"/>
+<text class="tiny" x="910" y="332" text-anchor="end">DEEPER →</text>
+<text class="tiny" x="515" y="332">COLDER ↓</text>
+<line x1="557.8" y1="265.0" x2="658.2" y2="199.2" stroke="#D55E00" stroke-width="2.4"/>
+<line x1="745.1" y1="218.0" x2="744.4" y2="213.0" stroke="#56B4E9" stroke-width="2.4"/>
+<circle cx="536.0" cy="151.6" r="5" fill="#8a949c"/>
+<circle cx="547.1" cy="152.9" r="5" fill="#8a949c"/>
+<circle cx="562.1" cy="135.9" r="5" fill="#8a949c"/>
+<circle cx="552.0" cy="154.0" r="5" fill="#8a949c"/>
+<circle cx="575.8" cy="164.9" r="5" fill="#8a949c"/>
+<circle cx="597.9" cy="148.0" r="5" fill="#8a949c"/>
+<circle cx="601.6" cy="179.7" r="5" fill="#8a949c"/>
+<circle cx="605.2" cy="150.5" r="5" fill="#8a949c"/>
+<circle cx="632.8" cy="186.6" r="5" fill="#8a949c"/>
+<circle cx="623.1" cy="181.2" r="5" fill="#8a949c"/>
+<circle cx="658.2" cy="199.2" r="5" fill="#8a949c"/>
+<circle cx="644.9" cy="187.1" r="5" fill="#8a949c"/>
+<circle cx="645.4" cy="183.4" r="5" fill="#8a949c"/>
+<circle cx="664.0" cy="197.2" r="5" fill="#8a949c"/>
+<circle cx="677.1" cy="203.7" r="5" fill="#8a949c"/>
+<circle cx="691.3" cy="200.3" r="5" fill="#8a949c"/>
+<circle cx="692.4" cy="199.6" r="5" fill="#8a949c"/>
+<circle cx="705.0" cy="214.2" r="5" fill="#8a949c"/>
+<circle cx="733.5" cy="229.4" r="5" fill="#8a949c"/>
+<circle cx="726.7" cy="211.8" r="5" fill="#8a949c"/>
+<circle cx="744.4" cy="213.0" r="5" fill="#8a949c"/>
+<circle cx="761.4" cy="225.0" r="5" fill="#8a949c"/>
+<circle cx="765.3" cy="249.8" r="5" fill="#8a949c"/>
+<circle cx="780.4" cy="246.6" r="5" fill="#8a949c"/>
+<circle cx="782.8" cy="239.2" r="5" fill="#8a949c"/>
+<circle cx="822.2" cy="226.5" r="5" fill="#8a949c"/>
+<circle cx="815.2" cy="247.8" r="5" fill="#8a949c"/>
+<circle cx="836.5" cy="246.2" r="5" fill="#8a949c"/>
+<circle cx="844.6" cy="249.2" r="5" fill="#8a949c"/>
+<circle cx="844.7" cy="267.8" r="5" fill="#8a949c"/>
+<circle cx="859.8" cy="271.6" r="5" fill="#8a949c"/>
+<circle cx="868.9" cy="270.2" r="5" fill="#8a949c"/>
+<circle cx="879.1" cy="287.1" r="5" fill="#8a949c"/>
+<circle cx="883.6" cy="279.4" r="5" fill="#8a949c"/>
+<circle cx="557.8" cy="265.0" r="8" fill="#D55E00" stroke="#1f2933" stroke-width="1.4"/>
+<circle cx="745.1" cy="218.0" r="8" fill="#56B4E9" stroke="#1f2933" stroke-width="1.4"/>
+<text class="sm" x="571.8" y="270.0">far</text>
+<text class="sm" x="755.1" y="204.0">close</text>
+<text class="body" x="507" y="372">Its nearest surveyed station is</text>
+<text class="body" x="507" y="396">far away: the survey never met</text>
+<text class="body" x="507" y="420">shallow, cold water. Flagged.</text>
+<text class="note" x="470" y="470" text-anchor="middle">The inputs are standardised first, as for k-nearest neighbours, so that each counts alike.</text>
+</svg>

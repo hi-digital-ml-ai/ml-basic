@@ -1,7 +1,7 @@
 ---
 title: "Uneven sampling and extrapolation"
-description: "A model answers for conditions its survey never reached, with nothing to show that it is guessing. Past the data each method carries on in its own way, and the distance to the nearest surveyed station shows where that happens."
-order: 5
+description: "A model answers for conditions its survey never reached, with nothing to show that it is guessing. Checked against the truth, a random forest and polynomial regression go wrong in different ways past the data, and the distance to the nearest surveyed station shows where."
+order: 4
 categories: [assumptions]
 ---
 
@@ -17,50 +17,60 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Survey effort leaves conditions a model has never seen
 
-Survey effort is never spread evenly over the sea. It follows ports, weather, ship
-time and the questions of the day, so some conditions are sampled hundreds of times
-and others never. A model learns its relationships from the conditions its survey
-covered. Asked about anything else, it still answers, and nothing in the answer shows
-that it is guessing.
+Survey effort is never spread evenly over the sea. It follows ports, weather, ship time
+and the questions of the day, so some conditions are sampled hundreds of times and
+others never. **Uneven sampling** means some conditions are covered thinly, so a
+model's fit there rests on a few stations. **Extrapolation** means predicting for
+conditions the survey did not cover at all. A model still answers there, and nothing in
+the answer shows that it is guessing.
 
-Two problems are worth keeping apart. **Uneven sampling** means some conditions are
-covered thinly, so the fit there rests on a few stations. **Extrapolation** means
-predicting for conditions the survey did not cover at all. This page shows what two
-familiar methods do when they are asked to extrapolate, and how to measure how far a
-station lies from the survey, so that a prediction map can say where it is guessing.
+Each method carries on past the data in its own way. Linear regression keeps its slope,
+polynomial regression follows its curve wherever the bend takes it, and decision trees,
+random forests and k-nearest neighbours level off at the edge of the data;
+[Choosing a method](../03-supervised-learning/choosing-a-method.qmd#beyond-the-sampled-temperatures-each-model-follows-its-own-rule)
+draws three of them side by side. This page checks two of them against the truth past
+the data, and measures how far a station lies from the survey, so that a prediction map
+can say where it is guessing.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## Each method carries on past the data in its own shape
+## The distance to the nearest surveyed station shows where a model is guessing
 
-A fitted model keeps no record of where its data stopped. Linear regression continues
-its straight line at the same slope. Polynomial regression follows its curve, which
-may turn back up wherever its bend happens to fall. A decision tree sends every value
-beyond its last split to the same leaf as the most extreme stations it saw, so a
-random forest, an average of such trees, repeats the value at the edge. Its
-predictions are never absurd, which makes them easy to trust, but they stay flat
-however far the truth moves on.
+The usual check takes each input in turn and asks whether a station's value lies
+between the smallest and largest the survey recorded. It misses a station that is
+inside every range but in a combination of conditions the survey never met, such as
+shallow water as cold as the survey found only at depth.
+
+A check that looks at all the inputs together measures the **distance to the nearest
+surveyed station**: the distance [k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd)
+uses to find its neighbours, with the inputs standardised so that each counts alike. A
+station far from every surveyed station is one the model knows little about, whatever
+each input says alone. Conditions the survey covered thinly lie further from their
+nearest station too, so the same distance shows uneven sampling.
 
 ::: {.diagram}
-![Three methods fitted to the same data and asked about values beyond it. Linear regression continues at the same slope, polynomial regression follows its own bend, and a random forest repeats the value at the edge of the data. None of them shows that it has left the data.](img/past-the-data.svg){fig-alt="Three cards, each with the same points falling across the left part of a small chart, a shaded region on the right marked beyond the data, and a dashed true curve that keeps falling gently towards zero. Linear regression: a straight line carries on at the same slope into the shaded region and drops below zero. Polynomial regression: a curve follows the points and turns back upward past the data. Random forest: a stepped line follows the points and runs flat across the shaded region at the value of the last points. A note says none of them shows that it has left the data."}
+![A range check takes each input alone, so a shallow, cold station passes because its depth and its temperature each lie inside the survey's range. The distance to the nearest surveyed station takes all the inputs together and flags it, because the survey never met shallow, cold water.](img/range-and-distance.svg){fig-alt="Two cards, each a chart of depth across and temperature down on which the surveyed stations form a band from warm, shallow water to cold, deep water. Range check, each input alone: a dashed box spans the survey's range of depth and of temperature, and a new shallow, cold station sits inside it, so it passes. Distance to the survey, all inputs together: a line joins the same station to its nearest surveyed station across empty space, so it is flagged as far; a second new station inside the band has a short line and is close. A note says the inputs are standardised first, as for k-nearest neighbours."}
 :::
 
 ## Worked example
 
 The survey here visits only the shallower sites: those whose stations average less
 than 100 m deep. The deeper sites are the area the model is asked to map. Two methods
-from earlier pages are fitted with the same inputs: polynomial regression from
+are fitted with the same inputs: polynomial regression from
 [Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
 with squared terms for depth and temperature, and the random forest from
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 
 One survey could be lucky or unlucky, so the fit is repeated on ten surveys, each
 made of a different three quarters of the shallow sites. The quarter left out each
-time gives new sites within the survey's depths, to set against the deep sites.
+time gives new sites within the survey's depths, to set against the deep sites. The
+last two parts turn to a survey that sailed only in summer and autumn.
 
 ### Preparing the data
 
@@ -298,20 +308,15 @@ regression's lines fan out instead, from `r spread_of("Polynomial regression", "
 times the truth: within 100 m the water gets colder as it gets deeper, so fits that
 describe the shallow sites equally well can bend in different directions below them.
 
-## A range check misses new combinations of conditions
+### Shallow, cold stations pass a range check but lie far from the survey
 
-Spotting that 170 m lies beyond a survey of sites shallower than 100 m is easy. The harder
-case is a station inside the survey's range of every input, taken one at a time, in
-a combination of conditions the survey never met. Suppose a survey sailed only in
-summer and autumn, and its model is asked about spring and winter stations.
-
-The usual check takes each input in turn and asks whether a station's value lies
-between the smallest and largest the survey recorded. A check that looks at all the
-inputs together measures the **distance to the nearest surveyed station**: the inputs
-are standardised as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd),
-with chlorophyll logged first, and the distance is the straight line across all four.
-A station further from the survey than 95% of surveyed stations lie from their nearest
-neighbour at another site is flagged as far from the survey.
+Spotting that 170 m lies beyond a survey of sites shallower than 100 m is easy. A new
+combination is harder. Suppose a survey sailed only in summer and autumn, and its
+model is asked about spring and winter stations. The distance uses the four measured
+inputs, standardised as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd)
+with chlorophyll logged first. A station is flagged as far from the survey when it lies
+further from it than 95% of surveyed stations lie from their nearest neighbour at
+another site (at another site, because a site's own visits sit close together).
 
 ::: {.panel-tabset group="language"}
 
@@ -461,8 +466,9 @@ ggplot(mapping = aes(depth_m, temperature_c)) +
 A random forest fitted to the summer and autumn survey predicts the spring and winter
 stations. Season itself is left out of its inputs, as the survey has none of the
 seasons asked about. Its predictions are compared with the true mean count again, in
-four groups of stations from the nearest quarter to the furthest. A prediction 2 times too high or 2 times too low is off by a factor
-of 2.
+four groups of stations from the nearest quarter to the furthest. The error is the
+factor a prediction is off by: one twice the truth and one half of it are both off by a
+factor of 2.
 
 ::: {.panel-tabset group="language"}
 
@@ -538,30 +544,30 @@ distance is the only sign that its predictions there deserve less trust.
 
 Mapped alongside a prediction, the distance to the nearest surveyed station shows
 where the map rests on the survey and where it is extrapolating; areas far from the
-survey can be greyed out or left unmapped. The same distance shows uneven sampling too:
-conditions the survey covered thinly lie further from their nearest station. When
-extrapolating is the point, as in projecting a species' range under warmer water than
-any survey recorded, say which predictions are extrapolations and expect errors larger
-than any cross-validation on the survey has measured.
+survey can be greyed out or left unmapped.
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+measures a distance of the same kind on the map, to choose folds that hold stations as
+far from the fitted data as the area to be mapped lies from the survey. When extrapolating is the point, as in projecting
+a species' range under warmer water than any survey recorded, say which predictions are
+extrapolations and expect errors larger than any cross-validation on the survey has
+measured.
 
 ## Key points
 
 ::: {.key-points}
 - A model answers for conditions its survey never covered, and nothing in its
   predictions shows that it has left the data.
-- Past the data, a random forest repeats the value at the edge. Below 140 m it was
-  too high on all ten shallow surveys, at `r spread_of("Random forest", "below")`
-  times the true mean count.
-- Polynomial regression follows its curve, which can be close to right or far off
-  depending on the survey: from `r spread_of("Polynomial regression", "below")` times
-  the truth.
-- A range check on each input misses new combinations. `r n_hidden` of the
-  `r n_range` spring and winter stations that passed it were far from every surveyed
-  station.
+- Methods that agree within the survey's range part company past it. Below 140 m the
+  random forest stayed level and was too high on all ten shallow surveys, at
+  `r spread_of("Random forest", "below")` times the true mean count; polynomial
+  regression ranged from `r spread_of("Polynomial regression", "below")` times it.
+- A range check on each input misses new combinations: of the `r n_range` spring and
+  winter stations that passed it, `r n_hidden` were far from every surveyed station.
 - The distance to the nearest surveyed station, on standardised inputs, flags such
-  stations. The forest's typical error grew from a factor of
-  `r round(off_near, 1)` at the nearest quarter of stations to `r round(off_far, 1)`
-  at the furthest.
+  stations. The forest's typical error grew from a factor of `r round(off_near, 1)` at
+  the nearest quarter of stations to `r round(off_far, 1)` at the furthest.
+- Map that distance with the predictions, and treat areas far from the survey as
+  extrapolation.
 :::
 
 ## Try it yourself

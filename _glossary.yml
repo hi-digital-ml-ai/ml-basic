@@ -504,6 +504,20 @@ terms:
     definition: "A statistical model that fits a separate shift for each group, such as each site, used when there are too few groups to resample."
     page: chapters/06-assumptions-limitations/dependent-data.qmd
 
+  # 6 · Assumptions: Uneven sampling and extrapolation
+  - term: "Uneven sampling"
+    definition: "Survey effort that covers some conditions thinly, so a model's fit there rests on a few stations."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Extrapolation"
+    definition: "Predicting for conditions the data did not cover, where a model still answers but nothing in the answer shows that it is guessing."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Distance to the nearest surveyed station"
+    definition: "How far a station lies from the closest station in the survey, measured across all the inputs at once after standardising them; a large distance flags extrapolation."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "True mean count"
+    definition: "In a simulated survey, the number each station's count was drawn around; no real study knows it, but it shows a model's error free of the noise in single counts."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
