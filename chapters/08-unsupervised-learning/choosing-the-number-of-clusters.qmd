@@ -17,34 +17,40 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 ```
 
+{{< new-terms >}}
+
 ## The number of groups is a choice
 
-[Clustering with k-means](clustering.qmd) set $k$ to 2 and found the two kinds of seabed.
-k-means would have returned three groups as readily, or nine, so the number of habitat
-types in a survey is first of all a choice. This page shows two measures that help make
-it, and a simple baseline that turns each measure into a clear answer: run the same
-clustering on the data with its groups shuffled away, and see which $k$ stands furthest
-above it.
+k-means and most other clustering methods take the number of groups as an input, and
+return that many whatever the data hold. [Clustering with k-means](clustering.qmd) set
+$k$ to 2 and found the two kinds of seabed, but k-means would have returned three groups
+as readily, or nine. So the number of habitat types in a survey is first of all a choice.
+This page shows two measures that help make it, and a simple baseline that turns each
+measure into a clear answer: run the same clustering on the data with its groups shuffled
+away, and see which $k$ stands furthest above it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## The sum of squares always falls as k rises
 
-The first measure is the **within-cluster sum of squares** from
-[Clustering with k-means](clustering.qmd): how
-far stations sit from the centre of their own cluster, squared and added up. It always
-falls as $k$ rises, because more centres always sit closer to the stations. The classic
-**elbow** method plots it against $k$ and looks for the bend where adding clusters
-stops helping much.
+The first measure is the within-cluster sum of squares from
+[Clustering with k-means](clustering.qmd): how far stations sit from the centre of their
+own cluster, squared and added up. It always falls as $k$ rises, because more centres
+always sit closer to the stations. The classic **elbow** method plots it against $k$ and
+looks for the bend where adding clusters stops helping much.
 
-The second is the **silhouette width**. For each station, compare the average distance
-to the other stations in its own cluster with the average distance to the stations of
-the nearest other cluster. A station well inside its own cluster scores close to 1, a
-station on the border between two scores close to 0, and a station nearer another
+## The silhouette width compares a station's own cluster with the nearest other
+
+The second measure is the **silhouette width**. For each station, compare the average
+distance to the other stations in its own cluster with the average distance to the
+stations of the nearest other cluster. A station well inside its own cluster scores close
+to 1, a station on the border between two scores close to 0, and a station nearer another
 cluster than its own scores below 0. The average over all stations summarises the whole
 clustering, and the $k$ with the highest average is the best separated.
+
+## Shuffling each column removes the groups and keeps the values
 
 Neither number has a fixed scale. A sum of squares depends on the data's units and
 number of columns, and with two dozen columns every station is far from every other, so
@@ -57,8 +63,11 @@ with: the same data with its groups removed.
 
 Shuffle each column on its own, and every column keeps exactly its own values: the same
 zeros, the same few large counts. Only which values occur together in a row is lost, and
-with it any groups. Clustering the shuffled table the same way gives a **baseline**: the
-scores that data like this reaches with no groups in it at all.
+with it any groups. Clustering the shuffled table the same way gives a **shuffled
+baseline**: the scores that data like this reaches with no groups in it at all. It plays
+the part that predicting the average plays for a supervised model, as in
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations): a score
+means something only against what no structure would give.
 
 ## Worked example
 
@@ -309,7 +318,7 @@ clusters come back on a fresh sample.
 - The **silhouette width** compares each station's distance to its own cluster with its
   distance to the nearest other one. Its average has no fixed scale.
 - **Shuffling each column on its own** keeps every column's values and removes any
-  groups, giving a **baseline** for both measures.
+  groups, giving a **shuffled baseline** for both measures.
 - On the community matrix, the silhouette stood furthest above the baseline at two
   clusters, `r round(at_two$times, 1)` times the shuffled value: the hard and soft seabed.
 :::

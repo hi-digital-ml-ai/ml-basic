@@ -637,6 +637,84 @@ terms:
     definition: "The average cost of a model's calls per station, counting each false alarm at k times the cost of a miss; with calibrated probabilities it is lowest at a threshold of k/(1 + k)."
     page: chapters/07-validation/choosing-a-metric.qmd
 
+  # 8 · Unsupervised learning: Clustering with k-means
+  - term: "Clustering"
+    definition: "Sorting rows into groups so that rows in the same group resemble each other more than rows in other groups, with no answer to learn from."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Within-cluster sum of squares"
+    definition: "Every point's distance to the centre of its own cluster, squared and added up; small when every cluster is compact, and what k-means makes smaller."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Community matrix"
+    definition: "A table with one row per sample and one column per taxon, holding the counts or another measure of how many were found."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+
+  # 8 · Unsupervised learning: Choosing the number of clusters
+  - term: "Elbow"
+    definition: "A bend in the within-cluster sum of squares plotted against the number of clusters, where adding clusters stops helping much; real data often show none."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Silhouette width"
+    definition: "For one row, how much nearer it sits to its own cluster than to the nearest other, from −1 to 1; the average over all rows scores a whole clustering."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Shuffled baseline"
+    definition: "The score the same steps reach on a copy of the data with each column shuffled on its own, so every column keeps its values and any groups are gone."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+
+  # 8 · Unsupervised learning: Hierarchical clustering
+  - term: "Hierarchical clustering"
+    definition: "Clustering that starts from single rows, joins the two closest groups again and again, and records the joins as a tree that can be cut into any number of groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Dendrogram"
+    definition: "The tree that hierarchical clustering draws, each join at the height of the distance it bridged; a cut across it gives a grouping."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Linkage"
+    definition: "The rule for the distance between two groups in hierarchical clustering: their nearest members (single), their furthest (complete), all pairs on average (average), or the rise in the sum of squares if joined (Ward)."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Rand index"
+    definition: "The share of pairs of rows that two groupings agree about, both putting the pair in one group or both putting it in different groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Adjusted Rand index (ARI)"
+    definition: "The Rand index corrected for the agreement expected by chance: 1 for identical groupings, about 0 for no more agreement than chance."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Chaining"
+    definition: "Linkage joining groups through threads of in-between rows, so that nearly every row ends up in one group and the rest are peeled off one or two at a time."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+
+  # 8 · Unsupervised learning: Principal component analysis
+  - term: "Principal component analysis (PCA)"
+    definition: "A method that builds new axes from the columns, each a weighted sum of them, ordered by how much of the variance they hold and each at right angles to the last."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Ordination"
+    definition: "A map of samples, usually in two dimensions, on which samples with similar communities sit close together."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Principal component"
+    definition: "One of the new axes that PCA builds: the direction of most remaining spread at right angles to the components before it."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Loadings"
+    definition: "The weights that build a principal component from the original columns, one per column; they say what the component is made of."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Score"
+    definition: "A row's value on a principal component: where it sits along that new axis."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Horseshoe effect"
+    definition: "The arch that rows along a long gradient bend into on a PCA map, because PCA can follow only straight-line directions."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+
+  # 8 · Unsupervised learning: How many components to keep
+  - term: "Parallel analysis"
+    definition: "Choosing how many principal components to keep by comparing each component's share of the variance with the share it reaches in copies of the table with every column shuffled, and keeping those above it."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+  - term: "UMAP"
+    definition: "Uniform manifold approximation and projection: a method that draws a flat map on which each row's nearest neighbours stay close to it; distances between groups and the sizes of groups on the map carry no meaning."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+
+  # 8 · Unsupervised learning: Checking a pattern before reporting it
+  - term: "Cluster stability"
+    definition: "How often a clustering comes back when it is refitted on resamples of the data, measured by its agreement with the original grouping; a split through a steady gradient can be stable too."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+  - term: "External validation"
+    definition: "Checking a pattern found without labels against a variable recorded separately and left out of the analysis, such as the seabed type for clusters of counts."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

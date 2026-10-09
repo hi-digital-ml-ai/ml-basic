@@ -101,7 +101,7 @@ closest groups again and again, and records the joins as a tree, a dendrogram. C
 high for a few groups, lower for more.
 
 ## Scene 12
-visual: manim Linkage: the share of stations in the largest group for Ward and single linkage at two to six groups (page results, beyond-k-means.qmd#fig-linkage)
+visual: manim Linkage: the share of stations in the largest group for Ward and single linkage at two to six groups (page results, hierarchical-clustering.qmd#fig-linkage)
 
 How the tree measures the distance between groups, its linkage, decides what it
 finds. Ward's linkage finds nearly the same two groups as k-means. Single linkage chains

@@ -10,7 +10,7 @@ exports <- list(
   # Scene 12: the share of stations in the largest group for every linkage and k.
   # Knitted first: it attaches mclust with adjustedRandIndex, and the pages after it
   # that attach mclust with fewer functions leave the attached package as it is.
-  "beyond-k-means.qmd" = function(env, dir) {
+  "hierarchical-clustering.qmd" = function(env, dir) {
     write(with(env, linkages), dir, "linkages")
   },
 

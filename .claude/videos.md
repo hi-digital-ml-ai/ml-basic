@@ -421,7 +421,7 @@ Built like §7, to a rough cut on the draft voice: `_videos/08-unsupervised-lear
   and 41° directions, 16/7/3 against two by cross-validation, the UMAP null), stable
   is not the same as real (bimodal bootstrap 53/7, the continuum, external checks).
 - `exports.R` writes 19 CSVs from the six pages (under a minute). Every spoken number
-  was checked against them. `beyond-k-means.qmd` must knit first: the pages attach
+  was checked against them. `hierarchical-clustering.qmd` must knit first: the pages attach
   `mclust` with `include.only`, and a later `library()` call cannot add
   `adjustedRandIndex` to a package already attached. `tools/figures-for-video.R` now
   knits with `error = FALSE`, so a failing chunk stops the export instead of leaving
@@ -794,7 +794,7 @@ narrated. The old 52-scene puzzle (the soft-bottom split) became the quiz.
   1,146 words); merging four pairs of scenes and dropping UMAP brought it to 7:35. The
   user asked for UMAP back, as one scene: 7:48.
 - The page names its linkages `Ward`, `single`, `average`, `complete` (`trees` in
-  `beyond-k-means.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
+  `hierarchical-clustering.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
 - A chart whose x axis starts at k = 2 keeps Manim's zero-based axes and hides the
   empty stretch with a white strip (`axis_mask()`).
 - A dot stack sizes its dots from its tallest bin (`dot_stack()`): 52 bootstrap
@@ -1022,3 +1022,17 @@ blocks it.
 - Poisson regression is linear regression throughout: the shortlist (860, 784 and 847
   animals, "about as many"), the intervals, and the paired comparison (80%, the
   interval covering zero).
+
+## §8 Unsupervised learning second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-unsupervised`), where
+*Beyond k-means* became *Hierarchical clustering* (`hierarchical-clustering.qmd`, also
+the key in `exports.R`). The pages' numbers did not change, so the script stays as built
+on 2026-10-05: three points, 35 scenes, 7:50 on the draft voice. The user approved it as
+it stands and ran `narrate.py` (35 requests, about $0.09); the final cut runs 7:49.
+
+- The re-export matched every spoken number: 15 of 800 out of place, silhouette 0.179
+  against about 0.05 shuffled, single linkage over 99% in one group, 29.4%, about 39°,
+  16, 3 and 2 components, 52 of 60, 2% against 11% near the boundary, ARI 0.92.
+- Possible trims, not taken: fold the adjusted Rand index scene (24) into the bootstrap
+  result, and the second component into the first (about 33 scenes, 7:20).

@@ -140,7 +140,7 @@ website:
             text: "Clustering with k-means"
           - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
             text: "Choosing the number of clusters"
-          - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
+          - href: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
             text: "Hierarchical clustering"
           - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
             text: "Principal component analysis"

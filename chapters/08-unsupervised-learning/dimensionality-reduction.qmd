@@ -16,28 +16,33 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 ```
 
+{{< new-terms >}}
+
 ## Components can replace columns as model inputs
 
-[Principal component analysis](principal-component-analysis.qmd) kept two components
-because a map has two axes. Components are also used as inputs: a model can take a few
-components in place of 24 taxon columns that rise and fall together, and a hundred sensor
-channels can shrink to a handful. Then the number to keep matters. Too few leaves
+Principal components can stand in for the original columns as the inputs to a model: a
+few components in place of many columns that rise and fall together, as when a hundred
+sensor channels shrink to a handful. Then the number to keep matters. Too few leaves
 structure behind; too many carries noise into the next model.
+[Principal component analysis](principal-component-analysis.qmd) kept two components only
+because a map has two axes.
 
-This page compares three ways to choose that number on the community matrix, and ends
-with **UMAP**, a method that makes a map of the stations for looking at rather than for
-modelling.
+This page compares three ways to choose the number for the 24 taxon columns of the
+community matrix, and ends with **UMAP**, a method that makes a map of the stations for
+looking at rather than for modelling.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## A set share of the variance keeps noise as well as structure
 
 The simplest rule keeps components until together they hold a set share of the variance,
 often 80%. It treats all variance as worth keeping. In counts of species much of the
 variance is chance, spread thinly over every column, and the rule keeps components to
 carry that too.
+
+## Structure and prediction each have their own test
 
 Two ways do better, one for each reason to keep a component.
 
@@ -45,14 +50,13 @@ Two ways do better, one for each reason to keep a component.
 ![Two ways to choose the number of components. Compare each component's share of the variance with the share it reaches when every column is shuffled, and keep those above it; or, when the components feed a model, cross-validate the model at each number and keep the fewest that do as well as the best.](img/components-to-keep.svg){fig-alt="Two cards side by side, joined by the word or, with a strip of definitions below. 1 Beat the shuffled baseline: a bar chart of the share of the variance held by components 1 to 10, falling from left to right, with an orange line for the shuffled data; the first three bars rise above the line, are coloured blue and labelled kept; the rest, below it, are grey. 2 Ask the model that uses them: cross-validated error against the number of components kept falls steeply from the first point to the second and then stays flat; a dotted line one standard error above the lowest error passes just above the second point, which is marked as the fewest that do as well. The strip reads: 80% rule, keep components until they hold 80% of the variance, noise included; baseline, each column shuffled on its own, the shares components reach with no structure; cross-validation, PCA refitted in every fold, so the held-out stations stay unseen."}
 :::
 
-- **A shuffled baseline** asks which components hold structure. It is the baseline of
-  [Choosing the number of clusters](choosing-the-number-of-clusters.qmd): shuffle each
-  column on its own, so every taxon keeps its counts but no taxa occur together. PCA of a
-  shuffled table still gives components of unequal size, because some columns line up a
-  little by chance and PCA finds whatever lines up. A component of the real table counts
-  as structure when its share beats the share the same component reaches in the shuffled
-  tables. This is called **parallel analysis**.
-- **Cross-validation** asks how many components a model needs. When the components feed
+- **Parallel analysis** asks which components hold structure. It runs PCA on the
+  [shuffled baseline](choosing-the-number-of-clusters.qmd#shuffling-each-column-removes-the-groups-and-keeps-the-values)
+  of *Choosing the number of clusters*, and a component of the real table counts as
+  structure when its share beats the share the same component reaches in the shuffled
+  tables. Shuffled tables still give components of unequal size, because some columns
+  line up a little by chance and PCA finds whatever lines up.
+- Cross-validation asks how many components a model needs. When the components feed
   a model, their number is a setting to tune like any other, chosen as in
   [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
 
@@ -238,7 +242,7 @@ because stations at the same site are more alike than stations
 from different sites.
 
 `step_pca()` sits inside the recipe, so the PCA is fitted again on each fold's training
-stations and only applied to its held-out ones. Fitting it once on all 800 stations would
+stations and only applied to its held-out ones. Fitting it once on all `r nrow(community)` stations would
 let the held-out stations shape the components, the leakage of
 [Avoiding information leakage](../02-marine-data/information-leakage.qmd).
 
@@ -403,7 +407,7 @@ something that differs between rock and gravel would need the third.
 
 ### UMAP keeps neighbours together
 
-PCA's axes are straight lines through the data. **UMAP** (uniform manifold approximation
+PCA's axes are straight lines through the data. UMAP (uniform manifold approximation
 and projection) makes a flat map in a different way: it places the stations so that each
 one's nearest neighbours in the 24 columns stay close to it, and bends the space as much
 as that needs. `neighbors` sets how many neighbours each station keeps close.
@@ -520,11 +524,11 @@ the gain from fewer columns.
 ## Key points
 
 ::: {.key-points}
-- Keeping components until they hold **80% of the variance** keeps noise too: it kept
+- Keeping components until they hold 80% of the variance keeps noise too: it kept
   `r n_80` of 24 components of the community matrix.
-- A **shuffled baseline** (parallel analysis) keeps the components that hold more of the
-  variance than they would in a table with each column shuffled. It kept `r n_kept`.
-- When the components feed a model, **cross-validate** the number of components, with
+- **Parallel analysis** keeps the components that hold more of the variance than they
+  would in a table with each column shuffled. It kept `r n_kept`.
+- When the components feed a model, cross-validate the number of components, with
   `step_pca()` inside the recipe so the PCA is refitted in every fold. Predicting depth
   needed `r fewest$num_comp`.
 - The methods answer different questions. PC3 held structure, rock against gravel, that
