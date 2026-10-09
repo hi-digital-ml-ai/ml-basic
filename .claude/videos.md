@@ -980,7 +980,9 @@ and got new takes (about $0.01); the other 32 kept theirs.
 Rebuilt from the second-pass pages (`feature/revise-assumptions`), where *Independence
 of observations* and *Spatial and temporal dependence* became *Dependent data* and the
 GAM left the linearity page. The three points stay; 31 scenes, 945 words, 7:12 on the
-draft voice. Six scenes keep their Gemini takes; 25 need new ones.
+draft voice. Six scenes kept their Gemini takes and 13 renumbered scenes reused theirs
+(same words), so the narration needed only 12 requests (about $0.04); the final cut runs
+7:04.
 
 - Chapter one drops the GAM: the forest alone finds the temperature hump and puts
   depth's peak at 17 m against 80. The error check is linear regression's average
