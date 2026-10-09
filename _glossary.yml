@@ -707,6 +707,14 @@ terms:
     definition: "Uniform manifold approximation and projection: a method that draws a flat map on which each row's nearest neighbours stay close to it; distances between groups and the sizes of groups on the map carry no meaning."
     page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
 
+  # 8 · Unsupervised learning: Checking a pattern before reporting it
+  - term: "Cluster stability"
+    definition: "How often a clustering comes back when it is refitted on resamples of the data, measured by its agreement with the original grouping; a split through a steady gradient can be stable too."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+  - term: "External validation"
+    definition: "Checking a pattern found without labels against a variable recorded separately and left out of the analysis, such as the seabed type for clusters of counts."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
