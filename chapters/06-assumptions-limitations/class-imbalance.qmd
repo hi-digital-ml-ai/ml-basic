@@ -17,6 +17,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Accuracy rewards a model that ignores the rare class
 
 Some of the outcomes marine scientists most want to predict are rare: a protected
@@ -26,11 +28,11 @@ never giving the rare answer. If a species is caught at 5% of stations, calling 
 absent everywhere is right 95% of the time and finds nothing. This page counts the rare
 cases such a model actually finds, and tests the usual fix.
 
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) turned a
-predicted probability into yes or no with a threshold, and named the two ways that
-answer can be wrong: a **false alarm** says yes where the truth is no, and a **miss**
-says no where the truth is yes. It also warned that for a rare species the
-probabilities may never reach the default threshold of 0.5.
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd#a-threshold-turns-a-probability-into-yes-or-no)
+turned a predicted probability into yes or no with a threshold, and named the two ways
+that answer can be wrong: a false alarm says yes where the truth is no, and a miss says
+no where the truth is yes. It also warned that for a rare species the probabilities may
+never reach the default threshold of 0.5.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -341,6 +343,10 @@ pd.DataFrame([
 
 :::
 
+::: {.panel-tabset group="language"}
+
+## R
+
 ```{r}
 #| label: fig-curve
 #| fig-cap: "Sensitivity against specificity for logistic regression on the rare species, from cross-validation by site. The grey curve is the model fitted without rebalancing, at every threshold. The cross is that model at the default threshold of 0.5, and the open circle at a threshold equal to the share of stations with the species. The coloured points are the downsampled and upsampled models at 0.5."
@@ -363,6 +369,8 @@ ggplot(curve, aes(specificity, sensitivity)) +
        subtitle = paste("Grey: logistic regression without rebalancing,",
                         "at every threshold"))
 ```
+
+:::
 
 ```{r}
 #| label: curve-numbers
@@ -446,11 +454,10 @@ threshold.
 
 Neither rebalancing nor a lower threshold makes the model better at telling presence
 from absence. Both choose where on the same curve to work, and the threshold does it
-without discarding stations or distorting the probabilities. The place to work comes
-from what each mistake costs, as
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) said: if a
-miss leaves a protected species unprotected, work far up the curve and accept the false
-alarms; if every station called present sends out a dive team, work lower down. At a
+without discarding stations or distorting the probabilities. Where to work depends on
+what each mistake costs: if a miss leaves a protected species unprotected, work far up
+the curve and accept the false alarms; if every station called present sends out a dive
+team, work lower down. At a
 sensitivity of about `r round(same$sensitivity, 1)` here, each presence found comes with
 about `r round(same$false_alarms / (same$called_present - same$false_alarms))` false
 alarms.
@@ -463,19 +470,16 @@ turns the costs of the two mistakes into a threshold.
 ## Key points
 
 ::: {.key-points}
-- With a rare class, accuracy mostly measures a model's success on the common
-  class. Logistic regression without rebalancing was
-  `r round(100 * plain$accuracy)`% accurate and found
-  `r plain$called_present - plain$false_alarms` of `r presences` presences.
-- Sensitivity is the share of true yeses called yes, which misses lower. Specificity is
-  the share of true noes called no, and precision the share of yes calls that are true;
-  false alarms lower both.
-- Rebalancing belongs in the recipe, so that it changes only the stations a model is
-  fitted to.
-- Rebalancing moves a model along the curve that the threshold traces. Upsampling at 0.5
+- With a rare class, accuracy mostly measures a model's success on the common class.
+  Logistic regression without rebalancing was `r round(100 * plain$accuracy)`% accurate
+  and found `r plain$called_present - plain$false_alarms` of `r presences` presences.
+- Sensitivity, specificity and precision count misses and false alarms apart; report
+  them, not accuracy alone.
+- Rebalancing, done in the recipe so that it changes only the stations a model is
+  fitted to, moves a model along the curve the threshold traces. Upsampling at 0.5
   matched no rebalancing at a threshold of `r round(prevalence, 3)`, and downsampling
   landed below the curve.
-- A rebalanced model's probabilities are no longer chances: upsampling's averaged
+- A rebalanced model's probabilities are no longer chances: after upsampling they averaged
   `r round(average_of("Upsampling"), 2)` where the species was at
   `r round(100 * prevalence, 1)`% of stations.
 - Choose the threshold from the cost of each mistake. With a rare class, precision stays

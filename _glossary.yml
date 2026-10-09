@@ -518,6 +518,32 @@ terms:
     definition: "In a simulated survey, the number each station's count was drawn around; no real study knows it, but it shows a model's error free of the noise in single counts."
     page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
 
+  # 6 · Assumptions: Class imbalance
+  - term: "Imbalanced"
+    definition: "Of classes where one answer is much rarer than the other, so that a model can score well on accuracy by never giving the rare answer."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Sensitivity"
+    definition: "Of the cases that are truly yes, the share a model calls yes; also called recall. Misses lower it."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Specificity"
+    definition: "Of the cases that are truly no, the share a model calls no. False alarms lower it."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Precision"
+    definition: "Of the cases a model calls yes, the share that are truly yes. False alarms lower it, and easily outnumber the true yeses when yes is rare."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Downsampling"
+    definition: "Dropping cases of the common class at random, before fitting, until they match the rare one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Upsampling"
+    definition: "Copying cases of the rare class at random, before fitting, until they match the common one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "SMOTE"
+    definition: "A variant of upsampling that makes new rare cases between pairs of real ones instead of copying them."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
