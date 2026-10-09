@@ -1022,3 +1022,17 @@ blocks it.
 - Poisson regression is linear regression throughout: the shortlist (860, 784 and 847
   animals, "about as many"), the intervals, and the paired comparison (80%, the
   interval covering zero).
+
+## §8 Unsupervised learning second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-unsupervised`), where
+*Beyond k-means* became *Hierarchical clustering* (`hierarchical-clustering.qmd`, also
+the key in `exports.R`). The pages' numbers did not change, so the script stays as built
+on 2026-10-05: three points, 35 scenes, 7:50 on the draft voice. The user approved it as
+it stands and ran `narrate.py` (35 requests, about $0.09); the final cut runs 7:49.
+
+- The re-export matched every spoken number: 15 of 800 out of place, silhouette 0.179
+  against about 0.05 shuffled, single linkage over 99% in one group, 29.4%, about 39°,
+  16, 3 and 2 components, 52 of 60, 2% against 11% near the boundary, ARI 0.92.
+- Possible trims, not taken: fold the adjusted Rand index scene (24) into the bootstrap
+  result, and the second component into the first (about 33 scenes, 7:20).
