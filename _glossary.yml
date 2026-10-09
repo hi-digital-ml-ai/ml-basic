@@ -618,6 +618,11 @@ terms:
     definition: "A plot of groups of stations' average predicted probability against the share where the species was found; calibrated probabilities lie on the diagonal."
     page: chapters/07-validation/classification-metrics.qmd
 
+  # 7 · Validation: Uncertainty and stability
+  - term: "Paired comparison"
+    definition: "Comparing two models by the difference in their scores within each resample of the same data, so that what makes a resample hard for both cancels."
+    page: chapters/07-validation/uncertainty-and-stability.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
