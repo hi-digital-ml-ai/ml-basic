@@ -23,7 +23,7 @@ Each task has a typical way of going wrong, and later pages deal with each one:
 
 | Task | Typical way of going wrong | Where the course deals with it |
 | --- | --- | --- |
-| Naming things | Most images are empty water, so a model that always says "nothing here" scores well and is useless | [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd); [Classification performance measures](../07-validation/classification-metrics.qmd); [When a network is the right tool](../09-neural-networks/when-to-use-one.qmd) |
+| Naming things | Most images are empty water, so a model that always says "nothing here" scores well and is useless | [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd); [Classification performance measures](../07-validation/classification-metrics.qmd); [When a network pays off](../09-neural-networks/when-a-network-pays-off.qmd) |
 | Mapping across space | Nearby sites are alike, so the usual checks overstate accuracy in areas never sampled | [Dependent data](../06-assumptions-limitations/dependent-data.qmd); [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |
 | Filling gaps | The gaps are not random: cloud comes with particular weather | [Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd); [Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd) |
 | Forecasting | A random split lets the model learn from the future; 40 years of annual data is only 40 observations | [Dependent data](../06-assumptions-limitations/dependent-data.qmd); [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd) |

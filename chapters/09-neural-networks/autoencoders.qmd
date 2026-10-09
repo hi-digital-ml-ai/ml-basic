@@ -1,7 +1,7 @@
 ---
 title: "Autoencoders"
 description: "An autoencoder is a network that learns to rebuild its own input through a narrow middle, with no response to predict. On the community matrix it finds the plane that PCA finds and a little more of depth, and it shows why you report the plane rather than its axes."
-order: 6
+order: 5
 categories: [neural-networks, unsupervised]
 ---
 

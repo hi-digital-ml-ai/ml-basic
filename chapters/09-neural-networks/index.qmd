@@ -51,8 +51,7 @@ once. [Training a network](training-a-network.qmd) sets its settings on validati
 as [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) does,
 and finds that stopping early restrains the weights as
 [Regularisation](../05-generalisation/regularisation.qmd) does.
-[How much data a network needs](how-much-data.qmd) and
-[When a network is the right tool](when-to-use-one.qmd) compare the network with the
+[When a network pays off](when-a-network-pays-off.qmd) compares the network with the
 forest of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
 and [Autoencoders](autoencoders.qmd) sets a network beside
 [Principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd).

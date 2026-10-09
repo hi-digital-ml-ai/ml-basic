@@ -778,6 +778,17 @@ terms:
     definition: "The usual name for a network of fully connected layers like those in this course; tidymodels fits one with mlp()."
     page: chapters/09-neural-networks/training-a-network.qmd
 
+  # 9 · Neural networks: When a network pays off
+  - term: "T–S diagram"
+    definition: "A plot of temperature against salinity, on which a water mass shows up as a band or cluster because it is identified by how the two go together."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Feature engineering"
+    definition: "Building new inputs from domain knowledge, such as a combination of two measurements, so that a simpler model can use what matters directly."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Transfer learning"
+    definition: "Starting from a network already trained on a large general dataset, such as millions of photographs, and retraining it on a few hundred examples of your own."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
