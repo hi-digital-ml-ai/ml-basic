@@ -544,6 +544,23 @@ terms:
     definition: "A variant of upsampling that makes new rare cases between pairs of real ones instead of copying them."
     page: chapters/06-assumptions-limitations/class-imbalance.qmd
 
+  # 7 · Validation: Cross-validation
+  - term: "Out-of-fold prediction"
+    definition: "A station's prediction from the model fitted without its fold, so that every station is predicted once as new data."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Pooled score"
+    definition: "One score worked out from every station's out-of-fold prediction together, rather than the average of the folds' own scores."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Leave-one-site-out"
+    definition: "Cross-validation with every site a fold of its own."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Selection optimism"
+    definition: "The part of a search winner's score that is luck: the lowest of many scores gathers the most, so the more candidates, the more the winner's score flatters it."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Nested cross-validation"
+    definition: "Running a whole search inside each round of an outer cross-validation and scoring its choice on the outer fold, which scores the search as well as the model it picks."
+    page: chapters/07-validation/cross-validation.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
