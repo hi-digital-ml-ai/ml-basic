@@ -648,6 +648,17 @@ terms:
     definition: "A table with one row per sample and one column per taxon, holding the counts or another measure of how many were found."
     page: chapters/08-unsupervised-learning/clustering.qmd
 
+  # 8 · Unsupervised learning: Choosing the number of clusters
+  - term: "Elbow"
+    definition: "A bend in the within-cluster sum of squares plotted against the number of clusters, where adding clusters stops helping much; real data often show none."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Silhouette width"
+    definition: "For one row, how much nearer it sits to its own cluster than to the nearest other, from −1 to 1; the average over all rows scores a whole clustering."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Shuffled baseline"
+    definition: "The score the same steps reach on a copy of the data with each column shuffled on its own, so every column keeps its values and any groups are gone."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
