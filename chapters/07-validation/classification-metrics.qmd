@@ -16,18 +16,19 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Presence can be scored in three ways
 
 [Logistic regression](../03-supervised-learning/logistic-regression.qmd) scored its calls
 of present or absent by accuracy, and
 [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#three-measures-count-misses-and-false-alarms-apart)
 added sensitivity, specificity and precision. All four count the calls at one threshold.
-A model that predicts presence gives more than calls, though: it gives a probability for
-every station, which ranks the stations from most to least likely to hold the species. So
-there are three things to score: the **calls** at one threshold, the **ranking** the
-probabilities make, and the **probabilities** themselves. This page adds the measures most
-used in machine learning for each, and shows that a model can look good on one and poor
-on another.
+But a model that predicts presence gives every station a probability, which also ranks
+the stations from most to least likely to hold the species. So there are three things to
+score: the calls, the ranking and the probabilities themselves. This page adds the
+measures most used in machine learning for each, and shows that a model can look good on
+one and poor on another.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -41,7 +42,7 @@ often set out as a two-by-two table called the **confusion matrix**.
 
 | Measure | What it is | A rule that calls every station present scores |
 | --- | --- | --- |
-| **Accuracy** | the share of calls that are right | the share of stations with the species |
+| Accuracy | the share of calls that are right | the share of stations with the species |
 | **F1** | an average of precision and sensitivity, pulled towards the lower of the two | close to 1 when presence is common |
 | **Balanced accuracy** | the average of sensitivity and specificity | 0.5 |
 | **MCC**, the Matthews correlation coefficient | the correlation between the calls and the truth, from −1 to 1 | nothing: its calls never vary, so there is no correlation to work out |
@@ -67,11 +68,11 @@ squeezing them all towards 0.5, leaves the order and the ROC AUC unchanged.
 
 ## Log loss scores the probabilities themselves
 
-**Log loss**, from
+Log loss, from
 [Loss functions](../04-how-algorithms-learn/loss-functions.qmd#counts-and-presence-have-their-own-losses),
 charges each station for the probability the model gave to what happened: little for a
 high probability of presence where the species was found, a lot for a confident call that
-turned out wrong. Lower is better. It rewards probabilities that are **spread out**, high
+turned out wrong. Lower is better. It rewards probabilities that are spread out, high
 where the species is and low where it is not, and **calibrated**: of the stations given
 0.8, about 8 in 10 hold the species. ROC AUC sees only the first of these.
 
@@ -466,17 +467,9 @@ against logistic regression's `r f2(spread_of("Logistic regression", "lowest"))`
 `r f2(spread_of("Logistic regression", "highest"))`, while staying calibrated. The spread
 that lowers its log loss is the same that gave it the higher ROC AUC.
 Here the three kinds of measure agree on the order of the models. The diagram above shows
-that they need not.
-
-## Balanced accuracy scores calls, ROC AUC rankings and log loss chances
-
-When the calls drive the work, at a threshold already chosen from what each mistake costs,
-report measures of the calls, and choose balanced accuracy or MCC unless the true absences
-really do not matter. To compare models before the threshold is chosen, report ROC AUC.
-When the probabilities themselves are used, as on a map of the chance of finding the
-species or when they are added up into an expected number of occupied stations, report
-log loss and check a calibration plot. ROC AUC cannot tell whether a 0.8 means 8 in 10.
-[Choosing measures that match the objective](choosing-a-metric.qmd) takes this further.
+that they need not, so the measure to report follows from how the predictions will be
+used, which [Choosing measures that match the objective](choosing-a-metric.qmd) sets
+out.
 
 ## Key points
 

@@ -589,6 +589,35 @@ terms:
     definition: "The square of the correlation between observed and predicted values, often reported as R²; it cannot see predictions that are all too low or too high by the same proportion."
     page: chapters/07-validation/regression-metrics.qmd
 
+  # 7 · Validation: Classification performance measures
+  - term: "Confusion matrix"
+    definition: "The two-by-two table of a model's calls against the truth: true presences, false alarms, misses and true absences."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "F1"
+    definition: "An average of precision and sensitivity pulled towards the lower of the two; it never counts the true absences."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Balanced accuracy"
+    definition: "The average of sensitivity and specificity, so presence and absence count alike; 0.5 for a rule that calls every case the same."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "MCC (Matthews correlation coefficient)"
+    definition: "The correlation between a model's calls and the truth, from −1 to 1, counting every cell of the confusion matrix."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "True absence"
+    definition: "A station without the species that a model calls absent."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "ROC curve"
+    definition: "A model's sensitivity drawn against its specificity at every threshold."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "ROC AUC"
+    definition: "The area under the ROC curve: the share of pairs, one yes and one no, in which the yes gets the higher probability; 1 is a perfect ranking and 0.5 no better than random."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Calibrated"
+    definition: "Of probabilities that can be read as chances: of the stations given 0.8, about 8 in 10 hold the species."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Calibration plot"
+    definition: "A plot of groups of stations' average predicted probability against the share where the species was found; calibrated probabilities lie on the diagonal."
+    page: chapters/07-validation/classification-metrics.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
