@@ -623,6 +623,20 @@ terms:
     definition: "Comparing two models by the difference in their scores within each resample of the same data, so that what makes a resample hard for both cancels."
     page: chapters/07-validation/uncertainty-and-stability.qmd
 
+  # 7 · Validation: Choosing measures that match the objective
+  - term: "Budget"
+    definition: "The fixed number of stations a survey has time to visit, which a shortlist must fill."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Shortlist"
+    definition: "The stations a model predicts the most animals at, up to the budget; scored on the animals caught there."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Perfect shortlist"
+    definition: "The stations that really held the most animals, up to the budget; the best any shortlist can find."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Expected cost"
+    definition: "The average cost of a model's calls per station, counting each false alarm at k times the cost of a miss; with calibrated probabilities it is lowest at a threshold of k/(1 + k)."
+    page: chapters/07-validation/choosing-a-metric.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
