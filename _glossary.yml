@@ -679,6 +679,26 @@ terms:
     definition: "Linkage joining groups through threads of in-between rows, so that nearly every row ends up in one group and the rest are peeled off one or two at a time."
     page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
 
+  # 8 · Unsupervised learning: Principal component analysis
+  - term: "Principal component analysis (PCA)"
+    definition: "A method that builds new axes from the columns, each a weighted sum of them, ordered by how much of the variance they hold and each at right angles to the last."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Ordination"
+    definition: "A map of samples, usually in two dimensions, on which samples with similar communities sit close together."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Principal component"
+    definition: "One of the new axes that PCA builds: the direction of most remaining spread at right angles to the components before it."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Loadings"
+    definition: "The weights that build a principal component from the original columns, one per column; they say what the component is made of."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Score"
+    definition: "A row's value on a principal component: where it sits along that new axis."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Horseshoe effect"
+    definition: "The arch that rows along a long gradient bend into on a PCA map, because PCA can follow only straight-line directions."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

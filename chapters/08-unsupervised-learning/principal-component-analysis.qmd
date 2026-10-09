@@ -16,23 +16,26 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 ```
 
-## PCA turns 24 taxon columns into one map
+{{< new-terms >}}
 
-Twenty-four taxon columns cannot be drawn in one picture. Pairs of them make 276 scatter
-plots, and none shows the whole community. **Principal component analysis** (PCA) builds
-new axes from the old columns so that the first two hold as much of the spread as two axes
-can. Plotted on those two, the stations form a map on which similar communities sit close
-together. Ecologists call such a map an **ordination**, and PCA is the most widely used
-way to make one.
+## PCA turns many columns into one map
 
-This page builds the map for the community matrix, shows how to read its axes from their
-**loadings**, and checks the axes against the recorded depth and seabed.
+A table with many columns cannot be drawn in one picture. **Principal component analysis**
+(PCA) builds new axes from the old columns, so that the first two hold as much of the
+spread as any two axes can. Plotted on those two, the rows form a map on which similar rows
+sit close together. Ecologists call such a map of samples an **ordination**, and PCA is the
+most widely used way to make one.
+
+The community matrix has 24 taxon columns. Pairs of them make `r choose(24, 2)` scatter
+plots, and none shows the whole community. This page builds the map for it, shows how to
+read its axes from their **loadings**, and checks the axes against the recorded depth and
+seabed.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Each component is the direction of most remaining spread
 
 PCA finds the direction through the data along which the points spread out most. That
 direction is the first **principal component**, PC1. The second, PC2, is the direction of
@@ -45,14 +48,8 @@ two or three keeps as much of the spread as two or three numbers can.
 :::
 
 Each component is a weighted sum of the original columns. The weights are its
-**loadings**, one per column, and they say what the component is made of. A station's
+loadings, one per column, and they say what the component is made of. A station's
 value on a component is its **score**: its position along that axis of the map.
-
-Two details matter when reading the results. The columns are put on a common scale first,
-for the reason [Clustering with k-means](clustering.qmd) gave: otherwise the column with
-the largest numbers takes over the first component. And a component's **sign is
-arbitrary**. Flipping every loading and every score gives the same axis pointing the other
-way, so "high on PC1" means nothing until the loadings say which end is which.
 
 ::: {.callout-note collapse="true"}
 ## The maths, if you want it
@@ -65,6 +62,14 @@ The eigenvector $v_j$ holds the loadings of component $j$, the score of station 
 $x_i^\top v_j$, and the eigenvalue $\lambda_j$ is the variance of that component. The share
 of the variance it holds is $\lambda_j / \sum_k \lambda_k$.
 :::
+
+## The columns are scaled first, and a component's sign is arbitrary
+
+The columns are put on a common scale first, for the reason
+[Clustering with k-means](clustering.qmd) gave: otherwise the column with the largest
+numbers takes over the first component. And a component's sign is arbitrary. Flipping
+every loading and every score gives the same axis pointing the other way, so "high on PC1"
+means nothing until the loadings say which end is which.
 
 ## Worked example
 
@@ -188,7 +193,7 @@ loadings.insert(0, "taxon", taxa_only.columns)
 
 :::
 
-The two tabs give the same loadings with **opposite signs**, on both components. Both are
+The two tabs give the same loadings with opposite signs, on both components. Both are
 correct: R and scikit-learn settle the arbitrary sign by different conventions.
 The rest of this page reads R's signs; on scikit-learn's, the map is turned upside down
 and left to right.
@@ -335,7 +340,7 @@ axes. The two directions are `r round(between)`° apart, close to a right angle.
 The variance table explains it. PC1 and PC2 hold almost the same share,
 `r round(pct[1], 1)`% and `r round(pct[2], 1)`%. When two directions carry nearly equal
 spread, every direction in the plane they make carries nearly the same spread too, so
-which one PCA takes as PC1 is close to arbitrary. PCA has found the **plane** in which depth
+which one PCA takes as PC1 is close to arbitrary. PCA has found the plane in which depth
 and seabed vary, and on the map both are clear. It has no way to know which two
 directions in that plane matter to an ecologist. Naming PC1 "the depth axis" because depth
 correlates with it would be wrong here: a component is a direction of large variance, and
@@ -393,11 +398,11 @@ reading the axes.
   scikit-learn gave opposite signs here.
 - The first two components held `r round(pct2, 1)`% of the variance. For counts of
   species that is usual, and it does not mean the map shows nothing.
-- **A component is not a gradient.** Depth and hard bottom both ran about
+- A component is not a gradient. Depth and hard bottom both ran about
   `r round(mean(dir$off_axis))`° from the nearest axis, because PC1 and PC2 held nearly
   equal variance. PCA finds the plane, not the drivers within it.
-- On the map, the seabed shows as a **boundary** between two arms and depth as a smooth
-  **gradient**.
+- On the map, the seabed shows as a boundary between two arms and depth as a smooth
+  gradient.
 :::
 
 ## Try it yourself
