@@ -377,7 +377,7 @@ also differs between toolkits: tidyclust's `hier_clust()` and R's `hclust()` use
 linkage, and scikit-learn uses Ward. When the aim is compact groups, as with k-means, Ward
 is the rule to ask for, and it is worth setting by name.
 
-## A tree shows one linkage's joins
+## A dendrogram depends on its linkage and never undoes a join
 
 A dendrogram looks like a fixed picture of the data, but it records one linkage's joins,
 and a different linkage gives a different tree from the same stations. Joins are also
