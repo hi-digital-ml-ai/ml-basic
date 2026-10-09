@@ -747,6 +747,23 @@ terms:
     definition: "Rectified linear unit: an activation function that is zero below zero and a straight line above it, the usual choice in large networks."
     page: chapters/09-neural-networks/what-a-network-is.qmd
 
+  # 9 · Neural networks: Forward propagation and backpropagation
+  - term: "Backpropagation"
+    definition: "Passing a network's error back through its layers, from the output to the inputs, to find the slope of the loss for every weight in one pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Forward propagation"
+    definition: "Pushing the inputs through a network layer by layer to the prediction, keeping every value on the way for the backward pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Plateau"
+    definition: "A nearly flat stretch of the loss during training, where the slopes are tiny and progress pauses before the loss falls again."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "BFGS"
+    definition: "A search for the lowest loss that also tracks how the slopes change from step to step and chooses its own step size, so it needs no learning rate; the nnet package uses it."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Vanishing gradient"
+    definition: "Slopes that shrink as they pass back through many layers of flat-ended bends such as tanh, so the weights near the inputs barely move."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

@@ -14,6 +14,8 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
+{{< new-terms >}}
+
 ## A network learns by walking downhill
 
 A network finds its weights the way
@@ -53,7 +55,7 @@ network has, which is what makes networks with millions of weights trainable.
 ## Worked example
 
 We predict abundance on a log scale from depth, temperature and chlorophyll, each
-standardised, with one hidden layer of four units. The hidden units use **tanh**, the
+standardised, with one hidden layer of four units. The hidden units use tanh, the
 S-shaped activation from minus one to one.
 
 ### Both passes fit in a few lines of base R
@@ -237,8 +239,8 @@ pauses; a run stopped there would have looked no better than a straight line. Th
 crawl at the end is why training longer rarely rescues a disappointing network. The
 small spike at step `r format(spike_at, big.mark = ",")` is a step that overshot the
 valley; the loss rose for a moment and recovered.
-[Training a network](training-a-network.qmd) shows how to choose the learning rate and
-when to stop.
+[Training a network](training-a-network.qmd) shows when to stop and how much the random
+start changes the result.
 
 ## Software works out the backward pass for you
 
@@ -273,13 +275,13 @@ above it, which is why the backward pass costs no more than a forward pass.
 ## Key points
 
 ::: {.key-points}
-- A network is trained by **gradient descent**: forward pass, backward pass, a small
+- A network is trained by gradient descent: forward pass, backward pass, a small
   step for every weight, repeated.
 - **Forward propagation** computes the prediction and keeps every value on the way.
   **Backpropagation** passes the error back through the same arrows and gives every
   weight its slope in one pass.
 - The activation enters the backward pass only as its slope.
-- **Check a hand-written gradient** against small nudges of each weight; here all
+- Check a hand-written gradient against small nudges of each weight; here all
   `r n_weights` slopes agreed to `r check_places` decimal places.
 - The loss can pause on a **plateau** before falling again, so a run stopped early can
   look no better than a straight line.
