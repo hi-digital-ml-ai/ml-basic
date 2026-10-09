@@ -974,3 +974,25 @@ and got new takes (about $0.01); the other 32 kept theirs.
   from the data.
 - Both leads are taken from the rounded errors (0.28 on the test sites against the
   0.26 cross-validation promised), so the video and page agree with the table.
+
+## §6 Assumptions second pass (2026-10-09)
+
+Rebuilt from the second-pass pages (`feature/revise-assumptions`), where *Independence
+of observations* and *Spatial and temporal dependence* became *Dependent data* and the
+GAM left the linearity page. The three points stay; 31 scenes, 945 words, 7:12 on the
+draft voice. Six scenes keep their Gemini takes; 25 need new ones.
+
+- Chapter one drops the GAM: the forest alone finds the temperature hump and puts
+  depth's peak at 17 m against 80. The error check is linear regression's average
+  error (caught − predicted), as on the page, not Poisson regression's caught ÷
+  predicted.
+- Chapter two reads *Dependent data*, on the whole survey (800 stations, 160 sites, 20
+  blocks): sites 1.31 times wider, worth about 470; blocks 2.34, worth about 150. The
+  position-only R² scenes left with their page; two scenes now resample the forest's
+  errors (1.25 by site, so score on unseen sites; 1.36 by block, so its inputs explain
+  most of what neighbours share). Key point two became "score a model on sites it has
+  never seen".
+- Chapter three gains scene 20: the ten polynomial regressions fan out below the
+  survey (0.7 to 3.7 times the truth), as the page's figure now shows beside the
+  forests. Both methods share the axes in `beyond_layout(scene, model)`.
+- The end card names forecasts and rare species; prediction intervals left the pages.
