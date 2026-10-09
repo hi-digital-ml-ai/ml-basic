@@ -326,7 +326,7 @@ The forest climbs from `r at_size(100, "Random forest")` to
 close. Logistic regression stays near `r at_size(1600, "Logistic regression")` at every
 size: more stations cannot give it a second line.
 
-### A named combination lets logistic regression match the network
+### Feature engineering lets logistic regression match the network
 
 An oceanographer who knows the slope of the band on the T–S diagram can hand that
 combination to a simpler model as a new column. Building inputs from domain knowledge like
