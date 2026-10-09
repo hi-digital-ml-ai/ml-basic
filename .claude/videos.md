@@ -1003,8 +1003,10 @@ draft voice. Six scenes kept their Gemini takes and 13 renumbered scenes reused 
 
 Rebuilt from the second-pass pages (`feature/revise-validation`) as the middle version
 the user chose after the page review: the 7:32 cut updated, not the short version. Same
-three points; 31 scenes, about 900 words, 7:09 on the draft voice. Not yet narrated with
-Gemini (scenes 1–3 keep their earlier takes).
+three points; 31 scenes, about 900 words, 7:09 on the draft voice and 7:02 narrated with
+Gemini (8 new takes for scenes 4, 5, 6, 8, 9, 11, 15 and 24; 20 reused, renumbered
+ones included; about $0.03). The user ran `narrate.py`, as the auto-mode classifier
+blocks it.
 
 - The spatial part is one scene (4): the pooled RMSE against the distance to the
   nearest fitted station (4.23 to 4.41), closing on "hold out what the model will
