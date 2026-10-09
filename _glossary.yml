@@ -637,6 +637,17 @@ terms:
     definition: "The average cost of a model's calls per station, counting each false alarm at k times the cost of a miss; with calibrated probabilities it is lowest at a threshold of k/(1 + k)."
     page: chapters/07-validation/choosing-a-metric.qmd
 
+  # 8 · Unsupervised learning: Clustering with k-means
+  - term: "Clustering"
+    definition: "Sorting rows into groups so that rows in the same group resemble each other more than rows in other groups, with no answer to learn from."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Within-cluster sum of squares"
+    definition: "Every point's distance to the centre of its own cluster, squared and added up; small when every cluster is compact, and what k-means makes smaller."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Community matrix"
+    definition: "A table with one row per sample and one column per taxon, holding the counts or another measure of how many were found."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
