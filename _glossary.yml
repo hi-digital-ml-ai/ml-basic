@@ -764,6 +764,20 @@ terms:
     definition: "Slopes that shrink as they pass back through many layers of flat-ended bends such as tanh, so the weights near the inputs barely move."
     page: chapters/09-neural-networks/forward-and-backward.qmd
 
+  # 9 · Neural networks: Training a network
+  - term: "Early stopping"
+    definition: "Keeping a network's weights from the training step where the error on validation data was lowest, instead of the last step; it restrains the weights as a penalty does."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Mini-batch"
+    definition: "A small random group of the training rows used for one step of gradient descent, so each step is quick on a large dataset."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Epoch"
+    definition: "One pass through all the mini-batches, so that every training row has been used once; the usual unit for how long a network trains."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Multilayer perceptron"
+    definition: "The usual name for a network of fully connected layers like those in this course; tidymodels fits one with mlp()."
+    page: chapters/09-neural-networks/training-a-network.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
