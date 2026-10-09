@@ -21,9 +21,8 @@ set.seed(123)
 ## Some models can be read from their parts
 
 An **interpretable model** is one whose fitted parts can be read directly. Poisson
-regression gives each input a multiplier; a GAM, from
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd),
-gives each input a curve; a small tree gives a few questions. A **black box**, such as a
+regression gives each input a multiplier; a GAM, below, gives each input a curve; a
+small tree gives a few questions. A **black box**, such as a
 random forest of 500 trees, boosting or a neural network, predicts well but has no part
 that means anything alone. It is read from outside instead, with
 [Feature importance](feature-importance.qmd) and [Partial effects](partial-effects.qmd).
@@ -35,6 +34,23 @@ readable model's parts in plain words.
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## A GAM gives each input one smooth curve
+
+A **generalised additive model (GAM)** replaces each input's straight line in a linear
+model with a smooth curve, and adds the curves up as a linear model adds its terms. The
+shape is free, as in a forest, but each input keeps one curve, the same whatever the
+other inputs are, so the curves can be drawn and compared with what is known about the
+species.
+
+Each curve is built from short, smooth bumps spread along the input's range, each with
+a weight, and the weighted bumps add up to a curve of almost any shape. A penalty on
+bending, like the penalty in [Regularisation](../05-generalisation/regularisation.qmd),
+stops the curve chasing the noise; its weight is chosen from the data.
+
+::: {.diagram}
+![A GAM covers the input's range with short smooth bumps, weights them, and adds them up into a curve. A penalty on bending stops the curve chasing the noise; with bending made very costly the curve becomes a straight line.](img/gam.svg){fig-alt="Three cards. Pieces, short smooth bumps: seven bell-shaped curves overlap along the input's range. Added up, a weight for each bump: the bumps, each scaled by its weight, are drawn dashed, and their sum is a solid curve that rises and falls with the data points. Penalty, each bend costs: three curves through the same points; a dashed curve with bends made cheap chases the noise, a dotted straight line is what bends made dear give, and the solid curve between them follows the rise and fall. The text says fitting chooses the weights and pays for every bend, and the data set the price. A note says the curves add up, so each input keeps one curve that can be drawn and read."}
+:::
 
 ## Scoring models on the same folds measures what reading costs
 

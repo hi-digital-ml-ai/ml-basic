@@ -20,11 +20,11 @@ set.seed(123)
 
 ## Folds decide how far each prediction has to reach
 
-[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
-found that a model's errors gather in patches on the map, and that spatial blocks score a
-model lower than cross-validation by site does. It left two choices open: how large the
-blocks should be, and how to hold out time for a model that forecasts. This page makes
-both. A cross-validated score says how well a model predicts stations as far from its
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd) found that visits to
+one site and, to a lesser degree, neighbouring sites share part of what a model's inputs
+miss, and resampled the survey in half-degree spatial blocks, squares of the map with
+every site in them. This page scores models with such blocks held out, sets how large
+they should be, and holds out time for a model that forecasts. A cross-validated score says how well a model predicts stations as far from its
 fitted data as the held-out ones were, so choosing the folds means choosing that distance
 to match the model's use.
 
@@ -40,6 +40,10 @@ leave the station's own site in the fitted data, so that distance is short. Fold
 sites push it out to the next site, and blocks push it across the block. The further away
 the fitted data, the less a model can lean on what its neighbours caught, and the larger
 its error.
+
+::: {.diagram}
+![Cross-validation by site holds out scattered sites, each with fitted sites close by. Spatial blocks cut the map into squares and hold out every site in a square, so a held-out site's neighbours are held out with it and its nearest fitted site is further away. Blocks test what a model knows about areas it has not seen.](img/spatial-blocks.svg){fig-alt="Two cards showing the same map of 44 sites. Cross-validation by site, hold out scattered sites: seven held-out sites are scattered across the map, each joined by a short dashed line to the nearest site used for fitting, so a held-out site's position alone says a lot about it. Spatial blocks, hold out whole areas: the map is cut into six squares and every site in the top middle square is held out; their neighbours are held out with them and their dashed lines to the nearest fitted site are longer, so position says less about them. A note says blocks test what a model knows about areas it has not seen."}
+:::
 
 No distance is right in general. A model that fills the gaps between monitored sites is
 used close to its data, and folds of sites match that use. A habitat map of an area
@@ -330,8 +334,7 @@ range is about `r patch_km` km.
 
 A block of half a degree is `r round(half_degree_ew)` km from west to east and
 `r round(half_degree_ns)` km from south to north, at least as wide as the range. That is
-the size [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
-used.
+the size [Dependent data](../06-assumptions-limitations/dependent-data.qmd) used.
 
 ### The error grows from folds of stations to half-degree blocks
 

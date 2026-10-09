@@ -112,10 +112,8 @@ website:
             text: "Linearity and nonlinearity"
           - href: chapters/06-assumptions-limitations/distributional-assumptions.qmd
             text: "Distributional assumptions"
-          - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
-            text: "Independence of observations"
-          - href: chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd
-            text: "Spatial and temporal dependence"
+          - href: chapters/06-assumptions-limitations/dependent-data.qmd
+            text: "Dependent data"
           - href: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
             text: "Uneven sampling and extrapolation"
           - href: chapters/06-assumptions-limitations/class-imbalance.qmd

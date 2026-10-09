@@ -50,13 +50,13 @@ The section picks up threads from earlier ones.
 the forest that [Feature importance](feature-importance.qmd) and
 [Partial effects](partial-effects.qmd) read from outside.
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-fitted the GAM and found its depth curve wrong; [Partial effects](partial-effects.qmd)
+found a random forest's depth curve wrong; [Partial effects](partial-effects.qmd)
 shows why no model gets it right on this survey, and
 [Black boxes and interpretable models](black-box-or-not.qmd) reads the GAM's parts with
 the multipliers of
 [Regression for counts](../03-supervised-learning/count-regression.qmd).
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-gave the forest intervals from a quantile forest, and
+found the forest's errors skewed and widening, and
 [Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) put an
 interval on a score; [Communicating uncertainty](communicating-uncertainty.qmd) checks
 intervals on predictions by their coverage at new sites.

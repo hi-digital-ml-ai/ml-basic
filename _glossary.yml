@@ -469,3 +469,87 @@ terms:
   - term: "One-standard-error rule"
     definition: "Among the settings whose cross-validated error is within one standard error of the lowest, choosing the simplest."
     page: chapters/05-generalisation/hyperparameter-selection.qmd
+
+  # 6 · Assumptions: Linearity and nonlinearity
+  - term: "Linear model"
+    definition: "A model that predicts from a starting value plus a fixed amount for each input, added up; linear, polynomial, Poisson and logistic regression are linear models."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+  - term: "Interaction"
+    definition: "An effect of one input that depends on the value of another, such as a preferred temperature that shifts with depth."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+
+  # 6 · Assumptions: Distributional assumptions
+  - term: "Equal spread"
+    definition: "Errors whose spread is the same whatever the prediction; homogeneity of variance, in statistics."
+    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+  - term: "Skewed"
+    definition: "Of data with a long tail on one side, such as counts with a few very large catches, so that the average and the median differ."
+    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+  - term: "Quantile loss"
+    definition: "A loss that is smallest at a chosen point of the outcomes, such as the value only 1 in 20 exceed, rather than at their average or median."
+    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+
+  # 6 · Assumptions: Dependent data
+  - term: "Dependent data"
+    definition: "Observations that share conditions, such as visits to one site or neighbouring sites, so one says something about another beyond what their inputs say."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+  - term: "Spatial block"
+    definition: "A square of the map with every site in it, resampled or held out as one group so that neighbouring sites stay together."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+    more: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Effective sample size"
+    definition: "The number of independent observations a set of dependent rows is worth for an estimate; if resampling groups spreads the estimate k times wider than resampling rows, the rows are worth k² times fewer."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+  - term: "Mixed model"
+    definition: "A statistical model that fits a separate shift for each group, such as each site, used when there are too few groups to resample."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+
+  # 6 · Assumptions: Uneven sampling and extrapolation
+  - term: "Uneven sampling"
+    definition: "Survey effort that covers some conditions thinly, so a model's fit there rests on a few stations."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Extrapolation"
+    definition: "Predicting for conditions the data did not cover, where a model still answers but nothing in the answer shows that it is guessing."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Distance to the nearest surveyed station"
+    definition: "How far a station lies from the closest station in the survey, measured across all the inputs at once after standardising them; a large distance flags extrapolation."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "True mean count"
+    definition: "In a simulated survey, the number each station's count was drawn around; no real study knows it, but it shows a model's error free of the noise in single counts."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+
+  # 6 · Assumptions: Class imbalance
+  - term: "Imbalanced"
+    definition: "Of classes where one answer is much rarer than the other, so that a model can score well on accuracy by never giving the rare answer."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Sensitivity"
+    definition: "Of the cases that are truly yes, the share a model calls yes; also called recall. Misses lower it."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Specificity"
+    definition: "Of the cases that are truly no, the share a model calls no. False alarms lower it."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Precision"
+    definition: "Of the cases a model calls yes, the share that are truly yes. False alarms lower it, and easily outnumber the true yeses when yes is rare."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+    more: chapters/07-validation/classification-metrics.qmd
+  - term: "Downsampling"
+    definition: "Dropping cases of the common class at random, before fitting, until they match the rare one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Upsampling"
+    definition: "Copying cases of the rare class at random, before fitting, until they match the common one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "SMOTE"
+    definition: "A variant of upsampling that makes new rare cases between pairs of real ones instead of copying them."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+
+  # 10 · Interpretation: Black boxes and interpretable models
+  - term: "Generalised additive model (GAM)"
+    definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
+    page: chapters/10-interpretation/black-box-or-not.qmd
+
+  # 10 · Interpretation: Communicating uncertainty
+  - term: "Quantile forest"
+    definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd

@@ -157,8 +157,8 @@ goes with it arrive in
 
 **Random splitting assumes independent rows.** Survey stations near each other are not
 independent, so a random split flatters every model on this page.
-[Spatial and temporal dependence](../chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
-explains why and holds out whole areas instead, and
+[Dependent data](../chapters/06-assumptions-limitations/dependent-data.qmd)
+explains why, and
 [Spatial and temporal cross-validation](../chapters/07-validation/spatial-and-temporal-cv.qmd)
 builds such splits in full.
 

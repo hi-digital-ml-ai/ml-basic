@@ -249,7 +249,7 @@ A model treats every row as independent evidence. These rows are not, in three w
   observation than to separate ones. Treating them as separate is called
   **pseudo-replication**.
 - **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth;
-  [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+  [Dependent data](../06-assumptions-limitations/dependent-data.qmd)
   comes back to this.
 
 So the number of independent observations is nearer `r n_distinct(raw$site_id)` than

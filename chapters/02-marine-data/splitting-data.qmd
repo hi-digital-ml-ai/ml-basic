@@ -178,8 +178,9 @@ by looking at the result rather than the code.
 
 A rare class causes more trouble than the split: accuracy rewards a model that never
 predicts it, and the fit leans towards the common class.
-[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows both and the
-rebalancing that answers them.
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows both, and
+that moving the threshold does what rebalancing the data does without distorting the
+probabilities.
 
 ## A random split puts each site on both sides
 

@@ -46,10 +46,10 @@ The section picks up threads from earlier ones.
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
 setting by cross-validation by site; [Cross-validation](cross-validation.qmd) shows that
 the folds that choose a model cannot also score it.
-[Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
-compared folds of sites with spatial blocks, and
-[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) sets the width of the
-blocks from the model's errors.
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd)
+found that neighbouring sites share part of what a model misses, and
+[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) holds out spatial
+blocks and sets their width from the model's errors.
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
 showed that each loss aims at a different middle of the data;
 [Regression performance measures](regression-metrics.qmd) shows what that does to the
@@ -58,7 +58,7 @@ misses and false alarms apart at one threshold;
 [Classification performance measures](classification-metrics.qmd) scores the ranking and
 the probabilities, and [Choosing measures that match the objective](choosing-a-metric.qmd)
 chooses the threshold from the costs.
-[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd)
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd)
 resampled whole sites to measure what repeat visits are worth;
 [Uncertainty and stability](uncertainty-and-stability.qmd) resamples them to put an
 interval on a score.

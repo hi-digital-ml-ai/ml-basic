@@ -209,7 +209,7 @@ theme. Reading the plotting code is not part of following the course.
 
 **The random-split assumption is wrong for survey data in either language.** Stations
 near each other are not independent, so every score on this page is flattered. See
-[Spatial and temporal dependence](../chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd).
+[Dependent data](../chapters/06-assumptions-limitations/dependent-data.qmd).
 
 ::: {.callout-tip}
 ## Key points

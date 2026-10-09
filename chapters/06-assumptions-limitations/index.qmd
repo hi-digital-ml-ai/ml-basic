@@ -15,49 +15,46 @@ toc: false
 
 Machine-learning methods are often called assumption-free. They make fewer assumptions
 about the shape of a relationship than a linear model does, but they still assume the
-data were collected in a way that lets the stations stand for the ocean. The section
-takes each assumption in turn, on the same simulated survey as the rest of the course.
-The first two pages cover what a model assumes about shape and spread, which machine
-learning relaxes:
+data were collected in a way that lets the stations stand for the ocean. The five pages
+in this section take each assumption in turn, on the same simulated survey as the rest
+of the course. The first two cover what a model assumes about shape and spread, which
+machine learning relaxes:
 
-- **linearity and nonlinearity**: linear models assume straight lines and trees and
-  forests do not, yet a random forest and a generalised additive model fitted to the
-  survey both get the depth curve wrong;
+- **linearity and nonlinearity**: a linear model gives each input a fixed effect and a
+  random forest does not; the forest finds the temperature curve that a straight line
+  misses, yet still puts depth's peak in the wrong place;
 - **distributional assumptions**: a random forest predicts skewed, unevenly spread
-  counts without assuming a distribution, but trained on log counts it predicts too
-  few animals, and its intervals must follow the errors.
+  counts without assuming a distribution, but its loss decides what it aims at, and
+  trained on log counts it predicts too few animals.
 
-The next three cover how the data were collected, which it does not relax:
+The next two cover how the data were collected, which machine learning does not relax:
 
-- **independence of observations**: repeat visits to a site are worth fewer stations
-  than their number, and resampling whole sites measures how many fewer;
-- **spatial and temporal dependence**: neighbouring sites share their water, and
-  holding out whole areas of the map measures what a model knows without them;
-- **uneven sampling and extrapolation**: each method carries on past the survey in its
-  own way, and the distance to the nearest surveyed station shows where that happens.
+- **dependent data**: repeat visits to a site and neighbouring sites are worth fewer
+  stations than their number, and resampling whole sites and whole areas measures how
+  many fewer;
+- **uneven sampling and extrapolation**: a model answers for conditions its survey never
+  reached, and the distance to the nearest surveyed station shows where it is guessing.
 
 The last page takes a rare answer:
 
 - **class imbalance**: sensitivity, specificity and precision count misses and false
   alarms apart, and rebalancing the training data turns out to move the threshold.
 
-The section picks up threads from earlier ones. The penalty on bending in
-[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) works like the ridge penalty
-in [Regularisation](../05-generalisation/regularisation.qmd).
+The section picks up threads from earlier ones and passes some on.
 [Distributional assumptions](distributional-assumptions.qmd) asks what each loss of
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd) aims at, and what that
-does to a total.
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd) aims at.
 [Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
-side of the split; [Independence of observations](independence-of-observations.qmd)
-measures what those visits are worth. Cross-validation by site from
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) scores every
-model here, and [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd)
-compares it with spatial blocks, which
-[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-develops. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves
-whole-curve scores to
+side of the split; [Dependent data](dependent-data.qmd) measures what those visits are
+worth, and [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+holds out whole areas.
+[Uneven sampling and extrapolation](sampling-and-extrapolation.qmd) measures how far a
+station lies from the survey as [k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd)
+finds its neighbours. [Class imbalance](class-imbalance.qmd) builds on the misses and
+false alarms of [Logistic regression](../03-supervised-learning/logistic-regression.qmd)
+and leaves whole-curve scores to
 [Classification performance measures](../07-validation/classification-metrics.qmd).
+A model that keeps one readable curve for each input waits for
+[Black boxes and interpretable models](../10-interpretation/black-box-or-not.qmd).
 
 ## Pages in this section
 
