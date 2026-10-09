@@ -7,14 +7,14 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scenes 5–6: each fold scheme's pooled RMSE and median distance to the nearest
+  # Scene 4: each fold scheme's pooled RMSE and median distance to the nearest
   # fitted station, run by run and averaged.
   "spatial-and-temporal-cv.qmd" = function(env, dir) {
     write(with(env, distance_runs), dir, "distance-runs")
     write(with(env, by_scheme), dir, "distance")
   },
 
-  # Scenes 8–12: the hundred searched candidates with their noise columns, and the
+  # Scenes 5–9: the hundred searched candidates with their noise columns, and the
   # nested scores.
   "cross-validation.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(
@@ -25,14 +25,12 @@ exports <- list(
                                    eight_inputs = nested_eight)), dir, "nested")
   },
 
-  # Scenes 15–16: the four models' measures and the average and median catch.
+  # Scenes 12–13: the four models' measures.
   "regression-metrics.qmd" = function(env, dir) {
     write(with(env, scores), dir, "measures")
-    write(with(env, tibble::tibble(average = mean(survey$abundance),
-                                   median = median(survey$abundance))), dir, "catch")
   },
 
-  # Scenes 18–19 and the quiz's answer: the shortlists and the cheapest thresholds.
+  # Scene 15 and the quiz's answer: the shortlists and the cheapest thresholds.
   "choosing-a-metric.qmd" = function(env, dir) {
     write(with(env, dplyr::mutate(shortlists, perfect = perfect, at_random = at_random,
                                   budget = budget)), dir, "shortlists")
@@ -40,7 +38,7 @@ exports <- list(
     write(with(env, dplyr::select(cost_curves, k, threshold, cost)), dir, "cost-curves")
   },
 
-  # Scenes 23–27: each model's interval, the paired differences, and the thousand
+  # Scenes 20–24: each model's interval, the paired differences, and the thousand
   # bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")

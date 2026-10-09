@@ -10,12 +10,13 @@ categories: [validation, uncertainty]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
+
+{{< new-terms >}}
 
 ## A score from one survey is an estimate
 
@@ -33,14 +34,15 @@ an interval of its own, much narrower than either model's.
 ## Resampling the sites gives a score its interval
 
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd#resampling-whole-groups-measures-the-effective-sample-size)
-drew **bootstrap samples** of whole sites to see how far an estimate moves from one sample
+drew bootstrap samples of whole sites to see how far an estimate moves from one sample
 to the next. A score can be treated the same way. Cross-validation has already given every
 station an out-of-fold prediction, as on
 [Cross-validation](cross-validation.qmd#out-of-fold-predictions-are-pooled-into-one-score).
 A bootstrap sample draws the sites again, with replacement, keeps each drawn site's
 stations with their predictions, and works out the RMSE on them. Repeated a thousand times,
 this gives a thousand RMSEs. The middle 95% of them, from the 2.5th to the 97.5th
-percentile, is a **95% interval** for the score.
+percentile, is a 95%
+[confidence interval](../01-introduction/prediction-and-explanation.qmd) for the score.
 
 Nothing is refitted, so a thousand samples take a second or two. The models are held fixed,
 though: the interval shows how much the score depends on which sites were scored, not how
@@ -70,7 +72,7 @@ The models are three of the four on
 [Regression performance measures](regression-metrics.qmd):
 
 - **Predicting the average**, with no skill.
-- **Poisson regression**, with each input entered as a straight line.
+- **Linear regression**, the simple baseline.
 - **Random forest**.
 
 They are cross-validated on the same ten folds of sites as on that page, so their
@@ -106,7 +108,7 @@ forest <- rand_forest(trees = 500) |>
 
 models <- list(
   "Predicting the average" = with_inputs(null_model(mode = "regression")),
-  "Poisson regression"     = with_inputs(poisson_reg()),
+  "Linear regression"      = with_inputs(linear_reg()),
   "Random forest"          = with_inputs(forest)
 )
 
@@ -138,11 +140,11 @@ from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import PoissonRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
@@ -158,9 +160,7 @@ numeric = [c for c in inputs if c not in categorical]
 
 def with_inputs(model):
     recipe = ColumnTransformer([
-        # scaling leaves an unpenalised fit unchanged and helps the solver
-        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
-                              ("scale", StandardScaler())]), numeric),
+        ("numeric", SimpleImputer(strategy="median"), numeric),
         ("nominal", OneHotEncoder(drop="first", sparse_output=False), categorical),
     ])
     return Pipeline([("recipe", recipe), ("model", model)])
@@ -171,7 +171,7 @@ forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
 
 models = {
     "Predicting the average": DummyRegressor(),
-    "Poisson regression": PoissonRegressor(alpha=0, max_iter=1000),
+    "Linear regression": LinearRegression(),
     "Random forest": forest,
 }
 
@@ -264,19 +264,19 @@ interval_of <- function(m) {
 }
 score_of <- function(m) intervals$RMSE[intervals$model == m]
 gap_average <- score_of("Predicting the average") - score_of("Random forest")
-gap_poisson <- score_of("Poisson regression") - score_of("Random forest")
+gap_linear <- score_of("Linear regression") - score_of("Random forest")
 ```
 
 Each RMSE is shown with its 95% interval: predicting the average
-`r interval_of("Predicting the average")`, Poisson regression
-`r interval_of("Poisson regression")` and the random forest
+`r interval_of("Predicting the average")`, linear regression
+`r interval_of("Linear regression")` and the random forest
 `r interval_of("Random forest")`. The intervals are `r f2(min(intervals$width))` to
 `r f2(max(intervals$width))` wide, more than twice the forest's lead of `r f2(gap_average)`
-over predicting the average, and many times its lead of `r f2(gap_poisson)` over Poisson
+over predicting the average, and many times its lead of `r f2(gap_linear)` over linear
 regression. Read alone, the three intervals overlap, and cannot say which model is better:
 not even whether either model beats predicting the average.
 
-### Pairing separates the forest from the average but not from Poisson regression
+### Pairing separates the forest from the average but not from linear regression
 
 ::: {.panel-tabset group="language"}
 
@@ -286,7 +286,7 @@ not even whether either model beats predicting the average.
 #| label: paired
 full <- rmse_by_model(scored)
 
-differences <- map(c("Predicting the average", "Poisson regression"), \(other) {
+differences <- map(c("Predicting the average", "Linear regression"), \(other) {
   in_each_sample <- scores$`Random forest` - scores[[other]]
   tibble(`forest minus` = other,
          difference = full[["Random forest"]] - full[[other]],
@@ -305,7 +305,7 @@ differences |> mutate(across(where(is.double), \(x) round(x, 3)))
 full = rmse_by_model(np.arange(len(survey)))
 
 table_rows = []
-for other in ["Predicting the average", "Poisson regression"]:
+for other in ["Predicting the average", "Linear regression"]:
     in_each_sample = scores["Random forest"] - scores[other]
     table_rows.append({"forest minus": other,
                        "difference": full["Random forest"] - full[other],
@@ -324,10 +324,10 @@ differences.round(3)
 #| include: false
 paired_of <- function(m) filter(differences, `forest minus` == m)
 vs_average <- paired_of("Predicting the average")
-vs_poisson <- paired_of("Poisson regression")
+vs_linear <- paired_of("Linear regression")
 signed <- function(x) sub("^-", "−", f2(x))
-paired_width <- vs_poisson$upper - vs_poisson$lower
-together <- cor(scores$`Random forest`, scores$`Poisson regression`)
+paired_width <- vs_linear$upper - vs_linear$lower
+together <- cor(scores$`Random forest`, scores$`Linear regression`)
 ```
 
 ::: {.panel-tabset group="language"}
@@ -336,14 +336,14 @@ together <- cor(scores$`Random forest`, scores$`Poisson regression`)
 
 ```{r}
 #| label: fig-pairs
-#| fig-cap: !expr glue::glue("The forest's RMSE against another model's in each of the 1,000 bootstrap samples of sites. Points below the dashed diagonal are samples in which the forest scored better. Against predicting the average, it did in {pct(vs_average[[5]])} of samples. Against Poisson regression the points hug the diagonal, as the two scores rise and fall together, and the forest did better in {pct(vs_poisson[[5]])}.")
-#| fig-alt: !expr glue::glue("Two square scatter plots side by side, each with a dashed diagonal line. Each has 1,000 points, one per bootstrap sample, with the forest's RMSE on the vertical axis. In the left panel the horizontal axis is the RMSE of predicting the average; the points form a long cloud running from about {f2(min(scores[[1]]))} to {f2(max(scores[[1]]))} along it, almost all of them below the diagonal. In the right panel the horizontal axis is the RMSE of Poisson regression; the points form a long, narrow band lying along the diagonal, most of them just below it and some just above.")
+#| fig-cap: !expr glue::glue("The forest's RMSE against another model's in each of the 1,000 bootstrap samples of sites. Points below the dashed diagonal are samples in which the forest scored better. Against predicting the average, it did in {pct(vs_average[[5]])} of samples. Against linear regression the points hug the diagonal, as the two scores rise and fall together, and the forest did better in {pct(vs_linear[[5]])}.")
+#| fig-alt: !expr glue::glue("Two square scatter plots side by side, each with a dashed diagonal line. Each has 1,000 points, one per bootstrap sample, with the forest's RMSE on the vertical axis. In the left panel the horizontal axis is the RMSE of predicting the average; the points form a long cloud running from about {f2(min(scores[[1]]))} to {f2(max(scores[[1]]))} along it, almost all of them below the diagonal. In the right panel the horizontal axis is the RMSE of linear regression; the points form a long, narrow band lying along the diagonal, most of them just below it and some just above.")
 #| fig-width: 8
 #| fig-height: 4.6
 paired_scores <- scores |>
-  pivot_longer(c(`Predicting the average`, `Poisson regression`),
+  pivot_longer(c(`Predicting the average`, `Linear regression`),
                names_to = "other", values_to = "other_rmse") |>
-  mutate(other = str_replace(other, "^Predicting", "predicting"),
+  mutate(other = str_to_lower(other),
          other = fct_inorder(paste("Against", other)),
          better = if_else(`Random forest` < other_rmse,
                           "Forest lower", "Forest higher"))
@@ -371,25 +371,26 @@ with a paired 95% interval from `r signed(vs_average$lower)` to `r signed(vs_ave
 The interval lies clear of zero, and the forest scored better in
 `r pct(vs_average[[5]])` of the samples, although the two models' own intervals overlap.
 
-Against Poisson regression the paired interval runs from `r signed(vs_poisson$lower)` to
-`r signed(vs_poisson$upper)`. At `r f2(paired_width)` wide, against
+Against linear regression the paired interval runs from `r signed(vs_linear$lower)` to
+`r signed(vs_linear$upper)`. At `r f2(paired_width)` wide, against
 `r f2(min(intervals$width))` for the narrowest of the models' own intervals, it is far
 sharper, because the two scores move almost in step (their correlation across the samples
 is `r f2(together)`). It still covers zero. The forest
-did better in `r pct(vs_poisson[[5]])` of the samples, so the order on
+did better in `r pct(vs_linear[[5]])` of the samples, so the order on
 [Regression performance measures](regression-metrics.qmd) is not stable: on this survey,
-RMSE cannot tell the forest from Poisson regression.
+RMSE cannot tell the forest from linear regression.
 
 ## Overlapping intervals do not show that two models are alike
 
 Report each score with its interval and the number of sites behind it. Compare two models by
 their paired difference, never by whether their own intervals overlap: here every interval
 overlapped the others, and the forest still beat predicting the average in nearly every
-sample. A lead that holds in `r pct(vs_poisson[[5]])` of samples is not yet a result. For a method with
+sample. A lead that holds in `r pct(vs_linear[[5]])` of samples is not yet a result. For a method with
 random choices in the fit, a difference must also be larger than the spread from one run to
 the next, which
 [Reproducibility and transparent reporting](../10-interpretation/reproducibility.qmd)
-measures by changing the seed.
+measures by changing the seed. The Python tab shows why: its forest, grown from other
+random draws, beats linear regression in nearly every sample.
 
 ## Key points
 
@@ -397,20 +398,20 @@ measures by changing the seed.
 - A cross-validated score comes from one survey, and would move if other sites had been
   sampled. Here each model's 95% interval was `r f2(min(intervals$width))` to
   `r f2(max(intervals$width))` wide.
-- A **bootstrap of the sites** over the pooled out-of-fold predictions gives that interval
+- A bootstrap of the sites over the pooled out-of-fold predictions gives that interval
   without refitting. It holds the fitted models fixed.
 - Two models are compared by a **paired comparison**: the difference in score within each
   bootstrap sample, on the same folds. What the two share cancels, so the paired interval
   is much narrower than either model's own.
 - The forest beat predicting the average in `r pct(vs_average[[5]])` of samples, although
-  their own intervals overlapped. It beat Poisson regression in only
-  `r pct(vs_poisson[[5]])`, and the paired interval covered zero.
+  their own intervals overlapped. It beat linear regression in only
+  `r pct(vs_linear[[5]])`, and the paired interval covered zero.
 :::
 
 ## Try it yourself
 
 1. Score the models with the MAE (`mae_vec()`) instead of the RMSE. Can the forest and
-   Poisson regression be told apart now?
+   linear regression be told apart now?
 2. Draw single stations instead of whole sites (`bootstraps()` in place of
    `group_bootstraps()`). How much narrower do the intervals become, and why are they
    too narrow?

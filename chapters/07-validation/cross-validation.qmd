@@ -10,19 +10,20 @@ categories: [validation]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## The folds that choose a model cannot also score it
 
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
 tree's node size by cross-validation by site, and noted that the winner's error was a
-little flattering, being the lowest of 12. With 12 candidates the flattery is small. With
-a hundred, it can make a model padded with pure noise look like the best on offer.
+little flattering, being the lowest of 12. With a hundred candidates, the winner can
+carry columns of pure noise.
 This page shows how to report a cross-validated score honestly: how many folds to use, how
 to turn them into one number, and how to score a model when the same folds also chose it.
 The last matters most when a survey is too small to set test sites aside, which is common
@@ -76,9 +77,9 @@ nested score is the best guess at how it will do on new sites.
 
 ## Worked example
 
-The model is Poisson regression from
-[Regression for counts](../03-supervised-learning/count-regression.qmd), with each input
-entered as a straight line. Nested cross-validation needs no test sites, so this page uses
+The model is linear regression from
+[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
+quick enough to fit thousands of times. Nested cross-validation needs no test sites, so this page uses
 all the survey's sites. Every fold holds whole sites, as in
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
 
@@ -99,16 +100,16 @@ survey <- load_coastal_survey_clean()
 inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
             "substrate", "season", "longitude", "latitude")
 
-# Poisson regression on any set of inputs, with gaps filled inside each round
-poisson_on <- function(vars, data) {
+# linear regression on any set of inputs, with gaps filled inside each round
+linear_on <- function(vars, data) {
   recipe(reformulate(vars, "abundance"), data = data) |>
     step_impute_median(all_numeric_predictors()) |>
     step_dummy(all_nominal_predictors()) |>
-    workflow(poisson_reg())
+    workflow(linear_reg())
 }
 
 cross_validate <- function(vars, data, folds) {
-  fit_resamples(poisson_on(vars, data), folds, metrics = metric_set(rmse),
+  fit_resamples(linear_on(vars, data), folds, metrics = metric_set(rmse),
                 control = control_resamples(save_pred = TRUE))
 }
 
@@ -127,11 +128,11 @@ import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import PoissonRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupKFold, LeaveOneGroupOut, cross_val_predict
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
@@ -142,24 +143,21 @@ inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
           "substrate", "season", "longitude", "latitude"]
 categorical = ["substrate", "season"]
 
-# Poisson regression on any set of inputs, with gaps filled inside each round
-def poisson_on(columns):
+# linear regression on any set of inputs, with gaps filled inside each round
+def linear_on(columns):
     numeric = [c for c in columns if c not in categorical]
     nominal = [c for c in columns if c in categorical]
     steps = [
-        # scaling leaves an unpenalised fit unchanged and helps the solver
-        ("numeric", Pipeline([("impute", SimpleImputer(strategy="median")),
-                              ("scale", StandardScaler())]), numeric),
+        ("numeric", SimpleImputer(strategy="median"), numeric),
         ("nominal", OneHotEncoder(drop="first", sparse_output=False), nominal),
     ]
     # a candidate may have no numeric or no categorical inputs
     recipe = ColumnTransformer([step for step in steps if step[2]])
-    return Pipeline([("recipe", recipe),
-                     ("model", PoissonRegressor(alpha=0, max_iter=1000))])
+    return Pipeline([("recipe", recipe), ("model", LinearRegression())])
 
 # one RMSE from every station's out-of-fold prediction
 def pooled_rmse(columns, data, folds, groups):
-    predicted = cross_val_predict(poisson_on(columns), data[columns],
+    predicted = cross_val_predict(linear_on(columns), data[columns],
                                   data["abundance"], cv=folds, groups=groups)
     return root_mean_squared_error(data["abundance"], predicted)
 
@@ -179,7 +177,7 @@ in_words <- function(n) {
 n_sites <- n_distinct(survey$site_id)
 ```
 
-### Five or ten folds are enough
+### Only the average of the folds' RMSEs moves with the number of folds
 
 The eight inputs are cross-validated with 2, 5, 10 and 20 folds of sites, each ten times
 with the sites dealt into new folds, and once with every site a fold of its own
@@ -224,7 +222,7 @@ def pooled_and_averaged(folds):
     predicted = np.empty(len(survey))
     fold_rmse = []
     for fit_rows, new_rows in folds.split(survey, groups=sites):
-        fitted = poisson_on(inputs).fit(survey.iloc[fit_rows][inputs],
+        fitted = linear_on(inputs).fit(survey.iloc[fit_rows][inputs],
                                         observed[fit_rows])
         predicted[new_rows] = fitted.predict(survey.iloc[new_rows][inputs])
         fold_rmse.append(root_mean_squared_error(observed[new_rows],
@@ -256,15 +254,15 @@ at <- function(v, col) by_folds[[col]][by_folds$folds == v]
 gap_one_site <- at(n_sites, "pooled") - at(n_sites, "averaged")
 ```
 
-**Two folds are a little pessimistic.** Each round fits to half the sites, and a model fitted
-to half the data predicts worse than one fitted to most of it: its pooled RMSE is
-`r f2(at(2, "pooled"))`. From five folds on, the pooled score barely moves:
-`r f2(at(5, "pooled"))` with five folds, `r f2(at(10, "pooled"))` with ten,
-`r f2(at(20, "pooled"))` with twenty and `r f2(at(n_sites, "pooled"))` with every site
-on its own. More folds only add fitting. Five or ten folds are the usual choice, and ten
-is cheap at this size.
+The pooled score barely moves. With two folds it is `r f2(at(2, "pooled"))`, a little
+higher, because each round fits to only half the sites. From five folds on it stays
+close to `r f2(at(10, "pooled"))`: `r f2(at(5, "pooled"))` with five folds,
+`r f2(at(10, "pooled"))` with ten, `r f2(at(20, "pooled"))` with twenty and
+`r f2(at(n_sites, "pooled"))` with every site on its own. So the five or ten folds of
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) are enough;
+more only add fitting.
 
-**The average of the folds' RMSEs drifts down as the folds get smaller,** from
+The average of the folds' RMSEs drifts down as the folds get smaller, from
 `r f2(at(2, "averaged"))` with two folds to `r f2(at(n_sites, "averaged"))` with one site
 per fold, `r f2(gap_one_site)` below the pooled score. The model did not change; only the
 bookkeeping did. A score that depends on the number of folds cannot be compared across
@@ -273,7 +271,7 @@ studies, which is why the rest of this section pools.
 ### A search over 100 sets of inputs picks noise
 
 Twenty columns of random numbers, `noise_1` to `noise_20`, are added to the survey. They
-carry no information about the catch. A search then draws 100 candidates, each Poisson
+carry no information about the catch. A search then draws 100 candidates, each linear
 regression on five of the 28 columns, and scores every candidate by ten-fold
 cross-validation by site.
 
@@ -339,13 +337,13 @@ real_sentence <- if (length(winner_real) > 0) {
 The winner scores `r f2(min(searched))`, the lowest of the 100, and
 `r in_words(winner_noise)` of its five columns are noise.
 `r real_sentence`
-A study that searched this way would report `r f2(min(searched))` as the model's error on
-new sites.
+How much of its lead over the median candidate, `r f2(median(searched))`, is luck is
+what the next part measures.
 
-### Nested cross-validation shows what the search is worth
+### Linear regression on the eight inputs beats the search's choice
 
 The search is now run inside an outer five-fold cross-validation by site, with five inner
-folds. For comparison, Poisson regression on the eight measured inputs, with no search, is
+folds. For comparison, linear regression on the eight measured inputs, with no search, is
 fitted and scored on the same outer folds.
 
 ::: {.panel-tabset group="language"}
@@ -365,7 +363,7 @@ nested <- map(outer$splits, \(s) {
                         \(vars) pooled_rmse(cross_validate(vars, fitting, inner)))
   chosen <- candidates[[which.min(inner_rmse)]]
   predict_held <- function(vars) {
-    predict(fit(poisson_on(vars, fitting), fitting), held)$.pred
+    predict(fit(linear_on(vars, fitting), fitting), held)$.pred
   }
   tibble(abundance = held$abundance,
          claimed = min(inner_rmse),
@@ -398,7 +396,7 @@ for k, (fit_rows, held_rows) in enumerate(outer.split(noisy, groups=sites), star
     chosen = candidates[inner_rmse.argmin()]
 
     def predict_held(columns):
-        fitted = poisson_on(columns).fit(fitting[columns], fitting["abundance"])
+        fitted = linear_on(columns).fit(fitting[columns], fitting["abundance"])
         return fitted.predict(held[columns])
 
     rounds.append(pd.DataFrame({
@@ -451,8 +449,8 @@ wins_words <- if (eight_wins == 5) "all five" else paste(in_words(eight_wins), "
 
 ```{r}
 #| label: fig-nested
-#| fig-cap: "Each outer fold of the nested cross-validation: the error the search claimed for its choice on the inner folds, the error of that choice on the outer fold, and the error of Poisson regression on the eight measured inputs, with no search, on the same outer fold."
-#| fig-alt: !expr glue::glue("A dot plot with the five outer folds down the side and RMSE in individuals along the bottom. Each fold has three points. The search's claimed errors average {f2(claimed_mean)}. On the outer folds the search's choice lands to the right of its claim in {sum(per_fold$searched > per_fold$claimed)} of the five folds, and the model on the eight inputs lands to the left of the search's choice in {wins_words}.")
+#| fig-cap: "Each outer fold of the nested cross-validation: the error the search claimed for its choice on the inner folds, the error of that choice on the outer fold, and the error of linear regression on the eight measured inputs, with no search, on the same outer fold."
+#| fig-alt: !expr glue::glue("A dot plot with the five outer folds down the side and RMSE in individuals along the bottom. Each fold has three points. The search's claimed errors average {f2(claimed_mean)}. On the outer folds the search's choice lands to the right of its claim in {in_words(sum(per_fold$searched > per_fold$claimed))} of the five folds, and the model on the eight inputs lands to the left of the search's choice in {wins_words}.")
 #| fig-width: 7
 #| fig-height: 3.8
 per_fold |>
@@ -467,7 +465,8 @@ per_fold |>
   scale_colour_manual(values = unname(ml_palette[c("grey", "vermilion", "blue")])) +
   scale_shape_manual(values = c(1, 16, 16)) +
   labs(x = "RMSE (individuals)", y = "Outer fold", colour = NULL, shape = NULL,
-       title = "Eight inputs with no search beat the search's choice") +
+       title = paste("Eight inputs with no search beat the search's choice in",
+                     wins_words, "folds")) +
   guides(colour = guide_legend(ncol = 1)) +
   theme(legend.position = "bottom")
 ```
@@ -475,16 +474,22 @@ per_fold |>
 :::
 
 The search claimed an average error of `r f2(claimed_mean)` on its inner folds. Pooled
-over the outer folds, the models it chose score **`r f2(nested_searched)`**: that is the
-nested score, `r f2(nested_searched - claimed_mean)` worse than claimed, and the honest
-figure for a model found by this search. `r noise_rounds` On a single outer fold the
-choice can do better than claimed, because some folds hold sites that are easier to
-predict; pooled over all five, it does worse.
+over the outer folds, the models it chose score `r f2(nested_searched)`: that is the
+nested score, and the honest figure for a model found by this search. On a single outer
+fold the choice can do better than claimed, because some folds hold sites that are easier
+to predict; pooled over all five, it does `r f2(nested_searched - claimed_mean)` worse.
+That is a small gap: with `r nrow(survey)` stations and a model as simple as linear
+regression, luck moves the scores little.
 
-Poisson regression on the eight measured inputs, with no search at all, scores
-`r f2(nested_eight)` on the same outer folds, and beats the search's choice in
-`r wins_words`. The search did not find a better model; it found the candidates that
-suited its folds best.
+The search still did harm. `r noise_rounds` Linear regression on the eight
+measured inputs, with no search at all, scores `r f2(nested_eight)` on the same outer
+folds, and beats the search's choice in `r wins_words`. The search did not find a better
+model; it found the candidates that suited its folds best.
+
+Selection optimism grows with the number of candidates and with how flexible the models
+are, and shrinks with the number of sites. A search over many settings of a flexible
+model on a few dozen sites can flatter its winner badly, and only a nested score shows
+by how much.
 
 ## Key points
 
@@ -492,14 +497,14 @@ suited its folds best.
 - Each station's **out-of-fold prediction** comes from the model fitted without its site.
   The **pooled score** is one RMSE over all of them; unlike the average of the folds'
   RMSEs, it does not drift with the number of folds.
-- **Five or ten folds are enough.** Two fit to too little of the data; more than ten only
-  add fitting.
+- Five or ten folds are enough: the pooled score barely moved beyond them.
 - The winner of a search has the lowest of many scores, and part of its lead is luck:
-  **selection optimism**. Here a search over 100 sets of inputs chose noise columns and
-  claimed `r f2(claimed_mean)`.
+  **selection optimism**. It grows with more candidates, more flexible models and fewer
+  sites. Here a search over 100 sets of inputs kept noise columns in every round.
 - **Nested cross-validation** runs the whole search inside each outer round and scores
-  its choice on the outer fold. It put the search at `r f2(nested_searched)`, behind the
-  eight measured inputs with no search (`r f2(nested_eight)`).
+  its choice on the outer fold. It put the search at `r f2(nested_searched)`, a little
+  worse than claimed and behind the eight measured inputs with no search
+  (`r f2(nested_eight)`).
 - Report the nested score, not the winner's. The final model, refitted to all the data,
   has no score of its own.
 :::
@@ -510,3 +515,5 @@ suited its folds best.
    it, and how far does the nested score move?
 2. Draw 1,000 candidates instead of 100. Does the winner's claimed score fall, and does
    the nested score follow it?
+3. Run the search and the nested cross-validation on 40 sites drawn at random. Predict
+   first: does the gap between the claimed and the nested score grow?

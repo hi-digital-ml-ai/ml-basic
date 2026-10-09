@@ -15,21 +15,22 @@ toc: false
 
 A score is a claim about the future: roughly how well a model will predict data it has not
 seen. This section asks what such a score can claim and what it should measure, on the
-same simulated survey as the rest of the course.
-The first two pages cover the folds:
+same simulated survey as the rest of the course, with linear regression, logistic
+regression and the random forest as the models. The first two pages cover the folds:
 
 - **cross-validation**: five or ten folds of sites are enough, their out-of-fold
   predictions are pooled into one score, and nested cross-validation scores a search for
   the best model as well as the model it picks;
 - **spatial and temporal cross-validation**: a score says how well a model predicts
-  stations as far from its fitted data as the held-out ones were, so blocks as wide as the
-  patches in its errors test new areas, and a forecast is tested on later years.
+  stations as far from its fitted data as the held-out ones were, so blocks at least as
+  wide as the distance over which its errors stay linked test new areas, and a forecast
+  is tested on later years.
 
 The next two cover the measures:
 
-- **regression performance measures**: RMSE, MAE, the Poisson deviance and R² weigh misses
-  their own way and can choose different models, and the squared correlation often
-  reported as R² cannot see predictions that run low;
+- **regression performance measures**: RMSE, MAE and R² weigh errors their own way and
+  can choose different models, and the squared correlation that software often reports
+  as R² cannot see predictions that run low;
 - **classification performance measures**: presence can be scored on the calls at one
   threshold, on how well the probabilities rank the stations, or on the probabilities
   themselves.
@@ -47,9 +48,9 @@ The section picks up threads from earlier ones.
 setting by cross-validation by site; [Cross-validation](cross-validation.qmd) shows that
 the folds that choose a model cannot also score it.
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd)
-found that neighbouring sites share part of what a model misses, and
-[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) holds out spatial
-blocks and sets their width from the model's errors.
+found that a model's errors stay linked within a site more than between neighbours;
+[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) measures how far the
+link reaches and holds out blocks at least that wide.
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
 showed that each loss aims at a different middle of the data;
 [Regression performance measures](regression-metrics.qmd) shows what that does to the
