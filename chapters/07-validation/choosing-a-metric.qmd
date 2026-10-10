@@ -457,6 +457,8 @@ a sentence a reader can check, and one that lets someone with other costs reuse 
 Every measure in this section compares predictions with what the survey recorded. If the
 records themselves are biased, by the gear, the observers or where the effort went, a model
 that matches them well matches the bias too, and no measure can show it.
+[From a model to a claim](../10-interpretation/from-model-to-claim.qmd) shows such a gear
+on the survey.
 
 ## Key points
 
