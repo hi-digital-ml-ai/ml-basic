@@ -36,10 +36,13 @@ exports <- list(
     write(with(env, comparison), dir, "comparison")
   },
 
-  # Scenes 17-20: the GAM's two intervals, the forest's conformal interval at the
-  # test sites, and the same forest calibrated on low chlorophyll.
+  # Scenes 17-20: the forest's two intervals at the test sites, its conformal
+  # interval, and the same forest calibrated on low chlorophyll, beside a quantile
+  # forest fitted to the same sites.
   "communicating-uncertainty.qmd" = function(env, dir) {
-    write(with(env, gam_summary), dir, "gam-intervals")
+    write(with(env, dplyr::summarise(two_intervals, coverage = mean(inside),
+                                     width = mean(high - low), .by = interval)),
+          dir, "two-intervals")
     write(with(env, tibble::tibble(coverage = mean(conformal$inside),
                                    width = 2 * half_width)), dir, "conformal")
     write(with(env, dplyr::summarise(shifted, coverage = mean(inside),
@@ -53,9 +56,12 @@ exports <- list(
                                    folds = by_folds)), dir, "spread")
   },
 
-  # Scenes 24-25: rock's multiplier and the cross-validated RMSE, as recorded and
-  # with half the animals on rock missed.
+  # Scenes 24-25: the forest report as recorded and with half the animals on mud
+  # missed: the cross-validated RMSE against the average, folds better, coverage and
+  # mud's ratio to sand across the fold models.
   "from-model-to-claim.qmd" = function(env, dir) {
-    write(with(env, gear), dir, "gear")
+    write(with(env, dplyr::bind_rows("As recorded" = summary_of(recorded),
+                                     "Half missed on mud" = summary_of(missed),
+                                     .id = "records")), dir, "gear")
   }
 )

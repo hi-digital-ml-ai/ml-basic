@@ -17,6 +17,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Partial effects draw how a prediction changes along one input
 
 [Feature importance](feature-importance.qmd) says how much a model relies on an input,
@@ -392,7 +394,9 @@ shows where the hump lies; how large it is depends on the station.
 
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
 traced the depth curve to position: the shelf deepens offshore, so depth carries an
-effect that belongs to something about position. A second forest is given longitude
+effect that belongs to something about position, a
+[confounder](../01-introduction/prediction-and-explanation.qmd#depth-confounds-the-salinity-slope).
+A second forest is given longitude
 and latitude as well, and both are scored on the test sites.
 
 ::: {.panel-tabset group="language"}

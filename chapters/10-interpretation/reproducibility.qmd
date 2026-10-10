@@ -16,6 +16,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## A re-run should give the same numbers
 
 An analysis is **reproducible** when someone else, given the same data and the same code,
@@ -36,7 +38,8 @@ A machine-learning analysis draws random numbers at several steps:
 - the **split**, which sites are held out to test the model;
 - the **folds** of cross-validation, which sites go into each fold;
 - the **model's own random choices**: a random forest draws stations and inputs for each
-  tree, and a neural network starts from random weights;
+  tree, and a neural network starts from random weights, as in
+  [Training a network](../09-neural-networks/training-a-network.qmd);
 - the shuffles that measure each input's score in
   [Feature importance](feature-importance.qmd).
 

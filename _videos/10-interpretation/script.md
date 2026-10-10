@@ -16,9 +16,9 @@ section's pages. No section numbers anywhere in the video: other sections are na
 This video is an overview built on three ideas, each with one example: test what a
 model relies on against random numbers and on more than one split (feature importance,
 with partial dependence and the GAM for the shape), name an interval and check its
-coverage (the GAM's two intervals, then a conformal interval that lapses at new kinds
-of station), and a score cannot check the records (the gear that misses animals on
-rock). The quiz is the reproducibility page's seed against split. The depth curve that
+coverage (the forest's two intervals, then a conformal interval that lapses at new
+kinds of station), and a score cannot check the records (the gear that misses animals
+on mud, in the forest report of From a model to a claim). The quiz is the reproducibility page's seed against split. The depth curve that
 follows position is left to the pages: the assumptions video already tells it. The
 truth of the simulation is never shown; every check here is one a real study can make.
 -->
@@ -137,30 +137,32 @@ To check an interval, count how many catches at new sites fall inside it. That s
 is its coverage.
 
 ## Scene 17
-visual: manim CoverageBars: the GAM's two intervals, width and coverage at the test sites (page results, communicating-uncertainty.qmd#fig-gam-intervals)
+visual: manim CoverageBars: the forest's two intervals, width and coverage at the test sites (page results, communicating-uncertainty.qmd#fig-two-intervals)
 
-The GAM's interval for the average, 2.5 animals wide, held 20 per cent of the catches
-at the test sites. Its interval for a new catch, 11.6 wide, held 96 per cent. Quote
-the narrow one as a range for the next catch, and it is wrong four times in five.
+A random forest refitted on resampled sites gives an interval for the average. It was
+2.8 animals wide, and held 24 per cent of the catches at the test sites. A quantile
+forest, which keeps every catch in its leaves, gives an interval for a new catch. It
+was 11.6 wide, and held 92 per cent. Quote the narrow one as a range for the next
+catch, and it is wrong about three times in four.
 
 ## Scene 18
-visual: manim Conformal: a forest's errors on calibration sites, sorted; the ninth in ten marked and turned into a half-width either side of a prediction (schematic)
+visual: manim Conformal: a model's errors on calibration sites, sorted; the ninth in ten marked and turned into a half-width either side of a prediction (schematic)
 
-A random forest gives no interval of its own. Conformal prediction makes one: measure
-its errors on calibration sites, held back from fitting, and reach as far either side
-as nine errors in ten.
+Conformal prediction gives any model an interval, from its errors alone. Measure the
+errors on calibration sites, held back from fitting, and reach as far either side as
+nine errors in ten.
 
 ## Scene 19
-visual: manim Conformal: "held 90% at the test sites", 12.6 animals wide (page results, communicating-uncertainty.qmd)
+visual: manim Conformal: the forest's conformal interval, its coverage at the test sites against the 90% promised, and its width (page results, communicating-uncertainty.qmd)
 
-At the test sites, the forest's interval held 90 per cent of the catches, just as
-promised, from a model with no distribution at all.
+At the test sites, the forest's conformal interval held 89 per cent of the catches,
+close to the 90 promised, with nothing but the model's errors to go on.
 
 ## Scene 20
-visual: manim Shift: calibrated on stations with little chlorophyll, used where it is highest; coverage 90% there, 73% here, the same label and width (page results, communicating-uncertainty.qmd#fig-shift)
+visual: manim Shift: calibrated on stations with little chlorophyll, used where it is highest; coverage at test sites like the calibration ones, then where chlorophyll is highest, the same label and width (page results, communicating-uncertainty.qmd#fig-shift)
 
 Now calibrate it on stations with little chlorophyll, and use it where chlorophyll is
-highest. It holds only 73 per cent, under the same label and at the same width.
+highest. It holds only 82 per cent, under the same label and at the same width.
 Nothing in the interval says its promise has lapsed.
 
 ## Scene 21
@@ -172,30 +174,31 @@ Key point two. Name the interval you quote, and check its coverage at new sites.
 # What a good score cannot check
 
 ## Scene 22
-visual: manim Gear: a grab on sand and on rock; on rock, half the animals slip past it (schematic)
+visual: manim Gear: patches of sand and mud with their animals; on mud, half the animals are missed (schematic)
 
 A model learns from the records, and the records come from a gear. Grabs and dredges
-often catch fewer animals on hard ground.
+catch different shares of the animals on different ground.
 
 ## Scene 23
-visual: manim Gear: the survey's records on rock halved, everything else unchanged; "the same analysis, the same folds" (schematic)
+visual: manim Gear: the survey's records on mud halved, everything else unchanged; "the same report, the same folds" (schematic)
 
-Suppose the survey's gear missed half the animals on rock, and run the whole analysis
+Suppose the survey's gear missed half the animals on mud, and run the whole report
 again, on the same folds.
 
 ## Scene 24
-visual: manim Multiplier: rock's multiplier against sand with its interval, as recorded across 1, then with the biased records well below it (page results, from-model-to-claim.qmd)
+visual: manim Ratio: mud's ratio to sand across the ten fold models, as recorded above 1, then with the biased records below it (page results, from-model-to-claim.qmd)
 
-As recorded, the GAM could not tell rock from sand: its multiplier of 0.80 had an
-interval from 0.59 to 1.09, which includes one. With the biased records it is 0.45,
-from 0.32 to 0.63, and a study would report half as many animals on rock. The change
-is the gear's, not the species'.
+As recorded, the forest predicted more animals on mud than on sand: 1.10 to 1.16 times
+as many, across the ten folds. With half missed on mud, every fold put mud below sand,
+at 0.90 to 0.95, and a study would report fewer animals on mud. The change is the
+gear's, not the species'.
 
 ## Scene 25
-visual: manim Multiplier: the cross-validated RMSE as recorded and with the biased records, the second lower (page results, from-model-to-claim.qmd)
+visual: manim Ratio: the forest's cross-validated RMSE as recorded and with the biased records, the second lower; then "better than the average on 9 of 10 folds" and "intervals held 95%" for both (page results, from-model-to-claim.qmd)
 
-The score did not warn. The cross-validated RMSE improved, from 4.34 to 4.27. Every
-fold carries the same bias, so the model matches the records as well as ever.
+The score did not warn. The forest's cross-validated RMSE fell, from 4.41 to 3.86. It
+still beat the average on nine folds of ten, and its intervals still held 95 per cent.
+Every fold carries the same bias, so the model matches the records as well as ever.
 
 ## Scene 26
 visual: manim Outside: three cards, two gears on the same ground, another way of counting (video, divers), the gear and effort reported (schematic)

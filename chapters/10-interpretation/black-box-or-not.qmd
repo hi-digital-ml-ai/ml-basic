@@ -11,18 +11,19 @@ categories: [interpretation, metrics]
 library(tidymodels)
 library(tidyverse)
 library(patchwork)
-library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Some models can be read from their parts
 
-An **interpretable model** is one whose fitted parts can be read directly. Poisson
-regression gives each input a multiplier; a GAM, below, gives each input a curve; a
-small tree gives a few questions. A **black box**, such as a
+An **interpretable model** is one whose fitted parts can be read directly. Linear
+regression gives each input a slope; a GAM, below, gives each input a curve; a small
+tree gives a few questions. A **black box**, such as a
 random forest of 500 trees, boosting or a neural network, predicts well but has no part
 that means anything alone. It is read from outside instead, with
 [Feature importance](feature-importance.qmd) and [Partial effects](partial-effects.qmd).
@@ -57,9 +58,8 @@ stops the curve chasing the noise; its weight is chosen from the data.
 Whether a readable model costs accuracy is a question for the data, and cross-validation
 answers it. Every model is scored on the same folds, built from whole sites as in
 [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd),
-so a hard fold is hard for all of them and the scores can be compared fold by fold,
-the **paired comparison** of
-[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd).
+so a hard fold is hard for all of them and the scores can be compared fold by fold, a
+[paired comparison](../07-validation/uncertainty-and-stability.qmd).
 
 ::: {.diagram}
 ![Two ways to read a model, and one way to score it. An interpretable model is read from its parts, curves and levels that add up to the prediction. A black box is probed from outside by changing its inputs and watching the prediction. Both are scored on the same held-out sites.](img/reading-a-model.svg){fig-alt="Three cards. Read the parts, an interpretable model: three small plots, a humped curve for input A, a falling line for input B and three bars for the levels of input C, joined by plus signs, equal the prediction. Probe from outside, a black box: a dark box labelled 500 trees with inputs A, B and C as arrows going in; the arrow for A is orange and marked change, and an orange arrow coming out is marked watch; the text says importance and partial dependence do this. Score both, the same held-out sites: a row of ten blocks with one green block marked held-out sites, and below it two bars of nearly equal length for the interpretable model and the black box, marked error on new sites. A note says that however a model is read, it shows what the model learned, and the data decide how far that describes the species."}
@@ -67,20 +67,19 @@ the **paired comparison** of
 
 ## Worked example
 
-Four models are scored by ten-fold cross-validation by site on the whole survey, with
+Three models are scored by ten-fold cross-validation by site on the whole survey, with
 the inputs of [Regression for counts](../03-supervised-learning/count-regression.qmd).
-Two are interpretable: Poisson regression, with a straight line for each input on the
-log scale, and a GAM, with a curve for depth and temperature. Two are black boxes: the
-random forest of [Partial effects](partial-effects.qmd), and boosting with the
+One is interpretable: a GAM, with a curve for depth and temperature. Two are black
+boxes: the random forest of [Partial effects](partial-effects.qmd), and boosting with the
 settings of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
 Predicting the average is the baseline. The GAM is then fitted to every station and
 read.
 
 ### Preparing the data
 
-The GAM here uses the negative binomial, which
-[Regression for counts](../03-supervised-learning/count-regression.qmd) showed gives
-honest intervals when counts spread more than Poisson expects.
+The GAM here uses the negative binomial of
+[Regression for counts](../03-supervised-learning/count-regression.qmd), which suits
+counts that spread more than Poisson expects.
 
 ::: {.panel-tabset group="language"}
 
@@ -113,7 +112,6 @@ gam_model <- gen_additive_mod() |>
 models <- list(
   "Predicting the average" =
     workflow(number_recipe, null_model(mode = "regression")),
-  "Poisson regression" = workflow(count_recipe, poisson_reg()),
   "GAM" = workflow(count_recipe) |>
     add_model(gam_model, formula = smooth_terms),
   "Random forest" = workflow(count_recipe,
@@ -188,8 +186,6 @@ gam = GridSearchCV(
 
 models = {
     "Predicting the average": with_recipe(DummyRegressor()),
-    "Poisson regression": with_recipe(PoissonRegressor(alpha=0,
-                                                       max_iter=1000)),
     "GAM": gam,
     # max_features and min_samples_leaf match ranger's defaults
     "Random forest": with_recipe(RandomForestRegressor(
@@ -226,8 +222,7 @@ scores <- imap(models, \(model, name) {
 }) |>
   list_rbind()
 
-kind <- c("Predicting the average" = "Baseline",
-          "Poisson regression" = "Interpretable", "GAM" = "Interpretable",
+kind <- c("Predicting the average" = "Baseline", "GAM" = "Interpretable",
           "Random forest" = "Black box", "Boosting" = "Black box")
 
 # each fold's RMSE beside the average's and the GAM's on the same fold
@@ -264,8 +259,7 @@ for fold, (fit_rows, held_rows) in enumerate(folds, start=1):
 by_fold = pd.DataFrame(rows).pivot(index="fold", columns="model",
                                    values="rmse")[list(models)]
 
-kind = {"Predicting the average": "Baseline",
-        "Poisson regression": "Interpretable", "GAM": "Interpretable",
+kind = {"Predicting the average": "Baseline", "GAM": "Interpretable",
         "Random forest": "Black box", "Boosting": "Black box"}
 
 pd.DataFrame({
@@ -296,7 +290,7 @@ The GAM, an interpretable model, has the lowest RMSE on new sites,
 forest and `r two(average_score$RMSE)` for predicting the average. Fold by fold the
 forest beats it on only `r forest_score[["Folds better than the GAM"]]` of the 10
 folds, and boosting on `r boost_score[["Folds better than the GAM"]]`. Boosting is
-the weakest of the four, at `r two(boost_score$RMSE)`; it is untuned here, and
+the weakest of the three, at `r two(boost_score$RMSE)`; it is untuned here, and
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) would
 narrow the gap.
 
@@ -451,71 +445,19 @@ highest in the shallowest water. It is flatter at the ends, as forests are where
 stations thin out. Two models that work in different ways agree, which says the shapes
 are in the data.
 
-The other inputs have one multiplier each, read as in
-[Regression for counts](../03-supervised-learning/count-regression.qmd).
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: multipliers
-multipliers <- tidy(extract_fit_engine(gam_fit), parametric = TRUE,
-                    conf.int = TRUE, exponentiate = TRUE) |>
-  filter(term != "(Intercept)") |>
-  transmute(term = str_replace(term, "^(substrate|season)", "\\1: "),
-            multiplier = estimate, conf_low = conf.low, conf_high = conf.high)
-
-multipliers |> mutate(across(where(is.numeric), \(x) round(x, 2)))
-```
-
-## Python
-
-```{python}
-# scikit-learn gives no intervals. Its chlorophyll and salinity were scaled,
-# so their coefficients are divided by the scale to give one unit's change.
-best = gam_fit.best_estimator_
-names = best["recipe"].get_feature_names_out()
-coefficients = pd.Series(best["model"].coef_, index=names)
-scale = best["recipe"].named_transformers_["numeric"]["scale"].scale_
-coefficients[["numeric__chlorophyll_mg_m3", "numeric__salinity_psu"]] /= scale
-
-kept = coefficients[~coefficients.index.str.contains("depth|temperature")]
-pd.DataFrame({
-    "term": kept.index.str.replace(r"^numeric__", "", regex=True)
-                .str.replace(r"^categorical__(substrate|season)_", r"\1: ",
-                             regex=True),
-    "multiplier": np.exp(kept).round(2).to_numpy(),
-})
-```
-
-:::
-
 ```{r}
 #| label: multiplier-numbers
 #| include: false
-term_of <- \(t) multipliers |> filter(term == t)
-mud <- term_of("substrate: mud")
-rock <- term_of("substrate: rock")
-summer <- term_of("season: summer")
-chlorophyll <- term_of("chlorophyll_mg_m3")
-salinity <- term_of("salinity_psu")
+# the GAM's multipliers for the levels, as in Regression for counts
+multiplier <- exp(coef(gam_engine))
 ```
 
-- **Substrate.** A muddy station is expected to hold `r two(mud$multiplier)` times
-  the count of a sandy one, with an interval from `r two(mud$conf_low)` to
-  `r two(mud$conf_high)`. Rock's interval, `r two(rock$conf_low)` to
-  `r two(rock$conf_high)`, includes 1: the data cannot tell rock from sand.
-- **Season.** Summer holds `r two(summer$multiplier)` times the count of spring.
-- **Chlorophyll.** Each extra mg/m³ multiplies the count by
-  `r two(chlorophyll$multiplier)`.
-- **Salinity.** Its interval, `r two(salinity$conf_low)` to
-  `r two(salinity$conf_high)`, includes 1, so the survey cannot say whether salinity
-  raises or lowers the count.
-
-Each multiplier comes with its interval, and an interval that includes 1 says plainly
-that the data cannot answer. Getting the same from a forest takes a partial dependence
-plot for every input, with no interval attached.
+The other inputs have one multiplier each, read as in
+[Regression for counts](../03-supervised-learning/count-regression.qmd): a muddy station
+is expected to hold `r two(multiplier[["substratemud"]])` times the count of a sandy
+one, and a summer station `r two(multiplier[["seasonsummer"]])` times the count of a
+spring one. Getting the same from a forest takes a partial dependence plot for every
+input.
 
 ## A black box earns its place where inputs work in combination
 
@@ -541,14 +483,13 @@ well ahead, it has found structure the readable one is missing.
 ## Key points
 
 ::: {.key-points}
-- An **interpretable model** is read from its parts: a GAM's curves, a Poisson
-  regression's multipliers. A **black box** is read from outside, with feature
-  importance and partial dependence.
+- An **interpretable model** is read from its parts, such as a GAM's curves and
+  multipliers. A **black box** is read from outside, with feature importance and
+  partial dependence.
 - Scored on the same folds of sites, the GAM predicted new sites as well as the
   random forest and better than boosting: on the survey, reading cost no accuracy.
-- The GAM's parts read as a habitat description, each with an interval: a
-  temperature peak in cool water, more animals on mud than on sand, and no answer on
-  salinity.
+- The GAM's parts read as a habitat description: a temperature peak in cool water,
+  more animals on mud than on sand and in summer than in spring.
 - The GAM and the forest drew the same shapes. Agreement says the shape is in the data,
   not that it is the species' response: both depth curves follow position.
 - A black box earns its place where inputs work in combination, where inputs are raw,

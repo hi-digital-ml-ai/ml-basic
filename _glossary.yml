@@ -806,12 +806,65 @@ terms:
     definition: "The mean squared difference between a row and its rebuilt version; the loss an autoencoder makes small, and large for rows unlike the training data."
     page: chapters/09-neural-networks/autoencoders.qmd
 
+  # 10 · Interpretation: Feature importance
+  - term: "Feature importance"
+    definition: "A score for each input of how much a fitted model relies on it; it says what the model uses, not the direction of an effect or its cause."
+    page: chapters/10-interpretation/feature-importance.qmd
+  - term: "Permutation importance"
+    definition: "The rise in a model's error on test data when one input is shuffled, so its values no longer belong to their rows; it works for any model."
+    page: chapters/10-interpretation/feature-importance.qmd
+  - term: "Impurity importance"
+    definition: "A random forest's built-in score: how much each input's splits lowered the error on the training data, summed over every tree; it favours inputs with many values."
+    page: chapters/10-interpretation/feature-importance.qmd
+
+  # 10 · Interpretation: Partial effects
+  - term: "Partial effect"
+    definition: "How a model's prediction changes along one input, drawn as a curve; it describes the model, and describes the species only where the data let that input vary on its own."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "Partial dependence plot"
+    definition: "A curve made by setting one input to the same value in every row, predicting each row and averaging, then repeating along the input's range; it works for any model."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "ICE curve"
+    definition: "Individual conditional expectation: one row's prediction as one input moves and the rest of the row stays as recorded; the partial dependence is their average."
+    page: chapters/10-interpretation/partial-effects.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
+  - term: "Interpretable model"
+    definition: "A model whose fitted parts can be read directly, such as a linear regression's slopes, a GAM's curves or a small tree's questions."
+    page: chapters/10-interpretation/black-box-or-not.qmd
+  - term: "Black box"
+    definition: "A model, such as a random forest, boosting or a neural network, with no part that means anything alone; it is read from outside, with feature importance and partial dependence."
+    page: chapters/10-interpretation/black-box-or-not.qmd
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
     page: chapters/10-interpretation/black-box-or-not.qmd
 
   # 10 · Interpretation: Communicating uncertainty
+  - term: "Prediction interval"
+    definition: "A range for one new observation, wider than an interval for the average because it adds the scatter of single observations; it stays wide however much data there is."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Coverage"
+    definition: "The share of new observations that fall inside their prediction intervals; a 90% interval should hold 9 in 10 at sites the model never saw."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Conformal prediction"
+    definition: "An interval for any model that reaches either side of a prediction as far as 90% of its errors on a calibration set; it holds at stations like the calibration ones."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Calibration set"
+    definition: "Data held out from fitting and testing, used to measure a model's errors and so set the width of a conformal interval."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
   - term: "Quantile forest"
     definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
     page: chapters/10-interpretation/communicating-uncertainty.qmd
+
+  # 10 · Interpretation: Reproducibility and transparent reporting
+  - term: "Reproducible"
+    definition: "Of an analysis that gives the same numbers when someone else runs it on the same data with the same code."
+    page: chapters/10-interpretation/reproducibility.qmd
+  - term: "Seed"
+    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly, though it does not show how far its numbers would move with other data."
+    page: chapters/10-interpretation/reproducibility.qmd
+
+  # 10 · Interpretation: From a model to a claim
+  - term: "Claim"
+    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found, how sure the finding is, and how far it reaches."
+    page: chapters/10-interpretation/from-model-to-claim.qmd

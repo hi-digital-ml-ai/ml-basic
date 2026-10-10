@@ -664,6 +664,25 @@ are, and the last two turn the analysis into a report.
   `SplineTransformer` with a ridge penalty, statsmodels' negative binomial for intervals,
   and boosting with a quantile loss for the quantile forest.
 
+**Second pass 2026-10-10** (`feature/revise-interpretation`): the same six pages, each
+with a new-terms box. Decisions agreed with the user:
+
+- *Black boxes and interpretable models* is trimmed to one interpretable model, the GAM,
+  scored against the forest and boosting on the same folds. Poisson regression and the
+  multiplier table go; mud and summer are one sentence, and paired comparison is linked.
+- *Communicating uncertainty* is rebuilt on the random forest: bootstrap refits of the
+  sites give the interval for the average, the quantile forest the interval for a new
+  catch, and conformal prediction any model's interval. The GAM, the negative binomial
+  and statsmodels leave the page.
+- *From a model to a claim* is a random forest report: the cross-validated score against
+  predicting the average, the inputs that beat three random columns on most folds,
+  partial-dependence shapes, and a 90% quantile-forest interval with its held-out
+  coverage, all in inline R. The gear bias moves from rock to **mud**, half the animals
+  missed; the rock version (55 stations) is the first Try it yourself exercise. The
+  Python tab uses `GradientBoostingRegressor(loss="quantile")` for the interval ends,
+  since `HistGradientBoostingRegressor` spent about 5 s per fit on threads with data
+  this small.
+
 ### Three findings the pages are built on
 
 - **No curve separates what the design confounds.** The simulation's depth peak is at 80 m;
@@ -675,8 +694,10 @@ are, and the last two turn the analysis into a report.
   new sites as well as the random forest and better than untuned boosting, and its curves
   match the forest's. A black box earns its place where inputs work in combination, inputs
   are raw, or prediction is the whole job.
-- **Observation bias defeats validation.** A gear that keeps half the animals on rock turns
-  "cannot tell" into a confident rock multiplier while the cross-validated RMSE improves.
+- **Observation bias defeats validation.** A gear that misses half the animals on mud
+  turns the forest's "mud holds 1.10–1.16 times as many as sand" into 0.90–0.95 on every
+  fold model, while the cross-validated RMSE falls from 4.41 to 3.86 and the intervals
+  still hold 95%.
   This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
   course says: checks on the records come from outside the model.
 
@@ -700,6 +721,8 @@ sites is the evidence an interval works.
 *new scalar*, silently collapsing every ribbon to its line. The same shadowing bit §7 and §8.
 Put derived columns before the column they are derived from, or rename. The revision
 met it again in `from-model-to-claim.qmd`, where a column `rock` shadowed a local `rock`.
+The rebuilt page computes `folds_better` before `forest_rmse = mean(forest_rmse)` for the
+same reason.
 
 ---
 

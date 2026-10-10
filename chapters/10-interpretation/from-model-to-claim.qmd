@@ -1,6 +1,6 @@
 ---
 title: "From a model to a claim"
-description: "A claim puts a model's numbers into words. On the survey the Methods and Results paragraphs are written from the code, the simulation confirms the temperature curve but not a depth peak, and a gear that misses animals on rock makes a confident new finding while the cross-validated score improves."
+description: "A claim puts a model's numbers into words. On the survey a random forest's Methods and Results paragraphs are written from the code, the simulation confirms the temperature shape but not a depth peak, and a gear that misses animals on mud turns more animals on mud into fewer while the cross-validated score improves."
 order: 6
 categories: [interpretation, reproducibility]
 ---
@@ -16,17 +16,18 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## A claim puts a model's numbers into words
 
-A study ends in sentences: a **Methods** paragraph that says what was done and a
-**Results** paragraph that says what was found. Each sentence is a **claim**, and a
-reader takes the claims away, not the numbers. A good claim says what was found, how
-sure the finding is, and how far it reaches.
+A study ends in sentences: a Methods paragraph that says what was done and a Results
+paragraph that says what was found. Each sentence is a **claim**, and a reader takes
+the claims away, not the numbers. A good claim says what was found, how sure the
+finding is, and how far it reaches.
 
-The earlier pages each gave part of the evidence: a score on new sites, curves and
-multipliers to read, intervals and a re-runnable analysis. This page puts them
-together for the survey, writes the two paragraphs, and checks which sentences the
-survey can support.
+This page writes both paragraphs for a random forest fitted to the survey, so that each
+sentence carries its evidence, and shows how to tell the sentences the survey supports
+from those it cannot, including one that every check inside the model would pass.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -46,21 +47,26 @@ species, and getting from one to the other takes three checks:
   at every station it fishes, and the model learns the change.
 
 ::: {.diagram}
-![Three checks before a claim. Cross-validation checks that the model beats a baseline on new sites. Whether the data separate two inputs depends on the survey's design, and whether the records match what was in the water is checked outside the model.](img/three-checks.svg){fig-alt="Three cards. Beats a baseline, checked by cross-validation: scored on sites it never saw, against predicting the average; two bars for the error on new sites, the model's shorter than the average's. Inputs the data separate, set by the survey's design: two inputs that move together cannot be told apart by any model; a scatter of stations along a diagonal band of depth against distance offshore, with the empty corners marked no stations. Records match the water, checked outside the model: a gear that misses animals biases every fold alike; eight animals in the water on rock, four recorded. A note says cross-validation makes the first check, and the other two need knowledge of how the data were collected."}
+![Three checks before a claim. Cross-validation checks that the model beats a baseline on new sites. Whether the data separate two inputs depends on the survey's design, and whether the records match what was in the water is checked outside the model.](img/three-checks.svg){fig-alt="Three cards. Beats a baseline, checked by cross-validation: scored on sites it never saw, against predicting the average; two bars for the error on new sites, the model's shorter than the average's. Inputs the data separate, set by the survey's design: two inputs that move together cannot be told apart by any model; a scatter of stations along a diagonal band of depth against distance offshore, with the empty corners marked no stations. Records match the water, checked outside the model: a gear that misses animals biases every fold alike; eight animals in the water on mud, four recorded. A note says cross-validation makes the first check, and the other two need knowledge of how the data were collected."}
 :::
 
 ## Worked example
 
-The GAM of [Black boxes and interpretable models](black-box-or-not.qmd) is scored
-against predicting the average by ten-fold cross-validation by site, then fitted to
-every station. The two paragraphs are written from its results. The survey is
-simulated, so its depth and temperature curves are checked against the ones the
-simulation used. Last, the records are biased as a gear that misses half the animals
-on rock would bias them, and the whole analysis is run again.
+A random forest is scored against predicting the average by ten-fold cross-validation
+by site. On each fold it also gives each held-out station a 90% interval, as the
+quantile forest of [Communicating uncertainty](communicating-uncertainty.qmd), and each
+input is shuffled on the held-out sites, as in
+[Feature importance](feature-importance.qmd). The two paragraphs are written from these
+results and from the forest's [partial dependence](partial-effects.qmd). The survey is
+simulated, so the shapes are then checked against the ones the simulation used. Last,
+the records are biased as a gear that misses half the animals on mud would bias them,
+and the whole report is run again.
 
 ### Preparing the data
 
-The folds are drawn inside a function with its own seed, as
+Three columns of random numbers are added to the inputs, as in
+[Feature importance](feature-importance.qmd), to show what an unused input scores. The
+folds are drawn inside a function with its own seed, as
 [Reproducibility and transparent reporting](reproducibility.qmd) recommends, so the
 biased records later get exactly the same folds.
 
@@ -72,38 +78,28 @@ biased records later get exactly the same folds.
 #| label: prepare
 survey <- load_coastal_survey_clean()
 
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+            "substrate", "season")
+
+# three columns of random numbers, unrelated to anything in the survey
+modelling <- survey |>
+  select(site_id, abundance, all_of(inputs)) |>
+  mutate(random_1 = rnorm(n()), random_2 = rnorm(n()), random_3 = rnorm(n()))
+
 # whole sites in each fold, the same folds for any version of the records
 site_folds <- function(data) {
   set.seed(123)
   group_vfold_cv(data, group = site_id, v = 10)
 }
 
-count_recipe <- recipe(
-  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
-    substrate + season,
-  data = survey
-) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_relevel(substrate, ref_level = "sand")
+forest_recipe <- recipe(abundance ~ ., data = modelling) |>
+  update_role(site_id, new_role = "site") |>
+  step_impute_median(all_numeric_predictors())
 
-gam <- workflow(count_recipe) |>
-  add_model(
-    gen_additive_mod() |>
-      set_engine("mgcv", family = mgcv::nb(), method = "REML") |>
-      set_mode("regression"),
-    formula = abundance ~ s(depth_m) + s(temperature_c) +
-      chlorophyll_mg_m3 + salinity_psu + substrate + season
-  )
-
-average <- workflow(count_recipe |> step_dummy(all_nominal_predictors()),
-                    null_model(mode = "regression"))
-
-# each fold's RMSE on the sites it left out
-score <- function(model, folds) {
-  fit_resamples(model, folds, metrics = metric_set(rmse)) |>
-    collect_metrics(summarize = FALSE) |>
-    pull(.estimate)
-}
+# a quantile forest predicts like a random forest and also gives intervals
+forest <- workflow(forest_recipe,
+                   rand_forest(mode = "regression", trees = 300) |>
+                     set_engine("ranger", seed = 123, quantreg = TRUE))
 ```
 
 ## Python
@@ -111,165 +107,285 @@ score <- function(model, folds) {
 ```{python}
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.impute import SimpleImputer
+from sklearn.inspection import partial_dependence, permutation_importance
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupKFold
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import OneHotEncoder, SplineTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-# whole sites in each fold, the same folds for any version of the records
-folds = list(GroupKFold(n_splits=10, shuffle=True, random_state=123)
-             .split(survey, groups=survey["site_id"]))
+# three columns of random numbers, unrelated to anything in the survey
+rng = np.random.default_rng(123)
+for i in (1, 2, 3):
+    survey[f"random_{i}"] = rng.standard_normal(len(survey))
 
-numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
+           "random_1", "random_2", "random_3"]
 categorical = ["substrate", "season"]
 predictors = numeric + categorical
 
-# scikit-learn has no GAM, so statsmodels fits the negative binomial, with
-# spline curves for depth and temperature
-def gam_recipe():
-    curves = make_pipeline(SimpleImputer(strategy="median"),
-                           SplineTransformer(n_knots=5, include_bias=False))
-    return ColumnTransformer([
-        ("curves", curves, ["depth_m", "temperature_c"]),
-        ("lines", SimpleImputer(strategy="median"),
-         ["chlorophyll_mg_m3", "salinity_psu"]),
-        ("levels", OneHotEncoder(drop=["sand", "spring"],
-                                 sparse_output=False), categorical),
-    ])
+# whole sites in each fold, the same folds for any version of the records
+def site_folds(data):
+    return GroupKFold(n_splits=10, shuffle=True, random_state=123).split(
+        data, groups=data["site_id"])
 
-def design(recipe, frame):
-    columns = pd.DataFrame(recipe.transform(frame[predictors]),
-                           columns=recipe.get_feature_names_out(),
-                           index=frame.index)
-    return sm.add_constant(columns, has_constant="add")
+def pipeline(model):
+    recipe = ColumnTransformer(
+        [("numeric", SimpleImputer(strategy="median"), numeric),
+         ("categorical", OneHotEncoder(sparse_output=False), categorical)],
+        verbose_feature_names_out=False)
+    return Pipeline([("recipe", recipe), ("model", model)])
 
-def fit_gam(frame):
-    recipe = gam_recipe().fit(frame[predictors])
-    model = sm.NegativeBinomial(frame["abundance"], design(recipe, frame))
-    return recipe, model.fit(method="bfgs", maxiter=2000, disp=0)
+# max_features and min_samples_leaf match ranger's defaults
+def forest():
+    return pipeline(RandomForestRegressor(n_estimators=300, max_features="sqrt",
+                                          min_samples_leaf=5, random_state=123))
 
-def predict_gam(fitted, frame):
-    recipe, model = fitted
-    return model.predict(design(recipe, frame)).to_numpy()
-
-# each fold's RMSE on the sites it left out, for the GAM and the average
-def score(data):
-    rows = []
-    for fit_rows, held_rows in folds:
-        fitting, held = data.iloc[fit_rows], data.iloc[held_rows]
-        caught = held["abundance"]
-        mean = np.full(len(held), fitting["abundance"].mean())
-        rows.append({
-            "GAM": root_mean_squared_error(
-                caught, predict_gam(fit_gam(fitting), held)),
-            "Predicting the average": root_mean_squared_error(caught, mean),
-        })
-    return pd.DataFrame(rows)
+# scikit-learn has no quantile forest, so gradient boosting with the quantile
+# loss gives the 5% and 95% points
+def quantile_ends(data):
+    return [pipeline(GradientBoostingRegressor(loss="quantile", alpha=q,
+                                               random_state=123))
+            .fit(data[predictors], data["abundance"])
+            for q in (0.05, 0.95)]
 ```
 
 :::
 
 ### The Methods and Results paragraphs are written from the code
 
-The GAM and the average are scored on the same folds, and the GAM is then fitted to
-every station and read as in
-[Black boxes and interpretable models](black-box-or-not.qmd): a curve for depth and
-temperature over the middle 90% of each, and a multiplier with its 95% interval for
-everything else.
+On each fold the forest is fitted to nine tenths of the sites. On the tenth it gives its
+RMSE beside the average's, the share of catches inside its 90% intervals, and the rise
+in RMSE when each input is shuffled. It also gives mud's effect: its average prediction
+with every fitting station set to mud, over that with every station set to sand.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: score
-folds <- site_folds(survey)
-gam_rmse <- score(gam, folds)
-average_rmse <- score(average, folds)
+#| label: report
+# the rise in held-out RMSE when an input is shuffled, as in Feature importance
+shuffle_importance <- function(fitted, data, repeats = 10) {
+  error <- \(d) rmse_vec(d$abundance, predict(fitted, d)$.pred)
+  before <- error(data)
+  columns <- setdiff(names(data), c("site_id", "abundance"))
+  map(columns, \(input) {
+    rises <- map_dbl(seq_len(repeats), \(i) {
+      shuffled <- data
+      shuffled[[input]] <- sample(shuffled[[input]])
+      error(shuffled) - before
+    })
+    tibble(input, rise = mean(rises))
+  }) |>
+    list_rbind()
+}
 
-tibble(model = c("GAM", "Predicting the average"),
-       rmse = c(mean(gam_rmse), mean(average_rmse)),
-       folds_better_than_the_average = c(sum(gam_rmse < average_rmse), NA)) |>
-  mutate(rmse = round(rmse, 2))
+# the average prediction with every station set to one level, over that with
+# every station set to another
+level_ratio <- function(fitted, data, input, level, reference) {
+  at <- function(value) {
+    set <- data
+    set[[input]] <- factor(value, levels = levels(data[[input]]))
+    mean(predict(fitted, set)$.pred)
+  }
+  at(level) / at(reference)
+}
+
+on_fold <- function(split) {
+  fitting <- training(split)
+  held <- testing(split)
+  fitted <- fit(forest, fitting)
+  ends <- predict(extract_fit_engine(fitted),
+                  bake(extract_recipe(fitted), new_data = held),
+                  type = "quantiles", quantiles = c(0.05, 0.95))$predictions
+  caught <- held$abundance
+  list(
+    score = tibble(
+      forest_rmse = rmse_vec(caught, predict(fitted, held)$.pred),
+      average_rmse = rmse_vec(caught, rep(mean(fitting$abundance), nrow(held))),
+      coverage = mean(caught >= ends[, 1] & caught <= ends[, 2]),
+      width = mean(ends[, 2] - ends[, 1]),
+      mud = level_ratio(fitted, fitting, "substrate", "mud", "sand")),
+    importance = shuffle_importance(fitted, held))
+}
+
+report <- function(data) {
+  folds <- map(site_folds(data)$splits, on_fold)
+  list(scores = map(folds, "score") |> list_rbind(),
+       importance = map(folds, "importance") |>
+         list_rbind(names_to = "fold") |>
+         mutate(random_top = max(rise[str_starts(input, "random")]),
+                .by = fold))
+}
+
+# folds_better comes first, before forest_rmse becomes the mean
+summary_of <- function(result) {
+  result$scores |>
+    summarise(folds_better = sum(forest_rmse < average_rmse),
+              forest_rmse = mean(forest_rmse),
+              average_rmse = mean(average_rmse),
+              coverage = mean(coverage), width = mean(width),
+              mud_low = min(mud), mud_high = max(mud))
+}
+
+recorded <- report(modelling)
+summary_of(recorded) |> mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
 ```{python}
-scores = score(survey)
+# the rise in held-out RMSE when an input is shuffled, as in Feature importance
+def shuffle_importance(fitted, data, repeats=10):
+    result = permutation_importance(
+        fitted, data[predictors], data["abundance"], n_repeats=repeats,
+        random_state=123, scoring="neg_root_mean_squared_error")
+    return pd.DataFrame({"input": predictors,
+                         "rise": result.importances_mean})
 
-pd.DataFrame({
-    "rmse": scores.mean().round(2),
-    "folds_better_than_the_average":
-        [(scores["GAM"] < scores["Predicting the average"]).sum(), None],
-}).rename_axis("model").reset_index()
+# the average prediction with every station set to one level, over that with
+# every station set to another
+def level_ratio(fitted, data, column, level, reference):
+    def at(value):
+        return fitted.predict(data[predictors].assign(**{column: value})).mean()
+    return at(level) / at(reference)
+
+def report(data):
+    scores, importance = [], []
+    for number, (fit_rows, held_rows) in enumerate(site_folds(data), start=1):
+        fitting, held = data.iloc[fit_rows], data.iloc[held_rows]
+        fitted = forest().fit(fitting[predictors], fitting["abundance"])
+        low, high = (end.predict(held[predictors])
+                     for end in quantile_ends(fitting))
+        caught = held["abundance"].to_numpy()
+        scores.append({
+            "forest_rmse": root_mean_squared_error(
+                caught, fitted.predict(held[predictors])),
+            "average_rmse": root_mean_squared_error(
+                caught, np.full(len(held), fitting["abundance"].mean())),
+            "coverage": np.mean((caught >= low) & (caught <= high)),
+            "width": np.mean(high - low),
+            "mud": level_ratio(fitted, fitting, "substrate", "mud", "sand")})
+        rises = shuffle_importance(fitted, held)
+        random = rises["input"].str.startswith("random")
+        importance.append(rises.assign(
+            fold=number, random_top=rises.loc[random, "rise"].max()))
+    return pd.DataFrame(scores), pd.concat(importance, ignore_index=True)
+
+def summary_of(result):
+    scores, _ = result
+    return pd.DataFrame([{
+        "folds_better": (scores["forest_rmse"] < scores["average_rmse"]).sum(),
+        "forest_rmse": scores["forest_rmse"].mean(),
+        "average_rmse": scores["average_rmse"].mean(),
+        "coverage": scores["coverage"].mean(),
+        "width": scores["width"].mean(),
+        "mud_low": scores["mud"].min(), "mud_high": scores["mud"].max()}])
+
+recorded = report(survey)
+summary_of(recorded).round(2)
 ```
 
 :::
 
+On each fold an input either beats all three random columns or it does not, and the
+count of folds it beats them on says how far its score is more than chance.
+
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: read
-gam_fit <- fit(gam, survey)
-gam_engine <- extract_fit_engine(gam_fit)
-prepared <- extract_recipe(gam_fit)
-
-# the GAM's curve for one input, relative to its peak
-curve_of <- function(input) {
-  ends <- quantile(survey[[input]], c(0.05, 0.95), na.rm = TRUE)
-  grid <- survey[rep(1, 60), ]
-  grid[[input]] <- seq(ends[1], ends[2], length.out = 60)
-  term <- predict(gam_engine, bake(prepared, grid), type = "terms")
-  curve <- term[, paste0("s(", input, ")")]
-  tibble(value = grid[[input]], relative = exp(curve - max(curve)))
+#| label: beats
+beats_of <- function(result) {
+  result$importance |>
+    filter(!str_starts(input, "random")) |>
+    summarise(folds_above_random = sum(rise > random_top),
+              median_rise = median(rise), .by = input) |>
+    arrange(desc(median_rise))
 }
 
-curves <- map(c(depth_m = "depth_m", temperature_c = "temperature_c"),
-              curve_of)
-
-multipliers <- tidy(gam_engine, parametric = TRUE, conf.int = TRUE,
-                    exponentiate = TRUE) |>
-  filter(term != "(Intercept)") |>
-  transmute(term, multiplier = estimate, conf_low = conf.low,
-            conf_high = conf.high)
-
-multipliers |> mutate(across(where(is.numeric), \(x) round(x, 2)))
+beats <- beats_of(recorded)
+beats |> mutate(median_rise = round(median_rise, 3))
 ```
 
 ## Python
 
 ```{python}
-gam_fit = fit_gam(survey)
-recipe, model = gam_fit
+def beats_of(result):
+    _, importance = result
+    real = importance[~importance["input"].str.startswith("random")]
+    return (real.assign(above=real["rise"] > real["random_top"])
+                .groupby("input")
+                .agg(folds_above_random=("above", "sum"),
+                     median_rise=("rise", "median"))
+                .sort_values("median_rise", ascending=False)
+                .round(3)
+                .reset_index())
 
-# the GAM's curve for one input, relative to its peak, at a typical station
-typical = survey[numeric].median()
+beats_of(recorded)
+```
 
-def curve_of(column):
-    low, high = survey[column].quantile([0.05, 0.95])
-    grid = pd.DataFrame({c: typical[c] for c in numeric}, index=range(60))
-    grid[column] = np.linspace(low, high, 60)
-    grid["substrate"], grid["season"] = "sand", "summer"
-    predicted = predict_gam(gam_fit, grid)
-    return pd.DataFrame({"value": grid[column],
-                         "relative": predicted / predicted.max()})
+:::
 
-curves = {column: curve_of(column) for column in ["depth_m", "temperature_c"]}
+The shapes come from a forest fitted to every station: its partial dependence over the
+middle 90% of each input, relative to its peak.
 
-multipliers = np.exp(pd.concat([model.params, model.conf_int()], axis=1))
-multipliers.columns = ["multiplier", "conf_low", "conf_high"]
-kept = multipliers.index.str.startswith(("lines", "levels"))
-multipliers[kept].rename(index=lambda term: term.split("__")[1]).round(2)
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: shapes
+everything <- fit(forest, modelling)
+
+# every station's prediction with one input set to each of 40 values,
+# averaged, relative to the highest
+shape_of <- function(input) {
+  ends <- quantile(modelling[[input]], c(0.05, 0.95), na.rm = TRUE)
+  value <- seq(ends[1], ends[2], length.out = 40)
+  average <- map_dbl(value, \(level) {
+    swept <- modelling
+    swept[[input]] <- level
+    mean(predict(everything, swept)$.pred)
+  })
+  tibble(value, relative = average / max(average))
+}
+
+shapes <- map(c(depth_m = "depth_m", temperature_c = "temperature_c"),
+              shape_of)
+
+map(shapes, \(s) s |> slice(c(1, which.max(s$relative), n()))) |>
+  list_rbind(names_to = "input") |>
+  mutate(across(where(is.double), \(x) round(x, 2)))
+```
+
+## Python
+
+```{python}
+everything = forest().fit(survey[predictors], survey["abundance"])
+
+# every station's prediction with one input set to each of 40 values,
+# averaged, relative to the highest
+def shape_of(column):
+    result = partial_dependence(everything, survey[predictors], [column],
+                                percentiles=(0.05, 0.95), grid_resolution=40)
+    average = result["average"][0]
+    return pd.DataFrame({"value": result["grid_values"][0],
+                         "relative": average / average.max()})
+
+shapes = {column: shape_of(column) for column in ["depth_m", "temperature_c"]}
+
+ends_and_peak = [shape.iloc[[0, shape["relative"].idxmax(), -1]].assign(input=column)
+                 for column, shape in shapes.items()]
+pd.concat(ends_and_peak, ignore_index=True)[["input", "value", "relative"]].round(2)
 ```
 
 :::
@@ -280,57 +396,69 @@ multipliers[kept].rename(index=lambda term: term.split("__")[1]).round(2)
 two <- \(x) format(round(x, 2), nsmall = 2)
 one <- \(x) format(round(x, 1), nsmall = 1)
 pct <- \(x) scales::percent(x, accuracy = 1)
-term_of <- \(t) multipliers |> filter(term == t)
-mud <- term_of("substratemud")
-rock <- term_of("substraterock")
-summer <- term_of("seasonsummer")
-chlorophyll <- term_of("chlorophyll_mg_m3")
-salinity <- term_of("salinity_psu")
-interval <- \(m) paste0(two(m$conf_low), " to ", two(m$conf_high))
-temperature <- curves$temperature_c
+recorded_summary <- summary_of(recorded)
+gain <- 1 - recorded_summary$forest_rmse / recorded_summary$average_rmse
+input_names <- c(depth_m = "depth", temperature_c = "temperature",
+                 chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
+                 substrate = "substrate", season = "season")
+beats_named <- beats |> mutate(name = input_names[input])
+most <- beats_named |> filter(folds_above_random > 5)
+rest <- beats_named |> filter(folds_above_random <= 5)
+salinity_beats <- beats_named |> filter(input == "salinity_psu") |> pull(folds_above_random)
+words <- \(x) knitr::combine_words(x, oxford_comma = FALSE)
+temperature <- shapes$temperature_c
 temperature_peak <- temperature$value[which.max(temperature$relative)]
-gain <- 1 - mean(gam_rmse) / mean(average_rmse)
+mud_range <- paste(two(recorded_summary$mud_low), "and",
+                   two(recorded_summary$mud_high))
 ```
 
 Every number below comes from the code above, so the paragraphs change with the
 analysis and cannot drift from it.
 
 > **Methods.** We modelled the count of the species at `r nrow(survey)` stations from
-> `r n_distinct(survey$site_id)` sites with a generalised additive model (GAM) with a
-> negative binomial response, fitted with mgcv `r packageVersion("mgcv")` in
-> R `r getRversion()`. Depth and temperature entered as smooth curves, chlorophyll and
-> salinity as straight lines on the log scale, and substrate and season as levels,
-> with sand and spring as the reference. Missing readings were filled with the median
-> of the stations used to fit. The model was scored by ten-fold cross-validation with
-> whole sites held out, against predicting the average on the same folds, drawn with
-> seed 123. The data, the code and the package versions are archived with the paper.
+> `r n_distinct(survey$site_id)` sites with a random forest of 300 trees, fitted with
+> ranger `r packageVersion("ranger")` in R `r getRversion()`. The inputs were depth,
+> temperature, chlorophyll, salinity, substrate and season, and missing readings were
+> filled with the median of the stations used to fit. The forest was scored by
+> ten-fold cross-validation with whole sites held out, against predicting the average
+> on the same folds, drawn with seed 123. On each fold, each input was shuffled 10
+> times on the held-out sites and its importance was the average rise in RMSE,
+> compared with three columns of random numbers added to the inputs. The 90% intervals
+> for single catches are the 5% and 95% points of a quantile forest, checked on the
+> held-out sites. Shapes are partial dependence from the forest fitted to every
+> station, and the effect of mud is the ratio of each fold's average prediction with
+> every station set to mud and to sand. The data, the code and the package versions
+> are archived with the paper.
 
-> **Results.** On held-out sites the GAM's RMSE was `r two(mean(gam_rmse))` animals,
-> against `r two(mean(average_rmse))` for predicting the average
-> (`r pct(gain)` lower), and it was lower on `r sum(gam_rmse < average_rmse)` of the
-> 10 folds. The count peaked in cool water, near `r one(temperature_peak)` °C, and
-> fell to `r pct(first(temperature$relative))` of the peak at
-> `r one(first(temperature$value))` °C and to `r pct(last(temperature$relative))` at
-> `r one(last(temperature$value))` °C. Muddy stations held `r two(mud$multiplier)`
-> times as many animals as sandy ones (95% interval `r interval(mud)`), and summer
-> `r two(summer$multiplier)` times as many as spring (`r interval(summer)`). Each
-> extra mg/m³ of chlorophyll multiplied the count by `r two(chlorophyll$multiplier)`
-> (`r interval(chlorophyll)`). The survey could not tell whether rock holds more or
-> fewer animals than sand (`r two(rock$multiplier)`, `r interval(rock)`), or whether
-> salinity raises or lowers the count (`r interval(salinity)`). Counts were highest at
-> the shallowest stations, but depth follows distance offshore on this survey, so the
-> depth curve is not read as a response to depth.
+> **Results.** On held-out sites the forest's RMSE was
+> `r two(recorded_summary$forest_rmse)` animals, against
+> `r two(recorded_summary$average_rmse)` for predicting the average (`r pct(gain)`
+> lower), and it was lower on `r recorded_summary$folds_better` of the 10 folds.
+> Shuffling `r words(most$name)` raised the error by more than any column of random
+> numbers on most folds (`r words(most$folds_above_random)` of 10); shuffling
+> `r words(rest$name)` did not. The count peaked in cool water, near
+> `r one(temperature_peak)` °C, and fell to `r pct(first(temperature$relative))` of
+> the peak at `r one(first(temperature$value))` °C and to
+> `r pct(last(temperature$relative))` at `r one(last(temperature$value))` °C. At the
+> same other inputs, muddy stations held between `r mud_range` times as many animals
+> as sandy ones across the ten fold models. The 90% intervals for single catches were
+> on average `r one(recorded_summary$width)` animals wide and held
+> `r pct(recorded_summary$coverage)` of the held-out catches. Depth follows distance
+> offshore on this survey, so although the forest relied on it, its curve is not read
+> as a response to depth.
 
-The Methods paragraph gives what a reader needs to re-run the analysis, and the
-baseline the score is judged against. The Results paragraph puts the score beside that
-baseline, gives the temperature effect as a shape with its range, and gives each
-multiplier with its interval. Where an interval includes 1 it says the survey cannot
-tell, and it explains why the depth curve is not read.
+The Methods paragraph gives what a reader needs to re-run the report, and the baseline
+the score is judged against. The Results paragraph puts the score beside that baseline
+and names only the inputs that beat the random columns on most folds. It gives
+temperature's effect as a shape with its range, and the interval with the coverage it
+reached. Mud's effect comes with its spread across the fold models, which is not a
+confidence interval: the fold models share nine tenths of their sites, so they agree
+more than models fitted to separate surveys would.
 
-### The simulation confirms the temperature curve but not a depth peak
+### The simulation confirms the temperature shape but not a depth peak
 
-No real study can check its curves against the truth. The survey is simulated, so its
-GAM's curves can be checked against the ones the simulation used, as in
+No real study can check its shapes against the truth. The survey is simulated, so the
+forest's shapes can be checked against the ones the simulation used, as in
 [Partial effects](partial-effects.qmd).
 
 ::: {.panel-tabset group="language"}
@@ -346,12 +474,12 @@ true_curve <- list(
 )
 true_peak <- c(depth_m = 80, temperature_c = 9)
 
-checked <- imap(curves, \(curve, input) {
-  peak <- curve$value[which.max(curve$relative)]
-  nearest <- which.min(abs(curve$value - true_peak[[input]]))
-  tibble(gam_peak = peak, simulation_peak = true_peak[[input]],
-         simulation_at_gam_peak = exp(true_curve[[input]](peak)),
-         gam_at_simulation_peak = curve$relative[nearest])
+checked <- imap(shapes, \(shape, input) {
+  peak <- shape$value[which.max(shape$relative)]
+  nearest <- which.min(abs(shape$value - true_peak[[input]]))
+  tibble(forest_peak = peak, simulation_peak = true_peak[[input]],
+         simulation_at_forest_peak = exp(true_curve[[input]](peak)),
+         forest_at_simulation_peak = shape$relative[nearest])
 }) |>
   list_rbind(names_to = "input")
 
@@ -369,13 +497,13 @@ true_curve = {
 true_peak = {"depth_m": 80, "temperature_c": 9}
 
 rows = []
-for column, curve in curves.items():
-    peak = curve["value"][curve["relative"].idxmax()]
-    nearest = (curve["value"] - true_peak[column]).abs().idxmin()
-    rows.append({"input": column, "gam_peak": peak,
+for column, shape in shapes.items():
+    peak = shape["value"][shape["relative"].idxmax()]
+    nearest = (shape["value"] - true_peak[column]).abs().idxmin()
+    rows.append({"input": column, "forest_peak": peak,
                  "simulation_peak": true_peak[column],
-                 "simulation_at_gam_peak": np.exp(true_curve[column](peak)),
-                 "gam_at_simulation_peak": curve["relative"][nearest]})
+                 "simulation_at_forest_peak": np.exp(true_curve[column](peak)),
+                 "forest_at_simulation_peak": shape["relative"][nearest]})
 pd.DataFrame(rows).round(2)
 ```
 
@@ -387,44 +515,51 @@ pd.DataFrame(rows).round(2)
 check_of <- \(i) checked |> filter(input == i)
 depth_check <- check_of("depth_m")
 temperature_check <- check_of("temperature_c")
+# the simulation's mud effect, as a multiplier on sand
+true_mud <- exp(0.40)
 ```
 
-The temperature sentence holds. The GAM's curve peaks at
-`r one(temperature_check$gam_peak)` °C and the simulation's at
-`r temperature_check$simulation_peak` °C; at the GAM's peak the simulation's curve
-stands at `r pct(temperature_check$simulation_at_gam_peak)` of its own peak. The shape,
-a hump in cool water, is right. An optimum quoted as
-`r one(temperature_check$gam_peak)` °C would be
-`r one(temperature_check$simulation_peak - temperature_check$gam_peak)` °C out, which
-is why the paragraph gives the curve and its range rather than an optimum.
+The temperature sentence holds. The forest's shape peaks at
+`r one(temperature_check$forest_peak)` °C and the simulation's at
+`r temperature_check$simulation_peak` °C; at the forest's peak the simulation's curve
+stands at `r pct(temperature_check$simulation_at_forest_peak)` of its own peak. The
+shape, a hump in cool water, is right. An optimum quoted as
+`r one(temperature_check$forest_peak)` °C would be
+`r one(temperature_check$simulation_peak - temperature_check$forest_peak)` °C out,
+which is why the paragraph gives the shape and its range rather than an optimum.
 
-The depth curve does not hold. The GAM's peaks at `r round(depth_check$gam_peak)` m,
-the shallowest depth drawn, and the simulation's at
-`r depth_check$simulation_peak` m, where the GAM's has fallen to
-`r pct(depth_check$gam_at_simulation_peak)` of its peak. Deep stations are also far
-offshore, and [Partial effects](partial-effects.qmd) found that no model separates the
-two on this survey. The Results paragraph declined to read the depth curve, and the
-check shows that was right.
+The mud sentence holds in direction. The simulation gave muddy stations
+`r two(true_mud)` times as many animals as sandy ones, more than any fold model found.
+Many of a forest's leaves hold stations of several substrates, and averaging over them
+pulls the difference towards nothing, so the direction is a safer claim than the size.
+
+The depth curve does not hold. The forest's peaks at `r round(depth_check$forest_peak)`
+m and the simulation's at `r depth_check$simulation_peak` m, where the forest's has
+fallen to `r pct(depth_check$forest_at_simulation_peak)` of its peak. Deep stations
+are also far offshore, and [Partial effects](partial-effects.qmd) found that no model
+separates the two on this survey. The Results paragraph declined to read the depth
+curve, and the check shows that was right.
 
 The survey cannot support three other sentences that are often written:
 
-- **"Salinity has no effect."** Its interval includes 1, which says the survey cannot
-  tell, not that the effect is zero. The paragraph says "could not tell".
+- **"Salinity has no effect."** Salinity beat the random columns on only
+  `r salinity_beats` of the 10 folds, which says the survey shows no sign of an effect,
+  not that there is none. A small effect would fail the same way.
 - **"Warming will reduce the count."** The model describes how the count varies across
   the stations sampled. Water warmer than any station is outside them, as
   [Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
   showed, and [Communicating uncertainty](communicating-uncertainty.qmd) found an
   interval that lost its coverage at stations unlike those that set it.
-- **"Temperature drives the count."** Every curve here describes how the count varies
+- **"Temperature drives the count."** Every shape here describes how the count varies
   with the inputs as they were found together. A cause needs an experiment or
   knowledge of the species.
 
-### A gear that misses animals on rock improves the score
+### A gear that misses animals on mud reverses a finding and improves the score
 
-Grabs and dredges often catch fewer of the animals on hard ground. Suppose the survey's
-gear kept each animal on rock with a chance of one half and every other animal. The
-records on rock would be halved, with nothing else changed, and the whole analysis is
-run again on the same folds.
+Grabs and dredges catch different shares of the animals on different ground. Suppose
+the survey's gear kept each animal on mud with a chance of one half, and every other
+animal. The records on mud would be halved, with nothing else changed, and the whole
+report is run again on the same folds.
 
 ::: {.panel-tabset group="language"}
 
@@ -433,54 +568,32 @@ run again on the same folds.
 ```{r}
 #| label: gear
 set.seed(77)
-# on rock the gear keeps each animal with a chance of one half
-biased <- survey |>
-  mutate(abundance = if_else(substrate == "rock",
+# on mud the gear keeps each animal with a chance of one half
+biased <- modelling |>
+  mutate(abundance = if_else(substrate == "mud",
                              rbinom(n(), abundance, 0.5), abundance))
 
-check <- function(data) {
-  folds <- site_folds(data)
-  gam_scores <- score(gam, folds)
-  average_scores <- score(average, folds)
-  on_rock <- tidy(extract_fit_engine(fit(gam, data)), parametric = TRUE,
-                  conf.int = TRUE, exponentiate = TRUE) |>
-    filter(term == "substraterock")
-  tibble(gam_rmse = mean(gam_scores), average_rmse = mean(average_scores),
-         folds_better = sum(gam_scores < average_scores),
-         rock = on_rock$estimate, rock_low = on_rock$conf.low,
-         rock_high = on_rock$conf.high)
-}
+missed <- report(biased)
 
-gear <- bind_rows("As recorded" = check(survey),
-                  "Half missed on rock" = check(biased), .id = "records")
-
-gear |> mutate(across(where(is.double), \(x) round(x, 2)))
+bind_rows("As recorded" = summary_of(recorded),
+          "Half missed on mud" = summary_of(missed), .id = "records") |>
+  mutate(across(where(is.double), \(x) round(x, 2)))
 ```
 
 ## Python
 
 ```{python}
 rng = np.random.default_rng(77)
-# on rock the gear keeps each animal with a chance of one half
+# on mud the gear keeps each animal with a chance of one half
 biased = survey.copy()
-on_rock = biased["substrate"] == "rock"
-biased.loc[on_rock, "abundance"] = rng.binomial(
-    biased.loc[on_rock, "abundance"].to_numpy(), 0.5)
+on_mud = biased["substrate"] == "mud"
+biased.loc[on_mud, "abundance"] = rng.binomial(
+    biased.loc[on_mud, "abundance"].to_numpy(), 0.5)
 
-def check(data):
-    scores = score(data)
-    _, model = fit_gam(data)
-    rock = "levels__substrate_rock"
-    low, high = np.exp(model.conf_int().loc[rock])
-    return {"gam_rmse": scores["GAM"].mean(),
-            "average_rmse": scores["Predicting the average"].mean(),
-            "folds_better": (scores["GAM"]
-                             < scores["Predicting the average"]).sum(),
-            "rock": np.exp(model.params[rock]),
-            "rock_low": low, "rock_high": high}
+missed = report(biased)
 
-pd.DataFrame([check(survey), check(biased)],
-             index=["As recorded", "Half missed on rock"]).round(2)
+pd.concat([summary_of(recorded), summary_of(missed)],
+          keys=["As recorded", "Half missed on mud"]).droplevel(1).round(2)
 ```
 
 :::
@@ -488,46 +601,45 @@ pd.DataFrame([check(survey), check(biased)],
 ```{r}
 #| label: gear-numbers
 #| include: false
-recorded <- gear |> filter(records == "As recorded")
-missed <- gear |> filter(records == "Half missed on rock")
-gain_of <- \(g) 1 - g$gam_rmse / g$average_rmse
-range_of <- \(g) paste0(two(g$rock_low), " to ", two(g$rock_high))
+missed_summary <- summary_of(missed)
+missed_gain <- 1 - missed_summary$forest_rmse / missed_summary$average_rmse
+missed_range <- paste(two(missed_summary$mud_low), "and",
+                      two(missed_summary$mud_high))
 ```
 
-As recorded, rock's multiplier is `r two(recorded$rock)`, with an interval from
-`r range_of(recorded)`: the survey cannot tell rock from sand. With half the animals
-on rock missed it is `r two(missed$rock)`, from `r range_of(missed)`, and the Results
-paragraph would now say that rock holds about half as many animals as sand, with an
-interval well clear of 1. The change is the gear's, not the species'.
+As recorded, every fold model put mud above sand, between `r mud_range` times as many
+animals. With half the animals on mud missed, every one put it below, between
+`r missed_range`, and the Results paragraph would now say that muddy stations hold
+fewer animals than sandy ones. The change is the gear's, not the species'.
 
-The score did not warn of it. The GAM's RMSE went from `r two(recorded$gam_rmse)` to
-`r two(missed$gam_rmse)`, its lead over the average from `r pct(gain_of(recorded))` to
-`r pct(gain_of(missed))`, and it still beat the average on
-`r missed$folds_better` of the 10 folds. Cross-validation compares the model with the
-records, and every fold carries the same bias: the held-out sites lose the same half
-on rock as the sites used to fit. The smaller counts on rock are also easier to
-predict, so the score improved.
+The score did not warn of it. The forest's RMSE fell from
+`r two(recorded_summary$forest_rmse)` to `r two(missed_summary$forest_rmse)`, it still
+beat the average on `r missed_summary$folds_better` of the 10 folds, and its intervals
+held `r pct(missed_summary$coverage)` of the held-out catches. Cross-validation compares
+the model with the records, and every fold carries the same bias: the held-out sites
+lose the same half on mud as the sites used to fit. The smaller counts on mud are also
+easier to predict, so the error fell.
 
 Checks on the records come from outside the model:
 
 - **Comparing gears.** Fishing the same ground with two gears, or with a gear of known
   catch, measures how much each misses on each kind of ground.
 - **An independent method.** Video, acoustics or divers count the animals another way,
-  and a model that agrees with them on rock has not learned the gear.
+  and a model that agrees with them on mud has not learned the gear.
 - **Reporting the gear and the effort.** A reader who knows how the animals were
   caught can judge how far the records match the water.
 
-[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
-by group, such as vessel or gear, and so finds a gear that differs from the rest. A
-bias shared by every haul shows up only against one of the checks above.
+[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared
+records by group, such as vessel or gear, and so finds a gear that differs from the
+rest. A bias shared by every haul shows up only against one of the checks above.
 
 ## A claim reports a finding with its certainty and reach
 
 The two paragraphs on this page follow from the whole course. The score is given beside
-a baseline, on sites the model never saw. The effects are given as shapes and
-multipliers, each with an interval, and "could not tell" is written where an interval
-includes 1. Sentences the design cannot support, such as the depth peak, are left out
-with the reason. The report of
+a baseline, on sites the model never saw. Only inputs that beat random numbers again
+and again are named. The effects are given as shapes and ratios with their spread, and
+the intervals with the coverage they reached. Sentences the design cannot support,
+such as the depth peak, are left out with the reason. The report of
 [Reproducibility and transparent reporting](reproducibility.qmd) lets a reader re-run
 all of it, and the gear and effort let a reader judge how far the records match the
 water.
@@ -535,26 +647,28 @@ water.
 ## Key points
 
 ::: {.key-points}
-- A **Methods** paragraph says what was done and what the score is judged against;
-  a **Results** paragraph gives the score beside its baseline, each effect with its
-  interval, and "could not tell" where the survey cannot.
+- A **claim** says what was found, how sure the finding is, and how far it reaches. The
+  Methods paragraph says what was done and what the score is judged against; the
+  Results paragraph gives the score beside its baseline and each effect with its spread.
 - Written from the code with inline numbers, the paragraphs cannot drift from the
-  analysis: here the GAM's RMSE was `r two(mean(gam_rmse))` against
-  `r two(mean(average_rmse))` for the average.
-- The simulation confirmed the temperature curve, a hump in cool water, but not a
-  depth peak: depth follows distance offshore, and no model separates the two on this
-  survey.
-- A gear that missed half the animals on rock turned "cannot tell" into a rock
-  multiplier of `r two(missed$rock)`, and the cross-validated score improved.
-  Validation compares a model with the records, not the records with the water.
+  analysis: here the forest's RMSE was `r two(recorded_summary$forest_rmse)` against
+  `r two(recorded_summary$average_rmse)` for the average, and its 90% intervals held
+  `r pct(recorded_summary$coverage)` of held-out catches.
+- The simulation confirmed the temperature shape, a hump in cool water, and mud's
+  direction but not its size. It did not confirm a depth peak: depth follows distance
+  offshore, and no model separates the two on this survey.
+- A gear that missed half the animals on mud turned more animals on mud into fewer, in
+  every fold model, and the cross-validated error fell. Validation compares a model
+  with the records, not the records with the water.
 - Checks on the records come from outside the model: comparing gears, an independent
   method, and reporting the gear and the effort.
 :::
 
 ## Try it yourself
 
-1. Make the gear miss half the animals on mud instead of rock. How do mud's multiplier
-   and the cross-validated score change?
-2. Write the Results paragraph for the random forest of
-   [Black boxes and interpretable models](black-box-or-not.qmd) instead of the GAM.
-   Which sentences can you still write, and what is missing without intervals?
+1. Make the gear miss half the animals on rock instead of mud. Rock has only
+   `r sum(survey$substrate == "rock")` stations. How do rock's ratio to sand and the
+   cross-validated score change, and would the report have caught it?
+2. Write the Results paragraph for the GAM of
+   [Black boxes and interpretable models](black-box-or-not.qmd) instead of the forest.
+   Which sentences gain an interval, and which stay as they are?

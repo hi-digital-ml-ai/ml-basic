@@ -812,33 +812,34 @@ def coverage_rows(items, promise=0.9, length=6.0, step=1.25):
 
 
 class Scene17(VideoScene):
-    """Page results: the GAM's two intervals, their widths and their coverage at the test sites."""
+    """Page results: the forest's two intervals, their widths and their coverage at the test sites."""
 
     number = 17
 
     def construct(self):
-        table = self.data("gam-intervals").set_index("interval")
+        table = self.data("two-intervals").set_index("interval")
         average, catch = table.loc["For the average"], table.loc["For a new catch"]
         rows, promise = coverage_rows([("for the average", BLUE, average["coverage"], average["width"]),
                                        ("for a new catch", ORANGE, catch["coverage"], catch["width"])])
         VGroup(rows, promise).move_to(0.8 * RIGHT + 0.2 * DOWN)
-        head = VGroup(label("the GAM's 90% intervals", 38, INK, weight=BOLD),
+        head = VGroup(label("the forest's 90% intervals", 38, INK, weight=BOLD),
                       label("share of catches inside, at the test sites", 26, SUBDUED)
                       ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.4)
         wrong = label(f"as a range for the next catch: wrong at {pct(1 - average['coverage'])} of stations",
                       30, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.35)
-        # "The GAM's interval for the average, 2.5 animals wide, ..."
+        # "A random forest refitted on resampled sites gives an interval for the average."
         self.play(FadeIn(head), FadeIn(promise), *[FadeIn(r[1]) for r in rows], run_time=self.share(0.1))
-        self.play(FadeIn(rows[0][0]), run_time=self.share(0.06))
-        # "... held 20 per cent of the catches at the test sites."
-        cue(self, "held 20")
-        self.play(GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.08))
-        # "Its interval for a new catch, 11.6 wide, held 96 per cent."
-        cue(self, "Its interval")
-        self.play(FadeIn(rows[1][0]), run_time=self.share(0.06))
-        cue(self, "held 96")
-        self.play(GrowFromEdge(rows[1][2], LEFT), FadeIn(rows[1][3]), run_time=self.share(0.08))
-        # "Quote the narrow one as a range for the next catch, and it is wrong four times in five."
+        # "It was 2.8 animals wide, and held 24 per cent of the catches at the test sites."
+        cue(self, "It was 2.8")
+        self.play(FadeIn(rows[0][0]), run_time=self.share(0.05))
+        cue(self, "and held 24")
+        self.play(GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.07))
+        # "A quantile forest, ..., gives an interval for a new catch. It was 11.6 wide, and held 92 per cent."
+        cue(self, "It was 11.6")
+        self.play(FadeIn(rows[1][0]), run_time=self.share(0.05))
+        cue(self, "and held 92")
+        self.play(GrowFromEdge(rows[1][2], LEFT), FadeIn(rows[1][3]), run_time=self.share(0.07))
+        # "Quote the narrow one as a range for the next catch, and it is wrong about three times in four."
         cue(self, "Quote the narrow")
         self.play(Indicate(rows[0], color=VERMILION, scale_factor=1.03), FadeIn(wrong, shift=0.2 * UP),
                   run_time=self.share(0.12))
@@ -846,7 +847,7 @@ class Scene17(VideoScene):
 
 
 class Scene18(VideoScene):
-    """Schematic: errors on calibration sites, sorted; nine in ten become the half-width."""
+    """Schematic: a model's errors on calibration sites, sorted; nine in ten become the half-width."""
 
     number = 18
 
@@ -858,7 +859,7 @@ class Scene18(VideoScene):
                         for e in errors]).arrange(RIGHT, buff=0.08, aligned_edge=DOWN)
         bars.move_to(3.0 * LEFT + 0.6 * DOWN)
         head = label("conformal prediction", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
-        none = label("a random forest gives no interval of its own", 28, SUBDUED).next_to(head, DOWN, 0.15)
+        none = label("any model, from its errors alone", 28, SUBDUED).next_to(head, DOWN, 0.15)
         bars_name = label("its errors on calibration sites, sorted", 26, SUBDUED).next_to(bars, DOWN, 0.3)
         held = label("held back from fitting", 24, SUBDUED).next_to(bars_name, DOWN, 0.1)
         k = int(np.ceil(0.9 * len(errors))) - 1
@@ -879,13 +880,13 @@ class Scene18(VideoScene):
                       Line(centre + half * DOWN + 0.25 * LEFT, centre + half * DOWN + 0.25 * RIGHT, color=BLUE,
                            stroke_width=6))
         either = label("as far either side", 26, BLUE, weight=BOLD).next_to(up, RIGHT, 0.3)
-        # "A random forest gives no interval of its own."
-        self.play(FadeIn(none), run_time=self.share(0.1))
-        # "Conformal prediction makes one: ..."
-        cue(self, "Conformal")
+        # "Conformal prediction gives any model an interval, ..."
         self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.08))
-        # "... measure its errors on calibration sites, held back from fitting, ..."
-        cue(self, "measure its errors")
+        # "... from its errors alone."
+        cue(self, "from its errors")
+        self.play(FadeIn(none), run_time=self.share(0.08))
+        # "Measure the errors on calibration sites, held back from fitting, ..."
+        cue(self, "Measure the errors")
         self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.05), FadeIn(bars_name),
                   run_time=self.share(0.2))
         cue(self, "held back")
@@ -911,15 +912,16 @@ class Scene19(VideoScene):
         head = VGroup(label("a conformal 90% interval", 38, INK, weight=BOLD),
                       label("share of catches inside, at the test sites", 26, SUBDUED)
                       ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.5)
-        note = label("from a model with no distribution", 32, BLUE, weight=BOLD).to_edge(DOWN, buff=0.8)
-        # "At the test sites, the forest's interval held 90 per cent of the catches, just as promised, ..."
+        note = label("from nothing but the model's errors", 32, BLUE, weight=BOLD).to_edge(DOWN, buff=0.8)
+        # "At the test sites, the forest's conformal interval held 89 per cent of the catches, ..."
         self.play(FadeIn(head), FadeIn(rows[0][0]), FadeIn(rows[0][1]), FadeIn(promise), run_time=self.share(0.15))
-        cue(self, "held 90")
+        cue(self, "held 89")
         self.play(GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.12))
-        cue(self, "just as promised")
+        # "... close to the 90 promised, ..."
+        cue(self, "close to")
         self.play(Indicate(promise, color=GREEN), run_time=self.share(0.1))
-        # "... from a model with no distribution at all."
-        cue(self, "from a model")
+        # "... with nothing but the model's errors to go on."
+        cue(self, "with nothing but")
         self.play(FadeIn(note, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
@@ -946,7 +948,7 @@ class Scene20(VideoScene):
         # "... and use it where chlorophyll is highest."
         cue(self, "and use it")
         self.play(FadeIn(rows[1][0]), run_time=self.share(0.06))
-        # "It holds only 73 per cent, under the same label and at the same width."
+        # "It holds only 82 per cent, under the same label and at the same width."
         cue(self, "It holds only")
         self.play(GrowFromEdge(rows[1][2], LEFT), FadeIn(rows[1][3]), run_time=self.share(0.1))
         cue(self, "under the same")
@@ -979,30 +981,30 @@ class Scene22(VideoScene):
     def construct(self):
         rng = np.random.default_rng(3)
         sand = ground("sand", ORANGE, 3.3 * LEFT + 0.4 * DOWN, rng)
-        rock = ground("rock", GREY, 3.3 * RIGHT + 0.4 * DOWN, rng, kept=0.5)
+        mud = ground("mud", PURPLE, 3.3 * RIGHT + 0.4 * DOWN, rng, kept=0.5)
         chain = VGroup(*[label(t, 30, INK, weight=BOLD) for t in ("the gear", "the records", "the model")])
         arrows = VGroup()
         chain.arrange(RIGHT, buff=1.2).to_edge(UP, buff=0.4)
         for a, b in zip(chain[:-1], chain[1:]):
             arrows.add(Arrow(a.get_right(), b.get_left(), color=INK, stroke_width=4, buff=0.15))
-        missed_name = label("missed", 28, VERMILION, weight=BOLD).next_to(rock[0], DOWN, 0.2)
+        missed_name = label("missed", 28, VERMILION, weight=BOLD).next_to(mud[0], DOWN, 0.2)
         # "A model learns from the records, and the records come from a gear."
         self.play(FadeIn(chain[2]), FadeIn(chain[1]), GrowArrow(arrows[1]), run_time=self.share(0.15))
         cue(self, "and the records come")
         self.play(FadeIn(chain[0]), GrowArrow(arrows[0]), run_time=self.share(0.1))
-        # "Grabs and dredges often catch fewer animals on hard ground."
+        # "Grabs and dredges catch different shares of the animals on different ground."
         cue(self, "Grabs and dredges")
-        self.play(*[FadeIn(VGroup(g[0], g[1])) for g in (sand, rock)], run_time=self.share(0.1))
-        self.play(*[LaggedStart(*[FadeIn(a, scale=0.5) for a in g[2]], lag_ratio=0.05) for g in (sand, rock)],
+        self.play(*[FadeIn(VGroup(g[0], g[1])) for g in (sand, mud)], run_time=self.share(0.1))
+        self.play(*[LaggedStart(*[FadeIn(a, scale=0.5) for a in g[2]], lag_ratio=0.05) for g in (sand, mud)],
                   run_time=self.share(0.15))
-        cue(self, "fewer animals")
-        self.play(rock[3].animate.set_color(LIGHT).shift(0.15 * DOWN), FadeIn(missed_name),
+        cue(self, "different shares")
+        self.play(mud[3].animate.set_color(LIGHT).shift(0.15 * DOWN), FadeIn(missed_name),
                   run_time=self.share(0.15))
         self.finish()
 
 
 class Scene23(VideoScene):
-    """Schematic: the records on rock halved, everything else unchanged."""
+    """Schematic: the records on mud halved, everything else unchanged."""
 
     number = 23
 
@@ -1013,22 +1015,22 @@ class Scene23(VideoScene):
         rows = VGroup()
         for i, (kind, count) in enumerate(zip(kinds, counts)):
             y = 1.6 - 0.5 * i
-            words = label(kind, 26, GREY if kind == "rock" else SUBDUED,
-                          weight=BOLD if kind == "rock" else NORMAL).move_to([-3.6, y, 0], aligned_edge=RIGHT)
+            words = label(kind, 26, PURPLE if kind == "mud" else SUBDUED,
+                          weight=BOLD if kind == "mud" else NORMAL).move_to([-3.6, y, 0], aligned_edge=RIGHT)
             bar = Rectangle(width=count * 1.6, height=0.34, stroke_width=0, fill_color=BLUE, fill_opacity=1
                             ).move_to([-3.3, y, 0], aligned_edge=LEFT)
             rows.add(VGroup(words, bar))
         head = label("the survey's records", 32, SUBDUED, weight=BOLD).next_to(rows, UP, 0.4)
-        name = VGroup(label("half the animals on rock missed", 27, VERMILION, weight=BOLD),
+        name = VGroup(label("half the animals on mud missed", 27, VERMILION, weight=BOLD),
                       label("everything else unchanged", 26, SUBDUED)).arrange(DOWN, buff=0.1)
         name.move_to(3.7 * RIGHT + 1.0 * UP)
-        again = card("the same analysis,\nthe same folds", BLUE, 32).move_to(3.9 * RIGHT + 1.4 * DOWN)
-        # "Suppose the survey's gear missed half the animals on rock, ..."
+        again = card("the same report,\nthe same folds", BLUE, 32).move_to(3.9 * RIGHT + 1.4 * DOWN)
+        # "Suppose the survey's gear missed half the animals on mud, ..."
         self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], *[GrowFromEdge(r[1], LEFT) for r in rows],
                   run_time=self.share(0.15))
         cue(self, "missed half")
         halve = [r[1].animate.stretch(0.5, 0, about_edge=LEFT).set_color(VERMILION)
-                 for r, k in zip(rows, kinds) if k == "rock"]
+                 for r, k in zip(rows, kinds) if k == "mud"]
         self.play(*halve, FadeIn(name), run_time=self.share(0.2))
         # "... and run the whole analysis again, on the same folds."
         cue(self, "and run the whole")
@@ -1036,58 +1038,56 @@ class Scene23(VideoScene):
         self.finish()
 
 
-def multiplier_layout(scene):
+def ratio_layout(scene):
+    """Mud's ratio to sand across the ten fold models, as recorded and with half missed on mud."""
     gear = scene.data("gear").set_index("records")
-    axes, frame = chart([0.2, 1.4, 0.2], [0, 3, 1], 8.0, 3.0, [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4], [],
-                        "rock's multiplier against sand", None, x_text=lambda v: f"{v:.1f}")
+    axes, frame = chart([0.8, 1.25, 0.05], [0, 3, 1], 8.0, 3.0, [0.8, 0.9, 1.0, 1.1, 1.2], [],
+                        "mud's ratio to sand, the forest of each fold", None, x_text=lambda v: f"{v:.1f}")
     VGroup(axes, frame).move_to(1.2 * RIGHT + 0.3 * DOWN)
     one = DashedLine(axes.c2p(1, 0), axes.c2p(1, 3), color=INK, stroke_width=4)
     one_name = label("1: the same as sand", 24, INK).next_to(one, UP, 0.1)
     rows = {}
     for key, y, colour, name in (("As recorded", 2.1, BLUE, "as recorded"),
-                                 ("Half missed on rock", 0.9, VERMILION, "half missed on rock")):
+                                 ("Half missed on mud", 0.9, VERMILION, "half missed on mud")):
         g = gear.loc[key]
-        line = Line(axes.c2p(g["rock_low"], y), axes.c2p(g["rock_high"], y), color=colour, stroke_width=8)
-        dot = Dot(axes.c2p(g["rock"], y), radius=0.15, color=colour)
-        value = label(f"{g['rock']:.2f}  ({g['rock_low']:.2f} to {g['rock_high']:.2f})", 26, colour, weight=BOLD
+        line = Line(axes.c2p(g["mud_low"], y), axes.c2p(g["mud_high"], y), color=colour, stroke_width=14)
+        value = label(f"{g['mud_low']:.2f} to {g['mud_high']:.2f}", 26, colour, weight=BOLD
                       ).next_to(line, UP, 0.15)
         value.add_background_rectangle(color=BACKGROUND, opacity=1, buff=0.05)
-        words = label(name, 28, colour, weight=BOLD).next_to(axes.c2p(0.2, y), LEFT, 0.3)
-        rows[key] = VGroup(words, line, dot, value)
+        words = label(name, 28, colour, weight=BOLD).next_to(axes.c2p(0.8, y), LEFT, 0.3)
+        rows[key] = VGroup(words, line, value)
     return gear, axes, frame, one, one_name, rows
 
 
 class Scene24(VideoScene):
-    """Page results: rock's multiplier with its interval, as recorded and with the biased records."""
+    """Page results: mud's ratio to sand across the fold models, as recorded and with the biased records."""
 
     number = 24
 
     def construct(self):
-        _, axes, frame, one, one_name, rows = multiplier_layout(self)
-        recorded, missed = rows["As recorded"], rows["Half missed on rock"]
-        head = label("the GAM's multiplier for rock, with its 95% interval", 32, SUBDUED, weight=BOLD
+        _, axes, frame, one, one_name, rows = ratio_layout(self)
+        recorded, missed = rows["As recorded"], rows["Half missed on mud"]
+        head = label("at the same other inputs, across the ten folds", 32, SUBDUED, weight=BOLD
                      ).to_edge(UP, buff=0.35)
-        cannot = label("cannot tell", 28, BLUE, weight=BOLD).next_to(recorded[1], RIGHT, 0.3)
-        half = label("half as many", 28, VERMILION, weight=BOLD).next_to(axes.c2p(1.0, 0.9), RIGHT, 0.3)
+        more = label("more on mud", 26, BLUE, weight=BOLD).next_to(recorded[1], DOWN, 0.15)
+        fewer = label("fewer on mud", 26, VERMILION, weight=BOLD).next_to(missed[1], DOWN, 0.15)
         gear_not = label("the change is the gear's, not the species'", 32, INK, weight=BOLD
                          ).to_edge(DOWN, buff=0.25)
-        # "As recorded, the GAM could not tell rock from sand: ..."
+        # "As recorded, the forest predicted more animals on mud than on sand: ..."
         self.play(FadeIn(head), FadeIn(frame), Create(one), FadeIn(one_name), run_time=self.share(0.08))
-        # "... its multiplier of 0.80 had an interval from 0.59 to 1.09, which includes one."
-        cue(self, "its multiplier")
-        self.play(FadeIn(recorded[0]), FadeIn(recorded[2], scale=0.5), FadeIn(recorded[3]), run_time=self.share(0.06))
-        cue(self, "had an interval")
-        self.play(GrowFromCenter(recorded[1]), run_time=self.share(0.06))
-        cue(self, "which includes")
-        self.play(Indicate(one, color=INK), FadeIn(cannot), run_time=self.share(0.06))
-        # "With the biased records it is 0.45, from 0.32 to 0.63, ..."
-        cue(self, "With the biased")
-        self.play(FadeIn(missed[0]), FadeIn(missed[2], scale=0.5), FadeIn(missed[3]), run_time=self.share(0.06))
-        cue(self, "from 0.32")
-        self.play(GrowFromCenter(missed[1]), run_time=self.share(0.06))
-        # "... and a study would report half as many animals on rock."
+        self.play(FadeIn(recorded[0]), run_time=self.share(0.05))
+        # "... 1.10 to 1.16 times as many, across the ten folds."
+        cue(self, "1.10 to")
+        self.play(GrowFromCenter(recorded[1]), FadeIn(recorded[2]), run_time=self.share(0.08))
+        self.play(FadeIn(more), run_time=self.share(0.05))
+        # "With half missed on mud, every fold put mud below sand, at 0.90 to 0.95, ..."
+        cue(self, "With half missed")
+        self.play(FadeIn(missed[0]), run_time=self.share(0.05))
+        cue(self, "at 0.90")
+        self.play(GrowFromCenter(missed[1]), FadeIn(missed[2]), run_time=self.share(0.08))
+        # "... and a study would report fewer animals on mud."
         cue(self, "and a study")
-        self.play(FadeIn(half), run_time=self.share(0.06))
+        self.play(FadeIn(fewer), run_time=self.share(0.06))
         # "The change is the gear's, not the species'."
         cue(self, "The change")
         self.play(FadeIn(gear_not, shift=0.2 * UP), run_time=self.share(0.08))
@@ -1095,29 +1095,38 @@ class Scene24(VideoScene):
 
 
 class Scene25(VideoScene):
-    """Page results: the cross-validated RMSE as recorded and with the biased records."""
+    """Page results: the forest's cross-validated RMSE, folds and coverage, as recorded and biased."""
 
     number = 25
 
     def construct(self):
-        gear, *_ = multiplier_layout(self)
-        values = [gear.loc["As recorded", "gam_rmse"], gear.loc["Half missed on rock", "gam_rmse"]]
+        gear = self.data("gear").set_index("records")
+        keys = ["As recorded", "Half missed on mud"]
+        values = [gear.loc[k, "forest_rmse"] for k in keys]
         top = np.ceil(max(values))
-        rows = hbars(["as recorded", "half missed on rock"], values, [BLUE, VERMILION], top,
-                     length=6.0, height=0.6, step=1.1, size=32, digits=2)
-        rows.move_to(0.6 * LEFT + 0.2 * DOWN)
-        head = VGroup(label("the GAM's cross-validated RMSE (individuals)", 32, SUBDUED, weight=BOLD),
+        rows = hbars(["as recorded", "half missed on mud"], values, [BLUE, VERMILION], top,
+                     length=6.0, height=0.6, step=1.5, size=32, digits=2)
+        rows.move_to(0.6 * LEFT + 0.1 * DOWN)
+        notes = VGroup(*[
+            label(f"better than the average on {int(gear.loc[k, 'folds_better'])} of 10 folds,"
+                  f"  intervals held {pct(gear.loc[k, 'coverage'])}", 24, SUBDUED
+                  ).next_to(r[1], DOWN, 0.12, aligned_edge=LEFT)
+            for k, r in zip(keys, rows)])
+        head = VGroup(label("the forest's cross-validated RMSE (individuals)", 32, SUBDUED, weight=BOLD),
                       label("lower is better", 26, SUBDUED)).arrange(DOWN, buff=0.1).to_edge(UP, buff=0.5)
         improved = label("improved", 34, VERMILION, weight=BOLD).next_to(rows[1][2], RIGHT, 0.4)
-        why = label("every fold carries the same bias", 32, INK, weight=BOLD).to_edge(DOWN, buff=0.6)
+        why = label("every fold carries the same bias", 32, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
         # "The score did not warn."
-        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.12))
-        # "The cross-validated RMSE improved, from 4.34 to 4.27."
-        cue(self, "from 4.34")
-        self.play(GrowFromEdge(rows[0][1], LEFT), FadeIn(rows[0][2]), run_time=self.share(0.08))
-        cue(self, "to 4.27")
-        self.play(GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.08))
-        self.play(FadeIn(improved, shift=0.2 * LEFT), run_time=self.share(0.06))
+        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.1))
+        # "The forest's cross-validated RMSE fell, from 4.41 to 3.86."
+        cue(self, "from 4.41")
+        self.play(GrowFromEdge(rows[0][1], LEFT), FadeIn(rows[0][2]), run_time=self.share(0.07))
+        cue(self, "to 3.86")
+        self.play(GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.07))
+        self.play(FadeIn(improved, shift=0.2 * LEFT), run_time=self.share(0.05))
+        # "It still beat the average on nine folds of ten, and its intervals still held 95 per cent."
+        cue(self, "It still beat")
+        self.play(FadeIn(notes, shift=0.1 * UP), run_time=self.share(0.1))
         # "Every fold carries the same bias, so the model matches the records as well as ever."
         cue(self, "Every fold")
         self.play(FadeIn(why, shift=0.2 * UP), run_time=self.share(0.1))
