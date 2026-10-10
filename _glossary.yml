@@ -320,6 +320,9 @@ terms:
     definition: "A sample of the same size as the data, drawn from it with replacement, so some examples appear twice or more and others not at all."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
     more: chapters/07-validation/uncertainty-and-stability.qmd
+  - term: "Out-of-bag error"
+    definition: "A random forest's error when each training example is predicted only by the trees whose bootstrap samples left it out; a score on unseen examples without holding data back."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
   - term: "Learning rate"
     definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
