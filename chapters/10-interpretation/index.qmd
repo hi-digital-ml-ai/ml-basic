@@ -33,17 +33,19 @@ The next two read a model from its parts and say how sure its predictions are:
   as a habitat description; a black box earns its place where inputs work in
   combination;
 - **communicating uncertainty**: an interval for the average and an interval for a new
-  catch answer different questions, and conformal prediction gives any model an
-  interval that holds at stations like the ones that set it.
+  catch answer different questions; a random forest gets the first from bootstrap
+  refits and the second as a quantile forest, and conformal prediction gives any model
+  an interval that holds at stations like the ones that set it.
 
 The last two turn the analysis into a report:
 
 - **reproducibility and transparent reporting**: a seed makes a run repeat, but the
   split of sites moves a forest's score far more than its seed, and a short report
   lets a reader re-run the whole analysis;
-- **from a model to a claim**: the Methods and Results paragraphs are written from the
-  code, the simulation confirms the temperature curve but not a depth peak, and a gear
-  that misses animals on rock improves the cross-validated score.
+- **from a model to a claim**: a random forest's Methods and Results paragraphs are
+  written from the code, the simulation confirms the temperature shape but not a depth
+  peak, and a gear that misses half the animals on mud turns more animals on mud into
+  fewer while the cross-validated score improves.
 
 The section picks up threads from earlier ones.
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built
