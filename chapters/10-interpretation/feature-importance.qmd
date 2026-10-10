@@ -16,14 +16,16 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Importance scores say which inputs a model relies on
 
 A linear model shows how much each input matters through its coefficients: one number
 for each input, in the outcome's units. A random forest averages hundreds of trees and
 has no such numbers. **Feature importance** gives every input a score for how much a
-fitted model relies on it, and works for any model. This page measures it in two ways,
-adds columns of random numbers to show what an unused input scores, and repeats the
-measurement to find the scores that hold.
+fitted model relies on it, and works for any model. Every input gets some score, though,
+and one split of the data can rank them by chance. This page shows how to measure
+importance and how to tell a score that means something from one that noise would give.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 

@@ -806,6 +806,17 @@ terms:
     definition: "The mean squared difference between a row and its rebuilt version; the loss an autoencoder makes small, and large for rows unlike the training data."
     page: chapters/09-neural-networks/autoencoders.qmd
 
+  # 10 · Interpretation: Feature importance
+  - term: "Feature importance"
+    definition: "A score for each input of how much a fitted model relies on it; it says what the model uses, not the direction of an effect or its cause."
+    page: chapters/10-interpretation/feature-importance.qmd
+  - term: "Permutation importance"
+    definition: "The rise in a model's error on test data when one input is shuffled, so its values no longer belong to their rows; it works for any model."
+    page: chapters/10-interpretation/feature-importance.qmd
+  - term: "Impurity importance"
+    definition: "A random forest's built-in score: how much each input's splits lowered the error on the training data, summed over every tree; it favours inputs with many values."
+    page: chapters/10-interpretation/feature-importance.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
