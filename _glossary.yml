@@ -817,6 +817,17 @@ terms:
     definition: "A random forest's built-in score: how much each input's splits lowered the error on the training data, summed over every tree; it favours inputs with many values."
     page: chapters/10-interpretation/feature-importance.qmd
 
+  # 10 · Interpretation: Partial effects
+  - term: "Partial effect"
+    definition: "How a model's prediction changes along one input, drawn as a curve; it describes the model, and describes the species only where the data let that input vary on its own."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "Partial dependence plot"
+    definition: "A curve made by setting one input to the same value in every row, predicting each row and averaging, then repeating along the input's range; it works for any model."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "ICE curve"
+    definition: "Individual conditional expectation: one row's prediction as one input moves and the rest of the row stays as recorded; the partial dependence is their average."
+    page: chapters/10-interpretation/partial-effects.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
