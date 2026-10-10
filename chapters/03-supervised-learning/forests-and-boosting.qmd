@@ -51,6 +51,14 @@ rule, one strong input would open almost every tree, the trees would be too alik
 averaging them would gain little. Adding trees makes the average steadier, up to a
 point where more trees change nothing; too many cost computing time but do no harm.
 
+Predicting every station from only the trees whose samples left it out gives the
+**out-of-bag error**: a score on stations each tree never saw, which a forest produces
+without holding any data back.
+It leaves out stations rather than sites, as a
+[random split](../02-marine-data/splitting-data.qmd#a-random-split-puts-each-site-on-both-sides)
+does, so a station can be scored by trees that saw others from its site. On survey data
+it can therefore flatter a forest, and held-back sites remain the fair test.
+
 ## Boosting adds small trees in sequence
 
 Boosting starts from a simple prediction, such as the average outcome, and adds trees
@@ -338,6 +346,48 @@ is lowest, `r f2(at_size(boost_scores, best_boost)$validation)`, at
 fitting chance patterns in the fitting sites, the overfitting a deep single tree
 showed.
 
+ranger also records the forest's out-of-bag error as it grows the trees.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: out-of-bag
+forest_400 <- workflow(tree_recipe, forest_model(400)) |> fit(fitting)
+# ranger's prediction.error is the out-of-bag mean squared error
+tibble(training   = at_size(forest_scores, 400)$training,
+       out_of_bag = sqrt(extract_fit_engine(forest_400)$prediction.error)) |>
+  round(2)
+```
+
+## Python
+
+```{python}
+forest_400 = fit(forest_model(400).set_params(oob_score=True), fitting)
+out_of_bag = forest_400["model"].oob_prediction_
+pd.DataFrame({
+    "training": [rmse(forest_400, fitting)],
+    "out_of_bag": [root_mean_squared_error(fitting["abundance"], out_of_bag)],
+}).round(2)
+```
+
+:::
+
+```{r}
+#| label: out-of-bag-numbers
+#| include: false
+oob_rmse <- sqrt(extract_fit_engine(forest_400)$prediction.error)
+stopifnot(oob_rmse > at_size(forest_scores, 400)$validation)
+```
+
+On the fitting stations the 400-tree forest misses by
+`r f2(at_size(forest_scores, 400)$training)` animals, but by `r f2(oob_rmse)` when each
+station is predicted only by the trees that never drew it. The out-of-bag error is the
+more honest of the two. It is higher than the validation error, but the two score
+different stations, and
+[RMSEs from different test sets cannot be compared](../02-marine-data/information-leakage.qmd#group-leakage-the-same-site-twice).
+
 ### The ensembles beat one tree but not Poisson regression
 
 The forest of 400 trees and the boosted model of `r best_boost` trees are refitted on
@@ -461,7 +511,7 @@ how its predictions change with each.
   threshold from `r min(thresholds)` to `r max(thresholds)` mg m⁻³.
 - A random forest averages many trees, each grown on a bootstrap sample and choosing
   among a few random inputs at each question. Adding trees steadies it and never makes
-  it worse.
+  it worse, and the stations each tree left out give an out-of-bag error for free.
 - Boosting adds small trees in sequence, each fitted to the remaining errors and scaled
   down by a learning rate. Too many trees fit the noise, so the number is chosen on
   validation data.
