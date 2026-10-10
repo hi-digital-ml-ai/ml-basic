@@ -1063,8 +1063,8 @@ from the 50-scene first build and are not in the cut.
 Rebuilt from the second-pass pages (`feature/revise-interpretation`), where
 *Communicating uncertainty* moved to the random forest and *From a model to a claim*
 became a forest report with the gear bias on mud. Same three points and 33 scenes;
-7:44 on the draft voice (was 7:27). Never narrated with Gemini, so a `narrate.py` run is
-all 33 scenes (about $0.12).
+7:44 on the draft voice (was 7:27). The first Gemini narration of this video: the user
+ran `narrate.py` on all 33 scenes (about $0.09); the final cut runs 7:28.
 
 - Chapter one is unchanged; the re-export matched every number (impurity ranking the
   three random columns above salinity, the seabed and the season; 39 test sites;
