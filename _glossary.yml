@@ -855,3 +855,11 @@ terms:
   - term: "Quantile forest"
     definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
     page: chapters/10-interpretation/communicating-uncertainty.qmd
+
+  # 10 · Interpretation: Reproducibility and transparent reporting
+  - term: "Reproducible"
+    definition: "Of an analysis that gives the same numbers when someone else runs it on the same data with the same code."
+    page: chapters/10-interpretation/reproducibility.qmd
+  - term: "Seed"
+    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly, though it does not show how far its numbers would move with other data."
+    page: chapters/10-interpretation/reproducibility.qmd
