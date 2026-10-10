@@ -840,6 +840,18 @@ terms:
     page: chapters/10-interpretation/black-box-or-not.qmd
 
   # 10 · Interpretation: Communicating uncertainty
+  - term: "Prediction interval"
+    definition: "A range for one new observation, wider than an interval for the average because it adds the scatter of single observations; it stays wide however much data there is."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Coverage"
+    definition: "The share of new observations that fall inside their prediction intervals; a 90% interval should hold 9 in 10 at sites the model never saw."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Conformal prediction"
+    definition: "An interval for any model that reaches either side of a prediction as far as 90% of its errors on a calibration set; it holds at stations like the calibration ones."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
+  - term: "Calibration set"
+    definition: "Data held out from fitting and testing, used to measure a model's errors and so set the width of a conformal interval."
+    page: chapters/10-interpretation/communicating-uncertainty.qmd
   - term: "Quantile forest"
     definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
     page: chapters/10-interpretation/communicating-uncertainty.qmd
