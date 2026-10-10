@@ -1036,3 +1036,24 @@ it stands and ran `narrate.py` (35 requests, about $0.09); the final cut runs 7:
   16, 3 and 2 components, 52 of 60, 2% against 11% near the boundary, ARI 0.92.
 - Possible trims, not taken: fold the adjusted Rand index scene (24) into the bootstrap
   result, and the second component into the first (about 33 scenes, 7:20).
+
+## §9 Neural networks second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-neural-networks`), where *How much
+data a network needs* and *When to use one* merged into *When a network pays off*
+(`when-a-network-pays-off.qmd`, also the key in `exports.R`) and the learning-rate
+sweep left *Training a network*. Same three points and 44 scenes, 7:32 on the draft
+voice (was 7:48). The user ran `narrate.py` on the revised script (44 requests, about
+$0.09); the final cut runs 7:34. Old `visuals/scenes/Scene45`–`50.mp4` are leftovers
+from the 50-scene first build and are not in the cut.
+
+- Scenes 18–19 are now schematic: too short a step crawls, too long a step overshoots
+  further each time until the error is "not a number". No rates or step counts.
+- Scenes 25–30 replace the learning curves with the page's single fits on 539
+  stations: on the counts the forest scores 4.20, linear regression 4.32 and the
+  network last at 4.52, against 4.72 for predicting the mean; trained on the true mean
+  counts (a check only, scene 27 schematic) the network leads at 1.43, the forest 1.62,
+  linear regression 2.12. "Short of signal, not of rows."
+- Unchanged numbers were re-checked against the re-export: early stopping at step
+  1,937, 4% worse by the end; seeds spanning 0.055, the average beating seven; the band
+  at 0.715, 0.827, 0.926 and 0.999 with 9 weights, 0.997 from 100 stations, 1.000 named.
