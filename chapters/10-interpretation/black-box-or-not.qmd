@@ -524,8 +524,8 @@ another. A black box can, and it earns its place in three kinds of work.
 
 - **Inputs that work in combination.** A water mass is a diagonal band in temperature
   and salinity. In
-  [When a network is the right tool](../09-neural-networks/when-to-use-one.qmd) a
-  network draws it from a few stations, while logistic regression matches it only once
+  [When a network pays off](../09-neural-networks/when-a-network-pays-off.qmd) a
+  network draws it from a few hundred stations, while logistic regression matches it only once
   the combination is named as an input. A black box well ahead of a GAM is a sign of
   such a combination, worth finding and naming.
 - **Raw inputs.** Images, sound and spectra have no input whose curve means anything

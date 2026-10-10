@@ -26,7 +26,7 @@ class Title(TitleScene):
 
 PROMISES = ["What a neural network actually computes",
             "Why a network can fail without a warning",
-            "When a network is the right tool"]
+            "When a network pays off"]
 ANSWERS = ["Weighted sums with a\nbend between them;\nthe bend does the work",
            "Set it up on validation\ndata, and report the\nspread over seeds",
            "Signal to spare, and\na combination nobody\nhas named"]
@@ -595,51 +595,34 @@ class Scene17(VideoScene):
         self.finish()
 
 
-RATE_COLOURS = {0.01: SKY, 0.05: GREEN, 0.2: BLUE, 0.5: ORANGE, 2.0: VERMILION}
+def descent_layout():
+    """Schematic: the error curve of scene 15, for the learning-rate scenes."""
+    f = lambda x: 0.22 * (x - 6.2) ** 2 + 0.5  # noqa: E731
+    axes, frame = chart([0, 10, 1], [0, 8, 1], 9, 4.6, [], [], "A weight", "Error")
+    frame.move_to([0, -0.8, 0])
+    curve = axes.plot(f, x_range=[0.4, 10], color=INK, stroke_width=5)
+    return axes, f, VGroup(frame, curve)
 
 
-def rates_layout(scene):
-    rates = scene.data("rates")
-    linear = value(scene, "training-a-network", "linear_mse")
-    names = {0.01: "0.01: crawls", 0.05: "0.05", 0.2: "0.2: goes lowest", 0.5: "0.5: bounces",
-             2.0: "2: not a number"}
-    top = np.log10(rates["step"].max())
-    axes, frame = chart([0, top, 1], [0.5, 0.9, 0.1], 7.8, 4.8, [1, 10, 100, "1,000"],
-                        [0.5, 0.6, 0.7, 0.8, 0.9], "Gradient-descent step (log scale)", "Training MSE",
-                        x_at=[0, 1, 2, 3], x_fmt="{}", y_fmt="{:.1f}")
-    frame.move_to([-2.4, -0.2, 0])
-    line = DashedLine(axes.c2p(0, linear), axes.c2p(top, linear), color=GREY, stroke_width=3)
-    line_name = label("Straight line", 26, SUBDUED).next_to(axes.c2p(0.05, linear), DOWN + RIGHT, 0.1)
-    curves, legend = {}, {}
-    head = label("Learning rate", 30, SUBDUED, weight=BOLD).move_to([2.2, 2.8, 0], aligned_edge=LEFT)
-    for i, (rate, rows) in enumerate(rates.groupby("rate")):
-        values = rows["mse"].to_numpy()
-        keep = np.isfinite(values) & (values <= 0.9)
-        steps = rows["step"].to_numpy()
-        # The page clips its panel at 0.9; the 0.5 run's spikes and the 2 run leave it.
-        curves[rate] = polyline(axes, np.log10(steps[keep]), np.clip(values[keep], 0.5, 0.9),
-                                RATE_COLOURS[rate], 5) if keep.sum() > 1 else VGroup()
-        legend[rate] = label(names[rate], 30, RATE_COLOURS[rate], weight=BOLD
-                             ).move_to([2.2, 2.1 - 0.6 * i, 0], aligned_edge=LEFT)
-    return axes, VGroup(frame, line, line_name), curves, legend, head
+def ball_at(axes, f, x):
+    return axes.c2p(x, f(x)) + 0.18 * UP
 
 
 class Scene18(VideoScene):
     number = 18
 
     def construct(self):
-        axes, frame, curves, legend, head = rates_layout(self)
-        passes = int(value(self, "training-a-network", "passes_001"))
-        linear = value(self, "training-a-network", "linear_mse")
-        x = np.log10(passes)
-        mark = DashedLine(axes.c2p(x, 0.5), axes.c2p(x, linear), color=SKY, stroke_width=3)
-        mark_name = label(f"Step {passes:,}", 26, SKY, weight=BOLD).next_to(axes.c2p(x, 0.5), UP + LEFT, 0.12)
+        axes, f, frame = descent_layout()
+        ball = Dot(ball_at(axes, f, 0.8), radius=0.18, color=ORANGE)
+        head = label("The learning rate: the length of each step", 32, SUBDUED).to_edge(UP, buff=0.5)
+        crawl = label("Too short: training crawls", 34, SKY, weight=BOLD).next_to(head, DOWN, 0.3)
         # "The length of each step is the learning rate."
-        self.play(FadeIn(frame), FadeIn(head), run_time=self.share(0.25))
-        # "At 0.01, the network takes 1,122 steps to beat a straight line."
-        self.wait(max(self.share(0.35) - self.time, 0.01))
-        self.play(Create(curves[0.01]), FadeIn(legend[0.01]), run_time=self.share(0.4))
-        self.play(Create(mark), FadeIn(mark_name), run_time=self.share(0.12))
+        self.play(FadeIn(frame), FadeIn(ball), FadeIn(head), run_time=self.share(0.3))
+        # "Too short, and training crawls."
+        self.wait(max(self.share(0.5) - self.time, 0.01))
+        self.play(FadeIn(crawl), run_time=self.share(0.1))
+        for x in np.linspace(0.85, 1.15, 6)[1:]:
+            self.play(ball.animate.move_to(ball_at(axes, f, x)), run_time=self.share(0.06))
         self.finish()
 
 
@@ -647,25 +630,30 @@ class Scene19(VideoScene):
     number = 19
 
     def construct(self):
-        axes, frame, curves, legend, head = rates_layout(self)
-        self.add(frame, head, curves[0.01], legend[0.01])
-        up = Arrow(axes.c2p(0.05, 0.62), axes.c2p(0.05, 0.93), buff=0, color=VERMILION, stroke_width=6)
-        nan_at = int(value(self, "training-a-network", "nan_at"))
-        warn = VGroup(label(f"At step {nan_at},", 30, VERMILION, weight=BOLD),
-                      label("and no warning", 30, VERMILION, weight=BOLD)
-                      ).arrange(DOWN, buff=0.08, aligned_edge=LEFT).next_to(legend[2.0], DOWN, 0.35
-                                                                             ).align_to(legend[2.0], LEFT)
-        # "At 0.2 it goes lowest."
-        self.play(Create(curves[0.05]), Create(curves[0.2]), FadeIn(legend[0.05]), FadeIn(legend[0.2]),
-                  run_time=self.share(0.14))
-        # "At 0.5 it is quicker, but bounces around the valley floor."
-        self.play(Create(curves[0.5]), FadeIn(legend[0.5]), run_time=self.share(0.22))
-        # "At 2, the error passes 1,000 by step 6, and becomes "not a number" at step 147, ..."
-        self.wait(max(self.share(0.42) - self.time, 0.01))
-        self.play(GrowArrow(up), FadeIn(legend[2.0]), run_time=self.share(0.15))
-        # "... with no warning at all."
-        self.wait(max(self.share(0.82) - self.time, 0.01))
-        self.play(FadeIn(warn, shift=0.2 * UP), run_time=self.share(0.1))
+        axes, f, frame = descent_layout()
+        ball = Dot(ball_at(axes, f, 4.8), radius=0.18, color=VERMILION)
+        head = label("The learning rate: the length of each step", 32, SUBDUED).to_edge(UP, buff=0.5)
+        long_name = label("Too long: each step overshoots", 34, VERMILION, weight=BOLD).next_to(head, DOWN, 0.3)
+        # Each step lands on the other side of the valley floor, further out than the last.
+        xs = [6.2 + d for d in (1.5, -2.2, 3.3, -4.9)]
+        path = VGroup()
+        nan = VGroup(label("Error: not a number", 36, VERMILION, weight=BOLD),
+                     label("and no warning", 32, VERMILION)).arrange(DOWN, buff=0.12).move_to(axes.c2p(6.2, 4.4))
+        nan.add_to_back(SurroundingRectangle(nan, buff=0.2, stroke_width=0, fill_color=BACKGROUND, fill_opacity=1))
+        self.add(frame, head)
+        # "Too long, and each step overshoots the valley floor further than the last, ..."
+        self.play(FadeIn(ball), FadeIn(long_name), run_time=self.share(0.12))
+        here = 4.8
+        for x in xs:
+            arc = ArcBetweenPoints(ball_at(axes, f, here), ball_at(axes, f, x), angle=-PI / 3 if x > here else PI / 3,
+                                   color=VERMILION, stroke_width=3)
+            path.add(DashedVMobject(arc, num_dashes=14))
+            self.play(Create(path[-1]), ball.animate.move_to(ball_at(axes, f, x)), run_time=self.share(0.1))
+            here = x
+        # "... until the error becomes "not a number", with no warning at all."
+        self.play(ball.animate.move_to(axes.c2p(10.6, 9.5)).set_opacity(0), run_time=self.share(0.08))
+        self.wait(max(self.share(0.66) - self.time, 0.01))
+        self.play(FadeIn(nan, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
@@ -792,82 +780,59 @@ class Scene24(KeyPointScene):
 
 # When a network pays off (scenes 25–37) ------------------------------------------------------
 
-CURVE_COLOURS = {"Random forest": GREEN, "Linear regression": SUBDUED, "Neural network": VERMILION}
-CURVE_NAMES = {"Random forest": "Random forest", "Linear regression": "Linear regression",
-               "Neural network": "Network, 8 hidden units"}
-Y_TOP = 9.0
+SURVEY_ORDER = ["Random forest", "Linear regression", "Neural network"]
+SURVEY_NAMES = ["Random forest", "Linear regression", "Network"]
+SURVEY_COLOURS = [GREEN, GREY, VERMILION]
+BAR_SCALE = 1.25
 
 
-def curves_layout(scene):
-    curves = scene.data("learning-curves")
-    baseline = value(scene, "how-much-data", "baseline")
-    sizes = sorted(curves["n"].unique())
-    lo, hi = np.log10(sizes[0]), np.log10(sizes[-1])
-    axes, frame = chart([lo, hi, 0.5], [3.5, Y_TOP, 1], 7.0, 5.0, sizes, [4, 5, 6, 7, 8, 9],
-                        "Training stations (log scale)", "RMSE on test sites (individuals)",
-                        x_at=np.log10(sizes))
-    frame.move_to([-2.6, -0.2, 0])
-    base = DashedLine(axes.c2p(lo, baseline), axes.c2p(hi, baseline), color=GREY, stroke_width=4)
-    right = axes.c2p(hi, 0)[0] + 0.3
-    base_name = label(f"Predict the mean: {baseline:.2f}", 26, SUBDUED, weight=BOLD
-                      ).move_to([right, base.get_y(), 0], aligned_edge=LEFT)
-    lines, ribbons, legend = {}, {}, {}
-    for i, model in enumerate(["Random forest", "Linear regression", "Neural network"]):
-        rows = curves[curves["model"] == model].sort_values("n")
-        xs = np.log10(rows["n"]).to_numpy()
-        colour = CURVE_COLOURS[model]
-        lines[model] = VGroup(polyline(axes, xs, rows["rmse"].clip(upper=Y_TOP), colour, 6),
-                              *[Dot(axes.c2p(x, min(y, Y_TOP)), radius=0.07, color=colour)
-                                for x, y in zip(xs, rows["rmse"])])
-        upper = rows["upper"].clip(upper=Y_TOP).to_numpy()
-        lower = rows["lower"].clip(upper=Y_TOP).to_numpy()
-        ribbons[model] = Polygon(*[axes.c2p(x, y) for x, y in zip(xs, upper)],
-                                 *[axes.c2p(x, y) for x, y in zip(xs[::-1], lower[::-1])],
-                                 stroke_width=0, fill_color=colour, fill_opacity=0.15)
-        legend[model] = label(CURVE_NAMES[model], 28, colour, weight=BOLD
-                              ).move_to([right, 2.6 - 0.5 * i, 0], aligned_edge=LEFT)
-    return dict(axes=axes, frame=frame, base=VGroup(base, base_name), lines=lines, ribbons=ribbons,
-                legend=legend, curves=curves, right=right)
+def counts_layout(scene):
+    scores = scene.data("survey-scores").set_index("model")
+    baseline = value(scene, "when-a-network-pays-off", "baseline")
+    rows = hbar_rows(SURVEY_NAMES, [scores.loc[m, "counts"] for m in SURVEY_ORDER], SURVEY_COLOURS,
+                     BAR_SCALE, x0=-2.4, top=0.9, step=1.3, digits=2)
+    head = label("RMSE on the counts at new sites (individuals)", 30, SUBDUED).to_edge(UP, buff=0.6)
+    x = -2.4 + BAR_SCALE * baseline
+    base = DashedLine([x, 1.7, 0], [x, -2.0, 0], color=GREY, stroke_width=4)
+    base_name = label(f"Predict the mean: {baseline:.2f}", 28, SUBDUED, weight=BOLD).next_to(base, DOWN, 0.15)
+    for r in rows:  # the bars end near the line, so each value sits inside its bar
+        r[2].set_color(BACKGROUND).next_to(r[1].get_right(), LEFT, 0.2)
+    return rows, head, VGroup(base, base_name)
 
 
 class Scene25(VideoScene):
     number = 25
 
     def construct(self):
-        c = curves_layout(self)
+        rows, head, base = counts_layout(self)
+        n_train = int(value(self, "when-a-network-pays-off", "n_train"))
+        fitted = label(f"Each fitted once, on {n_train} stations", 30, INK, weight=BOLD).next_to(head, DOWN, 0.3)
         # "Back to the survey. Linear regression, a random forest and a network with eight hidden units ..."
-        self.play(FadeIn(c["frame"]), run_time=self.share(0.15))
-        self.play(LaggedStart(*[FadeIn(c["legend"][m]) for m in c["legend"]], lag_ratio=0.4), run_time=self.share(0.3))
+        self.play(FadeIn(head), LaggedStart(*[FadeIn(r[0]) for r in rows], lag_ratio=0.4), run_time=self.share(0.3))
+        # "... are each fitted once, on 539 stations."
+        self.wait(max(self.share(0.45) - self.time, 0.01))
+        self.play(FadeIn(fitted), run_time=self.share(0.12))
         # "Predicting the mean scores 4.72."
         self.wait(max(self.share(0.78) - self.time, 0.01))
-        self.play(Create(c["base"][0]), FadeIn(c["base"][1]), run_time=self.share(0.15))
+        self.play(Create(base[0]), FadeIn(base[1]), run_time=self.share(0.15))
         self.finish()
-
-
-def end_values(c):
-    curves = c["curves"]
-    at = curves[curves["n"] == curves["n"].max()].set_index("model")["rmse"]
-    return {"Random forest": label(f"{at['Random forest']:.2f}", 26, GREEN, weight=BOLD
-                                   ).next_to(c["lines"]["Random forest"][-1], DOWN + LEFT, 0.1),
-            "Neural network": label(f"{at['Neural network']:.2f}", 26, VERMILION, weight=BOLD
-                                    ).next_to(c["lines"]["Neural network"][-1], UP, 0.15)}
 
 
 class Scene26(VideoScene):
     number = 26
 
     def construct(self):
-        c = curves_layout(self)
-        self.add(c["frame"], c["base"], *c["legend"].values())
-        ends = end_values(c)
-        # "The forest leads at every size, ending at 4.20."
-        self.play(FadeIn(c["ribbons"]["Random forest"]), Create(c["lines"]["Random forest"]), run_time=self.share(0.2))
-        self.play(FadeIn(ends["Random forest"]), FadeIn(c["ribbons"]["Linear regression"]),
-                  Create(c["lines"]["Linear regression"]), run_time=self.share(0.15))
-        # "The network varies most from draw to draw, and ends at 4.94."
-        self.wait(max(self.share(0.42) - self.time, 0.01))
-        self.play(FadeIn(c["ribbons"]["Neural network"]), Create(c["lines"]["Neural network"]), run_time=self.share(0.3))
-        self.play(FadeIn(ends["Neural network"]), run_time=self.share(0.1))
+        rows, head, base = counts_layout(self)
+        self.add(head, base, *[r[0] for r in rows])
+        last = label("Last", 32, VERMILION, weight=BOLD).move_to([base[0].get_x() + 0.3, rows[2][1].get_y(), 0],
+                                                                 aligned_edge=LEFT)
+        # "The forest scores 4.20, and linear regression 4.32."
+        for r in rows[:2]:
+            self.play(GrowFromEdge(r[1], LEFT), FadeIn(r[2]), run_time=self.share(0.15))
+        # "The network comes last, at 4.52."
+        self.wait(max(self.share(0.55) - self.time, 0.01))
+        self.play(GrowFromEdge(rows[2][1], LEFT), FadeIn(rows[2][2]), run_time=self.share(0.15))
+        self.play(FadeIn(last), run_time=self.share(0.1))
         self.finish()
 
 
@@ -875,21 +840,26 @@ class Scene27(VideoScene):
     number = 27
 
     def construct(self):
-        c = curves_layout(self)
-        self.add(c["frame"], c["base"], *c["legend"].values(), *c["ribbons"].values(), *c["lines"].values(),
-                 *end_values(c).values())
-        units = int(value(self, "how-much-data", "hidden_units"))
-        penalty = value(self, "how-much-data", "penalty")
-        note = VGroup(label("Cross-validation chooses:", 28, BLUE, weight=BOLD),
-                      label(f"{units} hidden unit, penalty {penalty:g}", 28, BLUE, weight=BOLD),
-                      label("almost a straight line", 28, BLUE, weight=BOLD)
-                      ).arrange(DOWN, buff=0.1, aligned_edge=LEFT).move_to([c["right"], 0.4, 0], aligned_edge=LEFT)
-        # "Allowed to choose, cross-validation shrinks the network to one hidden unit with the largest penalty: ..."
-        self.play(FadeIn(note[:2], shift=0.2 * LEFT), run_time=self.share(0.25))
-        # "... almost a straight line."
-        self.wait(max(self.share(0.75) - self.time, 0.01))
-        self.play(FadeIn(note[2]), Indicate(c["lines"]["Linear regression"], color=SUBDUED, scale_factor=1.0),
-                  run_time=self.share(0.2))
+        # Schematic: a smooth true mean, noisy counts scattered around it, then the counts faded.
+        axes, frame = chart([0, 10, 1], [0, 10, 1], 8, 4.6, [], [], "An input", "")
+        frame.move_to([0, -0.4, 0])
+        f = lambda x: 2 + 6 * np.exp(-((x - 5) ** 2) / 6)  # noqa: E731
+        true_mean = axes.plot(f, x_range=[0, 10], color=BLUE, stroke_width=7)
+        rng = np.random.default_rng(34)
+        xs = rng.uniform(0.3, 9.7, 60)
+        counts = VGroup(*[Dot(axes.c2p(x, np.clip(f(x) + rng.normal(0, 1.6), 0.2, 9.4)), radius=0.08, color=GREY)
+                          for x in xs])
+        counts_name = label("Observed counts", 30, SUBDUED, weight=BOLD).move_to(axes.c2p(7.6, 11))
+        mean_name = label("True mean counts", 30, BLUE, weight=BOLD).move_to(axes.c2p(2.4, 11))
+        check = label("A check, not data", 36, VERMILION, weight=BOLD).to_edge(UP, buff=0.5)
+        # "But this survey is simulated, so each station's true mean count is known: ..."
+        self.play(FadeIn(frame), FadeIn(counts, lag_ratio=0.02), FadeIn(counts_name), run_time=self.share(0.2))
+        # "... the number its count was drawn around."
+        self.wait(max(self.share(0.3) - self.time, 0.01))
+        self.play(Create(true_mean), FadeIn(mean_name), run_time=self.share(0.2))
+        # "A real survey has no such column. Here it is only a check."
+        self.wait(max(self.share(0.62) - self.time, 0.01))
+        self.play(counts.animate.set_opacity(0.25), FadeIn(check, shift=0.2 * DOWN), run_time=self.share(0.15))
         self.finish()
 
 
@@ -897,26 +867,22 @@ class Scene28(VideoScene):
     number = 28
 
     def construct(self):
-        # Schematic: a smooth average, noisy counts scattered around it, then the counts removed.
-        axes, frame = chart([0, 10, 1], [0, 10, 1], 8, 4.6, [], [], "An input", "")
-        frame.move_to([0, -0.4, 0])
-        f = lambda x: 2 + 6 * np.exp(-((x - 5) ** 2) / 6)  # noqa: E731
-        expected = axes.plot(f, x_range=[0, 10], color=BLUE, stroke_width=7)
-        rng = np.random.default_rng(34)
-        xs = rng.uniform(0.3, 9.7, 60)
-        counts = VGroup(*[Dot(axes.c2p(x, np.clip(f(x) + rng.normal(0, 1.6), 0.2, 9.8)), radius=0.08, color=GREY)
-                          for x in xs])
-        counts_name = label("Observed counts", 30, SUBDUED, weight=BOLD).move_to(axes.c2p(8.6, 9.2))
-        expected_name = label("Expected counts", 30, BLUE, weight=BOLD).move_to(axes.c2p(1.6, 8.6))
-        check = label("A check, not data", 36, VERMILION, weight=BOLD).to_edge(UP, buff=0.5)
-        # "But this survey is simulated, so each station's expected count is known: ..."
-        self.play(FadeIn(frame), FadeIn(counts, lag_ratio=0.02), FadeIn(counts_name), run_time=self.share(0.2))
-        # "... the average its count was drawn from."
-        self.wait(max(self.share(0.3) - self.time, 0.01))
-        self.play(Create(expected), FadeIn(expected_name), run_time=self.share(0.2))
-        # "A real survey has no such column. Here it is only a check."
+        n_train = int(value(self, "when-a-network-pays-off", "n_train"))
+        same = VGroup(label(f"Same {n_train} stations", 40, INK, weight=BOLD),
+                      label("Same inputs, same three models", 40, INK, weight=BOLD)
+                      ).arrange(DOWN, buff=0.35, aligned_edge=LEFT).move_to([0, 1.6, 0])
+        old = label("Response: the counts", 44, INK, weight=BOLD)
+        new = label("Response: the true mean counts", 44, BLUE, weight=BOLD)
+        VGroup(old, new).arrange(DOWN, buff=0.6).move_to([0, -1.4, 0])
+        gone = label("The noise is gone", 36, BLUE).next_to(new, DOWN, 0.4)
+        # "So train all three again on the same stations, ..."
+        self.play(FadeIn(same, lag_ratio=0.3), FadeIn(old), run_time=self.share(0.3))
+        # "... with the true mean count as the response."
+        self.wait(max(self.share(0.35) - self.time, 0.01))
+        self.play(Create(strike(old)), old.animate.set_color(GREY), FadeIn(new, shift=0.2 * UP), run_time=self.share(0.2))
+        # "The noise is gone, and nothing else has changed."
         self.wait(max(self.share(0.62) - self.time, 0.01))
-        self.play(counts.animate.set_opacity(0.25), FadeIn(check, shift=0.2 * DOWN), run_time=self.share(0.15))
+        self.play(FadeIn(gone), run_time=self.share(0.12))
         self.finish()
 
 
@@ -924,25 +890,21 @@ class Scene29(VideoScene):
     number = 29
 
     def construct(self):
-        expected = self.data("expected-curves")
-        full = int(value(self, "how-much-data", "n_train"))
-        at = expected[expected["n"] == full].set_index("model")["rmse"]
+        scores = self.data("survey-scores").set_index("model")
         order = ["Neural network", "Random forest", "Linear regression"]
-        head = label(f"RMSE against the expected counts, {full} stations (individuals)", 30, SUBDUED
+        head = label("RMSE against the true mean counts, trained on them (individuals)", 30, SUBDUED
                      ).to_edge(UP, buff=0.8)
-        rows = hbar_rows(["Network", "Random forest", "Linear regression"], [at[m] for m in order],
+        rows = hbar_rows(["Network", "Random forest", "Linear regression"], [scores.loc[m, "true_means"] for m in order],
                          [BLUE, GREEN, GREY], 2.6, x0=-0.6, top=1.2, step=1.3, digits=2)
-        best = label("Learned the response best", 36, BLUE, weight=BOLD).to_edge(DOWN, buff=0.7)
-        # "Scored against the expected counts, the order turns round."
-        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.15))
-        # "The network scores 1.54, the forest 1.63, and linear regression 2.12."
-        self.wait(max(self.share(0.22) - self.time, 0.01))
+        first = label("First, once the noise is gone", 36, BLUE, weight=BOLD).to_edge(DOWN, buff=0.7)
+        # "Now the order turns round."
+        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.2))
+        # "The network scores 1.43, the forest 1.62, and linear regression 2.12."
+        self.wait(max(self.share(0.25) - self.time, 0.01))
         for r in rows:
-            self.play(GrowFromEdge(r[1], LEFT), FadeIn(r[2]), run_time=self.share(0.1))
-        # "The network had learned the response best; the noise in the counts hid it."
-        self.wait(max(self.share(0.62) - self.time, 0.01))
-        self.play(FadeIn(best, shift=0.2 * UP), Indicate(rows[0][1], color=BLUE, scale_factor=1.05),
-                  run_time=self.share(0.2))
+            self.play(GrowFromEdge(r[1], LEFT), FadeIn(r[2]), run_time=self.share(0.15))
+        self.play(FadeIn(first, shift=0.2 * UP), Indicate(rows[0][1], color=BLUE, scale_factor=1.05),
+                  run_time=self.share(0.15))
         self.finish()
 
 
@@ -956,13 +918,15 @@ class Scene30(VideoScene):
         box, mark = tick(0.9)
         box.next_to(signal, LEFT, 0.5)
         mark.move_to(box)
-        # "So it was not short of rows."
-        self.play(FadeIn(rows), run_time=self.share(0.15))
-        self.play(Create(strike(rows)), rows.animate.set_color(GREY), run_time=self.share(0.2))
+        # "The same stations were enough once the noise was gone."
+        self.wait(max(self.share(0.2) - self.time, 0.01))
+        # "So the network was not short of rows."
+        self.play(FadeIn(rows), run_time=self.share(0.12))
+        self.play(Create(strike(rows)), rows.animate.set_color(GREY), run_time=self.share(0.15))
         # "It was short of signal."
-        self.wait(max(self.share(0.5) - self.time, 0.01))
-        self.play(FadeIn(signal), FadeIn(box), run_time=self.share(0.15))
-        self.play(Create(mark), run_time=self.share(0.12))
+        self.wait(max(self.share(0.72) - self.time, 0.01))
+        self.play(FadeIn(signal), FadeIn(box), run_time=self.share(0.12))
+        self.play(Create(mark), run_time=self.share(0.1))
         self.finish()
 
 
@@ -1044,7 +1008,7 @@ PANEL_CENTRES = [[-3.2, 1.4, 0], [3.2, 1.4, 0], [-3.2, -2.3, 0], [3.2, -2.3, 0]]
 
 def boundary_panels(scene):
     scores = scene.data("water-auc").set_index("model")
-    n_weights = int(value(scene, "when-to-use-one", "n_weights"))
+    n_weights = int(value(scene, "when-a-network-pays-off", "n_weights"))
     names = dict(PANEL_NAMES, **{"Neural network": f"Network, {n_weights} weights"})
     panels = {}
     for model, centre in zip(PANEL_MODELS, PANEL_CENTRES):
@@ -1138,7 +1102,7 @@ class Scene35(VideoScene):
 
     def construct(self):
         sizes = self.data("water-sizes")
-        n_test = int(value(self, "when-to-use-one", "n_test"))
+        n_test = int(value(self, "when-a-network-pays-off", "n_test"))
         cols = {"Neural network": (-1.8, "Network", BLUE), "Random forest": (1.4, "Random forest", GREEN),
                 "Logistic regression": (5.0, "Logistic regression", SUBDUED)}
         head = label(f"ROC AUC on the {n_test:,} test stations", 32, SUBDUED).to_edge(UP, buff=0.8)
@@ -1170,7 +1134,7 @@ class Scene36(VideoScene):
 
     def construct(self):
         # The combination the page names, added as a column; the score is the page's.
-        named_auc = value(self, "when-to-use-one", "named_auc")
+        named_auc = value(self, "when-a-network-pays-off", "named_auc")
         rng = np.random.default_rng(42)
 
         def column(name, colour, n=6):

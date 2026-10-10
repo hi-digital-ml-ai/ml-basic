@@ -17,9 +17,10 @@ This video is an overview built on three ideas, each with its examples from the 
 a network is weighted sums with a bend (one neuron is linear regression, two bends make
 the temperature hump), training can go wrong without a warning (learning rate, early
 stopping, the seed), and a network pays off with signal to spare and a combination
-nobody has named (the learning curves, the expected counts, the water-mass band). The
-expected counts are shown only as a check on the models, as on the page, and the video
-says a real survey has no such column. Autoencoders are left to the pages, for length.
+nobody has named (the true mean counts, the water-mass band). The learning rate is
+schematic: the pages teach it in prose and compute no numbers for it. The true mean
+counts are shown only as a check on the models, as on the page, and the video says a
+real survey has no such column. Autoencoders are left to the pages, for length.
 -->
 
 # In this video
@@ -29,7 +30,7 @@ visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
 In this video, you will learn three things. What a neural network actually computes.
-Why one can fail without a single warning. And when a network is the right tool.
+Why one can fail without a single warning. And when a network pays off.
 
 ## Scene 2
 visual: manim Parts: a small network drawn, then its three parts named: weighted sums, a bend, a walk downhill (schematic)
@@ -132,17 +133,15 @@ Nudging each weight by a tiny amount checks those slopes. All 21 agreed to ten d
 places.
 
 ## Scene 18
-visual: manim Rates: training error under four learning rates, 0.01 crawling (page results, training-a-network.qmd#fig-rates)
+visual: manim Rates: a ball on the error curve taking tiny steps, barely moving (schematic)
 
-The length of each step is the learning rate. At 0.01, the network takes 1,122 steps to
-beat a straight line.
+The length of each step is the learning rate. Too short, and training crawls.
 
 ## Scene 19
-visual: manim Rates: 0.2 the lowest, 0.5 bouncing, 2 gone off the chart, "not a number at step 147"
+visual: manim Rates: long steps overshoot the valley, each landing higher, until the error reads "not a number" (schematic)
 
-At 0.2 it goes lowest. At 0.5 it is quicker, but bounces around the valley floor. At 2,
-the error passes 1,000 by step 6, and becomes "not a number" at step 147, with no
-warning at all.
+Too long, and each step overshoots the valley floor further than the last, until the
+error becomes "not a number", with no warning at all.
 
 ## Scene 20
 visual: manim Stopping: a 40-unit network's training error over 8,000 steps (page results, training-a-network.qmd#fig-early-stopping)
@@ -177,51 +176,49 @@ report the spread over seeds.
 # When a network pays off
 
 ## Scene 25
-visual: manim Curves: an empty chart of test RMSE against training stations, the line for predicting the mean at 4.72 (page results, how-much-data.qmd#fig-learning-curves)
+visual: manim Counts: test RMSE bars for the three models, the line for predicting the mean at 4.72 drawn first (page results, when-a-network-pays-off.qmd)
 
 Back to the survey. Linear regression, a random forest and a network with eight hidden
-units predict the counts from 40 training stations up to all 539. Predicting the mean
-scores 4.72.
+units are each fitted once, on 539 stations. Predicting the mean scores 4.72.
 
 ## Scene 26
-visual: manim Curves: the three learning curves with their ranges, the forest lowest, the network's range widest
+visual: manim Counts: the forest's bar at 4.20, linear regression's at 4.32, the network's at 4.52, last
 
-The forest leads at every size, ending at 4.20. The network varies most from draw to
-draw, and ends at 4.94.
+The forest scores 4.20, and linear regression 4.32. The network comes last, at 4.52.
 
 ## Scene 27
-visual: manim Curves: "cross-validation chooses one hidden unit, penalty 1", beside the linear regression line
+visual: manim TrueMean: noisy counts scattered around a smooth curve; the counts fade, "a check, not data" (schematic)
 
-Allowed to choose, cross-validation shrinks the network to one hidden unit with the
-largest penalty: almost a straight line.
+But this survey is simulated, so each station's true mean count is known: the number its
+count was drawn around. A real survey has no such column. Here it is only a check.
 
 ## Scene 28
-visual: manim Expected: noisy counts scattered around a smooth curve; the counts fade, "a check, not data" (schematic)
+visual: manim Refit: the same 539 stations, the response switched from the counts to the true means (schematic)
 
-But this survey is simulated, so each station's expected count is known: the average its
-count was drawn from. A real survey has no such column. Here it is only a check.
+So train all three again on the same stations, with the true mean count as the
+response. The noise is gone, and nothing else has changed.
 
 ## Scene 29
-visual: manim Expected: RMSE against the expected counts with all 539 stations, network 1.54, forest 1.63, linear regression 2.12 (page results, how-much-data.qmd)
+visual: manim TrueMeans: RMSE against the true mean counts, network 1.43, forest 1.62, linear regression 2.12 (page results, when-a-network-pays-off.qmd)
 
-Scored against the expected counts, the order turns round. The network scores 1.54, the
-forest 1.63, and linear regression 2.12. The network had learned the response best; the
-noise in the counts hid it.
+Now the order turns round. The network scores 1.43, the forest 1.62, and linear
+regression 2.12.
 
 ## Scene 30
 visual: manim Signal: "short of rows" struck out, "short of signal" ticked
 pause-after: 0.5
 
-So it was not short of rows. It was short of signal.
+The same stations were enough once the noise was gone. So the network was not short of
+rows. It was short of signal.
 
 ## Scene 31
-visual: manim Band: 200 simulated stations on a temperature–salinity diagram, the core stations in a diagonal band (page results, when-to-use-one.qmd)
+visual: manim Band: 200 simulated stations on a temperature–salinity diagram, the core stations in a diagonal band (page results, when-a-network-pays-off.qmd)
 
 Now a simulated water mass. Its core is a diagonal band on a temperature–salinity
 diagram, and 200 stations train the models.
 
 ## Scene 32
-visual: manim Boundaries: logistic regression's single line, the tree's blocks, the forest's staircase, each with its ROC AUC (page results, when-to-use-one.qmd#fig-boundaries)
+visual: manim Boundaries: logistic regression's single line, the tree's blocks, the forest's staircase, each with its ROC AUC (page results, when-a-network-pays-off.qmd#fig-boundaries)
 
 Scored by ROC AUC, where one is a perfect ranking, logistic regression draws one
 straight line and reaches 0.715. A tree cuts one input at a time: 0.827. A forest of 500
@@ -239,13 +236,13 @@ Each hidden unit bends along a tilted line. Two of them, one at each edge, fence
 band.
 
 ## Scene 35
-visual: manim Sizes: ROC AUC at 100, 400 and 1,600 training stations, network, forest and logistic regression (page results, when-to-use-one.qmd)
+visual: manim Sizes: ROC AUC at 100, 400 and 1,600 training stations, network, forest and logistic regression (page results, when-a-network-pays-off.qmd)
 
 With only 100 stations, the network reaches 0.997. The forest needs 1,600 to come
 close, and logistic regression stays near 0.72.
 
 ## Scene 36
-visual: manim Combination: "salinity − 0.16 × temperature" added as a column; logistic regression 1.000 (page results, when-to-use-one.qmd)
+visual: manim Combination: "salinity − 0.16 × temperature" added as a column; logistic regression 1.000 (page results, when-a-network-pays-off.qmd)
 
 If you can name the combination, add it as a column: logistic regression then reaches
 1.000. A network finds the combinations nobody has named.

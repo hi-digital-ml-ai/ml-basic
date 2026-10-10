@@ -715,6 +715,97 @@ terms:
     definition: "Checking a pattern found without labels against a variable recorded separately and left out of the analysis, such as the seabed type for clusters of counts."
     page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
 
+  # 9 · Neural networks: Neurons, layers and activations
+  - term: "Neural network"
+    definition: "A model built from many small regressions joined together, each taking a weighted sum of its inputs and bending the result, with the bent results added up into a prediction."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Neuron"
+    definition: "One unit of a neural network: a weighted sum of its inputs plus a bias, passed through an activation function."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Weight"
+    definition: "The number a neuron multiplies one of its inputs by; a network learns its weights from the data, as a regression learns its coefficients."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Bias (of a neuron)"
+    definition: "The constant a neuron adds to its weighted sum, like the intercept of a regression."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Activation function"
+    definition: "The bend a neuron applies to its weighted sum; without it, a network of any size adds up to one straight line."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Hidden layer"
+    definition: "Several neurons that read the same inputs and pass their results on to the next layer; nothing outside the network sees their values."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Hidden unit"
+    definition: "One neuron in a hidden layer."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Logistic function"
+    definition: "The S-shaped curve of logistic regression, rising from 0 to 1; used as an activation function."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Tanh"
+    definition: "An S-shaped activation function rising from −1 to 1, the logistic function stretched and shifted."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "ReLU"
+    definition: "Rectified linear unit: an activation function that is zero below zero and a straight line above it, the usual choice in large networks."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+
+  # 9 · Neural networks: Forward propagation and backpropagation
+  - term: "Backpropagation"
+    definition: "Passing a network's error back through its layers, from the output to the inputs, to find the slope of the loss for every weight in one pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Forward propagation"
+    definition: "Pushing the inputs through a network layer by layer to the prediction, keeping every value on the way for the backward pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Plateau"
+    definition: "A nearly flat stretch of the loss during training, where the slopes are tiny and progress pauses before the loss falls again."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "BFGS"
+    definition: "A search for the lowest loss that also tracks how the slopes change from step to step and chooses its own step size, so it needs no learning rate; the nnet package uses it."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Vanishing gradient"
+    definition: "Slopes that shrink as they pass back through many layers of flat-ended bends such as tanh, so the weights near the inputs barely move."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+
+  # 9 · Neural networks: Training a network
+  - term: "Early stopping"
+    definition: "Keeping a network's weights from the training step where the error on validation data was lowest, instead of the last step; it restrains the weights as a penalty does."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Mini-batch"
+    definition: "A small random group of the training rows used for one step of gradient descent, so each step is quick on a large dataset."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Epoch"
+    definition: "One pass through all the mini-batches, so that every training row has been used once; the usual unit for how long a network trains."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Multilayer perceptron"
+    definition: "The usual name for a network of fully connected layers like those in this course; tidymodels fits one with mlp()."
+    page: chapters/09-neural-networks/training-a-network.qmd
+
+  # 9 · Neural networks: When a network pays off
+  - term: "T–S diagram"
+    definition: "A plot of temperature against salinity, on which a water mass shows up as a band or cluster because it is identified by how the two go together."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Feature engineering"
+    definition: "Building new inputs from domain knowledge, such as a combination of two measurements, so that a simpler model can use what matters directly."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Transfer learning"
+    definition: "Starting from a network already trained on a large general dataset, such as millions of photographs, and retraining it on a few hundred examples of your own."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+
+  # 9 · Neural networks: Autoencoders
+  - term: "Autoencoder"
+    definition: "A network trained to rebuild its own input through a narrow middle, so it learns a small map of the rows with no response to predict."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Encoder"
+    definition: "The half of an autoencoder that takes each row's many columns down to a few values, the code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Code (autoencoder)"
+    definition: "The few values in an autoencoder's narrow middle; they place each row on a small map, like PCA's scores, but nothing says what each value means."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Decoder"
+    definition: "The half of an autoencoder that rebuilds the row from its code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Reconstruction error"
+    definition: "The mean squared difference between a row and its rebuilt version; the loss an autoencoder makes small, and large for rows unlike the training data."
+    page: chapters/09-neural-networks/autoencoders.qmd
+
   # 10 · Interpretation: Black boxes and interpretable models
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."

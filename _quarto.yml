@@ -157,10 +157,8 @@ website:
             text: "Forward propagation and backpropagation"
           - href: chapters/09-neural-networks/training-a-network.qmd
             text: "Training a network"
-          - href: chapters/09-neural-networks/how-much-data.qmd
-            text: "How much data a network needs"
-          - href: chapters/09-neural-networks/when-to-use-one.qmd
-            text: "When a network is the right tool"
+          - href: chapters/09-neural-networks/when-a-network-pays-off.qmd
+            text: "When a network pays off"
           - href: chapters/09-neural-networks/autoencoders.qmd
             text: "Autoencoders"
       - section: "10 · Interpretation"

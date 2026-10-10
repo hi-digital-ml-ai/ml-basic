@@ -539,6 +539,21 @@ Neurons, layers and activations; Forward propagation and backpropagation; Traini
 network; How much data a network needs; When a network is the right tool; Autoencoders.
 The section is R-only: no Python tabs.
 
+**Second pass 2026-10-10** (`feature/revise-neural-networks`): five pages, as in the
+target table. Decisions agreed with the user:
+
+- *How much data a network needs* and *When a network is the right tool* merge into
+  `when-a-network-pays-off.qmd`. The learning curves, the cross-validated tuning and
+  `learning-curves.svg` go, so the page runs in about half a minute: linear regression,
+  the forest and the network are fitted once, scored on the counts, then trained again
+  on the true mean counts (§6's term, replacing "expected counts"). The water-mass band
+  keeps its 100/400/1,600-station table, and the closing checklist covers both signal
+  against noise and combinations nobody can name.
+- *Training a network* drops its learning-rate sweep, §4's lesson, for one paragraph
+  linking to *Gradient descent* and *Scaling and encoding*; early stopping and the seeds
+  stay as the worked parts, mini-batches and epochs as prose, with a redrawn diagram.
+- Every page gets a new-terms box. *Autoencoders* computes R² with `rsq_trad_vec()`.
+
 ### The engine decision
 
 **No `torch`, `brulee` or `keras`.** Everything runs on `nnet` (already installed for §3),
@@ -558,20 +573,21 @@ Two consequences must be kept if these pages are edited:
 - **parsnip squeezes two-class `nnet` probabilities into 0.269–0.731**, that is
   1/(1 + e) to e/(1 + e): `parsnip:::nnet_softmax()` turns nnet's single output p into
   the pair (1 − p, p) and then applies a softmax to it, as if they were scores. The ranking is untouched, so ROC AUC and predicted classes are right,
-  but the probabilities are not. `when-to-use-one.qmd` therefore reports AUC and draws
+  but the probabilities are not. `when-a-network-pays-off.qmd` therefore reports AUC and draws
   predicted classes, never probability maps or calibration. The old page's "a good score
   and an uncalibrated model" lesson was this artefact, not a property of networks.
 
 ### Three findings the pages are built on
 
-- **The network was short of signal, not of rows.** `how-much-data.qmd` draws learning
-  curves for linear regression, a random forest and an eight-unit network on the survey.
-  The forest leads at every size; cross-validation shrinks the network to one hidden unit
-  with the largest penalty. Scored against the simulated expected counts instead of the
-  observed ones, the network learned the response best (27% better than linear
-  regression): the count noise buried the gain. This is the section's headline; the page
-  says the expected counts are available only because the survey is simulated.
-- **A hidden unit bends along a tilted line.** `when-to-use-one.qmd` simulates a water-mass
+- **The network was short of signal, not of rows.** `when-a-network-pays-off.qmd` fits
+  linear regression, a random forest and an eight-unit network once on the survey's 539
+  training stations. On the counts the forest leads (4.20) and the network is last
+  (4.52, against 4.72 for predicting the mean). Trained on the true mean counts of the
+  same stations and scored against them, the network comes first (1.43, forest 1.62,
+  linear regression 2.12; 33% better than linear regression): the count noise buried the
+  gain. This is the section's headline; the page says the true mean counts are available
+  only because the survey is simulated.
+- **A hidden unit bends along a tilted line.** The same page simulates a water-mass
   band in T–S space, the one place this section steps outside the course datasets. A
   two-unit network (9 weights) reaches ROC AUC 0.999 from 200 stations where a 500-tree
   forest reaches 0.926 and logistic regression stays near 0.72 at every size; the forest
@@ -592,10 +608,10 @@ Two consequences must be kept if these pages are edited:
   without being told its shape; one is not enough and more add little.
 - `forward-and-backward.qmd`: all 21 hand-written slopes agree with the nudged ones to 10
   decimal places, and a run can pause on a plateau before it beats a straight line.
-- `training-a-network.qmd`: learning rate 0.2 goes lowest, 0.5 bounces, 2 becomes NaN
-  without a warning; early stopping keeps step 1,937 of 8,000; ten seeds vary by 0.055 in
-  validation MSE. The old unscaled-inputs comparison was cut; the page now simply
-  standardises every input.
+- `training-a-network.qmd`: early stopping keeps step 1,937 of 8,000, and the last step's
+  validation error is 4% worse; ten seeds vary by 0.055 in validation MSE, and
+  their average beats seven of them. The learning rate and standardising are prose with
+  links, since *Gradient descent* and *Scaling and encoding* teach them.
 
 ### Aimed at §10
 
