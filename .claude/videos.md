@@ -1057,3 +1057,29 @@ from the 50-scene first build and are not in the cut.
 - Unchanged numbers were re-checked against the re-export: early stopping at step
   1,937, 4% worse by the end; seeds spanning 0.055, the average beating seven; the band
   at 0.715, 0.827, 0.926 and 0.999 with 9 weights, 0.997 from 100 stations, 1.000 named.
+
+## §10 Interpretation second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-interpretation`), where
+*Communicating uncertainty* moved to the random forest and *From a model to a claim*
+became a forest report with the gear bias on mud. Same three points and 33 scenes;
+7:44 on the draft voice (was 7:27). Never narrated with Gemini, so a `narrate.py` run is
+all 33 scenes (about $0.12).
+
+- Chapter one is unchanged; the re-export matched every number (impurity ranking the
+  three random columns above salinity, the seabed and the season; 39 test sites;
+  temperature 10 of 10 splits, salinity 1; the peak at 7.7 °C over 598 stations; GAM
+  4.34 against the forest's 4.43). The quiz too: seeds 0.07, splits 1.84.
+- Scene 17 is the forest's two intervals: refits on resampled sites give the interval
+  for the average (2.8 wide, 24%), the quantile forest the interval for a new catch
+  (11.6 wide, 92%), "wrong about three times in four". `exports.R` writes
+  `two-intervals.csv`; `gam-intervals.csv` is gone.
+- Scene 18 no longer says a forest has no interval of its own (the quantile forest is
+  one): conformal prediction gives *any* model an interval from its errors. Scene 19:
+  89% at 12.5 wide, "close to the 90 promised". Scene 20: calibrated on low chlorophyll,
+  93% at like sites and 82% where chlorophyll is highest (was 73%).
+- Scenes 22–25 move from rock to mud, drawn in purple. Scene 24 draws mud's ratio to
+  sand across the ten fold models (1.10–1.16 as recorded, 0.90–0.95 with half missed);
+  scene 25 the forest's RMSE (4.41 to 3.86) with "better than the average on 9 of 10
+  folds, intervals held 95%" under both bars. `gear.csv` is the claim page's
+  `summary_of()` for both reports.
