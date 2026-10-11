@@ -1117,9 +1117,16 @@ with all three sounds, a beat apart.
   Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
 - Introduction: clownfish "Great work!" (wiggle), jellyfish "Brilliant!" (spin), whale
   and applause. Marine data: turtle and bubbles, starfish and fireworks, pufferfish
-  "Well done!" (jump).
+  "Well done!" (jump). Supervised learning: crab and applause, octopus "Spot on!"
+  (spin), clownfish "Nice one!" (wiggle).
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in
 mlbasic_video.py, a plate of the background colour at z-index 5 (above the chart, below
 a marker kept on top at 10). Check each video's chart labels for this when revising it.
+
+Dimming (2026-10-11): dim with `.animate.fade(0.75)`, never `.animate.set_opacity(...)`.
+`set_opacity` sets the fill too, so a curve drawn as a line fills the area under it and a
+pale shade turns solid (Supervised learning, scene 27). `fade` scales each part's own
+opacity. Remaining `set_opacity` dims to check when revising: Generalisation, Assumptions
+and limitations, Neural networks, Interpretation.
