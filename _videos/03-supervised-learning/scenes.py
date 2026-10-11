@@ -483,7 +483,7 @@ class Scene10(VideoScene):
                             label("false alarms: said present, truly absent", 26, SUBDUED)).arrange(RIGHT, buff=0.15),
                      VGroup(Square(0.3, stroke_width=0, fill_color=BLUE, fill_opacity=0.85),
                             label("misses: said absent, truly present", 26, SUBDUED)).arrange(RIGHT, buff=0.15)).arrange(RIGHT, buff=0.6)
-        key.next_to(head, DOWN, 0.35)
+        key.next_to(head, DOWN, 0.6)
         cost = card("what does each mistake cost?", PURPLE, 36).move_to(head)
         self.play(FadeIn(head), Create(chart.axes.x_axis), FadeIn(key), run_time=self.share(0.06))
         # "At a threshold of 0.5, the model gives 34 false alarms and 4 misses on the test stations."
@@ -1014,7 +1014,7 @@ class Scene24(VideoScene):
                                       corner_radius=0.1)
         trees = SurroundingRectangle(VGroup(*[rows[m][1] for m in order[-3:]]), color=ORANGE, buff=0.12,
                                      corner_radius=0.1)
-        few = card("a few hundred noisy stations", PURPLE, 28).move_to(chart.p(4.15, 8.1))
+        few = card("a few hundred noisy stations", PURPLE, 28).move_to(chart.p(4.15, 8.7))
         lower = card("lower is better", BLUE, 28).move_to(few)
         # "Here, all seven models were scored on the same test sites, with the typical miss: lower is better."
         self.play(FadeIn(VGroup(chart.axes.x_axis, chart.ticks, chart.x_name)), FadeIn(guides), FadeIn(key[0]),
@@ -1047,7 +1047,7 @@ class Scene25(VideoScene):
         best = table.loc[table["validation_rmse"].idxmin(), "model"]
         ring = Circle(0.25, color=ORANGE, stroke_width=5).move_to(rows[best][3])
         first = card("first on validation", ORANGE, 24).next_to(ring, RIGHT, 0.2)
-        tuned = card("tuned on these sites: a kind of overfitting", VERMILION, 28).move_to(chart.p(4.0, 8.1))
+        tuned = card("tuned on these sites: a kind of overfitting", VERMILION, 28).move_to(chart.p(4.0, 8.7))
         close = card("one split cannot separate close models", PURPLE, 28).move_to(tuned)
         # "On the validation sites, though, the single tree came first."
         self.play(FadeIn(key[1]), *[Create(rows[m][4]) for m in order], *[FadeIn(rows[m][3], scale=0.5) for m in order],
