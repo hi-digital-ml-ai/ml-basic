@@ -176,7 +176,7 @@ class Scene05(VideoScene):
     number = 5
 
     def construct(self):
-        # Page results: observations-and-features.qmd.
+        # Page results: the-coastal-survey.qmd.
         counts = self.data("counts").iloc[0]
         rows = [("rows in the file", int(counts["rows"]), GREY),
                 ("once duplicates are removed", int(counts["unique"]), BLUE),
@@ -275,7 +275,7 @@ class Scene08(VideoScene):
     number = 8
 
     def construct(self):
-        # Page results: exploratory-analysis.qmd, the range table.
+        # Page results: exploring-and-cleaning.qmd, the range table.
         head, cols = salinity_layout(self)
         fresh = card("no sea is that fresh", VERMILION, 38).to_edge(DOWN, buff=0.9)
         # "Before modelling, look."
@@ -298,7 +298,7 @@ class Scene09(VideoScene):
     number = 9
 
     def construct(self):
-        # Page results: missing-values-and-outliers.qmd, the mean once −999 is missing.
+        # Page results: exploring-and-cleaning.qmd, the mean once −999 is missing.
         head, cols = salinity_layout(self)
         cols[0][1].set_color(VERMILION)
         cols[1][1].set_color(VERMILION)
@@ -326,7 +326,7 @@ class Scene10(VideoScene):
     number = 10
 
     def construct(self):
-        # Page results: exploratory-analysis.qmd, the substrate spellings.
+        # Page results: exploring-and-cleaning.qmd, the substrate spellings.
         spellings = list(self.data("substrate-spellings")["substrate"])
         kind = {s: next(t for t in SUBSTRATE_TYPES if s.lower().startswith(t)) for s in spellings}
         colour = dict(zip(SUBSTRATE_TYPES, [PURPLE, ORANGE, BLUE, GREEN]))
@@ -361,7 +361,7 @@ class Scene11(VideoScene):
     number = 11
 
     def construct(self):
-        # Page results: missing-values-and-outliers.qmd#fig-deletion.
+        # Page results: exploring-and-cleaning.qmd#fig-deletion.
         table = self.data("deletion")
         cost = self.data("deletion-cost").iloc[0]
         seasons = ["spring", "summer", "autumn", "winter"]
