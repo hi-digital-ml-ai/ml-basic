@@ -62,7 +62,7 @@ GAP = 1.0              # seconds between scenes, unless the script's front matte
 RATE = 24000           # Gemini TTS: 24 kHz, mono, 16-bit
 MIX_RATE = 48000       # the soundtrack: 48 kHz stereo, so the jingle keeps its top end
 MUSIC = Path(__file__).resolve().parent.parent / "_videos" / "intro-music.wav"
-CHEERS = MUSIC.parent    # cheer-clap.wav, cheer-hooray.wav, cheer-fireworks.wav
+CHEERS = MUSIC.parent    # cheer-clap.wav, cheer-well-done.wav, ... (tools/make-cheers.py)
 CAPTION_CHARS = 84     # at most two lines of 42 characters per caption
 CARD_TEXT_WIDTH = 1500  # pixels
 
@@ -246,7 +246,7 @@ def main():
         length = frames / FPS
 
         track = padded(speech, length)
-        for animal, name, start in cheer_plan(folder, scene):
+        for animal, name, move, start in cheer_plan(folder, scene):
             cheer = music_samples(CHEERS / f"cheer-{name}.wav")
             at = round((spoken + start) * MIX_RATE)
             if at + len(cheer) > len(track):

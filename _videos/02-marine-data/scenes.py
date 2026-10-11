@@ -36,7 +36,7 @@ RECAP = ["Rows are not all independent",
 
 class Scene01(LearnScene):
     number = 1
-    times = (0.36, 0.52, 0.78)
+    times = (0.48, 0.61, 0.81)
 
 
 def plain_axes(x_range, y_range, x_length, y_length):
@@ -86,21 +86,27 @@ class Scene02(VideoScene):
         bad = cells[9]
         fault = Dot(bad.get_center(), 0.13, color=VERMILION)
         quiet = label("no warning", 32, VERMILION, weight=BOLD).next_to(output, DOWN, 0.4)
+        first = card("first, know what is in the table", GREEN, 34).to_edge(DOWN, buff=0.5)
+        # "Let's start with why the data come first."
+        self.play(FadeIn(cells), FadeIn(table_name), run_time=self.share(0.1))
         # "A model learns only from the table it is given."
-        self.play(FadeIn(cells), FadeIn(table_name), run_time=self.share(0.12))
-        self.play(GrowArrow(arrow_in), FadeIn(box), FadeIn(name), run_time=self.share(0.12))
-        self.play(GrowArrow(arrow_out), FadeIn(output, shift=0.2 * RIGHT), run_time=self.share(0.1))
+        at(self, 0.18)
+        self.play(GrowArrow(arrow_in), FadeIn(box), FadeIn(name), run_time=self.share(0.08))
+        self.play(GrowArrow(arrow_out), FadeIn(output, shift=0.2 * RIGHT), run_time=self.share(0.08))
         # "If the table is wrong,"
-        at(self, 0.4)
-        self.play(bad.animate.set_fill(VERMILION, 0.8), run_time=self.share(0.08))
+        at(self, 0.38)
+        self.play(bad.animate.set_fill(VERMILION, 0.8), run_time=self.share(0.06))
         # "the model learns that too,"
-        at(self, 0.55)
+        at(self, 0.48)
         self.add(fault)
-        self.play(fault.animate.move_to(box.get_center()), run_time=self.share(0.12))
+        self.play(fault.animate.move_to(box.get_center()), run_time=self.share(0.08))
         # "and nothing in its output says so."
-        at(self, 0.75)
-        self.play(fault.animate.move_to(output.get_center()).set_opacity(0), run_time=self.share(0.1))
-        self.play(FadeIn(quiet, shift=0.2 * UP), run_time=self.share(0.08))
+        at(self, 0.59)
+        self.play(fault.animate.move_to(output.get_center()).set_opacity(0), run_time=self.share(0.07))
+        self.play(FadeIn(quiet, shift=0.2 * UP), run_time=self.share(0.06))
+        # "So before any modelling, we need to know what is in the table."
+        at(self, 0.74)
+        self.play(FadeIn(first, shift=0.2 * UP), run_time=self.share(0.07))
         self.finish()
 
 
@@ -112,18 +118,18 @@ class Scene03(VideoScene):
         head = label("one simulated coastal survey", 44, PURPLE, weight=BOLD).to_edge(UP, buff=0.7)
         row = label("each row is a station: one visit to one place", 34, INK, weight=BOLD).next_to(head, DOWN, 0.4)
         parts = VGroup(panel("where and when", ["site", "date, season"], BLUE, 3.6),
-                       panel("the water", ["temperature", "salinity", "chlorophyll"], SKY, 3.0),
+                       panel("the water", ["temperature", "salinity", "chlorophyll:", "phytoplankton"], SKY, 3.0, 2.8),
                        panel("the seabed", ["mud, sand,", "gravel or rock"], ORANGE, 3.0),
                        panel("the species", ["how many", "were counted"], VERMILION, 3.0)
                        ).arrange(RIGHT, buff=0.25).move_to([0, -1.2, 0])
-        # "The course works on one simulated coastal survey."
+        # "The course works on one simulated coastal survey, the one from the introduction."
         self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
-        # "Each row is a station: one visit to one place."
-        at(self, 0.2)
+        # "Each row of its table is a station: one visit to one place."
+        at(self, 0.24)
         self.play(FadeIn(row), run_time=self.share(0.08))
-        # "It records where and when, the water's temperature, salinity and chlorophyll,
-        # the type of seabed, and the count of one species."
-        for part, when in zip(parts, [0.45, 0.55, 0.78, 0.88]):
+        # "It records where and when, the water's temperature and salinity, and its
+        # chlorophyll, ... Then the type of seabed, and the count of one species."
+        for part, when in zip(parts, [0.42, 0.51, 0.84, 0.91]):
             at(self, when)
             self.play(FadeIn(part, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
@@ -152,23 +158,25 @@ class Scene04(VideoScene):
         angles = [PI / 2 - (i + 0.5) * TAU / 12 for i in range(12)]
         spots = [centre + radius * np.array([np.cos(a), np.sin(a), 0]) for a in angles]
         near = label("neighbours", 32, GREEN, weight=BOLD).move_to(centre + [0, radius + 0.75, 0])
-        # "Columns come in different kinds. Some are quantities, some are categories, and some are neither."
-        self.play(FadeIn(kinds[0], shift=0.2 * DOWN), run_time=self.share(0.06))
-        at(self, 0.22)
-        self.play(FadeIn(kinds[1], shift=0.2 * DOWN), run_time=self.share(0.06))
-        at(self, 0.34)
-        self.play(FadeIn(kinds[2], shift=0.2 * DOWN), run_time=self.share(0.06))
-        # "As numbers, December and January are eleven months apart;"
-        at(self, 0.45)
-        self.play(Create(line), FadeIn(dots), FadeIn(names), run_time=self.share(0.1))
-        self.play(GrowFromCenter(apart), FadeIn(apart_name), run_time=self.share(0.08))
-        # "in the sea they are neighbours."
-        at(self, 0.76)
+        # "Some are quantities, measured on a scale, like depth. Some are categories, a label
+        # from a short list, like the type of seabed. And some are neither, like the month,"
+        at(self, 0.18)
+        self.play(FadeIn(kinds[0], shift=0.2 * DOWN), run_time=self.share(0.05))
+        at(self, 0.31)
+        self.play(FadeIn(kinds[1], shift=0.2 * DOWN), run_time=self.share(0.05))
+        at(self, 0.49)
+        self.play(FadeIn(kinds[2], shift=0.2 * DOWN), run_time=self.share(0.05))
+        # "As plain numbers, December and January are eleven months apart."
+        at(self, 0.65)
+        self.play(Create(line), FadeIn(dots), FadeIn(names), run_time=self.share(0.07))
+        self.play(GrowFromCenter(apart), FadeIn(apart_name), run_time=self.share(0.06))
+        # "In the sea they are neighbours, so a model needs to see the months as a circle."
+        at(self, 0.81)
         moves = [d.animate.move_to(s) for d, s in zip(dots, spots)]
         moves += [n.animate.move_to(centre + (radius + 0.4) * (s - centre) / radius) for n, s in zip(names, spots)]
         self.play(FadeOut(apart), FadeOut(apart_name), ReplacementTransform(line, ring), *moves,
-                  run_time=self.share(0.14))
-        self.play(FadeIn(near, scale=0.8), run_time=self.share(0.06))
+                  run_time=self.share(0.1))
+        self.play(FadeIn(near, scale=0.8), run_time=self.share(0.05))
         self.finish()
 
 
@@ -190,9 +198,9 @@ class Scene05(VideoScene):
             value = label(str(n), 44, INK, weight=BOLD).next_to(bar, RIGHT, 0.25)
             what = label(name, 30, SUBDUED).next_to(bar, UP, 0.12).align_to(bar, LEFT)
             bars.add(VGroup(bar, value, what))
-        # "The raw file has 815 rows. Remove the duplicates and 800 remain.
-        # But they come from only 160 sites, each visited several times."
-        for group, when in zip(bars, [0.05, 0.35, 0.62]):
+        # "The raw file has 815 rows. Some are the same station entered twice, called
+        # duplicates. Remove them, and 800 remain. But those 800 come from only 160 sites,"
+        for group, when in zip(bars, [0.23, 0.6, 0.72]):
             at(self, when)
             self.play(GrowFromEdge(group[0], LEFT), FadeIn(group[1]), FadeIn(group[2]), run_time=self.share(0.1))
         self.finish()
@@ -217,7 +225,7 @@ class Scene06(VideoScene):
         for k, i in enumerate(order):
             squares[i].move_to(slots[k])
         head = label("16 rows", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        warn = card("rows are not independent observations", VERMILION, 32).to_edge(DOWN, buff=0.45)
+        warn = card("rows are not independent observations", VERMILION, 32).to_edge(DOWN, buff=0.3)
         blocks, frames = [], VGroup()
         x = -5.0
         for s, n in enumerate(SITE_VISITS):
@@ -228,16 +236,16 @@ class Scene06(VideoScene):
             x += 2.4
         names = VGroup(*[label(f"site {c}", 30, SITE_COLOURS[s], weight=BOLD).next_to(frames[s], UP, 0.15)
                          for s, c in enumerate("ABCD")])
-        together = VGroup(frames, names).move_to([0, 0.25, 0])
+        together = VGroup(frames, names).move_to([0, 0.5, 0])
         for s, column in enumerate(blocks):
             column.move_to(frames[s])
         self.play(FadeIn(head), FadeIn(squares), run_time=self.share(0.1))
         # "Visits to the same site share their water and their seabed, so they are alike."
-        at(self, 0.12)
+        at(self, 0.06)
         self.play(*[sq.animate.set_fill(SITE_COLOURS[o], 0.8) for sq, o in zip(squares, owners)],
                   run_time=self.share(0.15))
-        # "The row count is not the number of independent observations."
-        at(self, 0.44)
+        # "So the row count is not the number of independent observations,"
+        at(self, 0.49)
         self.play(FadeIn(warn, shift=0.2 * UP), run_time=self.share(0.08))
         # "Keep the rows, but keep each site's rows together."
         at(self, 0.76)
@@ -278,19 +286,31 @@ class Scene08(VideoScene):
         # Page results: exploring-and-cleaning.qmd, the range table.
         head, cols = salinity_layout(self)
         fresh = card("no sea is that fresh", VERMILION, 38).to_edge(DOWN, buff=0.9)
-        # "Before modelling, look."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
-        # "The smallest value of salinity is minus 999,"
-        at(self, 0.2)
-        self.play(FadeIn(cols), run_time=self.share(0.1))
-        at(self, 0.3)
-        self.play(cols[0][1].animate.set_color(VERMILION), run_time=self.share(0.06))
+        # The page's prose: the real ocean is the narrow cluster near 34.
+        real = label("real sea water here: about 34", 34, GREEN, weight=BOLD).next_to(fresh, UP, 0.35)
+        look = label("before modelling, look", 44, INK, weight=BOLD).move_to(head)
+        # "Next, cleaning the raw file. Before modelling, look at the data."
+        at(self, 0.1)
+        self.play(FadeIn(look, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "A simple first check is the smallest, average and largest value of every column."
+        at(self, 0.23)
+        self.play(LaggedStart(*[FadeIn(c[0]) for c in cols], lag_ratio=0.5), run_time=self.share(0.12))
+        # "Here is salinity."
+        at(self, 0.52)
+        self.play(ReplacementTransform(look, head), run_time=self.share(0.05))
+        # "Its smallest value is minus 999,"
+        at(self, 0.59)
+        cols[0][1].set_color(VERMILION)
+        self.play(FadeIn(cols[0][1]), FadeIn(cols[2][1]), run_time=self.share(0.05))
         # "and its average is 2.24."
-        at(self, 0.58)
-        self.play(cols[1][1].animate.set_color(VERMILION), run_time=self.share(0.06))
-        # "No sea is that fresh."
-        at(self, 0.82)
-        self.play(FadeIn(fresh, shift=0.2 * UP), run_time=self.share(0.08))
+        at(self, 0.71)
+        cols[1][1].set_color(VERMILION)
+        self.play(FadeIn(cols[1][1]), run_time=self.share(0.05))
+        # "Real sea water here is about 34, so no sea is that fresh."
+        at(self, 0.8)
+        self.play(FadeIn(real), run_time=self.share(0.05))
+        at(self, 0.91)
+        self.play(FadeIn(fresh, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
@@ -308,13 +328,13 @@ class Scene09(VideoScene):
         missing = label("missing", 56, SUBDUED, weight=BOLD).move_to(cols[0][1])
         smallest = label("smallest real", 32, SUBDUED).move_to(cols[0][0])
         mean = label(f"{means['clean_mean']:.1f}", 72, GREEN, weight=BOLD).move_to(cols[1][1])
-        # "Minus 999 was written to mean "missing"."
+        # "Minus 999 is a code: some instrument or export wrote it to mean "missing"."
         self.play(FadeIn(meaning, shift=0.2 * UP), run_time=self.share(0.12))
-        # "Mark it missing,"
-        at(self, 0.45)
+        # "Mark those values as missing instead,"
+        at(self, 0.47)
         self.play(FadeOut(cols[0]), FadeIn(missing), run_time=self.share(0.1))
-        # "and the average is 33.9."
-        at(self, 0.72)
+        # "and the average becomes 33.9, as it should be."
+        at(self, 0.71)
         self.play(ReplacementTransform(cols[1][1], mean), run_time=self.share(0.12))
         self.finish()
 
@@ -331,10 +351,10 @@ class Scene10(VideoScene):
         kind = {s: next(t for t in SUBSTRATE_TYPES if s.lower().startswith(t)) for s in spellings}
         colour = dict(zip(SUBSTRATE_TYPES, [PURPLE, ORANGE, BLUE, GREEN]))
         chips = VGroup(*[card(s, colour[kind[s]], 26) for s in spellings])
-        chips.arrange_in_grid(3, 4, buff=(0.5, 0.45)).move_to([0, 0.2, 0])
+        chips.arrange_in_grid(3, 4, buff=(0.5, 0.45)).move_to([0, -0.5, 0])
         head = label(f"{len(spellings)} spellings", 44, INK, weight=BOLD).to_edge(UP, buff=0.6)
         xs = [-4.8, -1.6, 1.6, 4.8]
-        headings = VGroup(*[label(t, 40, colour[t], weight=BOLD).move_to([x, 2.3, 0])
+        headings = VGroup(*[label(t, 40, colour[t], weight=BOLD).move_to([x, 2.15, 0])
                             for t, x in zip(SUBSTRATE_TYPES, xs)])
         head4 = label(f"{len(SUBSTRATE_TYPES)} seabed types", 44, INK, weight=BOLD).to_edge(UP, buff=0.6)
         seen = {t: 0 for t in SUBSTRATE_TYPES}
@@ -342,18 +362,26 @@ class Scene10(VideoScene):
         moves = []
         for chip, s in zip(chips, spellings):
             t = kind[s]
-            moves.append(chip.animate.move_to([xs[SUBSTRATE_TYPES.index(t)], 1.3 - step * seen[t], 0]))
+            moves.append(chip.animate.move_to([xs[SUBSTRATE_TYPES.index(t)], 1.15 - step * seen[t], 0]))
             seen[t] += 1
         warn = card("a model sees twelve different habitats", VERMILION, 32).to_edge(DOWN, buff=0.3)
-        # "Count every category, too."
+        # "Count every category, too. The type of seabed was written in twelve different ways,"
         self.play(FadeIn(head), LaggedStart(*[FadeIn(c, scale=0.8) for c in chips], lag_ratio=0.1),
                   run_time=self.share(0.2))
-        # "Four seabed types were written twelve different ways,"
-        at(self, 0.25)
-        self.play(ReplacementTransform(head, head4), FadeIn(headings), *moves, run_time=self.share(0.18))
-        # "and a model would treat each spelling as a different habitat."
-        at(self, 0.62)
-        self.play(FadeIn(warn, shift=0.2 * UP), run_time=self.share(0.1))
+        # "such as sand with a capital S, sand in capitals, and sandy."
+        for name, when in [("Sand", 0.29), ("SAND", 0.4), ("sandy", 0.47)]:
+            at(self, when)
+            self.play(Indicate(chips[spellings.index(name)], color=ORANGE, scale_factor=1.15),
+                      run_time=self.share(0.06))
+        # "They are really four types: mud, sand, gravel and rock."
+        at(self, 0.5)
+        self.play(ReplacementTransform(head, head4), FadeIn(headings), run_time=self.share(0.1))
+        # "A model would treat each spelling as a different habitat,"
+        at(self, 0.7)
+        self.play(FadeIn(warn, shift=0.2 * UP), run_time=self.share(0.08))
+        # "so the spellings are merged."
+        at(self, 0.9)
+        self.play(*moves, run_time=self.share(0.1))
         self.finish()
 
 
@@ -390,17 +418,17 @@ class Scene11(VideoScene):
         winter = label(f"{cost['winter_lost_pct']:.0f}% of winter", 36, VERMILION, weight=BOLD)
         ring = SurroundingRectangle(VGroup(all_rows[3], complete[3], values[3]), color=VERMILION, buff=0.15, corner_radius=0.1)
         winter.next_to(ring, UP, 0.15)
-        # "Chlorophyll is missing most often in winter."
+        # "Some values are simply missing. Chlorophyll is missing most often in winter."
         self.play(Create(axes.x_axis), FadeIn(names), FadeIn(key[0]), GrowFromEdge(all_rows, DOWN), run_time=self.share(0.15))
-        # "Drop every incomplete row, as most modelling functions do by default,"
-        at(self, 0.25)
+        # "Many modelling functions quietly drop every incomplete row,"
+        at(self, 0.24)
         self.play(FadeIn(key[1]), LaggedStart(*[GrowFromEdge(b, DOWN) for b in complete], lag_ratio=0.2),
                   FadeIn(values), run_time=self.share(0.2))
-        # "and you lose 10% of the stations,"
-        at(self, 0.66)
+        # "Here, that loses 10% of the stations,"
+        at(self, 0.56)
         self.play(FadeIn(overall), run_time=self.share(0.08))
-        # "but 20% of winter."
-        at(self, 0.86)
+        # "but 20% of the winter ones."
+        at(self, 0.68)
         self.play(Create(ring), FadeIn(winter), run_time=self.share(0.08))
         self.finish()
 
@@ -409,20 +437,30 @@ class Scene12(VideoScene):
     number = 12
 
     def construct(self):
-        # Schematic: the question every fix starts from.
-        question = VGroup(label("Why is this value", 60, INK, weight=BOLD),
-                          label("missing, or strange?", 60, INK, weight=BOLD)).arrange(DOWN, buff=0.2)
-        question.move_to([0, 1.2, 0])
-        decides = label("the answer decides the fix", 40, GREEN, weight=BOLD).move_to([0, -0.9, 0])
-        some = label("and some gaps cannot be fixed at all", 36, VERMILION, weight=BOLD).move_to([0, -2.0, 0])
+        # Schematic: the question every fix starts from, and the three reasons a value is
+        # missing, after the exploring page's missing-and-unusual diagram.
+        question = label("Why is this value missing, or strange?", 44, INK, weight=BOLD).to_edge(UP, buff=0.7)
+        decides = label("the answer decides the fix", 40, GREEN, weight=BOLD).next_to(question, DOWN, 0.4)
+        reasons = VGroup(panel("by chance", ["a sample lost:", "little harm"], GREEN, 3.9, 2.6, 28),
+                         panel("with the season", ["follows something", "recorded: fill in", "from it"],
+                               ORANGE, 3.9, 2.6, 28),
+                         panel("in storms", ["the gaps are the", "stormy values:", "no fix in the data"],
+                               VERMILION, 3.9, 2.6, 28)).arrange(RIGHT, buff=0.35).move_to([0, -1.4, 0])
+        no_fix = reasons[2][2][-1]
         # "So every fix starts with one question: why is this value missing, or strange?"
-        self.play(FadeIn(question, shift=0.2 * DOWN), run_time=self.share(0.2))
-        # "The answer decides the fix,"
-        at(self, 0.6)
-        self.play(FadeIn(decides, shift=0.2 * UP), run_time=self.share(0.1))
-        # "and some gaps cannot be fixed at all."
-        at(self, 0.8)
-        self.play(FadeIn(some, shift=0.2 * UP), run_time=self.share(0.1))
+        self.play(FadeIn(question, shift=0.2 * DOWN), run_time=self.share(0.12))
+        # "The answer decides the fix."
+        at(self, 0.2)
+        self.play(FadeIn(decides, shift=0.2 * UP), run_time=self.share(0.06))
+        # "A sample lost by pure chance costs only a little precision. Gaps that depend on
+        # something recorded, such as the season, can be filled in from what was recorded.
+        # But when a sensor fails in storms,"
+        for reason, when in zip(reasons, [0.27, 0.43, 0.69]):
+            at(self, when)
+            self.play(FadeIn(reason, shift=0.2 * UP), run_time=self.share(0.06))
+        # "and no fix to the data can bring them back."
+        at(self, 0.89)
+        self.play(no_fix.animate.set_color(VERMILION), run_time=self.share(0.05))
         self.finish()
 
 
@@ -431,8 +469,11 @@ class Scene13(VideoScene):
 
     def construct(self):
         # Schematic: the recipe's three stages, after the scaling-and-encoding page's diagram.
-        chips = VGroup(card("standardise", SKY, 30), card("log", SKY, 30), card("columns of 0s and 1s", SKY, 30)
-                       ).arrange(RIGHT, buff=0.4).to_edge(UP, buff=0.6)
+        chips = VGroup(*[VGroup(card(name, SKY, 30), label(gloss, 26, SUBDUED)).arrange(DOWN, buff=0.15)
+                         for name, gloss in [("standardise", "every column on one scale"),
+                                             ("log", "pulls in a long tail"),
+                                             ("columns of 0s and 1s", "a category as numbers")]]
+                       ).arrange(RIGHT, buff=0.5, aligned_edge=UP).to_edge(UP, buff=0.5)
         stages = VGroup(panel("1 specify", ["list the steps"], BLUE, 3.3, 2.2, 28),
                         panel("2 estimate", ["the numbers they need,", "from training data only"], ORANGE, 4.5, 2.2, 28),
                         panel("3 apply", ["the same numbers,", "to any data"], GREEN, 3.7, 2.2, 28)
@@ -440,19 +481,23 @@ class Scene13(VideoScene):
         arrows = VGroup(*[Arrow(a.get_right(), b.get_left(), color=INK, stroke_width=4, buff=0.08)
                           for a, b in zip(stages[:-1], stages[1:])])
         name = label("a recipe", 40, INK, weight=BOLD).next_to(stages, UP, 0.4)
-        # "Columns then need preparing: standardised, logged, or turned into columns of zeros and ones."
-        for chip, when in zip(chips, [0.1, 0.2, 0.3]):
+        # "Standardising puts every column on the same scale: ... A log pulls in a long tail,
+        # ... And a category, such as the seabed, becomes columns of zeros and ones,"
+        for chip, when in zip(chips, [0.07, 0.35, 0.47]):
             at(self, when)
-            self.play(FadeIn(chip, shift=0.2 * DOWN), run_time=self.share(0.05))
-        # "A recipe lists these steps,"
-        at(self, 0.46)
-        self.play(FadeIn(name), FadeIn(stages[0], shift=0.2 * UP), run_time=self.share(0.08))
-        # "works out the numbers they need from the training data only,"
-        at(self, 0.6)
-        self.play(GrowArrow(arrows[0]), FadeIn(stages[1], shift=0.2 * UP), run_time=self.share(0.08))
-        # "and applies them to any data."
-        at(self, 0.86)
-        self.play(GrowArrow(arrows[1]), FadeIn(stages[2], shift=0.2 * UP), run_time=self.share(0.08))
+            self.play(FadeIn(chip, shift=0.2 * DOWN), run_time=self.share(0.04))
+        # "A recipe holds these steps. It lists them,"
+        at(self, 0.63)
+        self.play(FadeIn(name), FadeIn(stages[0], shift=0.2 * UP), run_time=self.share(0.04))
+        # "works out the numbers they need, such as each mean, from the training data only,"
+        at(self, 0.7)
+        self.play(GrowArrow(arrows[0]), FadeIn(stages[1], shift=0.2 * UP), run_time=self.share(0.04))
+        # "and then applies those same numbers to any data."
+        at(self, 0.84)
+        self.play(GrowArrow(arrows[1]), FadeIn(stages[2], shift=0.2 * UP), run_time=self.share(0.04))
+        # "Why the training data only? We come to that next."
+        at(self, 0.92)
+        self.play(stages[1][2][2].animate.set_color(VERMILION), run_time=self.share(0.04))
         self.finish()
 
 
@@ -460,7 +505,7 @@ class Scene14(KeyPointScene):
     number, point = 14, 2
 
 
-# Testing a model honestly (scenes 15–23) ------------------------------------------------
+# Testing a model honestly (scenes 15–24) ------------------------------------------------
 
 class Scene15(VideoScene):
     number = 15
@@ -468,17 +513,18 @@ class Scene15(VideoScene):
     def construct(self):
         # Schematic: the three roles of the data.
         head = label("tested on data it has not seen", 44, INK, weight=BOLD).to_edge(UP, buff=0.8)
-        roles = VGroup(panel("training", ["fits the model"], BLUE, 3.6, 2.0, 30),
+        roles = VGroup(panel("training", ["the model", "learns from it"], BLUE, 3.6, 2.0, 30),
                        panel("validation", ["chooses between", "models"], ORANGE, 3.6, 2.0, 30),
                        panel("test", ["reports the result,", "once"], GREEN, 3.6, 2.0, 30)
                        ).arrange(RIGHT, buff=0.5).move_to([0, -0.4, 0])
-        # "A model must be tested on data it has not seen."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.12))
-        # "Training data fits the model, validation data chooses between models,
-        # and test data reports the result, once."
-        for role, when in zip(roles, [0.36, 0.56, 0.76]):
+        # "Now to testing a model. A model must be tested on data it has not seen,"
+        at(self, 0.07)
+        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.08))
+        # "The model learns from the training data. Validation data choose between models,
+        # or between settings of one model. And the test data report the result, once,"
+        for role, when in zip(roles, [0.53, 0.64, 0.85]):
             at(self, when)
-            self.play(FadeIn(role, shift=0.2 * UP), run_time=self.share(0.07))
+            self.play(FadeIn(role, shift=0.2 * UP), run_time=self.share(0.05))
         self.finish()
 
 
@@ -522,17 +568,18 @@ class Scene16(VideoScene):
     def construct(self):
         # Page results: splitting-data.qmd, the share of test stations at a trained site.
         seen = int(self.data("seen")["seen_pct"].iloc[0])
-        before = sites_grid(lambda s, v: False).move_to([0, 0.3, 0])
-        after = random_grid().move_to(before)
-        head = label("a random split", 44, INK, weight=BOLD).to_edge(UP, buff=0.4)
-        key = split_key().next_to(after, DOWN, 0.45)
-        share = card(f"{seen}% of test stations sit at a site in training", VERMILION, 32).to_edge(DOWN, buff=0.35)
-        # "Split this survey at random,"
-        self.play(FadeIn(head), FadeIn(before), run_time=self.share(0.15))
-        at(self, 0.2)
-        self.play(ReplacementTransform(before, after), FadeIn(key), run_time=self.share(0.2))
-        # "and every test station sits at a site the model trained on."
-        at(self, 0.55)
+        before = sites_grid(lambda s, v: False).scale(0.85).move_to([0, 0.1, 0])
+        after = random_grid().scale(0.85).move_to(before)
+        head = label("a random split", 44, INK, weight=BOLD).to_edge(UP, buff=0.3)
+        how = label("each station by chance: three quarters to training", 30, SUBDUED).next_to(head, DOWN, 0.15)
+        key = split_key().next_to(after, DOWN, 0.3)
+        share = card(f"{seen}% of test stations sit at a site in training", VERMILION, 32).to_edge(DOWN, buff=0.3)
+        # "The simplest way is a random split: each station goes to training or test by chance,"
+        self.play(FadeIn(head), FadeIn(before), run_time=self.share(0.1))
+        at(self, 0.15)
+        self.play(FadeIn(how), ReplacementTransform(before, after), FadeIn(key), run_time=self.share(0.2))
+        # "Split this survey at random, and every test station sits at a site the model trained on."
+        at(self, 0.71)
         self.play(FadeIn(share, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
@@ -558,14 +605,16 @@ class Scene17(VideoScene):
         self.play(ReplacementTransform(full, rand), FadeIn(heads[0]), FadeIn(goal, shift=0.2 * DOWN),
                   run_time=self.share(0.1))
         # "A random split only tests another visit to a site the model already knows."
-        at(self, 0.3)
+        at(self, 0.18)
         self.play(FadeIn(asks[0]), run_time=self.share(0.08))
-        # "Hold back whole sites instead, and the test sites are new to the model, as they will be in use."
-        at(self, 0.52)
-        self.play(FadeIn(grouped), FadeIn(heads[1]), run_time=self.share(0.1))
-        self.play(Create(new), FadeIn(asks[1]), run_time=self.share(0.08))
-        # "So split along what you will predict for."
-        at(self, 0.86)
+        # "Hold back whole sites instead, so every visit to a test site stays out of training."
+        at(self, 0.38)
+        self.play(FadeIn(grouped), FadeIn(heads[1]), run_time=self.share(0.08))
+        # "Then the test sites are new to the model, as they will be in use."
+        at(self, 0.6)
+        self.play(Create(new), FadeIn(asks[1]), run_time=self.share(0.06))
+        # "So split along what you will predict for: by site for new sites, by year for next year."
+        at(self, 0.77)
         self.play(FadeIn(rule, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
@@ -582,40 +631,46 @@ class Scene18(VideoScene):
         wall = DashedLine([2.55, 2.0, 0], [2.55, -0.8, 0], color=GREY, stroke_width=5)
         leak = CurvedArrow(test.get_bottom() + 0.1 * DOWN, model.get_bottom() + 0.1 * DOWN, color=VERMILION,
                            stroke_width=6, angle=-PI / 2.2)
-        name = label("leakage", 52, VERMILION, weight=BOLD).move_to([2.3, -1.9, 0])
-        better = label("every score looks better", 36, INK, weight=BOLD).move_to([0, -2.9, 0])
+        name = label("information leakage", 46, VERMILION, weight=BOLD).move_to([1.6, -1.9, 0])
+        better = label("the score looks better than the model is", 36, INK, weight=BOLD).move_to([0, -2.9, 0])
         trace = label("and leaves no trace", 36, SUBDUED, weight=BOLD).next_to(better, DOWN, 0.2)
         self.play(FadeIn(train), FadeIn(model), GrowArrow(fit), FadeIn(test), Create(wall), run_time=self.share(0.12))
         # "When information from the test data reaches the model before the test,"
-        at(self, 0.15)
-        self.play(Create(leak), run_time=self.share(0.25))
-        # "that is leakage."
-        at(self, 0.45)
+        at(self, 0.08)
+        self.play(Create(leak), run_time=self.share(0.17))
+        # "that is called information leakage, or leakage for short."
+        at(self, 0.27)
         self.play(FadeIn(name, scale=0.8), run_time=self.share(0.06))
-        # "It makes every score look better, and it leaves no trace."
-        at(self, 0.62)
-        self.play(FadeIn(better, shift=0.2 * UP), run_time=self.share(0.07))
-        at(self, 0.82)
+        # "It makes the score look better than the model really is,"
+        at(self, 0.49)
+        self.play(FadeIn(better, shift=0.2 * UP), run_time=self.share(0.06))
+        # "and it leaves no trace: the results look just like honest ones, only better."
+        at(self, 0.71)
         self.play(FadeIn(trace, shift=0.2 * UP), run_time=self.share(0.07))
         self.finish()
 
 
 def rsq_bars(rows, colours, head_text):
-    """Horizontal R² bars on a 0 to 1 scale, with each bar's value as the page prints it."""
+    """Horizontal R² bars on a 0 to 1 scale, with each bar's value as the page prints it.
+    The axis group ends with what 0 and 1 mean, as the leakage page defines R²."""
     head = label(head_text, 40, INK, weight=BOLD).to_edge(UP, buff=0.6)
-    axis = plain_axes([0, 1, 0.25], [0, 1, 1], 8.0, 0.01).move_to([1.2, -2.2, 0])
+    axis = plain_axes([0, 1, 0.25], [0, 1, 1], 8.0, 0.01).move_to([1.2, -1.9, 0])
     ticks = VGroup(*[label(f"{v:g}", 24, SUBDUED).next_to(axis.c2p(v, 0), DOWN, 0.15) for v in (0, 0.5, 1)])
-    axis_name = label("R² on the test data", 26, SUBDUED).next_to(ticks, DOWN, 0.15)
+    means = VGroup(label("no better than the average", 24, SUBDUED).next_to(ticks[0], DOWN, 0.12)
+                   .align_to(ticks[0], LEFT).shift(0.3 * LEFT),
+                   label("every prediction exact", 24, SUBDUED).next_to(ticks[2], DOWN, 0.12)
+                   .align_to(ticks[2], RIGHT).shift(0.3 * RIGHT))
+    axis_name = label("R² on the test data", 26, SUBDUED, weight=BOLD).next_to(means, DOWN, 0.2)
     bars = VGroup()
     for i, ((name, value), colour) in enumerate(zip(rows, colours)):
         y = 0.9 - 1.6 * i
         width = max(value * 8.0, 0.02)
         bar = Rectangle(width=width, height=0.9, stroke_width=0, fill_color=colour, fill_opacity=0.85)
-        bar.move_to([axis.c2p(0, 0)[0] + width / 2, y, 0])
-        what = label(name, 30, INK, weight=BOLD).next_to([axis.c2p(0, 0)[0], y, 0], LEFT, 0.3)
+        bar.move_to([axis.c2p(0, 0)[0] + width / 2, y + 0.2, 0])
+        what = label(name, 30, INK, weight=BOLD).next_to([axis.c2p(0, 0)[0], y + 0.2, 0], LEFT, 0.3)
         amount = label(f"{value:.2f}", 40, INK, weight=BOLD).next_to(bar, RIGHT, 0.25)
         bars.add(VGroup(bar, what, amount))
-    return head, VGroup(axis, ticks, axis_name), bars
+    return head, VGroup(axis, ticks, axis_name, means), bars
 
 
 def target_layout(scene):
@@ -625,20 +680,74 @@ def target_layout(scene):
                     "a linear regression of the count")
 
 
+# Made-up counts at ten test stations, and predictions that follow about half their
+# swings: a picture of what R² measures, not survey numbers.
+RSQ_COUNTS = [3.0, 7.5, 4.5, 9.0, 5.5, 2.0, 8.0, 6.5, 3.5, 7.0]
+RSQ_SWAY = [0.4, -0.3, 0.5, -0.6, 0.2, 0.5, -0.4, 0.3, 0.6, -0.2]
+
+
 class Scene19(VideoScene):
     number = 19
 
     def construct(self):
-        # Page results: information-leakage.qmd, target leakage.
-        head, axis, bars = target_layout(self)
-        # "Add catch weight to a linear regression of the count,"
-        self.play(FadeIn(head), FadeIn(axis), run_time=self.share(0.12))
-        # "and R squared jumps from 0.28"
-        at(self, 0.5)
-        self.play(GrowFromEdge(bars[0][0], LEFT), FadeIn(bars[0][1:]), run_time=self.share(0.12))
-        # "to 0.98."
-        at(self, 0.8)
-        self.play(GrowFromEdge(bars[1][0], LEFT), FadeIn(bars[1][1:]), run_time=self.share(0.12))
+        # Schematic: the counts vary about their average; the predictions follow part of it.
+        model = label("a linear regression: the count from the environment", 36, INK, weight=BOLD)
+        model.to_edge(UP, buff=0.45)
+        head = label("R squared: how well a model fits the data", 40, PURPLE, weight=BOLD).move_to(model)
+        axes = plain_axes([0, 11, 1], [0, 10, 2], 7.0, 4.4).move_to([-2.9, -0.7, 0])
+        axis_name = label("the count at each test station", 26, SUBDUED).next_to(axes, UP, 0.15).align_to(axes, LEFT)
+        mean = np.mean(RSQ_COUNTS)
+        xs = range(1, len(RSQ_COUNTS) + 1)
+        dots = VGroup(*[Dot(axes.c2p(x, y), 0.1, color=INK) for x, y in zip(xs, RSQ_COUNTS)])
+        average = DashedLine(axes.c2p(0.4, mean), axes.c2p(10.6, mean), color=GREY, stroke_width=4)
+        average_name = label("average", 26, GREY, weight=BOLD).next_to(average, RIGHT, 0.15)
+        spread = VGroup(*[Line(axes.c2p(x, mean) + 0.07 * LEFT, axes.c2p(x, y) + 0.07 * LEFT,
+                               color=SKY, stroke_width=6) for x, y in zip(xs, RSQ_COUNTS)])
+        vary = label("how much the counts vary", 28, SKY, weight=BOLD).next_to(axes, DOWN, 0.3)
+        guesses = [mean + 0.5 * (y - mean) + d for y, d in zip(RSQ_COUNTS, RSQ_SWAY)]
+        predictions = VGroup(*[Line(axes.c2p(x - 0.3, g), axes.c2p(x + 0.3, g), color=ORANGE, stroke_width=7)
+                               for x, g in zip(xs, guesses)])
+        predicted = label("predictions", 28, ORANGE, weight=BOLD).next_to(vary, RIGHT, 0.6)
+        misses = VGroup(*[Line(axes.c2p(x, g) + 0.07 * RIGHT, axes.c2p(x, y) + 0.07 * RIGHT,
+                               color=VERMILION, stroke_width=6) for x, y, g in zip(xs, RSQ_COUNTS, guesses)])
+        missed = label("missed", 28, VERMILION, weight=BOLD).next_to(predicted, RIGHT, 0.6)
+        share = VGroup(label("R² = the share of", 34, INK, weight=BOLD),
+                       label("the variation the", 34, INK, weight=BOLD),
+                       label("predictions follow", 34, INK, weight=BOLD)).arrange(DOWN, buff=0.12)
+        share.move_to([4.1, 1.2, 0])
+        scale = Line([2.6, -0.6, 0], [5.6, -0.6, 0], color=INK, stroke_width=5)
+        ends = VGroup(*[Line(scale.get_start() + 0.15 * UP, scale.get_start() + 0.15 * DOWN, color=INK, stroke_width=5),
+                        Line(scale.get_end() + 0.15 * UP, scale.get_end() + 0.15 * DOWN, color=INK, stroke_width=5)])
+        one = VGroup(label("1", 36, GREEN, weight=BOLD), label("every prediction", 24, SUBDUED),
+                     label("exact", 24, SUBDUED)).arrange(DOWN, buff=0.08).next_to(scale.get_end(), DOWN, 0.25)
+        zero = VGroup(label("0", 36, VERMILION, weight=BOLD), label("no better than", 24, SUBDUED),
+                      label("the average", 24, SUBDUED)).arrange(DOWN, buff=0.08).next_to(scale.get_start(), DOWN, 0.25)
+        # "Here is an example. A linear regression, ... predicts the count from the environment:"
+        at(self, 0.04)
+        self.play(FadeIn(model, shift=0.2 * DOWN), run_time=self.share(0.05))
+        # "To check how well a model fits the data, we use R squared."
+        at(self, 0.31)
+        self.play(ReplacementTransform(model, head), run_time=self.share(0.04))
+        # "The counts at the test stations vary: some are high, some are low."
+        at(self, 0.42)
+        self.play(Create(axes), FadeIn(axis_name), FadeIn(dots), Create(average), FadeIn(average_name),
+                  run_time=self.share(0.05))
+        at(self, 0.49)
+        self.play(Create(spread), FadeIn(vary), run_time=self.share(0.04))
+        # "The model's predictions follow part of that variation, and miss the rest."
+        at(self, 0.54)
+        self.play(FadeIn(predictions), FadeIn(predicted), run_time=self.share(0.04))
+        at(self, 0.63)
+        self.play(Create(misses), FadeIn(missed), run_time=self.share(0.04))
+        # "R squared is the share they follow."
+        at(self, 0.68)
+        self.play(FadeIn(share, shift=0.2 * UP), run_time=self.share(0.04))
+        # "If every prediction is exact, R squared is one."
+        at(self, 0.75)
+        self.play(Create(scale), FadeIn(ends), FadeIn(one), run_time=self.share(0.04))
+        # "If the model does no better than predicting the average count everywhere, it is zero."
+        at(self, 0.86)
+        self.play(FadeIn(zero), run_time=self.share(0.04))
         self.finish()
 
 
@@ -646,22 +755,19 @@ class Scene20(VideoScene):
     number = 20
 
     def construct(self):
-        # Page results as in scene 19; the rest schematic.
+        # Page results: information-leakage.qmd, target leakage.
         head, axis, bars = target_layout(self)
-        self.add(head, axis, bars)
-        same = card("catch weight is the count, in other units", PURPLE, 34).to_edge(UP, buff=0.5)
-        handed = card("each test station's answer, handed to the model", VERMILION, 32).move_to([0, -3.3, 0])
-        copying = card("copying, not predicting", VERMILION, 36).move_to(handed)
-        cross = Cross(bars[1][0], stroke_color=VERMILION, stroke_width=8)
-        # "Catch weight is the weight of the animals that were counted: the count again, in other units."
-        self.play(FadeOut(head), FadeIn(same, shift=0.2 * DOWN), run_time=self.share(0.1))
-        # "So for every test station, the model is handed the answer it should predict."
-        at(self, 0.45)
-        self.play(FadeOut(axis), FadeIn(handed, shift=0.2 * UP), run_time=self.share(0.08))
-        # "The 0.98 measures copying, not predicting."
-        at(self, 0.8)
-        self.play(Create(cross), bars[1].animate.set_opacity(0.35), ReplacementTransform(handed, copying),
-                  run_time=self.share(0.1))
+        fifth = label("about a fifth of the variation", 28, SUBDUED).next_to(bars[0][2], RIGHT, 0.4)
+        self.add(head, axis)
+        # "On the environment alone, R squared is 0.22:"
+        at(self, 0.02)
+        self.play(GrowFromEdge(bars[0][0], LEFT), FadeIn(bars[0][1:]), run_time=self.share(0.1))
+        # "the predictions follow only about a fifth of the variation."
+        at(self, 0.28)
+        self.play(FadeIn(fifth), run_time=self.share(0.08))
+        # "Add one more column, catch weight, and it jumps to 0.98."
+        at(self, 0.87)
+        self.play(GrowFromEdge(bars[1][0], LEFT), FadeIn(bars[1][1:]), run_time=self.share(0.08))
         self.finish()
 
 
@@ -669,23 +775,48 @@ class Scene21(VideoScene):
     number = 21
 
     def construct(self):
-        # Page results: information-leakage.qmd, group leakage.
-        table = self.data("group").set_index("split")["rsq"]
-        head, axis, bars = rsq_bars([("random split", table["Random"]), ("grouped by site", table["Grouped by site"])],
-                                    [BLUE, GREEN], "the honest model, split two ways")
-        harder = card("a new site is much harder to predict", PURPLE, 32).to_edge(DOWN, buff=0.2)
-        self.play(FadeIn(head), FadeIn(axis), GrowFromEdge(bars[0][0], LEFT), FadeIn(bars[0][1:]), run_time=self.share(0.15))
-        # "Keep each site whole, and the honest model's R squared falls from 0.28 to 0.08."
-        at(self, 0.4)
-        self.play(GrowFromEdge(bars[1][0], LEFT), FadeIn(bars[1][1:]), run_time=self.share(0.12))
-        # "Predicting a new site is much harder than predicting a familiar one."
-        at(self, 0.62)
-        self.play(FadeOut(axis), FadeIn(harder, shift=0.2 * UP), run_time=self.share(0.1))
+        # Page results as in scene 20; the rest schematic.
+        head, axis, bars = target_layout(self)
+        fifth = label("about a fifth of the variation", 28, SUBDUED).next_to(bars[0][2], RIGHT, 0.4)
+        self.add(head, axis, bars, fifth)
+        same = card("catch weight is the count, in other units", PURPLE, 34).to_edge(UP, buff=0.5)
+        handed = card("each test station's answer, handed to the model", VERMILION, 32).move_to([0, -3.3, 0])
+        copying = card("copying, not predicting", VERMILION, 36).move_to(handed)
+        cross = Cross(bars[1][0], stroke_color=VERMILION, stroke_width=8)
+        # "Catch weight is the weight of the animals that were counted: the count again, in other units."
+        self.play(FadeOut(head), FadeIn(same, shift=0.2 * DOWN), run_time=self.share(0.1))
+        # "So for every test station, the model is handed the answer it should predict."
+        at(self, 0.44)
+        self.play(FadeOut(axis), FadeOut(fifth), FadeIn(handed, shift=0.2 * UP), run_time=self.share(0.08))
+        # "The 0.98 measures copying, not predicting."
+        at(self, 0.8)
+        self.play(Create(cross), bars[1].animate.set_opacity(0.35), ReplacementTransform(handed, copying),
+                  run_time=self.share(0.1))
         self.finish()
 
 
 class Scene22(VideoScene):
     number = 22
+
+    def construct(self):
+        # Page results: information-leakage.qmd, group leakage.
+        table = self.data("group").set_index("split")["rsq"]
+        head, axis, bars = rsq_bars([("random split", table["Random"]), ("split by site", table["By site"])],
+                                    [BLUE, GREEN], "environment only, split two ways")
+        harder = card("a new site is much harder to predict", PURPLE, 32).to_edge(DOWN, buff=0.2)
+        self.play(FadeIn(head), FadeIn(axis), GrowFromEdge(bars[0][0], LEFT), FadeIn(bars[0][1:]), run_time=self.share(0.15))
+        # "Leakage can also hide in the split. Keep each site whole, and the environment-only
+        # model's R squared falls from 0.22 to 0.04."
+        at(self, 0.3)
+        self.play(GrowFromEdge(bars[1][0], LEFT), FadeIn(bars[1][1:]), run_time=self.share(0.1))
+        # "Predicting a new site is much harder than predicting another visit to a familiar one,"
+        at(self, 0.52)
+        self.play(FadeOut(axis), FadeIn(harder, shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         # Schematic: the page's one question.
@@ -695,32 +826,38 @@ class Scene22(VideoScene):
                                                                                                 aligned_edge=LEFT)
         code.move_to([0, 0.5, 0])
         line = code[2]
-        mark = Arrow(line.get_left() + 1.2 * LEFT, line.get_left(), color=PURPLE, stroke_width=6, buff=0.1)
+        mark = Arrow(line.get_left() + 1.2 * LEFT, line.get_left(), color=VERMILION, stroke_width=6, buff=0.1)
         question = VGroup(label("Does this line of code use information", 44, INK, weight=BOLD),
                           label("from the rows I intend to test on?", 44, INK, weight=BOLD)).arrange(DOWN, buff=0.2)
         question.move_to([0, -2.0, 0])
-        self.play(FadeIn(head), FadeIn(code), run_time=self.share(0.15))
+        # "Leakage is rarely cheating."
+        self.play(FadeIn(code), run_time=self.share(0.1))
+        # "It is usually one line of code in the wrong place."
+        at(self, 0.14)
+        self.play(line.animate.set_fill(VERMILION, 0.6), GrowArrow(mark), run_time=self.share(0.1))
+        # "So one question catches every kind of leakage."
+        at(self, 0.4)
+        self.play(FadeIn(head), run_time=self.share(0.08))
         # "Does this line of code use information from the rows I intend to test on?"
-        at(self, 0.42)
-        self.play(line.animate.set_fill(PURPLE, 0.6), GrowArrow(mark), run_time=self.share(0.1))
-        self.play(FadeIn(question, shift=0.2 * UP), run_time=self.share(0.15))
+        at(self, 0.63)
+        self.play(FadeIn(question, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
-class Scene23(KeyPointScene):
-    number, point = 23, 3
+class Scene24(KeyPointScene):
+    number, point = 24, 3
 
 
-# The quiz (scenes 24–25) ----------------------------------------------------------------
+# The quiz (scenes 25–26) ----------------------------------------------------------------
 
-class Scene24(QuizScene):
-    number = 24
+class Scene25(QuizScene):
+    number = 25
     question = ("Gaps in chlorophyll are filled with", "the median of the whole survey,",
                 "then it is split into training and test.", "What is wrong?")
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         # Schematic: every row, test rows included, sets the median; a recipe uses training rows only.
@@ -758,19 +895,19 @@ class Scene25(VideoScene):
         self.finish()
 
 
-# The recap (scenes 26–28) and the end card (scene 29) -----------------------------------
-
-class Scene26(RecapScene):
-    number, point = 26, 1
-
+# The recap (scenes 27–29) and the end card (scene 30) -----------------------------------
 
 class Scene27(RecapScene):
-    number, point = 27, 2
+    number, point = 27, 1
 
 
 class Scene28(RecapScene):
-    number, point = 28, 3
+    number, point = 28, 2
 
 
-class Scene29(EndCardScene):
-    number = 29
+class Scene29(RecapScene):
+    number, point = 29, 3
+
+
+class Scene30(EndCardScene):
+    number = 30

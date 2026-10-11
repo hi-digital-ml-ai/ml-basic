@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
-"""Make the three cheers that greet each key point: _videos/cheer-*.wav, 48 kHz stereo.
+"""Make the cheers that greet each key point: _videos/cheer-*.wav, 48 kHz stereo.
 
     python tools/make-cheers.py
 
     cheer-clap.wav       applause: a dozen pairs of hands, swelling then dying away
-    cheer-hooray.wav     a small crowd shouting "Hooray!"
     cheer-fireworks.wav  a rocket's whistle, its bang, and the crackle after
+    cheer-bubbles.wav    bubbles rising, each a little rising "bloop"
+    cheer-<shout>.wav    a small crowd calling out each word in video_script.SHOUTS,
+                         such as cheer-well-done.wav, "Well done!"
 
-The clapping and the fireworks are synthesised from noise here, and the crowd is the
-offline Piper voice (as tools/draft-narration.py) at several pitches, so there is no
-licence to track. To use recorded sounds instead (CC0, say), save them under the same
-names, 48 kHz. tools/video_script.py pairs each sound with an animal per video, and
-tools/rough-cut.py plays it as the animal appears.
+The clapping, fireworks and bubbles are synthesised here, and the crowd is the offline
+Piper voice (as tools/draft-narration.py) at several pitches, so there is no licence
+to track. To use recorded sounds instead (CC0, say), save them under the same names,
+48 kHz. tools/video_script.py deals the cheers out to the videos, and
+tools/rough-cut.py plays each as its animal appears.
 """
 
 import importlib.util
+import sys
 from pathlib import Path
 
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import butter, fftconvolve, resample_poly, sosfilt
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from video_script import SHOUTS  # noqa: E402
 
 RATE = 48000
 OUT = Path(__file__).resolve().parent.parent / "_videos"
@@ -110,7 +116,24 @@ def fireworks():
     return finish(out)
 
 
-def hooray():
+def bubbles():
+    """Each bubble rings at a pitch set by its size, rising as it nears the surface."""
+    length = 2.4
+    out = np.zeros((int(length * RATE), 2))
+    t = 0.05
+    while t < 1.9:
+        n = int(rng.uniform(0.05, 0.09) * RATE)
+        tb = np.arange(n) / RATE
+        f0 = rng.uniform(500, 1300)
+        freq = f0 * (1 + 2.5 * tb / tb[-1])
+        bloop = np.sin(2 * np.pi * np.cumsum(freq) / RATE) * np.exp(-tb / 0.025)
+        bloop *= np.minimum(tb / 0.003, 1)
+        place(out, bloop * rng.uniform(0.5, 1.0), t, rng.uniform(-0.7, 0.7))
+        t += rng.exponential(0.07) + 0.03
+    return finish(out)
+
+
+def shout(words):
     spec = importlib.util.spec_from_file_location(
         "draft_narration", Path(__file__).with_name("draft-narration.py"))
     draft = importlib.util.module_from_spec(spec)
@@ -121,13 +144,14 @@ def hooray():
     out = np.zeros((int(length * RATE), 2))
     voices = [draft.load_voice(n) for n in ("en_GB-alan-medium",
                                             "en_GB-northern_english_male-medium")]
+    # Each word gets its own draw of pitches and timings, so the crowds differ.
     # Each shout at its own pitch: a resample raises the pitch and quickens the word,
     # so the higher voices sound like a younger crowd.
     for i, step in enumerate([0.95, 1.0, 1.12, 1.25, 1.4, 1.55, 1.7]):
         voice = voices[i % 2]
         config = SynthesisConfig(length_scale=1.15, noise_scale=0.9, noise_w_scale=1.0)
         audio = np.concatenate([c.audio_int16_array / 32768
-                                for c in voice.synthesize("Hooray!", syn_config=config)])
+                                for c in voice.synthesize(words, syn_config=config)])
         rate = voice.config.sample_rate
         up, down = 100, round(100 * step)
         shout = resample_poly(resample_poly(audio, RATE // np.gcd(RATE, rate), rate // np.gcd(RATE, rate)),
@@ -137,7 +161,9 @@ def hooray():
 
 
 def main():
-    for name, make in [("clap", clap), ("fireworks", fireworks), ("hooray", hooray)]:
+    makers = [("clap", clap), ("fireworks", fireworks), ("bubbles", bubbles)]
+    makers += [(name, lambda w=words: shout(w)) for name, words in SHOUTS.items()]
+    for name, make in makers:
         sound = np.clip(make(), -1, 1)
         path = OUT / f"cheer-{name}.wav"
         wavfile.write(path, RATE, (sound * 32767).astype(np.int16))

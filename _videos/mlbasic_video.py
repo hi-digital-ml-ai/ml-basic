@@ -40,7 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 from mlbasic_theme import ML_PALETTE  # noqa: E402  the site's Okabe-Ito palette
-from video_script import cheer_plan, narration_audio, read_script  # noqa: E402
+from video_script import SHOUTS, cheer_plan, narration_audio, read_script  # noqa: E402
 sys.path.insert(0, str(ROOT / "_videos"))
 from sea_friends import grid  # noqa: E402
 
@@ -137,14 +137,17 @@ class VideoScene(Scene):
         spots = ([np.array([0.0, -2.95, 0])] if one else
                  [np.array([x, -3.2, 0]) for x in (-4.6, 0.0, 4.6)])
         clock = ValueTracker(0.0)
-        for (animal, sound, start), spot in zip(self.cheers, spots):
-            parts, update = CHEERS[sound](sprite(animal, 1.6 if one else 1.4), spot,
-                                          aside=3.8 if one else 0)
+        for (animal, sound, move, start), spot in zip(self.cheers, spots):
+            figure, aside = sprite(animal, 1.6 if one else 1.4), 3.8 if one else 0
+            if sound in SHOUTS:
+                parts, update = shout_cheer(figure, spot, aside, SHOUTS[sound], move)
+            else:
+                parts, update = CHEERS[sound](figure, spot, aside)
             group = VGroup(*parts)
             group.add_updater(lambda m, u=update, s=start: u(clock.get_value() - s))
             update(-1.0)
             self.add(group)
-        length = max(s for _, _, s in self.cheers) + CHEER_LENGTH
+        length = max(c[-1] for c in self.cheers) + CHEER_LENGTH
         self.play(clock.animate.set_value(length), run_time=length, rate_func=linear)
 
     def data(self, name):
@@ -212,17 +215,30 @@ def sprite(name, height=1.5):
     return pixels.move_to(ORIGIN)
 
 
-def popped(animal, spot, t, hop=0.0):
-    """The animal grown in over 0.3 s with a little overshoot, `hop` units up."""
+def resting(mob):
+    """Keep `mob`'s shape as drawn, for popped() and bubble_pop() to start from each frame."""
+    mob.rest = mob.copy()
+    return mob
+
+
+def popped(animal, spot, t, hop=0.0, turn=0.0, squash=1.0):
+    """The animal grown in over 0.3 s with a little overshoot, `hop` units up, tilted by
+    `turn` radians and squashed sideways by `squash` (below 0 shows it mirrored, as it
+    turns round in a spin)."""
     grow = rate_functions.ease_out_back(min(max(t / 0.3, 0), 1)) if t >= 0 else 0
+    animal.become(animal.rest)
     animal.set_opacity(1 if t >= 0 else 0)
-    animal.scale_to_fit_height(max(animal.base_height * grow, 0.001))
+    animal.scale(max(grow, 0.001))
+    if squash != 1.0:
+        animal.stretch(np.sign(squash) * max(abs(squash), 0.03), 0)
+    if turn:
+        animal.rotate(turn)
     animal.move_to(spot + hop * UP)
 
 
 def clap_cheer(animal, spot, aside):
     """The animal bounces with the applause, a star flashing on either side."""
-    animal.base_height = animal.height
+    resting(animal)
     reach = animal.width / 2 + 0.45
     stars = VGroup(*[Star(4, outer_radius=0.3, inner_radius=0.09, color=ORANGE,
                           fill_opacity=1, stroke_width=0) for _ in (-1, 1)])
@@ -237,35 +253,97 @@ def clap_cheer(animal, spot, aside):
     return [animal, stars], update
 
 
-def hooray_cheer(animal, spot, aside):
-    """The animal jumps for joy, and "Hooray!" pops up beside it, or above it when
-    `aside` is 0 (the recap, where the animals stand close together)."""
-    animal.base_height = animal.height
+def speech_bubble(words, size, tail, reach=0.45):
+    """`words` in a white speech bubble, its tail pointing along `tail` (DOWN, or DOWN
+    and to one side) from the bubble's lower edge."""
+    text = label(words, size, VERMILION, weight=BOLD)
+    box = SurroundingRectangle(text, buff=0.22, corner_radius=0.22, color=INK, stroke_width=3,
+                               fill_color=WHITE, fill_opacity=1)
+    root = box.get_bottom() + 0.3 * tail[0] * box.width * RIGHT
+    tip = root + reach * normalize(tail)
+    left, right = root + 0.18 * LEFT + 0.02 * UP, root + 0.18 * RIGHT + 0.02 * UP
+    # The tail's fill covers the box's outline where they meet; its two sides are lines.
+    fill = Polygon(left, right, tip, stroke_width=0, fill_color=WHITE, fill_opacity=1)
+    sides = VGroup(Line(left + 0.02 * DOWN, tip, color=INK, stroke_width=3),
+                   Line(right + 0.02 * DOWN, tip, color=INK, stroke_width=3))
+    return VGroup(box, fill, sides, text)
+
+
+def shout_cheer(animal, spot, aside, words, move):
+    """The animal calls out `words` in a speech bubble beside it, or above it when
+    `aside` is 0 (the recap, where the animals stand close together), and moves:
+    "jump" jumps for joy, "spin" turns round twice, "wiggle" rocks from side to side."""
+    resting(animal)
     side = 1 if spot[0] <= 0 else -1
-    shout = label("Hooray!", 40 if aside else 36, VERMILION, weight=BOLD)
-    shout.base_height = shout.height
-    place = (spot + side * (animal.width / 2 + 0.3 + shout.width / 2) * RIGHT + 0.5 * UP if aside
-             else spot + (animal.height / 2 + 1.0) * UP)
+    # Both places keep the bubble below the key point's answer and the recap's last line.
+    if aside:
+        bubble = speech_bubble(words, 40, DOWN + 0.8 * -side * RIGHT)
+        place = spot + side * (animal.width / 2 + 0.5 + bubble.width / 2) * RIGHT + 0.45 * UP
+    else:
+        bubble = speech_bubble(words, 30, DOWN, reach=0.3)
+        place = spot + (animal.height / 2 + 0.75) * UP
+    resting(bubble)
+    lift = 1.0 if aside else 0.45    # in the recap, the jumps stay under the bubble
 
     def update(t):
-        jump = 0.0
-        if 0.3 <= t <= 0.9:
-            jump = 0.7 * np.sin(np.pi * (t - 0.3) / 0.6)
-        elif 1.0 <= t <= 1.4:
-            jump = 0.3 * np.sin(np.pi * (t - 1.0) / 0.4)
-        popped(animal, spot, t, jump)
+        hop = turn = 0.0
+        squash = 1.0
+        if move == "jump":
+            if 0.3 <= t <= 0.9:
+                hop = 0.7 * np.sin(np.pi * (t - 0.3) / 0.6)
+            elif 1.0 <= t <= 1.4:
+                hop = 0.3 * np.sin(np.pi * (t - 1.0) / 0.4)
+        elif move == "spin":
+            u = min(max((t - 0.3) / 1.2, 0), 1)
+            squash = np.cos(2 * TAU * rate_functions.smooth(u))
+            hop = 0.35 * np.sin(np.pi * u)
+        elif move == "wiggle":
+            if 0.3 <= t <= 1.9:
+                turn = 0.32 * np.sin(TAU * 3 * (t - 0.3)) * (1 - (t - 0.3) / 1.6)
+        popped(animal, spot, t, lift * hop, turn, squash)
         grow = rate_functions.ease_out_back(min(max((t - 0.15) / 0.3, 0), 1))
-        shout.set_opacity(1 if t >= 0.15 else 0)
-        shout.scale_to_fit_height(max(shout.base_height * grow, 0.001))
-        shout.move_to(place)
+        bubble.become(bubble.rest)
+        bubble.set_opacity(1 if t >= 0.15 else 0)
+        bubble.scale(max(grow, 0.001)).move_to(place)
 
-    return [animal, shout], update
+    return [animal, bubble], update
+
+
+def bubbles_cheer(animal, spot, aside):
+    """Bubbles stream up on either side of the animal, wobbling as they rise, and pop
+    before they reach the text above: wider beside a lone animal than in the recap."""
+    resting(animal)
+    rng = np.random.default_rng(11)
+    rise, spread = (1.5, (0.55, 1.5)) if aside else (1.1, (0.5, 0.85))
+    stream = []
+    for k in range(16):
+        r = rng.uniform(0.07, 0.16)
+        bubble = VGroup(Circle(r, color=SKY, stroke_width=3, fill_color=SKY, fill_opacity=0.18),
+                        Dot([-0.35 * r, 0.35 * r, 0], radius=0.25 * r, color=WHITE))
+        stream.append((bubble, 0.1 + 1.6 * k / 16 + rng.uniform(0, 0.08),
+                       (-1) ** k * rng.uniform(*spread) * animal.width, rng.uniform(0, TAU),
+                       rng.uniform(0.9, 1.3)))
+
+    def update(t):
+        hop = 0.12 * abs(np.sin(np.pi * 3 * (t - 0.3))) if 0.3 <= t <= 1.9 else 0
+        popped(animal, spot, t, hop)
+        for bubble, born, x, phase, pace in stream:
+            age = (t - born) * pace
+            seen = 0.0 if age < 0 or age > 1 else min(1.0, (1 - age) / 0.15)
+            bubble[0].set_stroke(opacity=seen).set_fill(opacity=0.18 * seen)
+            bubble[1].set_fill(opacity=seen)
+            if seen:
+                bubble.scale_to_fit_height(bubble[0].radius * 2 * (1 + 0.4 * age))
+                bubble.move_to(spot + (x + 0.12 * np.sin(phase + 9 * age)) * RIGHT
+                               + (rise * age - 0.45) * UP)
+
+    return [animal, *[b for b, *_ in stream]], update
 
 
 def fireworks_cheer(animal, spot, aside):
     """A rocket rises and bursts `aside` units to the animal's side, or above it when
     `aside` is 0; the sparks drift down and fade."""
-    animal.base_height = animal.height
+    resting(animal)
     side = 1 if spot[0] <= 0 else -1
     launch = spot + 0.6 * UP
     # Above, it leans outwards, clear of the recap's badges.
@@ -302,7 +380,8 @@ def fireworks_cheer(animal, spot, aside):
     return [trail, rocket, sparks, animal], update
 
 
-CHEERS = {"clap": clap_cheer, "hooray": hooray_cheer, "fireworks": fireworks_cheer}
+# The effects; a shout (video_script.SHOUTS) is drawn by shout_cheer with its move.
+CHEERS = {"clap": clap_cheer, "fireworks": fireworks_cheer, "bubbles": bubbles_cheer}
 
 
 # Scenes every video shares ------------------------------------------------------------

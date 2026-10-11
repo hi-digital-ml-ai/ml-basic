@@ -1092,18 +1092,32 @@ with all three sounds, a beat apart.
 
 - Animals: `_videos/sea_friends.py`, character grids drawn as squares by `sprite()` in
   `mlbasic_video.py` (crab, octopus, clownfish, turtle, whale, pufferfish, jellyfish,
-  starfish). Sounds: `tools/make-cheers.py` writes `_videos/cheer-{clap,hooray,fireworks}.wav`
-  (applause and fireworks synthesised from noise, "Hooray!" a small crowd of Piper
-  voices at several pitches; no licence to track).
-- `cheer_cast()` in `tools/video_script.py` picks three animals and pairs them with the
-  three sounds at random, seeded by the video's folder name, so renders and rough cuts
-  always agree. `cheer_plan()` gives each scene's cheers and their start times;
+  starfish). Sounds: `tools/make-cheers.py` writes `_videos/cheer-*.wav`, all made on
+  this laptop, so there is no licence to track.
+- Two kinds of cheer (2026-10-11, at the user's request for more variety). An
+  **effect** is a sound with its own picture: `clap` (applause, the animal bounces
+  between two flashing stars), `fireworks` (a rocket bursts beside it) and `bubbles`
+  (bubbles stream up either side and pop, each a rising "bloop"). A **shout** is a word
+  in a speech bubble, heard as a small crowd of Piper voices: Hooray!, Well done!,
+  Brilliant!, Great work!, Fantastic!, Nice one!, Spot on!, Keep going!
+  (`video_script.SHOUTS`), with a move: `jump`, `spin` (turns round twice) or `wiggle`.
+- `cheer_cast()` in `tools/video_script.py` deals the cheers out in turn from fixed
+  shuffles, continuing from video to video by folder number: odd videos get two shouts
+  and one effect, even ones one and two. So each effect and each move appears five
+  times across the ten videos, each word about twice, and no video repeats an animal,
+  word, move or effect. `cheer_plan()` gives each scene's (animal, sound, move, start);
   `VideoScene.celebrate()` draws them and `rough-cut.py` mixes the sounds from the same plan.
+- Everything stays below the text: a key point's speech bubble sits beside the animal
+  and under the answer, the recap's over each animal under the last line, and bubbles
+  rise beside the animal rather than over it.
+- Render cheer scenes with `--disable_caching` after changing the cheer code: Manim's
+  cache does not see changes inside an updater, so it reuses the old animation.
 - Script: `cheer: 1|2|3` on the key-point scenes with `pause-after: 2.0`, and
   `cheer: all` on the last recap scene with `pause-after: 4.0`. The line changes no
   Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
-- Introduction first (crab and fireworks, whale and clapping, pufferfish and "Hooray!");
-  the other nine get their lines and re-renders as each is revised.
+- Introduction: clownfish "Great work!" (wiggle), jellyfish "Brilliant!" (spin), whale
+  and applause. Marine data: turtle and bubbles, starfish and fireworks, pufferfish
+  "Well done!" (jump).
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in

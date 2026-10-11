@@ -176,30 +176,37 @@ model really is, and it leaves no trace: the results look just like honest ones,
 better.
 
 ## Scene 19
-visual: manim Target: R squared, 0 "no better than the average", 1 "every prediction exact"; environment only 0.22, plus catch weight 0.98 (page results, information-leakage.qmd)
+visual: manim Rsq: "R squared: how well the model fits the data"; test counts as dots around their average, the spread drawn; the predictions and what they miss; "R² = the share of the variation the predictions follow"; a scale, 0 "no better than the average", 1 "every prediction exact" (schematic)
 
 Here is an example. A linear regression, met in the introduction as a straight line,
-predicts the count from the environment: the water, the seabed and the season. We score
-it with R squared: the share of the variation in the test counts that the predictions
-follow. One means every prediction is exact; zero means no better than predicting the
-average. On the environment alone, R squared is 0.22. Add one more column, catch
-weight, and it jumps to 0.98.
+predicts the count from the environment: the water, the seabed and the season. To
+check how well a model fits the data, we use R squared. The counts at the test
+stations vary: some are high, some are low. The model's predictions follow part of
+that variation, and miss the rest. R squared is the share they follow. If every
+prediction is exact, R squared is one. If the model does no better than predicting the
+average count everywhere, it is zero.
 
 ## Scene 20
-visual: manim Target: catch weight and the count, the same animals; for each test station the model is handed its answer; the 0.98 bar crossed, "copying, not predicting" (schematic, page results as in scene 19)
+visual: manim Target: R squared, environment only 0.22, plus catch weight 0.98 (page results, information-leakage.qmd)
+
+On the environment alone, R squared is 0.22: the predictions follow only about a fifth
+of the variation. Add one more column, catch weight, and it jumps to 0.98.
+
+## Scene 21
+visual: manim Target: catch weight and the count, the same animals; for each test station the model is handed its answer; the 0.98 bar crossed, "copying, not predicting" (schematic, page results as in scene 20)
 
 Catch weight is the weight of the animals that were counted: the count again, in other
 units. So for every test station, the model is handed the answer it should predict. The
 0.98 measures copying, not predicting.
 
-## Scene 21
+## Scene 22
 visual: manim Group: R squared, random split 0.22, by site 0.04 (page results, information-leakage.qmd)
 
 Leakage can also hide in the split. Keep each site whole, and the environment-only
 model's R squared falls from 0.22 to 0.04. Predicting a new site is much harder than
 predicting another visit to a familiar one, and the random split hid that.
 
-## Scene 22
+## Scene 23
 visual: manim Question: "does this line use any information from rows I intend to test on?"
 pause-after: 0.5
 
@@ -207,7 +214,7 @@ Leakage is rarely cheating. It is usually one line of code in the wrong place. S
 question catches every kind of leakage. Does this line of code use information from the
 rows I intend to test on?
 
-## Scene 23
+## Scene 24
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 3
 pause-after: 2.0
@@ -217,14 +224,14 @@ untouched by every decision.
 
 # Quiz
 
-## Scene 24
+## Scene 25
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. A colleague fills the gaps in chlorophyll with the median of the whole
 survey, then splits it into training and test data. What is wrong?
 
-## Scene 25
+## Scene 26
 visual: manim QuizAnswer: "leakage"; every row, test rows included, feeds the median; then a recipe takes the median from the training rows only (schematic, after information-leakage.qmd img/leakage-kinds.svg)
 
 Leakage. The test rows helped set that median, so the test data reached the model
@@ -233,25 +240,25 @@ data only.
 
 # Key points
 
-## Scene 26
+## Scene 27
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: the row count is not the number of independent
 observations.
 
-## Scene 27
+## Scene 28
 visual: manim KeyPoints: the second ticked
 
 Two: look before you model, and treat every fix as a decision.
 
-## Scene 28
+## Scene 29
 visual: manim KeyPoints: the third ticked; then all three animals cheer
 cheer: all
 pause-after: 4.0
 
 Three: split along what you will predict for, and keep the test data untouched.
 
-## Scene 29
+## Scene 30
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.
