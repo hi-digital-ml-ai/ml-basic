@@ -845,7 +845,7 @@ class Scene17(VideoScene):
                         44).to_edge(UP, buff=0.4)
         axes = plain_axes([0, 3, 1], [-8, 10, 2], 6.0, 5.0).move_to([-2.6, -0.8, 0])
         zero = Line(axes.c2p(0, 0), axes.c2p(3, 0), color=INK, stroke_width=3)
-        bars = effect_bars(axes, forty["ml"], ["temperature", "its square"], [BLUE, ORANGE])
+        bars = effect_bars(axes, forty["ml"], ["temperature", "temperature²"], [BLUE, ORANGE])
         unit = label("each effect: animals per standard deviation of its input", 28, SUBDUED)
         unit.next_to(heading, DOWN, 0.2)
         scarce = title("Assumptions help when data are scarce", 46).to_edge(UP, buff=0.4)
@@ -893,7 +893,7 @@ class Scene18(VideoScene):
         prior_heading = title("A prior: knowledge written down before the fit", 42).to_edge(UP, buff=0.45)
         axes = plain_axes([0, 3, 1], [-8, 10, 2], 6.0, 5.0).move_to([2.6, -0.8, 0])
         zero = Line(axes.c2p(0, 0), axes.c2p(3, 0), color=INK, stroke_width=3)
-        names = ["temperature", "its square"]
+        names = ["temperature", "temperature²"]
         before = effect_bars(axes, forty["ml"], names, [BLUE, ORANGE])
         after = effect_bars(axes, forty["map"], names, [BLUE, ORANGE])
         for bar in after:                      # the new values sit over the old bars' outlines
