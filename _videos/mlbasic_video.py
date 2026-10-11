@@ -40,7 +40,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 from mlbasic_theme import ML_PALETTE  # noqa: E402  the site's Okabe-Ito palette
-from video_script import narration_audio, read_script  # noqa: E402
+from video_script import cheer_plan, narration_audio, read_script  # noqa: E402
+sys.path.insert(0, str(ROOT / "_videos"))
+from sea_friends import grid  # noqa: E402
 
 SERIES = "Machine Learning Basics for Marine Science"
 SITE = "ml-basic.pages.dev"   # Cloudflare Pages. The end cards show only this: page
@@ -85,6 +87,14 @@ def number(value, digits=1, size=36, color=INK):
     return label(f"{value:.{digits}f}", size=size, color=color)
 
 
+def plated(text, buff=0.1):
+    """Text on a plate of the background colour, so it reads over a chart's dots and
+    lines. The plate sits above the chart (z-index 5), below a marker kept on top (10)."""
+    plate = SurroundingRectangle(text, buff=buff, corner_radius=0.08, stroke_width=0,
+                                 fill_color=BACKGROUND, fill_opacity=0.88)
+    return VGroup(plate, text).set_z_index(5)
+
+
 class VideoScene(Scene):
     """A scene whose length is its narration. Subclasses set `number`."""
 
@@ -102,6 +112,9 @@ class VideoScene(Scene):
         with wave.open(str(wav)) as w:
             self.narration = w.getnframes() / w.getframerate()
         self.pause = self.script.scenes[self.number - 1].pause_after
+        self.cheers = cheer_plan(folder, scene)
+        # Room at the foot of the frame for the animals, in every scene that has them.
+        self.lift = 0.6 if any(s.cheer for s in self.script.scenes) else 0.0
 
     def share(self, fraction):
         """A run time as a fraction of this scene's narration."""
@@ -112,6 +125,27 @@ class VideoScene(Scene):
         left = self.narration - self.time
         if left > 1 / config.frame_rate:
             self.wait(left)
+
+    def celebrate(self):
+        """After the narration, the scene's animals pop up with their sounds.
+
+        tools/rough-cut.py starts each sound at the same moment, from the same plan.
+        """
+        if not self.cheers:
+            return
+        one = len(self.cheers) == 1
+        spots = ([np.array([0.0, -2.95, 0])] if one else
+                 [np.array([x, -3.2, 0]) for x in (-4.6, 0.0, 4.6)])
+        clock = ValueTracker(0.0)
+        for (animal, sound, start), spot in zip(self.cheers, spots):
+            parts, update = CHEERS[sound](sprite(animal, 1.6 if one else 1.4), spot,
+                                          aside=3.8 if one else 0)
+            group = VGroup(*parts)
+            group.add_updater(lambda m, u=update, s=start: u(clock.get_value() - s))
+            update(-1.0)
+            self.add(group)
+        length = max(s for _, _, s in self.cheers) + CHEER_LENGTH
+        self.play(clock.animate.set_value(length), run_time=length, rate_func=linear)
 
     def data(self, name):
         """A CSV written by tools/figures-for-video.R, from the pages' own results."""
@@ -150,6 +184,125 @@ class TitleScene(Scene):
         self.play(FadeIn(head, shift=0.3 * UP), run_time=0.5)
         self.play(GrowFromCenter(rule), FadeIn(tagline), run_time=0.6)
         self.wait(max(length - self.time, 0.1))
+
+
+# The cheers ---------------------------------------------------------------------------
+#
+# At each key point an animal pops up with a sound (tools/make-cheers.py), and after
+# the recap all three do. Which animals, which sounds and when come from
+# tools/video_script.py (cheer_plan), which tools/rough-cut.py reads too, so the
+# sound always lands on its animal. Each cheer is drawn as a function of the time
+# since it began, so three can overlap.
+
+CHEER_LENGTH = 2.4    # seconds each cheer moves for; the sounds last 2.2 to 2.8 s
+SPARKS = [ORANGE, VERMILION, YELLOW, SKY, PURPLE, GREEN, BLUE]
+
+
+def sprite(name, height=1.5):
+    """A pixel-art animal from _videos/sea_friends.py, `height` units tall."""
+    rows, colours = grid(name)
+    size = height / len(rows)
+    pixels = VGroup()
+    for y, row in enumerate(rows):
+        for x, c in enumerate(row):
+            if c != ".":
+                # A hair larger than the grid, so no seams show between pixels.
+                pixels.add(Square(size * 1.04, stroke_width=0, fill_color=colours[c],
+                                  fill_opacity=1).move_to([x * size, -y * size, 0]))
+    return pixels.move_to(ORIGIN)
+
+
+def popped(animal, spot, t, hop=0.0):
+    """The animal grown in over 0.3 s with a little overshoot, `hop` units up."""
+    grow = rate_functions.ease_out_back(min(max(t / 0.3, 0), 1)) if t >= 0 else 0
+    animal.set_opacity(1 if t >= 0 else 0)
+    animal.scale_to_fit_height(max(animal.base_height * grow, 0.001))
+    animal.move_to(spot + hop * UP)
+
+
+def clap_cheer(animal, spot, aside):
+    """The animal bounces with the applause, a star flashing on either side."""
+    animal.base_height = animal.height
+    reach = animal.width / 2 + 0.45
+    stars = VGroup(*[Star(4, outer_radius=0.3, inner_radius=0.09, color=ORANGE,
+                          fill_opacity=1, stroke_width=0) for _ in (-1, 1)])
+
+    def update(t):
+        beat = abs(np.sin(np.pi * 4.6 * (t - 0.35))) if 0.35 <= t <= 1.95 else 0
+        popped(animal, spot, t, 0.25 * beat)
+        stars.set_opacity(min(1, 1.5 * beat) if t >= 0.35 else 0)
+        for s, d in zip(stars, (-1, 1)):
+            s.scale_to_fit_height(0.2 + 0.4 * beat).move_to(spot + d * reach * RIGHT + 0.45 * UP)
+
+    return [animal, stars], update
+
+
+def hooray_cheer(animal, spot, aside):
+    """The animal jumps for joy, and "Hooray!" pops up beside it, or above it when
+    `aside` is 0 (the recap, where the animals stand close together)."""
+    animal.base_height = animal.height
+    side = 1 if spot[0] <= 0 else -1
+    shout = label("Hooray!", 40 if aside else 36, VERMILION, weight=BOLD)
+    shout.base_height = shout.height
+    place = (spot + side * (animal.width / 2 + 0.3 + shout.width / 2) * RIGHT + 0.5 * UP if aside
+             else spot + (animal.height / 2 + 1.0) * UP)
+
+    def update(t):
+        jump = 0.0
+        if 0.3 <= t <= 0.9:
+            jump = 0.7 * np.sin(np.pi * (t - 0.3) / 0.6)
+        elif 1.0 <= t <= 1.4:
+            jump = 0.3 * np.sin(np.pi * (t - 1.0) / 0.4)
+        popped(animal, spot, t, jump)
+        grow = rate_functions.ease_out_back(min(max((t - 0.15) / 0.3, 0), 1))
+        shout.set_opacity(1 if t >= 0.15 else 0)
+        shout.scale_to_fit_height(max(shout.base_height * grow, 0.001))
+        shout.move_to(place)
+
+    return [animal, shout], update
+
+
+def fireworks_cheer(animal, spot, aside):
+    """A rocket rises and bursts `aside` units to the animal's side, or above it when
+    `aside` is 0; the sparks drift down and fade."""
+    animal.base_height = animal.height
+    side = 1 if spot[0] <= 0 else -1
+    launch = spot + 0.6 * UP
+    # Above, it leans outwards, clear of the recap's badges.
+    burst = spot + (side * aside * RIGHT + 0.7 * UP if aside
+                    else np.sign(spot[0]) * 0.8 * RIGHT + 1.55 * UP)
+    size = 1.0 if aside else 0.5
+    rocket = Dot(radius=0.07, color=ORANGE)
+    trail = Line(launch, launch, color=ORANGE, stroke_width=4)
+    sparks = VGroup()
+    for ring, (n, reach) in enumerate([(18, 1.0), (10, 0.55)]):
+        for k in range(n):
+            angle = 2 * np.pi * (k + 0.5 * ring) / n
+            sparks.add(Dot(radius=0.085 - 0.02 * ring, color=SPARKS[(k + ring) % len(SPARKS)]))
+            sparks[-1].way = size * reach * np.array([np.cos(angle), np.sin(angle), 0])
+
+    def update(t):
+        hop = 0.3 * np.sin(np.pi * (t - 0.75) / 0.35) if 0.75 <= t <= 1.1 else 0
+        popped(animal, spot, t, hop)
+        flying = 0.05 <= t < 0.75
+        u = rate_functions.ease_out_sine(min(max((t - 0.05) / 0.7, 0), 1))
+        head = launch + u * (burst - launch)
+        rocket.move_to(head).set_opacity(1 if flying else 0)
+        trail.put_start_and_end_on(launch + max(u - 0.25, 0) * (burst - launch) + 1e-4 * UP, head)
+        trail.set_stroke(opacity=0.8 if flying else 0)
+        after = t - 0.75
+        for s in sparks:
+            if after < 0:
+                s.set_opacity(0).move_to(burst)
+            else:
+                out = 1 - np.exp(-after / 0.22)
+                s.move_to(burst + out * s.way + 0.35 * after ** 2 * DOWN)
+                s.set_opacity(min(1.0, max(0.0, 1.6 - after / 1.0)))
+
+    return [trail, rocket, sparks, animal], update
+
+
+CHEERS = {"clap": clap_cheer, "hooray": hooray_cheer, "fireworks": fireworks_cheer}
 
 
 # Scenes every video shares ------------------------------------------------------------
@@ -213,7 +366,8 @@ class KeyPointScene(VideoScene):
     point = None
 
     def construct(self):
-        tag = label(f"Key point {self.point} of 3", 34, BLUE, weight=BOLD).to_edge(UP, buff=1.1)
+        tag = label(f"Key point {self.point} of 3", 34, BLUE, weight=BOLD).to_edge(
+            UP, buff=1.1 - self.lift)
         promise = VGroup(badge(self.point),
                          label(video_constant(self, "PROMISES")[self.point - 1], 38, SUBDUED)
                          ).arrange(RIGHT, buff=0.4).next_to(tag, DOWN, 0.7)
@@ -235,10 +389,11 @@ class KeyPointScene(VideoScene):
                   FadeIn(box), run_time=self.share(0.4))
         self.play(Create(mark), run_time=self.share(0.1))
         self.finish()
+        self.celebrate()
 
 
-def recap_rows(recap):
-    head = title("The three key points", 56).to_edge(UP, buff=0.9)
+def recap_rows(recap, lift=0.0):
+    head = title("The three key points", 56).to_edge(UP, buff=0.9 - lift)
     rows = VGroup()
     for i, text in enumerate(recap, 1):
         box, mark = tick()
@@ -260,7 +415,7 @@ class RecapScene(VideoScene):
 
     def construct(self):
         index = self.point - 1
-        head, rows = recap_rows(video_constant(self, "RECAP"))
+        head, rows = recap_rows(video_constant(self, "RECAP"), self.lift)
         if index == 0:
             self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
             self.play(*[FadeIn(VGroup(r[0], r[1], r[3])) for r in rows], run_time=self.share(0.12))
@@ -270,6 +425,7 @@ class RecapScene(VideoScene):
         self.play(Indicate(row[3], color=INK, scale_factor=1.06), run_time=self.share(0.3))
         self.play(Create(row[2]), run_time=self.share(0.12))
         self.finish()
+        self.celebrate()
 
 
 class QuizScene(VideoScene):

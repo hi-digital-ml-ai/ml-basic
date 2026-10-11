@@ -1083,3 +1083,29 @@ ran `narrate.py` on all 33 scenes (about $0.09); the final cut runs 7:28.
   scene 25 the forest's RMSE (4.41 to 3.86) with "better than the average on 9 of 10
   folds, intervals held 95%" under both bars. `gear.csv` is the claim page's
   `summary_of()` for both reports.
+
+## Cheers at the key points (2026-10-10)
+
+At the user's request, each key point now ends with a pixel-art sea animal popping up
+with a cheering sound, to encourage the viewer, and after the recap all three return
+with all three sounds, a beat apart.
+
+- Animals: `_videos/sea_friends.py`, character grids drawn as squares by `sprite()` in
+  `mlbasic_video.py` (crab, octopus, clownfish, turtle, whale, pufferfish, jellyfish,
+  starfish). Sounds: `tools/make-cheers.py` writes `_videos/cheer-{clap,hooray,fireworks}.wav`
+  (applause and fireworks synthesised from noise, "Hooray!" a small crowd of Piper
+  voices at several pitches; no licence to track).
+- `cheer_cast()` in `tools/video_script.py` picks three animals and pairs them with the
+  three sounds at random, seeded by the video's folder name, so renders and rough cuts
+  always agree. `cheer_plan()` gives each scene's cheers and their start times;
+  `VideoScene.celebrate()` draws them and `rough-cut.py` mixes the sounds from the same plan.
+- Script: `cheer: 1|2|3` on the key-point scenes with `pause-after: 2.0`, and
+  `cheer: all` on the last recap scene with `pause-after: 4.0`. The line changes no
+  Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
+- Introduction first (crab and fireworks, whale and clapping, pufferfish and "Hooray!");
+  the other nine get their lines and re-renders as each is revised.
+
+Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
+station" or "22 stations above 15 not shown", goes through `plated()` in
+mlbasic_video.py, a plate of the background colour at z-index 5 (above the chart, below
+a marker kept on top at 10). Check each video's chart labels for this when revising it.
