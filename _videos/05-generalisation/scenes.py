@@ -122,7 +122,7 @@ class Scene01(LearnScene):
     def setup(self):
         super().setup()
         self.times = tuple(position(self, p) for p in
-                           ("Why a perfect", "Where the U", "And how to choose"))
+                           ("why a perfect", "where the U", "and how to choose"))
 
 
 # A perfect fit is a warning sign (scenes 2–10) ---------------------------------------------
@@ -132,7 +132,7 @@ BAR_SCALE = 1.05          # units of width per unit of RMSE
 
 
 def five_models_layout(scene):
-    """The five models, best on their fitting stations first, each with two bars."""
+    """The five models, best on their training stations first, each with two bars."""
     models = scene.data("five-models").sort_values("training").reset_index(drop=True)
     heading = title("Five models, one survey", 46).to_edge(UP, buff=0.45)
     rows = VGroup()
@@ -141,19 +141,21 @@ def five_models_layout(scene):
         name = label(m["model"], 30).move_to([BAR_LEFT - 0.3, y, 0], aligned_edge=RIGHT)
         fit_bar = Rectangle(width=max(m["training"] * BAR_SCALE, 0.02), height=0.34, stroke_width=0,
                             fill_color=FITTING, fill_opacity=1).move_to([BAR_LEFT, y + 0.19, 0], aligned_edge=LEFT)
-        fit_value = label(f2(m["training"]), 26, FITTING).next_to(fit_bar, RIGHT, 0.15)
+        fit_value = plated(label(f2(m["training"]), 26, FITTING), buff=0.06).next_to(fit_bar, RIGHT, 0.15)
         new_bar = Rectangle(width=m["new"] * BAR_SCALE, height=0.34, stroke_width=0,
                             fill_color=NEW, fill_opacity=1).move_to([BAR_LEFT, y - 0.19, 0], aligned_edge=LEFT)
-        new_value = label(f2(m["new"]), 26, NEW).next_to(new_bar, RIGHT, 0.15)
+        new_value = plated(label(f2(m["new"]), 26, NEW), buff=0.06).next_to(new_bar, RIGHT, 0.15)
         mark = label("?", 34, NEW, weight=BOLD).move_to([BAR_LEFT + 0.35, y - 0.19, 0])
+        for value in (fit_value, new_value):     # solid, so the faded values hide the average line
+            value[0].set_fill(opacity=1)
         rows.add(VGroup(name, fit_bar, fit_value, new_bar, new_value, mark))
     key = VGroup(
         VGroup(Square(0.3, fill_color=FITTING, fill_opacity=1, stroke_width=0),
-               label("error on the stations it was fitted to", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
+               label("error on the training stations", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
         VGroup(Square(0.3, fill_color=NEW, fill_opacity=1, stroke_width=0),
                label("error on new sites", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
     ).arrange(RIGHT, buff=0.7).to_edge(DOWN, buff=0.45)
-    unit = label("RMSE (individuals)", 24, SUBDUED).move_to([BAR_LEFT, 2.45, 0], aligned_edge=LEFT)
+    unit = label("error (RMSE, animals)", 24, SUBDUED).move_to([BAR_LEFT, 2.45, 0], aligned_edge=LEFT)
     baseline = models["baseline"].iloc[0]
     x = BAR_LEFT + baseline * BAR_SCALE
     average = DashedLine([x, 2.35, 0], [x, -2.6, 0], color=GREY, stroke_width=4, dash_length=0.12)
@@ -167,15 +169,20 @@ class Scene02(VideoScene):
 
     def construct(self):
         models, heading, rows, key, unit, *_ = five_models_layout(self)
-        # "Here are five models from earlier in the course, fitted to the same simulated coastal survey."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.08))
+        # "Let's start with five models from supervised learning, all fitted to the same simulated
+        # coastal survey: linear regression, two decision trees, a random forest and boosting."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
+        cue(self, "linear regression, two")
         self.play(LaggedStart(*[FadeIn(r[0], shift=0.2 * RIGHT) for r in rows], lag_ratio=0.15),
-                  run_time=self.share(0.3))
-        # "The bars show each model's error on the stations it was fitted to."
+                  run_time=self.share(0.15))
+        # "The bars show each model's error on its training stations, the stations it was fitted to."
         cue(self, "The bars show")
-        self.play(FadeIn(key[0]), FadeIn(unit), run_time=self.share(0.08))
+        self.play(FadeIn(key[0]), run_time=self.share(0.05))
         self.play(LaggedStart(*[AnimationGroup(GrowFromEdge(r[1], LEFT), FadeIn(r[2])) for r in rows],
-                              lag_ratio=0.2), run_time=self.share(0.35))
+                              lag_ratio=0.2), run_time=self.share(0.2))
+        # "The error is the typical miss, in animals, from the introduction, so shorter is better."
+        cue(self, "The error is")
+        self.play(FadeIn(unit), Indicate(unit, color=INK), run_time=self.share(0.1))
         self.finish()
 
 
@@ -185,12 +192,16 @@ class Scene03(VideoScene):
     def construct(self):
         models, heading, rows, key, unit, *_, perfect = five_models_layout(self)
         self.add(heading, *[VGroup(r[0], r[1], r[2]) for r in rows], key[0], unit)
-        others = [VGroup(r[0], r[1], r[2]) for r in rows if r is not perfect]
+        others = [VGroup(r[0], r[1], r[2][1]) for r in rows if r is not perfect]   # plates stay solid
+        one_each = plated(label("every leaf: one station", 28, FITTING, weight=BOLD)).next_to(perfect[2], RIGHT, 0.8)
         # "One of them is perfect."
-        self.play(*[o.animate.set_opacity(0.3) for o in others], run_time=self.share(0.12))
-        # "A decision tree, grown until every leaf holds a single station, has an error of exactly zero."
-        cue(self, "has an error")
-        self.play(perfect[2].animate.scale(1.6, about_edge=LEFT), run_time=self.share(0.12))
+        self.play(*[o.animate.fade(0.7) for o in others], run_time=self.share(0.08))
+        # "This decision tree kept splitting until every leaf, every final group, held a single station."
+        cue(self, "held a single")
+        self.play(FadeIn(one_each), run_time=self.share(0.08))
+        # "So it predicts each training station as that station's own count, and its error is exactly zero."
+        cue(self, "and its error")
+        self.play(perfect[2].animate.scale(1.6, about_edge=LEFT), run_time=self.share(0.08))
         self.play(Circumscribe(VGroup(perfect[0], perfect[2]), color=FITTING), run_time=self.share(0.25))
         self.finish()
 
@@ -214,7 +225,7 @@ class Scene05(VideoScene):
     def construct(self):
         models, heading, rows, key, unit, average, average_name, perfect = five_models_layout(self)
         self.add(heading, *[VGroup(r[0], r[1], r[2], r[5]) for r in rows], key, unit)
-        # "So score them on new sites, held back from fitting."
+        # "To find out, score them on new sites, held back from fitting, as a stand-in for the places ..."
         self.play(*[FadeOut(r[5]) for r in rows], run_time=self.share(0.05))
         for r in rows:
             r.remove(r[5])
@@ -222,23 +233,24 @@ class Scene05(VideoScene):
                               lag_ratio=0.15), run_time=self.share(0.3))
         # "The perfect tree comes last, at 6.21."
         cue(self, "The perfect tree")
-        others = [r for r in rows if r is not perfect]
-        self.play(*[o.animate.set_opacity(0.3) for o in others],
+        others = [VGroup(r[0], r[1], r[2][1], r[3], r[4][1]) for r in rows if r is not perfect]
+        self.play(*[o.animate.fade(0.7) for o in others],
                   perfect[4].animate.scale(1.5, about_edge=LEFT), run_time=self.share(0.1))
-        # "That is worse than ignoring every input and predicting the average count, 4.83."
+        # "That is worse than ignoring every input and predicting the average count everywhere, which
+        # misses by 4.83."
         cue(self, "That is worse")
         self.play(Create(average), FadeIn(average_name), run_time=self.share(0.15))
         self.finish()
 
 
 def crossing_layout(scene):
-    """Each model as a line from its error on the fitting stations to its error on new sites."""
+    """Each model as a line from its error on the training stations to its error on new sites."""
     models = scene.data("five-models")
     top = math.ceil(models["new"].max())
     axes, frame = chart([0, 1, 1], [0, top, 1], 5.2, 5.4, [], range(0, top + 1),
-                        None, "RMSE (individuals)")
+                        None, "error (RMSE, animals)")
     frame.move_to([-1.6, -0.3, 0])
-    sides = VGroup(label("fitting stations", 30, FITTING, weight=BOLD).next_to(axes.c2p(0, 0), DOWN, 0.3),
+    sides = VGroup(label("training stations", 30, FITTING, weight=BOLD).next_to(axes.c2p(0, 0), DOWN, 0.3),
                    label("new sites", 30, NEW, weight=BOLD).next_to(axes.c2p(1, 0), DOWN, 0.3))
     lines, names = VGroup(), VGroup()
     for _, m in models.iterrows():
@@ -263,15 +275,23 @@ class Scene06(VideoScene):
 
     def construct(self):
         frame, sides, lines, names, heading, linear = crossing_layout(self)
-        # "The order turns over."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), FadeIn(sides), run_time=self.share(0.1))
+        forest = list(self.data("five-models")["model"]).index("Random forest")
+        # "Here, each line joins a model's two errors."
+        self.play(FadeIn(frame), FadeIn(sides), run_time=self.share(0.08))
         self.play(LaggedStart(*[AnimationGroup(Create(l), FadeIn(n)) for l, n in zip(lines, names)],
-                              lag_ratio=0.2), run_time=self.share(0.35))
-        # "Linear regression, last on its own stations, is close to the best on new ones."
+                              lag_ratio=0.2), run_time=self.share(0.25))
+        # "The order turns over."
+        cue(self, "The order turns")
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "Linear regression, last on its own stations, is close to the best on new ones, ..."
         cue(self, "Linear regression")
-        self.play(*[VGroup(l, n).animate.set_opacity(0.25) for i, (l, n) in enumerate(zip(lines, names))
-                    if i != linear], lines[linear][0].animate.set_stroke(width=10), run_time=self.share(0.15))
-        self.play(Indicate(names[linear], color=MODEL_COLOURS["Linear regression"]), run_time=self.share(0.2))
+        self.play(*[VGroup(l, n).animate.fade(0.75) for i, (l, n) in enumerate(zip(lines, names))
+                    if i not in (linear, forest)], lines[linear][0].animate.set_stroke(width=10),
+                  run_time=self.share(0.1))
+        self.play(Indicate(names[linear], color=MODEL_COLOURS["Linear regression"]), run_time=self.share(0.15))
+        # "... behind only the random forest."
+        cue(self, "behind only")
+        self.play(Indicate(names[forest], color=MODEL_COLOURS["Random forest"]), run_time=self.share(0.12))
         self.finish()
 
 
@@ -302,14 +322,14 @@ class Scene07(VideoScene):
 
     def construct(self):
         p = signal_and_noise()
-        # "Why? Data hold a pattern and noise."
+        # "Why? Data hold two things: a pattern and noise."
         self.play(FadeIn(p["axes"]), FadeIn(p["names"]), run_time=self.share(0.08))
         self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in p["dots"]], lag_ratio=0.05),
                   run_time=self.share(0.15))
         # "The pattern, such as warmer water holding more of a species, turns up again at new sites."
         cue(self, "The pattern")
         self.play(Create(p["trend"]), FadeIn(p["signal_tag"]), run_time=self.share(0.25))
-        # "Noise, such as one lucky haul, does not."
+        # "Noise, the part of a count that the conditions do not decide, such as one lucky haul, does not."
         cue(self, "Noise")
         self.play(LaggedStart(*[Create(r) for r in p["residuals"]], lag_ratio=0.04),
                   FadeIn(p["noise_tag"]), run_time=self.share(0.25))
@@ -342,7 +362,7 @@ class Scene08(VideoScene):
                 fill_opacity=1).align_to(gauge[1], LEFT).align_to(gauge[1], DOWN))
 
         bars = VGroup(bar(own, gauges[0], FITTING), bar(new, gauges[1], NEW))
-        # "A flexible model cannot tell the two apart."
+        # "A flexible model, one that can bend freely, cannot tell the two apart."
         self.play(FadeOut(p["residuals"]), p["trend"].animate.set_stroke(opacity=0.3),
                   FadeIn(gauges), FadeIn(bars), run_time=self.share(0.1))
         # "Fitting the noise lowers its error on its own stations, but not on new ones."
@@ -352,7 +372,11 @@ class Scene08(VideoScene):
         # "The perfect tree has memorised the noise."
         cue(self, "The perfect tree")
         memorised = card("memorised\nthe noise", VERMILION, 32).move_to([4.7, -1.9, 0])
-        self.play(FadeIn(memorised, scale=0.9), run_time=self.share(0.1))
+        self.play(FadeIn(memorised, scale=0.9), run_time=self.share(0.08))
+        # "This is overfitting."
+        cue(self, "This is overfitting")
+        named = card("overfitting:\nmemorised\nthe noise", VERMILION, 32).move_to([4.7, -2.1, 0])
+        self.play(ReplacementTransform(memorised, named), run_time=self.share(0.08))
         self.finish()
 
 
@@ -374,7 +398,7 @@ class Scene09(VideoScene):
         new_sites = [2, 7, 9, 12, 19, 22]
         heading = title("Judge a model on data it was not fitted to", 42).to_edge(UP, buff=0.45)
         key = VGroup(
-            VGroup(Dot(radius=0.12, color=FITTING), label("fitting sites", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
+            VGroup(Dot(radius=0.12, color=FITTING), label("training sites", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
             VGroup(Dot(radius=0.12, color=NEW), label("new sites", 28, SUBDUED)).arrange(RIGHT, buff=0.15),
         ).arrange(RIGHT, buff=0.8).to_edge(DOWN, buff=0.5)
         whole = label("every visit to a site goes the same way", 30, INK, weight=BOLD).next_to(key, UP, 0.3)
@@ -383,10 +407,12 @@ class Scene09(VideoScene):
                   run_time=self.share(0.2))
         self.play(*[sites[i][1].animate.set_color(NEW if i in new_sites else FITTING) for i in range(24)],
                   FadeIn(key), run_time=self.share(0.15))
-        # "And the split is made by site, so that new sites really are new."
-        cue(self, "And the split")
-        self.play(*[sites[i][0].animate.set_stroke(NEW, 4) for i in new_sites], FadeIn(whole),
-                  run_time=self.share(0.15))
+        # "And, as in marine data, the split is made by site: ..."
+        cue(self, "the split is made")
+        self.play(*[sites[i][0].animate.set_stroke(NEW, 4) for i in new_sites], run_time=self.share(0.1))
+        # "... visits to one site resemble each other, so all of a site's stations go to one side, ..."
+        cue(self, "so all of a site")
+        self.play(FadeIn(whole), run_time=self.share(0.08))
         self.finish()
 
 
@@ -425,17 +451,25 @@ class Scene11(VideoScene):
                       label("small: many tiny leaves, flexible", 30, SUBDUED)).arrange(DOWN, buff=0.15,
                                                                                     aligned_edge=LEFT)
         dial.move_to([3.6, -2.2, 0])
-        # "How flexible should a model be?"
-        self.wait(self.share(0.15))
-        # "For a decision tree, one setting decides: the minimum node size, ..."
+        node = label("a node", 30, INK, weight=BOLD).next_to(big, LEFT, 0.25)
+        # "Now for the U-shaped error curve. How flexible should a model be?"
+        # "For a decision tree, one setting decides: the minimum node size."
         cue(self, "For a decision tree")
-        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.08))
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "A node is a group of stations that the tree may split in two with another question, ..."
+        cue(self, "A node is")
+        self.play(FadeIn(big), FadeIn(node), run_time=self.share(0.06))
+        cue(self, "may split in two")
+        self.play(GrowArrow(arrows[0]), GrowArrow(arrows[1]), FadeIn(left), FadeIn(right), run_time=self.share(0.08))
+        # "... and the minimum node size is the smallest group it is allowed to split."
         cue(self, "the smallest group")
-        self.play(FadeIn(rule), FadeIn(big), run_time=self.share(0.1))
-        self.play(GrowArrow(arrows[0]), GrowArrow(arrows[1]), FadeIn(left), FadeIn(right), FadeIn(big_tag),
-                  run_time=self.share(0.12))
-        self.play(FadeIn(small), FadeIn(small_tag), run_time=self.share(0.1))
-        self.play(FadeIn(dial), run_time=self.share(0.1))
+        self.play(FadeIn(rule), FadeIn(big_tag), run_time=self.share(0.06))
+        self.play(FadeIn(small), FadeIn(small_tag), run_time=self.share(0.06))
+        # "A large one stops the tree early. A size of 2 lets it split until each leaf holds a single station."
+        cue(self, "A large one")
+        self.play(FadeIn(dial[0]), run_time=self.share(0.06))
+        cue(self, "A size of 2")
+        self.play(FadeIn(dial[1]), run_time=self.share(0.06))
         self.finish()
 
 
@@ -445,7 +479,7 @@ def three_trees_layout(scene):
     x0, x1 = math.floor(points["temperature"].min()), math.ceil(points["temperature"].max())
     top = 10 * math.ceil(points["abundance"].max() / 10)
     axes, frame = chart([x0, x1, 1], [0, top, 10], 10.4, 5.0, range(x0, x1 + 1, 2), range(0, top + 1, 10),
-                        "temperature (°C)", "abundance (individuals)")
+                        "temperature (°C)", "abundance (animals)")
     frame.move_to([0.3, -0.75, 0])
     dots = VGroup(*[Dot(axes.c2p(x, y), radius=0.05, color=GREY, fill_opacity=0.5)
                     for x, y in zip(points["temperature"], points["abundance"])])
@@ -464,17 +498,18 @@ class Scene12(VideoScene):
 
     def construct(self):
         frame, dots, steps, captions = three_trees_layout(self)
-        # "Here are three trees with temperature as their only input."
+        # "Here are three trees with temperature as their only input, so each tree's predictions can be
+        # drawn as a line."
         self.play(FadeIn(frame), LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.001),
                   run_time=self.share(0.15))
-        # "A node size of 300 gives four leaves."
+        # "A node size of 300 gives four leaves, so only four different predictions."
         cue(self, "A node size of 300")
         self.play(Create(steps[0]), FadeIn(captions[0]), run_time=self.share(0.12))
         # "A size of 50 gives twenty."
         cue(self, "A size of 50")
         self.play(ReplacementTransform(steps[0], steps[1]), ReplacementTransform(captions[0], captions[1]),
                   run_time=self.share(0.12))
-        # "A size of 2 gives 414, jumping up to meet nearly every large catch."
+        # "A size of 2 gives 414, jumping up to meet nearly every large catch. Those catches are mostly luck."
         cue(self, "A size of 2")
         self.play(ReplacementTransform(steps[1], steps[2]), ReplacementTransform(captions[1], captions[2]),
                   run_time=self.share(0.2))
@@ -486,7 +521,8 @@ def u_curve_layout(scene):
     lo, hi = 0.4, math.log10(500)
     top = math.ceil(curve["new"].max())
     axes, frame = chart([lo, hi, 1], [0, top, 1], 9.6, 4.9, [math.log10(v) for v in (3, 10, 30, 100, 300)],
-                        range(0, top + 1), "leaves in the tree (log scale)", "RMSE (individuals)",
+                        range(0, top + 1), "leaves in the tree (log scale): more leaves, more flexible",
+                        "error (RMSE, animals)",
                         x_text=lambda v: f"{10 ** v:.0f}")
     frame.move_to([-0.6, -0.7, 0])
     xs = [math.log10(v) for v in curve["leaves"]]
@@ -497,11 +533,12 @@ def u_curve_layout(scene):
         return VGroup(line, dots)
 
     fitting, new = trace("training", FITTING), trace("new", NEW)
-    names = VGroup(label("fitting stations", 30, FITTING, weight=BOLD).next_to(fitting[1][-3], LEFT, 0.3),
+    names = VGroup(label("training stations", 30, FITTING, weight=BOLD).next_to(fitting[1][-3], LEFT, 0.3),
                    label("new sites", 30, NEW, weight=BOLD).next_to(new[1][-1], RIGHT, 0.2))
     baseline = curve["baseline"].iloc[0]
     average = hline(axes, baseline, lo, hi)
-    average_name = label("predict the average", 24, GREY).next_to(axes.c2p(math.log10(150), baseline), DOWN, 0.12)
+    average_name = VGroup(label("predict", 24, GREY), label("the average", 24, GREY)).arrange(
+        DOWN, buff=0.06, aligned_edge=LEFT).next_to(axes.c2p(hi, baseline), RIGHT, 0.15)
     return curve, axes, frame, xs, fitting, new, names, VGroup(average, average_name)
 
 
@@ -511,13 +548,16 @@ class Scene13(VideoScene):
     def construct(self):
         curve, axes, frame, xs, fitting, new, names, average = u_curve_layout(self)
         heading = title("A tree swept from rigid to flexible", 44).to_edge(UP, buff=0.45)
-        # "Now sweep the setting from rigid to flexible, with all six inputs."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.12))
-        # "The error on the fitting stations falls all the way to zero."
+        # "Now give the trees all six inputs, and sweep the setting from rigid to flexible."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.1))
+        # "Along the bottom is the number of leaves: more leaves, a more flexible tree."
+        cue(self, "Along the bottom")
+        self.play(Indicate(frame[3], color=INK, scale_factor=1.1), run_time=self.share(0.15))
+        # "The error on the training stations falls all the way to zero."
         cue(self, "The error on")
         self.play(Create(fitting[0]), LaggedStart(*[FadeIn(d) for d in fitting[1]]), FadeIn(names[0]),
-                  run_time=self.share(0.4), rate_func=linear)
-        self.play(Flash(fitting[1][-1], color=FITTING), run_time=self.share(0.1))
+                  run_time=self.share(0.22), rate_func=linear)
+        self.play(Flash(fitting[1][-1], color=FITTING), run_time=self.share(0.05))
         self.finish()
 
 
@@ -532,12 +572,18 @@ class Scene14(VideoScene):
         self.play(FadeIn(average), run_time=self.share(0.08))
         self.play(Create(new[0]), LaggedStart(*[FadeIn(d) for d in new[1]]), FadeIn(names[1]),
                   run_time=self.share(0.45), rate_func=linear)
-        # "This is the U-shaped error curve."
+        # "This is the U-shaped error curve, ..."
         cue(self, "This is")
         name = title("the U-shaped error curve", 44).set_color(NEW).move_to(heading)
         glow = new[0].copy().set_stroke(NEW, width=16, opacity=0.5)
         self.play(ReplacementTransform(heading, name), ShowPassingFlash(glow, time_width=0.5),
-                  run_time=self.share(0.3))
+                  run_time=self.share(0.2))
+        # "... and the best tree sits at its lowest point."
+        cue(self, "and the best tree")
+        low = int(np.argmin(curve["new"].to_numpy()))
+        best = Dot(new[1][low].get_center(), radius=0.13, color=NEW).set_z_index(10)
+        best_name = plated(label("the best tree", 28, NEW, weight=BOLD)).next_to(best, UP, 0.35, aligned_edge=LEFT)
+        self.play(FadeIn(best, scale=1.6), FadeIn(best_name), run_time=self.share(0.1))
         self.finish()
 
 
@@ -559,7 +605,8 @@ class Scene15(VideoScene):
         brace = Brace(gap, LEFT, color=VERMILION)
         over = label("overfitting", 34, VERMILION, weight=BOLD).next_to(brace, LEFT, 0.2).shift(0.5 * UP)
         over_note = label("a wide gap", 26, VERMILION).next_to(over, DOWN, 0.08)
-        # "On the left, the tree underfits: both errors are high and close together."
+        # "On the left, the tree underfits: it is too rigid to follow the pattern, so both errors are high
+        # and close together."
         self.play(Create(under_box), FadeIn(under), run_time=self.share(0.15))
         cue(self, "both errors")
         self.play(FadeIn(under_note), run_time=self.share(0.08))
@@ -595,7 +642,9 @@ def bias_board():
     arrow = Arrow(LEFT_BOARD, centre.get_center(), buff=0.05, color=INK, stroke_width=5,
                   max_tip_length_to_length_ratio=0.25)
     name = label("bias", 46, BLUE, weight=BOLD).next_to(board, UP, 0.75)
-    note = label("the average model's miss", 28, SUBDUED).next_to(name, DOWN, 0.1)
+    note = label("how far their average misses", 28, SUBDUED).next_to(name, DOWN, 0.1)
+    each = label("each dot: one survey's prediction", 26, SUBDUED).next_to(board[2], DOWN, 0.15)
+    board.add(each)
     return board, shots, arrow, VGroup(name, note)
 
 
@@ -606,14 +655,23 @@ class Scene16(VideoScene):
         board, shots, arrow, name = bias_board()
         heading = label("the same model, fitted to survey after survey", 32, SUBDUED).to_edge(UP, buff=0.4)
         # "Where does the U come from?"
-        self.wait(self.share(0.12))
         # "Imagine surveying the shelf again and again, and fitting the same model each time."
         cue(self, "Imagine")
-        self.play(FadeIn(heading), FadeIn(board), run_time=self.share(0.12))
-        self.play(LaggedStart(*[FadeIn(s, scale=2) for s in shots], lag_ratio=0.2), run_time=self.share(0.3))
-        # "Bias is how far the average of those models misses."
+        self.play(FadeIn(heading), FadeIn(board[0]), run_time=self.share(0.08))
+        # "Each survey gives a slightly different model, and so a slightly different prediction at one
+        # station: the dots on this target."
+        cue(self, "Each survey gives")
+        self.play(LaggedStart(*[FadeIn(s, scale=2) for s in shots], lag_ratio=0.2), run_time=self.share(0.2))
+        cue(self, "the dots on")
+        self.play(FadeIn(board[3]), run_time=self.share(0.05))
+        # "The centre is the station's expected count, the average it would give if it could be sampled
+        # again and again."
+        cue(self, "The centre is")
+        self.play(FadeIn(board[1], scale=2), FadeIn(board[2]), run_time=self.share(0.06))
+        self.play(Flash(board[1], color=INK), run_time=self.share(0.06))
+        # "Bias is how far the average of the predictions misses the centre."
         cue(self, "Bias is")
-        self.play(GrowArrow(arrow), FadeIn(name), run_time=self.share(0.15))
+        self.play(GrowArrow(arrow), FadeIn(name), run_time=self.share(0.1))
         self.finish()
 
 
@@ -627,10 +685,14 @@ class Scene17(VideoScene):
         right = target(RIGHT_BOARD)
         scatter = hits(RIGHT_BOARD, [0, 0], 0.65, 22, VERMILION)
         right_name = VGroup(label("variance", 46, VERMILION, weight=BOLD),
-                            label("how much it changes", 28, SUBDUED)).arrange(DOWN, buff=0.1).next_to(right, UP, 0.3).align_to(name, UP)
-        # "Variance is how much the model changes from one survey to the next."
-        self.play(FadeIn(right), FadeIn(right_name), run_time=self.share(0.15))
-        self.play(LaggedStart(*[FadeIn(s, scale=2) for s in scatter], lag_ratio=0.15), run_time=self.share(0.5))
+                            label("how much the predictions spread", 28, SUBDUED)).arrange(DOWN, buff=0.1).next_to(right, UP, 0.3).align_to(name, UP)
+        flexible = label("a flexible model", 28, VERMILION, weight=BOLD).next_to(right[2], DOWN, 0.15)
+        # "Variance is how much the predictions change from one survey to the next."
+        self.play(FadeIn(right), FadeIn(right_name), run_time=self.share(0.1))
+        self.play(LaggedStart(*[FadeIn(s, scale=2) for s in scatter], lag_ratio=0.15), run_time=self.share(0.3))
+        # "A flexible model follows whichever stations it happened to get, so its predictions spread widely."
+        cue(self, "A flexible model")
+        self.play(FadeIn(flexible), run_time=self.share(0.08))
         self.finish()
 
 
@@ -642,7 +704,7 @@ def parts_layout(scene):
     lo, hi = 0.2, math.log10(300)
     top = 5 * math.ceil(max(parts["noise"].max(), (parts["bias_squared"] + parts["variance"]).max()) / 5)
     axes, frame = chart([lo, hi, 1], [0, top, 5], 9.0, 4.9, [math.log10(v) for v in (3, 10, 30, 100)],
-                        range(0, top + 1, 5), "leaves in the tree (log scale)", "squared error (individuals²)",
+                        range(0, top + 1, 5), "leaves in the tree (log scale)", "squared error (animals²)",
                         x_text=lambda v: f"{10 ** v:.0f}")
     frame.move_to([-0.9, -0.7, 0])
     xs = [math.log10(v) for v in parts["leaves"]]
@@ -664,14 +726,22 @@ def parts_layout(scene):
     return parts, axes, frame, lines, names, noise_line, noise_name, best, best_x
 
 
+def squared_note(heading):
+    return label("bias²: bias × bias, so it adds to the variance", 28, BLUE).next_to(heading, DOWN, 0.2)
+
+
 class Scene18(VideoScene):
     number = 18
 
     def construct(self):
         parts, axes, frame, lines, names, *_ = parts_layout(self)
         heading = title("Bias and variance, measured", 44).to_edge(UP, buff=0.45)
-        # "Because the survey is simulated, the true expected counts are known, so both can be measured."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.12))
+        squared = squared_note(heading)
+        # "Because the survey is simulated, every station's expected count is known, so both can be measured."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.1))
+        # "Bias is squared here, multiplied by itself, so that it can be added to the variance."
+        cue(self, "Bias is squared")
+        self.play(FadeIn(squared), run_time=self.share(0.08))
         # "As the tree grows, bias falls and then stops."
         cue(self, "As the tree grows")
         self.play(Create(lines["bias_squared"]), FadeIn(names["bias_squared"]), run_time=self.share(0.15))
@@ -691,7 +761,7 @@ class Scene19(VideoScene):
     def construct(self):
         parts, axes, frame, lines, names, noise_line, noise_name, best, best_x = parts_layout(self)
         heading = title("Bias and variance, measured", 44).to_edge(UP, buff=0.45)
-        self.add(heading, frame, *lines.values(), *names.values())
+        self.add(heading, squared_note(heading), frame, *lines.values(), *names.values())
         # "Under it all lies noise: chance in the counts, which no model removes."
         self.play(FadeIn(noise_line, shift=0.5 * DOWN), FadeIn(noise_name), run_time=self.share(0.15))
         # "For the best tree, noise was 72 per cent of the error."
@@ -701,7 +771,10 @@ class Scene19(VideoScene):
         best_dot = Dot(axes.c2p(best_x, best["bias_squared"] + best["variance"]), radius=0.12, color=GREEN)
         best_name = label("the best tree", 26, GREEN, weight=BOLD).next_to(best_dot, UP, 0.25)
         self.play(FadeIn(best_dot, scale=1.6), FadeIn(best_name), run_time=self.share(0.1))
-        self.play(FadeIn(note, shift=0.2 * DOWN), run_time=self.share(0.15))
+        self.play(FadeIn(note, shift=0.2 * DOWN), run_time=self.share(0.12))
+        # "That is why even the best tree beat predicting the average by so little."
+        cue(self, "That is why")
+        self.play(Indicate(note, color=GREY), run_time=self.share(0.1))
         self.finish()
 
 
@@ -731,7 +804,7 @@ class Scene20(VideoScene):
         ).arrange(RIGHT, buff=0.6).next_to(heading, DOWN, 0.3)
         # The forest's variance bar starts at the single tree's height and shrinks.
         start = groups[0][1].copy().set_x(groups[1][1].get_x())
-        # "This is why a random forest works."
+        # "This is also why a random forest works."
         self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(key), FadeIn(base), run_time=self.share(0.1))
         self.play(GrowFromEdge(groups[0][0][0], DOWN), GrowFromEdge(groups[0][1][0], DOWN),
                   FadeIn(groups[0][0][1]), FadeIn(groups[0][1][1]), FadeIn(groups[0][2]), run_time=self.share(0.15))
@@ -741,7 +814,11 @@ class Scene20(VideoScene):
                   FadeIn(start), run_time=self.share(0.15))
         # "... but cuts their variance, here about thirteen-fold."
         cue(self, "but cuts")
-        self.play(ReplacementTransform(start, groups[1][1]), run_time=self.share(0.2))
+        self.play(ReplacementTransform(start, groups[1][1]), run_time=self.share(0.15))
+        # "Each tree follows its own stations, and their mistakes partly cancel in the average."
+        cue(self, "and their mistakes")
+        cancel = card("the trees' mistakes\npartly cancel", GREEN, 30).move_to([2.8, 0.6, 0])
+        self.play(FadeIn(cancel, scale=0.9), run_time=self.share(0.08))
         self.finish()
 
 
@@ -799,15 +876,24 @@ class Scene22(VideoScene):
         heading = title("A penalty on large coefficients", 46).to_edge(UP, buff=0.5)
         name = label("a linear model's coefficients", 28, SUBDUED).next_to(heading, DOWN, 0.2)
         rule = label("loss + λ × (size of the coefficients)", 34, PURPLE, weight=BOLD).next_to(base, DOWN, 2.0)
-        # "A linear model has its own dial: a penalty."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(name), FadeIn(base), FadeIn(bars), run_time=self.share(0.12))
+        track = slider[0]
+        ends = VGroup(label("λ = 0: no penalty", 26, SUBDUED).next_to(track.get_start(), LEFT, 0.3),
+                      label("larger λ: more rigid", 26, SUBDUED).next_to(track.get_end(), RIGHT, 0.3))
+        # "Finally, how to choose complexity honestly."
+        # "A linear model has its own dial: a penalty, which we met in the last video."
+        cue(self, "A linear model")
+        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(name), FadeIn(base), FadeIn(bars), run_time=self.share(0.1))
         # "The fit is charged for large coefficients, so it keeps them small unless the data clearly need them."
         cue(self, "The fit is charged")
         self.play(FadeIn(rule), run_time=self.share(0.1))
         # "A weight called lambda sets how hard the penalty pulls."
         cue(self, "A weight called")
-        self.play(FadeIn(slider), FadeIn(knob), run_time=self.share(0.08))
-        self.play(weight.animate.set_value(1), run_time=self.share(0.3), rate_func=smooth)
+        self.play(FadeIn(slider), FadeIn(knob), run_time=self.share(0.06))
+        # "At zero there is no penalty, and the larger it is, the more rigid the model."
+        cue(self, "At zero")
+        self.play(FadeIn(ends[0]), run_time=self.share(0.05))
+        cue(self, "and the larger")
+        self.play(FadeIn(ends[1]), weight.animate.set_value(1), run_time=self.share(0.2), rate_func=smooth)
         self.finish()
 
 
@@ -830,7 +916,9 @@ class Scene23(VideoScene):
                    penalty_shape(lambda c: c * c, PURPLE, ORIGIN)).arrange(DOWN, buff=0.15).move_to([-3.5, 2.2, 0]),
             VGroup(label("the lasso", 36, INK, weight=BOLD),
                    label("charges their absolute size", 26, SUBDUED),
+                   label("(the size without its sign)", 26, SUBDUED),
                    penalty_shape(abs, PURPLE, ORIGIN)).arrange(DOWN, buff=0.15).move_to([3.5, 2.2, 0]))
+        names[1].align_to(names[0], DOWN)
         verdicts = VGroup(label("shrinks every one, removes none", 28, BLUE, weight=BOLD).next_to(left_base, DOWN, 1.4),
                           label("sets the small ones to exactly zero", 28, VERMILION, weight=BOLD).next_to(right_base, DOWN, 1.4))
         slider, knob = slider_for(weight, 2.2)
@@ -842,7 +930,8 @@ class Scene23(VideoScene):
         self.play(FadeIn(names[0]), run_time=self.share(0.08))
         cue(self, "so it shrinks")
         self.play(weight.animate.set_value(0.5), FadeIn(verdicts[0]), run_time=self.share(0.12))
-        # "The lasso charges their absolute size, which makes a small coefficient cheaper to drop than to keep."
+        # "The lasso charges their absolute size, the size without its sign, which makes a small coefficient
+        # cheaper to drop than to keep."
         cue(self, "The lasso charges")
         self.play(FadeIn(names[1]), run_time=self.share(0.08))
         # "It sets those to exactly zero, and their inputs leave the model."
@@ -870,7 +959,7 @@ class Scene24(VideoScene):
         # and y is the RMSE − y0, and the tick labels translate back.
         axes, frame = chart([0, hi - lo, 1], [0, y1 - y0, 0.5], 9.0, 4.8, range(0, hi - lo + 1),
                             [v / 2 - y0 for v in range(math.ceil(2 * y0), math.floor(2 * y1) + 1)],
-                            "the penalty's weight, λ (log scale)", "RMSE on new sites (individuals)",
+                            "the penalty's weight, λ (log scale)", "error on new sites (RMSE, animals)",
                             x_text=lambda v: f"{10 ** (v + lo):g}", y_text=lambda v: f"{v + y0:.1f}")
         frame.move_to([-0.9, -0.75, 0])
 
@@ -896,21 +985,26 @@ class Scene24(VideoScene):
             at_point(lo, all_inputs), UR, 0.08)
         low_line = DashedLine(at_point(lo, measured), at_point(hi, measured), color=GREEN, stroke_width=4,
                               dash_length=0.12)
-        low_name = label(f"told which inputs were real: {f2(measured)}", 26, GREEN, weight=BOLD).next_to(
+        low_name = label(f"told which inputs were measured: {f2(measured)}", 26, GREEN, weight=BOLD).next_to(
             at_point(lo, measured), DR, 0.1)
         best_dot = Dot(at_point(math.log10(lasso["lambda"]), lasso["new"]), radius=0.12, color=VERMILION)
         best_name = label(f"lasso at its best: {f2(lasso['new'])}", 28, VERMILION, weight=BOLD).next_to(
-            at_point(0.5, measured), DR, 0.1)
+            at_point(hi, measured), DL, 0.1).shift(0.42 * DOWN)
         heading = title("A penalty against 200 random columns", 44).to_edge(UP, buff=0.45)
-        # "Give a regression 200 columns of random numbers, and its error on new sites is 6.41."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.08))
-        cue(self, "and its error")
-        self.play(Create(top_line), FadeIn(top_name), run_time=self.share(0.1))
-        # "The lasso, at its best penalty, scores 4.55: ..."
+        # "Here is a test. Give a linear regression 200 extra columns of random numbers: inputs that carry
+        # no information at all."
+        cue(self, "Give a linear")
+        self.play(FadeIn(heading, shift=0.2 * DOWN), FadeIn(frame), run_time=self.share(0.06))
+        # "Its error on new sites rises to 6.41, worse than predicting the average."
+        cue(self, "Its error on")
+        self.play(Create(top_line), FadeIn(top_name), run_time=self.share(0.08))
+        # "This chart follows the error as lambda grows."
+        cue(self, "This chart")
+        self.play(Create(lines[0]), Create(lines[1]), FadeIn(names), run_time=self.share(0.15))
+        # "The lasso, at its best lambda, scores 4.55: ..."
         cue(self, "The lasso")
-        self.play(Create(lines[0]), Create(lines[1]), FadeIn(names), run_time=self.share(0.2))
         self.play(FadeIn(best_dot, scale=1.6), FadeIn(best_name), run_time=self.share(0.08))
-        # "... as good as being told which inputs were real."
+        # "... as good as a regression told which inputs were measured."
         cue(self, "as good as")
         self.play(Create(low_line), FadeIn(low_name), run_time=self.share(0.12))
         self.finish()
@@ -934,14 +1028,18 @@ class Scene25(VideoScene):
         penalty, penalty_knob, penalty_track = dial("a regression's penalty, λ", [3.4, 0.8, 0])
         chosen = label("it has to be chosen", 40, INK, weight=BOLD).to_edge(UP, buff=0.6)
         trap = card("training error always\nfavours the most flexible", VERMILION, 32).move_to([0, -2.2, 0])
-        # "A node size, a penalty: every method has a setting like this, and it has to be chosen."
-        self.play(FadeIn(node), FadeIn(node_knob), run_time=self.share(0.1))
+        hyper = label("hyperparameters: fixed before fitting", 32, PURPLE, weight=BOLD).move_to([0, -0.55, 0])
+        # "A node size, a penalty: every method has a setting like this, a hyperparameter, fixed before fitting."
+        self.play(FadeIn(node), FadeIn(node_knob), run_time=self.share(0.08))
         cue(self, "a penalty")
-        self.play(FadeIn(penalty), FadeIn(penalty_knob), run_time=self.share(0.1))
-        cue(self, "and it has to")
-        self.play(FadeIn(chosen, shift=0.2 * DOWN), run_time=self.share(0.1))
-        # "Not by training error, which always favours the most flexible."
-        cue(self, "Not by training")
+        self.play(FadeIn(penalty), FadeIn(penalty_knob), run_time=self.share(0.08))
+        cue(self, "a hyperparameter")
+        self.play(FadeIn(hyper), run_time=self.share(0.08))
+        # "It has to be chosen, ..."
+        cue(self, "It has to")
+        self.play(FadeIn(chosen, shift=0.2 * DOWN), run_time=self.share(0.08))
+        # "... and not by the training error, which always favours the most flexible setting."
+        cue(self, "and not by")
         self.play(node_knob.animate.move_to(node_track.get_end()), penalty_knob.animate.move_to(penalty_track.get_end()),
                   FadeIn(trap, shift=0.2 * UP), run_time=self.share(0.2))
         self.finish()
@@ -957,7 +1055,7 @@ def repeats_layout(scene):
     axis = NumberLine(x_range=[lo, hi, 0.5], length=11, color=GRID, include_ticks=False).shift(2.5 * DOWN)
     ticks = VGroup(*[label(f"{v:.1f}", 24, SUBDUED).next_to(axis.n2p(v), DOWN, 0.15)
                      for v in np.arange(lo, hi + 0.01, 0.5)])
-    name = label("RMSE claimed for the winner (individuals)", 26, SUBDUED).next_to(ticks, DOWN, 0.2)
+    name = label("error claimed for the winner (RMSE, animals)", 26, SUBDUED).next_to(ticks, DOWN, 0.2)
     rows = {}
     for method, y in (("One validation split", 1.5), ("Ten-fold cross-validation", -1.0)):
         claimed = runs.loc[runs["method"] == method, "claimed"].to_numpy()
@@ -989,13 +1087,15 @@ class Scene26(VideoScene):
     def construct(self):
         frame, rows, caption = repeats_layout(self)
         one = rows["One validation split"]
-        # "The simplest way is one validation split: hold back some sites and compare settings on them."
-        self.play(FadeIn(one[0]), run_time=self.share(0.1))
-        # "But it depends on which sites were held back."
-        cue(self, "But it depends")
+        # "The simplest way is one validation split: hold back some of the training sites as validation
+        # sites, and compare the settings on them."
+        self.play(FadeIn(one[0]), run_time=self.share(0.08))
+        # "But the verdict depends on which sites were held back."
+        cue(self, "But the verdict")
         self.play(FadeIn(frame), FadeIn(caption), run_time=self.share(0.08))
-        # "In 20 repeats, the error it claimed ranged from 3.72 to 5.37."
-        cue(self, "In 20 repeats")
+        # "Repeated 20 times with different validation sites, the error it claimed for its winning setting
+        # ranged from 3.72 to 5.37."
+        cue(self, "Repeated 20")
         self.play(LaggedStart(*[FadeIn(d, shift=0.3 * DOWN) for d in one[1]], lag_ratio=0.05),
                   run_time=self.share(0.15))
         cue(self, "ranged from")
@@ -1026,12 +1126,16 @@ class Scene27(VideoScene):
         for d, f in zip(errors, folds):
             d.next_to(f, DOWN, 1.7).set_x(f.get_x())
         average = label("average the ten errors", 32, INK, weight=BOLD).next_to(errors, DOWN, 0.35)
-        # "Cross-validation does better. Deal the training sites into ten folds."
-        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.08))
+        whole = label("a fold: a group of whole sites", 28, SUBDUED).next_to(heading, DOWN, 0.2)
+        # "Cross-validation does better. Deal the training sites into ten groups, called folds, each
+        # holding whole sites."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
         cue(self, "Deal the")
         self.play(LaggedStart(*[FadeIn(f, shift=0.2 * DOWN) for f in folds], lag_ratio=0.1), FadeIn(names),
-                  run_time=self.share(0.15))
-        # "Each fold takes a turn as new data while the model is fitted to the rest, ..."
+                  run_time=self.share(0.12))
+        cue(self, "each holding")
+        self.play(FadeIn(whole), run_time=self.share(0.05))
+        # "Each fold takes a turn as new data while the model is fitted to the other nine, ..."
         cue(self, "Each fold")
         self.play(FadeIn(key), run_time=self.share(0.05))
         step = self.share(0.035)
@@ -1097,13 +1201,13 @@ class Scene29(VideoScene):
     def construct(self):
         box, base, rows, head = test_once_layout(self)
         sealed = label("held back since the start", 26, VERMILION, weight=BOLD).next_to(box, DOWN, 0.25)
-        # "Last, the test sites, held back since the start, are scored once."
+        # "Last, the test sites, held back since the very start, score the chosen tree once."
         self.play(FadeIn(box), FadeIn(sealed), run_time=self.share(0.12))
-        cue(self, "are scored once")
+        cue(self, "score the chosen")
         hinge = box[1].get_corner(DL)
         self.play(Rotate(box[1], angle=0.4, about_point=hinge), run_time=self.share(0.08))
-        # "The chosen tree beats predicting the average by 0.28, ..."
-        cue(self, "The chosen tree")
+        # "It beats predicting the average by 0.28, ..."
+        cue(self, "It beats")
         self.play(FadeIn(head), FadeIn(base), run_time=self.share(0.06))
         self.play(FadeIn(rows[1][0]), GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.1))
         # "... close to the 0.26 that cross-validation promised."
@@ -1125,10 +1229,12 @@ class Scene30(VideoScene):
         warning = card("choose again, and the score\nis no longer honest", VERMILION, 30).move_to([2.6, -2.9, 0])
         # "Then the test sites are spent."
         self.play(FadeOut(box[2]), FadeIn(spent, scale=1.4), run_time=self.share(0.15))
-        # "Choose again because the score disappointed, and they can no longer give an honest one."
-        cue(self, "Choose again")
-        self.play(ReplacementTransform(spent, again), box[0].animate.set_stroke(VERMILION), run_time=self.share(0.15))
-        self.play(FadeIn(warning, shift=0.2 * UP), run_time=self.share(0.12))
+        # "Choose again because the score disappointed, and they become validation sites, ..."
+        cue(self, "and they become")
+        self.play(ReplacementTransform(spent, again), box[0].animate.set_stroke(VERMILION), run_time=self.share(0.12))
+        # "... which can no longer give an honest score."
+        cue(self, "which can no")
+        self.play(FadeIn(warning, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
@@ -1140,9 +1246,9 @@ class Scene31(KeyPointScene):
 
 class Scene32(QuizScene):
     number = 32
-    question = ("A colleague adds ten new columns",
-                "to a regression, and its R² on",
-                "the fitting stations goes up.",
+    question = ("A colleague adds ten new columns,",
+                "and R² on the training stations goes up.",
+                "(R²: the share of the variation explained)",
                 "Do the new columns help?")
 
 
@@ -1153,7 +1259,7 @@ class Scene33(VideoScene):
         rows = self.data("random-columns")
         shown = rows[rows["noise"].round().isin([0, 10, 50, 100, 200])].reset_index(drop=True)
         no = label("No.", 72, VERMILION, weight=BOLD).to_edge(UP, buff=0.5)
-        header = ["random columns added", "R² on the fitting stations", "RMSE on new sites"]
+        header = ["random columns added", "R² on the training stations", "error on new sites (RMSE)"]
         xs = [-4.5, 0.2, 4.5]
         head = VGroup(*[label(t, 26, SUBDUED, weight=BOLD).move_to([x, 1.6, 0]) for t, x in zip(header, xs)])
         table_rows = VGroup()
@@ -1167,7 +1273,7 @@ class Scene33(VideoScene):
         ups = VGroup(label("rises", 28, FITTING, weight=BOLD).next_to(table_rows[-1][1], DOWN, 0.3),
                      label("rises", 28, NEW, weight=BOLD).next_to(table_rows[-1][2], DOWN, 0.3))
         tell = label("only new sites can tell", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
-        # "No. R squared on the fitting stations never falls when a column is added, even a column of random numbers."
+        # "No. R squared on the training stations never falls when a column is added, even a column of random numbers."
         self.play(FadeIn(no, scale=1.4), run_time=self.share(0.08))
         self.play(FadeIn(head), Create(rule), run_time=self.share(0.08))
         # "On the survey, ten random columns raised it, ..."
