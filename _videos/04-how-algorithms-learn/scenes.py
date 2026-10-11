@@ -316,6 +316,12 @@ class Scene04(VideoScene):
         self.play(Create(curves[1]), FadeIn(rows[1][:2]), run_time=self.share(0.08))
         cue(self, "costs 10, only")
         self.play(FadeIn(rows[1][2:]), FadeIn(marks[1], scale=0.5), run_time=self.share(0.06))
+        # "Whichever loss is chosen, training a machine-learning model means the same thing: finding the
+        # parameters that make the average loss on the training data as small as possible."
+        training = card("training: find the\nparameters with the\nlowest average loss\non the training data",
+                        PURPLE, 32).move_to(rows)
+        cue(self, "training a machine-learning")
+        self.play(FadeOut(rows), FadeIn(training, scale=0.95), run_time=self.share(0.06))
         self.finish()
 
 
@@ -348,7 +354,7 @@ class Scene05(VideoScene):
         each = label("each dot: one station", 28, SUBDUED).next_to(count, DOWN, 0.2, aligned_edge=LEFT)
         plankton = label("chlorophyll: a sign of\nhow much plankton\nis in the water", 26, SUBDUED
                          ).next_to(each, DOWN, 0.5, aligned_edge=LEFT)
-        # "Here is why that matters."
+        # "Here is why the choice of loss matters."
         self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.06))
         # "This chart shows the count of one species against chlorophyll, a sign of how much plankton is
         # in the water, at the survey's 749 stations."
@@ -842,12 +848,23 @@ class Scene17(VideoScene):
         bars = effect_bars(axes, forty["ml"], ["temperature", "its square"], [BLUE, ORANGE])
         unit = label("each effect: animals per standard deviation of its input", 28, SUBDUED)
         unit.next_to(heading, DOWN, 0.2)
-        cancel = label("two large effects\nthat cancel out", 34, INK, weight=BOLD).move_to([3.6, 0.8, 0])
+        scarce = title("Assumptions help when data are scarce", 46).to_edge(UP, buff=0.4)
+        outside = card("a small training set:\nknowledge from outside the data\ncan improve the fit", PURPLE, 36)
+        few = label("few stations\nfor twelve effects", 30, SUBDUED, weight=BOLD).move_to([3.6, 1.7, 0])
+        cancel = label("two large effects\nthat cancel out", 34, INK, weight=BOLD).move_to([3.6, 0.4, 0])
         chasing = card("a warning sign:\nchasing chance patterns", VERMILION, 30).next_to(cancel, DOWN, 0.6)
-        # "An assumption can also carry what you knew before the survey."
+        # "Assumptions can also help a model when data are scarce."
+        self.play(FadeIn(scarce, shift=0.2 * DOWN), run_time=self.share(0.04))
+        # "With a small training set, the data alone can mislead the fit, and knowledge from outside the
+        # data, written down as an assumption, can improve it."
+        cue(self, "With a small training")
+        self.play(FadeIn(outside, scale=0.95), run_time=self.share(0.05))
         # "Take a small survey: forty stations and twelve inputs, such as depth, temperature and their squares."
         cue(self, "Take a small")
-        self.play(FadeIn(heading, shift=0.2 * DOWN), Create(zero), run_time=self.share(0.07))
+        self.play(ReplacementTransform(scarce, heading), FadeOut(outside), Create(zero), run_time=self.share(0.05))
+        # "That is very few stations to learn twelve effects from."
+        cue(self, "That is very few")
+        self.play(FadeIn(few), run_time=self.share(0.04))
         # "Each effect is the change in animals for one standard deviation of its input."
         cue(self, "Each effect is")
         self.play(FadeIn(unit), run_time=self.share(0.06))
@@ -873,7 +890,7 @@ class Scene18(VideoScene):
         # Page results: likelihood-and-priors.qmd, the same two effects with a Normal prior (ridge).
         forty = self.data("forty")
         heading = title("What you knew before can help", 46).to_edge(UP, buff=0.4)
-        prior_heading = title("A prior: effects that large are rare", 46).to_edge(UP, buff=0.4)
+        prior_heading = title("A prior: knowledge written down before the fit", 42).to_edge(UP, buff=0.45)
         axes = plain_axes([0, 3, 1], [-8, 10, 2], 6.0, 5.0).move_to([2.6, -0.8, 0])
         zero = Line(axes.c2p(0, 0), axes.c2p(3, 0), color=INK, stroke_width=3)
         names = ["temperature", "its square"]
@@ -885,34 +902,49 @@ class Scene18(VideoScene):
                                  b[1].copy().set_color(GREY)) for b in before])
         unit = label("each effect: animals per standard deviation of its input", 28, SUBDUED
                      ).next_to(heading, DOWN, 0.2)
-        pa, prior_frame = chart([-4, 4, 1], [0, 1.15, 0.5], 4.6, 2.6, [-3, 0, 3], [], "an effect", "")
-        prior_frame.move_to([-4.0, -0.4, 0])
+        # The page's illustration of a prior, "usually within about ±2 animals", matches the fit's
+        # prior: a Normal curve with a standard deviation of 1 on every coefficient.
+        pa, prior_frame = chart([-4, 4, 1], [0, 1.15, 0.5], 4.6, 2.6, [-2, 0, 2], [], "an effect (animals)", "")
+        prior_frame.move_to([-4.0, -0.75, 0])
         prior = pa.plot(lambda b: bell(b, 0, 1), x_range=[-4, 4, 0.02], color=PURPLE, stroke_width=6)
-        prior_name = label("the prior,\ncentred on zero", 28, PURPLE, weight=BOLD).next_to(prior_frame, UP, 0.2)
+        prior_name = label("the prior", 28, PURPLE, weight=BOLD).move_to(pa.c2p(2.5, 0.85))
+        knowledge = VGroup(label("earlier surveys: most effects", 28, PURPLE, weight=BOLD),
+                           label("within about ±2 animals", 28, PURPLE, weight=BOLD)).arrange(DOWN, buff=0.08)
+        knowledge.next_to(prior_frame, UP, 0.3)
         likely = label("small effects likely,\nlarge ones not", 28, PURPLE).next_to(prior_frame, DOWN, 0.3)
-        # "With so few stations, what you knew before the survey can help."
+        many = label("many stations would\noutweigh the prior", 28, INK, weight=BOLD).move_to(likely)
+        # "This is where prior knowledge helps."
         self.play(FadeIn(heading, shift=0.2 * DOWN), Create(zero), FadeIn(unit), FadeIn(before),
-                  run_time=self.share(0.08))
-        # "And you did know something: effects that large are rare."
-        cue(self, "effects that large")
-        self.play(Indicate(VGroup(before[0][1], before[1][1]), color=INK), run_time=self.share(0.06))
-        # "A prior writes that belief down, as a curve centred on zero, so small effects are likely and large
-        # ones are not."
+                  run_time=self.share(0.06))
+        # "Say earlier surveys suggest that one standard deviation of any input usually changes the catch
+        # by no more than about two animals."
+        cue(self, "Say earlier surveys")
+        self.play(FadeIn(knowledge), run_time=self.share(0.06))
+        # "A prior writes that knowledge down before the fit sees the data, as a curve centred on zero:
+        # small effects are likely, and large ones are not."
         cue(self, "A prior writes")
-        self.play(ReplacementTransform(heading, prior_heading), FadeIn(prior_frame), Create(prior),
-                  FadeIn(prior_name), run_time=self.share(0.1))
-        cue(self, "so small effects")
-        self.play(FadeIn(likely), run_time=self.share(0.06))
-        # "Combined with the data, it pulls the temperature effect from 9.23 to 0.26,"
-        cue(self, "it pulls")
+        self.play(ReplacementTransform(heading, prior_heading), run_time=self.share(0.05))
+        cue(self, "as a curve centred")
+        self.play(FadeIn(prior_frame), Create(prior), FadeIn(prior_name), run_time=self.share(0.07))
+        cue(self, "small effects are likely")
+        self.play(FadeIn(likely), run_time=self.share(0.05))
+        # "The fit then weighs the data against the prior. With only forty stations, the prior pulls hard:"
+        cue(self, "The fit then weighs")
+        self.play(Indicate(prior, color=PURPLE), Indicate(VGroup(before[0][1], before[1][1]), color=INK),
+                  run_time=self.share(0.06))
+        # "the temperature effect shrinks from 9.23 to 0.26,"
+        cue(self, "the temperature effect shrinks")
         self.add(ghosts[0])
         self.play(ReplacementTransform(before[0][0], after[0][0]), FadeOut(before[0][1]), FadeIn(after[0][1]),
-                  run_time=self.share(0.1))
+                  run_time=self.share(0.08))
         # "and its square from minus 6.78 to minus 0.18."
         cue(self, "and its square from")
         self.add(ghosts[1])
         self.play(ReplacementTransform(before[1][0], after[1][0]), FadeOut(before[1][1]), FadeIn(after[1][1]),
-                  run_time=self.share(0.1))
+                  run_time=self.share(0.08))
+        # "With many stations, the data would outweigh the prior."
+        cue(self, "With many stations")
+        self.play(FadeOut(likely), FadeIn(many), run_time=self.share(0.06))
         self.finish()
 
 

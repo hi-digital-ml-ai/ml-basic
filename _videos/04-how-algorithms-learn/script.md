@@ -53,18 +53,21 @@ fished badly, or plain chance. No model can predict noise, so even the best fit 
 residuals.
 
 ## Scene 4
-visual: manim Losses: squared error as a steep U, "miss × miss", and absolute error as a shallow V, "the size of the miss", against the residual; a miss of 10 marked, costing 100 and 10 (schematic, the page's definitions)
+visual: manim Losses: squared error as a steep U, "miss × miss", and absolute error as a shallow V, "the size of the miss", against the residual; a miss of 10 marked, costing 100 and 10; then a card "training: find the parameters with the lowest average loss on the training data" (schematic, the page's definitions)
+pause-after: 0.5
 
 A loss function turns each miss into a penalty, and the average penalty over all the
 stations is the score. The two most common losses treat big misses very differently.
 Squared error multiplies each miss by itself, so a miss of 10 costs 100, a hundred times
 a miss of 1. Absolute error just takes the size of the miss, so a miss of 10 costs 10,
-only ten times as much.
+only ten times as much. Whichever loss is chosen, training a machine-learning model
+means the same thing: finding the parameters that make the average loss on the
+training data as small as possible.
 
 ## Scene 5
 visual: manim Lines: abundance against chlorophyll at 749 stations, "each dot: one station"; the squared-error line and the absolute-error line (page results, loss-functions.qmd#fig-two-lines)
 
-Here is why that matters. This chart shows the count of one species against
+Here is why the choice of loss matters. This chart shows the count of one species against
 chlorophyll, a sign of how much plankton is in the water, at the survey's 749 stations.
 Each dot is a station. Fit a straight line with squared error, then fit it again with
 absolute error. The two losses draw two different lines through exactly the same data.
@@ -118,6 +121,7 @@ hyperparameter: a setting we choose before fitting.
 
 ## Scene 11
 visual: manim Paths: the objective's contours for two slopes, "each ring: the same score", the lowest point marked; the walk at learning rate 0.3 arriving in 11 steps, then 0.02 creeping, needing 197 (page results, gradient-descent.qmd#fig-paths)
+pause-after: 1.0
 
 Here is gradient descent on the survey. It fits a straight line with two slopes, one
 for chlorophyll and one for depth. A formula knows the answer, so we can check the walk
@@ -174,23 +178,27 @@ Poisson distribution stops at zero, so Poisson regression never predicts fewer t
 animals.
 
 ## Scene 17
-visual: manim Forty: forty stations, twelve inputs; "each effect: animals per standard deviation of its input"; temperature +9.23 and its square −6.78, two bars cancelling (page results, likelihood-and-priors.qmd)
+visual: manim Forty: the heading "assumptions help when data are scarce", a card "a small training set: knowledge from outside the data can help"; then forty stations, twelve inputs, "few stations for twelve effects"; "each effect: animals per standard deviation of its input"; temperature +9.23 and its square −6.78, two bars cancelling (page results, likelihood-and-priors.qmd)
 
-An assumption can also carry what you knew before the survey. Take a small survey:
-forty stations and twelve inputs, such as depth, temperature and their squares. Each
-effect is the change in animals for one standard deviation of its input. The fit gives
-temperature an effect of 9.23 animals, and its square minus 6.78. Two large effects that
-cancel each other out are a warning sign: with so few stations, the fit is chasing
-chance patterns.
+Assumptions can also help a model when data are scarce. With a small training set, the
+data alone can mislead the fit, and knowledge from outside the data, written down as an
+assumption, can improve it. Take a small survey: forty stations and twelve inputs, such
+as depth, temperature and their squares. That is very few stations to learn twelve
+effects from. Each effect is the change in animals for one standard deviation of its
+input. The fit gives temperature an effect of 9.23 animals, and its square minus 6.78.
+Two large effects that cancel each other out are a warning sign: with so few stations,
+the fit is chasing chance patterns.
 
 ## Scene 18
-visual: manim Prior: the heading "what you knew before can help"; a Normal curve centred on zero, "a prior: effects that large are rare"; the two bars shrinking to 0.26 and −0.18 (page results, likelihood-and-priors.qmd)
+visual: manim Prior: the heading "what you knew before can help"; "earlier surveys: most effects within about ±2 animals"; a Normal curve centred on zero, "the prior", "small effects likely, large ones not"; the two bars shrinking to 0.26 and −0.18; "many stations would outweigh the prior" (page results, likelihood-and-priors.qmd)
 
-With so few stations, what you knew before the survey can help. And you did know
-something: effects that large are rare. A prior writes that belief down, as a curve
-centred on zero, so small effects are likely and large ones are not. Combined with the
-data, it pulls the temperature effect from 9.23 to 0.26, and its square from minus 6.78
-to minus 0.18.
+This is where prior knowledge helps. Say earlier surveys suggest that one standard
+deviation of any input usually changes the catch by no more than about two animals. A
+prior writes that knowledge down before the fit sees the data, as a curve centred on
+zero: small effects are likely, and large ones are not. The fit then weighs the data
+against the prior. With only forty stations, the prior pulls hard: the temperature
+effect shrinks from 9.23 to 0.26, and its square from minus 6.78 to minus 0.18. With
+many stations, the data would outweigh the prior.
 
 ## Scene 19
 visual: manim Penalty: "loss + penalty on large parameters"; "a prior = a penalty", "this is ridge regression" (schematic)
