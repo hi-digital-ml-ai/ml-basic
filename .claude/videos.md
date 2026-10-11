@@ -1117,7 +1117,8 @@ with all three sounds, a beat apart.
   Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
 - Introduction: clownfish "Great work!" (wiggle), jellyfish "Brilliant!" (spin), whale
   and applause. Marine data: turtle and bubbles, starfish and fireworks, pufferfish
-  "Well done!" (jump).
+  "Well done!" (jump). Supervised learning: crab and applause, octopus "Spot on!"
+  (spin), clownfish "Nice one!" (wiggle).
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in
