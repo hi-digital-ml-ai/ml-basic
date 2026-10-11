@@ -26,19 +26,21 @@ are left to the pages. It never says which variables truly drive the species.
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-This video looks at what happens when a model is fitted. It covers three ideas: the one
-number every fit makes small, the search that finds the best parameters, and the
-assumptions hidden inside that number.
+Welcome back to Machine Learning Basics for Marine Science. This video looks at what
+happens when a model is fitted, that is, when it learns its numbers from the training
+data. It covers three things: the one number every fit makes as small as it can, the
+search that finds the best values, and the assumptions hidden inside that number.
 
 # The number a fit makes small
 
 ## Scene 2
-visual: manim Loop: three cards in a circle, "guess the parameters", "score how wrong", "adjust and repeat" (schematic)
+visual: manim Loop: "parameters: the numbers a model learns"; three cards in a circle, "guess the parameters", "score how wrong", "adjust and repeat" (schematic)
 
-Every model in this course was fitted the same way. The algorithm guesses its
-parameters, the numbers it learns from the data. It scores how wrong that guess is,
-adjusts the parameters to do better, and repeats. Fitting is a search for the best
-score.
+Let's start with what fitting means. A model has parameters: the numbers it learns from
+the data, such as the coefficients of linear regression, which we met in supervised
+learning. Most models find them in the same way. The algorithm guesses the parameters,
+scores how wrong the predictions are, adjusts the parameters to do a little better, and
+repeats. Fitting is a search for the best score.
 
 ## Scene 3
 visual: manim Residual: a line through scattered points, one point's gap to the line drawn and labelled "residual = observed − predicted"; then "noise: what the conditions do not decide", with "patchy animals", "a net that fished badly", "chance"; a card "even the best fit leaves residuals" (schematic, after loss-functions.qmd)
@@ -47,44 +49,52 @@ pause-after: 0.5
 The score is built from residuals. A residual is how far one prediction missed: the
 observed count minus the predicted one. Part of every residual is noise, the part of a
 count that the station's conditions do not decide, such as patchy animals, a net that
-fished badly, or chance. No model can predict it, so even the best fit leaves
+fished badly, or plain chance. No model can predict noise, so even the best fit leaves
 residuals.
 
 ## Scene 4
-visual: manim Losses: squared error as a steep U and absolute error as a shallow V against the residual; a miss of 10 marked, costing 100 and 10 (schematic, the page's definitions)
-
-A loss function turns each miss into a penalty, and the average penalty is the score.
-The two common losses treat big misses very differently. Under squared error, a miss of
-10 costs a hundred times a miss of 1. Under absolute error, only ten times.
-
-## Scene 5
-visual: manim Lines: abundance against chlorophyll at 749 stations, the squared-error line and the absolute-error line (page results, loss-functions.qmd#fig-two-lines)
-
-That difference changes the answer. On the survey's 749 stations, the two losses draw
-two different lines through exactly the same data.
-
-## Scene 6
-visual: manim Share: the worst 5% of stations, 37 of them, supplying 50% of the squared error; the question "does the slope rest on a few stations?"; then the largest catch removed, the squared-error slope moving 13.5% and the absolute-error slope 2.1% (page results, loss-functions.qmd)
+visual: manim Losses: squared error as a steep U, "miss × miss", and absolute error as a shallow V, "the size of the miss", against the residual; a miss of 10 marked, costing 100 and 10; then a card "training: find the parameters with the lowest average loss on the training data" (schematic, the page's definitions)
 pause-after: 0.5
 
-Squared error listens hardest to the biggest misses. Just 37 stations, 5 per cent of
-the data, supply half of it. That matters if the slope we would report rests on those
-few stations. So remove one large catch, a single haul a repeat survey could easily
-miss, and refit. The squared-error slope moves by 13.5 per cent; the absolute-error
-slope, by 2.1.
+A loss function turns each miss into a penalty, and the average penalty over all the
+stations is the score. The two most common losses treat big misses very differently.
+Squared error multiplies each miss by itself, so a miss of 10 costs 100, a hundred times
+a miss of 1. Absolute error just takes the size of the miss, so a miss of 10 costs 10,
+only ten times as much. Whichever loss is chosen, training a machine-learning model
+means the same thing: finding the parameters that make the average loss on the
+training data as small as possible.
+
+## Scene 5
+visual: manim Lines: abundance against chlorophyll at 749 stations, "each dot: one station"; the squared-error line and the absolute-error line (page results, loss-functions.qmd#fig-two-lines)
+
+Here is why the choice of loss matters. This chart shows the count of one species against
+chlorophyll, a sign of how much plankton is in the water, at the survey's 749 stations.
+Each dot is a station. Fit a straight line with squared error, then fit it again with
+absolute error. The two losses draw two different lines through exactly the same data.
+
+## Scene 6
+visual: manim Share: the worst 5% of stations, 37 of them, supplying 50% of the squared error; "the slope: how fast the line rises", the question "does the slope rest on a few stations?"; then the largest catch removed, the squared-error slope moving 13.5% and the absolute-error slope 2.1% (page results, loss-functions.qmd)
+pause-after: 0.5
+
+Why do they differ? Squared error listens hardest to the biggest misses. Just 37
+stations, 5 per cent of the data, supply half of all the squared error. That matters if
+the slope, how fast the line rises with chlorophyll, rests on those few stations. So
+remove one large catch, a single haul a repeat survey could easily miss, and fit again.
+The squared-error slope moves by 13.5 per cent; the absolute-error slope, by only 2.1.
 
 ## Scene 7
 visual: manim Readings: two cards, "a real shoal: let squared error listen" and "a net that fished badly: absolute error is safer", under "the loss is a choice about the science" (schematic)
 pause-after: 0.5
 
-So which loss is right? If the big catches are real shoals, they matter, and squared
-error should listen to them. If they come from a net that fished badly, absolute error
-is safer. The data cannot tell you which. It is a choice about your science, so say
-which loss you used.
+So which loss is right? If the big catches are real shoals, they are important, and
+squared error should listen to them. If they come from a net that fished badly,
+absolute error is safer. The data cannot tell you which. It is a choice about your
+science, so always say which loss you used.
 
 ## Scene 8
-visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
-pause-after: 0.5
+visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 1
+pause-after: 2.0
 
 Key point one. A fit makes a loss small, and the loss decides what the model pays
 attention to.
@@ -92,41 +102,53 @@ attention to.
 # The search that finds the parameters
 
 ## Scene 9
-visual: manim Landscape: the score as a bowl over two parameters, its lowest point marked "the best parameters"; "a formula for a straight line, a search for most models" (schematic)
+visual: manim Landscape: the score as a bowl over two parameters, "each spot: one choice of the two parameters", "height: the score", its lowest point marked "the best parameters"; "a formula for a straight line, a search for most models" (schematic)
 
-For a straight line, a formula gives the best parameters in one step. Most models have
-no formula, so the algorithm has to search. Picture the score as a landscape. The best
+Now, how does the algorithm find the best parameters? For a straight line fitted with
+squared error, a formula gives them in one step. Most models have no formula, so the
+algorithm has to search. Picture a map where each spot is one choice of two parameters,
+and the height is the score for that choice. The score forms a landscape, and the best
 parameters sit at its lowest point.
 
 ## Scene 10
-visual: manim Downhill: a bowl, a dot feeling the slope and stepping down; "the learning rate: the size of each step" (schematic)
+visual: manim Downhill: a bowl, a dot feeling the slope and stepping down; "gradient: the slope of the ground"; "the learning rate: the size of each step, a hyperparameter" (schematic)
 
-Gradient descent is the simplest search. Find which way is downhill, take a step, and
-repeat until the ground is flat. The size of each step is called the learning rate.
+The simplest search is called gradient descent. The gradient is the slope of the ground
+under your feet, and descent means walking down it. So the algorithm finds which way is
+downhill, takes a step, and repeats until the ground is flat. The size of each step is
+set by the learning rate. Like the number of neighbours in k-nearest neighbours, it is a
+hyperparameter: a setting we choose before fitting.
 
 ## Scene 11
-visual: manim Paths: the objective's contours for two slopes; the walk at learning rate 0.3 arriving in 11 steps, then 0.02 creeping, needing 197 (page results, gradient-descent.qmd#fig-paths)
+visual: manim Paths: the objective's contours for two slopes, "each ring: the same score", the lowest point marked; the walk at learning rate 0.3 arriving in 11 steps, then 0.02 creeping, needing 197 (page results, gradient-descent.qmd#fig-paths)
+pause-after: 1.0
 
-The step size matters. At a learning rate of 0.3, this walk reaches the bottom in 11
+Here is gradient descent on the survey. It fits a straight line with two slopes, one
+for chlorophyll and one for depth. A formula knows the answer, so we can check the walk
+against it. Each ring joins the pairs of slopes with the same score, and the lowest
+point is in the middle. At a learning rate of 0.3, the walk reaches the bottom in 11
 steps. At 0.02, it creeps, and needs 197.
 
 ## Scene 12
 visual: manim Overshoot: a bowl, each step crossing the valley and landing higher on the far side; "0.8: never arrives", "no warning" (schematic, the page's rate)
 pause-after: 0.5
 
-Too large, and each step overshoots the valley and lands higher on the other side. At
-0.8, the walk climbs out and never arrives, and nothing on the way warns you.
+But make the steps too large, and each one overshoots the valley and lands higher on the
+other side. At a learning rate of 0.8, the walk climbs out and never arrives, and nothing
+on the way warns you.
 
 ## Scene 13
-visual: manim Printout: a model's output, coefficients that look normal, and a line "converged: FALSE" highlighted; "check the flag first" (schematic)
+visual: manim Printout: a model's output, coefficients that look normal, and a line "converged: FALSE" highlighted; "converged: the steps stopped improving the score"; "check the flag first" (schematic)
 
 That is why a fit needs checking. A search that went wrong still prints coefficients,
-and they look perfectly normal. The software records whether the search finished, in a
-convergence flag. Look at it before you read anything else.
+and they look perfectly normal. The software also records whether the search finished.
+A search has converged when its steps stop improving the score, and a convergence flag
+says whether that happened. Look at it before you read anything else.
 
 ## Scene 14
-visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
-pause-after: 0.5
+visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 2
+pause-after: 2.0
 
 Key point two. Fitting is a search, and a search can fail quietly. Check that it
 finished.
@@ -134,49 +156,62 @@ finished.
 # The assumptions inside the loss
 
 ## Scene 15
-visual: manim Distributions: three cards, a bell curve "Normal: a measurement" giving "squared error", bars from zero "Poisson: a count" giving "Poisson deviance", two bars "present or absent" giving "log loss"; "name the distribution, and the loss follows" (schematic, after likelihood-and-priors.qmd)
+visual: manim Distributions: "a distribution: how the values scatter around the prediction"; three cards, a bell curve "Normal: a measurement" giving "squared error", bars from zero "Poisson: a count" giving "Poisson deviance", two bars "present or absent" giving "log loss"; "name the distribution, and the loss follows" (schematic, after likelihood-and-priors.qmd)
 pause-after: 0.5
 
-Where does a loss come from? Each one assumes something about how the data were
-produced. Squared error assumes each value is scattered around the prediction in a
-bell-shaped curve, a Normal distribution. Assume a Poisson distribution, made for
-counts, and the loss becomes Poisson deviance. For present or absent, it becomes log
-loss. Name the distribution, and the loss follows.
+So far, we have chosen a loss by what it pays attention to. But each loss also assumes
+a distribution: a description of how the observed values scatter around the prediction.
+Squared error assumes a bell-shaped curve, the Normal distribution, which suits
+measurements. Assume a Poisson distribution, made for counts, and the loss becomes
+Poisson deviance. For present or absent, it becomes log loss. Name the distribution, and
+the loss follows. This is called maximum likelihood: the fit picks the parameters that
+make the data you saw most likely.
 
 ## Scene 16
 visual: manim Negative: a bell curve around a low prediction with the part below zero shaded, "squared error: below zero allowed"; beside it Poisson bars starting at zero, "Poisson: never below zero" (schematic)
 pause-after: 0.5
 
-That explains a puzzle from earlier in the course: a polynomial regression predicted a
-negative number of animals. A Normal curve runs below zero, so squared error saw
-nothing wrong. A Poisson distribution stops at zero, so Poisson regression never
-predicts fewer than zero animals.
+That explains a puzzle from supervised learning: polynomial regression predicted fewer
+than zero animals at some warm stations. It was fitted with squared error, which assumes
+a Normal curve, and a Normal curve runs below zero, so the loss saw nothing wrong. A
+Poisson distribution stops at zero, so Poisson regression never predicts fewer than zero
+animals.
 
 ## Scene 17
-visual: manim Forty: forty stations, twelve inputs; temperature +9.23 animals per standard deviation and its square −6.78, two bars cancelling (page results, likelihood-and-priors.qmd)
+visual: manim Forty: the heading "assumptions help when data are scarce", a card "a small training set: knowledge from outside the data can help"; then forty stations, twelve inputs, "few stations for twelve effects"; "each effect: animals per standard deviation of its input"; temperature +9.23 and its square −6.78, two bars cancelling (page results, likelihood-and-priors.qmd)
 
-Now a small survey: forty stations and twelve inputs. The fit gives temperature an
-effect of 9.23 animals, and its square minus 6.78. Two large effects that cancel out
-are a warning sign: with so few stations, the fit is chasing chance patterns.
+Assumptions can also help a model when data are scarce. With a small training set, the
+data alone can mislead the fit, and knowledge from outside the data, written down as an
+assumption, can improve it. Take a small survey: forty stations and twelve inputs, such
+as depth, temperature and their squares. That is very few stations to learn twelve
+effects from. Each effect is the change in animals for one standard deviation of its
+input. The fit gives temperature an effect of 9.23 animals, and its square minus 6.78.
+Two large effects that cancel each other out are a warning sign: with so few stations,
+the fit is chasing chance patterns.
 
 ## Scene 18
-visual: manim Prior: the heading "what you knew before can help"; a Normal curve centred on zero, "a prior: effects that large are rare"; the two bars shrinking to 0.26 and −0.18 (page results, likelihood-and-priors.qmd)
+visual: manim Prior: the heading "what you knew before can help"; "earlier surveys: most effects within about ±2 animals"; a Normal curve centred on zero, "the prior", "small effects likely, large ones not"; the two bars shrinking to 0.26 and −0.18; "many stations would outweigh the prior" (page results, likelihood-and-priors.qmd)
 
-With so few stations, what you knew before the survey can help. And you did know
-something: effects that large are rare. A prior writes that down, as a curve centred on
-zero. Combined with the data, it pulls the temperature effect from 9.23 to 0.26, and
-its square from minus 6.78 to minus 0.18.
+This is where prior knowledge helps. Say earlier surveys suggest that one standard
+deviation of any input usually changes the catch by no more than about two animals. A
+prior writes that knowledge down before the fit sees the data, as a curve centred on
+zero: small effects are likely, and large ones are not. The fit then weighs the data
+against the prior. With only forty stations, the prior pulls hard: the temperature
+effect shrinks from 9.23 to 0.26, and its square from minus 6.78 to minus 0.18. With
+many stations, the data would outweigh the prior.
 
 ## Scene 19
 visual: manim Penalty: "loss + penalty on large parameters"; "a prior = a penalty", "this is ridge regression" (schematic)
 
 In the fit, a prior works as a penalty added to the loss, one that grows as the
-parameters grow. This is ridge regression, and the next section of the course uses it
-to stop models overfitting.
+parameters grow. So the fit now balances two things: missing the data, and using large
+parameters. This is ridge regression. The generalisation section uses it to stop models
+overfitting, that is, learning the noise along with the pattern.
 
 ## Scene 20
-visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
-pause-after: 0.5
+visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 3
+pause-after: 2.0
 
 Key point three. Every loss assumes a distribution for the data, and a prior on the
 parameters adds a penalty.
@@ -187,8 +222,8 @@ parameters adds a penalty.
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. A colleague fits logistic regression, and every coefficient looks
-sensible. Can they trust them?
+Quick quiz. A colleague fits logistic regression, the model that predicts the
+probability of presence, and every coefficient looks sensible. Can they trust them?
 
 ## Scene 22
 visual: manim QuizAnswer: "not yet"; the fit stopped after two steps beside the finished one, chlorophyll 0.268 against 0.348, "converged: FALSE" highlighted (page results, parameter-estimation.qmd)
@@ -210,7 +245,9 @@ visual: manim KeyPoints: the second ticked
 Two: a search can fail quietly, so check that it finished.
 
 ## Scene 25
-visual: manim KeyPoints: the third ticked
+visual: manim KeyPoints: the third ticked; then all three animals cheer
+cheer: all
+pause-after: 4.0
 
 Three: every loss assumes a distribution, and a prior adds a penalty.
 
