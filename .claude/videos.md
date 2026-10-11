@@ -1127,6 +1127,6 @@ a marker kept on top at 10). Check each video's chart labels for this when revis
 
 Dimming (2026-10-11): dim with `.animate.fade(0.75)`, never `.animate.set_opacity(...)`.
 `set_opacity` sets the fill too, so a curve drawn as a line fills the area under it and a
-pale shade turns solid (Supervised learning, scene 28). `fade` scales each part's own
+pale shade turns solid (Supervised learning, scene 27). `fade` scales each part's own
 opacity. Remaining `set_opacity` dims to check when revising: Generalisation, Assumptions
 and limitations, Neural networks, Interpretation.

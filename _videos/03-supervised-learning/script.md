@@ -80,14 +80,6 @@ into a count always gives a number above zero. So a prediction can come close to
 but never cross it.
 
 ## Scene 8
-visual: manim Multipliers: "with the same water and season"; sand as 1, mud as 1.34 times sand, rock below 1 (page results, count-regression.qmd#each-coefficient-is-a-multiplier)
-
-Because of the logarithm, each coefficient becomes a multiplier. Take the seabed. With
-everything else held fixed, the same water and the same season, a muddy station is
-expected to hold 1.34 times the count of a sandy one. A rocky station is expected to
-hold fewer, so its multiplier is below one.
-
-## Scene 9
 visual: manim Logistic: "the chance that the species is present"; the probability of presence against temperature, between 0 and 1; the training stations as dots, found along the top, not found along the bottom (page results, logistic-regression.qmd#fig-curve)
 
 For present or absent, logistic regression uses the same idea. It adds up its inputs,
@@ -95,14 +87,14 @@ then squeezes the sum into a probability, the chance that the species is present
 which always stays between zero and one. The dots are the training stations: along the
 top where the species was found, along the bottom where it was not.
 
-## Scene 10
+## Scene 9
 visual: manim Mistakes: a threshold, a cut-off, turns the probability into present or absent; two cards, a false alarm (said present, was absent) and a miss (said absent, was present) (schematic)
 
 To get a plain answer, choose a threshold, a cut-off: above it, call the species
 present; below it, absent. The answer can be wrong in two ways. A false alarm says
 present where the species was absent. A miss says absent where it was present.
 
-## Scene 11
+## Scene 10
 visual: manim Thresholds: false alarms and misses on the test stations at thresholds 0.5 and 0.9, 34 and 4, then 6 and 97; "what does each mistake cost?" (page results, logistic-regression.qmd)
 pause-after: 0.5
 
@@ -110,7 +102,7 @@ At a threshold of 0.5, the model gives 34 false alarms and 4 misses on the test
 stations. Raise it to 0.9, and the false alarms fall to 6, but the misses rise to 97.
 So the right threshold depends on what each mistake costs.
 
-## Scene 12
+## Scene 11
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 1
 pause-after: 2.0
@@ -120,7 +112,7 @@ probability needs a threshold you choose.
 
 # Models that learn their shape
 
-## Scene 13
+## Scene 12
 visual: manim Neighbours: "every model so far assumes a shape"; then "k-nearest neighbours" as the heading; stations as grey dots on two inputs, a new station, its five nearest joined to it and ringed, "k = 5", "prediction: their average count" (schematic, after nearest-neighbours.qmd img/nearest-neighbours.svg)
 
 Next, models that learn their shape. Every model so far assumes a shape, such as a
@@ -128,7 +120,7 @@ line or a curve. k-nearest neighbours, met in the introduction, assumes none. Fo
 station, it finds the k most similar stations in the training data, here five, and
 predicts their average count.
 
-## Scene 14
+## Scene 13
 visual: manim Neighbours: "the error: a typical miss (RMSE)"; the error against the number of neighbours, on the training stations and on the validation sites; the first at zero for one neighbour, the second at its worst there, "overfitting: learning the noise"; both rising towards 300 (page results, nearest-neighbours.qmd#fig-neighbours)
 
 How many neighbours should it use? This chart shows the error, the typical miss from
@@ -138,7 +130,7 @@ zero, but on the validation sites, held back to choose between settings, it is a
 worst. This is overfitting: learning the noise along with the pattern. With hundreds of
 neighbours, every prediction blurs into one average.
 
-## Scene 15
+## Scene 14
 visual: manim Neighbours: the validation error lowest at 30 neighbours, marked; "a hyperparameter: chosen on validation data" (page results, nearest-neighbours.qmd#fig-neighbours)
 pause-after: 0.5
 
@@ -146,7 +138,7 @@ In between, the validation error is lowest at 30 neighbours. A setting like k, w
 fix before the model is fitted, is called a hyperparameter. It is chosen on validation
 data, never on the training data, where one neighbour always looks perfect.
 
-## Scene 16
+## Scene 15
 visual: manim Tree: "a decision tree" as the heading; the depth-3 tree for the count grows question by question, chlorophyll first, then two questions on temperature; "leaf: the average count of its stations" (page results, decision-trees.qmd#fig-tree)
 
 A decision tree, also met in the introduction, works differently. It asks yes-or-no
@@ -155,13 +147,13 @@ group, called a leaf, predicts the average count of the training stations that r
 it. Here, the first question is about chlorophyll, and the next two are about
 temperature.
 
-## Scene 17
+## Scene 16
 visual: manim Tree: the band between 6.4 and 10.4 °C highlighted, average 5.2 animals, against 1.5 below and 2.6 above (page results, decision-trees.qmd)
 
 For most stations, those two questions about temperature find a band, from 6.4 to
 10.4 degrees, with the most animals. A peak takes one question for each side.
 
-## Scene 18
+## Scene 17
 visual: manim Depth: "depth: the number of questions in a row"; the error on the training stations and on the validation sites against depth; the first falling towards zero, the second lowest at depth 5 (page results, decision-trees.qmd#fig-depth)
 pause-after: 0.5
 
@@ -169,7 +161,7 @@ How deep should a tree grow? Its depth, the number of questions in a row, is a
 hyperparameter too. A deeper tree fits the training stations ever more closely, but on
 the validation sites the error is lowest at depth 5, then climbs: overfitting again.
 
-## Scene 19
+## Scene 18
 visual: manim Resamples: "a resample: stations drawn at random, some twice, some not at all"; six trees from resampled stations, each opening on chlorophyll, their thresholds marked on one line from 2.57 to 12.6 (page results, forests-and-boosting.qmd)
 
 One tree is also unstable: a small change in the data can change it a lot. To see
@@ -177,7 +169,7 @@ this, grow it on six resamples. A resample draws the same number of stations at 
 from the training data, so some come twice and some not at all. The first question is
 always about chlorophyll, but its threshold moves from 2.57 to 12.6.
 
-## Scene 20
+## Scene 19
 visual: manim Forest: "a random forest: hundreds of trees, each on its own resample, averaged"; thirty of the page's forest's trees as thin staircases across temperature, then the average of all its trees as a thick line in small steps (page results, forests-and-boosting.qmd)
 
 A random forest puts this to use. It grows hundreds of trees, each on its own
@@ -185,14 +177,14 @@ resample, and each question chooses from a few inputs picked at random, so the t
 differ. Then it averages their predictions. The big jumps of single trees shrink into
 small steps.
 
-## Scene 21
+## Scene 20
 visual: manim Boosting: "boosting" as the heading; small trees in a row, each arrow labelled "errors", their sum the prediction (schematic, after forests-and-boosting.qmd img/forest-and-boosting.svg)
 
 Boosting also combines many trees, but in a different way. It adds small trees one
 after another. Each new tree is fitted to the errors left by the trees before it, so it
 corrects them a little at a time. The prediction is the sum of all the trees.
 
-## Scene 22
+## Scene 21
 visual: manim Counts: error on the validation sites against the number of trees, the forest flat, boosting lowest at 200 and rising; "the number of trees: a hyperparameter for boosting" (page results, forests-and-boosting.qmd#fig-trees)
 pause-after: 0.5
 
@@ -200,7 +192,7 @@ More trees never hurt a forest: its validation error stays flat. Boosting is dif
 On the validation sites, it does best at 200 trees, then gets worse, as the later trees
 fit the noise. So for boosting, the number of trees is a hyperparameter.
 
-## Scene 23
+## Scene 22
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 2
 pause-after: 2.0
@@ -210,7 +202,7 @@ how closely they fit, and it is chosen on validation data.
 
 # Choosing between them
 
-## Scene 24
+## Scene 23
 visual: manim Questions: five cards, each with its question as it is asked: the aim, predict or explain; the outcome, what kind; the range, beyond the data; the data, how much; the audience, who must accept it (schematic, after choosing-a-method.qmd img/choosing-a-method.svg)
 
 Finally, how to choose between these methods. Five questions narrow the choice before
@@ -218,14 +210,14 @@ any model is fitted. What is the aim: to predict, or to explain? What kind of ou
 is it? Must the model predict beyond the range of the data? How much data is there? And
 who must accept the result?
 
-## Scene 25
+## Scene 24
 visual: manim Comparison: "RMSE on the test sites: lower is better"; the seven models' test RMSE as dots, ordered, Poisson regression first and the three tree models last (page results, choosing-a-method.qmd#fig-comparison)
 
 Here, all seven models were scored on the same test sites, with the typical miss:
 lower is better. Poisson regression comes first, and the three tree models last. A few
 hundred noisy stations are too few for the flexible methods to beat a simple curve.
 
-## Scene 26
+## Scene 25
 visual: manim Comparison: the validation dots added, the tree first there; the tree's and boosting's gaps from validation to test marked "tuned on these sites"; "one split cannot separate close models" (page results, choosing-a-method.qmd#fig-comparison)
 pause-after: 0.5
 
@@ -234,7 +226,7 @@ number of trees, were chosen on those same sites, so they were tuned to those si
 chance patterns: a kind of overfitting. The test sites, kept apart until the end, show
 the cost. And one split cannot reliably tell apart models whose scores are close.
 
-## Scene 27
+## Scene 26
 visual: manim Beyond: "extrapolation: predicting beyond the data"; three models from 0 to 22 °C, the shaded ends beyond the data; the forest level, Poisson regression flattening to zero, linear regression falling below it (page results, choosing-a-method.qmd#fig-extrapolate)
 
 The models also differ beyond the data. Predicting outside the range of the data is
@@ -242,14 +234,14 @@ called extrapolation. Beyond the sampled temperatures, each model follows its ow
 The forest stays level, Poisson regression flattens towards zero, and linear regression
 falls below zero.
 
-## Scene 28
+## Scene 27
 visual: manim Beyond: "nothing in the data says which is right", "choose an assumption you can defend"
 pause-after: 0.5
 
 Nothing in the data says which is right, because there are no data there. So choose a
 model whose assumption you can defend, and say what it is.
 
-## Scene 29
+## Scene 28
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 3
 pause-after: 2.0
@@ -259,14 +251,14 @@ method.
 
 # Quiz
 
-## Scene 30
+## Scene 29
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
 Quick quiz. A colleague models counts of a species with linear regression, and a few
 predictions come out below zero. They set those to zero. Is the problem solved?
 
-## Scene 31
+## Scene 30
 visual: manim QuizAnswer: "no"; the negative predictions set to zero, the model beneath unchanged; then Poisson regression, never below zero (schematic)
 
 No. Setting them to zero hides the symptom, but the model still assumes a count can
@@ -274,25 +266,25 @@ fall below zero. A count model, such as Poisson regression, cannot make that mis
 
 # Key points
 
-## Scene 32
+## Scene 31
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: match the model to the outcome.
 
-## Scene 33
+## Scene 32
 visual: manim KeyPoints: the second ticked
 
 Two: flexible models learn the shape, but a hyperparameter, chosen on validation data,
 sets how closely.
 
-## Scene 34
+## Scene 33
 visual: manim KeyPoints: the third ticked; then all three animals cheer
 cheer: all
 pause-after: 4.0
 
 Three: start from the question, not the most flexible method.
 
-## Scene 35
+## Scene 34
 visual: manim EndCard: the site's address and a thank-you
 
 The pages for this section, with all the code, are linked below. Thanks for watching.

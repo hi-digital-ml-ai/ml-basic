@@ -116,7 +116,7 @@ def model_curve(chart, table, model, colour, width=6):
     return chart.line(rows["temperature_c"], rows[".pred"], colour, width)
 
 
-# Models that add up their inputs (scenes 2–12) ------------------------------------------
+# Models that add up their inputs (scenes 2–11) ------------------------------------------
 
 class Scene02(VideoScene):
     number = 2
@@ -379,54 +379,8 @@ class Scene07(VideoScene):
         self.finish()
 
 
-SUBSTRATE_ROWS = [("sand", None), ("mud", "substratemud"), ("rock", "substraterock")]
-
-
 class Scene08(VideoScene):
     number = 8
-
-    def construct(self):
-        # Page results: count-regression.qmd#each-coefficient-is-a-multiplier.
-        table = self.data("multipliers").set_index("term")
-        chart = Chart([0.5, 2.0, 0.25], [0, 3, 1], 9.0, 3.6, x_ticks=(0.5, 1, 1.5, 2), x_name="multiplier on the count",
-                      centre=(1.0, -0.2, 0))
-        one = DashedLine(chart.p(1, 0), chart.p(1, 3), color=GREY, stroke_width=3)
-        rows = {}
-        for i, (name, term) in enumerate(SUBSTRATE_ROWS):
-            y = 2.5 - i
-            value = 1 if term is None else table.loc[term, "multiplier"]
-            rows[name] = VGroup(label(name, 34, INK, weight=BOLD).next_to(chart.p(0.5, y), LEFT, 0.4),
-                                Dot(chart.p(value, y), 0.14, color=GREY if term is None else VERMILION))
-        head = label("each seabed type against sand", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        held = label("with the same water and the same season", 28, SUBDUED).next_to(head, DOWN, 0.25)
-        times = label(f"× {table.loc['substratemud', 'multiplier']:.2f}", 34, VERMILION, weight=BOLD)
-        times.next_to(rows["mud"][1], UP, 0.15)
-        rock = label(f"× {table.loc['substraterock', 'multiplier']:.2f}", 34, VERMILION, weight=BOLD)
-        rock.next_to(rows["rock"][1], UP, 0.15)
-        base = label("baseline", 26, SUBDUED).next_to(rows["sand"][1], RIGHT, 0.25)
-        # "Because of the logarithm, each coefficient becomes a multiplier."
-        self.play(FadeIn(VGroup(chart.axes.x_axis, chart.ticks, chart.x_name)), Create(one), run_time=self.share(0.1))
-        # "Take the seabed."
-        cue(self, "Take the seabed")
-        self.play(FadeIn(head), FadeIn(rows["sand"]), FadeIn(base), run_time=self.share(0.08))
-        # "With everything else held fixed, the same water and the same season,"
-        cue(self, "With everything")
-        self.play(FadeIn(held), run_time=self.share(0.06))
-        # "a muddy station is expected to hold 1.34 times the count of a sandy one."
-        cue(self, "a muddy station")
-        self.play(FadeIn(rows["mud"]), run_time=self.share(0.06))
-        cue(self, "1.34")
-        self.play(FadeIn(times, shift=0.1 * UP), run_time=self.share(0.06))
-        # "A rocky station is expected to hold fewer, so its multiplier is below one."
-        cue(self, "A rocky station")
-        self.play(FadeIn(rows["rock"]), run_time=self.share(0.06))
-        cue(self, "so its multiplier")
-        self.play(FadeIn(rock, shift=0.1 * UP), Indicate(one, color=INK), run_time=self.share(0.06))
-        self.finish()
-
-
-class Scene09(VideoScene):
-    number = 9
 
     def construct(self):
         # Page results: logistic-regression.qmd#fig-curve.
@@ -467,8 +421,8 @@ class Scene09(VideoScene):
         self.finish()
 
 
-class Scene10(VideoScene):
-    number = 10
+class Scene09(VideoScene):
+    number = 9
 
     def construct(self):
         # Schematic: the two ways a present-or-absent answer can be wrong.
@@ -504,8 +458,8 @@ class Scene10(VideoScene):
         self.finish()
 
 
-class Scene11(VideoScene):
-    number = 11
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
         # Page results: logistic-regression.qmd, the thresholds table.
@@ -550,14 +504,14 @@ class Scene11(VideoScene):
         self.finish()
 
 
-class Scene12(KeyPointScene):
-    number, point = 12, 1
+class Scene11(KeyPointScene):
+    number, point = 11, 1
 
 
-# Models that learn their shape (scenes 13–23) -------------------------------------------
+# Models that learn their shape (scenes 12–22) -------------------------------------------
 
-class Scene13(VideoScene):
-    number = 13
+class Scene12(VideoScene):
+    number = 12
 
     def construct(self):
         # Schematic: made-up points on two unnamed inputs, after the kNN page's diagram.
@@ -615,8 +569,8 @@ def neighbours_layout(scene):
     return table, chart, lines, names
 
 
-class Scene14(VideoScene):
-    number = 14
+class Scene13(VideoScene):
+    number = 13
 
     def construct(self):
         # Page results: nearest-neighbours.qmd#fig-neighbours.
@@ -653,8 +607,8 @@ def neighbours_head():
     return label("the error, a typical miss, for each number of neighbours", 34, INK, weight=BOLD).to_edge(UP, buff=0.5)
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         # Page results: nearest-neighbours.qmd#fig-neighbours, the best number of neighbours.
@@ -722,8 +676,8 @@ def tree_layout(scene):
     return nodes, levels, (q1, q2, q3, cold, band, warm, rich)
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         # Page results: decision-trees.qmd#fig-tree, the top of the depth-3 tree.
@@ -749,8 +703,8 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         # Page results: decision-trees.qmd, the temperature band.
@@ -785,8 +739,8 @@ def step_chart(x_max=20, y_max=6.5, y_ticks=(0, 2, 4, 6)):
                  x_name="temperature (°C)", y_name="predicted count", centre=(0.5, -0.45, 0))
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         # Page results: decision-trees.qmd#fig-depth.
@@ -825,8 +779,8 @@ RESAMPLE = [0, 2, 2, 3, 5, 6, 6, 6]
 STATION_COLOURS = [BLUE, ORANGE, GREEN, SKY, PURPLE, VERMILION, YELLOW, GREY]
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         # Page results: forests-and-boosting.qmd, the first question of six resampled trees.
@@ -881,8 +835,8 @@ class Scene19(VideoScene):
         self.finish()
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         # Page results: forests-and-boosting.qmd, thirty of the 400-tree forest's trees and their average.
@@ -921,8 +875,8 @@ def small_tree(colour=GREEN, scale=1.0):
                   Line(top.get_center(), right.get_center(), color=colour, stroke_width=4), top, left, right).scale(scale)
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         # Schematic: small trees in sequence, each fitted to the errors left before it.
@@ -953,8 +907,8 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         # Page results: forests-and-boosting.qmd#fig-trees, validation error by number of trees.
@@ -993,14 +947,14 @@ class Scene22(VideoScene):
         self.finish()
 
 
-class Scene23(KeyPointScene):
-    number, point = 23, 2
+class Scene22(KeyPointScene):
+    number, point = 22, 2
 
 
-# Choosing between them (scenes 24–29) ---------------------------------------------------
+# Choosing between them (scenes 23–28) ---------------------------------------------------
 
-class Scene24(VideoScene):
-    number = 24
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         # Schematic: the five questions, after the choosing page's diagram.
@@ -1049,8 +1003,8 @@ def comparison_layout(scene):
     return table, chart, rows, guides, key
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         # Page results: choosing-a-method.qmd#fig-comparison, the test sites.
@@ -1081,8 +1035,8 @@ class Scene25(VideoScene):
         self.finish()
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         # Page results: choosing-a-method.qmd#fig-comparison, the validation sites added.
@@ -1139,8 +1093,8 @@ def beyond_layout(scene):
     return chart, VGroup(shades, zero, beyond), curves, names, head
 
 
-class Scene27(VideoScene):
-    number = 27
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         # Page results: choosing-a-method.qmd#fig-extrapolate.
@@ -1161,11 +1115,11 @@ class Scene27(VideoScene):
         self.finish()
 
 
-class Scene28(VideoScene):
-    number = 28
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
-        # Page results as in scene 27, with the page's conclusion over them.
+        # Page results as in scene 26, with the page's conclusion over them.
         chart, backdrop, curves, names, head = beyond_layout(self)
         self.add(chart.frame, backdrop, *curves.values(), *names.values(), head)
         nothing = card("nothing in the data says which is right", VERMILION, 34).move_to([0, 0.8, 0])
@@ -1179,20 +1133,20 @@ class Scene28(VideoScene):
         self.finish()
 
 
-class Scene29(KeyPointScene):
-    number, point = 29, 3
+class Scene28(KeyPointScene):
+    number, point = 28, 3
 
 
-# The quiz (scenes 30–31) ----------------------------------------------------------------
+# The quiz (scenes 29–30) ----------------------------------------------------------------
 
-class Scene30(QuizScene):
-    number = 30
+class Scene29(QuizScene):
+    number = 29
     question = ("A linear regression of counts", "gives a few predictions below zero.",
                 "They are set to zero.", "Is the problem solved?")
 
 
-class Scene31(VideoScene):
-    number = 31
+class Scene30(VideoScene):
+    number = 30
 
     def construct(self):
         # Schematic: a line set to zero where it falls below, the model beneath unchanged, then a count model.
@@ -1223,19 +1177,19 @@ class Scene31(VideoScene):
         self.finish()
 
 
-# The recap (scenes 32–34) and the end card (scene 35) -----------------------------------
+# The recap (scenes 31–33) and the end card (scene 34) -----------------------------------
+
+class Scene31(RecapScene):
+    number, point = 31, 1
+
 
 class Scene32(RecapScene):
-    number, point = 32, 1
+    number, point = 32, 2
 
 
 class Scene33(RecapScene):
-    number, point = 33, 2
+    number, point = 33, 3
 
 
-class Scene34(RecapScene):
-    number, point = 34, 3
-
-
-class Scene35(EndCardScene):
-    number = 35
+class Scene34(EndCardScene):
+    number = 34
