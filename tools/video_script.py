@@ -26,7 +26,14 @@ DIRECTIVE = re.compile(r"^(visual|pause-after|cheer):\s*(.*)$")
 # animals are drawn in _videos/sea_friends.py, the sounds made by tools/make-cheers.py.
 ANIMALS = ["crab", "octopus", "clownfish", "turtle", "whale", "pufferfish", "jellyfish",
            "starfish"]
-SOUNDS = ["clap", "hooray", "fireworks"]
+# Two kinds of cheer. An effect is a sound with its own picture: applause, a firework,
+# bubbles rising. A shout is a word the animal calls out in a speech bubble, heard as
+# a small crowd, while it jumps, spins or wiggles. Each sound is _videos/cheer-<name>.wav.
+EFFECTS = ["clap", "fireworks", "bubbles"]
+SHOUTS = {"hooray": "Hooray!", "well-done": "Well done!", "brilliant": "Brilliant!",
+          "great-work": "Great work!", "fantastic": "Fantastic!", "nice-one": "Nice one!",
+          "spot-on": "Spot on!", "keep-going": "Keep going!"}
+MOVES = ["jump", "spin", "wiggle"]
 CHEER_STAGGER = 0.9    # seconds between the three cheers in "cheer: all"
 
 
@@ -109,22 +116,39 @@ def read_script(path):
 
 
 def cheer_cast(folder):
-    """The video's three (animal, sound) pairs, one per key point, in order.
+    """The video's three (animal, sound, move) cheers, one per key point, in order.
 
-    Drawn at random, but seeded by the folder's name, so every render and every rough
+    Odd-numbered videos get two shouts and one effect, even-numbered ones one shout and
+    two effects. The animals, shouts, moves and effects are each dealt in turn from a
+    fixed shuffle, continuing from video to video, so all ten videos share them out
+    evenly and no video repeats one. An effect's move is its own name. The order within
+    a video is shuffled, seeded by the folder's name, so every render and every rough
     cut of a video picks the same three.
     """
-    pick = random.Random(Path(folder).resolve().name)
-    return list(zip(pick.sample(ANIMALS, 3), pick.sample(SOUNDS, 3)))
+    name = Path(folder).resolve().name
+    n = int(name[:2]) - 1                   # 0 for _videos/01-introduction
+
+    def deal(things, start, count):
+        order = sorted(things)
+        random.Random("ml-basic cheers").shuffle(order)
+        return [order[(start + i) % len(order)] for i in range(count)]
+
+    shouts_before = sum(2 if k % 2 == 0 else 1 for k in range(n))
+    shouts = 2 if n % 2 == 0 else 1
+    effects_before = 3 * n - shouts_before
+    cheers = (list(zip(deal(SHOUTS, shouts_before, shouts), deal(MOVES, shouts_before, shouts)))
+              + [(e, e) for e in deal(EFFECTS, effects_before, 3 - shouts)])
+    random.Random(name).shuffle(cheers)
+    return [(a, s, m) for a, (s, m) in zip(deal(ANIMALS, 3 * n, 3), cheers)]
 
 
 def cheer_plan(folder, scene):
-    """[(animal, sound, seconds after the narration ends)] for a scene's cheer line."""
+    """[(animal, sound, move, seconds after the narration ends)] for a scene's cheer line."""
     cast = cheer_cast(folder)
     if not scene.cheer:
         return []
     if scene.cheer == "all":
-        return [(a, s, i * CHEER_STAGGER) for i, (a, s) in enumerate(cast)]
+        return [(*c, i * CHEER_STAGGER) for i, c in enumerate(cast)]
     if scene.cheer in ("1", "2", "3"):
         return [(*cast[int(scene.cheer) - 1], 0.0)]
     raise ValueError(f"scene {scene.number}: cheer must be 1, 2, 3 or all, not {scene.cheer!r}")
