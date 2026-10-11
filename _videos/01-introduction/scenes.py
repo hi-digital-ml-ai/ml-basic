@@ -36,7 +36,7 @@ RECAP = ["Your data decide the kind of learning",
 
 class Scene01(LearnScene):
     number = 1
-    times = (0.4, 0.55, 0.8)
+    times = (0.53, 0.62, 0.8)
 
 
 def plain_axes(x_range, y_range, x_length, y_length):
@@ -80,23 +80,31 @@ class Scene02(VideoScene):
     number = 2
 
     def construct(self):
-        # Schematic: measurements in, a prediction out, for a case the model has not seen.
+        # Schematic: a trained model; new data in, a prediction out.
         inputs = VGroup(*[card(t, SKY, 30) for t in ["temperature", "salinity", "depth"]]
-                        ).arrange(DOWN, buff=0.25).move_to([-4.6, -0.3, 0])
-        unseen = label("a new case", 30, SUBDUED, weight=BOLD).next_to(inputs, UP, 0.35)
-        box = RoundedRectangle(width=3.0, height=2.2, corner_radius=0.25, stroke_color=INK, stroke_width=5,
-                               fill_color=GRID, fill_opacity=0.5).move_to([0, -0.3, 0])
-        name = label("a model", 40, INK, weight=BOLD).move_to(box)
-        fitted = label("fitted to examples", 28, SUBDUED).next_to(box, DOWN, 0.3)
-        output = card("a prediction", GREEN, 38).move_to([4.6, -0.3, 0])
+                        ).arrange(DOWN, buff=0.25).move_to([-4.6, 0.2, 0])
+        unseen = label("new data", 30, SUBDUED, weight=BOLD).next_to(inputs, UP, 0.35)
+        box = RoundedRectangle(width=3.4, height=2.2, corner_radius=0.25, stroke_color=INK, stroke_width=5,
+                               fill_color=GRID, fill_opacity=0.5).move_to([0, 0.2, 0])
+        name = VGroup(label("a trained", 40, INK, weight=BOLD), label("model", 40, INK, weight=BOLD)
+                      ).arrange(DOWN, buff=0.1).move_to(box)
+        fitted = label("trained on examples with answers", 28, SUBDUED).next_to(box, DOWN, 0.3)
+        output = card("a prediction", GREEN, 38).move_to([4.6, 0.2, 0])
         arrow_in = Arrow(inputs.get_right(), box.get_left(), color=INK, stroke_width=5, buff=0.2)
         arrow_out = Arrow(box.get_right(), output.get_left(), color=INK, stroke_width=5, buff=0.2)
-        # "Machine learning fits a model to examples,"
-        self.play(FadeIn(box), FadeIn(name), FadeIn(fitted), run_time=self.share(0.2))
-        # "so that it can make good predictions for cases it has not seen."
-        at(self, 0.4)
-        self.play(FadeIn(inputs), FadeIn(unseen), GrowArrow(arrow_in), run_time=self.share(0.2))
-        self.play(GrowArrow(arrow_out), FadeIn(output, shift=0.2 * RIGHT), run_time=self.share(0.15))
+        course = card("this course: build models well, and avoid the pitfalls", PURPLE, 32).to_edge(DOWN, buff=0.5)
+        # "Machine learning trains a model on examples whose answers we already know."
+        at(self, 0.08)
+        self.play(FadeIn(box), FadeIn(name), FadeIn(fitted), run_time=self.share(0.12))
+        # "Once trained, the model takes new data as its input,"
+        at(self, 0.27)
+        self.play(FadeIn(inputs), FadeIn(unseen), GrowArrow(arrow_in), run_time=self.share(0.15))
+        # "Its output is a prediction for that station."
+        at(self, 0.56)
+        self.play(GrowArrow(arrow_out), FadeIn(output, shift=0.2 * RIGHT), run_time=self.share(0.1))
+        # "In this course, we learn how to build these models well, ..."
+        at(self, 0.68)
+        self.play(FadeIn(course, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
@@ -192,15 +200,15 @@ class Scene06(VideoScene):
         cls = label("classification", 46, GREEN, weight=BOLD).move_to([4.5, -1.4, 0])
         arrows = [Arrow(start.get_right(), q.get_left(), color=INK, stroke_width=5, buff=0.3) for q in (quantity, category)]
         self.play(FadeIn(start), run_time=self.share(0.1))
-        # "When the answer is a quantity, the task is regression."
-        at(self, 0.15)
+        # "In supervised learning, when the answer is a quantity, ... the task is regression."
+        at(self, 0.2)
         self.play(GrowArrow(arrows[0]), FadeIn(quantity), run_time=self.share(0.15))
         self.play(FadeIn(reg, shift=0.2 * RIGHT), run_time=self.share(0.1))
         # "When it is a category, such as present or absent, it is classification."
-        at(self, 0.55)
+        at(self, 0.62)
         self.play(GrowArrow(arrows[1]), FadeIn(category), run_time=self.share(0.15))
-        at(self, 0.85)
-        self.play(FadeIn(cls, shift=0.2 * RIGHT), run_time=self.share(0.1))
+        at(self, 0.88)
+        self.play(FadeIn(cls, shift=0.2 * RIGHT), run_time=self.share(0.08))
         self.finish()
 
 
@@ -223,8 +231,8 @@ def neighbours_layout(scene):
     picked = VGroup(*[Dot(axes.c2p(d, t), 0.07, color=PURPLE)
                       for d, t in zip(near["depth_m"], near["temperature_c"])])
     star = Star(5, outer_radius=0.2, color=INK, fill_color=YELLOW, fill_opacity=1, stroke_width=3
-                ).move_to(axes.c2p(new["depth_m"], new["temperature_c"]))
-    star_name = label("a new station", 28, INK, weight=BOLD).next_to(star, UP + RIGHT, 0.35)
+                ).move_to(axes.c2p(new["depth_m"], new["temperature_c"])).set_z_index(10)   # always on top
+    star_name = plated(label("a new station", 28, INK, weight=BOLD)).next_to(star, UP + RIGHT, 0.25)
     ring = Circle(radius=0.75, color=PURPLE, stroke_width=4).move_to(picked)
     found = [p == "yes" for p in near["present"]]
     return axes, frame, grey, picked, star, star_name, ring, found, new
@@ -236,20 +244,27 @@ class Scene07(VideoScene):
     def construct(self):
         axes, frame, grey, picked, star, star_name, ring, found, new = neighbours_layout(self)
         head = label("k-nearest neighbours", 40, INK, weight=BOLD).to_edge(UP, buff=0.35)
-        note = VGroup(label("nearest in temperature,", 28, SUBDUED),
-                      label("salinity and depth", 28, SUBDUED)).arrange(DOWN, buff=0.1)
+        aim = VGroup(label("aim: is the species", 30, INK, weight=BOLD),
+                     label("present at the star?", 30, INK, weight=BOLD)).arrange(DOWN, buff=0.1)
         fifteen = label("the 15 most similar", 32, PURPLE, weight=BOLD)
-        VGroup(fifteen, note).arrange(DOWN, buff=0.3).move_to([4.2, 0.4, 0])
-        # "The simplest supervised method is k-nearest neighbours."
-        self.play(FadeIn(head), FadeIn(frame), FadeIn(grey), run_time=self.share(0.25))
-        # "For a new station,"
-        at(self, 0.4)
-        self.play(GrowFromCenter(star), FadeIn(star_name), run_time=self.share(0.1))
-        # "it finds the fifteen survey stations most like it in temperature, salinity and depth."
-        at(self, 0.55)
-        self.play(FadeIn(picked, scale=1.5), Create(ring), FadeIn(fifteen), run_time=self.share(0.2))
-        self.play(FadeIn(note), run_time=self.share(0.1))
-        self.add(star)   # keep the star on top of the stations
+        note = VGroup(label("in temperature, salinity", 28, SUBDUED),
+                      label("and depth, not on a map", 28, SUBDUED)).arrange(DOWN, buff=0.1)
+        answers = card("their answers are known", BLUE, 28)
+        VGroup(aim, fifteen, note, answers).arrange(DOWN, buff=0.45).move_to([4.2, -0.2, 0])
+        # "Let's look at one of the simplest supervised methods, k-nearest neighbours."
+        self.play(FadeIn(head), FadeIn(frame), FadeIn(grey), run_time=self.share(0.14))
+        # "Here, its aim is to predict whether the species is present at a new station, marked by the star,"
+        at(self, 0.2)
+        self.play(GrowFromCenter(star), FadeIn(star_name), FadeIn(aim), run_time=self.share(0.1))
+        # "It does this from the neighbours: the fifteen survey stations most like the new one ..."
+        at(self, 0.45)
+        self.play(FadeIn(picked, scale=1.5), Create(ring), FadeIn(fifteen), run_time=self.share(0.12))
+        # "Nearest means most similar in the water, not closest on a map."
+        at(self, 0.69)
+        self.play(FadeIn(note), run_time=self.share(0.08))
+        # "The neighbours come with answers, ..."
+        at(self, 0.82)
+        self.play(FadeIn(answers, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
@@ -261,23 +276,37 @@ class Scene08(VideoScene):
         head = label("k-nearest neighbours", 40, INK, weight=BOLD).to_edge(UP, buff=0.35)
         self.add(head, frame, grey, picked, ring, star, star_name)
         tokens = VGroup(*[Dot(radius=0.16, color=FOUND if f else NOT_FOUND) for f in found])
-        tokens.arrange_in_grid(3, 5, buff=0.25).move_to([4.2, 1.7, 0])
+        tokens.arrange_in_grid(3, 5, buff=0.22).move_to([4.2, 2.7, 0])
         keys = VGroup(VGroup(Dot(radius=0.1, color=FOUND), label("found", 26, SUBDUED)).arrange(RIGHT, buff=0.15),
                       VGroup(Dot(radius=0.1, color=NOT_FOUND), label("not found", 26, SUBDUED)).arrange(RIGHT, buff=0.15)
                       ).arrange(RIGHT, buff=0.5).next_to(tokens, DOWN, 0.3)
-        share = label(f"{sum(found)} of {len(found)} found", 36, INK, weight=BOLD).next_to(keys, DOWN, 0.45)
-        chance = card(f"{round(100 * new['.pred_yes'])}% chance of presence", GREEN, 28).next_to(share, DOWN, 0.4)
-        counts = VGroup(label("abundance:", 28, SUBDUED, weight=BOLD), label("their average count", 28, SUBDUED)
-                        ).arrange(DOWN, buff=0.1).next_to(chance, DOWN, 0.4)
-        # "Eleven of those fifteen had the species,"
-        self.play(ReplacementTransform(picked.copy(), tokens), FadeIn(keys), run_time=self.share(0.2))
-        self.play(FadeIn(share), run_time=self.share(0.08))
-        # "so the model gives a seventy-three percent chance of presence."
-        at(self, 0.4)
-        self.play(FadeIn(chance, shift=0.2 * UP), run_time=self.share(0.1))
-        # "To predict abundance, it averages their counts instead."
-        at(self, 0.72)
-        self.play(FadeIn(counts), run_time=self.share(0.1))
+        share = label(f"{sum(found)} of {len(found)} found", 36, INK, weight=BOLD).next_to(keys, DOWN, 0.35)
+        chance = card(f"{round(100 * new['.pred_yes'])}% chance of presence", GREEN, 28).next_to(share, DOWN, 0.3)
+        confidence = label("a kind of confidence", 26, SUBDUED).next_to(chance, DOWN, 0.15)
+        kind = VGroup(label("present or absent:", 28, INK, weight=BOLD),
+                      label("a classification", 28, GREEN, weight=BOLD)).arrange(DOWN, buff=0.08)
+        cutoff = label("above a cut-off: yes or no", 26, SUBDUED)
+        counts = VGroup(label("abundance: their average count", 28, INK, weight=BOLD),
+                        label("a regression", 28, BLUE, weight=BOLD)).arrange(DOWN, buff=0.08)
+        VGroup(VGroup(kind, cutoff).arrange(DOWN, buff=0.12), counts).arrange(DOWN, buff=0.3
+                                                                          ).next_to(confidence, DOWN, 0.3)
+        # "Eleven of those fifteen neighbours had the species."
+        self.play(ReplacementTransform(picked.copy(), tokens), FadeIn(keys), run_time=self.share(0.08))
+        self.play(FadeIn(share), run_time=self.share(0.04))
+        # "So the model predicts a seventy-three percent chance of presence: a kind of confidence ..."
+        at(self, 0.14)
+        self.play(FadeIn(chance, shift=0.2 * UP), run_time=self.share(0.06))
+        at(self, 0.26)
+        self.play(FadeIn(confidence), run_time=self.share(0.05))
+        # "This is a classification, because the answer is a category: present or absent."
+        at(self, 0.47)
+        self.play(FadeIn(kind), run_time=self.share(0.05))
+        # "To get a plain yes or no, choose a cut-off, and call the species present above it."
+        at(self, 0.63)
+        self.play(FadeIn(cutoff), run_time=self.share(0.04))
+        # "The same method can also do regression: to predict abundance, it averages the neighbours' counts instead."
+        at(self, 0.8)
+        self.play(FadeIn(counts), run_time=self.share(0.06))
         self.finish()
 
 
@@ -306,14 +335,24 @@ class Scene09(VideoScene):
                       label("the water only", 32, SUBDUED, weight=BOLD)).arrange(DOWN, buff=0.12)
         note.move_to([4.8, 2.0, 0])
         head = label("unsupervised: k-means, three groups", 34, INK, weight=BOLD).to_edge(UP, buff=0.35)
-        # "With no answers at all, the learning is unsupervised."
-        self.play(FadeIn(frame), FadeIn(grey), FadeIn(note), run_time=self.share(0.25))
-        # "Here k-means sorts the stations into three groups using only the water:"
+        names_alike = VGroup(
+            VGroup(label("k-nearest neighbours:", 32, INK, weight=BOLD), label("supervised", 32, BLUE, weight=BOLD)
+                   ).arrange(RIGHT, buff=0.2),
+            VGroup(label("k-means:", 32, INK, weight=BOLD), label("unsupervised", 32, PURPLE, weight=BOLD)
+                   ).arrange(RIGHT, buff=0.2)).arrange(RIGHT, buff=0.8).to_edge(UP, buff=0.35)
+        # "Now for unsupervised learning, where the examples have no answers at all."
+        self.play(FadeIn(frame), FadeIn(grey), FadeIn(note), run_time=self.share(0.12))
+        # "A common method is k-means. Its name sounds like k-nearest neighbours, but ..."
         at(self, 0.35)
-        self.play(FadeIn(head), Transform(grey, coloured), run_time=self.share(0.25))
-        # "shallow, mid-depth and deep."
-        at(self, 0.75)
-        self.play(LaggedStart(*[FadeIn(n, shift=0.2 * RIGHT) for n in names], lag_ratio=0.4), run_time=self.share(0.2))
+        self.play(FadeIn(names_alike[0]), run_time=self.share(0.05))
+        at(self, 0.5)
+        self.play(FadeIn(names_alike[1]), run_time=self.share(0.05))
+        # "In this example, k-means sorted all 800 stations into three groups, ..."
+        at(self, 0.63)
+        self.play(FadeOut(names_alike), FadeIn(head), Transform(grey, coloured), run_time=self.share(0.12))
+        # "Looking at the groups afterwards, we named them shallow, mid-depth and deep."
+        at(self, 0.85)
+        self.play(LaggedStart(*[FadeIn(n, shift=0.2 * RIGHT) for n in names], lag_ratio=0.4), run_time=self.share(0.12))
         self.finish()
 
 
@@ -338,14 +377,23 @@ class Scene10(VideoScene):
         head = label("ask for three: three groups", 40, INK, weight=BOLD).to_edge(UP, buff=0.6)
         head6 = label("ask for six: six groups", 40, INK, weight=BOLD).to_edge(UP, buff=0.6)
         check = card("groups appear whether or not they are real", PURPLE, 32).to_edge(DOWN, buff=0.4)
-        # "It will return groups whether or not real ones exist,"
-        self.play(FadeIn(head), FadeIn(dots), run_time=self.share(0.15))
+        k_is = card("k: the number of groups, which we choose", INK, 32).to_edge(DOWN, buff=0.4)
+        unknown = card("the best k is usually unknown", VERMILION, 32).to_edge(DOWN, buff=0.4)
+        # "Unsupervised learning often needs extra information from us."
+        self.play(FadeIn(head), FadeIn(dots), run_time=self.share(0.12))
+        # "The k in k-means is the number of groups, and we chose three,"
         at(self, 0.2)
+        self.play(FadeIn(k_is, shift=0.2 * UP), run_time=self.share(0.06))
+        # "but the best number is usually unknown."
+        at(self, 0.41)
+        self.play(FadeOut(k_is), FadeIn(unknown, shift=0.2 * UP), run_time=self.share(0.06))
+        # "k-means returns as many groups as we ask for, ...: ask for six, and six appear."
+        at(self, 0.79)
         self.play(ReplacementTransform(head, head6),
-                  *[d.animate.set_color(palette[six[i]]) for i, d in enumerate(dots)], run_time=self.share(0.2))
-        # "so its results need checking."
-        at(self, 0.55)
-        self.play(FadeIn(check, shift=0.2 * UP), run_time=self.share(0.15))
+                  *[d.animate.set_color(palette[six[i]]) for i, d in enumerate(dots)], run_time=self.share(0.15))
+        # "So its results need checking."
+        at(self, 0.9)
+        self.play(FadeOut(unknown), FadeIn(check, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
@@ -382,20 +430,30 @@ class Scene11(VideoScene):
         new_name = label("a new example", 26, SUBDUED).move_to([3.5 - 1.1, 1.0, 0])
         new_arrow = Arrow(new_name.get_bottom(), new.get_top(), color=GREY, stroke_width=3, buff=0.08)
         tools = card("text and image generators are generative", PURPLE, 30).to_edge(DOWN, buff=0.1)
-        # "Models also differ in what they learn."
+        course = card("this course: mostly discriminative models", GREEN, 30).to_edge(DOWN, buff=0.1)
+        what = label("not how a model learns, but what it produces", 30, SUBDUED, weight=BOLD).to_edge(UP, buff=0.2)
+        # "Models also differ in another way."
         self.play(FadeIn(panels[0][2]), FadeIn(panels[1][2]), FadeIn(panels[0][0]), FadeIn(panels[1][0]),
-                  run_time=self.share(0.12))
-        # "A discriminative model, such as k-nearest neighbours, learns only the answer."
-        at(self, 0.15)
-        self.play(FadeIn(panels[0][1]), Create(boundary), run_time=self.share(0.15))
-        # "A generative model learns the data themselves, and can invent new examples."
-        at(self, 0.47)
-        self.play(FadeIn(panels[1][1]), FadeIn(blobs), run_time=self.share(0.15))
-        at(self, 0.64)
-        self.play(GrowFromCenter(new), FadeIn(new_name), GrowArrow(new_arrow), run_time=self.share(0.1))
+                  run_time=self.share(0.07))
+        # "This is not about how a model learns, but about what it produces."
+        at(self, 0.08)
+        self.play(FadeIn(what), run_time=self.share(0.06))
+        # "A discriminative model, such as k-nearest neighbours, learns only the answer: here, the boundary ..."
+        at(self, 0.22)
+        self.play(FadeIn(panels[0][1]), run_time=self.share(0.06))
+        at(self, 0.38)
+        self.play(Create(boundary), run_time=self.share(0.1))
+        # "A generative model learns what the data themselves look like, so it can invent new examples."
+        at(self, 0.54)
+        self.play(FadeIn(panels[1][1]), FadeIn(blobs), run_time=self.share(0.1))
+        at(self, 0.67)
+        self.play(GrowFromCenter(new), FadeIn(new_name), GrowArrow(new_arrow), run_time=self.share(0.06))
         # "The tools that write text and draw pictures are generative."
-        at(self, 0.8)
-        self.play(FadeIn(tools, shift=0.2 * UP), run_time=self.share(0.1))
+        at(self, 0.75)
+        self.play(FadeIn(tools, shift=0.2 * UP), run_time=self.share(0.06))
+        # "This basic course focuses mostly on discriminative models."
+        at(self, 0.87)
+        self.play(FadeOut(tools), FadeIn(course, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
@@ -474,13 +532,13 @@ def hump_layout(scene):
     shown = points[points["abundance"] <= top]
     dots = VGroup(*[Dot(axes.c2p(t, a), 0.045, color=GREY, fill_opacity=0.45)
                     for t, a in zip(shown["temperature_c"], shown["abundance"])])
-    hidden = label(f"{len(points) - len(shown)} stations above {top} not shown", 22, SUBDUED)
-    hidden.next_to(axes.c2p(17, top), DOWN + LEFT, 0.05).shift(0.1 * DOWN)
+    hidden = plated(label(f"{len(points) - len(shown)} stations above {top} not shown", 24, SUBDUED))
+    hidden.next_to(axes.c2p(17, top), DOWN + LEFT, 0.05)
     line = shapes[shapes["model"] == "Linear regression"]
     tree = shapes[shapes["model"] == "Decision tree"]
     straight = polyline(axes, line["temperature_c"], line[".pred"], BLUE, 8)
     steps = polyline(axes, tree["temperature_c"], tree[".pred"], ORANGE, 8)
-    tags = {"straight": VGroup(label("straight line:", 32, BLUE, weight=BOLD),
+    tags = {"straight": VGroup(label("linear regression:", 32, BLUE, weight=BOLD),
                                label("nearly flat", 32, BLUE, weight=BOLD)).arrange(DOWN, buff=0.1, aligned_edge=LEFT),
             "steps": VGroup(label("decision tree:", 32, ORANGE, weight=BOLD),
                             label("finds the hump", 32, ORANGE, weight=BOLD)).arrange(DOWN, buff=0.1, aligned_edge=LEFT)}
@@ -495,12 +553,16 @@ class Scene15(VideoScene):
 
     def construct(self):
         frame, dots, hidden, straight, steps, tags, title_ = hump_layout(self)
-        # "In the survey, the species does best in middling water."
-        self.play(FadeIn(frame), FadeIn(title_), run_time=self.share(0.12))
-        self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.003), FadeIn(hidden), run_time=self.share(0.3))
-        # "A straight line through that hump is nearly flat, so a linear regression reports almost no temperature effect."
-        at(self, 0.45)
-        self.play(Create(straight), FadeIn(tags["straight"]), run_time=self.share(0.25))
+        # "Here is an example of how predictions are evaluated, using two models."
+        self.play(FadeIn(frame), FadeIn(title_), run_time=self.share(0.1))
+        # "In the survey, the species does best in middling water, neither too cold nor too warm."
+        at(self, 0.23)
+        self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.003), FadeIn(hidden), run_time=self.share(0.25))
+        # "The first model, a linear regression, fits a straight line. Through that hump, the line is nearly flat, ..."
+        at(self, 0.55)
+        self.play(Create(straight), run_time=self.share(0.15))
+        at(self, 0.72)
+        self.play(FadeIn(tags["straight"]), run_time=self.share(0.08))
         self.finish()
 
 
@@ -510,9 +572,24 @@ class Scene16(VideoScene):
     def construct(self):
         frame, dots, hidden, straight, steps, tags, title_ = hump_layout(self)
         self.add(frame, dots, hidden, straight, tags["straight"], title_)
-        # "A decision tree was never asked for a slope, and it finds the hump."
-        self.play(Create(steps), run_time=self.share(0.5))
-        self.play(FadeIn(tags["steps"]), run_time=self.share(0.15))
+        kind = label("a supervised model", 28, PURPLE, weight=BOLD)
+        later = VGroup(label("explained later", 26, SUBDUED),
+                       label("in the course", 26, SUBDUED)).arrange(DOWN, buff=0.08)
+        words = VGroup(kind, later).arrange(DOWN, buff=0.2)
+        box = SurroundingRectangle(words, color=PURPLE, buff=0.25, corner_radius=0.15)
+        VGroup(box, words).next_to(tags["steps"], UP, 0.6, aligned_edge=LEFT)
+        # "The second model, a decision tree, works differently. It splits the stations in two, ..."
+        at(self, 0.11)
+        self.play(Create(steps), run_time=self.share(0.3))
+        # "It was never asked for a straight line, and it finds the hump."
+        at(self, 0.48)
+        self.play(FadeIn(tags["steps"]), run_time=self.share(0.06))
+        # "Like k-nearest neighbours, a decision tree is a supervised model: ..."
+        at(self, 0.6)
+        self.play(Create(box), FadeIn(kind), run_time=self.share(0.06))
+        # "We learn how decision trees work later in the course, ..."
+        at(self, 0.82)
+        self.play(FadeIn(later), run_time=self.share(0.06))
         self.finish()
 
 
@@ -551,24 +628,24 @@ class Scene17(VideoScene):
         arrow = Arrow(mean_.get_bottom(), root.get_top(), color=GRID, stroke_width=5, buff=0.12)
         head = label("the tree on the held-back stations", 36, INK, weight=BOLD).to_edge(UP, buff=0.6)
         name = card("RMSE: a typical miss", ORANGE, 36).next_to(root, DOWN, 0.5)
-        # "To compare the two, each one predicts the stations held back."
+        # "To compare the two, each one predicts stations that were held back, ..."
         self.play(FadeIn(head), FadeIn(columns[0]), FadeIn(columns[1]), FadeIn(more), run_time=self.share(0.14))
         # "At every station, take the miss: the observed count minus the predicted one."
-        at(self, 0.18)
+        at(self, 0.34)
         self.play(LaggedStart(*[FadeIn(c, shift=0.15 * LEFT) for c in columns[2]], lag_ratio=0.12),
-                  run_time=self.share(0.14))
+                  run_time=self.share(0.1))
         # "Square the misses, so that none cancel out,"
-        at(self, 0.4)
+        at(self, 0.56)
         self.play(LaggedStart(*[FadeIn(c, shift=0.15 * LEFT) for c in columns[3]], lag_ratio=0.12),
-                  run_time=self.share(0.12))
+                  run_time=self.share(0.1))
         # "average them,"
-        at(self, 0.55)
+        at(self, 0.68)
         self.play(FadeIn(mean_, shift=0.2 * LEFT), run_time=self.share(0.06))
         # "and take the square root."
-        at(self, 0.62)
+        at(self, 0.72)
         self.play(GrowArrow(arrow), FadeIn(root, shift=0.2 * DOWN), run_time=self.share(0.07))
         # "This is the root mean squared error, or RMSE: a typical miss, in animals."
-        at(self, 0.72)
+        at(self, 0.79)
         self.play(FadeIn(name, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
@@ -713,9 +790,16 @@ class Scene22(VideoScene):
     def construct(self):
         head, cards = tasks_layout()
         # "Most marine applications come down to six tasks: naming things, ... and standing in for a slow model."
-        self.play(FadeIn(head), run_time=self.share(0.1))
-        at(self, 0.25)
-        self.play(LaggedStart(*[FadeIn(c, shift=0.2 * UP) for c in cards], lag_ratio=0.6), run_time=self.share(0.65))
+        self.play(FadeIn(head), run_time=self.share(0.08))
+        at(self, 0.15)
+        self.play(LaggedStart(*[FadeIn(c, shift=0.2 * UP) for c in cards], lag_ratio=0.6), run_time=self.share(0.4))
+        # "Each task tends to have its own suitable ways of building models, ..."
+        ways = card("each task has its own suitable ways of building models", PURPLE, 30).to_edge(DOWN, buff=0.3)
+        at(self, 0.57)
+        self.play(FadeIn(ways, shift=0.2 * UP), run_time=self.share(0.08))
+        at(self, 0.72)
+        self.play(LaggedStart(*[Indicate(c[2][1], color=PURPLE, scale_factor=1.15) for c in cards], lag_ratio=0.15),
+                  run_time=self.share(0.2))
         self.finish()
 
 
@@ -760,15 +844,16 @@ class Scene24(VideoScene):
         boxes, arrows = pipeline_layout()
         few = label("a few labels, predictions for everything else", 34, INK, weight=BOLD)
         few.move_to([0, -1.2, 0])
-        # "Most of the six are supervised, and the answers usually come from a specialist: slow and costly."
-        self.play(FadeIn(boxes[0]), run_time=self.share(0.12))
-        at(self, 0.25)
-        self.play(GrowArrow(arrows[0]), FadeIn(boxes[1]), run_time=self.share(0.15))
-        # "A model turns those few labels into predictions for everything else."
-        at(self, 0.6)
-        self.play(GrowArrow(arrows[1]), FadeIn(boxes[2]), run_time=self.share(0.1))
-        self.play(GrowArrow(arrows[2]), FadeIn(boxes[3]), run_time=self.share(0.1))
-        self.play(FadeIn(few, shift=0.2 * UP), run_time=self.share(0.1))
+        # "Most of the six are supervised, so they need answers, which machine learning calls labels."
+        self.play(FadeIn(boxes[0]), run_time=self.share(0.1))
+        # "The labels usually come from a specialist, which is slow and costly."
+        at(self, 0.3)
+        self.play(GrowArrow(arrows[0]), FadeIn(boxes[1]), run_time=self.share(0.12))
+        # "A model trained on those few labels can then predict for everything else."
+        at(self, 0.69)
+        self.play(GrowArrow(arrows[1]), FadeIn(boxes[2]), run_time=self.share(0.08))
+        self.play(GrowArrow(arrows[2]), FadeIn(boxes[3]), run_time=self.share(0.08))
+        self.play(FadeIn(few, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 

@@ -8,6 +8,7 @@ way. The format is described in the comment at the top of each script.md and in
 
 import hashlib
 import json
+import random
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,7 +19,15 @@ MODEL = "gemini-3.8-flash-tts"
 LANGUAGE = "en-GB"
 PRONUNCIATION = Path(__file__).resolve().parent.parent / "_videos" / "pronunciation.yml"
 
-DIRECTIVE = re.compile(r"^(visual|pause-after):\s*(.*)$")
+DIRECTIVE = re.compile(r"^(visual|pause-after|cheer):\s*(.*)$")
+
+# The cheers: an animal pops up with a sound when each key point is made ("cheer: 1",
+# "cheer: 2", "cheer: 3"), and all three together after the recap ("cheer: all"). The
+# animals are drawn in _videos/sea_friends.py, the sounds made by tools/make-cheers.py.
+ANIMALS = ["crab", "octopus", "clownfish", "turtle", "whale", "pufferfish", "jellyfish",
+           "starfish"]
+SOUNDS = ["clap", "hooray", "fireworks"]
+CHEER_STAGGER = 0.9    # seconds between the three cheers in "cheer: all"
 
 
 @dataclass
@@ -28,6 +37,7 @@ class Scene:
     narration: str
     visual: str = ""
     pause_after: float = 0.0
+    cheer: str = ""
     extra: dict = field(default_factory=dict)
 
     @property
@@ -65,6 +75,8 @@ def read_script(path):
                 key, value = m.groups()
                 if key == "visual":
                     current.visual = value.strip()
+                elif key == "cheer":
+                    current.cheer = value.strip()
                 else:
                     current.pause_after = float(value)
             elif line.strip() or body:
@@ -94,6 +106,28 @@ def read_script(path):
         raise ValueError(f"{path}: scenes must be numbered 1, 2, 3 … in order, got {numbers}")
 
     return Script(path, meta, scenes)
+
+
+def cheer_cast(folder):
+    """The video's three (animal, sound) pairs, one per key point, in order.
+
+    Drawn at random, but seeded by the folder's name, so every render and every rough
+    cut of a video picks the same three.
+    """
+    pick = random.Random(Path(folder).resolve().name)
+    return list(zip(pick.sample(ANIMALS, 3), pick.sample(SOUNDS, 3)))
+
+
+def cheer_plan(folder, scene):
+    """[(animal, sound, seconds after the narration ends)] for a scene's cheer line."""
+    cast = cheer_cast(folder)
+    if not scene.cheer:
+        return []
+    if scene.cheer == "all":
+        return [(a, s, i * CHEER_STAGGER) for i, (a, s) in enumerate(cast)]
+    if scene.cheer in ("1", "2", "3"):
+        return [(*cast[int(scene.cheer) - 1], 0.0)]
+    raise ValueError(f"scene {scene.number}: cheer must be 1, 2, 3 or all, not {scene.cheer!r}")
 
 
 def caption_text(narration):

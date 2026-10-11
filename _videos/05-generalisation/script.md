@@ -22,6 +22,9 @@ Script conventions (read by tools/narrate.py and tools/rough-cut.py):
     visual: card: <text>                a plain text card; "card: Heading | text" puts a
                                         small heading above the text
     pause-after: <seconds>              silence added after the narration
+    cheer: 1 | 2 | 3 | all              after the narration, the key point's animal pops up
+                                        with its sound; "all" brings all three, after the
+                                        recap. Give it pause-after: 2.0 (all: 4.0)
 - gap in the front matter is the silence between scenes, in seconds.
 - Every number spoken comes from the section's pages.
 - No section numbers anywhere in the video, spoken or shown: they can change, so they
