@@ -156,6 +156,11 @@ def ship(colour=INK, scale=1.0):
 class Scene01(LearnScene):
     number = 1
 
+    def setup(self):
+        super().setup()
+        self.times = tuple(position(self, p) for p in
+                           ("why a score is only", "why the measure", "and why a score needs"))
+
 
 # A score is a claim (scene 2, schematic) ---------------------------------------------------
 
@@ -191,7 +196,7 @@ class Scene02(VideoScene):
         self.finish()
 
 
-# Folds and their reach (scenes 3–4) --------------------------------------------------------
+# Folds and their reach (scenes 3–5) --------------------------------------------------------
 
 FOLD_COLOURS = [BLUE, ORANGE, GREEN, PURPLE, SKY]
 
@@ -212,17 +217,20 @@ class Scene03(VideoScene):
         result = lines_of("one out-of-fold prediction\nper station, from a model\nthat never saw its site",
                           32, ORANGE, BOLD).next_to(steps, DOWN, 0.6).align_to(head, LEFT)
 
-        # "Cross-validation deals the sites into folds."
-        self.play(FadeIn(dots, lag_ratio=0.005), FadeIn(head), run_time=self.share(0.1))
+        # "First, why a score is only as honest as its folds. You met cross-validation in the Generalisation video: ..."
+        self.play(FadeIn(dots, lag_ratio=0.005), FadeIn(head), run_time=self.share(0.08))
+        # "... the sites are dealt into folds, ..."
+        cue(self, "the sites are dealt")
         self.play(*[d.animate.set_color(FOLD_COLOURS[f]) for d, f in zip(dots, fold)], FadeIn(steps[0]),
-                  run_time=self.share(0.12))
-        # "Each fold is held out in turn ..."
-        cue(self, "Each fold is held out")
-        self.play(FadeIn(steps[1]), FadeIn(steps[2]), run_time=self.share(0.08))
+                  run_time=self.share(0.08))
+        # "... and each fold takes a turn as new data while a model is fitted to the others."
+        cue(self, "and each fold takes")
+        self.play(FadeIn(steps[1]), FadeIn(steps[2]), run_time=self.share(0.06))
         for k in range(5):
             self.play(*[d.animate.set_color(ORANGE if f == k else LIGHT).scale(1.0) for d, f in zip(dots, fold)],
-                      run_time=self.share(0.07))
+                      run_time=self.share(0.04))
         # "So every station gets one out-of-fold prediction, ..."
+        cue(self, "So every station")
         self.play(*[d.animate.set_color(ORANGE) for d in dots], FadeIn(result, shift=0.2 * UP),
                   run_time=self.share(0.1))
         self.finish()
@@ -232,54 +240,80 @@ SCHEME_NAMES = {"Stations": "folds of stations", "Sites": "folds of sites",
                 "Half-degree blocks": "half-degree blocks"}
 
 
+def distance_layout(scene):
+    runs, means = scene.data("distance-runs"), scene.data("distance")
+    lo = 4.1
+    top = np.ceil((runs["rmse"].max() - lo) * 10) / 10
+    axes, frame = chart([0, 16, 4], [0, top, 0.1], 9.5, 5.0, [0, 4, 8, 12, 16],
+                        np.arange(0, top + 1e-9, 0.1), "median distance to the nearest fitted station (km)",
+                        "pooled RMSE (individuals)", y_text=lambda v: f"{v + lo:.1f}")
+    frame.move_to([0.4, -0.2, 0])
+    small = {s: VGroup(*[Dot(axes.c2p(r["nearest_km"], r["rmse"] - lo), radius=0.06, color=BLUE,
+                             fill_opacity=0.4) for _, r in runs[runs["folds"] == s].iterrows()])
+             for s in SCHEME_NAMES}
+    big = {s: Dot(axes.c2p(r["km"], r["rmse"] - lo), radius=0.15, color=BLUE)
+           for _, r in means.iterrows() for s in [r["folds"]]}
+    names = {}
+    for _, r in means.iterrows():
+        s = r["folds"]
+        names[s] = plated(lines_of(f"{SCHEME_NAMES[s]}\n{r['km']:.0f} km, {f2(r['rmse'])}", 28, INK, BOLD, 0.06),
+                          buff=0.06)
+        names[s].next_to(big[s], UP + LEFT if s == "Half-degree blocks" else DOWN + RIGHT, 0.15)
+        names[s][1].set_z_index(6)     # the text stays above its plate, which fades in after it
+    trend = VMobject(color=GREY, stroke_width=4).set_points_as_corners(
+        [big[s].get_center() for s in SCHEME_NAMES])
+    head = label("The same random forest, scored three ways", 34, SUBDUED).to_edge(UP, buff=0.35)
+    advice = label("hold out what the model will face", 36, ORANGE, weight=BOLD).move_to(head)
+    return frame, small, big, names, trend, head, advice
+
+
 class Scene04(VideoScene):
     number = 4
 
     def construct(self):
-        runs, means = self.data("distance-runs"), self.data("distance")
-        lo = 4.1
-        top = np.ceil((runs["rmse"].max() - lo) * 10) / 10
-        axes, frame = chart([0, 16, 4], [0, top, 0.1], 9.5, 5.0, [0, 4, 8, 12, 16],
-                            np.arange(0, top + 1e-9, 0.1), "median distance to the nearest fitted station (km)",
-                            "pooled RMSE (individuals)", y_text=lambda v: f"{v + lo:.1f}")
-        frame.move_to([0.4, -0.2, 0])
-        small = {s: VGroup(*[Dot(axes.c2p(r["nearest_km"], r["rmse"] - lo), radius=0.06, color=BLUE,
-                                 fill_opacity=0.4) for _, r in runs[runs["folds"] == s].iterrows()])
-                 for s in SCHEME_NAMES}
-        big = {s: Dot(axes.c2p(r["km"], r["rmse"] - lo), radius=0.15, color=BLUE)
-               for _, r in means.iterrows() for s in [r["folds"]]}
-        names = {}
-        for _, r in means.iterrows():
-            s = r["folds"]
-            names[s] = lines_of(f"{SCHEME_NAMES[s]}\n{r['km']:.0f} km, {f2(r['rmse'])}", 28, INK, BOLD, 0.06)
-            names[s].next_to(big[s], UP + LEFT if s == "Half-degree blocks" else DOWN + RIGHT, 0.15)
-        trend = VMobject(color=GREY, stroke_width=4).set_points_as_corners(
-            [big[s].get_center() for s in SCHEME_NAMES])
-        head = label("The same random forest, scored three ways", 34, SUBDUED).to_edge(UP, buff=0.35)
-        advice = label("hold out what the model will face", 36, ORANGE, weight=BOLD).move_to(head)
-
+        frame, small, big, names, trend, head, advice = distance_layout(self)
         # "What a score claims depends on what the folds hold out."
-        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.1))
-        # "A random forest was scored with folds of single stations, folds of sites and spatial blocks."
-        cue(self, "A random forest was scored")
-        self.play(*[FadeIn(small[s], lag_ratio=0.1) for s in SCHEME_NAMES], run_time=self.share(0.15))
+        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.08))
+        # "Here a random forest, many decision trees averaged, was scored three ways: with folds of single
+        # stations, folds of whole sites, and folds of blocks, which are squares of the map."
+        for s, phrase in (("Stations", "folds of single"), ("Sites", "folds of whole"),
+                          ("Half-degree blocks", "folds of blocks")):
+            cue(self, phrase)
+            self.play(FadeIn(small[s], lag_ratio=0.1), FadeIn(names[s][1][0]), run_time=self.share(0.07))
+        # "Along the bottom is how far each held-out station lies from the nearest station the forest was
+        # fitted to."
+        cue(self, "Along the bottom")
+        self.play(Indicate(frame[3], color=INK, scale_factor=1.1), run_time=self.share(0.15))
+        self.finish()
+
+
+class Scene05(VideoScene):
+    number = 5
+
+    def construct(self):
+        frame, small, big, names, trend, head, advice = distance_layout(self)
+        self.add(head, frame, *small.values(), *[n[1][0] for n in names.values()])
+        # "With folds of stations, a held-out station's own site is often still in the fitted data, so the
+        # forest can lean on what its neighbours caught."
+        self.play(Indicate(small["Stations"], color=BLUE, scale_factor=1.3), run_time=self.share(0.15))
         # "The further away its fitted data, the larger its error: ..."
         cue(self, "The further away")
-        self.play(*[FadeIn(big[s], scale=1.6) for s in SCHEME_NAMES], Create(trend), run_time=self.share(0.15))
+        self.play(*[FadeIn(big[s], scale=1.6) for s in SCHEME_NAMES], Create(trend), run_time=self.share(0.12))
         # "... from 4.23 with folds of stations ..."
         cue(self, "from 4.23")
-        self.play(FadeIn(names["Stations"]), FadeIn(names["Sites"]), run_time=self.share(0.1))
+        self.play(*[FadeIn(names[s][0]) for s in ("Stations", "Sites")],
+                  *[FadeIn(names[s][1][1]) for s in ("Stations", "Sites")], run_time=self.share(0.08))
         # "... to 4.41 with blocks."
         cue(self, "to 4.41")
-        self.play(FadeIn(names["Half-degree blocks"]), Indicate(big["Half-degree blocks"], color=ORANGE),
-                  run_time=self.share(0.1))
+        self.play(FadeIn(names["Half-degree blocks"][0]), FadeIn(names["Half-degree blocks"][1][1]),
+                  Indicate(big["Half-degree blocks"], color=ORANGE), run_time=self.share(0.08))
         # "So choose folds that hold out what the model will face."
         cue(self, "So choose folds")
         self.play(FadeOut(head, shift=0.2 * UP), FadeIn(advice, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
-# A search flatters its winner (scenes 5–9) ------------------------------------------------
+# A search flatters its winner (scenes 6–10) ------------------------------------------------
 
 def column_cells(n, colour, size=0.32):
     return VGroup(*[Square(size, stroke_width=0, fill_color=colour, fill_opacity=1) for _ in range(n)]
@@ -305,8 +339,8 @@ def search_layout(scene):
     return search, cards, VGroup(axis, axis_name), dots, winner
 
 
-class Scene05(VideoScene):
-    number = 5
+class Scene06(VideoScene):
+    number = 6
 
     def construct(self):
         search, cards, axis, dots, winner = search_layout(self)
@@ -332,8 +366,8 @@ class Scene05(VideoScene):
         self.finish()
 
 
-class Scene06(VideoScene):
-    number = 6
+class Scene07(VideoScene):
+    number = 7
 
     def construct(self):
         search, cards, axis, dots, winner = search_layout(self)
@@ -353,14 +387,14 @@ class Scene06(VideoScene):
                   run_time=self.share(0.25))
         self.play(best.animate.scale(1.7), FadeIn(value, shift=0.2 * DOWN), run_time=self.share(0.12))
         # "Two of its five columns are pure noise."
-        cue(self, "Two of its five")
+        cue(self, "two of its five")
         self.play(TransformFromCopy(best, cells), FadeIn(head), run_time=self.share(0.15))
         self.play(FadeIn(names), *[Indicate(c, color=GREY) for c in cells[:noise]], run_time=self.share(0.12))
         self.finish()
 
 
-class Scene07(VideoScene):
-    number = 7
+class Scene08(VideoScene):
+    number = 8
 
     def construct(self):
         axis = Line([-5.5, -1.6, 0], [5.5, -1.6, 0], color=GRID, stroke_width=3)
@@ -405,8 +439,8 @@ class Scene07(VideoScene):
         self.finish()
 
 
-class Scene08(VideoScene):
-    number = 8
+class Scene09(VideoScene):
+    number = 9
 
     def construct(self):
         blocks = VGroup(*[Rectangle(width=2.2, height=0.9, stroke_color=BACKGROUND, stroke_width=4,
@@ -423,7 +457,7 @@ class Scene08(VideoScene):
                                ).next_to(mini, LEFT, 0.5)
         held_name = lines_of("its choice is scored here:\nno part in choosing", 30, ORANGE, BOLD, 0.06
                              ).move_to([3.4, -1.0, 0])
-        # "Nested cross-validation scores the search as well."
+        # "The cure is nested cross-validation: cross-validation inside cross-validation."
         self.play(FadeIn(head), FadeIn(blocks), FadeIn(fold_name), run_time=self.share(0.12))
         arrow = None
         for f in range(3):
@@ -431,18 +465,19 @@ class Scene08(VideoScene):
             new_arrow = Arrow(mini.get_right(), blocks[f].get_bottom(), buff=0.15, color=ORANGE, stroke_width=5)
             anims = [blocks[f].animate.set_fill(ORANGE)] + ([blocks[f - 1].animate.set_fill(BLUE)] if f else [])
             if f == 0:
-                # "An outer fold of sites is held out, the whole search runs on the other sites, ..."
-                cue(self, "An outer fold")
+                # "First, an outer fold of sites is held out. The whole search, with folds of its own, runs
+                # on the other sites and makes its choice."
+                cue(self, "an outer fold")
                 self.play(*anims, run_time=self.share(0.06))
-                cue(self, "the whole search runs")
+                cue(self, "The whole search")
                 self.play(FadeIn(mini), FadeIn(inner), FadeIn(search_name), run_time=self.share(0.08))
             else:
                 self.play(*anims, mini.animate.set_fill(GREY), FadeOut(arrow), run_time=self.share(0.05))
             self.play(LaggedStart(*[Indicate(s, color=INK, scale_factor=1.6) for s in mini[::9]], lag_ratio=0.05),
                       Indicate(inner, color=SKY), run_time=self.share(0.07))
             if f == 0:
-                # "... and its choice is scored on the outer fold, which played no part in choosing."
-                cue(self, "and its choice")
+                # "That choice is then scored on the outer fold, which played no part in choosing."
+                cue(self, "That choice is")
             self.play(chosen.animate.set_fill(VERMILION), GrowArrow(new_arrow), run_time=self.share(0.05))
             if f == 0:
                 self.play(FadeIn(held_name), run_time=self.share(0.06))
@@ -450,8 +485,8 @@ class Scene08(VideoScene):
         self.finish()
 
 
-class Scene09(VideoScene):
-    number = 9
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
         n = self.data("nested").iloc[0]
@@ -484,15 +519,15 @@ class Scene09(VideoScene):
         self.finish()
 
 
-class Scene10(KeyPointScene):
-    number = 10
+class Scene11(KeyPointScene):
+    number = 11
     point = 1
 
 
-# The measure follows the use (scenes 11–17) ------------------------------------------------
+# The measure follows the use (scenes 12–18) ------------------------------------------------
 
-class Scene11(VideoScene):
-    number = 11
+class Scene12(VideoScene):
+    number = 12
 
     def construct(self):
         misses = [0.5, -0.4, 0.8, -0.3, 2.4, 0.6]
@@ -508,22 +543,70 @@ class Scene11(VideoScene):
                             ).arrange(RIGHT, buff=0.2)).arrange(RIGHT, buff=0.6).move_to([-2.5, 3.3, 0])
         squares = VGroup(*[Square(abs(m) * 0.55, stroke_width=0, fill_color=VERMILION, fill_opacity=0.6)
                            for m in misses]).arrange(RIGHT, buff=0.15, aligned_edge=DOWN).move_to([3.6, 1.6, 0])
-        rmse_name = lines_of("RMSE: squares each miss,\nlowest at the average", 30, INK, BOLD, 0.06
+        rmse_name = lines_of("RMSE: squares each miss,\nminds large misses most", 30, INK, BOLD, 0.06
                              ).next_to(squares, DOWN, 0.3)
         bars = VGroup(*[Rectangle(width=abs(m) * 0.55, height=0.28, stroke_width=0, fill_color=VERMILION,
                                   fill_opacity=0.6) for m in misses]).arrange(RIGHT, buff=0.08).move_to([-2.5, -2.0, 0])
-        mae_name = lines_of("MAE: adds the misses\nas they are, lowest\nat the median", 30, INK, BOLD, 0.06).next_to(bars, DOWN, 0.3)
+        mae_name = lines_of("MAE: averages the misses\nas they are", 30, INK, BOLD, 0.06).next_to(bars, DOWN, 0.3)
         # "A performance measure turns every miss into one number."
         self.play(FadeIn(key), FadeIn(caught), FadeIn(predicted), run_time=self.share(0.12))
         self.play(LaggedStart(*[Create(g) for g in gaps], lag_ratio=0.15), run_time=self.share(0.15))
-        # "The RMSE minds large misses most."
-        cue(self, "The RMSE minds")
+        # "The RMSE squares each miss before averaging, so it minds large misses most."
+        cue(self, "The RMSE squares")
         self.play(*[TransformFromCopy(g, s) for g, s in zip(gaps, squares)], run_time=self.share(0.15))
         self.play(FadeIn(rmse_name), Indicate(squares[4], color=VERMILION), run_time=self.share(0.1))
-        # "The mean absolute error, or MAE, counts every animal missed the same."
+        # "The mean absolute error, or MAE, averages the misses as they are, so every animal missed counts the same."
         cue(self, "The mean absolute error")
         self.play(*[TransformFromCopy(g, b) for g, b in zip(gaps, bars)], run_time=self.share(0.15))
         self.play(FadeIn(mae_name), run_time=self.share(0.08))
+        self.finish()
+
+
+class Scene13(VideoScene):
+    number = 13
+
+    def construct(self):
+        # Schematic: made-up counts falling away geometrically, so the median sits below the average.
+        heights = 0.74 ** np.arange(16)
+        share = heights / heights.sum()
+        median = np.searchsorted(np.cumsum(share), 0.5) + 0.5     # the bar holding the middle station
+        average = float((np.arange(16) * share).sum()) + 0.5       # in bar widths, from the axis's left end
+        width, x0, y0 = 0.6, -5.0, -2.2
+        bars = VGroup(*[Rectangle(width=width * 0.9, height=4.0 * h, stroke_width=0, fill_color=GREY,
+                                  fill_opacity=0.6).move_to([x0 + width * (i + 0.5), y0, 0], aligned_edge=DOWN)
+                        for i, h in enumerate(heights)])
+        axis = Line([x0, y0, 0], [x0 + width * 16, y0, 0], color=GRID, stroke_width=3)
+        x_name = label("animals caught at a station", 28, SUBDUED).next_to(axis, DOWN, 0.25)
+        y_name = label("stations", 28, SUBDUED).rotate(PI / 2).next_to(bars, LEFT, 0.3)
+
+        def marker(at, colour, top, text, side):
+            x = x0 + width * at
+            line = DashedLine([x, y0, 0], [x, top, 0], color=colour, stroke_width=5)
+            words = plated(lines_of(text, 28, colour, BOLD, 0.06)).next_to([x, top, 0], side, 0.15)
+            return VGroup(line, words)
+
+        mean_mark = marker(average, BLUE, 1.6, "average\nRMSE is best here", RIGHT)
+        median_mark = marker(median, VERMILION, 2.4, "median\nMAE is best here", LEFT)
+        tail = plated(label("a few big catches", 28, INK, weight=BOLD)).move_to([x0 + width * 12.5, -0.9, 0])
+        pull = Arrow(tail.get_left() + 0.1 * RIGHT, [x0 + width * average + 0.15, -0.9, 0], buff=0.1, color=INK,
+                     stroke_width=5, max_tip_length_to_length_ratio=0.12)
+        # "That changes which prediction scores best."
+        self.play(Create(axis), FadeIn(x_name), FadeIn(y_name),
+                  LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.05), run_time=self.share(0.12))
+        # "The RMSE is lowest when a model predicts the average catch, ..."
+        cue(self, "The RMSE is lowest")
+        self.play(Create(mean_mark[0]), FadeIn(mean_mark[1]), run_time=self.share(0.08))
+        # "... and MAE when it predicts the median."
+        cue(self, "and MAE when")
+        self.play(Create(median_mark[0]), FadeIn(median_mark[1]), run_time=self.share(0.08))
+        # "Survey counts are skewed: most stations catch a few animals, and a few catch a great many."
+        cue(self, "Survey counts are")
+        self.play(Indicate(VGroup(*bars[:3]), color=GREY), run_time=self.share(0.08))
+        cue(self, "and a few catch")
+        self.play(Indicate(VGroup(*bars[8:]), color=INK), FadeIn(tail), run_time=self.share(0.08))
+        # "Those big catches pull the average up, so the median sits below it."
+        cue(self, "Those big catches")
+        self.play(GrowArrow(pull), Indicate(mean_mark[0], color=BLUE), run_time=self.share(0.1))
         self.finish()
 
 
@@ -553,15 +636,18 @@ def picks_layout(scene):
     return measures, names, columns, ys
 
 
-class Scene12(VideoScene):
-    number = 12
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         measures, names, columns, ys = picks_layout(self)
         lower = label("lower is better", 26, SUBDUED).to_edge(DOWN, buff=0.6)
-        # "So the two measures pick different models."
+        # "So the two measures can pick different models. Here are four, scored both ways."
         self.play(FadeIn(names), *[FadeIn(h) for h, r, b in columns.values()],
-                  *[FadeIn(r) for h, r, b in columns.values()], FadeIn(lower), run_time=self.share(0.2))
+                  *[FadeIn(r) for h, r, b in columns.values()], FadeIn(lower), run_time=self.share(0.15))
+        # "The last is a random forest fitted to log counts: ..."
+        cue(self, "The last is")
+        self.play(Indicate(names[3], color=INK), run_time=self.share(0.1))
         for measure, phrase, colour in (("RMSE", "The RMSE picks", BLUE), ("MAE", "MAE picks", VERMILION)):
             head, rows, best = columns[measure]
             cue(self, phrase)
@@ -571,8 +657,8 @@ class Scene12(VideoScene):
         self.finish()
 
 
-class Scene13(VideoScene):
-    number = 13
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         measures = self.data("measures").set_index("model").loc[MODEL_ORDER]
@@ -616,8 +702,8 @@ def ranked_bars(n=20, seed=17):
     return bars
 
 
-class Scene14(VideoScene):
-    number = 14
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         bars = ranked_bars().move_to([-0.6, -0.6, 0], aligned_edge=DOWN).shift(1.8 * DOWN)
@@ -632,21 +718,21 @@ class Scene14(VideoScene):
         self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.04), FadeIn(x_name),
                   run_time=self.share(0.2))
         # "A ship has time to revisit 100 stations, and goes where a model predicts the most animals."
-        cue(self, "A ship has time")
+        cue(self, "a ship has time")
         self.play(*[b.animate.set_fill(ORANGE, opacity=0.9) for b in top], GrowFromCenter(bracket),
                   FadeIn(budget), run_time=self.share(0.15))
         boat.next_to(bracket, UP, 0.7).shift(1.2 * LEFT)
         self.play(FadeIn(boat, shift=0.5 * RIGHT), run_time=self.share(0.12))
-        # "Only the order of the predictions matters."
-        cue(self, "Only the order")
+        # "Then only the order of the predictions matters, not their size."
+        cue(self, "only the order")
         drop = bars[0].height / 2
         self.play(FadeIn(only), *[b.animate.stretch(0.5, 1, about_edge=DOWN) for b in bars],
                   VGroup(bracket, budget, boat).animate.shift(drop * DOWN), run_time=self.share(0.15))
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         lists = self.data("shortlists").set_index("model")
@@ -689,36 +775,8 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
-
-    def construct(self):
-        size = 3.0
-        cells = VGroup(*[Square(size, stroke_color=GRID, stroke_width=4) for _ in range(4)]
-                       ).arrange_in_grid(2, 2, buff=0).move_to([1.2, -0.5, 0])
-        truth = VGroup(label("species present", 28, SUBDUED).next_to(cells[0], UP, 0.2),
-                       label("species absent", 28, SUBDUED).next_to(cells[1], UP, 0.2))
-        calls = VGroup(label("called present", 30, SUBDUED).next_to(cells[0], LEFT, 0.25),
-                       label("called absent", 30, SUBDUED).next_to(cells[2], LEFT, 0.25))
-        right = VGroup(label("right", 32, GREEN, weight=BOLD).move_to(cells[0]),
-                       label("right", 32, GREEN, weight=BOLD).move_to(cells[3]))
-        alarm = label("false alarm", 36, VERMILION, weight=BOLD).move_to(cells[1])
-        miss = label("miss", 36, ORANGE, weight=BOLD).move_to(cells[2])
-        # "Calls of present or absent need something else."
-        self.play(Create(cells), FadeIn(truth), FadeIn(calls), run_time=self.share(0.15))
-        self.play(FadeIn(right), run_time=self.share(0.1))
-        # "A false alarm is a station called present where the species is absent."
-        cue(self, "A false alarm")
-        self.play(cells[1].animate.set_fill(VERMILION, opacity=0.12), FadeIn(alarm, scale=0.8),
-                  run_time=self.share(0.12))
-        # "A miss is a station called absent where it is present."
-        cue(self, "A miss is")
-        self.play(cells[2].animate.set_fill(ORANGE, opacity=0.12), FadeIn(miss, scale=0.8), run_time=self.share(0.12))
-        self.finish()
-
-
-class Scene17(VideoScene):
-    number = 17
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         alarm = VGroup(Square(1.8, stroke_width=0, fill_color=VERMILION, fill_opacity=0.8),
@@ -735,28 +793,36 @@ class Scene17(VideoScene):
                  stroke_width=6),
             label("threshold", 28, INK, weight=BOLD).move_to([to_x(threshold.get_value()), -0.15, 0]),
             label("called present", 26, BLUE).next_to([to_x(threshold.get_value()), -1.8, 0], RIGHT, 0.15)))
+        heading = title("Calls of present or absent", 44).to_edge(UP, buff=0.5)
+        # "Calls of present or absent need something else again. As in the Supervised learning video, a
+        # threshold turns a probability of presence into a call, ..."
+        self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.05))
+        cue(self, "a threshold turns")
+        self.play(FadeIn(axis), FadeIn(axis_name), FadeIn(pointer), run_time=self.share(0.08))
+        # "... and a call can be a false alarm or a miss."
         # "If a false alarm wastes a dive, it may cost far more than a miss."
-        self.play(FadeIn(alarm, scale=0.6), FadeIn(alarm_name), run_time=self.share(0.15))
+        cue(self, "If a false alarm")
+        self.play(FadeIn(alarm, scale=0.6), FadeIn(alarm_name), run_time=self.share(0.08))
         cue(self, "it may cost far more")
-        self.play(FadeIn(miss, scale=0.6), FadeIn(miss_name), run_time=self.share(0.12))
-        # "Then the threshold for calling a station present should come from those costs, ..."
-        cue(self, "Then the threshold")
-        self.play(FadeIn(axis), FadeIn(axis_name), FadeIn(pointer), run_time=self.share(0.12))
-        # "... not sit at 0.5."
+        self.play(FadeIn(miss, scale=0.6), FadeIn(miss_name), run_time=self.share(0.08))
+        # "Then the threshold should come from those costs, not sit at 0.5: ..."
         cue(self, "not sit at")
-        self.play(threshold.animate.set_value(0.7), run_time=self.share(0.15))
+        self.play(Indicate(pointer, color=INK), run_time=self.share(0.06))
+        # "... raise it, and the model calls present only where it is surer."
+        cue(self, "raise it")
+        self.play(threshold.animate.set_value(0.7), run_time=self.share(0.12))
         self.finish()
 
 
-class Scene18(KeyPointScene):
-    number = 18
+class Scene19(KeyPointScene):
+    number = 19
     point = 2
 
 
-# A score needs an interval (scenes 19–24) --------------------------------------------------
+# A score needs an interval (scenes 20–25) --------------------------------------------------
 
-class Scene19(VideoScene):
-    number = 19
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         points, dots = site_map(width=6.0, height=5.4, centre=(-3.6, -0.3))
@@ -801,8 +867,8 @@ def site_squares():
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -849,8 +915,8 @@ class Scene20(VideoScene):
         self.finish()
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
@@ -893,8 +959,8 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         a = np.array([4.6, 3.8, 5.3, 4.2, 4.9])
@@ -920,10 +986,11 @@ class Scene22(VideoScene):
         self.play(FadeIn(head_l), FadeIn(key), run_time=self.share(0.1))
         self.play(LaggedStart(*[FadeIn(VGroup(p, q)) for p, q in zip(dots_a, dots_b)], lag_ratio=0.2),
                   run_time=self.share(0.2))
-        cue(self, "rise and fall together")
+        cue(self, "when one model's")
         self.play(Create(line_a), Create(line_b), run_time=self.share(0.12))
-        # "Compare them in pairs: take the difference within each sample, and what they share cancels."
-        cue(self, "Compare them in pairs")
+        # "So compare them in pairs: in each resample, take one model's error from the other's. What they share
+        # cancels, and only the difference is left."
+        cue(self, "compare them in pairs")
         self.play(FadeIn(head_r), Create(axis), Create(zero), FadeIn(zero_name), FadeIn(links),
                   run_time=self.share(0.1))
         self.play(LaggedStart(*[TransformFromCopy(l, d) for l, d in zip(links, diffs)], lag_ratio=0.15),
@@ -949,8 +1016,8 @@ def pair_panel(scores, other, x, paired):
     return VGroup(box, diagonal, x_name, y_name), dots, result
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -959,16 +1026,20 @@ class Scene23(VideoScene):
         key = VGroup(key_row(BLUE, "forest lower", 26), key_row(VERMILION, "forest higher", 26)
                      ).arrange(DOWN, buff=0.2, aligned_edge=LEFT).move_to([2.2, 0.5, 0])
         note = label("one dot per resample", 26, SUBDUED).next_to(key, DOWN, 0.4).align_to(key, LEFT)
-        # "In pairs, the forest beats predicting the average in 99 per cent of the samples."
-        self.play(FadeIn(frame), FadeIn(key), FadeIn(note), run_time=self.share(0.15))
-        self.play(FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.3))
+        # "Each dot is one resample."
+        self.play(FadeIn(frame), FadeIn(key), FadeIn(note), run_time=self.share(0.12))
+        self.play(FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.2))
+        # "Below the diagonal, the forest's error is the lower."
+        cue(self, "Below the diagonal")
+        self.play(Indicate(frame[1], color=BLUE), run_time=self.share(0.12))
+        # "In pairs, the forest beats predicting the average in 99 per cent of the resamples."
         cue(self, "in 99 per cent")
         self.play(FadeIn(result, shift=0.2 * DOWN), run_time=self.share(0.15))
         self.finish()
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -996,22 +1067,22 @@ class Scene24(VideoScene):
         self.finish()
 
 
-class Scene25(KeyPointScene):
-    number = 25
+class Scene26(KeyPointScene):
+    number = 26
     point = 3
 
 
-# Quiz (scenes 26–27) ----------------------------------------------------------------------
+# Quiz (scenes 27–28) ----------------------------------------------------------------------
 
-class Scene26(QuizScene):
-    number = 26
+class Scene27(QuizScene):
+    number = 27
     question = ("A false alarm costs three misses.",
                 "The probabilities can be trusted.",
                 "Where should the threshold be?")
 
 
-class Scene27(VideoScene):
-    number = 27
+class Scene28(VideoScene):
+    number = 28
 
     def construct(self):
         thresholds = self.data("thresholds").set_index("k")
@@ -1065,22 +1136,22 @@ class Scene27(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 28–31) ---------------------------------------------------
-
-class Scene28(RecapScene):
-    number = 28
-    point = 1
-
+# Key points and end card (scenes 29–32) ---------------------------------------------------
 
 class Scene29(RecapScene):
     number = 29
-    point = 2
+    point = 1
 
 
 class Scene30(RecapScene):
     number = 30
+    point = 2
+
+
+class Scene31(RecapScene):
+    number = 31
     point = 3
 
 
-class Scene31(EndCardScene):
-    number = 31
+class Scene32(EndCardScene):
+    number = 32
