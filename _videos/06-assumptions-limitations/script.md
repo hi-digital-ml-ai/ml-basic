@@ -107,7 +107,7 @@ so they partly repeat each other.
 ## Scene 11
 visual: manim Worth: the 800 squares, about 470 of them kept bright: "worth about 470 independent stations"; "counted as 800: looks surer than it is" (page results, dependent-data.qmd)
 
-The page measures how much. The 800 stations carry about as much information as 470
+How much do they repeat? The 800 stations carry about as much information as 470
 independent ones. Count them as 800, and a model's results look surer than they are.
 
 ## Scene 12
@@ -129,14 +129,15 @@ these to learn from.
 visual: manim Novelty: the winter stations ringed, "the model still answers, just as sure"; "extrapolation: predicting beyond the data" (page results)
 
 It still gives an answer, and the answer looks just as sure as any other. As in the
-Supervised learning video, predicting beyond the data is called extrapolation. On the
-page, the forest's errors grew the further a station lay from the survey.
+Supervised learning video, predicting beyond the data is called extrapolation. Tested on
+stations like these, the forest's errors grew the further a station lay from the survey.
 
 ## Scene 15
 visual: manim Novelty: "before trusting a prediction, ask: did the survey see conditions like these?" (page results)
+pause-after: 1.0
 
 So before trusting a prediction, ask one question: did the survey see conditions like
-these? The page shows a simple way to measure it.
+these?
 
 ## Scene 16
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers

@@ -439,7 +439,7 @@ class Scene11(VideoScene):
                         ).move_to(4.6 * RIGHT + 0.9 * UP)
         surer = lines(f"counted as {n}:", "results look surer", "than they are", size=30, colour=VERMILION
                       ).next_to(counted, DOWN, 0.6, aligned_edge=LEFT)
-        # "The page measures how much."
+        # "How much do they repeat?"
         self.play(FadeIn(head), FadeIn(squares, lag_ratio=0.001), run_time=self.share(0.14))
         # "The 800 stations carry about as much information as 470 independent ones."
         cue(self, "The 800")
@@ -554,8 +554,8 @@ class Scene14(VideoScene):
         # "As in the Supervised learning video, predicting beyond the data is called extrapolation."
         cue(self, "predicting beyond")
         self.play(FadeIn(extrapolation, shift=0.2 * UP), run_time=self.share(0.1))
-        # "On the page, the forest's errors grew the further a station lay from the survey."
-        cue(self, "On the page")
+        # "Tested on stations like these, the forest's errors grew the further a station lay from the survey."
+        cue(self, "Tested on")
         self.play(FadeIn(grew, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
@@ -569,21 +569,16 @@ class Scene15(VideoScene):
         self.add(frame, dots, head, key, winter, seen)
         question = VGroup(label("before trusting a prediction, ask:", 34, INK, weight=BOLD),
                           label("did the survey see conditions like these?", 40, BLUE, weight=BOLD)
-                          ).arrange(DOWN, buff=0.2)
-        page = label("the page shows a simple way to measure it", 28, SUBDUED).next_to(question, DOWN, 0.45)
-        words = VGroup(question, page).move_to(0.2 * DOWN)
-        box = SurroundingRectangle(words, color=BLUE, buff=0.45, corner_radius=0.2, stroke_width=5,
+                          ).arrange(DOWN, buff=0.2).move_to(0.2 * DOWN)
+        box = SurroundingRectangle(question, color=BLUE, buff=0.45, corner_radius=0.2, stroke_width=5,
                                    fill_color=BACKGROUND, fill_opacity=0.97)
-        VGroup(box, words).set_z_index(5)
+        VGroup(box, question).set_z_index(5)
         # "So before trusting a prediction, ask one question: did the survey see conditions like these?"
         self.play(FadeOut(seen), dots.animate.set_opacity(0.4), winter.animate.set_opacity(0.4),
                   run_time=self.share(0.06))
         self.play(FadeIn(box), FadeIn(question[0]), run_time=self.share(0.1))
         cue(self, "did the survey")
-        self.play(FadeIn(question[1], shift=0.2 * UP), run_time=self.share(0.12))
-        # "The page shows a simple way to measure it."
-        cue(self, "The page shows")
-        self.play(FadeIn(page), run_time=self.share(0.1))
+        self.play(FadeIn(question[1], shift=0.2 * UP), run_time=self.share(0.15))
         self.finish()
 
 
