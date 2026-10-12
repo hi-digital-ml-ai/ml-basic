@@ -4,9 +4,9 @@
     manim -ql scenes.py Scene08                      # draft
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
-A gentle introduction to the section, built on three ideas with one picture each:
-machine learning frees a model from straight lines, but not from how the data were
-collected, and a rare answer fools accuracy. Scenes marked "page results" read
+A gentle introduction to the section, built on three ideas with a simple picture for
+each concept: machine learning frees a model from straight lines and bell curves, but
+not from how the data were collected, and a rare answer fools accuracy. Scenes marked "page results" read
 visuals/data/*.csv, which tools/figures-for-video.R writes from the pages. The others
 are schematic: made-up shapes, never numbers that could pass for survey results. The
 opening, key-point, recap, quiz and end-card scenes are shared (mlbasic_video.py) and
@@ -28,10 +28,10 @@ class Title(TitleScene):
 PROMISES = ["What machine learning frees a model from",
             "What it does not free a model from",
             "Why a rare answer fools accuracy"]
-ANSWERS = ["From straight lines:\nit can find the shape\nin the data on its own",
-           "Not from how the data\nwere collected: where the survey\nnever went, it is guessing",
-           "Count what the model finds,\nnot just how often\nit is right"]
-RECAP = ["Machine learning frees a model from straight lines",
+ANSWERS = ["From straight lines and bell curves:\nit can find the shape\nin the data on its own",
+           "Not from how the data were collected:\nrepeat visits count for less, and\noff the survey, it is guessing",
+           "Check how many rare cases\nthe model finds, not just\nhow often it is right"]
+RECAP = ["Machine learning frees a model from straight lines and bell curves",
          "Not from how the data were collected",
          "A rare answer fools accuracy"]
 
@@ -99,7 +99,7 @@ class Scene01(LearnScene):
                            ("what machine learning frees", "what it does not", "and why a rare"))
 
 
-# Machine learning frees a model from straight lines (scenes 2–5) ----------------------------
+# Frees a model from straight lines and bell curves (scenes 2–8) ----------------------------
 
 class Scene02(VideoScene):
     """Schematic: what an assumption is, and what happens when it is wrong."""
@@ -205,16 +205,147 @@ class Scene04(VideoScene):
         self.finish()
 
 
-class Scene05(KeyPointScene):
-    number, point = 5, 1
+class Scene05(VideoScene):
+    """Schematic: the second assumption of a statistics course, about the errors."""
 
+    number = 5
 
-# But not from how the data were collected (scenes 6–11) -------------------------------------
+    def construct(self):
+        head = label("Taught in statistics courses: the errors", 38, SUBDUED, weight=BOLD).to_edge(UP, buff=0.6)
+        gap = label("error: what was caught − what was predicted", 30, INK).next_to(head, DOWN, 0.3)
+
+        def panel(x, heading):
+            box = RoundedRectangle(width=5.6, height=4.0, corner_radius=0.2, stroke_color=BLUE, stroke_width=5
+                                   ).move_to([x, -1.1, 0])
+            return VGroup(box, label(heading, 32, BLUE, weight=BOLD).next_to(box.get_top(), DOWN, 0.35))
+
+        bell_axes = plain_axes([-3, 3, 1], [0, 1.1, 1], 4.2, 2.0).move_to([-3.2, -1.5, 0])
+        bell_line = bell_axes.plot(lambda x: np.exp(-x * x / 2), x_range=[-3, 3], color=INK, stroke_width=6)
+        rng = np.random.default_rng(5)
+        band_axes = plain_axes([0, 10, 1], [-3, 3, 1], 4.2, 2.0).move_to([3.2, -1.5, 0])
+        points = VGroup(*[Dot(band_axes.c2p(x, y), radius=0.06, color=INK)
+                          for x, y in zip(rng.uniform(0.3, 9.7, 60), rng.normal(0, 0.8, 60))])
+        edges = VGroup(DashedLine(band_axes.c2p(0, 1.8), band_axes.c2p(10, 1.8), color=GREY, stroke_width=3),
+                       DashedLine(band_axes.c2p(0, -1.8), band_axes.c2p(10, -1.8), color=GREY, stroke_width=3))
+        left, right = panel(-3.2, "a bell curve"), panel(3.2, "even spread everywhere")
+        # "Statistics courses teach another assumption, about a model's errors: ..."
+        self.play(FadeIn(head), run_time=self.share(0.08))
+        # "... the gaps between what was caught and what was predicted."
+        cue(self, "the gaps")
+        self.play(FadeIn(gap, shift=0.2 * UP), run_time=self.share(0.1))
+        # "The errors should follow a bell curve, the Normal distribution, ..."
+        cue(self, "The errors should")
+        self.play(FadeIn(left), FadeIn(bell_axes), run_time=self.share(0.06))
+        self.play(Create(bell_line), run_time=self.share(0.1))
+        # "... and spread evenly everywhere."
+        cue(self, "and spread evenly")
+        self.play(FadeIn(right), FadeIn(band_axes), LaggedStart(*[FadeIn(d, scale=0.5) for d in points],
+                                                                 lag_ratio=0.02), Create(edges), run_time=self.share(0.14))
+        self.finish()
+
 
 class Scene06(VideoScene):
+    number = 6
+
+    def construct(self):
+        counts = self.data("counts").sort_values("abundance")
+        values, stations = counts["abundance"].to_numpy(), counts["stations"].to_numpy()
+        total = stations.sum()
+        median = values[np.searchsorted(np.cumsum(stations), total / 2)]
+        top = np.ceil(stations.max() / 50) * 50
+        axes, frame = chart([-1, 41, 10], [0, top, 50], 11.4, 4.6, [0, 10, 20, 30, 40],
+                            list(range(0, int(top) + 1, 50)), "animals caught at a station", "stations")
+        VGroup(axes, frame).shift(0.2 * RIGHT + 0.6 * DOWN)
+        unit = axes.x_length / 42
+        bars = VGroup(*[Rectangle(width=unit * 0.85, height=max(n / top * axes.y_length, 0.001), stroke_width=0,
+                                  fill_color=BLUE, fill_opacity=0.85).move_to(axes.c2p(v, 0), aligned_edge=DOWN)
+                        for v, n in zip(values, stations)])
+        empty = label(f"{stations[values == 0][0]} caught nothing", 28, INK, weight=BOLD
+                      ).next_to(bars[0], RIGHT, 0.25).align_to(bars[0], UP)
+        mid = DashedLine(axes.c2p(median, 0), axes.c2p(median, top * 0.7), color=INK, stroke_width=5)
+        mid_name = VGroup(Line(mid.get_end(), axes.c2p(6.5, top * 0.7), color=INK, stroke_width=3),
+                          label(f"the middle station: {median:g}", 28, INK, weight=BOLD
+                                ).next_to(axes.c2p(6.5, top * 0.7), RIGHT, 0.1))
+        largest = label(f"largest {values.max():g}", 28, INK, weight=BOLD).next_to(axes.c2p(values.max(), 0), UP, 0.35)
+        tail = Arrow(axes.c2p(12, top * 0.3), axes.c2p(36, top * 0.3), color=ORANGE, stroke_width=6, buff=0)
+        tail_name = label("a long tail of big catches", 30, ORANGE, weight=BOLD).next_to(tail, UP, 0.15)
+        head = label(f"The survey's catches, {total} stations", 32, SUBDUED, weight=BOLD).to_edge(UP, buff=0.35)
+        # "Survey counts do not behave like that. Of 598 stations, 129 caught nothing, ..."
+        self.play(FadeIn(frame), FadeIn(head), run_time=self.share(0.06))
+        cue(self, "Of 598")
+        self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.03), run_time=self.share(0.12))
+        cue(self, "129 caught")
+        self.play(FadeIn(empty, shift=0.2 * LEFT), run_time=self.share(0.06))
+        # "... the middle station caught 3, ..."
+        cue(self, "the middle station")
+        self.play(Create(mid), FadeIn(mid_name), run_time=self.share(0.08))
+        # "... and the largest 40."
+        cue(self, "and the largest")
+        self.play(FadeIn(largest, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "Most catches are small, with a long tail of big ones."
+        cue(self, "Most catches")
+        self.play(GrowArrow(tail), FadeIn(tail_name), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene07(VideoScene):
+    number = 7
+
+    def construct(self):
+        errors = self.data("errors")
+        spread = self.data("spread").sort_values("fifth")
+        x_top = np.ceil(errors["predicted"].max() / 4) * 4
+        y_lo, y_hi = np.floor(errors["error"].min() / 10) * 10, np.ceil(errors["error"].max() / 10) * 10
+        axes, frame = chart([0, x_top, 4], [y_lo, y_hi, 10], 8.2, 4.8, list(range(0, int(x_top) + 1, 4)),
+                            list(range(int(y_lo), int(y_hi) + 1, 10)), "the forest's prediction",
+                            "error: caught − predicted")
+        VGroup(axes, frame).shift(1.9 * LEFT + 0.4 * DOWN)
+        zero = Line(axes.c2p(0, 0), axes.c2p(x_top, 0), color=GREY, stroke_width=3)
+        dots = VGroup(*[Dot(axes.c2p(q, e), radius=0.035, color=INK).set_opacity(0.45)
+                        for q, e in zip(errors["predicted"], errors["error"])])
+        above = VGroup(*[d for d, e in zip(dots, errors["error"]) if e > 8])
+        bands = VGroup()
+        for _, row in spread.iloc[[0, -1]].iterrows():
+            lo, hi = row["predicted_from"], min(row["predicted_to"], x_top)
+            bands.add(Rectangle(width=axes.c2p(hi, 0)[0] - axes.c2p(lo, 0)[0],
+                                height=axes.c2p(0, row["error_sd"])[1] - axes.c2p(0, -row["error_sd"])[1],
+                                stroke_width=0, fill_color=BLUE, fill_opacity=0.25
+                                ).move_to(axes.c2p(lo, -row["error_sd"]), aligned_edge=DL))
+        lopsided = lines("lopsided: most a little", "below, a few far above", size=28)
+        wider = lines("wider where it", "predicts more", size=28, colour=BLUE)
+        fine = lines("the forest", "predicts well anyway", size=30, colour=GREEN)
+        why = lines("a tree predicts the", "average catch of", "similar stations:", size=26, bold=False, buff=0.06)
+        why.add(label("no bell curve needed", 26, INK, weight=BOLD).next_to(why, DOWN, 0.06, aligned_edge=LEFT))
+        VGroup(lopsided, wider, fine, why).arrange(DOWN, buff=0.4, aligned_edge=LEFT).move_to(5.1 * RIGHT + 0.2 * DOWN)
+        head = label("The random forest's errors, on sites it never saw", 30, SUBDUED, weight=BOLD
+                     ).to_edge(UP, buff=0.3)
+        # "So a random forest's errors are lopsided, ..."
+        self.play(FadeIn(frame), FadeIn(head), Create(zero), run_time=self.share(0.06))
+        self.play(FadeIn(dots, lag_ratio=0.002), run_time=self.share(0.1))
+        cue(self, "are lopsided")
+        self.play(Indicate(above, color=VERMILION, scale_factor=1.5), FadeIn(lopsided), run_time=self.share(0.08))
+        # "... and they spread wider where it predicts more."
+        cue(self, "and they spread")
+        self.play(FadeIn(bands), FadeIn(wider), run_time=self.share(0.1))
+        # "Yet the forest predicts well."
+        cue(self, "Yet the forest")
+        self.play(FadeIn(fine, shift=0.2 * UP), run_time=self.share(0.06))
+        # "A tree predicts the average catch of similar stations, and an average needs no bell curve."
+        cue(self, "A tree predicts")
+        self.play(FadeIn(why, shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene08(KeyPointScene):
+    number, point = 8, 1
+
+
+# But not from how the data were collected (scenes 9–16) ------------------------------------
+
+class Scene09(VideoScene):
     """Schematic: a model learns only from its stations, and survey effort gathers near a port."""
 
-    number = 6
+    number = 9
 
     def construct(self):
         sea = Rectangle(width=7.0, height=5.0, stroke_width=0, fill_color="#EAF2F8", fill_opacity=1
@@ -229,30 +360,98 @@ class Scene06(VideoScene):
         points = [near + np.array([abs(dx), dy, 0]) for dx, dy in rng.normal(0, [1.0, 0.8], (30, 2))]
         stations = VGroup(*[Dot(p, radius=0.08, color=BLUE) for p in points
                             if abs(p[0] - sea.get_x()) < 3.3 and abs(p[1] - sea.get_y()) < 2.3])
-        unsurveyed = label("never surveyed", 28, SUBDUED, weight=BOLD).move_to(sea.get_right() + 1.7 * LEFT + 1.5 * DOWN)
         model = RoundedRectangle(width=2.6, height=1.4, corner_radius=0.2, stroke_color=GREEN, stroke_width=6
                                  ).move_to(4.8 * RIGHT + 0.6 * UP)
         model_name = label("the model", 32, GREEN, weight=BOLD).move_to(model)
         arrow = Arrow(stations.get_right(), model.get_left(), color=INK, stroke_width=6, buff=0.3)
         only = lines("it can only learn", "from these stations", size=28).next_to(model, DOWN, 0.4)
-        effort = label("survey effort follows ports, weather and ship time", 30, INK, weight=BOLD
-                       ).to_edge(DOWN, buff=0.3)
-        # "Next, what it does not free a model from."
+        matters = label("so how they were gathered matters", 30, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
+        # "Next, what it does not free a model from: how the data were collected."
         self.play(FadeIn(sea), FadeIn(land), FadeIn(port), run_time=self.share(0.1))
         self.play(LaggedStart(*[FadeIn(s, scale=0.5) for s in stations], lag_ratio=0.03), run_time=self.share(0.1))
         # "However flexible, a model can only learn from the stations it was given."
         cue(self, "a model can only")
         self.play(FadeIn(model), FadeIn(model_name), GrowArrow(arrow), FadeIn(only), run_time=self.share(0.14))
-        # "And survey effort is never even: it follows ports, weather and ship time."
-        cue(self, "And survey effort")
-        self.play(FadeIn(unsurveyed), Indicate(port, color=INK), run_time=self.share(0.1))
-        cue(self, "it follows ports")
-        self.play(FadeIn(effort, shift=0.2 * UP), run_time=self.share(0.1))
+        # "... so how they were gathered matters."
+        cue(self, "so how they")
+        self.play(FadeIn(matters, shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+def visit_squares(visits):
+    """One square per station, in rows like a spreadsheet and in stacks by site."""
+    counts = sorted(visits["visits"].astype(int), reverse=True)
+    total = sum(counts)
+    squares = VGroup(*[Square(0.1, stroke_width=0, fill_color=BLUE, fill_opacity=1) for _ in range(total)])
+    grid = squares.copy().arrange_in_grid(rows=20, buff=0.06).move_to(0.3 * DOWN)
+    stacks, i = VGroup(), 0
+    for n in counts:
+        stacks.add(VGroup(*[squares[i + k].copy() for k in range(n)]).arrange(UP, buff=0.02))
+        i += n
+    stacks.arrange_in_grid(rows=4, buff=(0.06, 0.35), cell_alignment=DOWN)
+    stacks.scale_to_fit_width(12.6)
+    if stacks.height > 4.4:
+        stacks.scale_to_fit_height(4.4)
+    stacks.move_to(1.2 * DOWN)
+    return total, grid, stacks
+
+
+class Scene10(VideoScene):
+    number = 10
+
+    def construct(self):
+        total, grid, stacks = visit_squares(self.data("visits"))
+        head = label(f"{total} stations", 48, INK, weight=BOLD).to_edge(UP, buff=0.5)
+        sites = label(f"from only {len(stacks)} sites", 48, BLUE, weight=BOLD).to_edge(UP, buff=0.5)
+        # "This survey's 800 stations come from only 160 sites, visited again and again."
+        self.play(FadeIn(head), LaggedStart(*[FadeIn(q) for q in grid], lag_ratio=0.002), run_time=self.share(0.14))
+        cue(self, "come from only")
+        flat = VGroup(*[q for stack in stacks for q in stack])
+        self.play(Transform(grid, flat), run_time=self.share(0.18))
+        self.play(FadeOut(head, shift=0.3 * UP), FadeIn(sites, shift=0.3 * UP), run_time=self.share(0.06))
+        # "As the Marine data video showed, visits to one site share its depth, its seabed and its water, ..."
+        cue(self, "visits to one site")
+        start = sum(len(q) for q in stacks[:5])
+        one = VGroup(*grid[start:start + len(stacks[5])])
+        box = SurroundingRectangle(stacks[5], color=ORANGE, buff=0.08, stroke_width=4)
+        name = label("one site: same depth, same seabed, same water", 30, ORANGE, weight=BOLD
+                     ).next_to(stacks, UP, 0.3)
+        self.play(one.animate.set_fill(ORANGE), Create(box), FadeIn(name), run_time=self.share(0.12))
+        # "... so they partly repeat each other."
+        cue(self, "so they partly")
+        repeat = label("so its visits partly repeat each other", 30, INK, weight=BOLD).move_to(name)
+        self.play(FadeOut(name, shift=0.2 * UP), FadeIn(repeat, shift=0.2 * UP), run_time=self.share(0.08))
+        self.finish()
+
+
+class Scene11(VideoScene):
+    number = 11
+
+    def construct(self):
+        spreads = self.data("spreads")
+        worth = spreads[(spreads["estimate"] == "Average catch") & (spreads["resampled"] == "Whole sites")]["worth"].iloc[0]
+        worth = int(round(worth, -1))
+        n = int(self.data("visits")["visits"].sum())
+        squares = VGroup(*[Square(0.16, stroke_width=0, fill_color=BLUE, fill_opacity=1) for _ in range(n)]
+                         ).arrange_in_grid(rows=20, buff=0.05).move_to(2.6 * LEFT + 0.3 * DOWN)
+        head = label("How much the stations are worth", 34, SUBDUED, weight=BOLD).to_edge(UP, buff=0.4)
+        counted = lines(f"{n} stations,", f"worth about {worth}", "independent ones", size=34, colour=BLUE
+                        ).move_to(4.6 * RIGHT + 0.9 * UP)
+        surer = lines(f"counted as {n}:", "results look surer", "than they are", size=30, colour=VERMILION
+                      ).next_to(counted, DOWN, 0.6, aligned_edge=LEFT)
+        # "The page measures how much."
+        self.play(FadeIn(head), FadeIn(squares, lag_ratio=0.001), run_time=self.share(0.14))
+        # "The 800 stations carry about as much information as 470 independent ones."
+        cue(self, "The 800")
+        self.play(*[q.animate.set_fill(LIGHT) for q in squares[worth:]], FadeIn(counted), run_time=self.share(0.2))
+        # "Count them as 800, and a model's results look surer than they are."
+        cue(self, "Count them")
+        self.play(FadeIn(surer, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
 def novelty_layout(scene):
-    """The summer and autumn survey by depth and temperature, and the winter stations, for scenes 7–10."""
+    """The summer and autumn survey by depth and temperature, and the winter stations, for scenes 12–15."""
     stations = scene.data("novelty")
     depth, temp = stations["depth_m"], stations["temperature_c"]
     axes, frame = chart([0, 200, 50], [0, 20, 5], 7.0, 4.8, [0, 50, 100, 150, 200], [0, 5, 10, 15, 20],
@@ -277,14 +476,18 @@ def novelty_layout(scene):
     return frame, surveyed_dots, winter_dots, head, key, cold_zone, cold_name
 
 
-class Scene07(VideoScene):
-    number = 7
+class Scene12(VideoScene):
+    number = 12
 
     def construct(self):
         frame, dots, winter, head, key, cold_zone, cold_name = novelty_layout(self)
         cold_name.next_to(key[0], DOWN, 0.4, aligned_edge=LEFT)
+        effort = lines("survey effort follows", "ports, weather and ship time", size=30).move_to(head, aligned_edge=UL)
+        # "Survey effort is uneven too: it follows ports, weather and ship time."
+        self.play(FadeIn(effort), run_time=self.share(0.08))
         # "Here is a survey that sailed only in summer and autumn."
-        self.play(FadeIn(frame), FadeIn(head), run_time=self.share(0.12))
+        cue(self, "Here is a survey")
+        self.play(FadeOut(effort), FadeIn(frame), FadeIn(head), run_time=self.share(0.1))
         # "Each dot is a station, placed by its depth and its temperature."
         cue(self, "Each dot is")
         self.play(FadeIn(key[0]), FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.2))
@@ -302,8 +505,8 @@ def winter_notes(key):
     return seen
 
 
-class Scene08(VideoScene):
-    number = 8
+class Scene13(VideoScene):
+    number = 13
 
     def construct(self):
         frame, dots, winter, head, key, cold_zone, cold_name = novelty_layout(self)
@@ -328,8 +531,8 @@ class Scene08(VideoScene):
         self.finish()
 
 
-class Scene09(VideoScene):
-    number = 9
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         frame, dots, winter, head, key, cold_zone, cold_name = novelty_layout(self)
@@ -358,8 +561,8 @@ class Scene09(VideoScene):
         self.finish()
 
 
-class Scene10(VideoScene):
-    number = 10
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         frame, dots, winter, head, key, cold_zone, cold_name = novelty_layout(self)
@@ -385,14 +588,14 @@ class Scene10(VideoScene):
         self.finish()
 
 
-class Scene11(KeyPointScene):
-    number, point = 11, 2
+class Scene16(KeyPointScene):
+    number, point = 16, 2
 
 
-# A rare answer fools accuracy (scenes 12–16) ------------------------------------------------
+# A rare answer fools accuracy (scenes 17–20) ------------------------------------------------
 
 def rare_grid(scene):
-    """The training stations as dots, the ones with the rare species picked out, for scenes 12–15."""
+    """The training stations as dots, the ones with the rare species picked out, for scenes 17–19."""
     rare = scene.data("rare").iloc[0]
     n, present = int(rare["stations"]), int(rare["present"])
     dots = VGroup(*[Dot(radius=0.065, color=LIGHT) for _ in range(n)]).arrange_in_grid(cols=26, buff=0.09)
@@ -408,8 +611,8 @@ def lit_up(lit):
         d.set_color(VERMILION).scale(1.4)
 
 
-class Scene12(VideoScene):
-    number = 12
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         rare, dots, lit, _ = rare_grid(self)
@@ -443,8 +646,8 @@ def trap_panel(scene):
     return plain, head, found, accuracy, meaning
 
 
-class Scene13(VideoScene):
-    number = 13
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         rare, dots, lit, _ = rare_grid(self)
@@ -467,94 +670,48 @@ class Scene13(VideoScene):
         self.finish()
 
 
-def sensitivity_name():
-    return VGroup(label("sensitivity", 40, BLUE, weight=BOLD),
-                  label("of the stations with the species,", 26, INK),
-                  label("the share called present", 26, INK)
-                  ).arrange(DOWN, buff=0.08).move_to(3.9 * RIGHT + 2.2 * UP)
-
-
-class Scene14(VideoScene):
-    number = 14
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         rare, dots, lit, _ = rare_grid(self)
         lit_up(lit)
         plain, head, found, accuracy, meaning = trap_panel(self)
         self.add(dots, head, found, accuracy, meaning)
-        name = sensitivity_name()
-        value = label(f"{plain['sensitivity']:.0f}", 72, BLUE, weight=BOLD).move_to(3.9 * RIGHT + 0.2 * DOWN)
-        hid = lines("the 95% hid a model", "that finds nothing", size=30, colour=VERMILION
-                    ).next_to(value, DOWN, 0.5)
-        hid.set_x(value.get_x())
-        # "So count what the model finds."
-        self.play(FadeOut(VGroup(head, found, accuracy, meaning)), run_time=self.share(0.08))
-        # "Sensitivity is the share of the stations with the species that the model calls present."
-        cue(self, "Sensitivity is")
-        self.play(FadeIn(name), Indicate(lit, color=BLUE, scale_factor=1.6), run_time=self.share(0.14))
-        # "Here it is 0: ..."
-        cue(self, "Here it is")
-        self.play(FadeIn(value, scale=1.3), run_time=self.share(0.08))
-        # "... the 95 per cent hid a model that finds nothing."
-        cue(self, "the 95 per cent")
-        self.play(FadeIn(hid, shift=0.2 * UP), run_time=self.share(0.1))
+        rings = VGroup(*[Circle(0.15, color=BLUE, stroke_width=4).move_to(d) for d in lit])
+        ask = lines("how many of these", "does it find?", size=40, colour=BLUE).move_to(3.9 * RIGHT + 1.0 * UP)
+        not_only = lines("not just how often", "it is right", size=30, colour=SUBDUED).next_to(ask, DOWN, 0.3)
+        later = lines("measuring it:", "the Validation section", size=30, colour=INK).next_to(not_only, DOWN, 0.7)
+        for g in (not_only, later):
+            g.align_to(ask, LEFT)
+        # "So check how many of the rare cases a model finds, ..."
+        self.play(FadeOut(VGroup(head, found, accuracy, meaning)), Create(rings), run_time=self.share(0.12))
+        self.play(FadeIn(ask), run_time=self.share(0.1))
+        # "... not just how often it is right."
+        cue(self, "not just")
+        self.play(FadeIn(not_only), run_time=self.share(0.08))
+        # "The Validation section shows how to measure that."
+        cue(self, "The Validation")
+        self.play(FadeIn(later, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
-
-    def construct(self):
-        rare, dots, lit, others = rare_grid(self)
-        lit_up(lit)
-        lower = self.data("same").iloc[0]
-        self.add(dots)
-        name = sensitivity_name()
-        self.add(name)
-        # Drawn at the page's rates: the share of presences found, and of absences called present.
-        rng = np.random.default_rng(8)
-        found = [lit[k] for k in rng.choice(len(lit), round(lower["sensitivity"] * len(lit)), replace=False)]
-        alarms = [others[k] for k in rng.choice(len(others), round((1 - lower["specificity"]) * len(others)),
-                                               replace=False)]
-        rings = VGroup(*[Circle(0.14, color=GREEN, stroke_width=4).move_to(d) for d in found])
-        threshold = label("threshold lowered", 30, INK, weight=BOLD).move_to(3.9 * RIGHT + 0.5 * UP)
-        value = label(f"about {lower['sensitivity']:.1f}", 56, GREEN, weight=BOLD).next_to(threshold, DOWN, 0.25)
-        seven = label("7 in 10 found", 28, GREEN).next_to(value, DOWN, 0.1)
-        price = VGroup(key_row(PURPLE, "false alarms:", 28), label("without the species, called present", 24, INK)
-                       ).arrange(DOWN, buff=0.08, aligned_edge=LEFT).next_to(seven, DOWN, 0.45)
-        price.set_x(threshold.get_x())
-        costs = lines("where to set it:", "what each mistake costs", size=28, colour=BLUE
-                      ).next_to(price, DOWN, 0.45)
-        costs.set_x(threshold.get_x())
-        # "Lower the threshold, and the model finds about 7 in 10 of them."
-        self.play(FadeIn(threshold), run_time=self.share(0.08))
-        cue(self, "the model finds")
-        self.play(Create(rings), FadeIn(value), FadeIn(seven), run_time=self.share(0.14))
-        # "The price is more false alarms: stations without the species called present."
-        cue(self, "The price")
-        self.play(*[d.animate.set_color(PURPLE) for d in alarms], FadeIn(price), run_time=self.share(0.14))
-        # "Where to set the threshold depends on what each mistake costs."
-        cue(self, "Where to set")
-        self.play(FadeIn(costs, shift=0.2 * UP), run_time=self.share(0.1))
-        self.finish()
+class Scene20(KeyPointScene):
+    number, point = 20, 3
 
 
-class Scene16(KeyPointScene):
-    number, point = 16, 3
+# Quiz (scenes 21–22) -----------------------------------------------------------------------
 
-
-# Quiz (scenes 17–18) -----------------------------------------------------------------------
-
-class Scene17(QuizScene):
-    number = 17
+class Scene21(QuizScene):
+    number = 21
     question = ("A harmful algal bloom occurs", "on 2 days in 100.",
                 "A model that warns of blooms is 98% accurate.", "Is it a good model?")
 
 
-class Scene18(VideoScene):
+class Scene22(VideoScene):
     """Schematic: a hundred days, two with a bloom, and a model that never warns."""
 
-    number = 18
+    number = 22
 
     def construct(self):
         days = VGroup(*[Square(0.36, stroke_width=0, fill_color=LIGHT, fill_opacity=1) for _ in range(100)]
@@ -566,8 +723,8 @@ class Scene18(VideoScene):
                        label("98% accurate", 40, GREEN, weight=BOLD),
                        label("blooms caught: 0", 40, VERMILION, weight=BOLD)
                        ).arrange(DOWN, buff=0.25, aligned_edge=LEFT).move_to(3.0 * RIGHT + 1.0 * UP)
-        ask = VGroup(label("ask for its sensitivity:", 30, BLUE, weight=BOLD),
-                     label("how many blooms it catches", 30, INK)
+        ask = VGroup(label("ask:", 30, BLUE, weight=BOLD),
+                     label("how many blooms does it catch?", 30, BLUE, weight=BOLD)
                      ).arrange(DOWN, buff=0.1, aligned_edge=LEFT).next_to(never, DOWN, 0.7, aligned_edge=LEFT)
         rings = VGroup(*[Circle(0.3, color=VERMILION, stroke_width=4).move_to(b) for b in blooms])
         key = key_row(VERMILION, "a day with a bloom", 26).next_to(days, DOWN, 0.3)
@@ -579,25 +736,25 @@ class Scene18(VideoScene):
         # "... and it misses every bloom."
         cue(self, "and it misses")
         self.play(FadeIn(never[2]), Create(rings), run_time=self.share(0.1))
-        # "Ask for its sensitivity: how many of the blooms it catches."
-        cue(self, "Ask for")
+        # "Ask how many of the blooms it catches."
+        cue(self, "Ask how")
         self.play(FadeIn(ask, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
-# The recap (scenes 19–21) and the end card (scene 22) --------------------------------------
+# The recap (scenes 23–25) and the end card (scene 26) --------------------------------------
 
-class Scene19(RecapScene):
-    number, point = 19, 1
-
-
-class Scene20(RecapScene):
-    number, point = 20, 2
+class Scene23(RecapScene):
+    number, point = 23, 1
 
 
-class Scene21(RecapScene):
-    number, point = 21, 3
+class Scene24(RecapScene):
+    number, point = 24, 2
 
 
-class Scene22(EndCardScene):
-    number = 22
+class Scene25(RecapScene):
+    number, point = 25, 3
+
+
+class Scene26(EndCardScene):
+    number = 26
