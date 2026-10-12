@@ -9,23 +9,17 @@ write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, 
 
 exports <- list(
   # Scenes 2–6: the five models on their fitting stations and on new sites, and the
-  # error of predicting the average. Scenes 12–15: the three one-input trees with the
-  # stations they were fitted to, and the sweep from rigid to flexible.
+  # error of predicting the average. Scenes 11–12: the sweep from rigid to flexible.
   "underfitting-and-overfitting.qmd" = function(env, dir) {
     write(with(env, dplyr::filter(results, model != "Predict the average") |>
                       dplyr::transmute(model, training, new, baseline = baseline_five)),
           dir, "five-models")
-    write(with(env, dplyr::select(train, temperature = temperature_c, abundance) |>
-                      tidyr::drop_na()), dir, "temperature-points")
-    write(with(env, dplyr::transmute(lines, min_n, temperature = temperature_c, prediction = .pred,
-                                     leaves = one_leaves[match(min_n, three_sizes)])),
-          dir, "three-trees")
     write(with(env, dplyr::transmute(sweep, min_n, leaves, training, new,
                                      baseline = baseline, best_leaves = best$leaves)),
           dir, "u-curve")
   },
 
-  # Scenes 18–20: bias², variance and noise by tree size, the noise's share of the best
+  # Scenes 15–18: bias², variance and noise by tree size, the noise's share of the best
   # tree's error, and a single tree against a forest of the same trees.
   "bias-variance.qmd" = function(env, dir) {
     write(with(env, dplyr::transmute(parts, min_n, leaves, bias_squared, variance, noise,
@@ -34,7 +28,7 @@ exports <- list(
     write(with(env, dplyr::select(tree_and_forest, model, bias_squared, variance)), dir, "tree-and-forest")
   },
 
-  # Scene 24: error on new sites against λ, and the models without a penalty. Scene 33:
+  # Scene 22: error on new sites against λ, and the models without a penalty. Scene 30:
   # R² on the fitting stations and the error on new sites, as random columns are added.
   "regularisation.qmd" = function(env, dir) {
     write(with(env, dplyr::filter(sweep, model %in% c("Ridge regression", "Lasso"))),
@@ -44,7 +38,7 @@ exports <- list(
           dir, "random-columns")
   },
 
-  # Scenes 26, 28 and 29: the runs of each way of choosing, and the test sites' score.
+  # Scenes 25 and 26: the runs of each way of choosing, and the test sites' score.
   # The two leads are taken from the rounded errors, as the page states them.
   "hyperparameter-selection.qmd" = function(env, dir) {
     write(with(env, dplyr::select(repeats, method, min_n, claimed)), dir, "repeats")
