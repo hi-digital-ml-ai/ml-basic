@@ -164,7 +164,7 @@ class Scene03(VideoScene):
 
     def construct(self):
         frame, dots, line, cross, steps, names, hump = shapes_layout()
-        prefers = label("a temperature it prefers", 28, INK, weight=BOLD).move_to(hump + 0.35 * UP)
+        prefers = label("a temperature it prefers", 28, INK, weight=BOLD).move_to(hump + 0.75 * UP)
         # "Take linear regression."
         self.play(FadeIn(frame), LaggedStart(*[FadeIn(d, scale=0.5) for d in dots], lag_ratio=0.02),
                   run_time=self.share(0.12))
@@ -186,7 +186,7 @@ class Scene04(VideoScene):
 
     def construct(self):
         frame, dots, line, cross, steps, names, hump = shapes_layout()
-        prefers = label("a temperature it prefers", 28, INK, weight=BOLD).move_to(hump + 0.35 * UP)
+        prefers = label("a temperature it prefers", 28, INK, weight=BOLD).move_to(hump + 0.75 * UP)
         line.fade(0.6)
         self.add(frame, dots, line, cross, names[0], prefers)
         flexible = label("flexible", 40, GREEN, weight=BOLD).move_to([3.6, 1.4, 0])
@@ -467,11 +467,10 @@ def novelty_layout(scene):
     head = label("A survey in summer and autumn", 28, SUBDUED, weight=BOLD).move_to([1.0, 2.9, 0], aligned_edge=LEFT)
     key = VGroup(key_row(LIGHT, "surveyed station"), key_row(ORANGE, "winter station")
                  ).arrange(DOWN, buff=0.3, aligned_edge=LEFT).next_to(head, DOWN, 0.4, aligned_edge=LEFT)
-    cold = surveyed["temperature_c"] < 8
-    left = surveyed["depth_m"][cold].min()
-    cold_zone = Rectangle(width=axes.c2p(200, 0)[0] - axes.c2p(left, 0)[0],
-                          height=axes.c2p(0, 8)[1] - axes.c2p(0, 0)[1], stroke_color=BLUE, stroke_width=4,
-                          fill_color=BLUE, fill_opacity=0.08).move_to(axes.c2p(left, 0), aligned_edge=DL)
+    cold = surveyed[surveyed["temperature_c"] < 8]
+    low, high = axes.c2p(cold["depth_m"].min() - 4, cold["temperature_c"].min() - 0.6), axes.c2p(cold["depth_m"].max() + 4, 8)
+    cold_zone = Rectangle(width=high[0] - low[0], height=high[1] - low[1], stroke_color=BLUE, stroke_width=4,
+                          fill_color=BLUE, fill_opacity=0.08).move_to(low, aligned_edge=DL)
     cold_name = label("cold water: only at depth", 28, BLUE, weight=BOLD)
     return frame, surveyed_dots, winter_dots, head, key, cold_zone, cold_name
 
@@ -606,6 +605,24 @@ def rare_grid(scene):
     return rare, dots, lit, others
 
 
+def rare_key(dots):
+    """Above the grid: what the survey recorded, and what the model called."""
+    called = VGroup(Square(0.3, color=INK, stroke_width=4), label("called present by the model", 28)
+                    ).arrange(RIGHT, buff=0.2)
+    key = VGroup(key_row(VERMILION, "species present (the survey's record)"), called
+                 ).arrange(DOWN, buff=0.25, aligned_edge=LEFT).next_to(dots, UP, 0.45, aligned_edge=LEFT)
+    return key
+
+
+def model_calls(scene, lit, others):
+    """Squares on the stations the model called present: all of them, at 0.5, are absences.
+    They are drawn on stations well away from any presence, so the two never look alike."""
+    plain = scene.data("at-default").set_index("training").loc["No rebalancing"]
+    clear = [d for d in others if min(np.linalg.norm(d.get_center() - p.get_center()) for p in lit) > 0.6]
+    picks = np.random.default_rng(5).choice(len(clear), int(plain["false_alarms"]), replace=False)
+    return VGroup(*[Square(0.3, color=INK, stroke_width=4).move_to(clear[k]) for k in picks])
+
+
 def lit_up(lit):
     for d in lit:
         d.set_color(VERMILION).scale(1.4)
@@ -616,6 +633,7 @@ class Scene17(VideoScene):
 
     def construct(self):
         rare, dots, lit, _ = rare_grid(self)
+        key = rare_key(dots)
         examples = VGroup(label("rare", 48, VERMILION, weight=BOLD),
                           label("a protected species", 36, INK, weight=BOLD),
                           label("a harmful algal bloom", 36, INK, weight=BOLD)).arrange(DOWN, buff=0.3).move_to(0.4 * UP)
@@ -629,7 +647,8 @@ class Scene17(VideoScene):
         cue(self, "Here a second")
         self.play(FadeOut(examples), FadeIn(dots, lag_ratio=0.001), run_time=self.share(0.12))
         cue(self, "29 of")
-        self.play(*[d.animate.set_color(VERMILION).scale(1.4) for d in lit], FadeIn(found), run_time=self.share(0.12))
+        self.play(*[d.animate.set_color(VERMILION).scale(1.4) for d in lit], FadeIn(found), FadeIn(key[0]),
+                  run_time=self.share(0.12))
         self.finish()
 
 
@@ -650,17 +669,19 @@ class Scene18(VideoScene):
     number = 18
 
     def construct(self):
-        rare, dots, lit, _ = rare_grid(self)
+        rare, dots, lit, others = rare_grid(self)
         lit_up(lit)
-        self.add(dots)
+        key = rare_key(dots)
+        self.add(dots, key[0])
         plain, head, found, accuracy, meaning = trap_panel(self)
         everywhere = label("as if it said absent everywhere", 28, INK, weight=BOLD).next_to(meaning, DOWN, 0.3)
-        rings = VGroup(*[Circle(0.13, color=VERMILION, stroke_width=3).move_to(d) for d in lit])
+        calls = model_calls(self, lit, others)
         # "Logistic regression gives each station a probability of presence, ..."
-        self.play(FadeIn(head), run_time=self.share(0.1))
+        self.play(FadeIn(head), FadeIn(key[1]), run_time=self.share(0.1))
         # "Here it finds none of the presences."
         cue(self, "Here it finds")
-        self.play(FadeIn(found), Create(rings), run_time=self.share(0.1))
+        self.play(FadeIn(found), LaggedStart(*[Create(c) for c in calls], lag_ratio=0.3),
+                  Indicate(lit, color=VERMILION, scale_factor=1.3), run_time=self.share(0.1))
         # "Yet its accuracy, the share of its calls that are right, is 95 per cent."
         cue(self, "Yet its accuracy")
         self.play(FadeIn(accuracy), FadeIn(meaning), run_time=self.share(0.1))
@@ -674,10 +695,12 @@ class Scene19(VideoScene):
     number = 19
 
     def construct(self):
-        rare, dots, lit, _ = rare_grid(self)
+        rare, dots, lit, others = rare_grid(self)
         lit_up(lit)
+        key = rare_key(dots)
+        calls = model_calls(self, lit, others)
         plain, head, found, accuracy, meaning = trap_panel(self)
-        self.add(dots, head, found, accuracy, meaning)
+        self.add(dots, key, calls, head, found, accuracy, meaning)
         rings = VGroup(*[Circle(0.15, color=BLUE, stroke_width=4).move_to(d) for d in lit])
         ask = lines("how many of these", "does it find?", size=40, colour=BLUE).move_to(3.9 * RIGHT + 1.0 * UP)
         not_only = lines("not just how often", "it is right", size=30, colour=SUBDUED).next_to(ask, DOWN, 0.3)
