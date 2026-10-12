@@ -13,21 +13,21 @@ scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
 
-This video is an overview built on three ideas, each with one example and the reason
-behind it: a model can fit well and still be wrong (the random forest's depth curve,
-explained as confounding), rows are worth less than they seem (repeat visits and the
-effective sample size), and a model never says when it is guessing (past the survey's
-depths, and a new mix of conditions). The quiz applies the second idea. It does not
-tour every page: the error check along each input, blocks of the map, what the forest's
-inputs explain, polynomial regression past the data, what each loss aims at, samples
-from one year and class imbalance are left to the pages, and the end card names some
-of them. Each true curve is shown only after the model's own answer.
+This video is built from three pages of the section, each a case where a good score
+hides a problem: the loss decides what a prediction means (distributional assumptions:
+two forests with the same RMSE, one 30 per cent short of the animals caught), a model
+never says when it is guessing (uneven sampling and extrapolation: a new mix of
+conditions passes the range check), and a rare answer fools accuracy (class imbalance:
+95 per cent accurate while finding nothing, and rebalancing that only moves the
+threshold). The quiz applies the third idea to a made-up rare event. Linearity and
+dependent data are left to their pages, and the end card names them.
 
-Earlier videos already taught linear regression and random forests (Supervised
-learning), repeat visits that are not independent (Marine data), resamples (Supervised
-learning), extrapolation and each method's own rule past the data (Supervised learning)
-and whole-site folds (Generalisation). Here they get a one-line reminder, not a re-run;
-the words go on confounding, the effective sample size and why a forest runs flat.
+Earlier videos already taught squared and absolute error (How algorithms learn),
+extrapolation and each method's own rule past the data, k-nearest neighbours, and
+thresholds with false alarms and misses (Supervised learning). Here they get a one-line
+reminder; the words go on what is new: which middle a loss aims at, a new mix of
+conditions, the distance to the survey, sensitivity, specificity and precision, and why
+rebalancing is a threshold in disguise.
 -->
 
 # In this video
@@ -37,208 +37,233 @@ visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
 Welcome back to Machine Learning Basics for Marine Science. This video is about
-assumptions: what a method takes for granted about its data. It covers three things:
-why a model can fit well and still be wrong, why rows are worth less than they seem,
-and why a model never says when it is guessing.
+assumptions: what a model takes for granted about its data. It covers three things:
+why the loss decides what a prediction means, why a model never says when it is
+guessing, and why a rare answer fools accuracy.
 
 ## Scene 2
-visual: manim Simulated: a "true process" box sends dots to a map of stations (schematic)
+visual: manim Hidden: a score card with a big tick; a magnifying glass passes over it and finds a crack: "a good score can hide a problem" (schematic)
 
-As in the other videos, the survey is simulated: we wrote the process that makes its
-counts. So a model's answers can be checked against the truth, which no real study can
-do.
+Each part shows a model with a good score that hides a problem. The score alone never
+reveals it. Knowing what the model assumes does.
 
-# A model can fit well and still be wrong
+# The loss decides what a prediction means
 
 ## Scene 3
-visual: manim Shapes: a straight line fails a hump; a random forest follows it in steps (schematic)
+visual: manim Checks: two boxes, "errors bell-shaped" and "equal spread everywhere"; "taught in statistics courses" (schematic)
 
-First, why a model can fit well and still be wrong. Few marine responses are straight
-lines. A linear model, such as linear regression, assumes they are: each extra degree
-or metre always adds the same amount. A random forest, many decision trees averaged,
-does not. Its trees split the stations into groups, so it follows the data in steps,
-with no shape chosen in advance.
+First, why the loss decides what a prediction means. Statistics courses teach two
+checks before fitting a model. A model's errors should follow a bell curve, the Normal
+distribution, and they should spread equally everywhere.
 
 ## Scene 4
-visual: manim Truth: the forest's temperature curve, then the simulation's curve dashed over it (page results, linearity-and-nonlinearity.qmd#fig-truth)
+visual: manim Counts: a histogram of the 598 training stations' catches; 129 at zero, the median 3, the largest 40, the average 4.0 to the right of the median; "skewed: a long tail" (page results, distributional-assumptions.qmd)
 
-Fit a random forest to the survey, and draw how its prediction changes with
-temperature, with the other inputs held fixed. It finds a hump, a temperature where the
-species does best, without being told the shape. The dashed line is the true curve, the
-one the simulation used, and the forest follows it closely.
+Counts of animals fail both. Of 598 stations, 129 caught nothing, the middle station
+caught 3, and the largest 40. A long tail like this is called skew. The few big catches
+pull the average up to 4.0, above the middle catch, the median.
 
 ## Scene 5
-visual: manim Truth: the depth panel, the forest's peak in shallow water, the true peak at 80 m, the stretch between them shaded (page results)
+visual: manim Errors: the random forest's errors against its predictions, fanning out; "1.8" and "7.7" for the spread in the lowest and highest fifth, "4.3 times as wide"; "the forest predicts well anyway" (page results, distributional-assumptions.qmd#fig-errors)
 
-For depth, it does not. The forest puts the most animals at 17 metres, and the truth is
-80. Yet the forest fits the survey well, and nothing in its predictions warns of the
-mistake. A map drawn from this curve would send the next survey to the wrong depth.
+A random forest's errors fail both checks too. They are lopsided, and they spread 4.3
+times wider where it predicts the most. Yet the forest predicts well. A tree predicts
+the average catch of similar stations, and an average needs no bell curve.
 
 ## Scene 6
-visual: manim Shelf: a cross-section from the coast to open sea, the seabed deepening; along it, depth changes and so does something no input measures; the forest sees only depth, which takes the credit (schematic)
+visual: manim Middles: a schematic histogram with a long tail; the median, the average and a far point marked: "absolute error: the median", "squared error: the average", "a quantile loss: any point you choose" (schematic)
 
-Why? The shelf deepens offshore. So moving away from the coast changes the depth, but
-it can change other things too, things that no input measures. Both change together,
-station by station, so the forest cannot tell them apart. It sees only depth, so depth
-takes the credit for both.
+So what does the shape change? What a prediction means. A prediction is one number
+standing for all the catches a station could give, and the loss picks which one.
+Squared error aims at the average. Absolute error aims at the median. And a quantile
+loss aims at any point you choose, such as the catch only 1 in 20 stations exceed.
 
 ## Scene 7
-visual: manim Confounding: "confounding" and its meaning; position, depth and the count as three boxes; then fish, fishing boats and seabirds in the same three places; "a better fit cannot fix it: measure the hidden cause" (schematic)
+visual: manim Logs: the long tail squeezed by taking logs, the histogram turning more bell-shaped; "a common habit" (schematic)
 
-This is called confounding. A confounder is a hidden cause linked to both an input and
-the outcome: here, position sets the depth and also changes the catch. Think of
-seabirds and fishing boats. They gather in the same places, but the boats do not draw
-the birds: the fish draw both. A better-fitting curve cannot fix this, because the data
-look the same either way. Only measuring the hidden cause can.
+Now a common habit. Skewed counts are often turned into their logarithm before
+fitting, which squeezes the long tail into something more bell-shaped. Fit a second
+forest to the log counts, and turn its predictions back into animals.
 
 ## Scene 8
+visual: manim Totals: two RMSEs, almost the same; then bars for the animals caught, the forest on raw counts and the forest on log counts, "30% short" (page results, distributional-assumptions.qmd)
+
+The two forests score almost the same RMSE, 4.69 and 4.78. Now add up their
+predictions. The stations caught 2,421 animals. The forest on raw counts predicts 2,514.
+The forest on log counts predicts 1,699: 30 per cent short.
+
+## Scene 9
+visual: manim Middles: the histogram again; the log-count forest's aim near the median, "a total needs the average"; "keep the counts, or use a loss made for counts" (schematic)
+
+Why? On the log scale, squared error aims at the average log count, and turned back
+into animals, that lands near the median, the typical catch. A stock estimate needs
+the average. So when totals matter, keep the counts as they are, or use a loss made
+for counts, such as Poisson deviance.
+
+## Scene 10
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 1
 pause-after: 2.0
 
-Key point one. A model can fit well and still be wrong: a curve that follows the data
-can credit the wrong input.
+Key point one. The loss decides what a prediction means: for skewed counts, the
+average and the typical catch differ, and a total needs the average.
 
-# Rows are worth less than they seem
-
-## Scene 9
-visual: manim Visits: 800 stations as squares, which gather into 160 sites; one site's visits highlighted; "dependent data" (page results, dependent-data.qmd)
-
-Next, why rows are worth less than they seem. The survey holds 800 stations, from only
-160 sites visited again and again. As the Marine data video showed, visits to one site
-share its depth, its seabed and its water, so they partly repeat each other. Ask one
-person the same question twice, and you get two answers but only one opinion. Data like
-these are called dependent: each visit says something about the others.
-
-## Scene 10
-visual: manim Resample: stations drawn at random, then whole sites drawn with all their visits; the average catch of each draw marked on a line (schematic)
-
-How much less are they worth? A resample can tell. Draw stations at random, as many as
-the survey holds, so some come up twice and some not at all: a survey that might have
-been. Work out its average catch, and do it many times. The more the averages move, the
-less sure the survey is of its average. Then draw whole sites instead, each with all
-its visits, because a new survey would bring new sites, not just new visits.
+# A model never says when it is guessing
 
 ## Scene 11
-visual: manim Spreads: the 500 averages drawn by station, and the 500 by site, wider; "worth about 470 stations"; "the effective sample size" (page results, dependent-data.qmd)
+visual: manim Easy: one input as a line, the survey's range marked; a new station beyond it, flagged "outside the range: easy to spot"; then a question mark: "inside every range?" (schematic)
 
-Drawing whole sites spreads the averages 1.31 times wider. That is the spread an
-average of only about 470 independent stations would have, so the 800 stations are
-worth about 470. This is the survey's effective sample size: how many independent rows
-the data are really worth. Count all 800, and the survey seems surer of its average
-than it is.
+Next, why a model never says when it is guessing. Survey effort is uneven: it follows
+ports, weather and ship time. As the Supervised learning video showed, past the data
+each model follows its own rule. A station outside the survey's range is easy to spot.
+The hard case is a station inside every range.
 
 ## Scene 12
-visual: manim Unseen: one site's visits, some fitted and some held out, "already seen"; then the whole site held out, "a new site" (schematic)
+visual: manim Novelty: temperature against depth for the summer and autumn survey, cold water only at depth (page results, sampling-and-extrapolation.qmd#fig-novelty)
 
-The same goes for a model's score. Hold out a few visits to a site whose other visits
-were fitted, and the model has, in effect, seen that site already. Its score looks
-better than it will be at a new site. That is why the Generalisation video held out
-whole sites.
+Here is a survey that sailed only in summer and autumn. Each dot is a station, placed
+by its depth and its temperature. In those seasons the shallows are warm, so the survey
+met cold water only at depth.
 
 ## Scene 13
+visual: manim Novelty: winter stations appear, cold and shallow, inside the dashed box of the survey's ranges; "each value seen, never together" (page results)
+
+Then the model is asked about winter, when the shallows turn cold. Each winter station's
+depth was seen, and so was its temperature, but never together. The forest has no
+stations like these to learn from.
+
+## Scene 14
+visual: manim RangeCheck: 406 spring and winter stations; 279 pass the range check on every input; 132 of those far from every surveyed station, 47% (page results, sampling-and-extrapolation.qmd)
+
+The usual check takes one input at a time. Of 406 spring and winter stations, 279 pass
+it on every input. Yet 132 of those, almost half, lie far from every surveyed station.
+
+## Scene 15
+visual: manim Distance: a winter station and a line to its nearest surveyed station, across the inputs at once (schematic)
+
+A better check looks at all the inputs at once: the distance from each station to the
+nearest surveyed station, the same distance k-nearest neighbours uses to find its
+neighbours. Far from every surveyed station means the model is on its own.
+
+## Scene 16
+visual: manim DistanceError: the forest's typical error in four groups, nearest to furthest from the survey, rising from 1.4 to 2.7; "off by a factor of 2: twice or half the truth"; "map the distance beside the predictions" (page results, sampling-and-extrapolation.qmd)
+
+And it works. Because the survey is simulated, the forest can be checked against the
+truth. Its error is the factor it is off by, so twice the truth or half of it is a
+factor of 2. Nearest the survey, it was typically off by 1.4; furthest away, by 2.7.
+So map the distance beside the predictions, to show where the model is guessing.
+
+## Scene 17
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 2
 pause-after: 2.0
 
-Key point two. Rows are worth less than they seem: visits to one site repeat each
-other, so score a model on sites it has never seen.
+Key point two. A model never says when it is guessing: measure how far each station
+lies from the survey, on all the inputs at once.
 
-# A model never says when it is guessing
-
-## Scene 14
-visual: manim Beyond: the true mean count against depth, the survey's depths to 100 m unshaded, deeper water shaded; "extrapolation: predicting beyond the data" (page results, sampling-and-extrapolation.qmd#fig-beyond)
-
-Finally, why a model never says when it is guessing. Survey effort is never even: it
-follows ports, weather and ship time. Suppose the survey reached only sites shallower
-than 100 metres, and a model must map the deeper ones. The line is the true average
-count at each depth. As in the Supervised learning video, predicting beyond the data is
-called extrapolation.
-
-## Scene 15
-visual: manim Beyond: ten random forests, one per survey, follow the truth to 100 m and run flat beyond it; "deeper than the deepest station: the same leaf" (page results)
-
-Ten random forests, each fitted to a different part of the survey, follow the truth
-within its depths. Beyond, they run flat, while the true count keeps falling. Why? A
-tree only asks whether a station is deeper or shallower than depths it has seen. A
-station far deeper gets the same answers as the deepest station it saw, so it lands in
-the same leaf and gets the same prediction.
-
-## Scene 16
-visual: manim Beyond: "below 140 m: 1.8 to 2.8 times the truth" on screen only (page results)
-
-Below 140 metres they are too high on all ten surveys, and nothing in their
-predictions says so.
-
-## Scene 17
-visual: manim Novelty: temperature against depth for the summer and autumn survey, cold water only at depth (page results, sampling-and-extrapolation.qmd#fig-novelty)
-
-A new mix of conditions is harder to spot. Here each dot is a station, placed by its
-depth and its temperature. A survey that sailed only in summer and autumn met cold
-water only at depth.
+# A rare answer fools accuracy
 
 ## Scene 18
-visual: manim Novelty: winter stations appear, cold and shallow, inside both ranges (page results)
+visual: manim Rare: 598 training stations as dots, the 29 with a rare species lit up; "4.8%"; "imbalanced classes" (page results, class-imbalance.qmd)
 
-Winter brings cold water to the shallows. Its depth and its temperature each lie within
-the survey's ranges, but never together. The forest has no stations like these to
-learn from, so it is guessing here too.
+Finally, why a rare answer fools accuracy. Many things marine scientists most want to
+predict are rare: a protected species, a harmful algal bloom. Here a second species
+turns up at only 29 of 598 stations, 4.8 per cent. When one answer is much rarer than
+the other, the classes are called imbalanced.
 
 ## Scene 19
-visual: manim Distance: a winter station and a line to its nearest surveyed station, across the inputs at once; "map the distance beside the predictions" (schematic)
+visual: manim Trap: logistic regression's calls at the threshold of 0.5; "presences found: 0"; "accuracy: 95%" (page results, class-imbalance.qmd)
 
-A check on one input at a time misses it. A better check is the distance from each
-station to the nearest surveyed station, across all the inputs at once. On the survey,
-the forest's errors grew with that distance. So map the distance beside the
-predictions, to show where the map is guessing.
+Logistic regression gives each station a probability of presence, and as in the
+Supervised learning video, a threshold of 0.5 turns it into a call. Here it finds none
+of the presences. Yet its accuracy, the share of calls that are right, is 95 per cent:
+calling the species absent everywhere is right almost everywhere.
 
 ## Scene 20
+visual: manim Measures: twenty cases, four truly present and sixteen absent, six called present; sensitivity, specificity and precision each lighting its group (schematic, after class-imbalance.qmd img/three-measures.svg)
+
+So count the two kinds of mistake apart. Sensitivity: of the stations with the
+species, the share called present; misses lower it. Specificity: of the stations
+without it, the share called absent; false alarms lower it. Precision: of the stations
+called present, the share that truly have it.
+
+## Scene 21
+visual: manim Rebalance: the training stations; upsampling copies each presence about 20 times; downsampling drops absences; "only the training data change" (schematic, with the page's 20)
+
+The usual fix is rebalancing: change the training data so both answers are equally
+common. Upsampling copies each presence, here about 20 times. Downsampling drops
+absences until the two match. Only the data the model learns from change; it is still
+scored on the real mix.
+
+## Scene 22
+visual: manim Rebalanced: sensitivity 0 rising to about 0.7; 31% of absences become false alarms; precision: about 1 in 9 called present holds the species (page results, class-imbalance.qmd)
+
+Both raise the sensitivity from 0 to about 0.7: most presences are now found. The
+price is false alarms, at about 31 per cent of the absences. And precision stays low:
+only about 1 in 9 stations called present holds the species.
+
+## Scene 23
+visual: manim Curve: sensitivity against specificity for every threshold, no rebalancing; upsampling at 0.5 lands exactly on the point for a threshold of 0.048 (page results, class-imbalance.qmd#fig-curve)
+
+Now leave the data alone and lower the threshold instead, to 0.048, the share of
+stations with the species. The calls come out the same as upsampling: a sensitivity of
+0.717 and a specificity of 0.712 both ways. Copying the presences raises every
+station's probability but keeps their order, so a cut at 0.5 after copying falls in
+the same place as a cut at 0.048 before.
+
+## Scene 24
+visual: manim Chances: the average probability against the share of stations with the species, without rebalancing (0.048 against 4.8%) and after upsampling (0.34, about 7 times too high); "choose the threshold from the costs" (page results, class-imbalance.qmd)
+
+Rebalancing also does harm. After upsampling, the probabilities average 0.34, about 7
+times the real share: they are no longer chances. So leave the data alone, and choose
+the threshold from what a miss and a false alarm each cost.
+
+## Scene 25
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 3
 pause-after: 2.0
 
-Key point three. A model never says when it is guessing: measure how far each
-prediction lies from the survey.
+Key point three. A rare answer fools accuracy: report sensitivity, specificity and
+precision, and move the threshold rather than the data.
 
 # Quiz
 
-## Scene 21
+## Scene 26
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. Two surveys each record 800 stations. One visits 800 different sites, once
-each. The other visits 160 sites, five times each. Which gives the surer average
-catch?
+Quick quiz. A harmful algal bloom occurs on 2 days in 100. A model that warns of blooms
+is 98 per cent accurate. Is it a good model?
 
-## Scene 22
-visual: manim QuizAnswer: "The first"; 800 squares each on its own site, against 160 stacks of five; "worth about 470, like this video's survey" (schematic, with the page's 470)
+## Scene 27
+visual: manim QuizAnswer: "Can't tell yet"; a model that never warns: 98% accurate, sensitivity 0; "ask for sensitivity and precision" (schematic)
 
-The first. Each of its stations brings a new site. In the second, visits to one site
-partly repeat each other, so its 800 stations are worth fewer: in this video's survey,
-about 470.
+You can't tell yet. A model that never warns is also 98 per cent accurate, and it
+misses every bloom. Ask for its sensitivity, how many blooms it catches, and its
+precision, how many of its warnings are real.
 
 # Key points
 
-## Scene 23
+## Scene 28
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: a model can fit well and still be
-wrong.
+To sum up the three key points. <short pause> One: the loss decides what a prediction
+means.
 
-## Scene 24
+## Scene 29
 visual: manim KeyPoints: the second ticked
 
-Two: rows are worth less than they seem.
+Two: a model never says when it is guessing.
 
-## Scene 25
+## Scene 30
 visual: manim KeyPoints: the third ticked; then all three animals cheer
 cheer: all
 pause-after: 4.0
 
-Three: a model never says when it is guessing.
+Three: a rare answer fools accuracy.
 
-## Scene 26
+## Scene 31
 visual: manim EndCard: the site's address and a thank-you
 
-The pages also cover blocks of the map, what a model assumes about counts, forecasts
-and rare species, with all the code. They are linked below. Thanks for watching.
+The pages also cover straight lines and curves, and repeat visits to the same sites,
+with all the code. They are linked below. Thanks for watching.
