@@ -491,9 +491,6 @@ terms:
   - term: "Skewed"
     definition: "Of data with a long tail on one side, such as counts with a few very large catches, so that the average and the median differ."
     page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
-  - term: "Quantile loss"
-    definition: "A loss that is smallest at a chosen point of the outcomes, such as the value only 1 in 20 exceed, rather than at their average or median."
-    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
 
   # 6 · Assumptions: Dependent data
   - term: "Dependent data"
