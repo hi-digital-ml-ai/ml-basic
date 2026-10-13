@@ -1120,7 +1120,9 @@ with all three sounds, a beat apart.
   "Well done!" (jump). Supervised learning: crab and applause, octopus "Spot on!"
   (spin), clownfish "Nice one!" (wiggle). How algorithms learn: jellyfish and
   fireworks, whale and bubbles, turtle "Keep going!" (jump). Generalisation: starfish
-  "Hooray!" (wiggle), pufferfish "Fantastic!" (spin), crab and applause.
+  "Hooray!" (wiggle), pufferfish "Fantastic!" (spin), crab and applause. Assumptions and
+  limitations: octopus and bubbles, clownfish "Brilliant!" (jump), jellyfish and
+  fireworks.
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in
