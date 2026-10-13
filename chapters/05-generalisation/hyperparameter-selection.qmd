@@ -23,9 +23,8 @@ set.seed(123)
 Each page in this section has turned a setting, a tree's minimum node size or the lasso's
 penalty λ, and found that its best value cannot be read from the training error. This page
 names those settings and sets out
-[cross-validation](../02-marine-data/splitting-data.qmd), the standard way to choose them.
-It also shows that one set of validation sites, as earlier sections used, gives a verdict
-that swings with the sites that happen to be held back.
+[cross-validation](../02-marine-data/splitting-data.qmd), the standard way to choose them
+honestly: on the training sites, with the test sites opened only once, at the end.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -67,10 +66,8 @@ other, so a site on both sides would score the model on a place it has already s
 or ten folds are usual. With more folds, each round fits to more of the data, but there is
 more fitting to do: every candidate setting is fitted once per fold.
 
-Anything learned from the data belongs inside the rounds, including the preprocessing. The
-median that fills a gap is worked out again from each round's fitting folds, which a
-workflow does by itself; worked out once from all the training sites, it would leak the
-held-out fold into the fitting
+Anything learned from the data, such as the median that fills a gap, is worked out again
+in each round from the fitting folds alone. A workflow does that by itself
 ([Avoiding information leakage](../02-marine-data/information-leakage.qmd)).
 
 ## Worked example
@@ -290,8 +287,6 @@ ggplot(cv, aes(leaves, mean)) +
 
 :::
 
-### The one-standard-error rule picks the simplest of the tied settings
-
 The lowest cross-validated error is `r f2(best_row$mean)`, for a node size of
 `r best$min_n` and trees of about `r round(best_row$leaves)` leaves, the same setting
 [Underfitting and overfitting](underfitting-and-overfitting.qmd) found. Predicting the
@@ -332,14 +327,13 @@ pd.DataFrame({"rule": ["lowest error", "one-standard-error rule"],
 :::
 
 `desc(min_n)` tells `select_by_one_std_err()` which way is simpler: a larger node size
-makes a smaller tree. The rule trades a little of the error for a simpler model, on the
-grounds that the more flexible model's lead is within the noise.
+makes a smaller tree.
 
 ### One validation split gives a noisy verdict
 
 The choice above rests on one cutting of the sites into folds. To see how much a choice
-depends on the sites that happen to be held out, the whole selection is repeated
-many times, in two ways. One uses a single validation split, three quarters of the training sites for
+depends on the sites that happen to be held out, the whole selection is repeated 20
+times, in two ways. One uses a single validation split, three quarters of the training sites for
 fitting, as in [Decision trees](../03-supervised-learning/decision-trees.qmd). The other
 uses ten-fold cross-validation, with the sites dealt into new folds each time. Each run
 records the node size that won and the error it claimed.
@@ -426,7 +420,6 @@ cv_runs <- summary_of("Ten-fold cross-validation")
 n_runs <- nrow(one_runs)
 one_spread <- diff(range(one_runs$claimed))
 lead <- baseline - best_row$mean
-cv_mode <- count(cv_runs, min_n) |> slice_max(n, n = 1, with_ties = FALSE)
 in_tie <- sum(repeats$min_n %in% tied$min_n)
 ```
 
@@ -464,13 +457,9 @@ a spread caused only by which sites were held out. That spread is about
 Ten-fold cross-validation's claimed errors ranged only from `r f2(min(cv_runs$claimed))` to
 `r f2(max(cv_runs$claimed))`: each rests on every training site, not a quarter of them.
 
-**Both choices wander within the flat bottom.** One validation split chose
-`r in_words(n_distinct(one_runs$min_n))` different node sizes, from
-`r max(one_runs$min_n)` down to `r min(one_runs$min_n)`. Cross-validation chose
-`r in_words(n_distinct(cv_runs$min_n))`, and settled on `r cv_mode$min_n` in
-`r cv_mode$n` of the `r n_runs` runs. `r if (in_tie == 2 * n_runs) paste("Every one of the", 2 * n_runs, "choices was") else paste(in_tie, "of the", 2 * n_runs, "choices were")`
-among the settings that tie, so neither method can pin the node size down, and the data
-say it matters little.
+Both methods chose different node sizes from run to run, but
+`r if (in_tie == 2 * n_runs) "every choice was" else paste(in_tie, "of the", 2 * n_runs, "choices were")`
+among the settings that tie: the data say the exact node size matters little.
 
 The claimed error is also a little flattering. It is the lowest of 12 errors, so part of
 the winner's lead is luck. The honest figure comes from data that played no part in the
@@ -528,17 +517,14 @@ n_test_sites <- n_distinct(test$site_id)
 
 The tree scores `r f2(test_tree)` on the test sites, against `r f2(test_average)` for
 predicting the training sites' average: better by `r f2(round(test_average, 2) - round(test_tree, 2))`.
-Cross-validation put the tree `r f2(round(baseline, 2) - round(best_row$mean, 2))` ahead of the average.
-Both errors are lower on the test sites than in cross-validation, because these
-`r n_test_sites` sites happen to be easier to predict; a single set of test sites is one
-draw too. The gain over the average on the same sites is the fairer comparison, and it
-holds up.
+Cross-validation promised a lead of `r f2(round(baseline, 2) - round(best_row$mean, 2))`,
+so the promise holds up. Both errors are lower on the test sites than in
+cross-validation, because these `r n_test_sites` sites happen to be easier to predict;
+that is why the lead over the average, on the same sites, is the fairer comparison.
 
 Once the test sites have been scored, they are spent. Choosing again because their score
 disappointed would make them validation sites, and the score would flatter the model as
-the claimed errors above do. [Cross-validation](../07-validation/cross-validation.qmd)
-shows how to get an honest score when the data are too few to set test sites
-aside.
+the claimed errors above do.
 
 ## Key points
 
@@ -546,17 +532,15 @@ aside.
 - A hyperparameter is fixed before fitting and limits it. The training error always
   favours the most flexible setting, so a hyperparameter is chosen on data the model was
   not fitted to.
-- **k-fold cross-validation** cuts the training data into *k* folds; each takes a turn as
-  new data while the model is fitted to the rest, and the *k* errors are averaged. Folds
-  hold whole sites, as a split does.
+- **k-fold cross-validation** cuts the training sites into *k* folds; each takes a turn as
+  new data while the model is fitted to the rest, and the *k* errors are averaged. Settings
+  within one **standard error** of the best cannot be told apart, and the
+  **one-standard-error rule** takes the simplest of them.
 - One validation split gives a noisy verdict. In `r n_runs` runs, the error it claimed for its
   winner ranged from `r f2(min(one_runs$claimed))` to `r f2(max(one_runs$claimed))`;
   with ten-fold cross-validation, from `r f2(min(cv_runs$claimed))` to
   `r f2(max(cv_runs$claimed))`.
-- Settings within one standard error of the best cannot be told apart. The
-  **one-standard-error rule** takes the simplest of them.
-- In tidymodels: `tune()`, `group_vfold_cv()`, `tune_grid()`, `select_best()`,
-  `finalize_workflow()`, then `last_fit()`, the only step that scores the test sites.
+- The test sites score the chosen model once, at the end. After that they are spent.
 :::
 
 ## Try it yourself
