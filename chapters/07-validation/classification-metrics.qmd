@@ -1,6 +1,6 @@
 ---
 title: "Classification performance measures"
-description: "Presence can be scored on the calls at one threshold, on how well the probabilities rank the stations, or on the probabilities themselves. F1 cannot tell a model from calling every station present, ROC AUC scores the ranking at every threshold, and log loss checks that the probabilities can be read as chances."
+description: "Presence can be scored on the calls at one threshold, on how well the probabilities rank the stations, or on whether the probabilities can be read as chances. Sensitivity, specificity and precision count misses and false alarms apart, ROC AUC scores the ranking at every threshold, and a calibration plot checks the probabilities."
 order: 4
 categories: [validation, metrics, classification]
 ---
@@ -26,9 +26,9 @@ of present or absent by accuracy, and
 rare species accuracy hides the misses. Accuracy counts the calls at one threshold. But
 a model that predicts presence gives every station a probability, which also ranks
 the stations from most to least likely to hold the species. So there are three things to
-score: the calls, the ranking and the probabilities themselves. This page gives the
-measures most used in machine learning for each, and shows that a model can look good on
-one and poor on another.
+score: the calls, the ranking and the probabilities themselves. This page gives a
+common measure or check for each, and shows that a model can look much the same on one
+and clearly better on another.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -56,21 +56,12 @@ most of the yeses and still look good.
 
 ## Measures at one threshold count the calls
 
-Three summaries of the calls are common in machine learning. Each turns the four counts
-at a threshold into one number: true presences, false alarms, misses and true absences,
-often set out as a two-by-two table called the **confusion matrix**.
-
-| Measure | What it is | A rule that calls every station present scores |
-| --- | --- | --- |
-| Accuracy | the share of calls that are right | the share of stations with the species |
-| **F1** | an average of precision and sensitivity, pulled towards the lower of the two | close to 1 when presence is common |
-| **Balanced accuracy** | the average of sensitivity and specificity | 0.5 |
-| **MCC**, the Matthews correlation coefficient | the correlation between the calls and the truth, from −1 to 1 | nothing: its calls never vary, so there is no correlation to work out |
-
-F1 is built from precision and sensitivity, and neither counts the **true absences**, the
-absent stations called absent. F1 suits a search for something rare, where the absences
-are many and uninteresting. Balanced accuracy and MCC count every cell, and treat
-presence and absence alike.
+At a threshold, every station falls into one of four cells: true presences, false alarms,
+misses and true absences. Set out as a two-by-two table, they are called the
+**confusion matrix**, and every measure of the calls is worked out from it. One more
+measure is common: **balanced accuracy**, the average of sensitivity and specificity. It
+gives presence and absence equal weight, so a rule that calls every station present
+scores 0.5 however common the species is.
 
 ## ROC AUC scores the ranking at every threshold
 
@@ -84,22 +75,15 @@ one without, in which the station with the species gets the higher probability. 
 AUC of 1 ranks every station with the species above every station without it; 0.5 is no
 better than ranking at random.
 
-ROC AUC depends only on the order of the probabilities. Raising every probability, or
-squeezing them all towards 0.5, leaves the order and the ROC AUC unchanged.
+## A calibration plot checks that probabilities can be read as chances
 
-## Log loss scores the probabilities themselves
-
-Log loss, from
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd#counts-and-presence-have-their-own-losses),
-charges each station for the probability the model gave to what happened: little for a
-high probability of presence where the species was found, a lot for a confident call that
-turned out wrong. Lower is better. It rewards probabilities that are spread out, high
-where the species is and low where it is not, and **calibrated**: of the stations given
-0.8, about 8 in 10 hold the species. ROC AUC sees only the first of these.
-
-::: {.diagram}
-![ROC AUC and log loss on two sets of eight probabilities. Left, every station with the species is ranked above every station without it, but all eight probabilities are high: ROC AUC is perfect, and log loss charges heavily for the absent stations called likely. Right, one pair is in the wrong order, but the probabilities sit near the truth: ROC AUC is a little lower and log loss much lower. The two measures rank the two sets in opposite orders.](img/auc-and-log-loss.svg){fig-alt="Two cards, each with four stations where the species is present, drawn filled, and four where it is absent, drawn open, placed along an axis of predicted probability of presence from 0 to 1. Left, right order, too sure of presence: the present stations sit at 0.85 and above, the absent ones between 0.6 and 0.8; ROC AUC 1.00, log loss 0.66. Right, some order wrong, honest: the present stations sit between 0.4 and 0.9 and the absent ones between 0.1 and 0.6, so one absent station is ranked above one present station; ROC AUC 0.94, log loss 0.40. A note says ROC AUC is the share of present–absent pairs in which the present station has the higher probability, and log loss charges each station for the probability it gave to what happened, most for a confident miss."}
-:::
+A probability of presence is **calibrated** when it can be read as a chance: of the
+stations given 0.8, about 8 in 10 hold the species. ROC AUC cannot see this, because it
+depends only on the order of the probabilities: raising every probability, or squeezing
+them all towards 0.5, leaves the order and the ROC AUC unchanged. A **calibration plot**
+checks it directly. The log loss of
+[Loss functions](../04-how-algorithms-learn/loss-functions.qmd#counts-and-presence-have-their-own-losses)
+scores the probabilities in one number, but the plot shows where they go wrong.
 
 ## Worked example
 
@@ -180,8 +164,8 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
-                             log_loss, matthews_corrcoef, roc_auc_score, roc_curve)
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, precision_score,
+                             recall_score, roc_auc_score)
 from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -247,7 +231,7 @@ the event a measure is about, and `present` lists `yes` first, so every measure 
 about presence. In scikit-learn the outcome is `True` for presence, which its measures
 take as the event by default.
 
-### F1 cannot tell the models from calling every station present
+### At 0.5, both models call nearly every station present
 
 At the default threshold of 0.5, predicting the share present calls every station
 present, since it gives every station a probability near `r f2(share_present)`.
@@ -263,12 +247,11 @@ calls <- predictions |>
                          levels = c("yes", "no")))
 
 at_threshold <- calls |>
-  summarise(`true absences` = sum(called == "no" & present == "no"),
-            accuracy = accuracy_vec(present, called),
-            F1 = f_meas_vec(present, called),
+  summarise(accuracy = accuracy_vec(present, called),
+            sensitivity = sensitivity_vec(present, called),
+            specificity = specificity_vec(present, called),
+            precision = precision_vec(present, called),
             `balanced accuracy` = bal_accuracy_vec(present, called),
-            # NA where the calls never vary
-            MCC = suppressWarnings(mcc_vec(present, called)),
             .by = model)
 
 at_threshold |> mutate(across(where(is.double), \(x) round(x, 3)))
@@ -280,12 +263,12 @@ at_threshold |> mutate(across(where(is.double), \(x) round(x, 3)))
 def at_threshold(g, threshold=0.5):
     called = g.probability >= threshold
     return pd.Series({
-        "true absences": int((~called & ~g.present).sum()),
         "accuracy": accuracy_score(g.present, called),
-        "F1": f1_score(g.present, called),
+        "sensitivity": recall_score(g.present, called),
+        # specificity is the sensitivity for absence
+        "specificity": recall_score(g.present, called, pos_label=False),
+        "precision": precision_score(g.present, called),
         "balanced accuracy": balanced_accuracy_score(g.present, called),
-        # scikit-learn gives 0 where the calls never vary
-        "MCC": matthews_corrcoef(g.present, called),
     })
 
 calls = (predictions.groupby("model", sort=False)
@@ -301,25 +284,25 @@ calls.round(3)
 #| include: false
 call_of <- function(name, measure) at_threshold[[measure]][at_threshold$model == name]
 rule <- "Predicting the share present"
-f1_gap <- max(abs(at_threshold$F1 - call_of(rule, "F1")))
+absences_called <- function(name) round(call_of(name, "specificity") * n_absent)
 ```
 
-Accuracy and F1 barely move. The rule that calls every station present has an F1 of
-`r f3(call_of(rule, "F1"))`, and neither model is more than `r f3(f1_gap)` away from it.
-The models differ in the true absences: of the `r n_absent` stations without the species,
-logistic regression called `r call_of("Logistic regression", "true absences")` absent and
-the random forest `r call_of("Random forest", "true absences")`. F1 never counts those
-stations, so it cannot see the difference.
+The rule finds every presence, so its sensitivity is 1, and calls every absence wrong,
+so its specificity is 0. Its accuracy, `r pct(call_of(rule, "accuracy"))`, is just the
+share of stations with the species. The two models are not far from it. Both have a
+sensitivity near 1, and of the `r n_absent` stations without the species, logistic
+regression called only `r absences_called("Logistic regression")` absent and the random
+forest `r absences_called("Random forest")`. Their accuracy is no better than the
+rule's: `r pct(call_of("Logistic regression", "accuracy"))` for logistic regression and
+`r pct(call_of("Random forest", "accuracy"))` for the forest. Precision moves little
+too, since with presence this common most calls of present are right whatever the
+model.
 
-Balanced accuracy and MCC can. Balanced accuracy puts the rule at
-`r f3(call_of(rule, "balanced accuracy"))`, logistic regression at
-`r f3(call_of("Logistic regression", "balanced accuracy"))` and the forest at
-`r f3(call_of("Random forest", "balanced accuracy"))`, and MCC gives
-`r f3(call_of("Logistic regression", "MCC"))` and
-`r f3(call_of("Random forest", "MCC"))`. MCC cannot be worked out for the rule:
-yardstick reports it as missing, and scikit-learn as 0, the value for calls unrelated to
-the truth. Both models are only a little better than the rule at this threshold, and the
-forest is the better of the two.
+Balanced accuracy shows the difference more clearly: `r f3(call_of(rule, "balanced accuracy"))`
+for the rule, `r f3(call_of("Logistic regression", "balanced accuracy"))` for logistic
+regression and `r f3(call_of("Random forest", "balanced accuracy"))` for the forest. Both
+models are only a little better than the rule at this threshold, and the forest is the
+better of the two.
 
 ### The forest ranks the stations better than logistic regression
 
@@ -400,43 +383,11 @@ length, so whatever threshold is chosen, the forest can reach the same sensitivi
 fewer false alarms. The points show why the first part made the two models look so alike:
 0.5 sits near the top right corner, where the curves are closest.
 
-### Log loss rewards probabilities that are spread out and calibrated
-
-::: {.panel-tabset group="language"}
-
-## R
+### Both models' probabilities can be read as chances
 
 ```{r}
-#| label: log-loss
-probability_scores <- predictions |>
-  summarise(`log loss` = mn_log_loss_vec(present, probability),
-            lowest = min(probability), highest = max(probability),
-            .by = model)
-
-probability_scores |> mutate(across(where(is.double), \(x) round(x, 3)))
-```
-
-## Python
-
-```{python}
-probability_scores = (predictions.groupby("model", sort=False)
-                      .apply(lambda g: pd.Series({
-                          "log loss": log_loss(g.present, g.probability),
-                          "lowest": g.probability.min(),
-                          "highest": g.probability.max(),
-                      }), include_groups=False)
-                      .reset_index())
-
-probability_scores.round(3)
-```
-
-:::
-
-```{r}
-#| label: log-loss-numbers
+#| label: calibration
 #| include: false
-loss_of <- function(name) probability_scores$`log loss`[probability_scores$model == name]
-spread_of <- function(name, end) probability_scores[[end]][probability_scores$model == name]
 # eight groups of equal size by predicted probability, for the calibration plot
 calibration <- ranked |>
   mutate(group = ntile(probability, 8), .by = model) |>
@@ -445,8 +396,7 @@ calibration <- ranked |>
 range_of <- function(name) range(calibration$predicted[calibration$model == name])
 ```
 
-A **calibration plot** checks the second half of what log loss rewards. It sorts each
-model's stations by their predicted probability into eight groups of
+The calibration plot sorts each model's stations by their predicted probability into eight groups of
 `r nrow(survey) / 8`, and plots each group's average probability against the share of
 its stations where the species was caught.
 
@@ -478,35 +428,26 @@ ggplot(calibration, aes(predicted, observed, colour = model)) +
 Both models' groups stay close to the diagonal, so their probabilities can be read as
 chances. Predicting the share present is calibrated too: it says
 `r f2(share_present)` everywhere, and the species was caught at `r pct(share_present)`
-of the stations. What it lacks is spread, and log loss charges it the most, at
-`r f3(loss_of(rule))`. Logistic regression lowers that to
-`r f3(loss_of("Logistic regression"))` and the forest to
-`r f3(loss_of("Random forest"))`, `r pct(1 - loss_of("Random forest") / loss_of(rule))`
-below the rule. The forest gains by spreading its probabilities further, from
-`r f2(spread_of("Random forest", "lowest"))` to `r f2(spread_of("Random forest", "highest"))`
-against logistic regression's `r f2(spread_of("Logistic regression", "lowest"))` to
-`r f2(spread_of("Logistic regression", "highest"))`, while staying calibrated. The spread
-that lowers its log loss is the same that gave it the higher ROC AUC.
-Here the three kinds of measure agree on the order of the models. The diagram above shows
-that they need not, so the measure to report follows from how the predictions will be
-used, which [Choosing measures that match the objective](choosing-a-metric.qmd) sets
-out.
+of the stations. What it lacks is spread. The forest's groups run from
+`r f2(range_of("Random forest")[1])` to `r f2(range_of("Random forest")[2])`, wider than
+logistic regression's, and that spread is what gave it the higher ROC AUC.
+
+The measure to report follows from how the predictions will be used, which
+[Choosing measures that match the objective](choosing-a-metric.qmd) sets out.
 
 ## Key points
 
 ::: {.key-points}
 - Presence can be scored on the **calls** at one threshold, on the **ranking** the
-  probabilities make, or on the **probabilities** themselves. A model can do well on one
-  and poorly on another.
-- **F1** never counts the true absences. With the species at `r pct(share_present)` of
-  stations, calling every station present scored an F1 of `r f3(call_of(rule, "F1"))`,
-  within `r f3(f1_gap)` of both models. **Balanced accuracy** and **MCC** count every
-  cell and told the models apart.
+  probabilities make, or on whether the probabilities are **calibrated**. A model can
+  look much the same on one and clearly better on another.
+- **Sensitivity**, **specificity** and **precision** count misses and false alarms apart.
+  **Balanced accuracy**, the average of sensitivity and specificity, scores a rule that
+  calls every station present at 0.5.
 - **ROC AUC** is the area under the curve of sensitivity against specificity: the share
   of pairs, one station with the species and one without, ranked the right way round.
   It is 0.5 for ranking at random, and it ignores how high or low the probabilities are.
-- **Log loss** rewards probabilities that are both spread out and **calibrated**. A
-  calibration plot shows whether a predicted 0.8 means 8 in 10.
+- A **calibration plot** shows whether a predicted 0.8 means 8 in 10.
 - yardstick treats the first level of the outcome as the event. Check the levels before
   trusting any of these measures.
 :::
@@ -516,6 +457,7 @@ out.
 1. Add a fourth model: logistic regression with `step_upsample(present)` from the
    `themis` package at the end of its recipe, as in
    [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd). Predict first:
-   does its ROC AUC or its log loss move more?
-2. Score the three models on `rare_species` instead of `present`. How does the F1 of
-   predicting the share present change when the species is rare?
+   does its ROC AUC move, and does its calibration plot stay on the diagonal?
+2. Score the three models on `rare_species` instead of `present`. How do the accuracy
+   and the balanced accuracy of predicting the share present change when the species is
+   rare?

@@ -571,17 +571,8 @@ terms:
   - term: "Confusion matrix"
     definition: "The two-by-two table of a model's calls against the truth: true presences, false alarms, misses and true absences."
     page: chapters/07-validation/classification-metrics.qmd
-  - term: "F1"
-    definition: "An average of precision and sensitivity pulled towards the lower of the two; it never counts the true absences."
-    page: chapters/07-validation/classification-metrics.qmd
   - term: "Balanced accuracy"
     definition: "The average of sensitivity and specificity, so presence and absence count alike; 0.5 for a rule that calls every case the same."
-    page: chapters/07-validation/classification-metrics.qmd
-  - term: "MCC (Matthews correlation coefficient)"
-    definition: "The correlation between a model's calls and the truth, from −1 to 1, counting every cell of the confusion matrix."
-    page: chapters/07-validation/classification-metrics.qmd
-  - term: "True absence"
-    definition: "A station without the species that a model calls absent."
     page: chapters/07-validation/classification-metrics.qmd
   - term: "ROC curve"
     definition: "A model's sensitivity drawn against its specificity at every threshold."
