@@ -1,6 +1,6 @@
 ---
 title: "6 · Model assumptions and limitations"
-description: "Machine learning frees a model from straight lines, but not from the way the data were collected. The section tests what a model assumes about shape and spread, then what repeat visits, neighbouring sites, uneven survey effort and a rare species do to its scores and predictions."
+description: "Machine learning frees a model from straight lines and bell curves, but not from the way the data were collected. The section tests what a model takes for granted about shape and spread, what repeat visits and uneven survey effort do to it, and why a rare answer fools accuracy."
 categories: [assumptions, spatial-temporal, class-imbalance]
 listing:
   id: pages
@@ -13,32 +13,34 @@ listing:
 toc: false
 ---
 
-Machine-learning methods are often called assumption-free. They make fewer assumptions
-about the shape of a relationship than a linear model does, but they still assume the
-data were collected in a way that lets the stations stand for the ocean. The five pages
-in this section take each assumption in turn, on the same simulated survey as the rest
-of the course. The first two cover what a model assumes about shape and spread, which
-machine learning relaxes:
+Every method takes something for granted about its data: an assumption. When an
+assumption is wrong, the model still gives an answer, but the answer can be wrong.
+Machine-learning methods are often called assumption-free. They take less for granted
+about the shape of a relationship than a linear model does, but they still need data
+collected in a way that lets the stations stand for the sea. The five pages in this
+section cover three ideas, on the same simulated survey as the rest of the course.
 
-- **linearity and nonlinearity**: a linear model gives each input a fixed effect and a
-  random forest does not; the forest finds the temperature curve that a straight line
-  misses, yet still puts depth's peak in the wrong place;
-- **distributional assumptions**: a random forest predicts skewed, unevenly spread
-  counts without assuming a distribution, but its loss decides what it aims at, and
-  trained on log counts it predicts too few animals.
+Machine learning frees a model from straight lines and bell curves:
 
-The next two cover how the data were collected, which machine learning does not relax:
+- **linearity and nonlinearity**: a straight line misses the hump of a species'
+  preferred temperature, and a random forest finds it without being told its shape;
+- **distributional assumptions**: a random forest's errors are lopsided and widen with
+  the catch, yet it predicts well; the loss decides what it aims at, the average for
+  squared error and the median for absolute error.
 
-- **dependent data**: repeat visits to a site and neighbouring sites are worth fewer
-  stations than their number, and resampling whole sites and whole areas measures how
-  many fewer;
-- **uneven sampling and extrapolation**: a model answers for conditions its survey never
-  reached, and the distance to the nearest surveyed station shows where it is guessing.
+It does not free a model from how the data were collected:
 
-The last page takes a rare answer:
+- **dependent data**: visits to one site repeat each other, and resampling whole sites
+  instead of single stations measures how many fewer independent stations the survey's
+  rows are worth;
+- **uneven sampling and extrapolation**: cold, shallow winter water that a summer survey
+  never met passes a range check on each input; the distance to the nearest surveyed
+  station finds it, and a random forest's error grows with that distance.
 
-- **class imbalance**: sensitivity, specificity and precision count misses and false
-  alarms apart, and rebalancing the training data turns out to move the threshold.
+And a rare answer fools accuracy:
+
+- **class imbalance**: a model can be highly accurate yet miss most of a rare species'
+  presences, and rebalancing the training data turns out to move the threshold.
 
 The section picks up threads from earlier ones and passes some on.
 [Distributional assumptions](distributional-assumptions.qmd) asks what each loss of
@@ -46,15 +48,13 @@ The section picks up threads from earlier ones and passes some on.
 [Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
 side of the split; [Dependent data](dependent-data.qmd) measures what those visits are
 worth, and [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-holds out whole areas.
+holds out neighbouring sites and whole years.
 [Uneven sampling and extrapolation](sampling-and-extrapolation.qmd) measures how far a
 station lies from the survey as [k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd)
-finds its neighbours. [Class imbalance](class-imbalance.qmd) builds on the misses and
-false alarms of [Logistic regression](../03-supervised-learning/logistic-regression.qmd)
-and leaves whole-curve scores to
+finds its neighbours. [Class imbalance](class-imbalance.qmd) builds on the threshold of
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves the
+measures that count misses and false alarms apart to
 [Classification performance measures](../07-validation/classification-metrics.qmd).
-A model that keeps one readable curve for each input waits for
-[Black boxes and interpretable models](../10-interpretation/black-box-or-not.qmd).
 
 ## Pages in this section
 
@@ -66,7 +66,7 @@ A model that keeps one readable curve for each input waits for
 
 **Documentation**
 
-- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, which is the concrete answer to most of this section.
+- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, for when neighbouring sites share conditions too.
 - [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Independence is assumed silently in almost every default, and this page says where.
 
 **Video**
