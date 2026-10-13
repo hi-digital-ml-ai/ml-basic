@@ -350,6 +350,18 @@ out unless the lesson needs them.
 
 Every page has glossary entries and a new-terms box.
 
+**Beginners' pass 2026-10-13** (`feature/simplify-assumptions-limitations`): the five
+pages were cut back to what the section video teaches, keeping their structure, and
+the overview now groups them under the video's three ideas: what machine learning frees
+a model from (Linearity, Distributional), what it does not (Dependent data, Uneven
+sampling), and why a rare answer fools accuracy (Class imbalance). *Linearity* lost the
+GAM and the depth peak; *Distributional* lost quantile loss and keeps log counts as a
+short part; sensitivity, specificity and precision moved from *Class imbalance* to §7
+*Classification performance measures*. The video's numbers (598 stations, 129 at zero,
+median 3, largest 40; about 470 of 800; the rare species at 29 of 598, 1 in 6 found
+at 92% accuracy) come from these
+pages and must not drift.
+
 ### Two threads that must be kept if these pages are edited
 
 **RMSE is not comparable across resampling schemes.** Different folds or splits hold
