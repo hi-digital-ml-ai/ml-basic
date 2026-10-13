@@ -7,7 +7,7 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scenes 5, 6 and 20: the random forest's pooled RMSE with folds of stations and with
+  # Scenes 5, 6 and 21: the random forest's pooled RMSE with folds of stations and with
   # half-degree blocks, run by run and averaged.
   "spatial-and-temporal-cv.qmd" = function(env, dir) {
     write(with(env, distance_runs), dir, "distance-runs")
@@ -36,7 +36,7 @@ exports <- list(
           dir, "lower")
   },
 
-  # Scenes 14–17: each model's interval and the thousand bootstrap scores.
+  # Scenes 14 and 16–18: each model's interval and the thousand bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")
     write(with(env, scores), dir, "bootstrap-scores")

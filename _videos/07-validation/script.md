@@ -18,7 +18,8 @@ and one picture: test on new places (folds of stations against blocks of the map
 how far each leaves the nearest training station), look beyond accuracy (sensitivity and
 specificity, on the Assumptions video's rare species, which that video promised
 Validation would measure, and the threshold trading one for the other), and put an
-interval on a score (resampling the sites). The key points avoid why and what. Cross-validation is known from the Generalisation
+interval on a score (resampling the sites: many
+slightly different test sets, so a range of errors). The key points avoid why and what. Cross-validation is known from the Generalisation
 video and gets a clause, not a re-run. Nested cross-validation, RMSE against MAE,
 shortlists, the cost threshold and the paired comparison stay on the pages; the end
 card names some of them.
@@ -130,31 +131,38 @@ alone.
 visual: manim OneSurvey: the survey's sites and the forest's score; other sites the survey might have drawn, the score moving with them (schematic)
 
 Finally, putting an interval on a score. Scored by cross-validation by site, the random
-forest's error is 4.32. But that number comes from one survey. With other sites, it
-would have come out higher or lower.
+forest's error is 4.32. But that number comes from one set of test data. With slightly
+different test data, it would have come out higher or lower.
 
 ## Scene 15
-visual: manim Resample: the 160 sites drawn again with replacement, some twice, some not at all; each draw gives one error (schematic)
+visual: manim Purpose: one test set gives one error; many slightly different test sets give many errors, spread into a range (schematic)
 
-To see by how much, draw the survey again from itself, which is called resampling. Draw
-160 sites from its own 160, with replacement, so some come up twice and some not at all.
-Work out the forest's error on them, and do it a thousand times.
+A single test set gives a single error. Resampling tests the same model on many slightly
+different test sets instead, all made from the survey itself. Each gives its own error,
+and together they show a range: how far the score could move.
 
 ## Scene 16
+visual: manim Resample: the 160 sites drawn again with replacement, some twice, some not at all; each draw gives one error (schematic)
+
+Here is how. Draw 160 sites from the survey's own 160, with replacement, so some come up
+twice and some not at all. That is one new test set. Score the forest on it, and do it a
+thousand times.
+
+## Scene 17
 visual: manim Interval: the thousand errors as a histogram; the middle 95 per cent shaded, from 3.75 to 4.94 (page results, uncertainty-and-stability.qmd)
 
 The middle 95 per cent of those thousand errors is a 95 per cent interval. For the
 forest, it runs from 3.75 to 4.94. Its error on new sites could be anywhere in that
 range, not exactly 4.32.
 
-## Scene 17
+## Scene 18
 visual: manim Intervals: the forest's interval, then linear regression's and predicting the average's, all overlapping (page results, uncertainty-and-stability.qmd)
 
 Add linear regression and predicting the average, and all three intervals overlap. So a
 small gap between two scores is not, on its own, a ranking: with other sites, the order
 could change.
 
-## Scene 18
+## Scene 19
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 3
 pause-after: 2.0
@@ -164,7 +172,7 @@ move.
 
 # Quiz
 
-## Scene 19
+## Scene 20
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
@@ -172,7 +180,7 @@ Quick quiz. You will use a model to map a stretch of coast that nobody has surve
 Which test gives the honest score: holding out single stations, or whole blocks of the
 map?
 
-## Scene 20
+## Scene 21
 visual: manim QuizAnswer: "whole blocks"; the two scores again, the blocks' one picked out (page results)
 
 Whole blocks. Holding out single stations leaves each station's neighbours in the
@@ -181,24 +189,24 @@ training data, so the score flatters the model. On the survey, that was 4.23 aga
 
 # Key points
 
-## Scene 21
+## Scene 22
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: test on new places.
 
-## Scene 22
+## Scene 23
 visual: manim KeyPoints: the second ticked
 
 Two: look beyond accuracy.
 
-## Scene 23
+## Scene 24
 visual: manim KeyPoints: the third ticked; then all three animals cheer
 cheer: all
 pause-after: 4.0
 
 Three: put an interval on a score.
 
-## Scene 24
+## Scene 25
 visual: manim EndCard: the site's address and a thank-you
 
 The pages go further: forecasts tested on later years, measures for counts, comparing

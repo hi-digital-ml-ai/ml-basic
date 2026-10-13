@@ -1120,6 +1120,11 @@ two scores, and *Threshold* (lowering the threshold from 0.19 to 0.05, the page'
 `same`, takes sensitivity from 1 in 6 to 72% and specificity from 96% to 71%, and
 accuracy falls to 71% though the model finds far more) before the costs, which now say
 the threshold trades one mistake for the other. 24 scenes, 6:07 on the draft voice.
+Then, at the user's request, the purpose of resampling got its own scene before the
+mechanics: a single test set gives a single error; resampling tests the same model on
+many slightly different test sets made from the survey, each giving its own error, so
+together they show a range (schematic). The forest's score is now "one set of test
+data", and the mechanics scene ends "That is one new test set." 25 scenes, 6:24.
 
 ## Cheers at the key points (2026-10-10)
 

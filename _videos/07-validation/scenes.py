@@ -580,7 +580,7 @@ class Scene13(KeyPointScene):
     point = 2
 
 
-# Put an interval on a score (scenes 14–17) -------------------------------------------------
+# Put an interval on a score (scenes 14–18) -------------------------------------------------
 
 class Scene14(VideoScene):
     number = 14
@@ -604,12 +604,12 @@ class Scene14(VideoScene):
         self.play(FadeIn(dots, lag_ratio=0.005), FadeIn(head), run_time=self.share(0.12))
         cue(self, "the random")
         self.play(FadeIn(score_name), FadeIn(score, scale=1.2), run_time=self.share(0.1))
-        # "But that number comes from one survey."
+        # "But that number comes from one set of test data."
         cue(self, "But that number")
         self.play(Indicate(dots, color=BLUE, scale_factor=1.05), run_time=self.share(0.08))
-        # "With other sites, it would have come out higher or lower."
-        cue(self, "With other sites")
-        other_head = label("other sites it might have drawn", 30, GREY, weight=BOLD).move_to(head)
+        # "With slightly different test data, it would have come out higher or lower."
+        cue(self, "With slightly different")
+        other_head = label("slightly different test data", 30, GREY, weight=BOLD).move_to(head)
         current = dots
         for k, value in enumerate(others):
             new = other_sites()
@@ -622,13 +622,74 @@ class Scene14(VideoScene):
         self.finish()
 
 
+class Scene15(VideoScene):
+    number = 15
+
+    def construct(self):
+        # Schematic: test sets as small grids of sites, errors as dots on an unnumbered line.
+        rng = np.random.default_rng(15)
+
+        def test_set(changed=0):
+            grid = VGroup(*[Square(0.2, stroke_width=0, fill_color=BLUE, fill_opacity=0.85) for _ in range(20)]
+                          ).arrange_in_grid(4, 5, buff=0.05)
+            for k in rng.choice(20, changed, replace=False):
+                grid[k].set_fill(VERMILION if rng.random() < 0.5 else LIGHT, opacity=1)
+            return grid
+
+        def errors_line(y):
+            return Line([0.0, y, 0], [5.6, y, 0], color=GRID, stroke_width=3)
+
+        one = test_set().move_to([-4.6, 1.7, 0])
+        one_name = label("a single test set", 30, INK, weight=BOLD).next_to(one, UP, 0.2)
+        top_line = errors_line(1.7)
+        one_arrow = Arrow(one.get_right(), top_line.get_left(), buff=0.2, color=INK, stroke_width=5)
+        one_dot = Dot([2.8, 1.7, 0], radius=0.15, color=BLUE)
+        one_error = label("a single error", 28, BLUE, weight=BOLD).next_to(one_dot, UP, 0.2)
+
+        def card_of(grid):
+            back = SurroundingRectangle(grid, color=GRID, buff=0.12, corner_radius=0.06, stroke_width=2,
+                                        fill_color=BACKGROUND, fill_opacity=1)
+            return VGroup(back, grid)
+
+        many = VGroup(*[card_of(test_set(4)).move_to([-5.4 + 0.32 * k, -1.0 - 0.22 * k, 0]) for k in range(5)])
+        many_name = label("resampling: many slightly different test sets", 30, ORANGE, weight=BOLD
+                          ).move_to([-1.6, 0.2, 0])
+        low_line = errors_line(-1.6)
+        many_arrow = Arrow([many.get_right()[0], -1.6, 0], low_line.get_left(), buff=0.2, color=INK,
+                           stroke_width=5)
+        values = np.clip(2.8 + rng.normal(0, 1.0, 10), 0.4, 5.2)
+        dots = VGroup(*[Dot([v, -1.6, 0], radius=0.12, color=ORANGE) for v in values])
+        span = Line([values.min(), -2.2, 0], [values.max(), -2.2, 0], color=ORANGE, stroke_width=8)
+        span_name = label("a range: how far the score could move", 30, ORANGE, weight=BOLD
+                          ).next_to(span, DOWN, 0.25)
+        each = label("each gives its own error", 28, INK).next_to(low_line, UP, 0.5)
+
+        # "A single test set gives a single error."
+        self.play(FadeIn(one), FadeIn(one_name), run_time=self.share(0.08))
+        self.play(GrowArrow(one_arrow), Create(top_line), FadeIn(one_dot, scale=2), FadeIn(one_error),
+                  run_time=self.share(0.08))
+        # "Resampling tests the same model on many slightly different test sets instead, all made
+        # from the survey itself."
+        cue(self, "Resampling tests")
+        self.play(FadeIn(many_name), LaggedStart(*[FadeIn(g, shift=0.2 * RIGHT) for g in many], lag_ratio=0.3),
+                  run_time=self.share(0.2))
+        # "Each gives its own error, ..."
+        cue(self, "Each gives")
+        self.play(GrowArrow(many_arrow), Create(low_line), FadeIn(each),
+                  LaggedStart(*[FadeIn(d, scale=2) for d in dots], lag_ratio=0.15), run_time=self.share(0.15))
+        # "... and together they show a range: how far the score could move."
+        cue(self, "and together")
+        self.play(Create(span), FadeIn(span_name), run_time=self.share(0.1))
+        self.finish()
+
+
 def site_squares():
     return VGroup(*[Square(0.26, stroke_width=0, fill_color=BLUE, fill_opacity=0.85) for _ in range(160)]
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -657,16 +718,17 @@ class Scene15(VideoScene):
                                   ).move_to([to_x((bins[i] + bins[i + 1]) / 2), -2.9, 0], aligned_edge=DOWN)
                         for i, c in enumerate(counts)])
         first = Dot([to_x(scores.iloc[0]), -2.75, 0], radius=0.1, color=ORANGE)
-        # "To see by how much, draw the survey again from itself, which is called resampling."
+        # "Here is how."
         self.play(FadeIn(source), FadeIn(source_name), run_time=self.share(0.08))
-        # "Draw 160 sites from its own 160, with replacement, so some come up twice and some not at all."
+        # "Draw 160 sites from the survey's own 160, with replacement, so some come up twice and some
+        # not at all. That is one new test set."
         cue(self, "Draw 160")
         self.play(FadeIn(target), FadeIn(target_name), run_time=self.share(0.06))
         self.play(LaggedStart(*[TransformFromCopy(source[i], p) for i, p in zip(drawn, picks)], lag_ratio=0.01),
                   run_time=self.share(0.2))
         self.play(FadeIn(twice), FadeIn(never), FadeIn(note), run_time=self.share(0.08))
-        # "Work out the forest's error on them, ..."
-        cue(self, "Work out the")
+        # "Score the forest on it, ..."
+        cue(self, "Score the forest")
         self.play(Create(axis), FadeIn(axis_name), FadeIn(first, scale=2), run_time=self.share(0.1))
         # "... and do it a thousand times."
         cue(self, "do it a thousand")
@@ -675,8 +737,8 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -713,8 +775,8 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
@@ -753,22 +815,22 @@ class Scene17(VideoScene):
         self.finish()
 
 
-class Scene18(KeyPointScene):
-    number = 18
+class Scene19(KeyPointScene):
+    number = 19
     point = 3
 
 
-# Quiz (scenes 19–20) -----------------------------------------------------------------------
+# Quiz (scenes 20–21) -----------------------------------------------------------------------
 
-class Scene19(QuizScene):
-    number = 19
+class Scene20(QuizScene):
+    number = 20
     question = ("You will map coast nobody has surveyed.",
                 "Hold out single stations, or whole blocks?",
                 "Which test gives the honest score?")
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         means, axis, rows, head, to_x = two_tests(self)
@@ -790,22 +852,22 @@ class Scene20(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 21–24) ---------------------------------------------------
-
-class Scene21(RecapScene):
-    number = 21
-    point = 1
-
+# Key points and end card (scenes 22–25) ---------------------------------------------------
 
 class Scene22(RecapScene):
     number = 22
-    point = 2
+    point = 1
 
 
 class Scene23(RecapScene):
     number = 23
+    point = 2
+
+
+class Scene24(RecapScene):
+    number = 24
     point = 3
 
 
-class Scene24(EndCardScene):
-    number = 24
+class Scene25(EndCardScene):
+    number = 25
