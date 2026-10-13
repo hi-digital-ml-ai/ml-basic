@@ -1,6 +1,6 @@
 ---
 title: "Cross-validation"
-description: "Five or ten folds of sites are enough, and their out-of-fold predictions are pooled into one score. When the same folds also choose the model, the winner's score is too good; nested cross-validation scores the choosing as well."
+description: "Cross-validation scores a model on sites it was not fitted to, from one prediction per station. When the same folds also choose the model, the winner's score is too good: a search over 100 sets of inputs keeps random columns, and nested cross-validation scores the choosing as well."
 order: 1
 categories: [validation]
 ---
@@ -24,10 +24,9 @@ set.seed(123)
 tree's node size by cross-validation by site, and noted that the winner's error was a
 little flattering, being the lowest of 12. With a hundred candidates, the winner can
 carry columns of pure noise.
-This page shows how to report a cross-validated score honestly: how many folds to use, how
-to turn them into one number, and how to score a model when the same folds also chose it.
-The last matters most when a survey is too small to set test sites aside, which is common
-in marine work.
+This page shows how to report a cross-validated score honestly when the same folds also
+chose the model. That matters most when a survey is too small to set test sites aside,
+which is common in marine work.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -40,14 +39,10 @@ That prediction is the station's **out-of-fold prediction**. Pooling the out-of-
 predictions of every station and working out one RMSE from them gives the **pooled
 score**.
 
-`collect_metrics()` in tidymodels reports something slightly different: the average of
-the folds' own RMSEs, which [Hyperparameter
-selection](../05-generalisation/hyperparameter-selection.qmd) used. The two agree when the
-folds are few and large. With many small folds they part, because a large miss raises only
-its own fold's RMSE, and the average gives that fold the same weight as every quiet one.
-
-Pooling has a second use. Any scheme that holds out every station once scores the same
-stations, so pooled scores from different schemes can be compared.
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) averaged
+the folds' own RMSEs instead. With five or ten folds of sites the two barely differ, but
+the pooled score has one advantage: any scheme that holds out every station once scores
+the same stations, so pooled scores from different schemes can be compared.
 [Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) relies on this.
 
 ## Nested cross-validation scores the search as well
@@ -130,7 +125,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import root_mean_squared_error
-from sklearn.model_selection import GroupKFold, LeaveOneGroupOut, cross_val_predict
+from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -174,99 +169,7 @@ in_words <- function(n) {
   if (n > 10) return(as.character(n))
   c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
 }
-n_sites <- n_distinct(survey$site_id)
 ```
-
-### Only the average of the folds' RMSEs moves with the number of folds
-
-The eight inputs are cross-validated with 2, 5, 10 and 20 folds of sites, each ten times
-with the sites dealt into new folds, and once with every site a fold of its own
-(**leave-one-site-out**, `r n_sites` folds). Each run gives the pooled score and the
-average of the folds' RMSEs.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fold-sweep
-set.seed(1)
-sweep <- map(c(2, 5, 10, 20), \(v) {
-  map(1:10, \(r) {
-    rounds <- cross_validate(inputs, survey,
-                             group_vfold_cv(survey, group = site_id, v = v))
-    tibble(folds = v, pooled = pooled_rmse(rounds),
-           averaged = collect_metrics(rounds)$mean)
-  }) |>
-    list_rbind()
-}) |>
-  list_rbind()
-
-# v = NULL makes one fold per site
-one_site <- cross_validate(inputs, survey, group_vfold_cv(survey, group = site_id))
-sweep <- bind_rows(sweep, tibble(folds = n_sites, pooled = pooled_rmse(one_site),
-                                 averaged = collect_metrics(one_site)$mean))
-
-sweep |>
-  summarise(`pooled RMSE` = mean(pooled), `average of the folds' RMSEs` = mean(averaged),
-            .by = folds) |>
-  mutate(across(-folds, \(x) round(x, 2)))
-```
-
-## Python
-
-```{python}
-observed = survey["abundance"].to_numpy()
-
-def pooled_and_averaged(folds):
-    predicted = np.empty(len(survey))
-    fold_rmse = []
-    for fit_rows, new_rows in folds.split(survey, groups=sites):
-        fitted = linear_on(inputs).fit(survey.iloc[fit_rows][inputs],
-                                        observed[fit_rows])
-        predicted[new_rows] = fitted.predict(survey.iloc[new_rows][inputs])
-        fold_rmse.append(root_mean_squared_error(observed[new_rows],
-                                                 predicted[new_rows]))
-    return {"pooled": root_mean_squared_error(observed, predicted),
-            "averaged": np.mean(fold_rmse)}
-
-runs = [{"folds": v, **pooled_and_averaged(GroupKFold(n_splits=v, shuffle=True,
-                                                      random_state=r))}
-        for v in (2, 5, 10, 20) for r in range(10)]
-runs.append({"folds": sites.nunique(), **pooled_and_averaged(LeaveOneGroupOut())})
-
-(pd.DataFrame(runs)
-    .groupby("folds")
-    .agg(**{"pooled RMSE": ("pooled", "mean"),
-            "average of the folds' RMSEs": ("averaged", "mean")})
-    .reset_index()
-    .round(2))
-```
-
-:::
-
-```{r}
-#| label: sweep-numbers
-#| include: false
-by_folds <- sweep |>
-  summarise(pooled = mean(pooled), averaged = mean(averaged), .by = folds)
-at <- function(v, col) by_folds[[col]][by_folds$folds == v]
-gap_one_site <- at(n_sites, "pooled") - at(n_sites, "averaged")
-```
-
-The pooled score barely moves. With two folds it is `r f2(at(2, "pooled"))`, a little
-higher, because each round fits to only half the sites. From five folds on it stays
-close to `r f2(at(10, "pooled"))`: `r f2(at(5, "pooled"))` with five folds,
-`r f2(at(10, "pooled"))` with ten, `r f2(at(20, "pooled"))` with twenty and
-`r f2(at(n_sites, "pooled"))` with every site on its own. So the five or ten folds of
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) are enough;
-more only add fitting.
-
-The average of the folds' RMSEs drifts down as the folds get smaller, from
-`r f2(at(2, "averaged"))` with two folds to `r f2(at(n_sites, "averaged"))` with one site
-per fold, `r f2(gap_one_site)` below the pooled score. The model did not change; only the
-bookkeeping did. A score that depends on the number of folds cannot be compared across
-studies, which is why the rest of this section pools.
 
 ### A search over 100 sets of inputs picks noise
 
@@ -494,19 +397,15 @@ by how much.
 ## Key points
 
 ::: {.key-points}
-- Each station's **out-of-fold prediction** comes from the model fitted without its site.
-  The **pooled score** is one RMSE over all of them; unlike the average of the folds'
-  RMSEs, it does not drift with the number of folds.
-- Five or ten folds are enough: the pooled score barely moved beyond them.
+- Each station's **out-of-fold prediction** comes from the model fitted without its site,
+  and the **pooled score** is one RMSE over all of them.
 - The winner of a search has the lowest of many scores, and part of its lead is luck:
   **selection optimism**. It grows with more candidates, more flexible models and fewer
-  sites. Here a search over 100 sets of inputs kept noise columns in every round.
+  sites. Here a search over 100 sets of inputs kept random columns.
 - **Nested cross-validation** runs the whole search inside each outer round and scores
   its choice on the outer fold. It put the search at `r f2(nested_searched)`, a little
   worse than claimed and behind the eight measured inputs with no search
-  (`r f2(nested_eight)`).
-- Report the nested score, not the winner's. The final model, refitted to all the data,
-  has no score of its own.
+  (`r f2(nested_eight)`). Report the nested score, not the winner's.
 :::
 
 ## Try it yourself

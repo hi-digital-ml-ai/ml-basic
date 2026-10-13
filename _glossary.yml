@@ -529,9 +529,6 @@ terms:
   - term: "Pooled score"
     definition: "One score worked out from every station's out-of-fold prediction together, rather than the average of the folds' own scores."
     page: chapters/07-validation/cross-validation.qmd
-  - term: "Leave-one-site-out"
-    definition: "Cross-validation with every site a fold of its own."
-    page: chapters/07-validation/cross-validation.qmd
   - term: "Selection optimism"
     definition: "The part of a search winner's score that is luck: the lowest of many scores gathers the most, so the more candidates, the more the winner's score flatters it."
     page: chapters/07-validation/cross-validation.qmd
