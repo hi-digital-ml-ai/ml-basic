@@ -13,14 +13,15 @@ scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
 
-This video is an overview built on three ideas, each with one or two examples:
-clustering finds groups nobody labelled (k-means recovers the seabed from the counts;
-a shuffled copy says how many groups stand out; a tree gives every number at once),
-PCA turns many columns into a map (the ordination, its loadings, and choosing the
-number of components by its use; UMAP briefly), and a pattern is checked before it is
-reported (bootstrap samples, a gap, a recorded category). The quiz applies the second
-check to the soft-bottom split on the checking page. The other linkage rules, UMAP's
-settings and the horseshoe effect are left to the pages; the end card names them.
+Rebuilt 2026-10-14 as an introduction, one new concept per part, each with one example
+and one picture, as the Assumptions and Validation videos were: find groups without
+labels (k-means, which recovers the seabed from the counts), draw many columns as one
+map (PCA and the ordination), and check that groups come back (refitting k-means on
+resampled sites, which the Validation video introduced). The key points avoid why and
+what. The silhouette and the shuffled baseline, hierarchical clustering and linkage,
+loadings, the number of components, UMAP, the adjusted Rand index by name, the gap
+between clusters and the soft-bottom split stay on the pages; the end card names some
+of them.
 -->
 
 # In this video
@@ -29,235 +30,176 @@ settings and the horseshoe effect are left to the pages; the end card names them
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-In this video, you will learn three things. How clustering finds groups nobody has
-labelled. How principal component analysis turns many columns into one map. And how to
-check a pattern before you report it.
+Welcome back to Machine Learning Basics for Marine Science. This video is about
+unsupervised learning: finding structure in data that has no answers. It covers three
+things: finding groups without labels, drawing many columns as one map, and checking
+that groups come back.
+
+# Find groups without labels
 
 ## Scene 2
-visual: manim NoLabels: a table of animal counts, its answer column empty (schematic)
+visual: manim NoLabels: a table of animal counts, its habitat column empty (schematic)
 
-Many marine datasets have no answer column. A benthic survey counts the animals at
-every station, but nobody has said which habitat each station belongs to. Unsupervised
-learning finds structure in the data itself.
+First, finding groups without labels. A benthic survey counts the animals at every
+station, but nobody has said which habitat each station belongs to. There is no answer
+for a model to learn from. Can the counts alone sort the stations into groups?
 
 ## Scene 3
 visual: manim Matrix: a table builds up, one row per station and one column per taxon, counts filling in (page results, clustering.qmd)
 
-Here, each of the course's 800 simulated survey stations has counts of 24 taxa. One
-row per station, one column per taxon: ecologists call this a community matrix.
-
-# Clustering finds groups nobody labelled
+This survey has 800 stations, each with counts of 24 kinds of animal, or taxa. One row
+per station, one column per taxon.
 
 ## Scene 4
-visual: manim KMeans: points in two dimensions; two centres placed, points coloured by nearest centre, centres move, repeat (schematic)
+visual: manim Points: stations as points placed by two taxa's counts, two clouds; "similar counts: close together" (schematic)
 
-Clustering sorts stations into groups of similar stations. The most widely used
-method is k-means. You choose the number of groups, k. Each station joins its nearest
-centre, each centre moves to the average of its stations, and this repeats.
+Clustering sorts the stations into groups of similar ones. Picture each station as a
+point, placed by its counts, so that stations with similar counts lie close together.
+Here there are only two taxa, so the picture is flat; with 24, the idea is the same.
 
 ## Scene 5
-visual: manim Seabed: 800 squares in two clusters, then each marked by its recorded seabed; the 15 out of place highlighted (page results, clustering.qmd)
+visual: manim KMeans: two centres placed; points coloured by nearest centre, centres move, repeat (schematic)
 
-k-means was given only the counts, logged and on a common scale, and asked for two
-groups. One cluster is the hard bottom, rock and gravel; the other, the soft bottom.
-Only 15 of the 800 stations sit in the other kind's cluster.
+The most widely used method is k-means. You choose the number of groups, k: here, two.
+It places two centres, and each station joins its nearest centre. Each centre then moves
+to the middle of its stations, and the two steps repeat until nothing changes.
 
 ## Scene 6
-visual: manim Random: points scattered at random, cut into four tidy groups (schematic)
+visual: manim Seabed: 800 squares in two clusters, then each marked by its recorded seabed; the 15 out of place ringed (page results, clustering.qmd)
 
-But k-means returns as many groups as you ask for, even from random numbers. So how
-many groups does the survey really hold?
+Given only the counts of the 800 stations, k-means was asked for two groups. Now compare
+them with the seabed, recorded at each station but never shown to k-means. One group is
+the hard bottom, rock and gravel; the other, the soft bottom, sand and mud. Only 15 of
+the 800 stations sit in the other kind's group.
 
 ## Scene 7
-visual: manim Silhouette: one station, its average distance to its own cluster and to the nearest other cluster (schematic)
+visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 1
+pause-after: 2.0
 
-The silhouette width compares each station's distance to its own cluster with its
-distance to the nearest other one. Averaged over the stations, higher means better
-separated groups.
+Key point one. Find groups without labels: k-means sorts the stations into groups of
+similar ones.
+
+# Draw many columns as one map
 
 ## Scene 8
-visual: manim Sweep: the average silhouette for two to eight clusters, highest at two (page results, choosing-the-number-of-clusters.qmd#fig-k-sweep)
+visual: manim Spread: a tilted cloud of points; new axes turn to its longest spread, "PC1: most spread" (schematic)
 
-Across two to eight clusters, the silhouette is highest at two, at 0.179. That
-sounds low: a popular rule of thumb calls it no real structure.
+Next, drawing many columns as one map. Two columns make a flat picture, but 24 cannot
+be drawn at all. Principal component analysis, or PCA, helps. It finds the direction in
+which the stations spread out most: the first principal component.
 
 ## Scene 9
-visual: manim Shuffle: a small table, each column's values shuffled up and down on its own (schematic)
+visual: manim Spread: "PC2: next, at right angles"; then "each a mix of all 24 taxa" (schematic)
 
-So run the same clustering on a shuffled copy. Shuffle each taxon's counts across
-the stations: every column keeps its values, but any groups are gone.
+The second principal component is the direction of next most spread, at right angles
+to the first. Each component is a mix of all 24 taxa, weighted so that the stations
+spread out as far as they can.
 
 ## Scene 10
-visual: manim Sweep: the shuffled baseline added near 0.05; the lead at two clusters marked "3.5 times" (page results)
+visual: manim Ordination: the 800 stations drawn on PC1 and PC2 in grey; "similar counts sit close" (page results, principal-component-analysis.qmd#fig-ordination)
 
-On shuffled counts, the silhouette stays near 0.05 for every number of clusters. At
-two, the survey scores three and a half times that, the clearest lead of any.
+Draw each station at its place on the first two components, and 24 columns become one
+map. Stations with similar counts sit close together, and stations with different
+counts sit far apart.
 
 ## Scene 11
-visual: manim Tree: stations joined pair by pair into a dendrogram; a cut line drops to give two, then three groups (schematic)
+visual: manim Ordination: the stations shaped by seabed, then coloured by depth; "one arm: hard bottom", "depth changes smoothly"; "PCA never saw either" (page results)
 
-Hierarchical clustering gives every number of groups at once. It joins the two
-closest groups again and again, and records the joins as a tree, a dendrogram. Cut it
-high for a few groups, lower for more.
+Now mark what was recorded at each station. The hard-bottom stations form one arm of the
+map and the soft-bottom stations another, and depth changes smoothly from shallow to
+deep. PCA never saw the seabed or the depth: the counts alone put them there.
 
 ## Scene 12
-visual: manim Linkage: the share of stations in the largest group for Ward and single linkage at two to six groups (page results, hierarchical-clustering.qmd#fig-linkage)
+visual: manim Ordination: "PC1 and PC2: 29.4% of the variance"; "a summary: enough to see the main structure" (page results)
 
-How the tree measures the distance between groups, its linkage, decides what it
-finds. Ward's linkage finds nearly the same two groups as k-means. Single linkage chains
-more than 99 per cent of stations into one group.
+A map of two components is a summary. Here it holds 29.4 per cent of the variance in
+the counts. That is usual for species counts, and enough to show the main structure.
 
 ## Scene 13
-visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
-pause-after: 0.5
+visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 2
+pause-after: 2.0
 
-Key point one. Clustering finds groups nobody labelled. Compare them with the same data,
-shuffled, to see how many really stand out.
+Key point two. Draw many columns as one map: PCA places the stations along their
+directions of most spread.
 
-# PCA turns many columns into one map
+# Check that groups come back
 
 ## Scene 14
-visual: manim Components: a cloud of points; the direction of most spread drawn as PC1, the next at right angles as PC2 (schematic)
+visual: manim Random: points scattered at random, cut into four tidy groups; "groups alone prove nothing" (schematic)
 
-Twenty-four columns cannot be drawn in one picture. Principal component analysis, or
-PCA, finds the direction along which the stations spread out most: the first principal
-component. The second is the next most, at right angles.
+Finally, checking that groups come back. k-means always returns the number of groups
+you ask for, even from random numbers. Asked for four groups here, it finds four tidy
+ones. So a set of groups, on its own, proves nothing.
 
 ## Scene 15
-visual: manim Ordination: the 800 stations on PC1 and PC2, coloured by depth, shaped by seabed (page results, principal-component-analysis.qmd#fig-ordination)
+visual: manim Bootstrap: the survey's sites drawn again at random, some twice and some not at all, each with all its stations; "fit k-means again: same groups?" (schematic)
 
-Plotted on those two, the stations form a map, an ordination, where similar
-communities sit close together. The two components hold 29.4 per cent of the variance,
-usual for species counts.
+Real groups should come back when the data change a little. So, as in the Validation
+video, resample the survey's sites: draw 160 sites from its own 160, with replacement,
+each with all its stations. Fit k-means again on the new sample, and see whether the
+same groups come back.
 
 ## Scene 16
-visual: manim Loadings: each taxon as a point at its loadings on PC1 and PC2, coloured by its share on hard bottom (page results, principal-component-analysis.qmd#fig-loadings)
+visual: manim Replicates: sixty dots by agreement with the first grouping, 52 near one, 8 near zero (page results, interpreting-patterns.qmd#fig-bootstrap)
 
-To read the axes, look at the loadings: the weight of each taxon in a component.
-The hard-bottom taxa sit together, and the rest line up in order of depth.
+Do this 60 times. Each dot is one refit, placed by how closely its groups match the
+first ones: one means the same groups. In 52 of the 60 refits, the hard and soft groups
+came back almost exactly. In the other 8, the stations split into shallow and deep
+instead.
 
 ## Scene 17
-visual: manim Ordination: arrows for depth and hard bottom over the map, each about 39 degrees from an axis (page results)
+visual: manim Replicates: "two competing answers"; "report how often each came back: 52 and 8 of 60" (page results)
 
-So depth and seabed both run diagonally, about 39 degrees from the axes: each
-component mixes the two. Read an axis from its loadings, not from its name.
+So the data hold two competing answers, and the seabed groups are the stronger. Report
+how often each one came back, not just the groups.
 
 ## Scene 18
-visual: manim Keep: 24 component bars by share of variance; the 80% line falls at 16; then the shuffled shares, three components above them (page results, dimensionality-reduction.qmd#fig-baseline)
+visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 3
+pause-after: 2.0
 
-Components can also be a model's inputs. How many to keep? Keeping 80 per cent of the
-variance keeps 16 of the 24. Parallel analysis keeps only those that beat their
-shuffled counterparts: three.
-
-## Scene 19
-visual: manim Depth: cross-validated error of predicting depth against the number of components, flat after two (page results, dimensionality-reduction.qmd#fig-components)
-
-When the components feed a model, cross-validate the number. To predict depth, two
-are enough. The third holds real structure, rock against gravel, that depth does not
-need.
-
-## Scene 20
-visual: manim UMAP: the observed map, hard bottom apart and depth running smoothly, beside the shuffled single cloud (page results, dimensionality-reduction.qmd#fig-umap)
-
-UMAP draws a map another way, keeping each station's nearest neighbours close. The
-hard-bottom stations form their own group, with depth running smoothly through each.
-Shuffled counts give one cloud.
-
-## Scene 21
-visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
-pause-after: 0.5
-
-Key point two. PCA turns many columns into one map. Read its axes from their loadings,
-and keep as many components as the use needs.
-
-# Check a pattern before reporting it
-
-## Scene 22
-visual: manim Checks: a supervised model checked against held-out answers; a clustering with none; three cards appear (schematic)
-
-A supervised model can be checked against held-out answers. A clustering has none,
-so three checks take their place.
-
-## Scene 23
-visual: manim Bootstrap: the survey's sites drawn again at random, some twice and some not at all, each with all its stations (schematic)
-
-First, does the pattern come back? A bootstrap sample draws the survey's sites again
-at random, with replacement, each with all its stations. k-means is refitted on sixty.
-
-## Scene 24
-visual: manim Agreement: pairs of stations, together or apart in two groupings; the adjusted Rand index from zero to one (schematic)
-
-The adjusted Rand index compares each refit with the original. For every pair of
-stations: together in both, or apart in both? One means identical, zero no better than
-chance.
-
-## Scene 25
-visual: manim Replicates: sixty dots by agreement with the original, 52 near one, 8 near zero (page results, interpreting-patterns.qmd#fig-bootstrap)
-
-In 52 of the 60 samples, the seabed split came back almost exactly. In the other 8,
-a split into shallow and deep took its place. Report how often each came back.
-
-## Scene 26
-visual: manim Gap: stations placed on the line between two cluster centres; groups give two humps with a gap, a gradient gives a flat spread (schematic)
-
-Second, is there a gap? Place each station on the line between the two cluster
-centres. Real groups leave few stations near the boundary; a gradient leaves as many
-there as anywhere.
-
-## Scene 27
-visual: manim Positions: the seabed split's histogram of positions, two humps, 2% within 0.1 of the boundary (page results, interpreting-patterns.qmd#fig-positions)
-
-The seabed split has a clear gap: only 2 per cent of stations lie close to its boundary.
-
-## Scene 28
-visual: manim Record: the two clusters beside the recorded seabed; the adjusted Rand index 0.92 (page results, interpreting-patterns.qmd)
-
-Third, does it match a record? The split matches the recorded seabed, which k-means
-never saw, at an adjusted Rand index of 0.92: the strongest evidence there is.
-
-## Scene 29
-visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
-pause-after: 0.5
-
-Key point three. Check a pattern before reporting it: does it come back, is there a gap,
-and does it match a record?
+Key point three. Check that groups come back: refit on resampled sites, and report how
+often they return.
 
 # Quiz
 
-## Scene 30
+## Scene 19
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. Within the soft bottom, k-means splits the stations into shallow and
-deep, and the split comes back in every bootstrap sample. Are they two groups?
+Quick quiz. Asked for five groups of plankton samples, k-means returns five groups. Does
+that show the samples fall into five groups?
 
-## Scene 31
-visual: manim QuizAnswer: "not yet"; the soft-bottom split's flat histogram beside the seabed split's two humps, 11% against 2% near the boundary (page results, interpreting-patterns.qmd#fig-positions)
+## Scene 20
+visual: manim QuizAnswer: "Not yet"; random dots cut into five groups; "resample, refit: do the five come back?" (schematic)
 
-Not yet. Eleven per cent of its stations sit near the boundary, against 2 per cent
-for the seabed split. No gap: k-means cut a steady depth gradient in the same place every
-time. And a gradient is a finding too.
+Not yet. k-means returns five groups whenever it is asked for five, even from random
+numbers. Resample, refit, and see whether the same five groups come back.
 
 # Key points
 
-## Scene 32
+## Scene 21
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: clustering finds groups nobody
-labelled; compare them with shuffled data.
+To sum up. <short pause> One: find groups without labels.
 
-## Scene 33
+## Scene 22
 visual: manim KeyPoints: the second ticked
 
-Two: PCA turns many columns into a map; read its axes from their loadings.
+Two: draw many columns as one map.
 
-## Scene 34
-visual: manim KeyPoints: the third ticked
+## Scene 23
+visual: manim KeyPoints: the third ticked; then all three animals cheer
+cheer: all
+pause-after: 4.0
 
-Three: check a pattern before reporting it.
+Three: check that groups come back.
 
-## Scene 35
+## Scene 24
 visual: manim EndCard: the site's address and a thank-you
 
-The pages also cover how to read a UMAP map, the other linkage rules and the
-horseshoe effect in PCA, with all the code. They are linked below. Thanks for watching.
+The pages go further: choosing the number of groups, clustering as a tree, how many
+components to keep, and other kinds of map, with all the code. They are linked below.
+Thanks for watching.
