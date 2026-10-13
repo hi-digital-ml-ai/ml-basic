@@ -350,15 +350,15 @@ different distributions of the response, so a "harder" scheme can report a *lowe
 Use R², or the same test set for both. §2's leakage page found it first. No §6 page
 compares schemes any more; §7's `spatial-and-temporal-cv.qmd` does, and must keep it.
 
-**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
-the forest recovers the temperature hump but puts depth's peak in shallow water, because depth
-is confounded with position, which carries an unmodelled spatial field. The page keeps
-this to one paragraph and links to §1 and §10's partial-effects page, which teach
-confounding; the page itself stays on linearity.
+**A curve that fits the data can still be wrong.** The forest recovers the temperature hump
+but puts depth's peak in shallow water, because depth is confounded with position, which
+carries an unmodelled spatial field. Since the 2026-10 beginners' pass this lives only in
+§10's `partial-effects.qmd` (with §1 teaching confounding); `linearity-and-nonlinearity.qmd`
+stays on the straight line against the forest's temperature hump.
 
 ### Uses of `coastal-survey-truth.csv`
 
-`linearity-and-nonlinearity.qmd` compares the forest's curves against the true generating curves,
+`partial-effects.qmd` compares the forest's curves against the true generating curves,
 and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
 than observed counts. Both say in the text that no real study could do this.
 

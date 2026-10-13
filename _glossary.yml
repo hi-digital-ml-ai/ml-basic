@@ -474,6 +474,9 @@ terms:
     page: chapters/05-generalisation/hyperparameter-selection.qmd
 
   # 6 · Assumptions: Linearity and nonlinearity
+  - term: "Assumption"
+    definition: "Something a method takes for granted about its data, such as a straight line; when it is wrong, the model still answers, but the answer can be wrong."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
   - term: "Linear model"
     definition: "A model that predicts from a starting value plus a fixed amount for each input, added up; linear, polynomial, Poisson and logistic regression are linear models."
     page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd

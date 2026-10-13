@@ -1,6 +1,6 @@
 ---
 title: "Linearity and nonlinearity"
-description: "Linear models assume a fixed effect for each input; trees and forests do not. A linear regression's errors, averaged along each input, show where a straight line fails, and a random forest then finds the curve. A curve that fits the data can still be wrong."
+description: "Linear models assume a fixed effect for each input; trees and forests do not. A linear regression's errors, averaged along each input, show where a straight line misses a curve, and a random forest finds the curve without being told its shape."
 order: 1
 categories: [assumptions]
 ---
@@ -21,12 +21,15 @@ set.seed(123)
 
 ## Only linear models assume straight lines
 
-Few marine responses are straight lines. A species has a temperature it prefers, growth
-levels off when food is plentiful, and oxygen has a level below which little survives.
+Every method takes something for granted about its data, an **assumption**. A wrong
+assumption does not stop a model: it still gives an answer, but the answer can be wrong.
+The first assumption of many models is a straight line, and few marine responses are
+straight lines. A species has a temperature it prefers, growth levels off when food is
+plentiful, and oxygen has a level below which little survives.
 [Prediction and explanation](../01-introduction/prediction-and-explanation.qmd) showed a
 straight line missing a temperature optimum that a decision tree found without being
-told. This page shows how to find such a miss when there are many inputs, and why a
-flexible model that draws a convincing curve can still be wrong about it.
+told. This page shows how to spot such a miss when there are many inputs, and how a
+random forest finds the curve on its own.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -36,9 +39,9 @@ flexible model that draws a convincing curve can still be wrong about it.
 
 A **linear model** predicts the outcome as a starting value plus a fixed amount for each
 input. Linear, polynomial, Poisson and logistic regression, from
-[Supervised learning](../03-supervised-learning/index.qmd), are all linear models;
-Poisson and logistic regression add up their amounts on the log scale and the log-odds.
-Two assumptions follow:
+[Supervised learning](../03-supervised-learning/index.qmd), are all linear models
+(Poisson and logistic regression add up their amounts on a transformed scale, but the
+idea is the same). Two assumptions follow:
 
 - **One shape for each input.** One more metre of depth has the same effect at 20 m as
   at 180 m. A squared term lets the line bend, but only into one peak that falls the
@@ -56,21 +59,16 @@ say. A split inside another split lets the effect of depth differ between cold w
 warm, so interactions come built in. A
 [random forest](../03-supervised-learning/forests-and-boosting.qmd) averages many such
 trees. No shape has to be chosen in advance: that is what most of machine learning
-gains over a linear model.
-
-The cost is that a forest holds no single curve for depth. Its prediction across depth
-depends on the values the other inputs are held at, because those can change the effect
-of depth. A generalised additive model (GAM) sits between the two, with a free curve for
-each input that adds up like a linear model's terms, so it gives up interactions to keep
-one readable curve;
-[Black boxes and interpretable models](../10-interpretation/black-box-or-not.qmd) fits
-one.
+gains over a linear model. The cost is that a forest holds no single curve for depth:
+its prediction across depth can change with the values of the other inputs.
 
 ## Worked example
 
 Two models are fitted to the training sites of the survey with the inputs of
 [Regression for counts](../03-supervised-learning/count-regression.qmd): linear
 regression, with a straight line for every input, and a random forest of 500 trees.
+First linear regression's errors show where a straight line misses, then the forest's
+predictions show what it finds there.
 
 ### Preparing the data
 
@@ -252,127 +250,103 @@ straight line cannot draw that. The other three inputs stay between
 that about `r per_group` noisy counts in each group give. For them, a straight line is as good
 as the data can tell.
 
-### The random forest finds the temperature hump but not the depth peak
+### The random forest finds the temperature hump
 
-The random forest is fitted to the training stations, and its prediction is drawn
-across depth and across temperature, with the other inputs held at typical values. This
-is one slice: held at other values, the forest's curve could change shape. The survey
-is [simulated](../02-marine-data/the-coastal-survey.qmd#the-survey-is-simulated-so-its-answers-are-known),
-so the curves can be checked against the ones the simulation used: its count peaks at
-80 m of depth and at 9 °C. No real study can make this check. Each curve in
-@fig-truth is divided by its own peak, so only its shape is compared.
+Both models are now fitted to the training stations, and their predictions are drawn
+across temperature, with the other inputs held at typical values: a summer station on
+sand, with the median depth, chlorophyll and salinity.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: fig-truth
-#| fig-cap: "The random forest's curves against the curves the simulation used (dashed), each divided by its own peak, with the other inputs held at typical values (sand, summer, the median of the rest). Temperature is close to the truth through the middle of its range. Depth is not: between the forest's shallow peak and the true peak at 80 m, its curve stays level or falls while the true one rises."
-#| fig-alt: "Two panels, each with a stepped random forest curve and a dashed true curve, scaled so each peaks at 1. Left, depth: the true curve is an arch peaking at 80 metres; the forest's curve peaks in shallow water and is level or falling where the true curve peaks. Right, temperature: the true curve is an arch peaking at 9 degrees and the forest follows it through the middle of the range, peaking a little cooler; it moves in steps and levels off at both ends."
-#| fig-width: 8
-#| fig-height: 4
+#| label: across-temperature
 forest_fit <- fit(models[["Random forest"]], train)
 
 typical <- train |>
-  summarise(across(c(depth_m, temperature_c, chlorophyll_mg_m3,
-                     salinity_psu), \(x) median(x, na.rm = TRUE))) |>
+  summarise(across(c(depth_m, chlorophyll_mg_m3, salinity_psu),
+                   \(x) median(x, na.rm = TRUE))) |>
   mutate(substrate = factor("sand", levels = levels(train$substrate)),
          season    = factor("summer", levels = levels(train$season)))
 
-# the forest's prediction along one input, the others held at typical values
-across_input <- function(input) {
-  values <- range(train[[input]], na.rm = TRUE)
-  steps <- tibble(!!input := seq(values[1], values[2], length.out = 200))
-  grid <- typical |>
-    select(-all_of(input)) |>
-    cross_join(steps)
-  augment(forest_fit, new_data = grid) |>
-    transmute(value = .data[[input]], .pred)
-}
+# 200 temperatures across the training range, the other inputs held at typical values
+temperatures <- range(train$temperature_c, na.rm = TRUE)
+grid <- cross_join(typical, tibble(temperature_c = seq(temperatures[1],
+                                                       temperatures[2],
+                                                       length.out = 200)))
 
-# the curves R/make-example-data.R used, on the log scale
-true_curve <- list(
-  depth_m       = \(depth) -0.55 * ((depth - 80) / 60)^2,
-  temperature_c = \(temperature) -0.60 * ((temperature - 9) / 3)^2
+across_temperature <- bind_rows(
+  "Linear regression" = augment(linear_fit, new_data = grid),
+  "Random forest" = augment(forest_fit, new_data = grid),
+  .id = "model"
 )
+```
 
-shapes <- map(names(true_curve), \(name) {
-  forest <- across_input(name)
-  truth <- exp(true_curve[[name]](forest$value))
-  bind_rows(
-    "Random forest" = tibble(value = forest$value, relative = forest$.pred),
-    Simulation = tibble(value = forest$value, relative = truth),
-    .id = "curve"
-  ) |>
-    # each curve divided by its own peak
-    mutate(relative = relative / max(relative), input = name, .by = curve)
-}) |>
-  list_rbind()
+```{r}
+#| label: temperature-numbers
+#| include: false
+one <- \(x) format(round(x, 1), nsmall = 1)
+ends <- \(name) filter(across_temperature, model == name)$.pred[c(1, 200)]
+linear_ends <- ends("Linear regression")
+forest_ends <- ends("Random forest")
+forest_peak <- across_temperature |>
+  filter(model == "Random forest") |>
+  slice_max(.pred, n = 1, with_ties = FALSE)
+```
 
-shape_plot <- function(which, x_label) {
-  ggplot(filter(shapes, input == which),
-         aes(value, relative, colour = curve, linetype = curve)) +
-    geom_line(linewidth = 1.1) +
-    scale_colour_manual(values = c("Random forest" = ml_palette[["green"]],
-                                   Simulation = ml_palette[["grey"]])) +
-    scale_linetype_manual(values = c("Random forest" = "solid",
-                                     Simulation = "dashed")) +
-    labs(x = x_label, y = "Count relative to its peak", colour = NULL,
-         linetype = NULL)
-}
-
-shape_plot("depth_m", "Depth (m)") +
-  shape_plot("temperature_c", "Temperature (°C)") +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```{r}
+#| label: fig-temperature
+#| fig-cap: "Linear regression's and the random forest's predicted catch across temperature, with the other inputs held at typical values (sand, summer, the median of the rest). The straight line can only rise or fall. The forest, told nothing about the shape, predicts the most animals in the middle temperatures and fewer in colder and warmer water."
+#| fig-alt: !expr 'glue::glue("Two lines of predicted animals against temperature. Linear regression: a straight line from about {round(linear_ends[1], 1)} animals in the coldest water to about {round(linear_ends[2], 1)} in the warmest. Random forest: a stepped curve that starts at about {round(forest_ends[1], 1)} animals, rises to about {round(forest_peak$.pred, 1)} near {one(forest_peak$temperature_c)} degrees and falls to about {round(forest_ends[2], 1)} in the warmest water.")'
+#| fig-width: 7
+#| fig-height: 4
+ggplot(across_temperature, aes(temperature_c, .pred, colour = model)) +
+  geom_line(linewidth = 1.1) +
+  scale_colour_manual(values = c("Linear regression" = ml_palette[["blue"]],
+                                 "Random forest" = ml_palette[["green"]])) +
+  labs(x = "Temperature (°C)", y = "Predicted animals", colour = NULL) +
+  theme(legend.position = "bottom")
 ```
 
 ## Python
 
 ```{python}
 forest_fit = models["Random forest"].fit(train[predictors], train["abundance"])
-typical = train[numeric].median()
 
-def across_input(column):
-    grid = pd.DataFrame({c: [typical[c]] * 200 for c in numeric})
-    grid[column] = np.linspace(train[column].min(), train[column].max(), 200)
-    grid["substrate"], grid["season"] = "sand", "summer"
-    return pd.Series(forest_fit.predict(grid[predictors]), index=grid[column])
+# 200 temperatures across the training range, the other inputs held at typical values
+grid = pd.DataFrame({c: [train[c].median()] * 200 for c in numeric})
+grid["temperature_c"] = np.linspace(train["temperature_c"].min(),
+                                    train["temperature_c"].max(), 200)
+grid["substrate"], grid["season"] = "sand", "summer"
 
-# where the forest's curve peaks, against the simulation's 80 m and 9 °C
-pd.Series({column: across_input(column).idxmax()
-           for column in ["depth_m", "temperature_c"]},
-          name="Random forest's peak").round(1).to_frame()
+across_temperature = pd.DataFrame({
+    "Linear regression": linear_fit.predict(grid[predictors]),
+    "Random forest": forest_fit.predict(grid[predictors]),
+}, index=grid["temperature_c"])
+
+# the predicted animals in the coldest water, at the peak and in the warmest water
+pd.DataFrame({"coldest": across_temperature.iloc[0],
+              "most animals at (°C)": across_temperature.idxmax(),
+              "most animals": across_temperature.max(),
+              "warmest": across_temperature.iloc[-1]}).round(1)
 ```
 
 :::
 
-```{r}
-#| label: curve-numbers
-#| include: false
-peak <- shapes |>
-  filter(curve == "Random forest") |>
-  slice_max(relative, n = 1, with_ties = FALSE, by = input) |>
-  select(input, value) |>
-  deframe() |>
-  as.list()
-one <- \(x) format(round(x, 1), nsmall = 1)
-```
+In @fig-temperature the straight line runs from `r one(linear_ends[1])` animals in the
+coldest water to `r one(linear_ends[2])` in the warmest: one fixed amount per degree, as
+its assumption demands. The forest was told nothing about the shape, yet it draws the
+hump that the error check found. Its prediction rises from `r one(forest_ends[1])`
+animals to `r one(forest_peak$.pred)` near `r one(forest_peak$temperature_c)` °C and
+falls to `r one(forest_ends[2])` in the warmest water. Its curve is jagged rather than
+smooth, because each of its trees splits the stations into groups by temperature. Where the straight line
+missed, the forest found the curve.
 
-On temperature the forest draws the hump that the error check found, though no one told
-it the shape. It peaks near `r one(peak$temperature_c)` °C and follows the true curve
-through the middle of the range, where most stations lie. Where the straight line
-failed, the forest found the curve.
-
-On depth the forest is wrong. Its curve peaks at `r round(peak$depth_m)` m, while
-the simulation's count peaks at 80 m, and nothing warned of it: the error check showed
-no pattern along depth. The reason is not the shape. The shelf deepens offshore, so
-depth follows position, and the forest gave depth an effect that belongs to something
-about position that no input measures. Position is a
-[confounder](../01-introduction/prediction-and-explanation.qmd#depth-confounds-the-salinity-slope),
-and no choice between straight lines and curves removes it.
-[Partial effects](../10-interpretation/partial-effects.qmd) returns to this case. A
-curve that fits the data can still be wrong.
+The forest's curve is one slice: held at other values of the other inputs, it could
+change shape, which is an interaction at work.
+[Partial effects](../10-interpretation/partial-effects.qmd) draws curves that do not
+depend on that choice.
 
 ## Key points
 
@@ -384,8 +358,6 @@ curve that fits the data can still be wrong.
   input. On the survey, temperature showed a hump the straight line missed; the other
   inputs showed none.
 - A random forest found the temperature hump without being told its shape.
-- Its depth curve was wrong, through confounding with position, which no choice of
-  shape removes: a curve that fits the data can still be wrong.
 :::
 
 ## Try it yourself
@@ -394,6 +366,7 @@ curve that fits the data can still be wrong.
    `step_poly(temperature_c, degree = 2, options = list(raw = TRUE))`, as
    [Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
    did, and run the error check again. Does the hump along temperature disappear?
-2. In `typical`, hold temperature at its lower quartile instead of its median, then at
-   its upper quartile, and redraw the forest's depth curve. Does its shape change? If
-   it does, the forest has learned an interaction.
+2. In `typical`, hold depth at its lower quartile instead of its median, then at its
+   upper quartile, and redraw @fig-temperature. Does the forest's curve change shape,
+   or only move up and down? A change of shape means the forest has learned an
+   interaction. What does the straight line do?
