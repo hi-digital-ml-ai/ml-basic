@@ -141,35 +141,29 @@ video showed, survey counts are skewed: most stations catch a few animals, and a
 a great many. Those big catches pull the average up, so the median sits below it.
 
 ## Scene 14
-visual: manim Picks: the four models' RMSE and MAE as two rows of dots; the RMSE's lowest is the random forest, MAE's the random forest on log counts (page results, regression-metrics.qmd)
+visual: manim Picks: the four models' RMSE and MAE as two rows of dots; the RMSE's lowest is the random forest, MAE's the random forest on log counts, which predicts 69 per cent of the catch (page results, regression-metrics.qmd)
 
 So the two measures can pick different models. Here are four, scored both ways. The
 last is a random forest fitted to log counts: taking the logarithm shrinks the big
 catches, so this forest aims near the median. The RMSE picks the plain random forest.
-MAE picks the forest on log counts.
+MAE picks the forest on log counts, yet its predictions add up to only 69 per cent of the
+animals caught.
 
 ## Scene 15
-visual: manim Picks: a bar of the animals caught, and each model's predicted total; the forest on log counts at 69 per cent of it (page results)
-
-Add up that forest's predictions, and they reach only 69 per cent of the animals
-caught. For a stock estimate, which needs the total, MAE has picked a model that misses
-almost a third of them.
-
-## Scene 16
 visual: manim Shortlist: stations ranked by a model's prediction; a ship visits the top hundred (schematic)
 
 Other uses ask other things. Say a ship has time to revisit 100 stations, and goes where
 a model predicts the most animals. Then only the order of the predictions matters, not
 their size.
 
-## Scene 17
+## Scene 16
 visual: manim ShortlistResult: animals found by each model's shortlist, between a random hundred and a perfect hundred (page results, choosing-a-metric.qmd)
 
 The forest on log counts finds 847 animals, about as many as the other models. Each
 shortlist finds 2.1 times what a hundred random stations would. Predictions that run low
 lose nothing here.
 
-## Scene 18
+## Scene 17
 visual: manim Sensitivity: the Assumptions video's grid of stations, the rare species lit, the model's calls as squares; accuracy, then sensitivity with the presences ringed, then specificity (page results, ../06-assumptions-limitations/class-imbalance.qmd)
 
 Calls of present or absent need measures of their own. Remember the rare species in the
@@ -178,7 +172,7 @@ presence in six. The share of the presences a model finds is called its sensitiv
 share of the absences it calls absent is its specificity, here 96 per cent. With so few
 presences, accuracy is almost all specificity, which is why it hid the misses.
 
-## Scene 19
+## Scene 18
 visual: manim Costs: a false alarm, a wasted dive, as a large square; a miss, a lost record, as a small one; a threshold on the probability of presence slides up from 0.5 (schematic)
 
 Which matters more depends on what each mistake costs. A miss lowers sensitivity, and a
@@ -186,7 +180,7 @@ false alarm lowers specificity. If a false alarm wastes a dive, it may cost far 
 a miss. Then the threshold that turns a probability into a call should come from those
 costs, not sit at 0.5: raise it, and the model calls present only where it is surer.
 
-## Scene 20
+## Scene 19
 visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 2
 pause-after: 2.0
@@ -196,22 +190,16 @@ then choose the measure.
 
 # A score needs an interval
 
-## Scene 21
-visual: manim OneSurvey: the survey's sites, then other sites the survey might have drawn, the score moving with them (schematic)
-
-Finally, why a score needs an interval. A score comes from one survey. Had other sites
-been sampled, it would have come out higher or lower, and two models might have swapped
-places.
-
-## Scene 22
+## Scene 20
 visual: manim Resample: the 160 sites drawn again with replacement, some twice, some not at all; each draw gives one error (schematic)
 
-To see how far, draw the survey again from itself, which is called resampling. Draw 160
-sites from its own 160, with replacement, so some come up twice and some not at all: a
-survey that might have been. Keep their stations' out-of-fold predictions, and work out
-the error. Do it a thousand times.
+Finally, why a score needs an interval. A score comes from one survey; with other sites,
+it would have come out higher or lower. To see how far, draw the survey again from itself,
+which is called resampling. Draw 160 sites from its own 160, with replacement, so some
+come up twice and some not at all. Keep their stations' out-of-fold predictions, work out
+the error, and do it a thousand times.
 
-## Scene 23
+## Scene 21
 visual: manim Intervals: the three models' RMSEs with their 95% intervals, all overlapping (page results, uncertainty-and-stability.qmd)
 
 The middle 95 per cent of those thousand errors is a 95 per cent interval: the range
@@ -219,27 +207,27 @@ the score could take with other sites. For the random forest it runs from 3.75 t
 and all three models' intervals overlap. Read alone, they cannot even say whether the
 forest beats predicting the average.
 
-## Scene 24
+## Scene 22
 visual: manim Pairs: two models' errors over a few resamples, rising and falling together; their difference drawn beside, nearly constant (schematic)
 
 But a hard sample is hard for every model: when one model's error rises, so do the
 others'. So compare them in pairs: in each resample, take one model's error from the
 other's. What they share cancels, and only the difference is left.
 
-## Scene 25
+## Scene 23
 visual: manim PairScatter: the forest's RMSE against predicting the average's, one dot per resample, nearly all below the diagonal (page results, uncertainty-and-stability.qmd#fig-pairs)
 
 Each dot is one resample. Below the diagonal, the forest's error is the lower. In pairs,
 the forest beats predicting the average in 99 per cent of the resamples.
 
-## Scene 26
+## Scene 24
 visual: manim PairScatter: the second panel, against linear regression, a narrow band along the diagonal; the paired interval across zero (page results)
 
 Against linear regression, it wins in only 80 per cent, and the paired interval for the
 difference reaches across zero: no difference at all is still possible. On this survey,
 the RMSE cannot tell those two apart.
 
-## Scene 27
+## Scene 25
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
 cheer: 3
 pause-after: 2.0
@@ -249,7 +237,7 @@ pairs.
 
 # Quiz
 
-## Scene 28
+## Scene 26
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
@@ -257,7 +245,7 @@ Quick quiz. A false alarm wastes a dive, and costs three times as much as a miss
 record. The model's probabilities can be read as chances. Above what probability should
 a station be called present?
 
-## Scene 29
+## Scene 27
 visual: manim QuizAnswer: "0.75"; the two expected costs against the probability, crossing at 0.75; logistic regression's cost curve with its lowest point (page results, choosing-a-metric.qmd#fig-cost)
 
 0.75. At probability p, calling a station present risks a false alarm, with chance one
@@ -267,24 +255,24 @@ on the survey.
 
 # Key points
 
-## Scene 30
+## Scene 28
 visual: manim KeyPoints: the three key points, the first ticked
 
 To sum up. <short pause> One: a score is only as honest as its folds.
 
-## Scene 31
+## Scene 29
 visual: manim KeyPoints: the second ticked
 
 Two: the measure must follow the use.
 
-## Scene 32
+## Scene 30
 visual: manim KeyPoints: the third ticked; then all three animals cheer
 cheer: all
 pause-after: 4.0
 
 Three: a score needs an interval.
 
-## Scene 33
+## Scene 31
 visual: manim EndCard: the site's address and a thank-you
 
 The pages also cover forecasts tested on later years, measures for a total or a map,

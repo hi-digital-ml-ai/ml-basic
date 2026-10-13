@@ -25,12 +25,12 @@ exports <- list(
                                    eight_inputs = nested_eight)), dir, "nested")
   },
 
-  # Scenes 14–15: the four models' measures.
+  # Scene 14: the four models' measures.
   "regression-metrics.qmd" = function(env, dir) {
     write(with(env, scores), dir, "measures")
   },
 
-  # Scene 17 and the quiz's answer: the shortlists and the cheapest thresholds.
+  # Scene 16 and the quiz's answer: the shortlists and the cheapest thresholds.
   "choosing-a-metric.qmd" = function(env, dir) {
     write(with(env, dplyr::mutate(shortlists, perfect = perfect, at_random = at_random,
                                   budget = budget)), dir, "shortlists")
@@ -38,7 +38,7 @@ exports <- list(
     write(with(env, dplyr::select(cost_curves, k, threshold, cost)), dir, "cost-curves")
   },
 
-  # Scene 18: the Assumptions video's rare species and logistic regression at the
+  # Scene 17: the Assumptions video's rare species and logistic regression at the
   # threshold that calls about as many stations present as hold it, as that video's
   # exports.R writes them, with the share of absences it calls absent.
   "../06-assumptions-limitations/class-imbalance.qmd" = function(env, dir) {
@@ -55,7 +55,7 @@ exports <- list(
     }), dir, "matched")
   },
 
-  # Scenes 22–26: each model's interval, the paired differences, and the thousand
+  # Scenes 20–24: each model's interval, the paired differences, and the thousand
   # bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")

@@ -524,7 +524,7 @@ class Scene11(KeyPointScene):
     point = 1
 
 
-# The measure follows the use (scenes 12–19) ------------------------------------------------
+# The measure follows the use (scenes 12–18) ------------------------------------------------
 
 class Scene12(VideoScene):
     number = 12
@@ -655,42 +655,12 @@ class Scene14(VideoScene):
             box = SurroundingRectangle(VGroup(names[best], rows[best]), color=colour, buff=0.12, corner_radius=0.1)
             self.play(rows[best][1].animate.set_color(colour).scale(1.4), rows[best][2].animate.set_color(colour),
                       Create(box), run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene15(VideoScene):
-    number = 15
-
-    def construct(self):
-        measures = self.data("measures").set_index("model").loc[MODEL_ORDER]
-        share = measures["predicted / caught"]
-        ys = [1.4 - 1.0 * i for i in range(4)]
-        full = 7.0
-        x0 = -1.6
-        caught = DashedLine([x0 + full, 2.3, 0], [x0 + full, -2.2, 0], color=INK, stroke_width=4)
-        caught_name = label("animals caught", 28, INK, weight=BOLD).next_to(caught, UP, 0.1)
-        head = label("Each model's predictions, added up", 34, SUBDUED).to_edge(UP, buff=0.35)
-        rows = VGroup()
-        for m, y in zip(MODEL_ORDER, ys):
-            colour = VERMILION if m == LOG_FOREST else GREY
-            bar = Rectangle(width=full * share[m], height=0.5, stroke_width=0, fill_color=colour,
-                            fill_opacity=0.85 if m == LOG_FOREST else 0.5).move_to([x0, y, 0], aligned_edge=LEFT)
-            name = label(MODEL_NAMES[m], 28, INK).next_to([x0, y, 0], LEFT, 0.3)
-            rows.add(VGroup(name, bar))
-        log_row = rows[MODEL_ORDER.index(LOG_FOREST)]
-        value = label(pct(share[LOG_FOREST]), 40, VERMILION, weight=BOLD).next_to(log_row[1], RIGHT, 0.2)
-        missing = Brace(Line(log_row[1].get_right(), [x0 + full, log_row[1].get_y(), 0]), DOWN, color=VERMILION)
-        missing_name = label("missed", 30, VERMILION, weight=BOLD).next_to(missing, DOWN, 0.1)
-        # "Add up that forest's predictions, ..."
-        self.play(FadeIn(head), Create(caught), FadeIn(caught_name), run_time=self.share(0.12))
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(r[0]), GrowFromEdge(r[1], LEFT)) for r in rows],
-                              lag_ratio=0.2), run_time=self.share(0.25))
-        # "... and they reach only 69 per cent of the animals caught."
-        cue(self, "and they reach only")
-        self.play(FadeIn(value), run_time=self.share(0.1))
-        # "For a stock estimate, MAE has picked a model that misses almost a third of them."
-        cue(self, "For a stock estimate")
-        self.play(GrowFromCenter(missing), FadeIn(missing_name), run_time=self.share(0.15))
+        # "... yet its predictions add up to only 69 per cent of the animals caught."
+        total = measures.loc[LOG_FOREST, "predicted / caught"]
+        short = label(f"its predictions add up to {pct(total)} of the catch", 28, VERMILION, weight=BOLD
+                      ).next_to(box, DOWN, 0.25, aligned_edge=RIGHT)
+        cue(self, "yet its predictions")
+        self.play(FadeIn(short, shift=0.2 * UP), FadeOut(lower), run_time=self.share(0.1))
         self.finish()
 
 
@@ -703,8 +673,8 @@ def ranked_bars(n=20, seed=17):
     return bars
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         bars = ranked_bars().move_to([-0.6, -0.6, 0], aligned_edge=DOWN).shift(1.8 * DOWN)
@@ -732,8 +702,8 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         lists = self.data("shortlists").set_index("model")
@@ -814,8 +784,8 @@ def model_calls(scene, lit, others):
     return VGroup(*[Square(0.3, color=INK, stroke_width=4).move_to(d) for d in hits + picked])
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         matched = self.data("matched").iloc[0]
@@ -872,8 +842,8 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(VideoScene):
-    number = 19
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         alarm = VGroup(Square(1.8, stroke_width=0, fill_color=VERMILION, fill_opacity=0.8),
@@ -915,61 +885,20 @@ class Scene19(VideoScene):
         self.finish()
 
 
-class Scene20(KeyPointScene):
-    number = 20
+class Scene19(KeyPointScene):
+    number = 19
     point = 2
 
 
-# A score needs an interval (scenes 21–26) --------------------------------------------------
-
-class Scene21(VideoScene):
-    number = 21
-
-    def construct(self):
-        points, dots = site_map(width=6.0, height=5.4, centre=(-3.6, -0.3))
-        head = label("the survey's sites", 30, BLUE, weight=BOLD).next_to(dots, UP, 0.2)
-        lo, hi = points[:, :2].min(axis=0), points[:, :2].max(axis=0)
-        axis = Line([1.6, -2.4, 0], [6.4, -2.4, 0], color=GRID, stroke_width=3)
-        axis_name = label("score", 28, SUBDUED).next_to(axis, DOWN, 0.2)
-        a, b = ValueTracker(3.4), ValueTracker(4.4)
-        mark_a = always_redraw(lambda: Dot([a.get_value(), -1.6, 0], radius=0.16, color=BLUE))
-        mark_b = always_redraw(lambda: Dot([b.get_value(), -0.9, 0], radius=0.16, color=ORANGE))
-        key = VGroup(key_row(BLUE, "model A"), key_row(ORANGE, "model B")).arrange(DOWN, buff=0.2,
-                                                                                 aligned_edge=LEFT).move_to([4.0, 1.6, 0])
-        rng = np.random.default_rng(22)
-
-        def other_sites():
-            return VGroup(*[Dot([rng.uniform(lo[0], hi[0]), rng.uniform(lo[1], hi[1]), 0], radius=0.07, color=GREY)
-                            for _ in range(len(points))])
-
-        # "A score comes from one survey."
-        self.play(FadeIn(dots, lag_ratio=0.005), FadeIn(head), run_time=self.share(0.15))
-        self.play(Create(axis), FadeIn(axis_name), FadeIn(mark_a), FadeIn(mark_b), FadeIn(key),
-                  run_time=self.share(0.12))
-        # "Had other sites been sampled, it would have come out higher or lower, ..."
-        cue(self, "Had other sites")
-        other_head = label("other sites it might have drawn", 30, GREY, weight=BOLD).move_to(head)
-        current = dots
-        for k, (va, vb) in enumerate(((2.4, 3.6), (4.6, 5.8), (3.8, 3.1))):
-            new = other_sites()
-            anims = [ReplacementTransform(current, new), a.animate.set_value(va), b.animate.set_value(vb)]
-            if k == 0:
-                anims.append(ReplacementTransform(head, other_head))
-            # "... and two models might have swapped places."
-            if k == 2:
-                cue(self, "and two models")
-            self.play(*anims, run_time=self.share(0.13))
-            current = new
-        self.finish()
-
+# A score needs an interval (scenes 20–24) --------------------------------------------------
 
 def site_squares():
     return VGroup(*[Square(0.26, stroke_width=0, fill_color=BLUE, fill_opacity=0.85) for _ in range(160)]
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -998,26 +927,26 @@ class Scene22(VideoScene):
                                   ).move_to([to_x((bins[i] + bins[i + 1]) / 2), -2.9, 0], aligned_edge=DOWN)
                         for i, c in enumerate(counts)])
         first = Dot([to_x(scores.iloc[0]), -2.75, 0], radius=0.1, color=ORANGE)
-        # "To see how far, draw the survey again from itself, which is called resampling."
-        self.play(FadeIn(source), FadeIn(source_name), run_time=self.share(0.1))
+        # "Finally, why a score needs an interval. A score comes from one survey; ..."
+        self.play(FadeIn(source), FadeIn(source_name), run_time=self.share(0.08))
         # "Draw 160 sites from its own 160, with replacement, ..."
         cue(self, "Draw 160")
         self.play(FadeIn(target), FadeIn(target_name), run_time=self.share(0.06))
         self.play(LaggedStart(*[TransformFromCopy(source[i], p) for i, p in zip(drawn, picks)], lag_ratio=0.01),
                   run_time=self.share(0.2))
         self.play(FadeIn(twice), FadeIn(never), FadeIn(note), run_time=self.share(0.08))
-        # "... keep their stations' out-of-fold predictions, and work out the error."
-        cue(self, "and work out the error")
+        # "Keep their stations' out-of-fold predictions, work out the error, ..."
+        cue(self, "work out the error")
         self.play(Create(axis), FadeIn(axis_name), FadeIn(first, scale=2), run_time=self.share(0.1))
-        # "Do it a thousand times."
-        cue(self, "Do it a thousand")
+        # "... and do it a thousand times."
+        cue(self, "do it a thousand")
         self.play(FadeOut(first), LaggedStart(*[GrowFromEdge(h, DOWN) for h in hist], lag_ratio=0.03),
                   run_time=self.share(0.15))
         self.finish()
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
@@ -1060,8 +989,8 @@ class Scene23(VideoScene):
         self.finish()
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         a = np.array([4.6, 3.8, 5.3, 4.2, 4.9])
@@ -1117,8 +1046,8 @@ def pair_panel(scores, other, x, paired):
     return VGroup(box, diagonal, x_name, y_name), dots, result
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -1139,8 +1068,8 @@ class Scene25(VideoScene):
         self.finish()
 
 
-class Scene26(VideoScene):
-    number = 26
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -1168,22 +1097,22 @@ class Scene26(VideoScene):
         self.finish()
 
 
-class Scene27(KeyPointScene):
-    number = 27
+class Scene25(KeyPointScene):
+    number = 25
     point = 3
 
 
-# Quiz (scenes 28–29) ----------------------------------------------------------------------
+# Quiz (scenes 26–27) ----------------------------------------------------------------------
 
-class Scene28(QuizScene):
-    number = 28
+class Scene26(QuizScene):
+    number = 26
     question = ("A false alarm costs three misses.",
                 "The probabilities can be trusted.",
                 "Where should the threshold be?")
 
 
-class Scene29(VideoScene):
-    number = 29
+class Scene27(VideoScene):
+    number = 27
 
     def construct(self):
         thresholds = self.data("thresholds").set_index("k")
@@ -1237,22 +1166,22 @@ class Scene29(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 30–33) ---------------------------------------------------
+# Key points and end card (scenes 28–31) ---------------------------------------------------
 
-class Scene30(RecapScene):
-    number = 30
+class Scene28(RecapScene):
+    number = 28
     point = 1
 
 
-class Scene31(RecapScene):
-    number = 31
+class Scene29(RecapScene):
+    number = 29
     point = 2
 
 
-class Scene32(RecapScene):
-    number = 32
+class Scene30(RecapScene):
+    number = 30
     point = 3
 
 
-class Scene33(EndCardScene):
-    number = 33
+class Scene31(EndCardScene):
+    number = 31
