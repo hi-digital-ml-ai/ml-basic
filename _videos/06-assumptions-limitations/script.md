@@ -61,6 +61,7 @@ what people mean when they call machine learning flexible.
 
 ## Scene 5
 visual: manim Checks: two boxes, "errors: a bell curve" and "equal spread everywhere"; "taught in statistics courses" (schematic)
+pause-after: 1.0
 
 Statistics courses teach another assumption, about a model's errors: the gaps between
 what was caught and what was predicted. The errors should follow a bell curve, the
