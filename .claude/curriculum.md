@@ -252,6 +252,18 @@ change `coastal-survey.csv`: same seed, same bytes, verified.
 Rules for using it are in `data/README.md`: join on `station_id`, never pass it to a model,
 never quote a score against it without saying no real study could compute one.
 
+**Beginners' pass 2026-10-13** (`feature/simplify-generalisation`): the four pages were
+cut back to what the section video teaches, keeping their structure and every number the
+video quotes, and the overview now groups them under the video's three ideas: a perfect
+fit is a warning sign (Underfitting and overfitting), the U-shaped curve comes from bias
+and variance (Bias–variance), and complexity is chosen honestly (Regularisation,
+Hyperparameter selection). *Underfitting and overfitting* lost the "too much flexibility
+costs more" comparison; *Bias–variance* lost the shared-sites asides; *Regularisation*
+lost the coefficient-counting section and the elastic net (glossary entry removed);
+*Hyperparameter selection* keeps the one-standard-error rule, briefly, because §8 uses
+it. The video's numbers (6.21 against 4.83; 72% noise; about 13-fold; 6.41 and 4.55;
+4.45–4.64 against 3.72–5.37; 0.28 against 0.26) come from these pages and must not drift.
+
 ## 6. Model assumptions and limitations
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
 `class-imbalance`

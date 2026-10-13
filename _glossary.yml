@@ -452,9 +452,6 @@ terms:
   - term: "Lasso"
     definition: "A linear regression with a penalty on the sum of the absolute values of its coefficients, which sets the smallest to exactly zero and so drops their inputs."
     page: chapters/05-generalisation/regularisation.qmd
-  - term: "Elastic net"
-    definition: "A linear regression whose penalty mixes ridge regression's and the lasso's; mixture sets the share, from 0 for ridge to 1 for the lasso."
-    page: chapters/05-generalisation/regularisation.qmd
 
   # 5 · Generalisation: Hyperparameter selection
   - term: "k-fold cross-validation"

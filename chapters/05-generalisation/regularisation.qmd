@@ -27,22 +27,15 @@ found that a random forest cuts variance by averaging many trees. Regularisation
 another way. It charges the model for large coefficients, so the model fits its own data a
 little worse, and new data better.
 
-This page first sets out the setting that moves each method from rigid to flexible, and
-why every input added to a linear model makes it more flexible, even a column of random
-numbers. It then introduces the two penalties in common use, ridge regression and the lasso.
-It shows that they can rescue a regression swamped by useless inputs, and what the lasso's
-choice of inputs can and cannot tell you.
+This page shows why every input added to a linear regression makes it more flexible, even
+a column of random numbers. It then introduces the two penalties in common use, ridge
+regression and the lasso, and tests them on a regression swamped by useless inputs.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
 ## One setting moves each method from rigid to flexible
-
-A model's flexibility, also called its complexity, is how wide a family of shapes it can
-take. A straight line fits only data that lie near a line. A tree with one station in each
-leaf fits any data at all, even counts drawn at random, so when it fits the survey
-closely, that says nothing about the survey.
 
 Each method has [hyperparameters](../03-supervised-learning/nearest-neighbours.qmd),
 settings fixed before the fit, that set how flexible it can be. Turning one moves the
@@ -53,24 +46,14 @@ model from rigid to flexible.
 :::
 
 Two of these settings are easy to misread. Raising the penalty of ridge regression, set
-out below, makes the model simpler, since it pulls every coefficient towards zero. And the
-number of trees in a random forest is not a complexity setting at all. Each tree is as
-flexible as before, and averaging more of them steadies the prediction without letting it
-bend further. Boosting is different, because each new tree fits part of what the trees
-before it got wrong, so more trees do make it more flexible.
+out below, makes the model simpler, not more flexible. And adding trees to a random
+forest steadies its prediction without letting it bend further, as
+[The bias–variance trade-off](bias-variance.qmd) showed.
 
-## Counting coefficients measures flexibility only for a linear model
-
-In a linear model, each input adds one coefficient, and each coefficient gives the fitted
-surface one more way to bend. Its complexity is close to its number of coefficients. That
+For a linear regression, the inputs themselves set the flexibility. Each input adds one
+coefficient, and each coefficient gives the fitted surface one more way to bend. That
 holds even for an input that carries no information: the fit still gives it a
 coefficient, and uses it to follow whatever noise it can match.
-
-For other methods the count is a poor guide. A forest of 500 trees has thousands of split
-points, far more than any linear model in the course has coefficients, yet adding more
-trees does not make it overfit. A ridge model keeps every one of its coefficients, but the
-penalty stops them moving freely. So complexity is compared within one method, by turning
-its setting. Between methods, the fair comparison is the error on new data.
 
 ## Ridge regression shrinks coefficients and the lasso removes them
 
@@ -88,18 +71,17 @@ and removes variance.
 
 Two penalties are in common use:
 
-- **Ridge regression** charges the sum of the squared coefficients.
-  [Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) derives
-  it from a Normal prior. A squared penalty is heavy on large coefficients and light on
-  small ones, so it shrinks every coefficient but sets none to exactly zero.
-- **The lasso** charges the sum of their absolute values. The same page shows that it
-  comes from a Laplace prior, which has a sharp peak at zero. The price of each unit is
-  the same all the way down to zero, so a small coefficient that does little for the fit
-  is cheaper to drop than to keep. The lasso sets such coefficients to exactly zero, and
-  the input is gone from the model.
+- **Ridge regression** charges the sum of the squared coefficients. A squared penalty is
+  heavy on large coefficients and light on small ones, so it shrinks every coefficient
+  but sets none to exactly zero.
+- **The lasso** charges the sum of their absolute values. The price of each unit is the
+  same all the way down to zero, so a small coefficient that does little for the fit is
+  cheaper to drop than to keep. The lasso sets such coefficients to exactly zero, and the
+  input is gone from the model.
 
-**Elastic net** charges a mixture of the two. In tidymodels, `mixture` sets the share:
-0 is ridge, 1 is the lasso.
+[Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) showed that
+both penalties come from priors on the coefficients. In tidymodels, `mixture` picks the
+penalty: 0 is ridge, 1 is the lasso.
 
 ::: {.diagram}
 ![Least squares fits the stations as closely as it can. Ridge regression shrinks every coefficient and sets none to zero. The lasso shrinks them too, and sets the small ones to exactly zero, which drops their inputs. The weight λ runs from least squares at zero to predicting the average when it is large.](img/regularisation.svg){fig-alt="Three cards, each with six coefficient bars about a zero line. Least squares, no penalty: bars of different heights. Ridge regression, squared penalty: every bar shorter than its least-squares outline, none at zero. Lasso, absolute penalty: the three large bars shorter, the three small ones exactly zero and drawn as open circles, so those inputs are dropped. Below, a card says the weight lambda sets how hard the penalty pulls, from lambda equals zero, least squares and the most flexible, to a large lambda, where every coefficient is zero and the model predicts the average. Raising lambda adds bias and removes variance. A note says to standardise the inputs first, because the penalty is charged per unit of each input."}
@@ -162,7 +144,7 @@ inputs_recipe <- function(data, columns) {
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.metrics import r2_score, root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
@@ -337,11 +319,9 @@ fit_panel / new_panel
 **The fit only improves.** With no random columns, the regression's $R^2$ on the fitting
 stations is `r sprintf("%.3f", none$r_squared)`. Every column added raises it, and with
 `r round(full$noise)` columns, on average, it reaches `r sprintf("%.3f", full$r_squared)`.
-This is not chance: adding a column can never lower $R^2$ on the stations the model was
-fitted to. The fit could always give the new coefficient a value of zero and do exactly
-as well as before, so it takes whatever small match with the catch the random numbers
-happen to offer. A higher $R^2$ after adding an input is therefore no evidence that the
-input matters.
+Adding a column can never lower $R^2$ on the stations the model was fitted to: the fit
+could always give the new coefficient a value of zero and do as well as before. So a
+higher $R^2$ after adding an input is no evidence that the input matters.
 
 **Every column costs on new sites.** Ten random columns already raise the error on new
 sites from `r f2(none$new)` to `r f2(few$new)`. With about `r first_worse$noise` columns
@@ -358,8 +338,7 @@ nothing; it has simply run out of stations to be wrong about.
 ### The lasso matches a regression on the measured inputs alone
 
 Now the regression gets the first 200 random columns, and the penalties have to hold them
-back. For each split, ridge regression, the lasso and an elastic net with `mixture = 0.5`
-are fitted to all 204 inputs, and each is scored on the new sites at 61 values of λ. Three
+back. For each split, ridge regression and the lasso are fitted to all 204 inputs, and each is scored on the new sites at 61 values of λ. Three
 models without a penalty set the scale: the regression on all 204 inputs, the regression
 on the four measured inputs alone, and predicting the fitting stations' average.
 
@@ -388,7 +367,7 @@ score_split <- function(s) {
       fit(fitting[c("abundance", columns)])
   }
 
-  penalised <- map(c(`Ridge regression` = 0, Lasso = 1, `Elastic net` = 0.5), \(m) {
+  penalised <- map(c(`Ridge regression` = 0, Lasso = 1), \(m) {
     fitted <- fit_to(inputs, penalised_model(m))
     tibble(lambda = lambdas,
            new    = map_dbl(lambdas, \(l) error_on_new(fitted, penalty = l)))
@@ -429,7 +408,6 @@ lambdas = 10 ** np.linspace(-3, 3, 61)
 penalised = {
     "Ridge regression": lambda lam, n: Ridge(alpha=lam * n),
     "Lasso": lambda lam, n: Lasso(alpha=lam),
-    "Elastic net": lambda lam, n: ElasticNet(alpha=lam, l1_ratio=0.5),
 }
 
 def error_on_new(fitted, new, columns):
@@ -493,7 +471,7 @@ reference <- best |>
          hjust = if_else(model == "Linear regression, all inputs", 1, 0))
 
 sweep |>
-  filter(!is.na(lambda), model != "Elastic net") |>
+  filter(!is.na(lambda)) |>
   ggplot(aes(lambda, new, colour = model)) +
   geom_hline(data = reference, aes(yintercept = new), linetype = "dashed",
              colour = ml_palette[["grey"]]) +
@@ -523,14 +501,11 @@ a tree's node size on [Underfitting and overfitting](underfitting-and-overfittin
 
 **The lasso did as well as knowing which columns were random.** At its best λ, the lasso
 scores `r f2(lasso_error)`, against `r f2(measured_only)` for a regression given only the
-four measured inputs. It got there by setting nearly all the random columns to zero. The
-elastic net lands close to the lasso, at a larger λ, since half its penalty is the
-lasso's.
+four measured inputs. It got there by setting nearly all the random columns to zero.
 
 **Ridge regression helped less.** Its best error is `r f2(ridge_error)`. It keeps all 204
-coefficients, yet does far better than least squares with the same 204: the penalty stops
-them moving freely, so counting coefficients no longer measures the model's complexity.
-But ridge only shrinks each random column, and 200 small coefficients still add up. Ridge
+coefficients, yet does far better than least squares with the same 204, because the
+penalty stops them moving freely. But ridge only shrinks each random column, and 200 small coefficients still add up. Ridge
 suits data in which many inputs each matter a little; the lasso suits data in which a few
 matter and the rest are noise, as here.
 
@@ -622,16 +597,15 @@ the data, and a different set of stations would give a different list.
 ## Key points
 
 ::: {.key-points}
-- Each method has its own setting for how flexible it is. Only for a linear model does
-  the number of coefficients measure it; across methods, compare the error on new data.
-- $R^2$ on the fitting data never falls when an input is added, even a column of random
-  numbers, yet every random column made the regression worse on new sites.
-- Regularisation adds a penalty on the size of the coefficients, weighted by λ. Raising
-  λ adds bias and removes variance. Standardise the inputs first, so the penalty treats
-  each one alike.
-- Ridge regression shrinks every coefficient; the lasso sets some to exactly zero. With
-  200 random columns among its inputs, the lasso predicted about as well as a regression
-  told which inputs were measured, and ridge regression less well.
+- Every input added to a linear regression makes it more flexible. $R^2$ on the fitting
+  data never falls when an input is added, even a column of random numbers, yet every
+  random column made the regression worse on new sites.
+- **Regularisation** adds a **penalty** on the size of the coefficients, weighted by λ.
+  Raising λ adds bias and removes variance. Standardise the inputs first, so the penalty
+  treats each one alike.
+- **Ridge regression** shrinks every coefficient; **the lasso** sets some to exactly
+  zero. With 200 random columns among its inputs, the lasso predicted about as well as a
+  regression told which inputs were measured.
 - The lasso kept some random columns and dropped some measured inputs. Its list of
   inputs is not evidence of which ones matter.
 :::
