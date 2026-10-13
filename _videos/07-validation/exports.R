@@ -29,7 +29,7 @@ exports <- list(
                        sensitivity = found, specificity = 1 - false_alarms / (n - presences),
                        accuracy, presences, repeats = 5)
     }), dir, "matched")
-    # Scene 10: the same model at a lower threshold, equal to the share of training
+    # Scene 11: the same model at a lower threshold, equal to the share of training
     # stations with the species, as the page scores it.
     write(with(env, dplyr::transmute(same, threshold, sensitivity = found,
                                      specificity = 1 - false_alarms, accuracy)),
