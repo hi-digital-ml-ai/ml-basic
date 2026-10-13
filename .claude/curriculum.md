@@ -342,7 +342,10 @@ out unless the lesson needs them.
 - *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
   (*Choosing a method* draws it), so the page links there and gives its own diagram to
   the range check against the distance to the nearest surveyed station, which it ties
-  to k-nearest neighbours.
+  to k-nearest neighbours. The 2026-10 beginners' pass cut the forest against
+  polynomial regression below the survey's depths; the worked example is now only the
+  summer and autumn survey asked about spring and winter: cold, shallow winter stations
+  pass every range check, the distance flags them, and the forest's error grows with it.
 - *Class imbalance*: false alarm and miss are §3's terms and are linked, not bolded.
 
 Every page has glossary entries and a new-terms box.
