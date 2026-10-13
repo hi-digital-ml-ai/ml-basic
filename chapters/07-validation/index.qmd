@@ -1,6 +1,6 @@
 ---
 title: "7 · Model validation and performance assessment"
-description: "Cross-validation scores a model on sites it was not fitted to. The section matches the folds to how far the predictions must reach, chooses the measure from the use the predictions are put to, and puts an interval on the score."
+description: "Cross-validation scores a model on sites it was not fitted to. The section shows how to keep that score honest with folds of sites, how to choose the measure from the use of the predictions, and how to put an interval on the score."
 categories: [validation, metrics, spatial-temporal, uncertainty]
 listing:
   id: pages
@@ -14,55 +14,48 @@ toc: false
 ---
 
 A score is a claim about the future: roughly how well a model will predict data it has not
-seen. This section asks what such a score can claim and what it should measure, on the
-same simulated survey as the rest of the course, with linear regression, logistic
-regression and the random forest as the models. The first two pages cover the folds:
+seen. The six pages in this section cover three ideas, on the same simulated survey as the
+rest of the course, with linear regression, logistic regression and the random forest as
+the models.
 
-- **cross-validation**: five or ten folds of sites are enough, their out-of-fold
-  predictions are pooled into one score, and nested cross-validation scores a search for
-  the best model as well as the model it picks;
+A score is only as honest as its folds:
+
+- **cross-validation**: five or ten folds of sites give every station one out-of-fold
+  prediction, and nested cross-validation scores a search for the best model as well as
+  the model it picks;
 - **spatial and temporal cross-validation**: a score says how well a model predicts
-  stations as far from its fitted data as the held-out ones were, so blocks at least as
-  wide as the distance over which its errors stay linked test new areas, and a forecast
-  is tested on later years.
+  stations as far from its fitted data as the held-out ones were, so blocks of the map
+  test new areas, and a forecast is tested on later years.
 
-The next two cover the measures:
+The measure must follow the use:
 
 - **regression performance measures**: RMSE, MAE and R² weigh errors their own way and
-  can choose different models, and the squared correlation that software often reports
-  as R² cannot see predictions that run low;
+  can choose different models on skewed counts;
 - **classification performance measures**: presence can be scored on the calls at one
-  threshold, on how well the probabilities rank the stations, or on the probabilities
-  themselves.
+  threshold, on how well the probabilities rank the stations, or on whether the
+  probabilities can be read as chances;
+- **choosing measures that match the objective**: a shortlist of stations is scored on
+  the animals it finds, and the costs of misses and false alarms set the threshold.
 
-The last two cover what to report:
+A score needs an interval:
 
-- **uncertainty and stability**: a bootstrap of the sites puts an interval on a score, and
-  a paired comparison says how sure a ranking of two models is;
-- **choosing measures that match the objective**: the use of the predictions decides the
-  measure, a shortlist is scored on the animals it finds, and the costs of misses and
-  false alarms set the threshold.
+- **uncertainty and stability**: drawing the sites again puts an interval on a score, and
+  a paired comparison says how sure a ranking of two models is.
 
 The section picks up threads from earlier ones.
 [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
 setting by cross-validation by site; [Cross-validation](cross-validation.qmd) shows that
 the folds that choose a model cannot also score it.
-[Dependent data](../06-assumptions-limitations/dependent-data.qmd)
-found that visits to one site repeat each other;
-[Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) measures how far the
-link between neighbouring sites reaches and holds out blocks at least that wide.
-[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-showed that each loss aims at a different middle of the data;
-[Regression performance measures](regression-metrics.qmd) shows what that does to the
-scores. [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) showed
-that accuracy hides the misses of a rare answer;
-[Classification performance measures](classification-metrics.qmd) names the measures
-that count misses and false alarms apart, and scores the ranking and the probabilities, and [Choosing measures that match the objective](choosing-a-metric.qmd)
-chooses the threshold from the costs.
-[Dependent data](../06-assumptions-limitations/dependent-data.qmd)
-resampled whole sites to measure what repeat visits are worth;
-[Uncertainty and stability](uncertainty-and-stability.qmd) resamples them to put an
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd) found that visits to
+one site repeat each other; [Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd)
+holds out blocks wide enough to keep a site's neighbours out of its training data, and
+[Uncertainty and stability](uncertainty-and-stability.qmd) resamples whole sites to put an
 interval on a score.
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) showed that accuracy
+hides the misses of a rare answer; [Classification performance measures](classification-metrics.qmd)
+counts misses and false alarms apart, and
+[Choosing measures that match the objective](choosing-a-metric.qmd) chooses the threshold
+from what each costs.
 
 ## Pages in this section
 
