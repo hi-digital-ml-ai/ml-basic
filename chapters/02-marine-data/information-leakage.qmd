@@ -363,9 +363,8 @@ Two kinds of leakage survive the most careful code. The whole survey was explore
 order to clean it ([Exploring and cleaning the data](exploring-and-cleaning.qmd)), and
 what was seen shaped the choices that followed; say so when you report. And keeping
 sites whole does not stop two *nearby* sites sharing their water;
-[Dependent data](../06-assumptions-limitations/dependent-data.qmd) measures how much they
-share, and [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-holds out whole areas for it.
+[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+measures how far that reaches and holds out whole areas for it.
 
 ## Key points
 

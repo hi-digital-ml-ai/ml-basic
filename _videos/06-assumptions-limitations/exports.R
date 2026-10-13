@@ -18,9 +18,8 @@ exports <- list(
   # Scenes 10–11: visits per site, and how many independent stations the survey is worth.
   "dependent-data.qmd" = function(env, dir) {
     write(with(env, dplyr::count(survey, site_id, name = "visits")), dir, "visits")
-    write(with(env, dplyr::bind_rows("Average catch" = catch_spread,
-                                     "Average forest error" = error_spread,
-                                     .id = "estimate")), dir, "spreads")
+    write(with(env, dplyr::bind_rows("Average catch" = catch_spread, .id = "estimate")),
+          dir, "spreads")
   },
 
   # Scenes 12–15: the stations of the depth and temperature scatter.

@@ -494,17 +494,10 @@ terms:
 
   # 6 · Assumptions: Dependent data
   - term: "Dependent data"
-    definition: "Observations that share conditions, such as visits to one site or neighbouring sites, so one says something about another beyond what their inputs say."
+    definition: "Observations that share conditions, such as visits to one site, so one says something about another beyond what their inputs say."
     page: chapters/06-assumptions-limitations/dependent-data.qmd
-  - term: "Spatial block"
-    definition: "A square of the map with every site in it, resampled or held out as one group so that neighbouring sites stay together."
-    page: chapters/06-assumptions-limitations/dependent-data.qmd
-    more: chapters/07-validation/spatial-and-temporal-cv.qmd
   - term: "Effective sample size"
     definition: "The number of independent observations a set of dependent rows is worth for an estimate; if resampling groups spreads the estimate k times wider than resampling rows, the rows are worth k² times fewer."
-    page: chapters/06-assumptions-limitations/dependent-data.qmd
-  - term: "Mixed model"
-    definition: "A statistical model that fits a separate shift for each group, such as each site, used when there are too few groups to resample."
     page: chapters/06-assumptions-limitations/dependent-data.qmd
 
   # 6 · Assumptions: Uneven sampling and extrapolation
@@ -550,6 +543,9 @@ terms:
     page: chapters/07-validation/cross-validation.qmd
 
   # 7 · Validation: Spatial and temporal cross-validation
+  - term: "Spatial block"
+    definition: "A square of the map with every site in it, held out as one group so that neighbouring sites stay together."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
   - term: "Distance to the nearest fitted station"
     definition: "For a held-out station, how far away the closest station the model was fitted to lies; the folds set it, and a score holds only for predictions that far from the data."
     page: chapters/07-validation/spatial-and-temporal-cv.qmd

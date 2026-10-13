@@ -72,7 +72,7 @@ Fifty-three pages, against sixty-two before. File names may change with the titl
 | Overdispersion and the negative binomial | *Regression for counts* | Link |
 | Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
 | False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
-| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why sites are held out (repeat visits); neighbours and blocks are §7's |
 | Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
 | Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
 | The simulated truth as a check | *The coastal survey* | One sentence and a link |
@@ -334,7 +334,11 @@ out unless the lesson needs them.
   the effective sample size of the average catch and of the forest's errors. Cut: the
   negative binomial, the patches map and a position-only forest (a permutation check
   found no clustering of errors beyond chance). The spatial-blocks diagram moved to §7
-  *Spatial and temporal cross-validation*, which now owns the folds.
+  *Spatial and temporal cross-validation*, which now owns the folds. The 2026-10
+  beginners' pass cut it further to stations against whole sites for the average catch
+  (800 stations worth about 470): spatial blocks, neighbours and the forest's errors
+  went to §7, which now introduces spatial blocks itself; years, enough groups and
+  identifiers are a sentence each, and mixed models are gone.
 - *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
   (*Choosing a method* draws it), so the page links there and gives its own diagram to
   the range check against the distance to the nearest surveyed station, which it ties
