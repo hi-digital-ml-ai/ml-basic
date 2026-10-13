@@ -44,10 +44,8 @@ this gives a thousand RMSEs. The middle 95% of them, from the 2.5th to the 97.5t
 percentile, is a 95%
 [confidence interval](../01-introduction/prediction-and-explanation.qmd) for the score.
 
-Nothing is refitted, so a thousand samples take a second or two. The models are held fixed,
-though: the interval shows how much the score depends on which sites were scored, not how
-the models themselves would change if fitted to other sites. Refitting in every sample would
-add that, at a thousand times the cost.
+Nothing is refitted, so a thousand samples take a second or two. The interval shows how
+much the score depends on which sites were scored.
 
 ## Two models are compared in pairs
 
@@ -382,24 +380,18 @@ RMSE cannot tell the forest from linear regression.
 
 ## Overlapping intervals do not show that two models are alike
 
-Report each score with its interval and the number of sites behind it. Compare two models by
-their paired difference, never by whether their own intervals overlap: here every interval
-overlapped the others, and the forest still beat predicting the average in nearly every
-sample. A lead that holds in `r pct(vs_linear[[5]])` of samples is not yet a result. For a method with
-random choices in the fit, a difference must also be larger than the spread from one run to
-the next, which
-[Reproducibility and transparent reporting](../10-interpretation/reproducibility.qmd)
-measures by changing the seed. The Python tab shows why: its forest, grown from other
-random draws, beats linear regression in nearly every sample.
+Report each score with its interval and the number of sites behind it. Compare two models
+by their paired difference, never by whether their own intervals overlap: here every
+interval overlapped the others, and the forest still beat predicting the average in nearly
+every sample. A lead that holds in `r pct(vs_linear[[5]])` of samples is not yet a result.
 
 ## Key points
 
 ::: {.key-points}
 - A cross-validated score comes from one survey, and would move if other sites had been
-  sampled. Here each model's 95% interval was `r f2(min(intervals$width))` to
+  sampled. A bootstrap of the sites over the out-of-fold predictions gives it an
+  interval; here each model's 95% interval was `r f2(min(intervals$width))` to
   `r f2(max(intervals$width))` wide.
-- A bootstrap of the sites over the pooled out-of-fold predictions gives that interval
-  without refitting. It holds the fitted models fixed.
 - Two models are compared by a **paired comparison**: the difference in score within each
   bootstrap sample, on the same folds. What the two share cancels, so the paired interval
   is much narrower than either model's own.
