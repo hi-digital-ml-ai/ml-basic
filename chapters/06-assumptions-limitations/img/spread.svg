@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 524" width="100%" role="img" aria-label="What a loss aims at. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway. Each loss aims at a different point: a histogram of catches with a long right tail, with lines at the median, the average and the 95% point; absolute error aims at the median, squared error at the average, and a quantile loss at any chosen point. Totals, log counts fall short: three bars, the total caught, the total predicted by a model on raw counts, level with it, and the total predicted by a model on log counts, clearly shorter. A note says that for skewed counts the loss decides which middle a prediction stands for.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 697 524" width="100%" role="img" aria-label="What a loss aims at. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway. Each loss aims at a different point: a histogram of catches with a long right tail, with lines at the median and the average; absolute error aims at the median, squared error at the average. A note says that for skewed counts the loss decides which middle a prediction stands for.">
 <defs>
 <style>
       .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
@@ -11,7 +11,7 @@
       .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
     </style>
 </defs>
-<text class="title" x="470" y="26" text-anchor="middle">What a loss aims at</text>
+<text class="title" x="308" y="26" text-anchor="middle">What a loss aims at</text>
 <rect class="box" x="0" y="48" width="294" height="386" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
 <text class="head" x="22" y="90">Skewed errors</text>
 <text class="lab" x="22" y="114" fill="#0072B2">WIDEN AS PREDICTIONS GROW</text>
@@ -23,14 +23,7 @@
 <text class="lab" x="345" y="114" fill="#D55E00">AIMS AT A DIFFERENT POINT</text>
 <text class="body" x="345" y="346">Absolute error aims at</text>
 <text class="body" x="345" y="370">the median, squared error</text>
-<text class="body" x="345" y="394">at the average, a quantile</text>
-<text class="body" x="345" y="418">loss at any chosen point.</text>
-<rect class="box" x="646" y="48" width="294" height="386" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
-<text class="head" x="668" y="90">Totals</text>
-<text class="lab" x="668" y="114" fill="#009E73">LOG COUNTS FALL SHORT</text>
-<text class="body" x="668" y="346">Squared error on log counts</text>
-<text class="body" x="668" y="370">aims near the median, so</text>
-<text class="body" x="668" y="394">totals come out short.</text>
+<text class="body" x="345" y="394">at the average.</text>
 <path class="ax" d="M34 150 V295 H266"/>
 <line x1="34" y1="273" x2="266" y2="273" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="5 4"/>
 <text class="sm" x="28" y="278" text-anchor="end">0</text>
@@ -99,19 +92,8 @@
 <rect x="558" y="293" width="13" height="2" fill="#8a949c" fill-opacity="0.6"/>
 <line x1="393.0" y1="152" x2="393.0" y2="295" stroke="#D55E00" stroke-width="2.6" stroke-dasharray="6 4"/>
 <line x1="417.0" y1="174" x2="417.0" y2="295" stroke="#0072B2" stroke-width="2.6"/>
-<line x1="490.0" y1="196" x2="490.0" y2="295" stroke="#009E73" stroke-width="2.6" stroke-dasharray="2 4"/>
 <text class="sm" x="399.0" y="160" style="fill:#D55E00">median</text>
 <text class="sm" x="423.0" y="182" style="fill:#0072B2">average</text>
-<text class="sm" x="496.0" y="204" style="fill:#009E73">95% point</text>
 <text class="sm" x="589" y="315" text-anchor="end">catch</text>
-<path class="ax" d="M680 150 V295 H912"/>
-<line x1="690" y1="170" x2="912" y2="170" stroke="#8a949c" stroke-width="1.2" stroke-dasharray="5 4"/>
-<rect x="700" y="170" width="44" height="125" fill="#8a949c" fill-opacity="0.6"/>
-<rect x="778" y="172" width="44" height="123" fill="#0072B2" fill-opacity="0.75"/>
-<rect x="856" y="212" width="44" height="83" fill="#D55E00" fill-opacity="0.75"/>
-<text class="sm" x="878" y="197" text-anchor="middle" style="fill:#D55E00">short</text>
-<text class="sm" x="722" y="315" text-anchor="middle" style="font-size:14px">caught</text>
-<text class="sm" x="800" y="315" text-anchor="middle" style="font-size:14px">raw counts</text>
-<text class="sm" x="878" y="315" text-anchor="middle" style="font-size:14px">log counts</text>
-<text class="note" x="470" y="476" text-anchor="middle">For skewed counts, the loss decides which middle a prediction stands for.</text>
+<text class="note" x="308" y="476" text-anchor="middle">For skewed counts, the loss decides which middle a prediction stands for.</text>
 </svg>

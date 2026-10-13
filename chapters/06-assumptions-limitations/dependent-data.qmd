@@ -1,6 +1,6 @@
 ---
 title: "Dependent data"
-description: "Visits to one site and neighbouring sites share their water and seabed, so a survey's rows are worth fewer independent stations than their number. Resampling whole sites and whole areas measures the shortfall, and shows which of it a random forest's inputs explain."
+description: "Visits to one site share its water and seabed, so a survey's rows are worth fewer independent stations than their number. Resampling whole sites instead of single stations measures how many fewer."
 order: 3
 categories: [assumptions, spatial-temporal]
 ---
@@ -26,12 +26,10 @@ the other. [The coastal survey](../02-marine-data/the-coastal-survey.qmd#repeat-
 found that its rows come from far fewer monitoring sites, and called treating repeat
 visits as separate observations pseudo-replication; that is why
 [Splitting the data](../02-marine-data/splitting-data.qmd) keeps each site's rows
-together. Neighbouring sites share a water mass and a stretch of seabed too, and samples
-from one year share its weather.
+together.
 
-This page measures what the survey's rows are worth as evidence, and whether a model's
-inputs take the dependence away. The answer decides how a model must be scored. The
-same problem appears wherever one unit is sampled several times:
+This page measures what the survey's rows are worth as evidence. The same problem
+appears wherever one unit is sampled several times:
 
 | What is repeated | What the rows share | The unit to count |
 | --- | --- | --- |
@@ -52,24 +50,21 @@ computing an average in each shows how far that average moves from one sample of
 survey to the next.
 
 Drawing single rows treats every row as independent. Drawing whole sites, each with all
-its visits, treats only the sites as independent, and drawing whole **spatial blocks**,
-squares of the map with every site in them, treats only the areas as independent. If
-drawing larger groups spreads the average wider, the rows inside a group were partly
-repeating each other.
+its visits, treats only the sites as independent. If drawing whole sites spreads the
+average wider, the visits to a site were partly repeating each other.
 
 The difference converts into a number of stations. An average's spread shrinks with the
 square root of the number of independent observations, so a spread $k$ times wider means
 the rows are worth $k^2$ times fewer: the **effective sample size**.
 
 ::: {.diagram}
-![Visits to one site share its water and seabed. Resampling stations draws single visits, so every row counts as separate evidence. Resampling sites draws a site with all its visits, so only sites count. If resampling sites spreads an estimate wider, the visits were repeating each other.](img/resample-sites.svg){fig-alt="Three cards. The survey, sites with repeat visits: four sites, A to D, each a box holding three to five visits drawn as dots in the site's colour; visits to one site share its water and seabed, so they tend to agree. Resample stations, draw one row at a time: sixteen draws of a single visit each, with the colours mixed, so every row counts as separate evidence. Resample sites, draw whole sites: four draws of a whole site with all its visits, one site drawn twice and one not at all, so only sites count as separate evidence. A note says if resampling sites spreads an estimate wider, the visits were repeating each other."}
+![Resampling stations draws single visits; resampling sites draws each site with all its visits.](img/resample-sites.svg){fig-alt="Three cards. The survey, sites with repeat visits: four sites, A to D, each a box holding three to five visits drawn as dots in the site's colour; visits to one site share its water and seabed, so they tend to agree. Resample stations, draw one row at a time: sixteen draws of a single visit each, with the colours mixed, so every row counts as separate evidence. Resample sites, draw whole sites: four draws of a whole site with all its visits, one site drawn twice and one not at all, so only sites count as separate evidence. A note says if resampling sites spreads an estimate wider, the visits were repeating each other."}
 :::
 
 ## Worked example
 
-The whole survey is used, since nothing on this page is a final score. Each site is
-given a block: the square of half a degree, about 40 by 55 km, that holds the centre of
-its stations. Five hundred bootstrap samples are drawn by station, by site and by block.
+The whole survey is used, since nothing on this page is a final score. Five hundred
+bootstrap samples are drawn by station, and five hundred by site.
 
 ### Preparing the data
 
@@ -79,18 +74,12 @@ its stations. Five hundred bootstrap samples are drawn by station, by site and b
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean() |>
-  # the half-degree square holding the centre of each site's stations
-  mutate(block = paste(floor(mean(longitude) / 0.5),
-                       floor(mean(latitude) / 0.5)),
-         .by = site_id)
+survey <- load_coastal_survey_clean()
 
 resamples <- list(
   "Single stations" = bootstraps(survey, times = 500),
-  "Whole sites"     = group_bootstraps(survey, group = site_id, times = 500),
-  "Whole blocks"    = group_bootstraps(survey, group = block, times = 500)
+  "Whole sites"     = group_bootstraps(survey, group = site_id, times = 500)
 )
-folds <- group_vfold_cv(survey, group = site_id, v = 10)
 
 # how far the average of some values moves from one resample to the next,
 # for each way of resampling
@@ -100,8 +89,7 @@ spread_of <- function(values) {
   })
 }
 
-tibble(stations = nrow(survey), sites = n_distinct(survey$site_id),
-       blocks = n_distinct(survey$block))
+tibble(stations = nrow(survey), sites = n_distinct(survey$site_id))
 ```
 
 ## Python
@@ -109,26 +97,13 @@ tibble(stations = nrow(survey), sites = n_distinct(survey$site_id),
 ```{python}
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import GroupKFold, cross_val_predict
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-# the half-degree square holding the centre of each site's stations
-centre = survey.groupby("site_id")[["longitude", "latitude"]].transform("mean")
-survey["block"] = (np.floor(centre["longitude"] / 0.5).astype(int).astype(str)
-                   + " "
-                   + np.floor(centre["latitude"] / 0.5).astype(int).astype(str))
-
 rng = np.random.default_rng(123)
-levels = {"Single stations": "station_id", "Whole sites": "site_id",
-          "Whole blocks": "block"}
+levels = {"Single stations": "station_id", "Whole sites": "site_id"}
 
 def resamples(column, times=500):
     """Row numbers of each bootstrap sample that draws whole groups."""
@@ -148,15 +123,14 @@ def spread_of(values):
                       for level, drawn in samples.items()})
 
 pd.DataFrame({"stations": [len(survey)],
-              "sites": [survey["site_id"].nunique()],
-              "blocks": [survey["block"].nunique()]})
+              "sites": [survey["site_id"].nunique()]})
 ```
 
 :::
 
-### Visits and neighbouring sites repeat each other's catch
+### Visits to one site repeat each other's catch
 
-The first estimate is the simplest: the average catch per station, in each of the
+The estimate is the simplest one: the average catch per station, in each of the
 bootstrap samples.
 
 ::: {.panel-tabset group="language"}
@@ -190,203 +164,58 @@ catch_spread.round({"spread": 2, "wider": 2, "worth": 0}).reset_index(
 #| label: catch-numbers
 #| include: false
 two <- \(x) sprintf("%.2f", x)
-catch_of <- \(level) catch_spread[catch_spread$resampled == level, ]
+by_site <- catch_spread[catch_spread$resampled == "Whole sites", ]
 n_sites <- n_distinct(survey$site_id)
-n_blocks <- n_distinct(survey$block)
 ```
 
-The `r nrow(survey)` stations come from `r n_sites` sites in `r n_blocks` blocks.
-Drawing whole sites spreads the average catch `r two(catch_of("Whole sites")$wider)`
-times wider than drawing single stations, so for this estimate the rows are worth about
-`r round(catch_of("Whole sites")$worth, -1)` independent stations. Drawing whole blocks
-spreads it `r two(catch_of("Whole blocks")$wider)` times wider, and the rows are worth
-about `r round(catch_of("Whole blocks")$worth, -1)`. An interval for the average built
-as if all `r nrow(survey)` were independent would be too narrow by that factor.
+The `r nrow(survey)` stations come from only `r n_sites` sites. Drawing whole sites
+spreads the average catch `r two(by_site$wider)` times wider than drawing single
+stations, so for this estimate the stations are worth about
+`r round(by_site$worth, -1)` independent ones. An interval for the average built as if
+all `r nrow(survey)` were independent would be too narrow: the survey would look surer
+than it is.
 
-A site's depth, temperature and seabed stay the same from one visit to the next, so a
-deep muddy site is rich every time it is sampled and a shallow rocky one poor every
-time. Neighbouring sites share those conditions too: the shelf deepens offshore, so a
-block of the map is shallow or deep as a whole.
+A site's depth and seabed stay much the same from one visit to the next, so a deep
+muddy site is rich every time it is sampled and a shallow rocky one poor every time. Its
+visits partly repeat each other.
 
-### The forest's errors stay linked within a site more than between neighbours
+A model's score has the same problem. A held-out visit predicted by a model fitted to
+the same site's other visits has been helped by them, and looks easier than a new site
+would be. That is why the course scores models on whole sites held out, as
+[Splitting the data](../02-marine-data/splitting-data.qmd) and
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) did.
 
-A model knows each station's depth, temperature and seabed. Once those are in the
-model, what is left for rows to share is only what the inputs miss, and that shows in
-the model's errors. The random forest of
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), 500
-trees on six inputs, predicts every station from folds of sites it was not fitted to,
-as in [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd).
-Its errors, the animals caught minus the number predicted, are then resampled as the
-catch was.
+## Neighbouring sites and years share conditions too
 
-::: {.panel-tabset group="language"}
+Neighbouring sites share a water mass and a stretch of seabed, and samples from one
+year share its weather. [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
+holds out whole areas of the map and whole years for them.
 
-## R
-
-```{r}
-#| label: forest-errors
-forest <- workflow(
-  recipe(abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 +
-           salinity_psu + substrate + season, data = survey) |>
-    step_impute_median(all_numeric_predictors()),
-  rand_forest(trees = 500) |>
-    set_engine("ranger", seed = 123) |>
-    set_mode("regression")
-)
-
-# every station, predicted by a forest that never saw its site
-predicted <- fit_resamples(forest, folds,
-                           control = control_resamples(save_pred = TRUE)) |>
-  collect_predictions() |>
-  arrange(.row) |>
-  pull(.pred)
-
-error_spread <- tibble(resampled = names(resamples),
-                       spread = spread_of(survey$abundance - predicted)) |>
-  mutate(wider = spread / first(spread),
-         worth = nrow(survey) / wider^2)
-
-error_spread |>
-  mutate(across(spread:wider, \(x) round(x, 2)), worth = round(worth))
-```
-
-## Python
-
-```{python}
-numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
-categorical = ["substrate", "season"]
-predictors = numeric + categorical
-
-forest = Pipeline([
-    ("recipe", ColumnTransformer([
-        ("numeric", SimpleImputer(strategy="median"), numeric),
-        ("categorical", OneHotEncoder(sparse_output=False), categorical)])),
-    # max_features="sqrt" and min_samples_leaf=5, as ranger does
-    ("model", RandomForestRegressor(n_estimators=500, max_features="sqrt",
-                                    min_samples_leaf=5, random_state=123)),
-])
-
-# every station, predicted by a forest that never saw its site
-predicted = cross_val_predict(
-    forest, survey[predictors], survey["abundance"], groups=survey["site_id"],
-    cv=GroupKFold(n_splits=10, shuffle=True, random_state=123))
-
-error_spread = spread_of(survey["abundance"] - predicted).rename(
-    "spread").to_frame()
-error_spread["wider"] = error_spread["spread"] / error_spread["spread"].iloc[0]
-error_spread["worth"] = len(survey) / error_spread["wider"] ** 2
-error_spread.round({"spread": 2, "wider": 2, "worth": 0}).reset_index(
-    names="resampled")
-```
-
-:::
-
-```{r}
-#| label: error-numbers
-#| include: false
-error_of <- \(level) error_spread[error_spread$resampled == level, ]
-block_over_site <- error_of("Whole blocks")$spread / error_of("Whole sites")$spread
-wider <- list(catch_site = catch_of("Whole sites")$wider,
-              catch_block = catch_of("Whole blocks")$wider,
-              error_site = error_of("Whole sites")$wider,
-              error_block = error_of("Whole blocks")$wider)
-```
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-spread
-#| fig-cap: "How much wider the average spreads when whole sites or whole blocks are resampled instead of single stations, for the catch and for the random forest's errors. The errors spread wider for sites almost as much as the catch does, but for blocks far less: the forest's inputs explain most of what neighbouring sites share, and little of what visits to one site share."
-#| fig-alt: !expr 'glue::glue("A line chart with three ways of resampling on the horizontal axis, single stations, whole sites and whole blocks, and how many times wider the average spreads than with single stations on the vertical axis, starting at 1. The average catch, in vermilion, rises to {two(wider$catch_site)} for sites and {two(wider$catch_block)} for blocks. The forest error, in blue, rises to {two(wider$error_site)} for sites and to {two(wider$error_block)} for blocks.")'
-#| fig-width: 7
-#| fig-height: 4
-bind_rows("Average catch" = catch_spread,
-          "Average forest error" = error_spread, .id = "estimate") |>
-  mutate(resampled = fct_inorder(resampled)) |>
-  ggplot(aes(resampled, wider, colour = estimate, group = estimate)) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  scale_colour_manual(values = c(
-    "Average catch" = ml_palette[["vermilion"]],
-    "Average forest error" = ml_palette[["blue"]])) +
-  scale_y_continuous(limits = c(0.9, NA)) +
-  labs(x = "Resampled by", y = "Times wider than\nresampling stations",
-       colour = NULL) +
-  theme(legend.position = "bottom")
-```
-
-:::
-
-In @fig-spread the forest's errors spread `r two(wider$error_site)` times wider when
-whole sites are drawn, almost as much as the catch did, so even to the model the
-`r nrow(survey)` rows are worth only about `r round(error_of("Whole sites")$worth, -1)`
-independent stations. A site's visits share something its depth, temperature and seabed
-do not capture. Drawing whole blocks spreads the errors `r two(wider$error_block)` times
-wider, against `r two(wider$catch_block)` for the catch: much of what neighbouring sites
-share is their depth and water, and the forest's inputs already hold those.
-
-What is left by block, a factor of `r two(block_over_site)` beyond drawing sites, rests
-on only `r n_blocks` blocks, and a different set of folds, such as the Python tab's,
-gives a noticeably different factor. Twenty groups are too few to pin it down, so it
-cannot be taken as zero.
-
-The two answers set how the forest must be scored. A held-out visit is helped by the
-site's other visits, so the folds must hold out whole sites, as they did here. Some of
-what neighbours share may remain, and an area of the map can also hold conditions the
-rest covers thinly, the subject of
-[Uneven sampling and extrapolation](sampling-and-extrapolation.qmd). So a model that
-will map areas nobody has surveyed is scored on held-out areas, as
-[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-does. Errors that spread clearly wider by block than by site are a sign of something
-neighbours share and the inputs miss, such as a front or a sediment type.
-
-## Samples from one year share its conditions
-
-Samples close in time resemble each other as samples close in space do: one year's cold
-winter, or one month's bloom, touches every station sampled then. A model that
-forecasts must also never be helped by the future. Predicting 2021 from a model fitted
-to 2022 is not merely optimistic; it can never happen in use, so a forecast is scored
-only on years after those the model was fitted to.
-[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-builds that split. The survey's six years are too few to resample as groups.
-
-## Resampling needs enough groups and their identifiers
-
-Resampling by group works when there are many groups. With `r n_blocks` blocks the
-survey is near the lower end; with a handful of transects or vessels the possible
-resamples are too few to give a reliable spread, and **mixed models**, which fit a
-separate shift for each group, are the usual route. They are beyond this course.
-
-It also needs the identifier. `site_id` survived here because the survey kept it. Real
-datasets often lose the grab, haul or cast that a row came from when the data are
+Resampling by group needs enough groups, and it needs to know which group each row came
+from. Datasets often lose the grab, haul or cast a row came from when they are
 summarised, and once that column is gone the repeats cannot be found. Keep the
-identifier of the unit sampled at every stage, and report both numbers: how many rows,
-and how many sites.
+identifier of the unit sampled, and report both numbers: how many rows, and how many
+sites.
 
 ## Key points
 
 ::: {.key-points}
-- Visits to one site, neighbouring sites and samples from one year share conditions:
-  they are **dependent data**, and count as less than separate evidence.
-- Resampling whole sites or whole **spatial blocks** instead of single stations
-  measures the shortfall: a spread $k$ times wider means the rows are worth $k^2$
-  times fewer, the **effective sample size**.
-- For the average catch, the `r nrow(survey)` stations were worth about
-  `r round(catch_of("Whole sites")$worth, -1)` by site and
-  `r round(catch_of("Whole blocks")$worth, -1)` by block.
-- A random forest's errors spread wider by site almost as much as the catch, so it
-  must be scored on held-out sites. By block they spread far less than the catch: its
-  inputs explained most of what neighbouring sites shared.
+- Visits to one site share its depth, seabed and water: they are **dependent data**,
+  and are not fully separate evidence.
+- Resampling whole sites instead of single stations measures the shortfall: a spread
+  $k$ times wider means the rows are worth $k^2$ times fewer, the **effective sample
+  size**. For the average catch, the `r nrow(survey)` stations were worth
+  about `r round(by_site$worth, -1)`.
+- A model must be scored on whole sites held out, or the site's other visits help it.
+  Keep the identifier of every unit sampled.
 :::
 
 ## Try it yourself
 
-1. Draw the folds again with `set.seed(1)`, then `set.seed(2)`, before
-   `group_vfold_cv()`, and resample the forest's errors each time. How far does the
-   factor between blocks and sites move?
-2. Remove `depth_m` and `temperature_c` from the forest's recipe and resample its
-   errors again. How much of what neighbouring sites share do those two inputs
-   explain?
+1. Measure what the stations are worth for the average depth, `survey$depth_m`, which
+   changes little between visits to a site. How does the answer compare with the number
+   of sites?
+2. Do the same for the average temperature, which changes with the season; add
+   `na.rm = TRUE` to the `mean()` inside `spread_of()` (`np.nanmean()` in Python),
+   since a few temperatures are missing. Are the stations worth more or fewer for temperature than for depth, and
+   why?

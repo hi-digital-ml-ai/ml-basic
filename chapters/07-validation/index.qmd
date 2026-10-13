@@ -48,16 +48,16 @@ The section picks up threads from earlier ones.
 setting by cross-validation by site; [Cross-validation](cross-validation.qmd) shows that
 the folds that choose a model cannot also score it.
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd)
-found that a model's errors stay linked within a site more than between neighbours;
+found that visits to one site repeat each other;
 [Spatial and temporal cross-validation](spatial-and-temporal-cv.qmd) measures how far the
-link reaches and holds out blocks at least that wide.
+link between neighbouring sites reaches and holds out blocks at least that wide.
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
 showed that each loss aims at a different middle of the data;
 [Regression performance measures](regression-metrics.qmd) shows what that does to the
-scores. [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) counted
-misses and false alarms apart at one threshold;
-[Classification performance measures](classification-metrics.qmd) scores the ranking and
-the probabilities, and [Choosing measures that match the objective](choosing-a-metric.qmd)
+scores. [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) showed
+that accuracy hides the misses of a rare answer;
+[Classification performance measures](classification-metrics.qmd) names the measures
+that count misses and false alarms apart, and scores the ranking and the probabilities, and [Choosing measures that match the objective](choosing-a-metric.qmd)
 chooses the threshold from the costs.
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd)
 resampled whole sites to measure what repeat visits are worth;

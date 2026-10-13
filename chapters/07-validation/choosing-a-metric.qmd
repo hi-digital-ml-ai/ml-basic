@@ -50,7 +50,7 @@ the cost of the calls at a threshold chosen from what each mistake costs.
 rows and the map of chances need their measures; this page adds the shortlist and the call
 at each station. A total alone is never enough: predicting the average gets the total
 right and says nothing about any station. None of these measures says whether an input causes what it predicts, which
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#test-error-cannot-reveal-a-confounder)
 showed a good predictor need not do.
 
 ## A shortlist is scored on what it finds

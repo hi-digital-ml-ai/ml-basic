@@ -18,9 +18,8 @@ exports <- list(
   # Scenes 10–11: visits per site, and how many independent stations the survey is worth.
   "dependent-data.qmd" = function(env, dir) {
     write(with(env, dplyr::count(survey, site_id, name = "visits")), dir, "visits")
-    write(with(env, dplyr::bind_rows("Average catch" = catch_spread,
-                                     "Average forest error" = error_spread,
-                                     .id = "estimate")), dir, "spreads")
+    write(with(env, dplyr::bind_rows("Average catch" = catch_spread, .id = "estimate")),
+          dir, "spreads")
   },
 
   # Scenes 12–15: the stations of the depth and temperature scatter.
@@ -31,13 +30,19 @@ exports <- list(
   },
 
   # Scenes 17–19: the rare species' share, and the calls without rebalancing at the
-  # threshold of the page's curve that calls about as many stations present as hold the
-  # species. At 0.5 the model calls almost none present, too extreme an example.
+  # page's matched threshold, which calls about as many stations present as hold the
+  # species. The page gives shares of its five repeats' predictions; the scenes count.
   "class-imbalance.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(stations = nrow(train), present = n_present,
                                    prevalence = prevalence, top = top,
                                    copies = copies)), dir, "rare")
-    write(with(env, dplyr::mutate(dplyr::slice_min(curve, abs(called_present - presences), n = 1),
-                                  presences = presences, repeats = 5)), dir, "matched")
+    write(with(env, {
+      n <- nrow(plain_predictions)
+      presences <- sum(plain_predictions$rare_species == "yes")
+      dplyr::transmute(matched, threshold,
+                       called_present = round(called * n),
+                       false_alarms = round(false_alarms * (n - presences)),
+                       sensitivity = found, accuracy, presences, repeats = 5)
+    }), dir, "matched")
   }
 )

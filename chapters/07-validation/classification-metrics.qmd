@@ -22,17 +22,37 @@ set.seed(123)
 
 [Logistic regression](../03-supervised-learning/logistic-regression.qmd) scored its calls
 of present or absent by accuracy, and
-[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#three-measures-count-misses-and-false-alarms-apart)
-added sensitivity, specificity and precision. All four count the calls at one threshold.
-But a model that predicts presence gives every station a probability, which also ranks
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) showed that for a
+rare species accuracy hides the misses. Accuracy counts the calls at one threshold. But
+a model that predicts presence gives every station a probability, which also ranks
 the stations from most to least likely to hold the species. So there are three things to
-score: the calls, the ranking and the probabilities themselves. This page adds the
+score: the calls, the ranking and the probabilities themselves. This page gives the
 measures most used in machine learning for each, and shows that a model can look good on
 one and poor on another.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## Sensitivity, specificity and precision count misses and false alarms apart
+
+Accuracy adds up both kinds of right answer. Three measures keep them apart, each the
+share of one group of cases:
+
+- **Sensitivity**, also called recall: of the cases that are truly yes, the share
+  called yes. Misses lower it.
+- **Specificity**: of the cases that are truly no, the share called no. False alarms
+  lower it.
+- **Precision**: of the cases called yes, the share that are truly yes. False alarms
+  lower it too, and when yes is rare they easily outnumber the true yeses: with 5
+  yeses in 100 cases, calling one no in ten yes gives about 10 false alarms.
+
+When nearly every case is no, accuracy is mostly specificity, so a model can miss
+most of the yeses and still look good.
+
+::: {.diagram}
+![The same twenty cases, four truly yes and sixteen truly no, with six called yes. Sensitivity is the share of true yeses called yes, lowered by misses. Specificity is the share of true noes called no, lowered by false alarms. Precision is the share of yes calls that are true, also lowered by false alarms.](img/three-measures.svg){fig-alt="Three cards show the same twenty cases in two rows: four truly yes, drawn filled, and sixteen truly no, drawn open. A dashed box marks the six the model called yes: three true yeses and three noes. One true yes lies outside the box. Sensitivity, lowered by misses: of the four true yeses, three were called yes and one, the miss, was not; 3 of 4. Specificity, lowered by false alarms: of the sixteen true noes, thirteen were called no and three, the false alarms, sit in the box; 13 of 16. Precision, lowered by false alarms: of the six yes calls, three are true and three are false alarms; 3 of 6. A note says accuracy, 16 of 20, hides the miss, because when yeses are few it mostly counts the noes."}
+:::
 
 ## Measures at one threshold count the calls
 
@@ -55,8 +75,9 @@ presence and absence alike.
 ## ROC AUC scores the ranking at every threshold
 
 [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#upsampling-gives-the-same-answers-as-a-lower-threshold)
-drew a model's sensitivity against its specificity at every threshold. That curve is the
-**ROC curve** (receiver operating characteristic, a name from radar). The area under it,
+drew the share of presences a model finds against the share of absences it calls
+present, at every threshold: its sensitivity against one minus its specificity. That
+curve is the **ROC curve** (receiver operating characteristic, a name from radar). The area under it,
 the **ROC AUC**, sums up the whole curve in one number, so models can be compared before
 a threshold is chosen. It is also the share of pairs, one station with the species and
 one without, in which the station with the species gets the higher probability. A ROC

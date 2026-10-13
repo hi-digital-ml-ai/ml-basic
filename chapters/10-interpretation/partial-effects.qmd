@@ -24,8 +24,8 @@ set.seed(123)
 [Feature importance](feature-importance.qmd) says how much a model relies on an input,
 but not whether the prediction rises or falls with it, or where it peaks. **Partial
 effects** draw that shape. [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-drew one: a random forest's prediction across depth, with the other inputs held at
-typical values. That is one slice, and held at other values the forest's curve could
+drew one: a random forest's prediction across temperature, with the other inputs held
+at typical values. That is one slice, and held at other values the forest's curve could
 change shape. This page draws curves that do not depend on that choice, one averaged
 over every station and one for each station.
 
@@ -302,9 +302,8 @@ On depth neither curve has the simulation's arch. The partial dependence is high
 at `r round(shallowest)` m, the shallowest value drawn, and at the simulation's peak
 of `r true_peak[["depth_m"]]` m it has fallen to
 `r percent(at_true_depth(partial$depth_m))` of its peak. The slice is level through
-the shallow half and falls beyond it. So the wrong depth curve of Linearity and
-nonlinearity did not come from the typical values the slice was held at; it is what
-the forest learned.
+the shallow half and falls beyond it. So the wrong depth curve does not come from the
+typical values the slice was held at; it is what the forest learned.
 
 ### ICE curves show the temperature hump at nearly every station
 
@@ -392,9 +391,9 @@ shows where the hump lies; how large it is depends on the station.
 
 ### Position as an input leaves the depth curve falling
 
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-traced the depth curve to position: the shelf deepens offshore, so depth carries an
-effect that belongs to something about position, a
+Why is the depth curve wrong? The shelf deepens offshore, so depth follows position,
+and the forest can give depth an effect that belongs to something about position that
+no input measures. Position would then be a
 [confounder](../01-introduction/prediction-and-explanation.qmd#depth-confounds-the-salinity-slope).
 A second forest is given longitude
 and latitude as well, and both are scored on the test sites.

@@ -23,12 +23,12 @@ set.seed(123)
 ## Folds decide how far each prediction has to reach
 
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd) found that visits to
-one site and, to a lesser degree, neighbouring sites share part of what a model's inputs
-miss, and resampled the survey in half-degree spatial blocks, squares of the map with
-every site in them. This page scores models with such blocks held out, sets how large
-they should be, and holds out time for a model that forecasts. A cross-validated score says how well a model predicts stations as far from its
-fitted data as the held-out ones were, so choosing the folds means choosing that distance
-to match the model's use.
+one site repeat each other, so a model is scored on whole sites held out. Neighbouring
+sites can share conditions too, a water mass or a stretch of seabed. This page holds out
+**spatial blocks**, squares of the map with every site in them, sets how large they
+should be, and holds out time for a model that forecasts. A cross-validated score says
+how well a model predicts stations as far from its fitted data as the held-out ones
+were, so choosing the folds means choosing that distance to match the model's use.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -332,13 +332,12 @@ ggplot(error_by_distance, aes(band_end - 10, correlation)) +
 The link is weak. Sites up to `r range_km` km apart have errors that lean the same way,
 with correlations of only `r f3(min(close_r))` to `r f3(max(close_r))`; further apart,
 the correlation is about zero. Each site's error rests on a handful of noisy counts, and
-[Dependent data](../06-assumptions-limitations/dependent-data.qmd#the-forests-errors-stay-linked-within-a-site-more-than-between-neighbours)
-found that the forest's inputs explain most of what neighbouring sites share. Weak as it
-is, the link ends at a range of about `r range_km` km.
+much of what neighbouring sites share, their depth and water, is already among the
+forest's inputs. Weak as it is, the link ends at a range of about `r range_km` km.
 
 A block of half a degree is `r round(half_degree_ew)` km from west to east and
-`r round(half_degree_ns)` km from south to north, at least as wide as the range. That is
-the size Dependent data used.
+`r round(half_degree_ns)` km from south to north, at least as wide as the range, so the
+blocks below are half a degree wide.
 
 ### The error grows from folds of stations to half-degree blocks
 

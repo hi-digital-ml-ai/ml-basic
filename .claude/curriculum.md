@@ -72,7 +72,7 @@ Fifty-three pages, against sixty-two before. File names may change with the titl
 | Overdispersion and the negative binomial | *Regression for counts* | Link |
 | Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
 | False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
-| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why sites are held out (repeat visits); neighbours and blocks are §7's |
 | Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
 | Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
 | The simulated truth as a check | *The coastal survey* | One sentence and a link |
@@ -334,14 +334,33 @@ out unless the lesson needs them.
   the effective sample size of the average catch and of the forest's errors. Cut: the
   negative binomial, the patches map and a position-only forest (a permutation check
   found no clustering of errors beyond chance). The spatial-blocks diagram moved to §7
-  *Spatial and temporal cross-validation*, which now owns the folds.
+  *Spatial and temporal cross-validation*, which now owns the folds. The 2026-10
+  beginners' pass cut it further to stations against whole sites for the average catch
+  (800 stations worth about 470): spatial blocks, neighbours and the forest's errors
+  went to §7, which now introduces spatial blocks itself; years, enough groups and
+  identifiers are a sentence each, and mixed models are gone.
 - *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
   (*Choosing a method* draws it), so the page links there and gives its own diagram to
   the range check against the distance to the nearest surveyed station, which it ties
-  to k-nearest neighbours.
+  to k-nearest neighbours. The 2026-10 beginners' pass cut the forest against
+  polynomial regression below the survey's depths; the worked example is now only the
+  summer and autumn survey asked about spring and winter: cold, shallow winter stations
+  pass every range check, the distance flags them, and the forest's error grows with it.
 - *Class imbalance*: false alarm and miss are §3's terms and are linked, not bolded.
 
 Every page has glossary entries and a new-terms box.
+
+**Beginners' pass 2026-10-13** (`feature/simplify-assumptions-limitations`): the five
+pages were cut back to what the section video teaches, keeping their structure, and
+the overview now groups them under the video's three ideas: what machine learning frees
+a model from (Linearity, Distributional), what it does not (Dependent data, Uneven
+sampling), and why a rare answer fools accuracy (Class imbalance). *Linearity* lost the
+GAM and the depth peak; *Distributional* lost quantile loss and keeps log counts as a
+short part; sensitivity, specificity and precision moved from *Class imbalance* to §7
+*Classification performance measures*. The video's numbers (598 stations, 129 at zero,
+median 3, largest 40; about 470 of 800; the rare species at 29 of 598, 1 in 6 found
+at 92% accuracy) come from these
+pages and must not drift.
 
 ### Two threads that must be kept if these pages are edited
 
@@ -350,15 +369,15 @@ different distributions of the response, so a "harder" scheme can report a *lowe
 Use R², or the same test set for both. §2's leakage page found it first. No §6 page
 compares schemes any more; §7's `spatial-and-temporal-cv.qmd` does, and must keep it.
 
-**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
-the forest recovers the temperature hump but puts depth's peak in shallow water, because depth
-is confounded with position, which carries an unmodelled spatial field. The page keeps
-this to one paragraph and links to §1 and §10's partial-effects page, which teach
-confounding; the page itself stays on linearity.
+**A curve that fits the data can still be wrong.** The forest recovers the temperature hump
+but puts depth's peak in shallow water, because depth is confounded with position, which
+carries an unmodelled spatial field. Since the 2026-10 beginners' pass this lives only in
+§10's `partial-effects.qmd` (with §1 teaching confounding); `linearity-and-nonlinearity.qmd`
+stays on the straight line against the forest's temperature hump.
 
 ### Uses of `coastal-survey-truth.csv`
 
-`linearity-and-nonlinearity.qmd` compares the forest's curves against the true generating curves,
+`partial-effects.qmd` compares the forest's curves against the true generating curves,
 and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
 than observed counts. Both say in the text that no real study could do this.
 

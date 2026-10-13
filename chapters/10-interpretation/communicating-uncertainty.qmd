@@ -54,11 +54,11 @@ is the interval.
 
 For a new catch, a **quantile forest** grows the same trees as a random forest, but
 keeps every training catch in each leaf instead of only their average, and reads the
-5% and 95% points off the catches that land with a new station. Like the quantile loss
-of [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd),
-it aims at chosen points of the catches rather than their average. Its intervals are
-lopsided where the errors are, as count errors usually are, and widen where the catches
-spread more.
+5% and 95% points off the catches that land with a new station. It aims at chosen points
+of the catches, where squared error aims at their average, as in
+[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#each-loss-aims-at-a-different-middle-of-the-data).
+Its intervals are lopsided where the errors are, as count errors usually are, and widen
+where the catches spread more.
 
 ## Conformal prediction sets an interval from held-out errors
 

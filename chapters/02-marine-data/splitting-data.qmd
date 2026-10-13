@@ -176,8 +176,8 @@ R now warns that the class is small, which is fair: `r rare_n` stations is thin
 ground to stratify on. The wider lesson: **check that a safeguard did what you asked**,
 by looking at the result rather than the code.
 
-A rare class causes more trouble than the split: accuracy rewards a model that never
-predicts it, and the fit leans towards the common class.
+A rare class causes more trouble than the split: accuracy stays high while a model
+misses most of the rare cases, and the fit leans towards the common class.
 [Class imbalance](../06-assumptions-limitations/class-imbalance.qmd) shows both, and
 that moving the threshold does what rebalancing the data does without distorting the
 probabilities.
