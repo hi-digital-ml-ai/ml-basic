@@ -45,7 +45,8 @@ dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
 
 for (page in pages) {
   message("knitting ", page)
-  out <- file.path(video, "visuals", "figures", sub("\\.qmd$", "", page))
+  # a page from another section is named "../NN-slug/page.qmd"; its figures go under its own name
+  out <- file.path(video, "visuals", "figures", sub("\\.qmd$", "", basename(page)))
   unlink(out, recursive = TRUE)
   dir.create(out, recursive = TRUE)
 

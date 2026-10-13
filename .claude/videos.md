@@ -1084,6 +1084,48 @@ ran `narrate.py` on all 33 scenes (about $0.09); the final cut runs 7:28.
   folds, intervals held 95%" under both bars. `gear.csv` is the claim page's
   `summary_of()` for both reports.
 
+## §7 Validation introduction version (2026-10-13)
+
+The beginners' cut (31 scenes, 10:05) was "very difficult to follow": cross-validation
+re-explained, nested cross-validation, and about 25 concepts. Rebuilt from scratch as an
+introduction, one new concept per part with one example and one picture, as the
+Assumptions video was: 22 scenes, 695 words, 5:26 on the draft voice.
+
+- *Test on what the model will face*: a held-out station's own site stays in the training
+  data; a held-out block of the map is an area never seen; the same forest scores 4.23
+  against 4.41. Cross-validation gets a clause, not a re-run.
+- *Measure what matters*: the Assumptions video's rare species (92% accurate, 1 in 6
+  found) names sensitivity and specificity (96%), and why accuracy hid the misses; which
+  matters depends on what each mistake costs, with no threshold arithmetic. This delivers
+  what the Assumptions video promised Validation would measure.
+- *A score needs an interval*: the forest's 4.32 comes from one survey; resampling the
+  sites gives 3.75 to 4.94, and all three models' intervals overlap.
+- Quiz: mapping unsurveyed coast, single stations or whole blocks?
+- Dropped, left to the pages (the user kept nested cross-validation on the page):
+  the search over noise columns and nested cross-validation, RMSE against MAE and the
+  log-count forest, the shortlist, the cost threshold, the paired comparison.
+- `exports.R` reads three pages, one of them `../06-assumptions-limitations/class-imbalance.qmd`;
+  `tools/figures-for-video.R` names a page's figure folder by its file name, so a page
+  from another section works.
+
+Second round, same day: the user found key points full of why and what ("Why to test a
+model on what it will face") hard to follow, and the 5:27 cut short enough to take a
+little more. The key points became plain imperatives, *Test on new places*, *Look beyond
+accuracy*, *Put an interval on a score*, used for the opening, the key-point cards and
+the recap alike (`RECAP = PROMISES`), and the narration lost its other why/what phrasing.
+Two scenes were added, each deepening its part's one concept rather than adding one:
+*Distance* (a held-out station's nearest training station is about 4 km away with
+folds of stations, 13 km with blocks, from the page's `by_scheme`) before the forest's
+two scores, and *Threshold* (lowering the threshold from 0.19 to 0.05, the page's
+`same`, takes sensitivity from 1 in 6 to 72% and specificity from 96% to 71%, and
+accuracy falls to 71% though the model finds far more) before the costs, which now say
+the threshold trades one mistake for the other. 24 scenes, 6:07 on the draft voice.
+Then, at the user's request, the purpose of resampling got its own scene before the
+mechanics: a single test set gives a single error; resampling tests the same model on
+many slightly different test sets made from the survey, each giving its own error, so
+together they show a range (schematic). The forest's score is now "one set of test
+data", and the mechanics scene ends "That is one new test set." 25 scenes, 6:24.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up
@@ -1122,7 +1164,8 @@ with all three sounds, a beat apart.
   fireworks, whale and bubbles, turtle "Keep going!" (jump). Generalisation: starfish
   "Hooray!" (wiggle), pufferfish "Fantastic!" (spin), crab and applause. Assumptions and
   limitations: octopus and bubbles, clownfish "Brilliant!" (jump), jellyfish and
-  fireworks.
+  fireworks. Validation: whale and applause, turtle "Well done!" (wiggle), starfish
+  "Great work!" (spin).
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in
