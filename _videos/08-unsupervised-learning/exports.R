@@ -14,13 +14,12 @@ exports <- list(
     write(with(env, dplyr::select(seabed, cluster, bottom, n, majority)), dir, "seabed")
   },
 
-  # Scenes 10–12: the variance table and the station map.
+  # Scenes 10–13: the station map.
   "principal-component-analysis.qmd" = function(env, dir) {
-    write(with(env, variance), dir, "variance")
     write(with(env, dplyr::select(stations, PC1, PC2, depth_m, hard_bottom)), dir, "ordination")
   },
 
-  # Scenes 16 and 17: each bootstrap refit's agreement with the original grouping.
+  # Scenes 18 and 19: each bootstrap refit's agreement with the original grouping.
   "interpreting-patterns.qmd" = function(env, dir) {
     write(with(env, replicates), dir, "replicates")
   }

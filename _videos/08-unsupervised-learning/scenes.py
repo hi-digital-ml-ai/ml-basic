@@ -27,8 +27,8 @@ PROMISES = ["Find groups without labels",
             "Draw many columns as one map",
             "Check that groups come back"]
 ANSWERS = ["k-means sorts\nthe stations into groups\nof similar ones",
-           "PCA places the stations\nalong their directions\nof most spread",
-           "Refit on resampled sites,\nand report how often\nthey return"]
+           "PCA places the stations;\ncolours and shapes show\nhow well groups fit",
+           "Refit on resampled sites:\ndoes k give the same\ngroups each time?"]
 RECAP = PROMISES
 
 
@@ -158,10 +158,11 @@ class Scene02(VideoScene):
                          for y in np.linspace(answer.get_top()[1] - 0.5, answer.get_bottom()[1] + 0.5, 6)])
         idea = label("can the counts alone sort the stations into groups?", 32, INK, weight=BOLD
                      ).to_edge(DOWN, buff=0.35)
-        self.play(FadeIn(cells, lag_ratio=0.002), FadeIn(top), run_time=self.share(0.2))
-        cue(self, "but nobody has said")
-        self.play(Create(answer), FadeIn(answer_name), run_time=self.share(0.1))
-        self.play(LaggedStart(*[FadeIn(m) for m in marks], lag_ratio=0.2), run_time=self.share(0.12))
+        self.play(FadeIn(cells, lag_ratio=0.002), FadeIn(top), run_time=self.share(0.12))
+        cue(self, "such as the habitat")
+        self.play(Create(answer), FadeIn(answer_name), run_time=self.share(0.08))
+        cue(self, "But often nobody")
+        self.play(LaggedStart(*[FadeIn(m) for m in marks], lag_ratio=0.2), run_time=self.share(0.1))
         cue(self, "Can the counts")
         self.play(FadeIn(idea, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
@@ -189,13 +190,16 @@ class Scene03(VideoScene):
         top = Brace(heads, UP, color=SUBDUED)
         n_cols = label("24 taxa", 30, SUBDUED, weight=BOLD).next_to(top, UP, 0.1)
         name = label("one row per station, one column per taxon", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
+        similar = label("same habitat: similar counts", 34, BLUE, weight=BOLD).to_edge(DOWN, buff=0.4)
         self.play(FadeIn(heads), LaggedStart(*[FadeIn(r) for r in rows], lag_ratio=0.2), FadeIn(more),
                   run_time=self.share(0.25))
         self.play(GrowFromCenter(brace), FadeIn(n_rows), run_time=self.share(0.1))
         cue(self, "each with counts")
         self.play(GrowFromCenter(top), FadeIn(n_cols), run_time=self.share(0.1))
         cue(self, "One row per")
-        self.play(FadeIn(name, shift=0.2 * UP), run_time=self.share(0.12))
+        self.play(FadeIn(name, shift=0.2 * UP), run_time=self.share(0.1))
+        cue(self, "Stations in the same")
+        self.play(FadeOut(name), FadeIn(similar, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
@@ -221,14 +225,14 @@ class Scene04(VideoScene):
         axes, frame, dots, points = two_taxa_layout()
         head = label("Clustering: groups of similar stations", 34, INK, weight=BOLD).to_edge(UP, buff=0.3)
         point = lines_of("each station:\na point, placed\nby its counts", 30, BLUE, BOLD).move_to([TWO_TAXA_SIDE, 1.3, 0])
-        close = lines_of("similar counts:\nclose together", 30, INK, BOLD).move_to([TWO_TAXA_SIDE, -0.5, 0])
+        close = lines_of("close together:\nsimilar counts", 30, INK, BOLD).move_to([TWO_TAXA_SIDE, -0.5, 0])
         same = lines_of("two taxa here;\nwith 24, the same idea", 28, SUBDUED).move_to([TWO_TAXA_SIDE, -2.1, 0])
         near = np.argsort(((points - [2.6, 6.8]) ** 2).sum(1))[:3]
         rings = VGroup(*[Circle(0.2, color=INK, stroke_width=4).move_to(dots[i]) for i in near])
         self.play(FadeIn(head), run_time=self.share(0.1))
         cue(self, "Picture each")
         self.play(FadeIn(frame), FadeIn(dots, lag_ratio=0.02), FadeIn(point), run_time=self.share(0.18))
-        cue(self, "so that stations")
+        cue(self, "Stations with similar")
         self.play(Create(rings), FadeIn(close), run_time=self.share(0.12))
         cue(self, "Here there are")
         self.play(FadeOut(rings), FadeIn(same), run_time=self.share(0.12))
@@ -248,8 +252,9 @@ class Scene05(VideoScene):
                          for c, p in zip(colours, centres)])
         steps = VGroup(lines_of("1. each station joins\n    its nearest centre", 28, INK, BOLD),
                        lines_of("2. each centre moves to\n    the middle of its stations", 28, INK, BOLD),
-                       lines_of("repeat until\nnothing changes", 28, BLUE, BOLD)
-                       ).arrange(DOWN, buff=0.5, aligned_edge=LEFT).move_to([TWO_TAXA_SIDE, -0.3, 0])
+                       lines_of("repeat until\nnothing changes", 28, BLUE, BOLD),
+                       lines_of("result: a group\nfor every station", 28, INK, BOLD)
+                       ).arrange(DOWN, buff=0.45, aligned_edge=LEFT).move_to([TWO_TAXA_SIDE, -0.5, 0])
 
         def assign():
             nearest = np.argmin(((points[:, None, :] - centres[None]) ** 2).sum(-1), axis=1)
@@ -272,9 +277,11 @@ class Scene05(VideoScene):
         self.play(FadeIn(steps[2]), run_time=self.share(0.06))
         for _ in range(3):
             nearest, anims = assign()
-            self.play(*anims, run_time=self.share(0.035))
+            self.play(*anims, run_time=self.share(0.025))
             centres, anims = move(nearest)
-            self.play(*anims, run_time=self.share(0.035))
+            self.play(*anims, run_time=self.share(0.025))
+        cue(self, "The result is")
+        self.play(FadeIn(steps[3]), run_time=self.share(0.06))
         self.finish()
 
 
@@ -318,7 +325,7 @@ class Scene06(VideoScene):
         note = label(f"{len(out)} of {int(seabed.values.sum())} in the other kind's group", 32, VERMILION,
                      weight=BOLD).to_edge(UP, buff=0.25)
         self.play(FadeIn(head), FadeIn(grey, lag_ratio=0.001), FadeIn(names), run_time=self.share(0.2))
-        cue(self, "Now compare")
+        cue(self, "Here, the seabed")
         self.play(*[Transform(g, s) for g, s in zip(grey, [*hard_sq, *soft_sq])], FadeIn(key),
                   run_time=self.share(0.15))
         cue(self, "Only 15")
@@ -330,7 +337,7 @@ class Scene07(KeyPointScene):
     number, point = 7, 1
 
 
-# Draw many columns as one map (scenes 8–12) -----------------------------------------------
+# Draw many columns as one map (scenes 8–13) -----------------------------------------------
 
 SPREAD_ANGLE = 0.5
 
@@ -389,9 +396,12 @@ class Scene09(VideoScene):
         first, second = pc_names(new)
         self.add(old, dots, new, head, first)
         mix = label("each one: a mix of all 24 taxa", 32, INK, weight=BOLD).to_edge(DOWN, buff=0.3)
+        differ = label("spread: where the stations differ", 32, BLUE, weight=BOLD).to_edge(DOWN, buff=0.3)
         self.play(FadeIn(second), Indicate(new[1], color=BLUE), run_time=self.share(0.15))
-        cue(self, "Each component")
-        self.play(FadeIn(mix, shift=0.2 * UP), run_time=self.share(0.12))
+        cue(self, "Each one is")
+        self.play(FadeIn(mix, shift=0.2 * UP), run_time=self.share(0.1))
+        cue(self, "Spread matters")
+        self.play(FadeOut(mix), FadeIn(differ, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
@@ -449,22 +459,16 @@ class Scene11(VideoScene):
     number = 11
 
     def construct(self):
-        frame, grey, seabed, depth = ordination_layout(self)
+        frame, grey, _, _ = ordination_layout(self)
         self.add(frame, grey)
-        arms = lines_of("two arms:\nhard and soft", 32, INK, BOLD).move_to([SIDE_X, 0.2, 0])
-        smooth = lines_of("depth changes\nsmoothly", 32, INK, BOLD).move_to([SIDE_X, -1.2, 0])
-        never = lines_of("PCA saw\nneither", 32, VERMILION, BOLD).move_to([SIDE_X, -2.6, 0])
-        key = seabed_key()
-        keys = map_keys()
-        cue(self, "The hard-bottom")
-        self.play(*[Transform(g, s) for g, s in zip(grey, seabed)], FadeIn(key), run_time=self.share(0.15))
-        self.play(FadeIn(arms), run_time=self.share(0.08))
-        cue(self, "and depth changes")
-        self.play(*[Transform(g, d) for g, d in zip(grey, depth)], Transform(key, keys[0]), FadeIn(keys[1]),
-                  run_time=self.share(0.15))
-        self.play(FadeIn(smooth), run_time=self.share(0.08))
-        cue(self, "PCA never saw")
-        self.play(FadeIn(never), run_time=self.share(0.1))
+        place = lines_of("PCA: a place\nfor each station", 32, INK, BOLD).move_to([SIDE_X, 1.4, 0])
+        none = label("no groups", 34, VERMILION, weight=BOLD).move_to([SIDE_X, 0.2, 0])
+        check = lines_of("check groups\nby eye: colour\nor shape", 32, BLUE, BOLD).move_to([SIDE_X, -1.6, 0])
+        self.play(FadeIn(none), run_time=self.share(0.1))
+        cue(self, "It only gives")
+        self.play(FadeIn(place), run_time=self.share(0.1))
+        cue(self, "But the map")
+        self.play(FadeIn(check), run_time=self.share(0.12))
         self.finish()
 
 
@@ -472,28 +476,48 @@ class Scene12(VideoScene):
     number = 12
 
     def construct(self):
-        frame, _, _, depth = ordination_layout(self)
-        self.add(frame, depth, map_keys())
-        variance = self.data("variance")
-        two = variance["cumulative percent variance"].iloc[1]
-        held = lines_of(f"PC1 and PC2:\n{two:.1f}% of\nthe variance", 32, BLUE, BOLD).move_to([SIDE_X, 0.0, 0])
-        enough = lines_of("a summary:\nenough to show\nthe main structure", 28, INK, BOLD).move_to([SIDE_X, -2.0, 0])
-        self.play(Indicate(frame[1], color=BLUE, scale_factor=1.0), run_time=self.share(0.15))
-        cue(self, "Here it holds")
-        self.play(FadeIn(held), run_time=self.share(0.12))
-        cue(self, "That is usual")
-        self.play(FadeIn(enough), run_time=self.share(0.12))
+        frame, grey, seabed, _ = ordination_layout(self)
+        self.add(frame, grey)
+        known = lines_of("known groups:\nthe recorded\nseabed", 30, INK, BOLD).move_to([SIDE_X, 1.0, 0])
+        arms = lines_of("two arms,\na narrow band\nbetween", 30, INK, BOLD).move_to([SIDE_X, -0.6, 0])
+        other = lines_of("no record? mark\nthe k-means\ngroups instead", 30, BLUE, BOLD).move_to([SIDE_X, -2.4, 0])
+        self.play(FadeIn(known), run_time=self.share(0.1))
+        cue(self, "Mark hard bottom")
+        self.play(*[Transform(g, s) for g, s in zip(grey, seabed)], FadeIn(seabed_key()), run_time=self.share(0.15))
+        cue(self, "and the two form")
+        self.play(FadeIn(arms), run_time=self.share(0.1))
+        cue(self, "If no groups")
+        self.play(FadeIn(other), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene13(KeyPointScene):
-    number, point = 13, 2
+class Scene13(VideoScene):
+    number = 13
+
+    def construct(self):
+        frame, _, seabed, depth = ordination_layout(self)
+        key = seabed_key()
+        self.add(frame, seabed, key)
+        keys = map_keys()
+        smooth = lines_of("depth changes\nsmoothly:\na gradient", 32, INK, BOLD).move_to([SIDE_X, -0.2, 0])
+        never = lines_of("PCA saw\nneither", 32, VERMILION, BOLD).move_to([SIDE_X, -2.2, 0])
+        self.play(*[Transform(s, d) for s, d in zip(seabed, depth)], Transform(key, keys[0]), FadeIn(keys[1]),
+                  run_time=self.share(0.15))
+        cue(self, "It changes smoothly")
+        self.play(FadeIn(smooth), run_time=self.share(0.1))
+        cue(self, "PCA never saw")
+        self.play(FadeIn(never), run_time=self.share(0.1))
+        self.finish()
 
 
-# Check that groups come back (scenes 14–17) ------------------------------------------------
+class Scene14(KeyPointScene):
+    number, point = 14, 2
 
-class Scene14(VideoScene):
-    number = 14
+
+# Check that groups come back (scenes 15–19) ------------------------------------------------
+
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         frame, dots, groups = random_groups(4, 66, np.array([-2.8, -0.3, 0]), 5.6)
@@ -501,20 +525,62 @@ class Scene14(VideoScene):
         name = label("random numbers", 30, SUBDUED).next_to(frame, UP, 0.25)
         ask = label("asked for four groups", 34, INK, weight=BOLD).move_to([3.6, 1.2, 0])
         get = label("four tidy groups", 34, BLUE, weight=BOLD).move_to([3.6, 0.1, 0])
-        nothing = lines_of("so groups alone\nprove nothing", 36, VERMILION, BOLD).move_to([3.6, -1.6, 0])
+        judge = lines_of("so the groups alone\ncannot judge k", 36, VERMILION, BOLD).move_to([3.6, -1.6, 0])
         cue(self, "k-means always")
         self.play(Create(frame), FadeIn(dots, lag_ratio=0.005), FadeIn(name), run_time=self.share(0.15))
         cue(self, "Asked for four")
         self.play(FadeIn(ask), run_time=self.share(0.06))
         self.play(*[d.animate.set_color(colours[g]) for d, g in zip(dots, groups)], FadeIn(get),
                   run_time=self.share(0.15))
-        cue(self, "So a set")
-        self.play(FadeIn(nothing, shift=0.2 * UP), run_time=self.share(0.12))
+        cue(self, "So the groups alone")
+        self.play(FadeIn(judge, shift=0.2 * UP), run_time=self.share(0.12))
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
+def small_sample(points, inits, centre, size=2.0):
+    """One small panel: points in a square, coloured by the two groups k-means gives them."""
+    groups = kmeans(points, np.array(inits, dtype=float))
+    box = Square(size, color=GRID, stroke_width=3).move_to(centre)
+    scale = size / 2.2
+    dots = VGroup(*[Dot(centre + np.array([x, y, 0]) * scale, radius=0.05, color=(BLUE, ORANGE)[g])
+                    for (x, y), g in zip(points, groups)])
+    # The split: a dashed line half way between the two groups' centres, across them.
+    a, b = (points[groups == j].mean(0) for j in (0, 1))
+    mid, across = (a + b) / 2, np.array([b[1] - a[1], a[0] - b[0]]) / np.hypot(*(b - a))
+    ends = [centre + scale * np.array([*(mid + s * 0.85 * across), 0]) for s in (-1, 1)]
+    split = DashedLine(ends[0], ends[1], color=INK, stroke_width=3, dash_length=0.08)
+    return VGroup(box, dots, split)
+
+
+class Scene16(VideoScene):
+    number = 16
+
+    def construct(self):
+        # Schematic: three samples of two real groups, then three samples of no groups.
+        rng = np.random.default_rng(16)
+        xs = [-0.6, 1.8, 4.2]
+        real = VGroup()
+        for x in xs:
+            pts = np.vstack([rng.normal([-0.5, 0.45], 0.22, (14, 2)), rng.normal([0.5, -0.45], 0.22, (14, 2))])
+            real.add(small_sample(np.clip(pts, -1, 1), [[-0.5, 0.5], [0.5, -0.5]], np.array([x, 1.1, 0])))
+        shifting = VGroup()
+        for x, inits in zip(xs, ([[-0.5, 0], [0.5, 0]], [[0, -0.5], [0, 0.5]], [[-0.4, 0.4], [0.4, -0.4]])):
+            pts = rng.uniform(-0.95, 0.95, (40, 2))
+            shifting.add(small_sample(pts, inits, np.array([x, -1.7, 0])))
+        head = label("a slightly different sample: the same groups?", 32, INK, weight=BOLD).to_edge(UP, buff=0.3)
+        same = lines_of("real groups:\nthe same\neach time", 30, GREEN, BOLD).move_to([-4.3, 1.1, 0])
+        shift = lines_of("no real groups:\nthey shift", 30, VERMILION, BOLD).move_to([-4.3, -1.7, 0])
+        names = VGroup(*[label(f"sample {i}", 24, SUBDUED).next_to(real[i - 1], UP, 0.12) for i in (1, 2, 3)])
+        self.play(FadeIn(head), FadeIn(names), run_time=self.share(0.1))
+        cue(self, "If the groups are real")
+        self.play(LaggedStart(*[FadeIn(s) for s in real], lag_ratio=0.4), FadeIn(same), run_time=self.share(0.2))
+        cue(self, "If not")
+        self.play(LaggedStart(*[FadeIn(s) for s in shifting], lag_ratio=0.4), FadeIn(shift), run_time=self.share(0.2))
+        self.finish()
+
+
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         # Schematic: eight sites, each a box of stations, drawn again with replacement.
@@ -528,16 +594,15 @@ class Scene15(VideoScene):
             name = label(letters[i], 26, colour, weight=BOLD).next_to(box, UP, 0.1)
             return VGroup(box, dots.move_to(box), name)
 
-        head = label("real groups come back when the data change a little", 32, INK, weight=BOLD
-                     ).to_edge(UP, buff=0.3)
+        head = label("resampling: slightly different samples", 32, INK, weight=BOLD).to_edge(UP, buff=0.3)
         survey = VGroup(*[site(i) for i in range(len(letters))]).arrange(RIGHT, buff=0.22).move_to([1.8, 1.2, 0])
         survey_name = lines_of("the survey's\nsites", 28, SUBDUED).next_to(survey, LEFT, 0.5)
         draw = [1, 1, 3, 0, 5, 5, 7, 2]
         sample = VGroup(*[site(i, ORANGE) for i in draw]).arrange(RIGHT, buff=0.22).move_to([1.8, -1.2, 0])
         sample_name = lines_of("a resample:\nsome twice,\nsome not at all", 28, ORANGE, BOLD
                                ).next_to(sample, LEFT, 0.4)
-        refit = label("fit k-means again: the same groups?", 34, BLUE, weight=BOLD).to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(head), run_time=self.share(0.1))
+        refit = label("fit k-means again, same k: the same groups?", 34, BLUE, weight=BOLD).to_edge(DOWN, buff=0.4)
+        self.play(FadeIn(head), run_time=self.share(0.08))
         cue(self, "resample the survey")
         self.play(FadeIn(survey, lag_ratio=0.1), FadeIn(survey_name), run_time=self.share(0.12))
         cue(self, "draw 160")
@@ -581,12 +646,12 @@ def replicates_layout(scene):
     low_top = max(d.get_y() for d in dots if d.get_x() < to_x(0.5))
     other_name = label(f"{other}: shallow against deep", 32, ORANGE, weight=BOLD).move_to(
         [to_x(0.02), low_top + 0.5, 0], aligned_edge=LEFT)
-    head = label(f"{len(reps)} refits, each on resampled sites", 30, SUBDUED).to_edge(UP, buff=0.4)
+    head = label(f"k = 2: {len(reps)} refits, each on resampled sites", 30, SUBDUED).to_edge(UP, buff=0.4)
     return VGroup(axis, name), dots, same_name, other_name, head
 
 
-class Scene16(VideoScene):
-    number = 16
+class Scene18(VideoScene):
+    number = 18
 
     def construct(self):
         axis, dots, same_name, other_name, head = replicates_layout(self)
@@ -600,65 +665,71 @@ class Scene16(VideoScene):
         self.finish()
 
 
-class Scene17(VideoScene):
-    number = 17
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         axis, dots, same_name, other_name, head = replicates_layout(self)
         self.add(axis, dots, same_name, other_name, head)
-        two = label("two competing answers", 36, INK, weight=BOLD).to_edge(UP, buff=0.4)
-        report = lines_of("report how often\neach one came back", 34, INK, BOLD).move_to([-1.8, 0.6, 0])
-        self.play(FadeOut(head), FadeIn(two), run_time=self.share(0.12))
+        verdict = label("k = 2: a reasonable choice", 36, INK, weight=BOLD).to_edge(UP, buff=0.4)
+        report = lines_of("report how often\neach came back", 32, INK, BOLD).move_to([-1.8, 1.0, 0])
+        again = lines_of("another k? repeat\nthe check with it", 32, BLUE, BOLD).move_to([-1.8, -0.4, 0])
+        self.play(FadeOut(head), FadeIn(verdict), run_time=self.share(0.1))
         cue(self, "Report how often")
-        self.play(FadeIn(report, shift=0.2 * UP), run_time=self.share(0.15))
+        self.play(FadeIn(report, shift=0.2 * UP), run_time=self.share(0.1))
+        cue(self, "To judge another")
+        self.play(FadeIn(again, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene18(KeyPointScene):
-    number, point = 18, 3
+class Scene20(KeyPointScene):
+    number, point = 20, 3
 
 
-# Quiz (scenes 19 and 20) -----------------------------------------------------------------
+# Quiz (scenes 21 and 22) -----------------------------------------------------------------
 
-class Scene19(QuizScene):
-    number = 19
+class Scene21(QuizScene):
+    number = 21
     question = ("Asked for five groups of plankton samples,", "k-means returns five groups.",
-                "Do the samples fall into five groups?")
+                "Is five a good choice?")
 
 
-class Scene20(VideoScene):
-    number = 20
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         frame, dots, groups = random_groups(5, 55, np.array([-3.0, -0.6, 0]), 5.2)
         colours = [BLUE, ORANGE, GREEN, PURPLE, VERMILION]
-        answer = label("Not yet", 48, INK, weight=BOLD).to_edge(UP, buff=0.35)
+        answer = label("You can't tell yet", 48, INK, weight=BOLD).to_edge(UP, buff=0.35)
         name = label("random numbers", 28, SUBDUED).next_to(frame, UP, 0.2)
-        five = lines_of("five groups, because\nfive were asked for", 32, INK, BOLD).move_to([3.4, 0.7, 0])
-        check = lines_of("resample, refit:\ndo the same five\ncome back?", 34, BLUE, BOLD).move_to([3.4, -1.6, 0])
-        self.play(FadeIn(answer), run_time=self.share(0.08))
+        five = lines_of("five groups, because\nfive were asked for", 30, INK, BOLD).move_to([3.4, 1.3, 0])
+        check = lines_of("resample, refit with five:\ndo the same five\ncome back?", 30, BLUE, BOLD).move_to([3.4, -0.4, 0])
+        rarely = lines_of("rarely? five is\nnot a good choice", 30, VERMILION, BOLD).move_to([3.4, -2.2, 0])
+        self.play(FadeIn(answer), run_time=self.share(0.06))
         cue(self, "k-means returns")
-        self.play(Create(frame), FadeIn(dots, lag_ratio=0.005), FadeIn(name), run_time=self.share(0.12))
+        self.play(Create(frame), FadeIn(dots, lag_ratio=0.005), FadeIn(name), run_time=self.share(0.1))
         self.play(*[d.animate.set_color(colours[g]) for d, g in zip(dots, groups)], FadeIn(five),
-                  run_time=self.share(0.15))
+                  run_time=self.share(0.12))
         cue(self, "Resample, refit")
-        self.play(FadeIn(check, shift=0.2 * UP), run_time=self.share(0.12))
+        self.play(FadeIn(check, shift=0.2 * UP), run_time=self.share(0.1))
+        cue(self, "If they rarely")
+        self.play(FadeIn(rarely, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
-# Key points and end card (scenes 21–24) ----------------------------------------------------
-
-class Scene21(RecapScene):
-    number, point = 21, 1
-
-
-class Scene22(RecapScene):
-    number, point = 22, 2
-
+# Key points and end card (scenes 23–26) ----------------------------------------------------
 
 class Scene23(RecapScene):
-    number, point = 23, 3
+    number, point = 23, 1
 
 
-class Scene24(EndCardScene):
-    number = 24
+class Scene24(RecapScene):
+    number, point = 24, 2
+
+
+class Scene25(RecapScene):
+    number, point = 25, 3
+
+
+class Scene26(EndCardScene):
+    number = 26

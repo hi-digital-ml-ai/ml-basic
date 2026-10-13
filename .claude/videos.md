@@ -1151,6 +1151,21 @@ and plain imperative key points used for the opening, the cards and the recap
 - `exports.R` now reads three pages (clustering, PCA, interpreting patterns); the
   re-export matched the earlier CSVs byte for byte. Scenes use `cue()` as Validation does.
 
+Second round, same day, at the user's request to explain more for beginners. PCA must
+be said not to make groups: it only places the stations, but colours and shapes on its
+map show how well groups fit, here the seabed, known beforehand because it was recorded
+(the k-means groups are the fallback when nothing was recorded; they are not drawn). The
+refits are framed as judging whether the chosen k is reasonable: k = 2 gives the same
+groups in 52 of 60, so two is a reasonable choice, and another k is judged by repeating
+the check with it; the quiz asks whether five is a good choice. Added: supervised
+learning learns from answers (scene 2), same habitat means similar counts (3), distance
+as difference (4), k is chosen before k-means starts and the result is a group per
+station (5), k-means numbers its groups and a record names them (6), spread is where
+stations differ (9), a no-groups scene (11), the seabed marked on the map (12), and a
+schematic of real groups splitting the same way in three samples while random points
+split differently (16). The 29.4% variance scene went, to keep the part on one concept.
+26 scenes, 7:36 on the draft voice.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up
