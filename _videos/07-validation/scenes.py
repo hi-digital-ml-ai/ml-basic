@@ -5,9 +5,9 @@
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
 An introduction with one new concept per part, each on one example and one picture:
-test a model on what it will face (folds of stations against blocks of the map),
-measure what matters (sensitivity and specificity on the Assumptions video's rare
-species), and a score needs an interval (resampling the sites). Scenes marked "page
+test on new places (folds of stations against blocks of the map), look beyond accuracy
+(sensitivity and specificity on the Assumptions video's rare species, and the threshold
+trading one for the other), and put an interval on a score (resampling the sites). Scenes marked "page
 results" read visuals/data/*.csv, which tools/figures-for-video.R writes from the pages.
 The others are schematic: made-up shapes, never numbers that could pass for survey
 results; the maps use the survey's site positions, which are data, not results. The
@@ -28,15 +28,13 @@ class Title(TitleScene):
     pass
 
 
-PROMISES = ["Why to test a model on what it will face",
-            "Why to measure what matters",
-            "Why a score needs an interval"]
+PROMISES = ["Test on new places",
+            "Look beyond accuracy",
+            "Put an interval on a score"]
 ANSWERS = ["To map new areas,\nhold out whole areas",
            "Report sensitivity\nand specificity,\nnot accuracy alone",
            "Resample the sites\nto see how far\nit could move"]
-RECAP = ["Test a model on what it will face",
-         "Measure what matters",
-         "A score needs an interval"]
+RECAP = PROMISES
 
 # The pages' colours: training data in blue, anything held out in orange, a flattering or
 # misleading result in vermilion. Model names are the pages' own labels.
@@ -151,10 +149,10 @@ class Scene01(LearnScene):
     def setup(self):
         super().setup()
         self.times = tuple(position(self, p) for p in
-                           ("why to test", "why to measure", "and why a score needs"))
+                           ("testing a model", "looking beyond", "and putting an interval"))
 
 
-# Test on what the model will face (scenes 2–5) --------------------------------------------
+# Test on new places (scenes 2–6) ---------------------------------------------------------
 
 class Scene02(VideoScene):
     number = 2
@@ -174,7 +172,7 @@ class Scene02(VideoScene):
         promise = label("a promise about new places", 40, ORANGE, weight=BOLD).move_to([0, -2.3, 0])
         advice = label("so test on data as new as those places", 36, INK, weight=BOLD).next_to(promise, DOWN, 0.4)
 
-        # "First, why to test a model on what it will face."
+        # "First, testing on new places."
         self.play(FadeIn(model, shift=0.2 * RIGHT), run_time=self.share(0.1))
         # "A model's score says how far its predictions land from data it was not fitted to."
         cue(self, "A model's score")
@@ -267,9 +265,46 @@ class Scene04(VideoScene):
         # "The model must predict an area it has never seen, ..."
         cue(self, "The model must")
         self.play(FadeIn(never), run_time=self.share(0.1))
-        # "... which is what a map of new areas asks of it."
-        cue(self, "which is what")
+        # "... just as a map of new areas would ask of it."
+        cue(self, "just as a map")
         self.play(FadeIn(like), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene05(VideoScene):
+    number = 5
+
+    def construct(self):
+        km = self.data("distance").set_index("folds")["km"]
+        to_w = lambda v: v / 14 * 8.0  # noqa: E731
+        x0 = -3.0
+        rows = {}
+        for key, name, y, colour in (("Stations", "holding out\nsingle stations", 1.0, VERMILION),
+                                     ("Half-degree blocks", "holding out\nblocks of the map", -0.8, ORANGE)):
+            bar = Rectangle(width=to_w(km[key]), height=0.7, stroke_width=0, fill_color=colour, fill_opacity=0.85
+                            ).move_to([x0, y, 0], aligned_edge=LEFT)
+            value = label(f"{km[key]:.0f} km", 40, colour, weight=BOLD).next_to(bar, RIGHT, 0.25)
+            words = lines_of(name, 30, INK, NORMAL, 0.06).move_to([x0 - 0.4, y, 0], aligned_edge=RIGHT)
+            rows[key] = VGroup(words, bar, value)
+        head = label("from a held-out station to the nearest training station", 34, SUBDUED).to_edge(UP, buff=0.6)
+        times = plated(label(f"{km['Half-degree blocks'] / km['Stations']:.0f} times as far", 36, INK, weight=BOLD)
+                       ).move_to([2.0, -2.6, 0])
+        stations, blocks = rows["Stations"], rows["Half-degree blocks"]
+        # "The difference shows in distance."
+        self.play(FadeIn(head), run_time=self.share(0.1))
+        # "Holding out single stations, the nearest station in the training data is typically about
+        # 4 kilometres away."
+        cue(self, "Holding out single")
+        self.play(FadeIn(stations[0]), GrowFromEdge(stations[1], LEFT), run_time=self.share(0.12))
+        cue(self, "about 4")
+        self.play(FadeIn(stations[2]), run_time=self.share(0.06))
+        # "Holding out blocks, it is about 13 kilometres."
+        cue(self, "Holding out blocks")
+        self.play(FadeIn(blocks[0]), GrowFromEdge(blocks[1], LEFT), run_time=self.share(0.12))
+        self.play(FadeIn(blocks[2]), run_time=self.share(0.06))
+        # "The model has to reach three times as far."
+        cue(self, "The model has to")
+        self.play(FadeIn(times, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
@@ -290,8 +325,8 @@ def two_tests(scene):
     return means, VGroup(axis, axis_name), rows, head, to_x
 
 
-class Scene05(VideoScene):
-    number = 5
+class Scene06(VideoScene):
+    number = 6
 
     def construct(self):
         means, axis, rows, head, to_x = two_tests(self)
@@ -318,12 +353,12 @@ class Scene05(VideoScene):
         self.finish()
 
 
-class Scene06(KeyPointScene):
-    number = 6
+class Scene07(KeyPointScene):
+    number = 7
     point = 1
 
 
-# Measure what matters (scenes 7–10) ---------------------------------------------------------
+# Look beyond accuracy (scenes 8–12) --------------------------------------------------------
 
 def rare_grid(scene):
     """The Assumptions video's training stations as dots, the rare species picked out, laid
@@ -392,13 +427,13 @@ def rare_layout(scene):
                 missed=missed, accuracy=accuracy, sensitivity=sensitivity, specificity=specificity)
 
 
-class Scene07(VideoScene):
-    number = 7
+class Scene08(VideoScene):
+    number = 8
 
     def construct(self):
         r = rare_layout(self)
-        question = lines_of("what should we\nmeasure instead?", 36, INK, BOLD, 0.08).move_to([3.4, -0.6, 0])
-        # "Next, why to measure what matters. Remember the rare species from the Assumptions and
+        question = lines_of("we need measures\nthat see them", 36, INK, BOLD, 0.08).move_to([3.4, -0.6, 0])
+        # "Next, looking beyond accuracy. Remember the rare species from the Assumptions and
         # limitations video."
         self.play(FadeIn(r["dots"], lag_ratio=0.001), FadeIn(r["key"][0]), run_time=self.share(0.12))
         # "A model was 92 per cent accurate, ..."
@@ -410,14 +445,14 @@ class Scene07(VideoScene):
         # "... yet found only one presence in six. Accuracy hid the misses."
         cue(self, "yet found only")
         self.play(Indicate(r["missed"], color=VERMILION, scale_factor=1.5), run_time=self.share(0.1))
-        # "So what should we measure instead?"
-        cue(self, "So what should")
+        # "So we need measures that see them."
+        cue(self, "So we need")
         self.play(FadeIn(question, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
-class Scene08(VideoScene):
-    number = 8
+class Scene09(VideoScene):
+    number = 9
 
     def construct(self):
         r = rare_layout(self)
@@ -436,8 +471,8 @@ class Scene08(VideoScene):
         self.finish()
 
 
-class Scene09(VideoScene):
-    number = 9
+class Scene10(VideoScene):
+    number = 10
 
     def construct(self):
         r = rare_layout(self)
@@ -461,11 +496,55 @@ class Scene09(VideoScene):
         self.finish()
 
 
-class Scene10(VideoScene):
-    number = 10
+class Scene11(VideoScene):
+    number = 11
 
     def construct(self):
-        heading = title("What each mistake costs", 44).to_edge(UP, buff=0.5)
+        now, lower = self.data("matched").iloc[0], self.data("lower").iloc[0]
+        rows = (("sensitivity", "sensitivity", VERMILION, 1.2), ("specificity", "specificity", BLUE, -0.3),
+                ("accuracy", "accuracy", GREEN, -1.8))
+        columns = ((now, -2.2), (lower, 2.6))
+        names = VGroup(*[label(name, 34, colour, weight=BOLD).move_to([-2.7, y, 0], aligned_edge=RIGHT)
+                         for _, name, colour, y in rows])
+        heads, cells = VGroup(), []
+        for at_threshold, x in columns:
+            heads.add(label(f"threshold {at_threshold['threshold']:.2f}", 32, SUBDUED, weight=BOLD
+                            ).move_to([x + 1.6, 2.6, 0]))
+            column = VGroup()
+            for key, _, colour, y in rows:
+                v = at_threshold[key]
+                bar = Rectangle(width=max(3.2 * v, 0.02), height=0.55, stroke_width=0, fill_color=colour,
+                                fill_opacity=0.85).move_to([x, y, 0], aligned_edge=LEFT)
+                text = f"1 in {round(1 / v)}" if key == "sensitivity" and v < 0.5 else pct(v)
+                column.add(VGroup(bar, label(text, 32, colour, weight=BOLD).next_to(bar, RIGHT, 0.15)))
+            cells.append(column)
+        backdrop = Rectangle(width=4.6, height=4.6, stroke_width=0, fill_color=LIGHT, fill_opacity=0.25
+                             ).move_to([2.6 + 2.0, -0.3, 0])
+        lesson = label("finds far more, yet accuracy falls", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
+        # "The model calls a station present when its probability passes a threshold."
+        self.play(FadeIn(names), FadeIn(heads[0]), *[GrowFromEdge(c[0], LEFT) for c in cells[0]],
+                  *[FadeIn(c[1]) for c in cells[0]], run_time=self.share(0.15))
+        # "Lower that threshold, and it finds nearly three presences in four."
+        cue(self, "Lower that")
+        self.play(FadeIn(backdrop), FadeIn(heads[1]), run_time=self.share(0.06))
+        cue(self, "and it finds")
+        self.play(GrowFromEdge(cells[1][0][0], LEFT), FadeIn(cells[1][0][1]), run_time=self.share(0.1))
+        # "But it raises more false alarms too: specificity falls to 71 per cent."
+        cue(self, "specificity falls")
+        self.play(GrowFromEdge(cells[1][1][0], LEFT), FadeIn(cells[1][1][1]), run_time=self.share(0.1))
+        # "Accuracy falls with it, to 71 per cent, though the model now finds far more of the species."
+        cue(self, "Accuracy falls")
+        self.play(GrowFromEdge(cells[1][2][0], LEFT), FadeIn(cells[1][2][1]), run_time=self.share(0.1))
+        cue(self, "though the model")
+        self.play(FadeIn(lesson, shift=0.2 * UP), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene12(VideoScene):
+    number = 12
+
+    def construct(self):
+        heading = title("The cost of each mistake", 44).to_edge(UP, buff=0.5)
 
         def mistake(colour, name, counted, x):
             square = Square(1.6, stroke_width=0, fill_color=colour, fill_opacity=0.8).move_to([x, 0.9, 0])
@@ -477,9 +556,10 @@ class Scene10(VideoScene):
         alarm = mistake(VERMILION, "a false alarm:\na wasted dive", "counted by specificity", 3.2)
         species = label("a protected species", 28, INK, weight=BOLD).next_to(miss[0], UP, 0.2)
         dives = label("a survey with costly dives", 28, INK, weight=BOLD).next_to(alarm[0], UP, 0.2)
-        advice = label("decide what the predictions are for, then choose the measure", 34, BLUE,
+        advice = label("start from the use of the predictions, then choose the measure", 31, BLUE,
                        weight=BOLD).to_edge(DOWN, buff=0.5)
-        # "Which one matters more depends on what each mistake costs."
+        # "So the threshold trades one kind of mistake for the other, and the right trade depends
+        # on their costs."
         self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.1))
         # "For a protected species, a miss means a record lost."
         cue(self, "For a protected")
@@ -489,21 +569,21 @@ class Scene10(VideoScene):
         cue(self, "For a survey")
         self.play(FadeIn(dives), FadeIn(alarm[0], scale=0.6), FadeIn(alarm[1]), FadeIn(alarm[2]),
                   run_time=self.share(0.12))
-        # "So decide what the predictions are for, then choose the measure."
-        cue(self, "So decide")
+        # "So start from the use of the predictions, then choose the measure."
+        cue(self, "So start from")
         self.play(FadeIn(advice, shift=0.2 * UP), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene11(KeyPointScene):
-    number = 11
+class Scene13(KeyPointScene):
+    number = 13
     point = 2
 
 
-# A score needs an interval (scenes 12–15) ---------------------------------------------------
+# Put an interval on a score (scenes 14–17) -------------------------------------------------
 
-class Scene12(VideoScene):
-    number = 12
+class Scene14(VideoScene):
+    number = 14
 
     def construct(self):
         forest = self.data("intervals").set_index("model").loc[FOREST, "RMSE"]
@@ -519,7 +599,7 @@ class Scene12(VideoScene):
             return VGroup(*[Dot([rng.uniform(lo[0], hi[0]), rng.uniform(lo[1], hi[1]), 0], radius=0.07, color=GREY)
                             for _ in range(len(points))])
 
-        # "Finally, why a score needs an interval. Scored by cross-validation by site, the random
+        # "Finally, putting an interval on a score. Scored by cross-validation by site, the random
         # forest's error is 4.32."
         self.play(FadeIn(dots, lag_ratio=0.005), FadeIn(head), run_time=self.share(0.12))
         cue(self, "the random")
@@ -547,8 +627,8 @@ def site_squares():
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene13(VideoScene):
-    number = 13
+class Scene15(VideoScene):
+    number = 15
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -577,7 +657,7 @@ class Scene13(VideoScene):
                                   ).move_to([to_x((bins[i] + bins[i + 1]) / 2), -2.9, 0], aligned_edge=DOWN)
                         for i, c in enumerate(counts)])
         first = Dot([to_x(scores.iloc[0]), -2.75, 0], radius=0.1, color=ORANGE)
-        # "To see how far, draw the survey again from itself, which is called resampling."
+        # "To see by how much, draw the survey again from itself, which is called resampling."
         self.play(FadeIn(source), FadeIn(source_name), run_time=self.share(0.08))
         # "Draw 160 sites from its own 160, with replacement, so some come up twice and some not at all."
         cue(self, "Draw 160")
@@ -595,8 +675,8 @@ class Scene13(VideoScene):
         self.finish()
 
 
-class Scene14(VideoScene):
-    number = 14
+class Scene16(VideoScene):
+    number = 16
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -633,8 +713,8 @@ class Scene14(VideoScene):
         self.finish()
 
 
-class Scene15(VideoScene):
-    number = 15
+class Scene17(VideoScene):
+    number = 17
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
@@ -673,22 +753,22 @@ class Scene15(VideoScene):
         self.finish()
 
 
-class Scene16(KeyPointScene):
-    number = 16
+class Scene18(KeyPointScene):
+    number = 18
     point = 3
 
 
-# Quiz (scenes 17–18) -----------------------------------------------------------------------
+# Quiz (scenes 19–20) -----------------------------------------------------------------------
 
-class Scene17(QuizScene):
-    number = 17
+class Scene19(QuizScene):
+    number = 19
     question = ("You will map coast nobody has surveyed.",
                 "Hold out single stations, or whole blocks?",
                 "Which test gives the honest score?")
 
 
-class Scene18(VideoScene):
-    number = 18
+class Scene20(VideoScene):
+    number = 20
 
     def construct(self):
         means, axis, rows, head, to_x = two_tests(self)
@@ -710,22 +790,22 @@ class Scene18(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 19–22) ---------------------------------------------------
-
-class Scene19(RecapScene):
-    number = 19
-    point = 1
-
-
-class Scene20(RecapScene):
-    number = 20
-    point = 2
-
+# Key points and end card (scenes 21–24) ---------------------------------------------------
 
 class Scene21(RecapScene):
     number = 21
+    point = 1
+
+
+class Scene22(RecapScene):
+    number = 22
+    point = 2
+
+
+class Scene23(RecapScene):
+    number = 23
     point = 3
 
 
-class Scene22(EndCardScene):
-    number = 22
+class Scene24(EndCardScene):
+    number = 24

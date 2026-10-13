@@ -1108,6 +1108,19 @@ Assumptions video was: 22 scenes, 695 words, 5:26 on the draft voice.
   `tools/figures-for-video.R` names a page's figure folder by its file name, so a page
   from another section works.
 
+Second round, same day: the user found key points full of why and what ("Why to test a
+model on what it will face") hard to follow, and the 5:27 cut short enough to take a
+little more. The key points became plain imperatives, *Test on new places*, *Look beyond
+accuracy*, *Put an interval on a score*, used for the opening, the key-point cards and
+the recap alike (`RECAP = PROMISES`), and the narration lost its other why/what phrasing.
+Two scenes were added, each deepening its part's one concept rather than adding one:
+*Distance* (a held-out station's nearest training station is about 4 km away with
+folds of stations, 13 km with blocks, from the page's `by_scheme`) before the forest's
+two scores, and *Threshold* (lowering the threshold from 0.19 to 0.05, the page's
+`same`, takes sensitivity from 1 in 6 to 72% and specificity from 96% to 71%, and
+accuracy falls to 71% though the model finds far more) before the costs, which now say
+the threshold trades one mistake for the other. 24 scenes, 6:07 on the draft voice.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up

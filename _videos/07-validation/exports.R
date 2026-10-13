@@ -7,14 +7,14 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scenes 5 and 18: the random forest's pooled RMSE with folds of stations and with
+  # Scenes 5, 6 and 20: the random forest's pooled RMSE with folds of stations and with
   # half-degree blocks, run by run and averaged.
   "spatial-and-temporal-cv.qmd" = function(env, dir) {
     write(with(env, distance_runs), dir, "distance-runs")
     write(with(env, by_scheme), dir, "distance")
   },
 
-  # Scenes 7–9: the Assumptions video's rare species and logistic regression at the
+  # Scenes 8–10: the Assumptions video's rare species and logistic regression at the
   # threshold that calls about as many stations present as hold it, as that video's
   # exports.R writes them, with the share of absences it calls absent.
   "../06-assumptions-limitations/class-imbalance.qmd" = function(env, dir) {
@@ -29,9 +29,14 @@ exports <- list(
                        sensitivity = found, specificity = 1 - false_alarms / (n - presences),
                        accuracy, presences, repeats = 5)
     }), dir, "matched")
+    # Scene 10: the same model at a lower threshold, equal to the share of training
+    # stations with the species, as the page scores it.
+    write(with(env, dplyr::transmute(same, threshold, sensitivity = found,
+                                     specificity = 1 - false_alarms, accuracy)),
+          dir, "lower")
   },
 
-  # Scenes 12–15: each model's interval and the thousand bootstrap scores.
+  # Scenes 14–17: each model's interval and the thousand bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")
     write(with(env, scores), dir, "bootstrap-scores")
