@@ -529,9 +529,6 @@ terms:
   - term: "Pooled score"
     definition: "One score worked out from every station's out-of-fold prediction together, rather than the average of the folds' own scores."
     page: chapters/07-validation/cross-validation.qmd
-  - term: "Leave-one-site-out"
-    definition: "Cross-validation with every site a fold of its own."
-    page: chapters/07-validation/cross-validation.qmd
   - term: "Selection optimism"
     definition: "The part of a search winner's score that is luck: the lowest of many scores gathers the most, so the more candidates, the more the winner's score flatters it."
     page: chapters/07-validation/cross-validation.qmd
@@ -546,12 +543,6 @@ terms:
   - term: "Distance to the nearest fitted station"
     definition: "For a held-out station, how far away the closest station the model was fitted to lies; the folds set it, and a score holds only for predictions that far from the data."
     page: chapters/07-validation/spatial-and-temporal-cv.qmd
-  - term: "Correlogram"
-    definition: "The correlation between the errors of pairs of sites, drawn against the distance between them; it shows how far apart sites still share what a model misses."
-    page: chapters/07-validation/spatial-and-temporal-cv.qmd
-  - term: "Range"
-    definition: "In a correlogram, the distance beyond which the errors of two sites are unrelated; spatial blocks should be at least that wide."
-    page: chapters/07-validation/spatial-and-temporal-cv.qmd
   - term: "Expanding window"
     definition: "Cross-validation for forecasts that fits each round only to the years before the year it tests, adding a year each round."
     page: chapters/07-validation/spatial-and-temporal-cv.qmd
@@ -562,9 +553,6 @@ terms:
     page: chapters/07-validation/regression-metrics.qmd
   - term: "MAE (mean absolute error)"
     definition: "The average size of a prediction's error, its sign dropped; smallest when a model predicts the median. Lower is better."
-    page: chapters/07-validation/regression-metrics.qmd
-  - term: "MAPE (mean absolute percentage error)"
-    definition: "The average error as a share of the observed value; undefined for a count of zero, and it punishes predictions that are too high far more than those too low."
     page: chapters/07-validation/regression-metrics.qmd
   - term: "Squared correlation"
     definition: "The square of the correlation between observed and predicted values, often reported as R²; it cannot see predictions that are all too low or too high by the same proportion."
@@ -583,17 +571,8 @@ terms:
   - term: "Confusion matrix"
     definition: "The two-by-two table of a model's calls against the truth: true presences, false alarms, misses and true absences."
     page: chapters/07-validation/classification-metrics.qmd
-  - term: "F1"
-    definition: "An average of precision and sensitivity pulled towards the lower of the two; it never counts the true absences."
-    page: chapters/07-validation/classification-metrics.qmd
   - term: "Balanced accuracy"
     definition: "The average of sensitivity and specificity, so presence and absence count alike; 0.5 for a rule that calls every case the same."
-    page: chapters/07-validation/classification-metrics.qmd
-  - term: "MCC (Matthews correlation coefficient)"
-    definition: "The correlation between a model's calls and the truth, from −1 to 1, counting every cell of the confusion matrix."
-    page: chapters/07-validation/classification-metrics.qmd
-  - term: "True absence"
-    definition: "A station without the species that a model calls absent."
     page: chapters/07-validation/classification-metrics.qmd
   - term: "ROC curve"
     definition: "A model's sensitivity drawn against its specificity at every threshold."

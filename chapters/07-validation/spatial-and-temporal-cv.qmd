@@ -1,6 +1,6 @@
 ---
 title: "Spatial and temporal cross-validation"
-description: "A score says how well a model predicts stations as far from its fitted data as the held-out ones were. Blocks at least as wide as the distance over which a model's errors stay linked test new areas, and a forecast is tested only on years after those it was fitted to."
+description: "A score says how well a model predicts stations as far from its fitted data as the held-out ones were. Folds of stations, of sites and of map blocks give a random forest three different errors, and a forecast is tested only on years after those it was fitted to."
 order: 2
 categories: [validation, spatial-temporal]
 ---
@@ -25,8 +25,8 @@ set.seed(123)
 [Dependent data](../06-assumptions-limitations/dependent-data.qmd) found that visits to
 one site repeat each other, so a model is scored on whole sites held out. Neighbouring
 sites can share conditions too, a water mass or a stretch of seabed. This page holds out
-**spatial blocks**, squares of the map with every site in them, sets how large they
-should be, and holds out time for a model that forecasts. A cross-validated score says
+**spatial blocks**, squares of the map with every site in them, and holds out time for a
+model that forecasts. A cross-validated score says
 how well a model predicts stations as far from its fitted data as the held-out ones
 were, so choosing the folds means choosing that distance to match the model's use.
 
@@ -54,24 +54,13 @@ whose distance matches the use, and report the distance with the score. Each sch
 this page holds out every station once, so its pooled score, from
 [Cross-validation](cross-validation.qmd), can be compared with the others'.
 
-## Blocks are at least as wide as the distance over which errors are linked
+## Blocks are wide enough to hold out a site's neighbours
 
 A held-out site is predicted too well when a fitted site nearby shares what the inputs
-miss. Blocks take that help away only if each is at least as wide as the distance over
-which sites' errors stay linked, so that a held-out site's linked neighbours are held out
-with it.
-
-That distance comes from the errors of a model fitted without position. Take every pair
-of sites, group the pairs by the distance between them, and for each distance work out
-the correlation between the two sites' errors. This is a **correlogram**. Where nearby
-sites share what the inputs miss, their errors lean the same way, and at short distances
-the correlation is above zero. It falls to zero at the **range**, the distance beyond
-which the errors are unrelated. Blocks should be at least that wide.
-
-Wider blocks change the question little but cost something: there are fewer of them, so
-the blocks that happen to share a fold sway the score more. Set the size from the errors
-before looking at the score. A size chosen for the score it gives makes the score a choice
-as well.
+miss, such as the same patch of water. Blocks take that help away only if each is wide
+enough that a held-out site's close neighbours are held out with it. Set the size from
+the use of the model, before looking at the score: a size chosen for the score it gives
+makes the score a choice as well.
 
 ## An expanding window fits each round only to earlier years
 
@@ -211,138 +200,17 @@ pd.DataFrame({"stations": [len(survey)], "sites": [survey["site_id"].nunique()],
 #| label: helpers
 #| include: false
 f2 <- function(x) sprintf("%.2f", x)
-f3 <- function(x) sub("^-", "−", sprintf("%.3f", x))
-```
-
-### Nearby sites' errors are only weakly linked
-
-A forest on the six environmental inputs, without position, is cross-validated by site.
-Each site's error is its catch over all visits divided by the catch the forest predicted,
-on a log scale so that twice and half as many count as equal and opposite. The
-correlogram then compares the errors of every pair of sites up to 120 km apart.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: correlogram
-set.seed(1)
-by_site <- group_vfold_cv(survey, group = site_id, v = 5)
-
-site_errors <- survey |>
-  mutate(predicted = out_of_fold(environment, by_site)$.pred) |>
-  summarise(lon = first(site_lon), lat = first(site_lat),
-            # +1 so that a site with no catch has an error too
-            error = log((sum(abundance) + 1) / (sum(predicted) + 1)),
-            .by = site_id)
-
-site_pairs <- cross_join(site_errors, site_errors, suffix = c("_a", "_b")) |>
-  filter(site_id_a != site_id_b) |>
-  mutate(km = km_between(lon_a, lat_a, lon_b, lat_b))
-
-# each pair appears twice, as (a, b) and (b, a)
-error_by_distance <- site_pairs |>
-  filter(km <= 120) |>
-  mutate(band_end = 20 * ceiling(km / 20)) |>
-  summarise(pairs = n() / 2, correlation = cor(error_a, error_b), .by = band_end) |>
-  arrange(band_end)
-
-error_by_distance |>
-  mutate(distance = paste0(band_end - 20, "–", band_end, " km"),
-         correlation = round(correlation, 3)) |>
-  select(distance, pairs, correlation)
-```
-
-## Python
-
-```{python}
-by_site = list(GroupKFold(n_splits=5, shuffle=True, random_state=1)
-               .split(survey, groups=survey["site_id"]))
-
-site_errors = (survey.assign(predicted=out_of_fold(environment, by_site))
-               .groupby("site_id", as_index=False)
-               .agg(lon=("site_lon", "first"), lat=("site_lat", "first"),
-                    caught=("abundance", "sum"), predicted=("predicted", "sum")))
-# +1 so that a site with no catch has an error too
-site_errors["error"] = np.log((site_errors["caught"] + 1)
-                              / (site_errors["predicted"] + 1))
-
-site_pairs = site_errors.merge(site_errors, how="cross", suffixes=("_a", "_b"))
-site_pairs = site_pairs[site_pairs["site_id_a"] != site_pairs["site_id_b"]].copy()
-site_pairs["km"] = km_between(site_pairs["lon_a"], site_pairs["lat_a"],
-                              site_pairs["lon_b"], site_pairs["lat_b"])
-
-# each pair appears twice, as (a, b) and (b, a)
-nearby = site_pairs[site_pairs["km"] <= 120].copy()
-nearby["band_end"] = (20 * np.ceil(nearby["km"] / 20)).astype(int)
-error_by_distance = (nearby.groupby("band_end")
-    .apply(lambda g: pd.Series({"pairs": len(g) // 2,
-                                "correlation": g["error_a"].corr(g["error_b"])}),
-           include_groups=False)
-    .reset_index())
-
-error_by_distance.assign(
-    distance=[f"{e - 20}–{e} km" for e in error_by_distance["band_end"]],
-    pairs=error_by_distance["pairs"].astype(int),
-    correlation=error_by_distance["correlation"].round(3),
-)[["distance", "pairs", "correlation"]]
-```
-
-:::
-
-```{r}
-#| label: correlogram-numbers
-#| include: false
-first_zero <- which(error_by_distance$correlation <= 0)[1]
-range_km <- error_by_distance$band_end[first_zero - 1]
-close_r <- error_by_distance$correlation[seq_len(first_zero - 1)]
-far_r <- error_by_distance$correlation[-seq_len(first_zero - 1)]
+# a half-degree block, in km, at the survey's latitude
 half_degree_ew <- 0.5 * 111 * cos(42 * pi / 180)
 half_degree_ns <- 0.5 * 111
 ```
 
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-correlogram
-#| fig-cap: "The correlation between the errors of two sites, by the distance between them, for a random forest on the six environmental inputs. Each point is one 20 km band of distances. The correlation is slightly above zero for sites closer than the dotted line and about zero beyond it."
-#| fig-alt: !expr glue::glue("A line with points, with the distance between two sites in kilometres along the bottom, from 10 to 110, and the correlation of their errors up the side, with a dashed line at zero. The correlation is between {f3(min(close_r))} and {f3(max(close_r))} for sites up to {range_km} km apart, marked by a dotted vertical line, and stays close to zero, between {f3(min(far_r))} and {f3(max(far_r))}, beyond it.")
-#| fig-width: 7
-#| fig-height: 4
-ggplot(error_by_distance, aes(band_end - 10, correlation)) +
-  geom_hline(yintercept = 0, linetype = "dashed", colour = ml_palette[["grey"]]) +
-  geom_vline(xintercept = range_km, linetype = "dotted",
-             colour = ml_palette[["vermilion"]], linewidth = 0.8) +
-  geom_line(colour = ml_palette[["blue"]]) +
-  geom_point(colour = ml_palette[["blue"]], size = 3) +
-  annotate("text", x = range_km + 2, y = max(error_by_distance$correlation),
-           label = paste0("range: about ", range_km, " km"), hjust = 0,
-           colour = ml_palette[["vermilion"]]) +
-  scale_x_continuous(breaks = seq(0, 120, 20), limits = c(0, 120)) +
-  labs(x = "Distance between two sites (km)", y = "Correlation of\ntheir errors",
-       title = paste0("Sites closer than about ", range_km,
-                      " km have errors that lean slightly the same way"))
-```
-
-:::
-
-The link is weak. Sites up to `r range_km` km apart have errors that lean the same way,
-with correlations of only `r f3(min(close_r))` to `r f3(max(close_r))`; further apart,
-the correlation is about zero. Each site's error rests on a handful of noisy counts, and
-much of what neighbouring sites share, their depth and water, is already among the
-forest's inputs. Weak as it is, the link ends at a range of about `r range_km` km.
-
-A block of half a degree is `r round(half_degree_ew)` km from west to east and
-`r round(half_degree_ns)` km from south to north, at least as wide as the range, so the
-blocks below are half a degree wide.
-
 ### The error grows from folds of stations to half-degree blocks
 
 The forest on all eight inputs, position included, is cross-validated in three ways:
-folds of stations, folds of sites, and half-degree blocks. Each run lays the grid of
+folds of stations, folds of sites, and blocks half a degree wide, about
+`r round(half_degree_ew)` km from west to east and `r round(half_degree_ns)` km from south
+to north. Each run lays the grid of
 blocks on the map at a random offset, so that the score does not depend on one grid.
 Every scheme is run 10 times with new folds, because a single run's score depends on how
 the folds happen to fall. Each run records the pooled RMSE and the median distance to
@@ -578,10 +446,8 @@ in a later year needs folds of sites inside each round as well.
 ::: {.key-points}
 - A cross-validated score says how well a model predicts stations as far from its fitted
   data as the held-out ones were. Report the **distance to the nearest fitted station**
-  with the score, and choose the folds whose distance matches the use.
-- A **correlogram** of a model's errors shows the distance over which they stay linked,
-  and blocks should be at least that wide. Here the link was weak and ended at about
-  `r range_km` km, within a half-degree block.
+  with the score, and choose the folds whose distance matches the use: sites to fill
+  gaps in a survey, **spatial blocks** to map new areas.
 - Averaged over ten runs, the forest's error grew from `r f2(at("Stations", "rmse"))`
   with folds of stations to `r f2(at("Sites", "rmse"))` with folds of sites and
   `r f2(at("Half-degree blocks", "rmse"))` with half-degree blocks. Single runs
@@ -593,12 +459,9 @@ in a later year needs folds of sites inside each round as well.
 
 ## Try it yourself
 
-1. Draw the correlogram for the forest on all eight inputs, cross-validated by site.
-   Predict first: do its errors still lean the same way at short distances, once the
-   forest knows where each site is?
-2. Add blocks a whole degree wide to the ten runs, with `block_folds(1)`. Predict first:
+1. Add blocks a whole degree wide to the ten runs, with `block_folds(1)`. Predict first:
    does the error keep growing, and do the runs spread more or less than with
    half-degree blocks, now that the sites fall into fewer blocks?
-3. Make the expanding window forecast new sites: in each round, also leave out of the
+2. Make the expanding window forecast new sites: in each round, also leave out of the
    fitted years every visit to the tested year's sites. How much does the forecast's
    score change?

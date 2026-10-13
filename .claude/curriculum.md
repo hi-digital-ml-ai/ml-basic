@@ -465,6 +465,24 @@ Decisions agreed with the user:
 - *Choosing measures*' table is the one place that matches a use to a measure; pages 3
   and 4 link to it. False alarm and miss link to *Logistic regression*.
 
+**Beginners' pass 2026-10-13** (`feature/simplify-validation`): the six pages were cut
+back to what the section video teaches, and the overview now groups them under the
+video's three ideas: a score is only as honest as its folds (Cross-validation, Spatial
+and temporal CV), the measure must follow the use (the two measures pages, Choosing
+measures), and a score needs an interval (Uncertainty and stability).
+*Cross-validation* lost the pooled-against-averaged experiment and leave-one-site-out;
+*Spatial and temporal CV* lost the correlogram and the range, and now explains the
+half-degree blocks (about 41 by 56 km) in plain words; *Regression performance measures*
+lost MAPE, the Poisson deviance aside and the worked squared-correlation comparison (a
+short note and its diagram stay, and R² joins the worked table); *Classification
+performance measures* lost F1, MCC and log loss, gained balanced accuracy, and keeps a
+short calibration part because *Choosing measures*' cost rule needs calibrated
+probabilities; *Choosing measures* lost the causal and biased-records asides. Glossary
+entries for the cut terms were removed. The video's numbers (4.51 for the search; 4.43
+claimed, 4.46 nested, 4.37 for the eight inputs; 4.23, 4.34 and 4.41 for the schemes;
+69% of the catch; 847 animals and 2.1 times random; thresholds 0.51, 0.75 and 0.83;
+3.75 to 4.94; 99% and 80%) come from these pages and must not drift.
+
 ### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
@@ -478,8 +496,9 @@ either model's own score.
 
 ### Aimed at §10
 
-`choosing-a-metric.qmd` ends on observation bias: a model that reproduces biased survey data
-reproduces the bias, and no validation scheme detects it. That is the handover to §10.
+`choosing-a-metric.qmd` used to end on observation bias: a model that reproduces biased
+survey data reproduces the bias, and no validation scheme detects it. The beginners' pass
+cut it; §10's *From a model to a claim* introduces the gear on its own and never linked back.
 
 ## 8. Unsupervised learning
 `chapters/08-unsupervised-learning/` · categories: `unsupervised`, `interpretation`
