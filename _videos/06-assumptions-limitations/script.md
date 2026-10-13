@@ -19,7 +19,7 @@ collected. Three ideas, a simple picture for each concept, and few numbers: what
 assumption is (a straight line against a forest's steps, then skewed counts and a
 forest's lopsided errors), how the data were collected (repeat visits worth fewer
 stations, and cold, shallow winter water a summer survey never met), and a rare answer
-that fools accuracy (95 per cent accurate, finding nothing). Every term is introduced
+that fools accuracy (92 per cent accurate, finding one presence in six). Every term is introduced
 before it is used. Performance measures such as sensitivity belong to the Validation
 section and are not named here. Log counts, resampling, the distance check and
 rebalancing are left to the pages; the end card names some of them.
@@ -158,12 +158,14 @@ predict are rare: a protected species, a harmful algal bloom. Here a second spec
 turns up at only 29 of 598 stations, about 5 per cent.
 
 ## Scene 18
-visual: manim Trap: logistic regression, threshold 0.5; "presences found: 0"; "accuracy: 95%", "the share of calls that are right" (page results, class-imbalance.qmd)
+visual: manim Trap: logistic regression, its threshold set to call about as many stations present as hold the species; squares on the stations it calls present; "presences found: 1 in 6"; "accuracy: 92%", "the share of calls that are right"; "accuracy hides the misses" (page results, class-imbalance.qmd#fig-curve)
 
 Logistic regression gives each station a probability of presence, and, as in the
-Supervised learning video, a threshold of 0.5 turns it into a call. Here it finds none
-of the presences. Yet its accuracy, the share of its calls that are right, is 95 per
-cent. Calling the species absent everywhere is right almost everywhere.
+Supervised learning video, a threshold turns it into a call. Here the threshold is set
+so that it calls about as many stations present as have the species. It finds only one
+presence in six. Yet its accuracy, the share of its calls that are right, is 92 per
+cent. The species is so rare that calling a station absent is nearly always right, so
+accuracy hides the misses.
 
 ## Scene 19
 visual: manim Check: the 29 presences ringed, "how many of these does it find?"; "measuring it: the Validation section" (page results)

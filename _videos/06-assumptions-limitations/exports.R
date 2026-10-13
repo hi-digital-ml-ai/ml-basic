@@ -30,11 +30,14 @@ exports <- list(
       dplyr::transmute(novelty, depth_m, temperature_c, season, status))), dir, "novelty")
   },
 
-  # Scenes 17–19: the rare species' share and the calls at 0.5.
+  # Scenes 17–19: the rare species' share, and the calls without rebalancing at the
+  # threshold of the page's curve that calls about as many stations present as hold the
+  # species. At 0.5 the model calls almost none present, too extreme an example.
   "class-imbalance.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(stations = nrow(train), present = n_present,
                                    prevalence = prevalence, top = top,
                                    copies = copies)), dir, "rare")
-    write(with(env, at_default), dir, "at-default")
+    write(with(env, dplyr::mutate(dplyr::slice_min(curve, abs(called_present - presences), n = 1),
+                                  presences = presences, repeats = 5)), dir, "matched")
   }
 )

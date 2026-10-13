@@ -610,12 +610,27 @@ def rare_key(dots):
 
 
 def model_calls(scene, lit, others):
-    """Squares on the stations the model called present: all of them, at 0.5, are absences.
-    They are drawn on stations well away from any presence, so the two never look alike."""
-    plain = scene.data("at-default").set_index("training").loc["No rebalancing"]
-    clear = [d for d in others if min(np.linalg.norm(d.get_center() - p.get_center()) for p in lit) > 0.6]
-    picks = np.random.default_rng(5).choice(len(clear), int(plain["false_alarms"]), replace=False)
-    return VGroup(*[Square(0.3, color=INK, stroke_width=4).move_to(clear[k]) for k in picks])
+    """Squares on the stations the model called present, scaled from the page's five repeats
+    to one grid: a few on presences (found), the rest on absences (false alarms). False
+    alarms keep clear of the presences and of each other, so no square looks shared."""
+    matched = scene.data("matched").iloc[0]
+    repeats = int(matched["repeats"])
+    found = round((matched["called_present"] - matched["false_alarms"]) / repeats)
+    alarms = round(matched["false_alarms"] / repeats)
+    rng = np.random.default_rng(5)
+    hits = []
+    for k in rng.permutation(len(lit)):
+        if len(hits) < found and all(np.linalg.norm(lit[k].get_center() - q.get_center()) > 0.45 for q in hits):
+            hits.append(lit[k])
+    picked = []
+    for k in rng.permutation(len(others)):
+        d = others[k].get_center()
+        if (all(np.linalg.norm(d - q.get_center()) > 0.4 for q in lit)
+                and all(np.linalg.norm(d - q.get_center()) > 0.45 for q in hits + picked)):
+            picked.append(others[k])
+        if len(picked) == alarms:
+            break
+    return VGroup(*[Square(0.3, color=INK, stroke_width=4).move_to(d) for d in hits + picked])
 
 
 def lit_up(lit):
@@ -648,16 +663,18 @@ class Scene17(VideoScene):
 
 
 def trap_panel(scene):
-    plain = scene.data("at-default").set_index("training").loc["No rebalancing"]
+    matched = scene.data("matched").iloc[0]
+    one_in = round(1 / matched["sensitivity"])
     head = VGroup(label("logistic regression", 32, INK, weight=BOLD),
-                  label("threshold 0.5", 28, SUBDUED)).arrange(DOWN, buff=0.08).move_to(3.9 * RIGHT + 2.7 * UP)
+                  label(f"threshold {matched['threshold']:.2f}", 28, SUBDUED)
+                  ).arrange(DOWN, buff=0.08).move_to(3.9 * RIGHT + 2.7 * UP)
     found = VGroup(label("presences found", 30, VERMILION),
-                   label(f"{plain['called_present'] - plain['false_alarms']:.0f}", 64, VERMILION, weight=BOLD)
+                   label(f"1 in {one_in}", 64, VERMILION, weight=BOLD)
                    ).arrange(DOWN, buff=0.1).move_to(3.9 * RIGHT + 0.9 * UP)
-    accuracy = VGroup(label("accuracy", 30, GREEN), label(f"{100 * plain['accuracy']:.0f}%", 64, GREEN, weight=BOLD)
+    accuracy = VGroup(label("accuracy", 30, GREEN), label(f"{100 * matched['accuracy']:.0f}%", 64, GREEN, weight=BOLD)
                       ).arrange(DOWN, buff=0.1).move_to(3.9 * RIGHT + 1.3 * DOWN)
     meaning = label("the share of its calls that are right", 26, SUBDUED).next_to(accuracy, DOWN, 0.15)
-    return plain, head, found, accuracy, meaning
+    return matched, head, found, accuracy, meaning
 
 
 class Scene18(VideoScene):
@@ -668,21 +685,24 @@ class Scene18(VideoScene):
         lit_up(lit)
         key = rare_key(dots)
         self.add(dots, key[0])
-        plain, head, found, accuracy, meaning = trap_panel(self)
-        everywhere = label("as if it said absent everywhere", 28, INK, weight=BOLD).next_to(meaning, DOWN, 0.3)
+        matched, head, found, accuracy, meaning = trap_panel(self)
+        hides = label("accuracy hides the misses", 28, INK, weight=BOLD).next_to(meaning, DOWN, 0.3)
         calls = model_calls(self, lit, others)
         # "Logistic regression gives each station a probability of presence, ..."
-        self.play(FadeIn(head), FadeIn(key[1]), run_time=self.share(0.1))
-        # "Here it finds none of the presences."
-        cue(self, "Here it finds")
-        self.play(FadeIn(found), LaggedStart(*[Create(c) for c in calls], lag_ratio=0.3),
-                  Indicate(lit, color=VERMILION, scale_factor=1.3), run_time=self.share(0.1))
-        # "Yet its accuracy, the share of its calls that are right, is 95 per cent."
+        self.play(FadeIn(head[0]), run_time=self.share(0.08))
+        # "Here the threshold is set so that it calls about as many stations present ..."
+        cue(self, "Here the threshold")
+        self.play(FadeIn(head[1]), FadeIn(key[1]), LaggedStart(*[Create(c) for c in calls], lag_ratio=0.1),
+                  run_time=self.share(0.14))
+        # "It finds only one presence in six."
+        cue(self, "It finds only")
+        self.play(FadeIn(found), Indicate(lit, color=VERMILION, scale_factor=1.3), run_time=self.share(0.08))
+        # "Yet its accuracy, the share of its calls that are right, is 92 per cent."
         cue(self, "Yet its accuracy")
-        self.play(FadeIn(accuracy), FadeIn(meaning), run_time=self.share(0.1))
-        # "Calling the species absent everywhere is right almost everywhere."
-        cue(self, "Calling the species")
-        self.play(FadeIn(everywhere, shift=0.2 * UP), run_time=self.share(0.1))
+        self.play(FadeIn(accuracy), FadeIn(meaning), run_time=self.share(0.08))
+        # "... calling a station absent is nearly always right, so accuracy hides the misses."
+        cue(self, "so accuracy hides")
+        self.play(FadeIn(hides, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
@@ -694,7 +714,7 @@ class Scene19(VideoScene):
         lit_up(lit)
         key = rare_key(dots)
         calls = model_calls(self, lit, others)
-        plain, head, found, accuracy, meaning = trap_panel(self)
+        matched, head, found, accuracy, meaning = trap_panel(self)
         self.add(dots, key, calls, head, found, accuracy, meaning)
         rings = VGroup(*[Circle(0.15, color=BLUE, stroke_width=4).move_to(d) for d in lit])
         ask = lines("how many of these", "does it find?", size=40, colour=BLUE).move_to(3.9 * RIGHT + 1.0 * UP)
