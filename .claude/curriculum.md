@@ -72,7 +72,7 @@ Fifty-three pages, against sixty-two before. File names may change with the titl
 | Overdispersion and the negative binomial | *Regression for counts* | Link |
 | Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
 | False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
-| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why sites are held out (repeat visits); neighbours and blocks are §7's |
 | Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
 | Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
 | The simulated truth as a check | *The coastal survey* | One sentence and a link |
@@ -252,6 +252,18 @@ change `coastal-survey.csv`: same seed, same bytes, verified.
 Rules for using it are in `data/README.md`: join on `station_id`, never pass it to a model,
 never quote a score against it without saying no real study could compute one.
 
+**Beginners' pass 2026-10-13** (`feature/simplify-generalisation`): the four pages were
+cut back to what the section video teaches, keeping their structure and every number the
+video quotes, and the overview now groups them under the video's three ideas: a perfect
+fit is a warning sign (Underfitting and overfitting), the U-shaped curve comes from bias
+and variance (Bias–variance), and complexity is chosen honestly (Regularisation,
+Hyperparameter selection). *Underfitting and overfitting* lost the "too much flexibility
+costs more" comparison; *Bias–variance* lost the shared-sites asides; *Regularisation*
+lost the coefficient-counting section and the elastic net (glossary entry removed);
+*Hyperparameter selection* keeps the one-standard-error rule, briefly, because §8 uses
+it. The video's numbers (6.21 against 4.83; 72% noise; about 13-fold; 6.41 and 4.55;
+4.45–4.64 against 3.72–5.37; 0.28 against 0.26) come from these pages and must not drift.
+
 ## 6. Model assumptions and limitations
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
 `class-imbalance`
@@ -334,14 +346,33 @@ out unless the lesson needs them.
   the effective sample size of the average catch and of the forest's errors. Cut: the
   negative binomial, the patches map and a position-only forest (a permutation check
   found no clustering of errors beyond chance). The spatial-blocks diagram moved to §7
-  *Spatial and temporal cross-validation*, which now owns the folds.
+  *Spatial and temporal cross-validation*, which now owns the folds. The 2026-10
+  beginners' pass cut it further to stations against whole sites for the average catch
+  (800 stations worth about 470): spatial blocks, neighbours and the forest's errors
+  went to §7, which now introduces spatial blocks itself; years, enough groups and
+  identifiers are a sentence each, and mixed models are gone.
 - *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
   (*Choosing a method* draws it), so the page links there and gives its own diagram to
   the range check against the distance to the nearest surveyed station, which it ties
-  to k-nearest neighbours.
+  to k-nearest neighbours. The 2026-10 beginners' pass cut the forest against
+  polynomial regression below the survey's depths; the worked example is now only the
+  summer and autumn survey asked about spring and winter: cold, shallow winter stations
+  pass every range check, the distance flags them, and the forest's error grows with it.
 - *Class imbalance*: false alarm and miss are §3's terms and are linked, not bolded.
 
 Every page has glossary entries and a new-terms box.
+
+**Beginners' pass 2026-10-13** (`feature/simplify-assumptions-limitations`): the five
+pages were cut back to what the section video teaches, keeping their structure, and
+the overview now groups them under the video's three ideas: what machine learning frees
+a model from (Linearity, Distributional), what it does not (Dependent data, Uneven
+sampling), and why a rare answer fools accuracy (Class imbalance). *Linearity* lost the
+GAM and the depth peak; *Distributional* lost quantile loss and keeps log counts as a
+short part; sensitivity, specificity and precision moved from *Class imbalance* to §7
+*Classification performance measures*. The video's numbers (598 stations, 129 at zero,
+median 3, largest 40; about 470 of 800; the rare species at 29 of 598, 1 in 6 found
+at 92% accuracy) come from these
+pages and must not drift.
 
 ### Two threads that must be kept if these pages are edited
 
@@ -350,15 +381,15 @@ different distributions of the response, so a "harder" scheme can report a *lowe
 Use R², or the same test set for both. §2's leakage page found it first. No §6 page
 compares schemes any more; §7's `spatial-and-temporal-cv.qmd` does, and must keep it.
 
-**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
-the forest recovers the temperature hump but puts depth's peak in shallow water, because depth
-is confounded with position, which carries an unmodelled spatial field. The page keeps
-this to one paragraph and links to §1 and §10's partial-effects page, which teach
-confounding; the page itself stays on linearity.
+**A curve that fits the data can still be wrong.** The forest recovers the temperature hump
+but puts depth's peak in shallow water, because depth is confounded with position, which
+carries an unmodelled spatial field. Since the 2026-10 beginners' pass this lives only in
+§10's `partial-effects.qmd` (with §1 teaching confounding); `linearity-and-nonlinearity.qmd`
+stays on the straight line against the forest's temperature hump.
 
 ### Uses of `coastal-survey-truth.csv`
 
-`linearity-and-nonlinearity.qmd` compares the forest's curves against the true generating curves,
+`partial-effects.qmd` compares the forest's curves against the true generating curves,
 and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
 than observed counts. Both say in the text that no real study could do this.
 
@@ -434,6 +465,24 @@ Decisions agreed with the user:
 - *Choosing measures*' table is the one place that matches a use to a measure; pages 3
   and 4 link to it. False alarm and miss link to *Logistic regression*.
 
+**Beginners' pass 2026-10-13** (`feature/simplify-validation`): the six pages were cut
+back to what the section video teaches, and the overview now groups them under the
+video's three ideas: a score is only as honest as its folds (Cross-validation, Spatial
+and temporal CV), the measure must follow the use (the two measures pages, Choosing
+measures), and a score needs an interval (Uncertainty and stability).
+*Cross-validation* lost the pooled-against-averaged experiment and leave-one-site-out;
+*Spatial and temporal CV* lost the correlogram and the range, and now explains the
+half-degree blocks (about 41 by 56 km) in plain words; *Regression performance measures*
+lost MAPE, the Poisson deviance aside and the worked squared-correlation comparison (a
+short note and its diagram stay, and R² joins the worked table); *Classification
+performance measures* lost F1, MCC and log loss, gained balanced accuracy, and keeps a
+short calibration part because *Choosing measures*' cost rule needs calibrated
+probabilities; *Choosing measures* lost the causal and biased-records asides. Glossary
+entries for the cut terms were removed. The video's numbers (4.51 for the search; 4.43
+claimed, 4.46 nested, 4.37 for the eight inputs; 4.23, 4.34 and 4.41 for the schemes;
+69% of the catch; 847 animals and 2.1 times random; thresholds 0.51, 0.75 and 0.83;
+3.75 to 4.94; 99% and 80%) come from these pages and must not drift.
+
 ### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
@@ -447,8 +496,9 @@ either model's own score.
 
 ### Aimed at §10
 
-`choosing-a-metric.qmd` ends on observation bias: a model that reproduces biased survey data
-reproduces the bias, and no validation scheme detects it. That is the handover to §10.
+`choosing-a-metric.qmd` used to end on observation bias: a model that reproduces biased
+survey data reproduces the bias, and no validation scheme detects it. The beginners' pass
+cut it; §10's *From a model to a claim* introduces the gear on its own and never linked back.
 
 ## 8. Unsupervised learning
 `chapters/08-unsupervised-learning/` · categories: `unsupervised`, `interpretation`

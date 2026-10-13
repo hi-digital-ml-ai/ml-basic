@@ -1,6 +1,6 @@
 ---
 title: "Underfitting and overfitting"
-description: "A model's error on the stations it was fitted to says little about new sites. A model can be too rigid to follow the pattern or so flexible that it follows the noise, and on the survey the flexible failure costs far more."
+description: "A model's error on the stations it was fitted to says little about new sites. A tree that fits its stations perfectly does worse on new sites than predicting the average, and making a tree more flexible step by step draws the U-shaped error curve."
 order: 1
 categories: [generalisation]
 ---
@@ -22,16 +22,16 @@ set.seed(123)
 ## Two ways to fail on new data
 
 Every fitted model can report its error on the data it was fitted to. That number comes
-free, and it is easy to read as a measure of how good the model is. This page shows why
-it is a poor guide to how a model will do on new sites, and names the two ways a model
-fails there: too rigid to follow the pattern, or so flexible that it follows the noise as
-well. The two failures need opposite fixes, and the model's two errors, side by side, tell
-you which one you have.
+free, and it is easy to read as a measure of how good the model is. It is not: a model
+that fits its own stations perfectly can do worst of all on new sites. This page shows
+why, and names the two ways a model fails on new data: too rigid to follow the pattern,
+or so flexible that it follows the noise as well. The two failures need opposite fixes,
+and the model's two errors, side by side, tell you which one you have.
 
 [k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd) met overfitting
 with a single neighbour, and [Decision trees](../03-supervised-learning/decision-trees.qmd)
 watched the error on validation sites fall and then rise as a tree grew deeper. This page
-names the two ends of that curve and finds which end costs more on the survey.
+names the two ends of that curve.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -59,7 +59,7 @@ many examples is harder to fit than noise in a few.
 
 Before it sees any data, a model is limited to a family of shapes. A straight line can only
 be a straight line; a tree with four leaves can only give four different predictions. How
-wide that family is, is the model's **flexibility**.
+wide that family is, is the model's **flexibility**, also called its complexity.
 
 - **Underfitting** is a model too rigid to follow the pattern. It misses the training data
   and new data by about as much, so its two errors are both high and close together. It is
@@ -93,8 +93,7 @@ section.
 Each model is fitted to some of the training sites and scored on the rest, which play the
 part of new sites. One such split leaves only a few dozen sites to score on, and by chance
 they can be easier or harder to predict than the others. So the training sites are split
-20 times at random, by site, three quarters for fitting and a quarter as new sites, and
-each error is averaged over the 20 splits.
+20 times at random, by site, and each error is averaged over the 20 splits.
 
 ### Preparing the data
 
@@ -281,10 +280,6 @@ results.round(2)
 at <- function(m, column = "new") results[[column]][results$model == m]
 baseline_five <- at("Predict the average")
 f2 <- function(x) sprintf("%.2f", x)
-in_words <- function(n) c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")[n]
-beat_baseline <- results |>
-  filter(new < baseline_five, model != "Predict the average") |>
-  pull(model)
 ```
 
 ::: {.panel-tabset group="language"}
@@ -318,15 +313,13 @@ results |>
 
 By training error, the grown-out tree comes first with an RMSE of
 `r if (at("Decision tree, grown out", "training") < 0.005) "exactly zero" else f2(at("Decision tree, grown out", "training"))`,
-and boosting second at `r f2(at("Boosting", "training"))`. Both have fitted their
-stations almost perfectly. On new sites they are among the worst. The grown-out tree comes
-last, at `r f2(at("Decision tree, grown out"))`, well above the `r f2(baseline_five)` from
+and boosting second at `r f2(at("Boosting", "training"))`: both have fitted their
+stations almost perfectly. On new sites the order turns over. The grown-out tree comes
+last, at `r f2(at("Decision tree, grown out"))`, worse than the `r f2(baseline_five)` from
 predicting the average with no inputs at all, and boosting, at `r f2(at("Boosting"))`,
-does no better than that average. Linear regression, last by training error at
-`r f2(at("Linear regression", "training"))`, is close to the best on new sites at
-`r f2(at("Linear regression"))`, behind only the random forest at
-`r f2(at("Random forest"))`. Only `r in_words(length(beat_baseline))` of the five models
-beat the baseline: `r str_to_lower(knitr::combine_words(beat_baseline))`.
+does no better than that average. Linear regression, last by training error, is close to
+the best on new sites at `r f2(at("Linear regression"))`, behind only the random forest
+at `r f2(at("Random forest"))`.
 
 A tree with one station in each leaf predicts every fitting station as that station's own
 count, so its training error is zero. It has stored the data rather than learned a
@@ -500,8 +493,6 @@ loose <- row_at(min(sizes))
 # the most flexible tree that still beats predicting the average
 last_good <- sweep |> filter(new < baseline) |> slice_max(leaves)
 first_bad <- sweep |> filter(leaves > last_good$leaves) |> slice_min(leaves)
-cost_rigid <- baseline - best$new
-cost_flexible <- loose$new - best$new
 ```
 
 ::: {.panel-tabset group="language"}
@@ -533,50 +524,39 @@ sweep |>
 
 :::
 
-### Too much flexibility costs more than too little
+### The lowest point lies between underfitting and overfitting
 
 **The rigid end.** With a node size of `r max(sizes)`, the largest here, the tree has
 about `r round(stiff$leaves)` leaves. Its training error is `r f2(stiff$training)` and its
 error on new sites `r f2(stiff$new)`, within `r f2(abs(stiff$gap))` of each other. That is
-the sign of underfitting: both errors high and close together. A tree that never splits at
-all would predict the average count everywhere, the dashed line at `r f2(baseline)`.
+the sign of underfitting: both errors high and close together.
 
 **The lowest point.** The error on new sites is lowest, at `r f2(best$new)`, for a node size
-of `r best$min_n`, which gives trees of about `r round(best$leaves)` leaves. That is better
-than the baseline, but only by `r f2(baseline - best$new)`: the counts are noisy, and even
-the best tree leaves most of their variation unexplained.
+of `r best$min_n`, which gives trees of about `r round(best$leaves)` leaves. That beats
+predicting the average, but only by `r f2(baseline - best$new)`: the counts are noisy, and
+even the best tree leaves most of their variation unexplained.
+[The bias–variance trade-off](bias-variance.qmd) shows why.
 
-**The flexible end.** With a node size of 2, the tree has about `r round(loose$leaves)` leaves
-and a training error of `r if (loose$training < 0.005) "zero" else f2(loose$training)`. Its
-error on new sites is `r f2(loose$new)`, worse than predicting the average. Trees of about
-`r round(last_good$leaves)` leaves still beat the baseline; at about
-`r round(first_bad$leaves)` leaves and beyond, using the inputs at all does more harm than
-good. The training error gives no sign of that point: it falls smoothly through it.
-
-**The two costs are lopsided.** On new sites, a tree that never splits, the most rigid
-there can be, is `r f2(cost_rigid)` worse than the best one. The most flexible is
-`r f2(cost_flexible)` worse, about `r in_words(round(cost_flexible / cost_rigid))` times as
-much. With counts this noisy there is much more noise to fit than pattern to miss, so on
-these data too much flexibility is the costlier mistake.
+**The flexible end.** With a node size of 2, the tree has about `r round(loose$leaves)`
+leaves and a training error of
+`r if (loose$training < 0.005) "zero" else f2(loose$training)`. Its error on new sites is
+`r f2(loose$new)`, worse than predicting the average. The training error gives no sign of
+that: it falls smoothly all the way.
 
 The best node size here was found by averaging over 20 splits of the training sites.
 [Hyperparameter selection](hyperparameter-selection.qmd) turns that idea into the standard
-method, cross-validation, and shows why a single split is not enough.
+method, cross-validation.
 
 ## Key points
 
 ::: {.key-points}
-- The **training error** is a model's error on the data it was fitted to. Fitting noise
-  lowers it as much as fitting the pattern does, so it is no basis for choosing between
-  models.
+- A perfect fit is a warning sign. The **training error** is a model's error on the data
+  it was fitted to, and fitting noise lowers it as much as fitting the pattern does. The
+  tree that fitted every station did worse on new sites than predicting the average.
 - A model's **flexibility** is how wide a family of shapes it can take. Too little and it
   **underfits**: both errors are high and close together. Too much and it **overfits**: a
-  low training error and a much higher error on new data.
-- The training error falls with every gain in flexibility. The error on new data traces the
-  **U-shaped error curve**, and its lowest point, in between, is the target.
-- On the survey, the grown-out tree and boosting fitted their stations almost perfectly and
-  did no better on new sites than predicting the average count; too much flexibility cost
-  several times as much as too little.
+  low training error and a much higher error on new data. The error on new data traces
+  the **U-shaped error curve**, and its lowest point, in between, is the target.
 - The fixes are opposite: more flexibility or better inputs for underfitting; less
   flexibility, regularisation or more data for overfitting.
 :::

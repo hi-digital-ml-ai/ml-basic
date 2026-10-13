@@ -1,6 +1,6 @@
 ---
 title: "Distributional assumptions"
-description: "Most machine-learning models predict without Normal data or equal spread, but the loss still decides what a prediction means. A random forest's errors fail both checks and it predicts well anyway; trained on log counts, it predicts far fewer animals than were caught."
+description: "Most machine-learning models predict without Normal errors or equal spread, but the loss still decides what a prediction means. A random forest's errors fail both checks and it predicts well anyway; trained on log counts, it predicts far fewer animals than were caught."
 order: 2
 categories: [assumptions]
 ---
@@ -19,21 +19,22 @@ set.seed(123)
 
 {{< new-terms >}}
 
-## Normal data and equal spread are not requirements of machine learning
+## Normal errors and equal spread are not requirements of machine learning
 
-Statistics courses teach two checks before a model is fitted: that the model's errors
-follow a [Normal distribution](../01-introduction/discriminative-and-generative-models.qmd)
+A model's errors are the gaps between what was caught and what was predicted, the
+[residuals](../04-how-algorithms-learn/loss-functions.qmd) of Loss functions.
+Statistics courses teach two checks on them before a model is trusted: that they follow
+a [Normal distribution](../01-introduction/discriminative-and-generative-models.qmd)
 (the bell curve), and that their spread is the same everywhere, **equal spread**
-(homogeneity of variance, in statistics). Counts of animals usually fail both: they are
-**skewed**, with a long tail of large catches on one side. Most machine-learning models
-predict without either assumption: trees, forests and boosting split the data by the
-order of its values, whatever its shape. The exception is a
-[generative model](../01-introduction/discriminative-and-generative-models.qmd), which
-describes the data with a shape.
+(homogeneity of variance, in statistics). Models of animal counts usually fail both,
+because the counts are **skewed**: most catches are small, with a long tail of large
+ones on one side.
 
-The distribution still matters to what a prediction means, and the loss decides it.
-This page fits one random forest to the survey's counts, checks its errors against both
-assumptions, and shows how a common fix for skewed data quietly changes what the forest
+Most machine-learning models predict well without either assumption. The exception is a
+[generative model](../01-introduction/discriminative-and-generative-models.qmd), which
+describes the data with a shape. The shape of the data still matters in one way: it
+decides what a prediction means. This page fits a random forest to the survey's counts,
+checks its errors, and shows how a common fix for skewed counts changes what the forest
 predicts.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -45,9 +46,7 @@ predicts.
 A prediction is one number standing for all the catches a station could give, and the
 loss decides which number. [Loss functions](../04-how-algorithms-learn/loss-functions.qmd)
 set squared error against absolute error. Squared error is smallest at the average of
-the catches, and absolute error at the median, the middle catch. A **quantile loss**
-aims at any chosen point: its 95% version at the catch that only 1 in 20 stations
-exceed.
+the catches, and absolute error at the median, the middle catch.
 
 For a symmetric bell curve the average and the median are the same. For skewed counts
 they are not: a few large catches pull the average above the typical one. A model
@@ -56,7 +55,7 @@ animals per station times the number of stations. Any step that changes what
 the loss aims at changes that total, and the worked example shows a common one.
 
 ::: {.diagram}
-![The errors of a model fitted to counts are skewed and spread wider where more is predicted. Each loss aims at a different point of the catches: absolute error at the median, squared error at the average, a quantile loss at any chosen point. Squared error on log counts aims near the median, below the average, so totals come out short.](img/spread.svg){fig-alt="Three cards. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway, and the checks say where to take care. Each loss aims at a different point: a histogram of catches with a long right tail, a dashed line at the median, a solid line further right at the average and a dotted line far out at the 95% point; absolute error aims at the median, squared error at the average, a quantile loss at any chosen point. Totals, log counts fall short: three bars, the total caught, the total from a model on raw counts level with it, and a clearly shorter total from a model on log counts, marked short. A note says that for skewed counts the loss decides which middle a prediction stands for."}
+![The errors of a model fitted to counts are skewed and spread wider where more is predicted. Each loss aims at a different point of the catches: absolute error at the median, squared error at the average.](img/spread.svg){fig-alt="Two cards. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway. Each loss aims at a different point: a histogram of catches with a long right tail, a dashed line at the median and a solid line further right at the average; absolute error aims at the median, squared error at the average. A note says that for skewed counts the loss decides which middle a prediction stands for."}
 :::
 
 ## Worked example
@@ -262,20 +261,17 @@ shape_plot + spread_plot
 
 :::
 
-Neither stops the forest. Its predictions are averages of the catches at similar
-stations, and an average needs no particular shape and no equal spread. The shape
-matters to how sure a prediction can be: an interval around it should be lopsided and
-widen where the errors do, which
+Neither stops the forest. Each tree predicts the average catch of similar stations, and
+an average needs no bell curve and no equal spread. The shape matters again when a range
+is put around a prediction, which
 [Communicating uncertainty](../10-interpretation/communicating-uncertainty.qmd) builds.
-It also matters to what a prediction means, the subject of the next part.
 
 ### Training on log counts predicts far fewer animals than were caught
 
-A common recipe for skewed data is to make it more Normal first: fit the model to the
-log of the count, plus 1 so that empty stations stay at zero, and turn each prediction
-back with the exponential, minus 1. The second forest does exactly that, and both are
-scored on the same cross-validated stations: by RMSE, and by the total number of animals
-they predict across the `r nrow(train)` stations against the total caught.
+A common fix for skewed counts is to shrink the large catches first: fit the model to
+the log of the count, plus 1 so that empty stations stay at zero, and turn each
+prediction back into animals. A second forest does that, and both are scored on the same
+stations, by RMSE and by the total number of animals they predict.
 
 ::: {.panel-tabset group="language"}
 
@@ -334,59 +330,20 @@ totals.round({"rmse": 2, "predicted_total": 0})
 plain <- filter(totals, model == "Random forest")
 logged <- filter(totals, model == "Random forest on log counts")
 shortfall <- 1 - logged$predicted_total / logged$caught_total
-by_fifth <- errors |>
-  summarise(Caught = mean(caught), "Random forest" = mean(predicted),
-            "Random forest on log counts" = mean(log_predicted), .by = fifth) |>
-  arrange(fifth)
-log_series <- by_fifth[["Random forest on log counts"]]
 ```
 
-The two forests score almost the same: an RMSE of
+The two forests score almost the same RMSE:
 `r format(round(plain$rmse, 2), nsmall = 2)` on raw counts and
-`r format(round(logged$rmse, 2), nsmall = 2)` on log counts. Their totals do not. The
-stations caught `r plain$caught_total` animals; the forest on raw counts predicts
+`r format(round(logged$rmse, 2), nsmall = 2)` on log counts. Their totals do not match.
+The stations caught `r plain$caught_total` animals; the forest on raw counts predicts
 `r round(plain$predicted_total)`, and the forest on log counts
-`r round(logged$predicted_total)`, `r percent(shortfall)` short. @fig-log shows that
-the shortfall runs through every fifth of the stations, not just the largest.
+`r round(logged$predicted_total)`, `r percent(shortfall)` short.
 
-On the log scale, squared error aims at the average log count. Turned back into
-animals, that is close to the median, the typical catch, and for skewed counts the
-typical catch sits below the average. The forest on log counts answers a different
-question, and the RMSE does not show it. A survey that sums its predictions into a
-stock estimate, a biomass or a map total would come out `r percent(shortfall)` short
-with no warning.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-log
-#| fig-cap: "The average catch per station in each fifth of the forest's predictions, against the average each forest predicts there. The forest on raw counts follows the catch; the forest on log counts falls short in every fifth."
-#| fig-alt: !expr 'glue::glue("Points joined by lines for five groups of training stations, ordered by the forest prediction, with the average count per station on the vertical axis. The caught averages, in grey, rise from {one(by_fifth$Caught[1])} to {one(by_fifth$Caught[5])}. The forest on raw counts, in blue, lies close to them. The forest on log counts, in vermilion, lies below them in every group, from {one(log_series[1])} to {one(log_series[5])}.")'
-#| fig-width: 7
-#| fig-height: 3.8
-by_fifth |>
-  pivot_longer(-fifth, names_to = "series", values_to = "animals") |>
-  mutate(series = fct_inorder(series)) |>
-  ggplot(aes(fifth, animals, colour = series)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5) +
-  scale_colour_manual(values = c(
-    "Caught" = "grey40",
-    "Random forest" = ml_palette[["blue"]],
-    "Random forest on log counts" = ml_palette[["vermilion"]])) +
-  scale_y_continuous(limits = c(0, NA)) +
-  labs(x = "Fifth of the stations, by the forest's prediction",
-       y = "Average count (individuals)", colour = NULL)
-```
-
-:::
-
-Keep the counts as they are when the totals matter. For a skewed outcome, a loss built
-for it, such as the Poisson deviance of
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd), changes the weights
-without changing what the prediction aims at.
+On the log scale, squared error aims at the average log count. Turned back into animals,
+that is close to the median, the typical catch, which for skewed counts sits below the
+average. A stock estimate or a map total summed from these predictions would come out
+`r percent(shortfall)` short, and the RMSE gives no warning. Keep the counts as they are
+when the totals matter.
 
 Every check on this page also treats the stations as independent, which
 [Dependent data](dependent-data.qmd) tests.
@@ -394,13 +351,11 @@ Every check on this page also treats the stations as independent, which
 ## Key points
 
 ::: {.key-points}
-- Most machine-learning models predict without Normal data or **equal spread**. For
-  **skewed** counts, the loss still decides what a prediction means.
-- Squared error aims at the average, absolute error at the median, and a **quantile
-  loss** at any chosen point. For skewed counts these differ.
-- The random forest's errors on unseen sites were skewed, and `r one(sd_ratio)` times
-  as spread out at the largest predictions as at the smallest. Its predictions did not
-  need either assumption.
+- A model's errors need not be Normal or have **equal spread** for it to predict
+  well. The random forest's errors on unseen sites were **skewed**, and
+  `r one(sd_ratio)` times as spread out at the largest predictions as at the smallest.
+- Squared error aims at the average, absolute error at the median. For skewed counts
+  these differ, so the loss decides what a prediction means.
 - Trained on log counts, the forest scored about the same RMSE but predicted
   `r percent(shortfall)` fewer animals than were caught: it aimed at the typical catch,
   not the average. Keep the counts as they are when totals matter.
@@ -411,7 +366,5 @@ Every check on this page also treats the stations as independent, which
 1. Replace the forest with linear regression, `linear_reg()`, and fit it to the raw
    counts and to the log counts. Is the shortfall in the total larger or smaller than
    the forest's?
-2. Fit the boosted model of
-   [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) to the raw
-   counts with Poisson deviance, `set_engine("xgboost", objective = "count:poisson")`,
-   and compare its total with the forest's.
+2. Keep only the stations that caught nothing. What does the forest predict for them on
+   average, and why can it never predict fewer than zero animals?

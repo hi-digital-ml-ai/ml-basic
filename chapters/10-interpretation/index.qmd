@@ -52,8 +52,8 @@ The section picks up threads from earlier ones.
 the forest that [Feature importance](feature-importance.qmd) and
 [Partial effects](partial-effects.qmd) read from outside.
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-found a random forest's depth curve wrong; [Partial effects](partial-effects.qmd)
-shows why no model gets it right on this survey, and
+drew a random forest's temperature hump; [Partial effects](partial-effects.qmd)
+finds its depth curve wrong and shows why no model gets it right on this survey, and
 [Black boxes and interpretable models](black-box-or-not.qmd) reads the GAM's parts with
 the multipliers of
 [Regression for counts](../03-supervised-learning/count-regression.qmd).

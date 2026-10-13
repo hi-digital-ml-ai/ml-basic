@@ -1,6 +1,6 @@
 ---
 title: "Uneven sampling and extrapolation"
-description: "A model answers for conditions its survey never reached, with nothing to show that it is guessing. Checked against the truth, a random forest and polynomial regression go wrong in different ways past the data, and the distance to the nearest surveyed station shows where."
+description: "A model answers for conditions its survey never reached, with nothing to show that it is guessing. A range check on each input misses cold, shallow winter water that a summer survey never met; the distance to the nearest surveyed station finds it, and a random forest's error grows with that distance."
 order: 4
 categories: [assumptions]
 ---
@@ -28,13 +28,12 @@ model's fit there rests on a few stations. **Extrapolation** means predicting fo
 conditions the survey did not cover at all. A model still answers there, and nothing in
 the answer shows that it is guessing.
 
-Each method carries on past the data in its own way. Linear regression keeps its slope,
-polynomial regression follows its curve wherever the bend takes it, and decision trees,
-random forests and k-nearest neighbours level off at the edge of the data;
+Each method carries on past the data in its own way: linear regression keeps its slope,
+while decision trees, random forests and k-nearest neighbours level off at the edge of
+the data.
 [Choosing a method](../03-supervised-learning/choosing-a-method.qmd#beyond-the-sampled-temperatures-each-model-follows-its-own-rule)
-draws three of them side by side. This page checks two of them against the truth past
-the data, and measures how far a station lies from the survey, so that a prediction map
-can say where it is guessing.
+draws three of them side by side. None of them says when it has left the data, so this
+page measures how far a station lies from the survey.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -60,17 +59,9 @@ nearest station too, so the same distance shows uneven sampling.
 
 ## Worked example
 
-The survey here visits only the shallower sites: those whose stations average less
-than 100 m deep. The deeper sites are the area the model is asked to map. Two methods
-are fitted with the same inputs: polynomial regression from
-[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
-with squared terms for depth and temperature, and the random forest from
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
-
-One survey could be lucky or unlucky, so the fit is repeated on ten surveys, each
-made of a different three quarters of the shallow sites. The quarter left out each
-time gives new sites within the survey's depths, to set against the deep sites. The
-last two parts turn to a survey that sailed only in summer and autumn.
+Suppose a survey sailed only in summer and autumn, and its model is asked about the
+spring and winter stations. The example checks which of those stations the survey
+covered, and then how far off a random forest fitted to the survey is at each of them.
 
 ### Preparing the data
 
@@ -80,25 +71,13 @@ last two parts turn to a survey that sailed only in summer and autumn.
 
 ```{r}
 #| label: prepare
-survey <- load_coastal_survey_clean() |>
-  mutate(site_depth = mean(depth_m, na.rm = TRUE), .by = site_id)
+survey <- load_coastal_survey_clean()
 
-shallow <- filter(survey, site_depth < 100)
-deep <- filter(survey, site_depth >= 100)
+surveyed <- filter(survey, season %in% c("summer", "autumn"))
+asked <- filter(survey, season %in% c("spring", "winter"))
+inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu")
 
-# ten surveys, each of three quarters of the shallow sites
-surveys <- group_mc_cv(shallow, group = site_id, prop = 0.75, times = 10)
-
-forest_recipe <- recipe(
-  abundance ~ depth_m + temperature_c + chlorophyll_mg_m3 + salinity_psu +
-    substrate + season,
-  data = shallow
-) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_relevel(substrate, ref_level = "sand")
-
-curve_recipe <- forest_recipe |>
-  step_poly(depth_m, temperature_c, degree = 2, options = list(raw = TRUE))
+tibble(surveyed = nrow(surveyed), asked = nrow(asked))
 ```
 
 ## Python
@@ -110,210 +89,26 @@ from scipy.spatial.distance import cdist
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import (OneHotEncoder, PolynomialFeatures,
-                                   StandardScaler)
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlbasic_data import load_coastal_survey_clean, load_coastal_survey_truth
 
 survey = load_coastal_survey_clean()
-survey["site_depth"] = survey.groupby("site_id")["depth_m"].transform("mean")
 
-shallow = survey[survey["site_depth"] < 100].reset_index(drop=True)
-deep = survey[survey["site_depth"] >= 100].reset_index(drop=True)
+surveyed = survey[survey["season"].isin(["summer", "autumn"])].reset_index(drop=True)
+asked = survey[survey["season"].isin(["spring", "winter"])].reset_index(drop=True)
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
 
-# ten surveys, each of three quarters of the shallow sites
-surveys = list(GroupShuffleSplit(n_splits=10, train_size=0.75, random_state=123)
-               .split(shallow, groups=shallow["site_id"]))
-
-categorical = ["substrate", "season"]
-predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3",
-              "salinity_psu"] + categorical
-
-def squared(column):
-    return (column, Pipeline([
-        ("impute", SimpleImputer(strategy="median")),
-        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
-    ]), [column])
-
-curve_recipe = ColumnTransformer([
-    squared("depth_m"),
-    squared("temperature_c"),
-    ("numeric", SimpleImputer(strategy="median"),
-     ["chlorophyll_mg_m3", "salinity_psu"]),
-    ("categorical",
-     OneHotEncoder(drop=["sand", "spring"], sparse_output=False),
-     categorical),
-])
-
-forest_recipe = ColumnTransformer([
-    ("numeric", SimpleImputer(strategy="median"), predictors[:4]),
-    ("categorical", OneHotEncoder(handle_unknown="ignore"), categorical),
-])
+pd.DataFrame({"surveyed": [len(surveyed)], "asked": [len(asked)]})
 ```
 
 :::
-
-The survey has `r n_distinct(shallow$site_id)` of the `r n_distinct(survey$site_id)`
-sites. The other `r n_distinct(deep$site_id)` sites, down to
-`r round(max(deep$depth_m, na.rm = TRUE))` m, are the area to map.
-
-### Below the survey's depths the forest stays level and the polynomial fans out
-
-Each of the ten surveys fits both methods, which then predict every station at
-the left-out shallow sites and at the deep sites.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fits
-predict_two <- \(one_survey) {
-  fitting <- analysis(one_survey)
-  new_sites <- bind_rows(assessment(one_survey), deep)
-
-  polynomial <- fit(workflow(curve_recipe, linear_reg()), fitting)
-  forest <- fit(
-    workflow(forest_recipe,
-             rand_forest(trees = 500) |>
-               set_engine("ranger") |>
-               set_mode("regression")),
-    fitting
-  )
-
-  new_sites |>
-    select(station_id, site_id, depth_m) |>
-    mutate(
-      "Polynomial regression" = predict(polynomial, new_sites)$.pred,
-      "Random forest" = predict(forest, new_sites)$.pred
-    )
-}
-
-predictions <- surveys |>
-  mutate(predicted = map(splits, predict_two)) |>
-  select(id, predicted) |>
-  unnest(predicted) |>
-  pivot_longer(c("Polynomial regression", "Random forest"),
-               names_to = "model", values_to = "predicted")
-```
-
-## Python
-
-```{python}
-def predict_two(fit_rows, held_rows):
-    fitting = shallow.iloc[fit_rows]
-    new_sites = pd.concat([shallow.iloc[held_rows], deep], ignore_index=True)
-
-    polynomial = Pipeline([("recipe", curve_recipe),
-                           ("model", LinearRegression())]).fit(
-        fitting[predictors], fitting["abundance"])
-    forest = Pipeline([
-        ("recipe", forest_recipe),
-        ("model", RandomForestRegressor(n_estimators=500, random_state=1,
-                                        n_jobs=-1)),
-    ]).fit(fitting[predictors], fitting["abundance"])
-
-    return new_sites[["station_id", "site_id", "depth_m"]].assign(
-        **{"Polynomial regression": polynomial.predict(new_sites[predictors]),
-           "Random forest": forest.predict(new_sites[predictors])})
-
-predictions = pd.concat(
-    [predict_two(fit_rows, held_rows).assign(id=i)
-     for i, (fit_rows, held_rows) in enumerate(surveys)]
-).melt(id_vars=["id", "station_id", "site_id", "depth_m"],
-       var_name="model", value_name="predicted")
-```
-
-:::
-
-The survey is simulated, so the predictions can be compared with the **true mean
-count** at each station: the number the simulation drew that station's count around.
-No real study has this; it shows each method's error free of the noise in single
-counts.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: truth
-predictions <- predictions |>
-  left_join(load_coastal_survey_truth(), by = "station_id")
-```
-
-## Python
-
-```{python}
-predictions = predictions.merge(load_coastal_survey_truth(), on="station_id")
-```
-
-:::
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-beyond
-#| fig-cap: "Mean predicted count at new sites in 20 m bands of depth, one thin line for each of the ten shallow surveys, against the true mean count (black). The shaded region holds the depths of the sites the surveys left out. Within the survey's depths the ten fits of each method agree with each other and with the truth. Below them the random forest's lines run flat, and polynomial regression's lines fan out."
-#| fig-alt: "Two panels, one per method, each with depth from 20 to 180 metres on the horizontal axis and mean count on the vertical, with the region deeper than 100 metres shaded. A thick black line for the true mean count falls from about 7 at 30 metres to about 4 at 90 metres, stays near 3.5 to 120 metres and then drops to about 1 at 170 metres. In every panel the ten thin blue lines bunch around the black line up to 100 metres. Beyond it: for polynomial regression the thin lines spread out, some following the black line down, others staying level or turning upward; for the random forest all ten lines stay level between about 3 and 5, well above the black line at the deepest bands."
-#| fig-width: 7
-#| fig-height: 3.8
-bands <- predictions |>
-  filter(between(depth_m, 20, 180)) |>
-  mutate(depth = 20 * floor(depth_m / 20) + 10)
-
-truth_line <- bands |>
-  summarise(true_mean = mean(true_mean), .by = c(model, depth))
-
-bands |>
-  summarise(predicted = mean(predicted), .by = c(model, id, depth)) |>
-  ggplot(aes(depth, predicted)) +
-  annotate("rect", xmin = 100, xmax = Inf, ymin = -Inf, ymax = Inf,
-           fill = "grey92") +
-  geom_line(aes(group = id), colour = ml_palette[["blue"]], alpha = 0.45) +
-  geom_line(aes(y = true_mean), data = truth_line, linewidth = 1.3) +
-  facet_wrap(~ model) +
-  labs(x = "Depth (m)", y = "Mean count (individuals)")
-```
-
-:::
-
-```{r}
-#| label: ratios
-#| include: false
-ratios <- predictions |>
-  mutate(where = case_when(
-    site_id %in% shallow$site_id ~ "within",
-    depth_m > 140 ~ "below"
-  )) |>
-  filter(!is.na(where)) |>
-  summarise(ratio = mean(predicted) / mean(true_mean),
-            .by = c(model, id, where))
-spread_of <- \(m, w) {
-  r <- range(ratios$ratio[ratios$model == m & ratios$where == w])
-  paste(format(round(r, 1), nsmall = 1), collapse = " to ")
-}
-```
-
-Within the survey's depths, @fig-beyond shows the ten fits of each method bunched
-around the truth. Past 100 m they part company. The random forest's lines run flat:
-it predicts a station at 170 m much as it predicts one at the deepest point of its
-survey, while the true mean count keeps falling. Below 140 m it is too high on all ten
-surveys, at `r spread_of("Random forest", "below")` times the truth. Polynomial
-regression's lines fan out instead, from `r spread_of("Polynomial regression", "below")`
-times the truth: within 100 m the water gets colder as it gets deeper, so fits that
-describe the shallow sites equally well can bend in different directions below them.
 
 ### Shallow, cold stations pass a range check but lie far from the survey
 
-Spotting that 170 m lies beyond a survey of sites shallower than 100 m is easy. A new
-combination is harder. Suppose a survey sailed only in summer and autumn, and its
-model is asked about spring and winter stations. The distance uses the four measured
-inputs, standardised as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd)
+A station deeper than any the survey reached is easy to spot: its depth is out of
+range. A new combination is harder. The distance uses the four measured inputs, standardised as in [Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd)
 with chlorophyll logged first. A station is flagged as far from the survey when it lies
 further from it than 95% of surveyed stations lie from their nearest neighbour at
 another site (at another site, because a site's own visits sit close together).
@@ -324,10 +119,6 @@ another site (at another site, because a site's own visits sit close together).
 
 ```{r}
 #| label: distance
-surveyed <- filter(survey, season %in% c("summer", "autumn"))
-asked <- filter(survey, season %in% c("spring", "winter"))
-inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu")
-
 distance_recipe <- recipe(surveyed[inputs]) |>
   step_impute_median(all_numeric()) |>
   step_log(chlorophyll_mg_m3) |>
@@ -368,10 +159,6 @@ asked |>
 ## Python
 
 ```{python}
-surveyed = survey[survey["season"].isin(["summer", "autumn"])].reset_index(drop=True)
-asked = survey[survey["season"].isin(["spring", "winter"])].reset_index(drop=True)
-inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
-
 def logged(frame):
     return frame[inputs].assign(
         chlorophyll_mg_m3=np.log(frame["chlorophyll_mg_m3"]))
@@ -465,8 +252,11 @@ ggplot(mapping = aes(depth_m, temperature_c)) +
 
 A random forest fitted to the summer and autumn survey predicts the spring and winter
 stations. Season itself is left out of its inputs, as the survey has none of the
-seasons asked about. Its predictions are compared with the true mean count again, in
-four groups of stations from the nearest quarter to the furthest. The error is the
+seasons asked about. The survey is simulated, so its predictions can be compared with
+the **true mean count** at each station: the number the simulation drew that station's
+count around. No real study has this; it shows the forest's error free of the noise in
+single counts. The stations are compared in four groups, from the nearest quarter to
+the furthest. The error is the
 factor a prediction is off by: one twice the truth and one half of it are both off by a
 factor of 2.
 
@@ -546,35 +336,31 @@ Mapped alongside a prediction, the distance to the nearest surveyed station show
 where the map rests on the survey and where it is extrapolating; areas far from the
 survey can be greyed out or left unmapped.
 [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-measures a distance of the same kind on the map, to choose folds that hold stations as
-far from the fitted data as the area to be mapped lies from the survey. When extrapolating is the point, as in projecting
-a species' range under warmer water than any survey recorded, say which predictions are
+holds out whole areas of the map, so that a score is measured on stations as far from
+the fitted data as the area to be mapped. When extrapolating is the point, as in
+projecting a species' range under warmer water than any survey recorded, say which predictions are
 extrapolations and expect errors larger than any cross-validation on the survey has
 measured.
 
 ## Key points
 
 ::: {.key-points}
-- In **extrapolation** a model answers for conditions its survey never covered, and
-  nothing in its predictions shows that it has left the data.
-- Methods that agree within the survey's range part company past it. Below 140 m the
-  random forest stayed level and was too high on all ten shallow surveys, at
-  `r spread_of("Random forest", "below")` times the true mean count; polynomial
-  regression ranged from `r spread_of("Polynomial regression", "below")` times it.
+- Survey effort is uneven, and in **extrapolation** a model answers for conditions its
+  survey never covered. Nothing in its predictions shows that it has left the data.
 - A range check on each input misses new combinations: of the `r n_range` spring and
   winter stations that passed it, `r n_hidden` were far from every surveyed station.
-- The **distance to the nearest surveyed station**, on standardised inputs, flags such
-  stations. The forest's typical error grew from a factor of `r round(off_near, 1)` at
-  the nearest quarter of stations to `r round(off_far, 1)` at the furthest.
-- Map that distance with the predictions, and treat areas far from the survey as
-  extrapolation.
+  The **distance to the nearest surveyed station**, on standardised inputs, flags them.
+- The forest's typical error grew from a factor of `r round(off_near, 1)` at the
+  nearest quarter of stations to `r round(off_far, 1)` at the furthest. Map that
+  distance with the predictions, and treat areas far from the survey as extrapolation.
 :::
 
 ## Try it yourself
 
-1. Refit the forest in `predict_two()` with `rand_forest(trees = 500, min_n = 50)`,
-   so each leaf holds at least 50 stations, and redraw @fig-beyond. Does a smoother
-   forest extrapolate any better?
-2. Use `nearest()` to measure how far each deep station lies from the shallow
-   survey, with both sets of stations prepared by a `distance_recipe` built on
-   `shallow`. Do the stations deeper than 140 m stand out?
+1. Flag stations with a stricter limit, `quantile(neighbour_gap, 0.99)` (`0.99` in
+   `np.quantile()` in Python). How many of the stations that pass the range check are
+   still far from the survey?
+2. Measure how far each station deeper than 100 m lies from a survey of the stations
+   shallower than 100 m, with `nearest()` (`cdist()` in Python) and a
+   `distance_recipe` built on the shallow stations. Do the deepest stations lie
+   furthest from the survey?

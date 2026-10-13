@@ -249,14 +249,16 @@ A model treats every row as independent evidence. These rows are not, in three w
   observation than to separate ones. Treating them as separate is called
   **pseudo-replication**.
 - **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth;
-  [Dependent data](../06-assumptions-limitations/dependent-data.qmd)
+  [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
   comes back to this.
 
 So the number of independent observations is nearer `r n_distinct(raw$site_id)` than
 `r nrow(survey)`, and a score computed as if it were `r nrow(survey)` looks better
 than it should. The fix is not to throw rows away, since repeat visits show how much a
 site varies, but to keep each site's rows together when the data are split to test a
-model. [Splitting the data](splitting-data.qmd) shows how.
+model. [Splitting the data](splitting-data.qmd) shows how, and
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd) measures what the
+visits are worth.
 
 ## One survey in four files
 

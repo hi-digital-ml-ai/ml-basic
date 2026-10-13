@@ -1,6 +1,6 @@
 ---
 title: "5 · Generalisation and model complexity"
-description: "A model can fit its training stations closely and still fail on new sites. The section names the two ways to fail, splits the error into bias, variance and noise, holds a model back with a penalty, and chooses its settings by cross-validation."
+description: "A model is fitted to be used on sites it has never seen. The section shows why a perfect fit to the training stations is a warning sign, where the U-shaped error curve comes from, and how to choose a model's complexity honestly, with a penalty and cross-validation."
 categories: [generalisation, tuning]
 listing:
   id: pages
@@ -13,27 +13,39 @@ listing:
 toc: false
 ---
 
-A flexible enough model can fit its training stations almost perfectly and still predict
-new sites no better than the average count. Its error on the data it was fitted to says
-little about new data, and the gap grows with how freely the model can bend. The four
-pages in this section follow that problem from diagnosis to cure, on the same simulated
-survey as the rest of the course:
+How well a model does on data it has never seen is called generalisation, and it is the
+reason for fitting a model at all. A flexible enough model can fit its training stations perfectly
+and still predict new sites worse than the average count. The four pages in this section
+cover three ideas, on the same simulated survey as the rest of the course.
 
-- **underfitting and overfitting**, the two ways to fail on new data, the U-shaped curve
-  they make, and which one costs more on the survey;
-- **the bias–variance trade-off**, which splits the error on new data into bias, variance
-  and noise, and finds that the noise is the largest part;
-- **regularisation**, the setting that makes each method more or less flexible, and a
-  penalty that holds a linear model back: ridge regression shrinks every coefficient,
-  and the lasso sets some to zero;
-- **hyperparameter selection**, choosing such a setting by cross-validation by site, with
-  the test sites kept for one final score.
+A perfect fit is a warning sign:
+
+- **underfitting and overfitting**: a tree that fits every training station does worse
+  on new sites than predicting the average, and making a tree more flexible step by step
+  draws the U-shaped error curve.
+
+The U-shaped curve comes from bias and variance:
+
+- **the bias–variance trade-off**: as a tree gets more flexible, its bias falls and its
+  variance rises; under both lies noise, the largest part of the error on the survey,
+  and a random forest cuts the variance by averaging trees.
+
+Complexity is chosen honestly:
+
+- **regularisation**: every input added to a linear regression makes it more flexible,
+  even a column of random numbers, and a penalty holds it back; ridge regression
+  shrinks every coefficient, and the lasso sets some to zero;
+- **hyperparameter selection**: a setting such as a tree's node size or the penalty's
+  weight is chosen by cross-validation on the training sites, and the test sites are
+  opened only once, at the end.
 
 The section picks up threads from earlier ones.
 [Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
 validation sites, and [Underfitting and overfitting](underfitting-and-overfitting.qmd)
-shows the cost of choosing badly. The penalty in [Regularisation](regularisation.qmd) is
-a prior, as [Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) shows.
+names the two ways that choice can go wrong.
+[Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) showed that
+a prior shrinks coefficients; [Regularisation](regularisation.qmd) tests whether that
+helps on new sites.
 [Splitting the data](../02-marine-data/splitting-data.qmd) set validation sites aside for
 choosing a model; [Hyperparameter selection](hyperparameter-selection.qmd) replaces them
 with cross-validation, which lets every training site take a turn.
