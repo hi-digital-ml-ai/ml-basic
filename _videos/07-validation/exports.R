@@ -38,7 +38,24 @@ exports <- list(
     write(with(env, dplyr::select(cost_curves, k, threshold, cost)), dir, "cost-curves")
   },
 
-  # Scenes 21–25: each model's interval, the paired differences, and the thousand
+  # Scene 18: the Assumptions video's rare species and logistic regression at the
+  # threshold that calls about as many stations present as hold it, as that video's
+  # exports.R writes them, with the share of absences it calls absent.
+  "../06-assumptions-limitations/class-imbalance.qmd" = function(env, dir) {
+    write(with(env, tibble::tibble(stations = nrow(train), present = n_present,
+                                   prevalence = prevalence)), dir, "rare")
+    write(with(env, {
+      n <- nrow(plain_predictions)
+      presences <- sum(plain_predictions$rare_species == "yes")
+      dplyr::transmute(matched, threshold,
+                       called_present = round(called * n),
+                       false_alarms = round(false_alarms * (n - presences)),
+                       sensitivity = found, specificity = 1 - false_alarms / (n - presences),
+                       accuracy, presences, repeats = 5)
+    }), dir, "matched")
+  },
+
+  # Scenes 22–26: each model's interval, the paired differences, and the thousand
   # bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")

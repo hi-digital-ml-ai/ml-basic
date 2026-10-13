@@ -524,7 +524,7 @@ class Scene11(KeyPointScene):
     point = 1
 
 
-# The measure follows the use (scenes 12–18) ------------------------------------------------
+# The measure follows the use (scenes 12–19) ------------------------------------------------
 
 class Scene12(VideoScene):
     number = 12
@@ -599,8 +599,9 @@ class Scene13(VideoScene):
         # "... and MAE when it predicts the median."
         cue(self, "and MAE when")
         self.play(Create(median_mark[0]), FadeIn(median_mark[1]), run_time=self.share(0.08))
-        # "Survey counts are skewed: most stations catch a few animals, and a few catch a great many."
-        cue(self, "Survey counts are")
+        # "As the Assumptions and limitations video showed, survey counts are skewed: most stations
+        # catch a few animals, and a few catch a great many."
+        cue(self, "survey counts are")
         self.play(Indicate(VGroup(*bars[:3]), color=GREY), run_time=self.share(0.08))
         cue(self, "and a few catch")
         self.play(Indicate(VGroup(*bars[8:]), color=INK), FadeIn(tail), run_time=self.share(0.08))
@@ -775,16 +776,114 @@ class Scene17(VideoScene):
         self.finish()
 
 
+def rare_grid(scene):
+    """The Assumptions video's training stations as dots, the rare species picked out, laid
+    out as that video lays them out, so the viewer sees the same picture again."""
+    rare = scene.data("rare").iloc[0]
+    n, present = int(rare["stations"]), int(rare["present"])
+    dots = VGroup(*[Dot(radius=0.065, color=LIGHT) for _ in range(n)]).arrange_in_grid(cols=26, buff=0.09)
+    dots.move_to(3.2 * LEFT + 0.3 * DOWN)
+    picks = np.random.default_rng(3).choice(n, present, replace=False)
+    lit = VGroup(*[dots[k] for k in picks])
+    others = VGroup(*[d for k, d in enumerate(dots) if k not in set(picks)])
+    for d in lit:
+        d.set_color(VERMILION).scale(1.4)
+    return dots, lit, others
+
+
+def model_calls(scene, lit, others):
+    """Squares on the stations the model called present, scaled from the page's five repeats
+    to one grid, placed as in the Assumptions video: a few on presences, the rest on absences."""
+    matched = scene.data("matched").iloc[0]
+    repeats = int(matched["repeats"])
+    found = round((matched["called_present"] - matched["false_alarms"]) / repeats)
+    alarms = round(matched["false_alarms"] / repeats)
+    rng = np.random.default_rng(5)
+    hits = []
+    for k in rng.permutation(len(lit)):
+        if len(hits) < found and all(np.linalg.norm(lit[k].get_center() - q.get_center()) > 0.45 for q in hits):
+            hits.append(lit[k])
+    picked = []
+    for k in rng.permutation(len(others)):
+        d = others[k].get_center()
+        if (all(np.linalg.norm(d - q.get_center()) > 0.4 for q in lit)
+                and all(np.linalg.norm(d - q.get_center()) > 0.45 for q in hits + picked)):
+            picked.append(others[k])
+        if len(picked) == alarms:
+            break
+    return VGroup(*[Square(0.3, color=INK, stroke_width=4).move_to(d) for d in hits + picked])
+
+
 class Scene18(VideoScene):
     number = 18
+
+    def construct(self):
+        matched = self.data("matched").iloc[0]
+        dots, lit, others = rare_grid(self)
+        calls = model_calls(self, lit, others)
+        called = VGroup(Square(0.3, color=INK, stroke_width=4), label("called present by the model", 28)
+                        ).arrange(RIGHT, buff=0.2)
+        key = VGroup(key_row(VERMILION, "species present"), called
+                     ).arrange(DOWN, buff=0.25, aligned_edge=LEFT).next_to(dots, UP, 0.45, aligned_edge=LEFT)
+
+        def measure(name, meaning, value, colour, y):
+            """The name and its meaning in one column, the value in a second, so the
+            longest meaning never runs into its number."""
+            head = label(name, 34, colour, weight=BOLD)
+            words = label(meaning, 26, SUBDUED)
+            names = VGroup(head, words).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            names.move_to([1.2, y, 0], aligned_edge=LEFT)
+            number = label(value, 56, colour, weight=BOLD).move_to([4.9, y, 0], aligned_edge=LEFT)
+            return VGroup(names, number)
+
+        accuracy = measure("accuracy", "calls that are right", f"{100 * matched['accuracy']:.0f}%", GREEN, 2.2)
+        sensitivity = measure("sensitivity", "presences found", f"1 in {round(1 / matched['sensitivity'])}",
+                              VERMILION, 0.4)
+        specificity = measure("specificity", "absences called absent", f"{100 * matched['specificity']:.0f}%",
+                              BLUE, -1.4)
+        rings = VGroup(*[Circle(0.15, color=VERMILION, stroke_width=4).move_to(d) for d in lit])
+        absent = VGroup(*others)
+        mostly = plated(lines_of("so few presences:\naccuracy is almost all specificity", 28, INK, BOLD, 0.06)
+                        ).move_to([1.2, -3.0, 0], aligned_edge=LEFT)
+
+        # "Calls of present or absent need measures of their own."
+        self.play(FadeIn(dots, lag_ratio=0.001), FadeIn(key[0]), run_time=self.share(0.08))
+        # "Remember the rare species in the Assumptions and limitations video: a model that was
+        # 92 per cent accurate ..."
+        cue(self, "a model that was")
+        self.play(FadeIn(key[1]), LaggedStart(*[Create(c) for c in calls], lag_ratio=0.1), run_time=self.share(0.08))
+        cue(self, "92 per cent")
+        self.play(FadeIn(accuracy), run_time=self.share(0.05))
+        # "... found only one presence in six."
+        cue(self, "found only one")
+        self.play(Create(rings), run_time=self.share(0.06))
+        # "The share of the presences a model finds is called its sensitivity."
+        cue(self, "is called its sensitivity")
+        self.play(FadeIn(sensitivity), run_time=self.share(0.06))
+        # "The share of the absences it calls absent is its specificity, here 96 per cent."
+        cue(self, "The share of the absences")
+        self.play(FadeOut(rings), Indicate(absent, color=BLUE, scale_factor=1.0), run_time=self.share(0.08))
+        cue(self, "is its specificity")
+        self.play(FadeIn(specificity), run_time=self.share(0.06))
+        # "With so few presences, accuracy is almost all specificity, which is why it hid the misses."
+        cue(self, "With so few")
+        self.play(FadeIn(mostly, shift=0.2 * UP), Indicate(accuracy[1], color=GREEN),
+                  Indicate(specificity[1], color=BLUE), run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene19(VideoScene):
+    number = 19
 
     def construct(self):
         alarm = VGroup(Square(1.8, stroke_width=0, fill_color=VERMILION, fill_opacity=0.8),
                        ).move_to([-4.0, 1.0, 0])
         alarm_name = lines_of("a false alarm:\na wasted dive", 30, VERMILION, BOLD, 0.06).next_to(alarm, DOWN, 0.25)
+        alarm_cost = label("lowers specificity", 26, SUBDUED).next_to(alarm_name, DOWN, 0.15, aligned_edge=LEFT)
         miss = Square(0.75, stroke_width=0, fill_color=ORANGE, fill_opacity=0.8).move_to([-0.8, 0.55, 0])
         miss_name = lines_of("a miss:\na record lost", 30, ORANGE, BOLD, 0.06).next_to(miss, DOWN, 0.25)
         miss_name.align_to(alarm_name, UP)
+        miss_cost = label("lowers sensitivity", 26, SUBDUED).next_to(miss_name, DOWN, 0.15, aligned_edge=LEFT)
         axis, to_x = number_line(0, 1, 1.0, 5.0, -2.4, [0, 0.5, 1], 1)
         axis_name = label("probability of presence", 28, SUBDUED).next_to(axis, DOWN, 0.45)
         threshold = ValueTracker(0.5)
@@ -793,19 +892,21 @@ class Scene18(VideoScene):
                  stroke_width=6),
             label("threshold", 28, INK, weight=BOLD).move_to([to_x(threshold.get_value()), -0.15, 0]),
             label("called present", 26, BLUE).next_to([to_x(threshold.get_value()), -1.8, 0], RIGHT, 0.15)))
-        heading = title("Calls of present or absent", 44).to_edge(UP, buff=0.5)
-        # "Calls of present or absent need something else again. As in the Supervised learning video, a
-        # threshold turns a probability of presence into a call, ..."
+        heading = title("What each mistake costs", 44).to_edge(UP, buff=0.5)
+        # "Which matters more depends on what each mistake costs."
         self.play(FadeIn(heading, shift=0.2 * DOWN), run_time=self.share(0.05))
-        cue(self, "a threshold turns")
-        self.play(FadeIn(axis), FadeIn(axis_name), FadeIn(pointer), run_time=self.share(0.08))
-        # "... and a call can be a false alarm or a miss."
+        # "A miss lowers sensitivity, and a false alarm lowers specificity."
+        cue(self, "A miss lowers")
+        self.play(FadeIn(miss, scale=0.6), FadeIn(miss_name), FadeIn(miss_cost), run_time=self.share(0.08))
+        cue(self, "and a false alarm")
+        self.play(FadeIn(alarm, scale=0.6), FadeIn(alarm_name), FadeIn(alarm_cost), run_time=self.share(0.08))
         # "If a false alarm wastes a dive, it may cost far more than a miss."
-        cue(self, "If a false alarm")
-        self.play(FadeIn(alarm, scale=0.6), FadeIn(alarm_name), run_time=self.share(0.08))
         cue(self, "it may cost far more")
-        self.play(FadeIn(miss, scale=0.6), FadeIn(miss_name), run_time=self.share(0.08))
-        # "Then the threshold should come from those costs, not sit at 0.5: ..."
+        self.play(Indicate(alarm, color=VERMILION, scale_factor=1.1), run_time=self.share(0.06))
+        # "Then the threshold that turns a probability into a call should come from those costs, ..."
+        cue(self, "the threshold that turns")
+        self.play(FadeIn(axis), FadeIn(axis_name), FadeIn(pointer), run_time=self.share(0.08))
+        # "... not sit at 0.5: ..."
         cue(self, "not sit at")
         self.play(Indicate(pointer, color=INK), run_time=self.share(0.06))
         # "... raise it, and the model calls present only where it is surer."
@@ -814,15 +915,15 @@ class Scene18(VideoScene):
         self.finish()
 
 
-class Scene19(KeyPointScene):
-    number = 19
+class Scene20(KeyPointScene):
+    number = 20
     point = 2
 
 
-# A score needs an interval (scenes 20–25) --------------------------------------------------
+# A score needs an interval (scenes 21–26) --------------------------------------------------
 
-class Scene20(VideoScene):
-    number = 20
+class Scene21(VideoScene):
+    number = 21
 
     def construct(self):
         points, dots = site_map(width=6.0, height=5.4, centre=(-3.6, -0.3))
@@ -867,8 +968,8 @@ def site_squares():
                   ).arrange_in_grid(10, 16, buff=0.06)
 
 
-class Scene21(VideoScene):
-    number = 21
+class Scene22(VideoScene):
+    number = 22
 
     def construct(self):
         scores = self.data("bootstrap-scores")[FOREST]
@@ -897,10 +998,10 @@ class Scene21(VideoScene):
                                   ).move_to([to_x((bins[i] + bins[i + 1]) / 2), -2.9, 0], aligned_edge=DOWN)
                         for i, c in enumerate(counts)])
         first = Dot([to_x(scores.iloc[0]), -2.75, 0], radius=0.1, color=ORANGE)
-        # "To see how far, resample the sites."
+        # "To see how far, draw the survey again from itself, which is called resampling."
         self.play(FadeIn(source), FadeIn(source_name), run_time=self.share(0.1))
-        # "Draw the 160 sites again, with replacement, ..."
-        cue(self, "Draw the 160")
+        # "Draw 160 sites from its own 160, with replacement, ..."
+        cue(self, "Draw 160")
         self.play(FadeIn(target), FadeIn(target_name), run_time=self.share(0.06))
         self.play(LaggedStart(*[TransformFromCopy(source[i], p) for i, p in zip(drawn, picks)], lag_ratio=0.01),
                   run_time=self.share(0.2))
@@ -915,8 +1016,8 @@ class Scene21(VideoScene):
         self.finish()
 
 
-class Scene22(VideoScene):
-    number = 22
+class Scene23(VideoScene):
+    number = 23
 
     def construct(self):
         iv = self.data("intervals").set_index("model")
@@ -959,8 +1060,8 @@ class Scene22(VideoScene):
         self.finish()
 
 
-class Scene23(VideoScene):
-    number = 23
+class Scene24(VideoScene):
+    number = 24
 
     def construct(self):
         a = np.array([4.6, 3.8, 5.3, 4.2, 4.9])
@@ -1016,8 +1117,8 @@ def pair_panel(scores, other, x, paired):
     return VGroup(box, diagonal, x_name, y_name), dots, result
 
 
-class Scene24(VideoScene):
-    number = 24
+class Scene25(VideoScene):
+    number = 25
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -1038,8 +1139,8 @@ class Scene24(VideoScene):
         self.finish()
 
 
-class Scene25(VideoScene):
-    number = 25
+class Scene26(VideoScene):
+    number = 26
 
     def construct(self):
         scores = self.data("bootstrap-scores")
@@ -1067,22 +1168,22 @@ class Scene25(VideoScene):
         self.finish()
 
 
-class Scene26(KeyPointScene):
-    number = 26
+class Scene27(KeyPointScene):
+    number = 27
     point = 3
 
 
-# Quiz (scenes 27–28) ----------------------------------------------------------------------
+# Quiz (scenes 28–29) ----------------------------------------------------------------------
 
-class Scene27(QuizScene):
-    number = 27
+class Scene28(QuizScene):
+    number = 28
     question = ("A false alarm costs three misses.",
                 "The probabilities can be trusted.",
                 "Where should the threshold be?")
 
 
-class Scene28(VideoScene):
-    number = 28
+class Scene29(VideoScene):
+    number = 29
 
     def construct(self):
         thresholds = self.data("thresholds").set_index("k")
@@ -1136,22 +1237,22 @@ class Scene28(VideoScene):
         self.finish()
 
 
-# Key points and end card (scenes 29–32) ---------------------------------------------------
-
-class Scene29(RecapScene):
-    number = 29
-    point = 1
-
+# Key points and end card (scenes 30–33) ---------------------------------------------------
 
 class Scene30(RecapScene):
     number = 30
-    point = 2
+    point = 1
 
 
 class Scene31(RecapScene):
     number = 31
+    point = 2
+
+
+class Scene32(RecapScene):
+    number = 32
     point = 3
 
 
-class Scene32(EndCardScene):
-    number = 32
+class Scene33(EndCardScene):
+    number = 33
