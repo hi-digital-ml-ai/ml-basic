@@ -1126,6 +1126,46 @@ many slightly different test sets made from the survey, each giving its own erro
 together they show a range (schematic). The forest's score is now "one set of test
 data", and the mechanics scene ends "That is one new test set." 25 scenes, 6:24.
 
+## §8 Unsupervised learning introduction version (2026-10-14)
+
+The 35-scene cut (7:49) taught about twenty concepts: the community matrix, the
+silhouette, shuffled baselines, hierarchical clustering and linkage, loadings, the 80%
+rule, parallel analysis, cross-validated components, UMAP, the bootstrap, the adjusted
+Rand index, the gap between clusters, and a record. Rebuilt as an introduction like
+Assumptions and Validation, one new concept per part with one example and one picture,
+and plain imperative key points used for the opening, the cards and the recap
+(`RECAP = PROMISES`): 24 scenes, 771 words, 6:07 on the draft voice.
+
+- *Find groups without labels*: the counts with no habitat column; stations as points
+  placed by two made-up taxa's counts (schematic), then k-means step by step; k-means
+  on the 800 stations against the recorded seabed, 15 out of place.
+- *Draw many columns as one map*: PCA's first and second components on a tilted cloud,
+  each a mix of all 24 taxa (schematic); the ordination in grey, then shaped by seabed
+  (two arms) and coloured by depth (a smooth change), which PCA never saw; 29.4% of the
+  variance as a summary. Loadings and the angles are left to the page.
+- *Check that groups come back*: k-means cuts random numbers into four tidy groups;
+  resampling the sites, as in the Validation video, and refitting; 52 of 60 refits
+  give the hard and soft groups, 8 shallow against deep: report how often each came
+  back. The agreement axis is described, not named (no "adjusted Rand index").
+- Quiz: five groups of plankton samples from k-means; not yet, resample and refit.
+- `exports.R` now reads three pages (clustering, PCA, interpreting patterns); the
+  re-export matched the earlier CSVs byte for byte. Scenes use `cue()` as Validation does.
+
+Second round, same day, at the user's request to explain more for beginners. PCA must
+be said not to make groups: it only places the stations, but colours and shapes on its
+map show how well groups fit, here the seabed, known beforehand because it was recorded
+(the k-means groups are the fallback when nothing was recorded; they are not drawn). The
+refits are framed as judging whether the chosen k is reasonable: k = 2 gives the same
+groups in 52 of 60, so two is a reasonable choice, and another k is judged by repeating
+the check with it; the quiz asks whether five is a good choice. Added: supervised
+learning learns from answers (scene 2), same habitat means similar counts (3), distance
+as difference (4), k is chosen before k-means starts and the result is a group per
+station (5), k-means numbers its groups and a record names them (6), spread is where
+stations differ (9), a no-groups scene (11), the seabed marked on the map (12), and a
+schematic of real groups splitting the same way in three samples while random points
+split differently (16). The 29.4% variance scene went, to keep the part on one concept.
+26 scenes, 7:36 on the draft voice.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up
