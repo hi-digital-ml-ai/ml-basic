@@ -1084,6 +1084,30 @@ ran `narrate.py` on all 33 scenes (about $0.09); the final cut runs 7:28.
   folds, intervals held 95%" under both bars. `gear.csv` is the claim page's
   `summary_of()` for both reports.
 
+## §7 Validation introduction version (2026-10-13)
+
+The beginners' cut (31 scenes, 10:05) was "very difficult to follow": cross-validation
+re-explained, nested cross-validation, and about 25 concepts. Rebuilt from scratch as an
+introduction, one new concept per part with one example and one picture, as the
+Assumptions video was: 22 scenes, 695 words, 5:26 on the draft voice.
+
+- *Test on what the model will face*: a held-out station's own site stays in the training
+  data; a held-out block of the map is an area never seen; the same forest scores 4.23
+  against 4.41. Cross-validation gets a clause, not a re-run.
+- *Measure what matters*: the Assumptions video's rare species (92% accurate, 1 in 6
+  found) names sensitivity and specificity (96%), and why accuracy hid the misses; which
+  matters depends on what each mistake costs, with no threshold arithmetic. This delivers
+  what the Assumptions video promised Validation would measure.
+- *A score needs an interval*: the forest's 4.32 comes from one survey; resampling the
+  sites gives 3.75 to 4.94, and all three models' intervals overlap.
+- Quiz: mapping unsurveyed coast, single stations or whole blocks?
+- Dropped, left to the pages (the user kept nested cross-validation on the page):
+  the search over noise columns and nested cross-validation, RMSE against MAE and the
+  log-count forest, the shortlist, the cost threshold, the paired comparison.
+- `exports.R` reads three pages, one of them `../06-assumptions-limitations/class-imbalance.qmd`;
+  `tools/figures-for-video.R` names a page's figure folder by its file name, so a page
+  from another section works.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up

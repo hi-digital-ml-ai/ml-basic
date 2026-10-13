@@ -7,38 +7,14 @@
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
 
 exports <- list(
-  # Scenes 4–5: each fold scheme's pooled RMSE and median distance to the nearest
-  # fitted station, run by run and averaged.
+  # Scenes 5 and 18: the random forest's pooled RMSE with folds of stations and with
+  # half-degree blocks, run by run and averaged.
   "spatial-and-temporal-cv.qmd" = function(env, dir) {
     write(with(env, distance_runs), dir, "distance-runs")
     write(with(env, by_scheme), dir, "distance")
   },
 
-  # Scenes 7–10: the hundred searched candidates with their noise columns, and the
-  # nested scores.
-  "cross-validation.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(
-      candidate = seq_along(candidates), rmse = searched,
-      noise = purrr::map_int(candidates, \(v) sum(startsWith(v, "noise"))),
-      winner = seq_along(candidates) == which.min(searched))), dir, "search")
-    write(with(env, tibble::tibble(claimed = claimed_mean, nested = nested_searched,
-                                   eight_inputs = nested_eight)), dir, "nested")
-  },
-
-  # Scene 14: the four models' measures.
-  "regression-metrics.qmd" = function(env, dir) {
-    write(with(env, scores), dir, "measures")
-  },
-
-  # Scene 16 and the quiz's answer: the shortlists and the cheapest thresholds.
-  "choosing-a-metric.qmd" = function(env, dir) {
-    write(with(env, dplyr::mutate(shortlists, perfect = perfect, at_random = at_random,
-                                  budget = budget)), dir, "shortlists")
-    write(with(env, cheapest), dir, "thresholds")
-    write(with(env, dplyr::select(cost_curves, k, threshold, cost)), dir, "cost-curves")
-  },
-
-  # Scene 17: the Assumptions video's rare species and logistic regression at the
+  # Scenes 7–9: the Assumptions video's rare species and logistic regression at the
   # threshold that calls about as many stations present as hold it, as that video's
   # exports.R writes them, with the share of absences it calls absent.
   "../06-assumptions-limitations/class-imbalance.qmd" = function(env, dir) {
@@ -55,11 +31,9 @@ exports <- list(
     }), dir, "matched")
   },
 
-  # Scenes 20–24: each model's interval, the paired differences, and the thousand
-  # bootstrap scores.
+  # Scenes 12–15: each model's interval and the thousand bootstrap scores.
   "uncertainty-and-stability.qmd" = function(env, dir) {
     write(with(env, intervals), dir, "intervals")
-    write(with(env, differences), dir, "paired")
     write(with(env, scores), dir, "bootstrap-scores")
   }
 )
