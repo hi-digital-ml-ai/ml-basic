@@ -1,6 +1,6 @@
 ---
 title: "Choosing measures that match the objective"
-description: "The use the predictions are put to decides the measure. A shortlist of stations to revisit is scored on the animals it finds, which depend only on the order of the predictions, and a call at each station is scored on what its mistakes cost, which sets the threshold."
+description: "The use of the predictions decides the measure. A shortlist of stations to revisit is scored on the animals it finds, and a call at each station on what its mistakes cost, which sets the threshold."
 order: 6
 categories: [validation, metrics]
 ---
@@ -23,11 +23,10 @@ set.seed(123)
 [Regression performance measures](regression-metrics.qmd) and
 [Classification performance measures](classification-metrics.qmd) showed that measures can
 rank the same models in different orders. So the measure should be chosen before any model is
-fitted, from what the predictions will be used for. A map of abundance, a stock total, a list
-of stations to revisit and a decision at each station ask different things of a model, and a
-model that is best at one can be poor at another. This page sets out which measure suits
-which use, and adds two the earlier pages did not cover: the catch found by a shortlist, and
-the cost of the calls at a threshold chosen from what each mistake costs.
+fitted, from what the predictions will be used for. A map of abundance, a list of stations to
+revisit and a decision at each station ask different things of a model, and a model that is
+best at one can be poor at another. This page adds two measures: the catch found by a
+shortlist, and the cost of the calls at a threshold chosen from what each mistake costs.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -37,21 +36,16 @@ the cost of the calls at a threshold chosen from what each mistake costs.
 
 | The predictions are used for | Score them with |
 | --- | --- |
-| A map of abundance | the RMSE, aimed at the average count, and R² as `rsq_trad()` or `r2_score()` |
+| A map of abundance | the RMSE, aimed at the average count, and R² |
 | A total, such as a stock estimate | the predicted total over the observed one, beside the RMSE |
 | The typical station, where totals do not matter | MAE, aimed at the median |
 | A shortlist of the most promising stations | the animals the shortlist finds, against a perfect and a random shortlist |
-| A map of the chance of presence | log loss, with a calibration plot |
+| A map of the chance of presence | a calibration plot, beside ROC AUC |
 | Comparing models before a threshold is chosen | ROC AUC |
-| A call at each station | the expected cost of the calls, at a threshold chosen from the costs; balanced accuracy or MCC while the costs are unknown |
+| A call at each station | the expected cost of the calls, at a threshold chosen from the costs; balanced accuracy while the costs are unknown |
 
-[Regression performance measures](regression-metrics.qmd) and
-[Classification performance measures](classification-metrics.qmd) showed why the first
-rows and the map of chances need their measures; this page adds the shortlist and the call
-at each station. A total alone is never enough: predicting the average gets the total
-right and says nothing about any station. None of these measures says whether an input causes what it predicts, which
-[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#test-error-cannot-reveal-a-confounder)
-showed a good predictor need not do.
+A total alone is never enough: predicting the average gets the total right and says nothing
+about any station.
 
 ## A shortlist is scored on what it finds
 
@@ -90,7 +84,7 @@ times a miss, it is 0.75.
 :::
 
 The rule needs calibrated probabilities, as
-[Classification performance measures](classification-metrics.qmd#log-loss-rewards-probabilities-that-are-spread-out-and-calibrated)
+[Classification performance measures](classification-metrics.qmd#a-calibration-plot-checks-that-probabilities-can-be-read-as-chances)
 checked with a calibration plot. If a model's 0.8 does not mean 8 in 10, the cheapest
 threshold has to be found by working out the expected cost at every threshold instead.
 
@@ -220,7 +214,6 @@ pd.DataFrame({"stations": [len(survey)], "animals caught": [caught.sum()],
 #| label: helpers
 #| include: false
 f2 <- function(x) sprintf("%.2f", x)
-f3 <- function(x) sprintf("%.3f", x)
 pct <- function(x) scales::percent(x, accuracy = 1)
 ```
 
@@ -298,10 +291,8 @@ finds `r list_of(log_forest, "animals found")` animals, against
 `r list_of("Linear regression", "animals found")` for linear regression. Its predictions
 run low, but in much the same order, and the order is all a shortlist uses.
 
-The gaps between the three are small. The Python tab, with its own folds and forests, puts
-them in another order, and
-[Uncertainty and stability](uncertainty-and-stability.qmd) showed that gaps this size need a
-paired comparison before they count as a ranking. The result shared by all three is plainer:
+The gaps between the three are too small to rank the models without the paired comparison
+of [Uncertainty and stability](uncertainty-and-stability.qmd). What all three share is plainer:
 each shortlist finds about `r pct(mean(shortlists[["share of a perfect shortlist"]]))` of
 what a perfect one would, and `r sprintf("%.1f", found_ratio)` times what a random one
 finds. A sentence such as "revisiting the `r budget` stations this model ranks highest
@@ -454,12 +445,6 @@ false alarm and a miss cost the same, which is rarely true and rarely written do
 above 0.75 were called present, as a wasted dive costs about three times a missed record" is
 a sentence a reader can check, and one that lets someone with other costs reuse the model.
 
-Every measure in this section compares predictions with what the survey recorded. If the
-records themselves are biased, by the gear, the observers or where the effort went, a model
-that matches them well matches the bias too, and no measure can show it.
-[From a model to a claim](../10-interpretation/from-model-to-claim.qmd) shows such a gear
-on the survey.
-
 ## Key points
 
 ::: {.key-points}
@@ -471,11 +456,9 @@ on the survey.
   `r budget` stations found about as many animals as the other models'.
 - The **expected cost** of the calls counts misses and false alarms by what each costs. If a
   false alarm costs $k$ misses, calibrated probabilities are cheapest at a threshold of
-  $k/(1+k)$.
-- For logistic regression the cheapest thresholds fell at
-  `r f2(cost_of(1, "cheapest threshold"))`, `r f2(cost_of(3, "cheapest threshold"))` and
-  `r f2(cost_of(5, "cheapest threshold"))`. At five to one, a threshold of 0.5 cost more
-  than calling no station present at all.
+  $k/(1+k)$: for logistic regression, `r f2(cost_of(1, "cheapest threshold"))`,
+  `r f2(cost_of(3, "cheapest threshold"))` and `r f2(cost_of(5, "cheapest threshold"))`
+  against 0.50, 0.75 and 0.83.
 - State the budget and the cost ratio behind a measure. A threshold of 0.5 assumes the two
   mistakes cost the same.
 :::
