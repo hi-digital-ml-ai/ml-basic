@@ -1,6 +1,6 @@
 ---
 title: "Regression performance measures"
-description: "RMSE, MAE and R² each weigh errors their own way, and on skewed counts they can choose different models. The squared correlation often reported as R² cannot see predictions that run low."
+description: "RMSE, MAE and R² each weigh errors their own way, and on skewed counts they can choose different models: MAE picks a forest that predicts only about two thirds of the animals caught."
 order: 3
 categories: [validation, metrics, regression]
 ---
@@ -24,9 +24,8 @@ Most pages so far have scored models by the RMSE, with R² beside it now and the
 **performance measures**: numbers that sum up how far a model's predictions fall from the
 observed values. Each measure weighs the errors its own way, so two measures can rank the
 same models differently, and a model can win on one by being wrong in a way the other
-ignores. This page sets the common measures side by side, shows why they part on skewed
-counts, and shows which of them can see predictions that are too low across the board.
-Which one to report depends on what the predictions are for, which
+ignores. This page sets the common measures side by side and shows why they part on
+skewed counts. Which one to report depends on what the predictions are for, which
 [Choosing measures that match the objective](choosing-a-metric.qmd) sets out.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
@@ -50,9 +49,7 @@ built the RMSE by hand, and MAE is the absolute error of
 [Loss functions](../04-how-algorithms-learn/loss-functions.qmd), used here to score rather
 than to fit. A forest fitted with squared error can be scored by MAE. For the RMSE and MAE,
 lower is better. R² is 1 for perfect predictions, 0 for predictions no better than the
-average of the observed values, and below 0 for worse. For counts, the Poisson deviance of
-Loss functions is also used as a measure; it needs every prediction above zero, which
-linear regression does not promise.
+average of the observed values, and below 0 for worse.
 
 Each measure is at its best at a different prediction, as each loss is in
 [Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd#each-loss-aims-at-a-different-middle-of-the-data):
@@ -60,20 +57,14 @@ the RMSE and R² when a model predicts the average of the values it could observ
 it predicts the median. For counts with a long right tail the median sits below the
 average, so MAE favours models that predict low.
 
-The **mean absolute percentage error** (MAPE), common in forecasting, divides each error by
-the observed value. A count of zero makes it undefined, and on the other counts it punishes
-a prediction that is too high far more than one that is too low, so it does not suit
-counts.
-
 ## Software often reports the squared correlation as R²
 
 This course reports the R² in the table above: `rsq_trad()` in yardstick and `r2_score()`
 in scikit-learn. Many programs and papers report something else under the same name: the
 **squared correlation** between the observed and predicted values, which is yardstick's
-`rsq()`. For a linear regression scored on the data it was fitted to, the two are equal.
-On new data, or for any other model, they are not, because the squared correlation asks
-only whether the predictions rise and fall with the observed values. Predictions that are
-all too low by the same proportion keep a perfect correlation.
+`rsq()`. It asks only whether the predictions rise and fall with the observed values, so
+predictions that are all too low by the same proportion keep a perfect score. When a
+paper reports R², check which one it means.
 
 ::: {.diagram}
 ![Two definitions of R². Left, predictions in the right pattern but too low: the squared correlation is perfect, and R² is low because it counts the gap to the line where the predicted value equals the observed one. Right, predictions at the right level with scatter: both measures agree. The two definitions rank the two sets of predictions in opposite orders.](img/two-r-squared.svg){fig-alt="Two cards, each a scatter of eight predicted values against observed values, with a dashed line where predicted equals observed. Left, right pattern, too low: the points lie on a straight line of half the slope, below the dashed line; squared correlation 1.00, R² 0.17. Right, right level, scattered: the points sit above and below the dashed line; squared correlation 0.73, R² 0.70. A note says squared correlation asks how closely the points follow some straight line, whatever its slope, and R² asks how close they come to the dashed line: one minus the squared misses, divided by the squared spread of the observed values around their average."}
@@ -226,7 +217,6 @@ pd.DataFrame({"stations": [len(survey)],
 #| label: helpers
 #| include: false
 f2 <- function(x) sprintf("%.2f", x)
-f3 <- function(x) sub("^-", "−", sprintf("%.3f", x))
 pct <- function(x) scales::percent(x, accuracy = 1)
 ```
 
@@ -248,6 +238,7 @@ number of animals caught: 1 means the model predicts the right total.
 scores <- predictions |>
   summarise(RMSE = rmse_vec(caught, predicted),
             MAE = mae_vec(caught, predicted),
+            `R²` = rsq_trad_vec(caught, predicted),
             `predicted / caught` = sum(predicted) / sum(caught),
             .by = model)
 
@@ -261,6 +252,7 @@ scores = (predictions.groupby("model", sort=False)
           .apply(lambda g: pd.Series({
               "RMSE": root_mean_squared_error(g.caught, g.predicted),
               "MAE": mean_absolute_error(g.caught, g.predicted),
+              "R²": r2_score(g.caught, g.predicted),
               "predicted / caught": g.predicted.sum() / g.caught.sum(),
           }), include_groups=False)
           .reset_index())
@@ -284,6 +276,8 @@ The RMSE picks the `r str_to_lower(best_on("RMSE"))`, at
 `r str_to_lower(best_on("MAE"))`, at `r f2(score_of(best_on("MAE"), "MAE"))`, a model
 that comes `r c("first", "second", "third", "fourth")[rmse_rank]` of four on the RMSE,
 behind `r knitr::combine_words(str_replace(str_to_lower(ahead), "^random", "the random"))`.
+R² counts the same squared errors as the RMSE, so it ranks the models in the same order,
+with predicting the average at about zero.
 
 The last column shows why. The forest on log counts predicts
 `r pct(score_of(log_forest, "predicted / caught"))` of the animals caught; the other models
@@ -294,57 +288,6 @@ found, and MAE, smallest at the median, rewards exactly that. For a stock estima
 map total, MAE has picked the model that misses
 `r pct(1 - score_of(log_forest, "predicted / caught"))` of the animals.
 
-### The squared correlation cannot see the shortfall
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: r-squared
-r_squared <- predictions |>
-  summarise(`squared correlation` = rsq_vec(caught, predicted),
-            `R²` = rsq_trad_vec(caught, predicted),
-            .by = model)
-
-r_squared |> mutate(across(where(is.double), \(x) round(x, 3)))
-```
-
-## Python
-
-```{python}
-r_squared = (predictions.groupby("model", sort=False)
-             .apply(lambda g: pd.Series({
-                 # yardstick's rsq() is the squared correlation,
-                 # and its rsq_trad() is r2_score()
-                 "squared correlation": np.corrcoef(g.caught, g.predicted)[0, 1] ** 2,
-                 "R²": r2_score(g.caught, g.predicted),
-             }), include_groups=False)
-             .reset_index())
-
-r_squared.round(3)
-```
-
-:::
-
-```{r}
-#| label: r-squared-numbers
-#| include: false
-r2_of <- function(name, measure) r_squared[[measure]][r_squared$model == name]
-fitted_models <- setdiff(levels(predictions$model), "Predicting the average")
-r2_rank <- rank(-r_squared$`R²`[r_squared$model %in% fitted_models])[
-  fitted_models == log_forest]
-```
-
-The forest on log counts has a squared correlation of
-`r f3(r2_of(log_forest, "squared correlation"))`, about as high as the random forest's
-`r f3(r2_of("Random forest", "squared correlation"))`: its predictions rise and fall with
-the catch as well as any model's do. Its R² is `r f3(r2_of(log_forest, "R²"))`,
-`r c("the highest", "the second", "the lowest")[r2_rank]` of the three fitted models,
-because R² also counts how far below the catch they sit. This is the left card of the
-diagram above, in real predictions. Predicting the average scores an R² of
-`r f3(r2_of("Predicting the average", "R²"))`, about zero, as R² is defined against it.
-
 ## Key points
 
 ::: {.key-points}
@@ -354,17 +297,14 @@ diagram above, in real predictions. Predicting the average scores an R² of
 - On these skewed counts the RMSE picked the `r str_to_lower(best_on("RMSE"))` and MAE the
   `r str_to_lower(best_on("MAE"))`, which predicts only
   `r pct(score_of(log_forest, "predicted / caught"))` of the animals caught.
-- The **squared correlation**, yardstick's `rsq()` and what much software reports as R²,
-  cannot see predictions that are too low across the board. The textbook R²,
-  `rsq_trad()` or `r2_score()`, can.
-- **MAPE** is undefined for a count of zero and favours low predictions. Do not use it for
-  counts.
+- The **squared correlation**, which much software reports as R², cannot see predictions
+  that are too low across the board. The R² used here, `rsq_trad()` or `r2_score()`, can.
 :::
 
 ## Try it yourself
 
-1. Add MAPE (`mape_vec()`) to the table, scored on the stations that caught something.
-   Predict first: which model does it pick?
-2. Multiply the forest on log counts' predictions by one number, chosen so that their
-   total matches the catch of the fitted stations in each fold. How much do its RMSE, MAE
-   and R² change?
+1. Multiply the forest on log counts' predictions by one number, chosen so that their
+   total matches the catch of the fitted stations in each fold. Predict first: which
+   model does MAE pick now?
+2. Add the squared correlation, `rsq_vec()`, to the table. Predict first: does the forest
+   on log counts score as well on it as the plain forest?

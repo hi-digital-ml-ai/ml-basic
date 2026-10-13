@@ -554,9 +554,6 @@ terms:
   - term: "MAE (mean absolute error)"
     definition: "The average size of a prediction's error, its sign dropped; smallest when a model predicts the median. Lower is better."
     page: chapters/07-validation/regression-metrics.qmd
-  - term: "MAPE (mean absolute percentage error)"
-    definition: "The average error as a share of the observed value; undefined for a count of zero, and it punishes predictions that are too high far more than those too low."
-    page: chapters/07-validation/regression-metrics.qmd
   - term: "Squared correlation"
     definition: "The square of the correlation between observed and predicted values, often reported as R²; it cannot see predictions that are all too low or too high by the same proportion."
     page: chapters/07-validation/regression-metrics.qmd
