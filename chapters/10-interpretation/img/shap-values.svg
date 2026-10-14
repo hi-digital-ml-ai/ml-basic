@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 490" width="100%" role="img" aria-label="SHAP values in three steps. Start from the average: knowing none of the station's inputs, the best guess is the average prediction. Reveal inputs in turn: each step moves the prediction, and each input is credited with the change it makes, averaged over every order. Add the contributions: the average plus every input's contribution equals the station's prediction. A note says that an input not yet revealed takes its values from the training stations, and the predictions are averaged.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+      .ref  { stroke: #55606a; stroke-width: 1.4; stroke-dasharray: 5 4; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">SHAP values</text>
+
+<!-- card 1: start from the average -->
+<rect class="box" x="0" y="48" width="294" height="384" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Start from the average</text>
+<text class="lab" x="22" y="114" fill="#0072B2">NO INPUTS KNOWN</text>
+<text class="sm" x="87" y="148" text-anchor="middle">A</text>
+<text class="sm" x="147" y="148" text-anchor="middle">B</text>
+<text class="sm" x="207" y="148" text-anchor="middle">C</text>
+<rect x="62" y="156" width="50" height="32" rx="3" fill="#dfe5ea"/>
+<rect x="122" y="156" width="50" height="32" rx="3" fill="#dfe5ea"/>
+<rect x="182" y="156" width="50" height="32" rx="3" fill="#dfe5ea"/>
+<text class="sm" x="87" y="178" text-anchor="middle" fill="#55606a">?</text>
+<text class="sm" x="147" y="178" text-anchor="middle" fill="#55606a">?</text>
+<text class="sm" x="207" y="178" text-anchor="middle" fill="#55606a">?</text>
+<line x1="147" y1="196" x2="147" y2="218" stroke="#8a949c" stroke-width="1.8"/>
+<path d="M 141 212 L 147 222 L 153 212" fill="none" stroke="#8a949c" stroke-width="1.8"/>
+<line class="ax" x1="34" y1="282" x2="260" y2="282"/>
+<g fill="#8a949c" fill-opacity="0.7">
+<circle cx="52" cy="266" r="5"/><circle cx="76" cy="266" r="5"/><circle cx="95" cy="266" r="5"/>
+<circle cx="112" cy="266" r="5"/><circle cx="126" cy="266" r="5"/><circle cx="139" cy="266" r="5"/>
+<circle cx="151" cy="266" r="5"/><circle cx="163" cy="266" r="5"/><circle cx="177" cy="266" r="5"/>
+<circle cx="194" cy="266" r="5"/><circle cx="215" cy="266" r="5"/><circle cx="242" cy="266" r="5"/>
+<circle cx="132" cy="252" r="5"/><circle cx="157" cy="252" r="5"/><circle cx="145" cy="238" r="5"/>
+</g>
+<line x1="147" y1="236" x2="147" y2="292" stroke="#0072B2" stroke-width="2.6"/>
+<text class="sm" x="147" y="310" text-anchor="middle" fill="#0072B2">average prediction</text>
+<text class="body" x="22" y="356">Knowing none of the station's</text>
+<text class="body" x="22" y="380">inputs, the best guess is the</text>
+<text class="body" x="22" y="404">average prediction.</text>
+
+<!-- card 2: reveal the inputs one by one -->
+<rect class="box" x="323" y="48" width="294" height="384" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Reveal inputs in turn</text>
+<text class="lab" x="345" y="114" fill="#E69F00">EACH STEP SHIFTS THE GUESS</text>
+<text class="sm" x="352" y="146">Prediction</text>
+<line class="ax" x1="352" y1="156" x2="352" y2="290"/>
+<line class="ax" x1="352" y1="290" x2="596" y2="290"/>
+<line class="ref" x1="352" y1="240" x2="596" y2="240"/>
+<line x1="362" y1="240" x2="414" y2="240" stroke="#1f2933" stroke-width="2.6"/>
+<line x1="414" y1="240" x2="414" y2="186" stroke="#0072B2" stroke-width="4"/>
+<line x1="414" y1="186" x2="472" y2="186" stroke="#1f2933" stroke-width="2.6"/>
+<line x1="472" y1="186" x2="472" y2="212" stroke="#E69F00" stroke-width="4"/>
+<line x1="472" y1="212" x2="530" y2="212" stroke="#1f2933" stroke-width="2.6"/>
+<line x1="530" y1="212" x2="530" y2="166" stroke="#0072B2" stroke-width="4"/>
+<line x1="530" y1="166" x2="586" y2="166" stroke="#1f2933" stroke-width="2.6"/>
+<text class="sm" x="388" y="310" text-anchor="middle">none</text>
+<text class="sm" x="443" y="310" text-anchor="middle">+ A</text>
+<text class="sm" x="501" y="310" text-anchor="middle">+ B</text>
+<text class="sm" x="558" y="310" text-anchor="middle">+ C</text>
+<text class="body" x="345" y="356">Credit each input with the</text>
+<text class="body" x="345" y="380">change it makes. Average</text>
+<text class="body" x="345" y="404">over every order of revealing.</text>
+
+<!-- card 3: add up the contributions -->
+<rect class="box" x="646" y="48" width="294" height="384" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Add the contributions</text>
+<text class="lab" x="668" y="114" fill="#009E73">AVERAGE + CONTRIBUTIONS</text>
+<text class="lab" x="668" y="132" fill="#009E73">= PREDICTION</text>
+<line class="ref" x1="740" y1="150" x2="740" y2="282"/>
+<line class="ref" x1="872" y1="150" x2="872" y2="282"/>
+<text class="sm" x="680" y="182" text-anchor="middle">A</text>
+<text class="sm" x="680" y="222" text-anchor="middle">B</text>
+<text class="sm" x="680" y="262" text-anchor="middle">C</text>
+<rect x="740" y="162" width="84" height="28" rx="3" fill="#0072B2" fill-opacity="0.85"/>
+<rect x="788" y="202" width="36" height="28" rx="3" fill="#E69F00" fill-opacity="0.9"/>
+<rect x="788" y="242" width="84" height="28" rx="3" fill="#0072B2" fill-opacity="0.85"/>
+<text class="sm" x="740" y="304" text-anchor="middle">average</text>
+<text class="sm" x="872" y="304" text-anchor="middle">prediction</text>
+<text class="body" x="668" y="356">Each input's average credit</text>
+<text class="body" x="668" y="380">is its SHAP value. Together</text>
+<text class="body" x="668" y="404">they reach the prediction.</text>
+
+<text class="note" x="470" y="464" text-anchor="middle">An input not yet revealed takes its values from the training stations, and the predictions are averaged.</text>
+</svg>

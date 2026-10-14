@@ -168,6 +168,8 @@ website:
             text: "Feature importance"
           - href: chapters/10-interpretation/partial-effects.qmd
             text: "Partial effects"
+          - href: chapters/10-interpretation/explaining-one-prediction.qmd
+            text: "Explaining one prediction"
           - href: chapters/10-interpretation/black-box-or-not.qmd
             text: "Black boxes and interpretable models"
           - href: chapters/10-interpretation/communicating-uncertainty.qmd
