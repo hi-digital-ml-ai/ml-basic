@@ -1202,6 +1202,59 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
   check, ReLU, 241 weights, the seeds, the true mean counts, the sample sizes,
   autoencoders. The end card names some of them.
 
+## §10 Interpretation introduction version (2026-10-14)
+
+The user rejected the beginners' rebuild (`feature/video-interpretation-beginners`,
+111f1bf): it re-ran cross-validation, splits and error ranges as the Validation video
+had, and mixed random columns with permutation importance. The section's pages were
+rebuilt first (`feature/rebuild-interpretation`: permutation importance alone, partial
+dependence, SHAP values, interpretable models and surrogates, a model card), then the
+video from them (`feature/video-interpretation-rebuild`), as an introduction like the
+four before it: one new concept per part with one example and one picture, plain
+imperative key points (`RECAP = PROMISES`). 22 scenes, 884 words, 6:50 cut on the Gemini voice.
+
+The first draft's third part, SHAP values, was hard to follow: it never said what SHAP
+stands for, what the values do or how to use them, and spent its words on averaging
+over every order of revealing the inputs. A model card replaced it for one draft; the
+user then asked for SHAP back, explained from the basics. The part now says what the
+values do for one station (each input adds animals to the average or takes some away,
+and they add up to the prediction), spells out SHapley Additive exPlanations (additive:
+the parts add up; Shapley: Lloyd Shapley's fair way to share a team's prize, the inputs
+as players and the gap between average and prediction as the prize), shows one station,
+and ends on the use: a prediction with its reasons, to check against what is known of
+the species or show to whoever acts on it. The averaging over orders is left to the
+page. The first draft's shuffle table
+was labelled A, B, C, which read as station names, and shuffled only B without saying
+why; it now names its columns (temperature, depth, salinity, count) and its rows (one
+per test station), says the other columns stay put so any change comes from that input
+alone, then puts temperature back and shuffles depth, then salinity.
+
+- *Shuffle each input in turn*: linear regression's coefficients beside a forest with
+  none to read; the test stations as a table, one row per station; temperature's column
+  shuffled, scored again, the rise named permutation importance; then depth's, then
+  salinity's (schematic heights); the forest's typical miss of 3.93 animals,
+  temperature's rise of 0.34, more than three times depth's 0.10, chlorophyll and
+  salinity near zero.
+- *Draw each input's effect*: importance says how much, not which way; a what-if
+  question, every training station given the same temperature, predicted and averaged
+  into one point, then repeated along the range (schematic), named a partial dependence
+  plot; the forest's hump peaking at 7.7 °C.
+- *Split one prediction into parts*: the training stations' predictions, their average
+  4.11, and one station's 6.53, "which inputs raised it?"; bars pushing from the average
+  to the prediction, one SHAP value per input (schematic); the name spelled out, then a
+  quiz team sharing its prize (the best player the biggest share, one who cost points a
+  negative one) beside the inputs sharing the gap, 6.53 − 4.11 = 2.42 animals, depth's
+  share biggest and the seabed's negative (schematic shares); the station 44.9 m
+  deep as a waterfall, depth +0.95, chlorophyll +0.80, temperature +0.63, salinity
+  +0.58, sand −0.49, season −0.05, to 6.53.
+- Quiz: salinity barely moves the error; does it have no effect? Not necessarily:
+  without temperature, season's importance rose from 0.04 to 0.15.
+- No cross-validation, splits, score ranges or intervals. ICE curves, the GAM, the
+  surrogate tree and the model card are left to the pages; the end card names them.
+- `exports.R` reads the three pages behind the parts, and only the one station the
+  video shows. The sweep schematic and the waterfall were kept; the shuffle table was
+  relabelled; the push and name schematics are new.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up

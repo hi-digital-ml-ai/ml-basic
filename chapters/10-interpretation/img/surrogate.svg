@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 490" width="100%" role="img" aria-label="A surrogate model in three steps. Run the black box: its predictions for every station it was fitted to, not the counts. Fit a small tree to them: the predictions are the tree's outcome, so a few questions learn to copy the black box. Check its fidelity: the share of the variation in the black box's predictions that the tree follows. A note says that a surrogate summarises what the black box predicts, as far as its fidelity goes.">
+<defs>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .head { font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .ax   { fill: none; stroke: #8a949c; stroke-width: 1.6; }
+      .edge { stroke: #8a949c; stroke-width: 1.8; }
+    </style>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">A surrogate model</text>
+
+<!-- card 1: predict with the black box -->
+<rect class="box" x="0" y="48" width="294" height="384" rx="8"/><rect x="0" y="48" width="294" height="6" rx="3" fill="#0072B2"/>
+<text class="head" x="22" y="90">Run the black box</text>
+<text class="lab" x="22" y="114" fill="#0072B2">PREDICTIONS, NOT COUNTS</text>
+<rect x="34" y="176" width="110" height="80" rx="6" fill="#1f2933"/>
+<text class="sm" x="89" y="212" text-anchor="middle" style="fill: #ffffff">black</text>
+<text class="sm" x="89" y="232" text-anchor="middle" style="fill: #ffffff">box</text>
+<line x1="150" y1="216" x2="184" y2="216" stroke="#8a949c" stroke-width="1.8"/>
+<path d="M 178 210 L 188 216 L 178 222" fill="none" stroke="#8a949c" stroke-width="1.8"/>
+<text class="sm" x="226" y="150" text-anchor="middle">Prediction</text>
+<rect x="200" y="160" width="52" height="22" rx="3" fill="#0072B2" fill-opacity="0.8"/>
+<rect x="200" y="186" width="52" height="22" rx="3" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="200" y="212" width="52" height="22" rx="3" fill="#0072B2" fill-opacity="0.55"/>
+<rect x="200" y="238" width="52" height="22" rx="3" fill="#0072B2" fill-opacity="0.2"/>
+<rect x="200" y="264" width="52" height="22" rx="3" fill="#0072B2" fill-opacity="0.65"/>
+<text class="body" x="22" y="356">Predict every station the</text>
+<text class="body" x="22" y="380">black box was fitted to.</text>
+
+<!-- card 2: fit a small tree to the predictions -->
+<rect class="box" x="323" y="48" width="294" height="384" rx="8"/><rect x="323" y="48" width="294" height="6" rx="3" fill="#E69F00"/>
+<text class="head" x="345" y="90">Fit a small tree to them</text>
+<text class="lab" x="345" y="114" fill="#E69F00">PREDICTIONS AS ITS OUTCOME</text>
+<line class="edge" x1="470" y1="176" x2="408" y2="226"/>
+<line class="edge" x1="470" y1="176" x2="532" y2="226"/>
+<line class="edge" x1="532" y1="238" x2="490" y2="276"/>
+<line class="edge" x1="532" y1="238" x2="574" y2="276"/>
+<rect x="430" y="152" width="80" height="30" rx="5" fill="#E69F00" fill-opacity="0.85"/>
+<text class="sm" x="470" y="172" text-anchor="middle">A &lt; ?</text>
+<rect x="492" y="214" width="80" height="30" rx="5" fill="#E69F00" fill-opacity="0.85"/>
+<text class="sm" x="532" y="234" text-anchor="middle">B &lt; ?</text>
+<rect x="378" y="226" width="60" height="28" rx="5" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="460" y="276" width="60" height="28" rx="5" fill="#0072B2" fill-opacity="0.55"/>
+<rect x="544" y="276" width="60" height="28" rx="5" fill="#0072B2" fill-opacity="0.85"/>
+<text class="body" x="345" y="356">A tree of a few questions</text>
+<text class="body" x="345" y="380">learns to copy the black</text>
+<text class="body" x="345" y="404">box's predictions.</text>
+
+<!-- card 3: check its fidelity -->
+<rect class="box" x="646" y="48" width="294" height="384" rx="8"/><rect x="646" y="48" width="294" height="6" rx="3" fill="#009E73"/>
+<text class="head" x="668" y="90">Check its fidelity</text>
+<text class="lab" x="668" y="114" fill="#009E73">HOW CLOSELY IT COPIES</text>
+<text class="sm" x="690" y="146">Tree</text>
+<line class="ax" x1="690" y1="154" x2="690" y2="286"/>
+<line class="ax" x1="690" y1="286" x2="904" y2="286"/>
+<text class="sm" x="904" y="306" text-anchor="end">Black box</text>
+<line x1="696" y1="280" x2="896" y2="160" stroke="#009E73" stroke-width="1.6" stroke-dasharray="5 4"/>
+<g fill="#009E73" fill-opacity="0.75">
+<circle cx="716" cy="262" r="5"/><circle cx="732" cy="262" r="5"/><circle cx="748" cy="262" r="5"/>
+<circle cx="764" cy="232" r="5"/><circle cx="780" cy="232" r="5"/><circle cx="796" cy="232" r="5"/>
+<circle cx="812" cy="208" r="5"/><circle cx="828" cy="208" r="5"/><circle cx="844" cy="208" r="5"/>
+<circle cx="866" cy="172" r="5"/><circle cx="884" cy="172" r="5"/>
+</g>
+<text class="body" x="668" y="356">The share of the black</text>
+<text class="body" x="668" y="380">box's variation the tree</text>
+<text class="body" x="668" y="404">follows: read it that far.</text>
+
+<text class="note" x="470" y="464" text-anchor="middle">A surrogate summarises what the black box predicts, as far as its fidelity goes.</text>
+</svg>

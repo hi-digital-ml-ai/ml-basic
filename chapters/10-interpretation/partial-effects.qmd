@@ -1,6 +1,6 @@
 ---
 title: "Partial effects"
-description: "A partial dependence plot draws how a model's prediction changes along one input, averaged over every station, and ICE curves draw the same change station by station. On the survey they find the temperature hump at nearly every station, and show that the depth curve describes the model, not the species."
+description: "A partial dependence plot draws how a model's prediction changes along one input, averaged over every station, and ICE curves draw the same change station by station. On the survey they show where a random forest predicts the most animals, and that the temperature hump appears at nearly every station."
 order: 2
 categories: [interpretation]
 ---
@@ -23,11 +23,9 @@ set.seed(123)
 
 [Feature importance](feature-importance.qmd) says how much a model relies on an input,
 but not whether the prediction rises or falls with it, or where it peaks. **Partial
-effects** draw that shape. [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-drew one: a random forest's prediction across temperature, with the other inputs held
-at typical values. That is one slice, and held at other values the forest's curve could
-change shape. This page draws curves that do not depend on that choice, one averaged
-over every station and one for each station.
+effects** draw that shape: how the model's prediction changes as one input moves. This
+page draws them two ways, averaged over every station and station by station, and
+shows what each can and cannot tell you.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -45,33 +43,28 @@ any model, because it only needs predictions.
 ![Partial dependence in three steps: give every row the same value of one input and keep the others, predict each row and move the value along its range so each row traces a curve, then average the rows' curves.](img/partial-dependence.svg){fig-alt="Three cards. Set one input, every row gets one value: a small table with inputs A, B and C, where every cell of column A reads 40 and the shaded cells of B and C are kept. Predict each row, one ICE curve per row: five orange humped curves of different heights against input A, with a dashed line at 40 marking where each row's prediction was made. Average, the partial dependence: the same five curves in grey with a thick green curve through their middle, their average. A note says that where the rows' curves differ in shape, the average hides it, so look at both."}
 :::
 
+Setting an input to its extreme values in every row builds stations the survey never
+had, such as the shallowest depth paired with the coldest water, so the curves on this
+page run only over the middle 90% of each input's values, where most stations lie.
+
 ## ICE curves show the same sweep station by station
 
 Before averaging, each row has its own curve: its prediction as the one input moves
 and the rest of the row stays put. These are **individual conditional expectation
 (ICE) curves**, and the partial dependence is their average. If they share one shape
 and differ only in height, the average describes them well. If they peak in different
-places or cross, the effect of the input depends on the others, an interaction of the
-kind [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-showed a forest can learn, and the average alone would hide it.
-
-## A sweep can build stations the survey never had
-
-Setting depth to the shallowest value in every row pairs it with every station's
-recorded temperature, including the cold water of the deepest stations. Few or no such
-stations exist, so there the model is extrapolating. The curves on this page run only
-over the middle 90% of each input's values, where most stations lie, and are read
-where the inputs' combinations look like the data.
+places or cross, the effect of the input depends on the others, an
+[interaction](../06-assumptions-limitations/linearity-and-nonlinearity.qmd), and the
+average alone would hide it.
 
 ## Worked example
 
-The random forest of
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd),
-500 trees on the six inputs of
-[Regression for counts](../03-supervised-learning/count-regression.qmd), is fitted to
-the same training sites. Its partial dependence is compared with the one slice, then
-its ICE curves are drawn, and finally position is added as an input to see whether the
-depth curve changes.
+A random forest of 500 trees, as in
+[Feature importance](feature-importance.qmd), predicts abundance from the six inputs
+of [Regression for counts](../03-supervised-learning/count-regression.qmd) and is
+fitted to the training sites of the same split by site. Its partial dependence is
+drawn for the two inputs it relied on most, temperature and depth, then its ICE
+curves for temperature.
 
 ### Preparing the data
 
@@ -88,18 +81,14 @@ inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
 
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split)
-test  <- testing(split)
 
-forest_on <- function(columns) {
-  forest_recipe <- recipe(reformulate(columns, "abundance"), data = train) |>
-    step_impute_median(all_numeric_predictors())
-  forest_model <- rand_forest(trees = 500) |>
-    set_engine("ranger", seed = 123) |>
-    set_mode("regression")
-  workflow(forest_recipe, forest_model) |> fit(train)
-}
+forest_recipe <- recipe(reformulate(inputs, "abundance"), data = train) |>
+  step_impute_median(all_numeric_predictors())
+forest_model <- rand_forest(trees = 500) |>
+  set_engine("ranger", seed = 123) |>
+  set_mode("regression")
 
-forest <- forest_on(inputs)
+forest <- workflow(forest_recipe, forest_model) |> fit(train)
 ```
 
 ## Python
@@ -111,8 +100,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import partial_dependence
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -125,33 +112,28 @@ grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
 train_rows, test_rows = next(grouper.split(survey,
                                            groups=survey["site_id"]))
 train = survey.iloc[train_rows].reset_index(drop=True)
-test = survey.iloc[test_rows].reset_index(drop=True)
 
 numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
 categorical = ["substrate", "season"]
 
-def forest_on(numeric):
-    recipe = ColumnTransformer(
-        [("numeric", SimpleImputer(strategy="median"), numeric),
-         ("categorical", OneHotEncoder(drop="first", sparse_output=False),
-          categorical)])
-    # max_features and min_samples_leaf match ranger's defaults
-    model = RandomForestRegressor(n_estimators=500, max_features="sqrt",
-                                  min_samples_leaf=5, random_state=123)
-    forest = Pipeline([("recipe", recipe), ("model", model)])
-    return forest.fit(train[numeric + categorical], train["abundance"])
-
-forest = forest_on(numeric)
+recipe = ColumnTransformer(
+    [("numeric", SimpleImputer(strategy="median"), numeric),
+     ("categorical", OneHotEncoder(drop="first", sparse_output=False),
+      categorical)])
+# max_features and min_samples_leaf match ranger's defaults
+model = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+                              min_samples_leaf=5, random_state=123)
+forest = Pipeline([("recipe", recipe), ("model", model)]).fit(
+    train[numeric + categorical], train["abundance"])
 ```
 
 :::
 
-### Partial dependence misses the depth peak as the slice did
+### The forest predicts most animals in cool water and at shallow depths
 
 Each input is set in turn to 40 values across the middle 90% of its range, and every
 training station is predicted at each. The partial dependence is the average at each
-value; the slice holds the other inputs at typical values (sand, summer, the median of
-the rest), as Linearity and nonlinearity did.
+value.
 
 ::: {.panel-tabset group="language"}
 
@@ -178,25 +160,12 @@ ice <- list(depth_m = sweep(forest, "depth_m"),
 # the partial dependence is the average over the stations
 partial <- map(ice, \(d) summarise(d, .pred = mean(.pred), .by = value))
 
-# one slice, as in Linearity and nonlinearity
-typical <- train |>
-  summarise(across(c(depth_m, temperature_c, chlorophyll_mg_m3,
-                     salinity_psu), \(x) median(x, na.rm = TRUE))) |>
-  mutate(substrate = factor("sand", levels = levels(train$substrate)),
-         season    = factor("summer", levels = levels(train$season)))
-
-slices <- map(names(partial), \(input) {
-  grid <- tibble(!!input := partial[[input]]$value)
-  rows <- typical |> select(-all_of(input)) |> cross_join(grid)
-  tibble(value = grid[[1]], .pred = predict(forest, rows)$.pred)
-}) |>
-  set_names(names(partial))
-
 peak_of <- \(d) d$value[which.max(d$.pred)]
-tibble(Peak = c("Depth (m)", "Temperature (°C)"),
-       `Partial dependence` = map_dbl(partial, peak_of),
-       `One slice` = map_dbl(slices, peak_of)) |>
-  mutate(across(-Peak, \(x) round(x, 1)))
+tibble(Input = c("Depth (m)", "Temperature (°C)"),
+       `Highest prediction at` = map_dbl(partial, peak_of),
+       `Highest` = map_dbl(partial, \(d) max(d$.pred)),
+       `Lowest` = map_dbl(partial, \(d) min(d$.pred))) |>
+  mutate(across(-Input, \(x) round(x, 1)))
 ```
 
 ## Python
@@ -206,104 +175,53 @@ tibble(Peak = c("Depth (m)", "Temperature (°C)"),
 # values over the middle 90% of its range
 def sweep(fitted, column, kind="average"):
     result = partial_dependence(
-        fitted, train[fitted.feature_names_in_], [column], kind=kind,
+        fitted, train[numeric + categorical], [column], kind=kind,
         percentiles=(0.05, 0.95), grid_resolution=40)
     return result["grid_values"][0], result[kind][0]
 
-# one slice, as in Linearity and nonlinearity
-typical = train[numeric].median()
-
-def one_slice(column, grid):
-    rows = pd.DataFrame({c: [typical[c]] * len(grid) for c in numeric})
-    rows[column] = grid
-    rows["substrate"], rows["season"] = "sand", "summer"
-    return forest.predict(rows[numeric + categorical])
-
-peaks = {}
-for column in ["depth_m", "temperature_c"]:
+rows = []
+for column, name in [("depth_m", "Depth (m)"),
+                     ("temperature_c", "Temperature (°C)")]:
     grid, average = sweep(forest, column)
-    peaks[column] = {
-        "Partial dependence": grid[average.argmax()],
-        "One slice": grid[one_slice(column, grid).argmax()]}
-(pd.DataFrame(peaks).T
-    .set_axis(["Depth (m)", "Temperature (°C)"])
-    .rename_axis("Peak")
-    .round(1))
+    rows.append({"Input": name, "Highest prediction at": grid[average.argmax()],
+                 "Highest": average.max(), "Lowest": average.min()})
+pd.DataFrame(rows).round(1)
 ```
 
 :::
 
 ```{r}
 #| label: fig-partial
-#| fig-cap: "The random forest's partial dependence and its one slice against the curves the simulation used (dashed), each divided by its own peak, over the middle 90% of each input's values. Both of the forest's curves find the temperature hump. Neither finds the depth peak: the slice is level from the shallowest depth drawn to about 80 m and then falls, and the partial dependence falls from the start."
-#| fig-alt: "Two panels, each with a partial dependence curve, a one-slice curve and a dashed simulation curve, scaled so each peaks at 1. Left, depth: the simulation's curve is an arch peaking at 80 metres; the partial dependence is highest at the shallowest depth and falls in steps to about 0.57; the slice stays between about 0.93 and 1 to about 80 metres, then falls in steps to about 0.53. Right, temperature: the simulation's curve is an arch peaking at 9 degrees; both forest curves sit near 0.5 below 5.5 degrees, rise steeply between 6 and 7 degrees to a peak between 7 and 8 degrees and stay near 0.9 to about 10 degrees; above that the slice falls to about a quarter of its peak and the partial dependence to about 0.58."
+#| fig-cap: "The random forest's partial dependence on depth and on temperature, over the middle 90% of each input's values: the average prediction over every training station as one input is set to each value."
+#| fig-alt: !expr 'glue::glue("Two panels of predicted count against an input. Left, depth: the curve is highest, about {one(max(partial$depth_m$.pred))} individuals, at the shallowest depth drawn, and falls in steps to about {one(min(partial$depth_m$.pred))} at the deepest. Right, temperature: the curve is low in the coldest water, rises steeply between 6 and 7 degrees to a peak of about {one(max(partial$temperature_c$.pred))} at {one(peak_of(partial$temperature_c))} degrees, and falls again in the warmest water.")'
 #| fig-width: 8
-#| fig-height: 4
-# the curves R/make-example-data.R used, on the log scale
-true_curve <- list(
-  depth_m       = \(depth) -0.55 * ((depth - 80) / 60)^2,
-  temperature_c = \(temperature) -0.60 * ((temperature - 9) / 3)^2
-)
+#| fig-height: 3.6
+one <- \(x) format(round(x, 1), nsmall = 1)
 
-shapes <- map(names(partial), \(input) {
-  bind_rows(
-    partial[[input]] |> mutate(curve = "Partial dependence"),
-    slices[[input]] |> mutate(curve = "One slice"),
-    partial[[input]] |>
-      mutate(curve = "Simulation", .pred = exp(true_curve[[input]](value)))
-  ) |>
-    mutate(input, relative = .pred / max(.pred), .by = curve)
-}) |>
-  list_rbind()
-
-shape_plot <- function(which, x_label) {
-  ggplot(filter(shapes, input == which),
-         aes(value, relative, colour = curve, linetype = curve)) +
-    geom_line(linewidth = 1.1) +
-    scale_colour_manual(values = c("Partial dependence" = ml_palette[["blue"]],
-                                   "One slice" = ml_palette[["orange"]],
-                                   Simulation = ml_palette[["grey"]])) +
-    scale_linetype_manual(values = c("Partial dependence" = "solid",
-                                     "One slice" = "solid",
-                                     Simulation = "dashed")) +
-    labs(x = x_label, y = "Prediction relative to its peak", colour = NULL,
-         linetype = NULL)
+curve_plot <- function(which, x_label) {
+  ggplot(partial[[which]], aes(value, .pred)) +
+    geom_line(colour = ml_palette[["blue"]], linewidth = 1.2) +
+    expand_limits(y = 0) +
+    labs(x = x_label, y = "Average prediction\n(individuals)")
 }
 
-shape_plot("depth_m", "Depth (m)") +
-  shape_plot("temperature_c", "Temperature (°C)") +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+curve_plot("depth_m", "Depth (m)") + curve_plot("temperature_c", "Temperature (°C)")
 ```
 
 ```{r}
 #| label: partial-numbers
 #| include: false
-one <- \(x) format(round(x, 1), nsmall = 1)
-pd_peak <- map_dbl(partial, peak_of)
-slice_peak <- map_dbl(slices, peak_of)
-true_peak <- c(depth_m = 80, temperature_c = 9)
-# the forest's prediction at the simulation's depth peak, relative to its own
-at_true_depth <- function(d) {
-  d$.pred[which.min(abs(d$value - true_peak[["depth_m"]]))] / max(d$.pred)
-}
 shallowest <- min(partial$depth_m$value)
-warmest <- \(d) last(d$.pred) / max(d$.pred)
+deepest <- max(partial$depth_m$value)
+depth_drop <- 1 - min(partial$depth_m$.pred) / max(partial$depth_m$.pred)
 ```
 
-On temperature the partial dependence peaks at `r one(pd_peak[["temperature_c"]])` °C
-and the slice at `r one(slice_peak[["temperature_c"]])` °C, both a little cooler than
-the simulation's `r true_peak[["temperature_c"]]` °C. They part in the warmest water:
-there the slice falls to `r percent(warmest(slices$temperature_c))` of its peak and
-the partial dependence only to `r percent(warmest(partial$temperature_c))`. The slice
-answers for one summer station on sand; the average answers for the stations as they
-are, and the ICE curves below show how much they differ.
-
-On depth neither curve has the simulation's arch. The partial dependence is highest
-at `r round(shallowest)` m, the shallowest value drawn, and at the simulation's peak
-of `r true_peak[["depth_m"]]` m it has fallen to
-`r percent(at_true_depth(partial$depth_m))` of its peak. The slice is level through
-the shallow half and falls beyond it. So the wrong depth curve does not come from the
-typical values the slice was held at; it is what the forest learned.
+The forest predicts the most animals at `r one(peak_of(partial$temperature_c))` °C, in
+cool water, and fewer in both colder and warmer water: temperature has a hump. Depth
+works one way only: the prediction is highest at `r round(shallowest)` m, the
+shallowest value drawn, and falls by `r percent(depth_drop)` towards
+`r round(deepest)` m. A single coefficient could not draw the hump; the plot reads both
+shapes straight off the fitted forest.
 
 ### ICE curves show the temperature hump at nearly every station
 
@@ -389,133 +307,31 @@ Stations where the forest predicts many animals anyway gain most from the right
 temperature, so the curves share a shape and differ in scale. The partial dependence
 shows where the hump lies; how large it is depends on the station.
 
-### Position as an input leaves the depth curve falling
-
-Why is the depth curve wrong? The shelf deepens offshore, so depth follows position,
-and the forest can give depth an effect that belongs to something about position that
-no input measures. Position would then be a
-[confounder](../01-introduction/prediction-and-explanation.qmd#depth-confounds-the-salinity-slope).
-A second forest is given longitude
-and latitude as well, and both are scored on the test sites.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: position
-forest_place <- forest_on(c(inputs, "longitude", "latitude"))
-
-test_rmse <- \(fitted) rmse_vec(test$abundance, predict(fitted, test)$.pred)
-place_depth <- sweep(forest_place, "depth_m") |>
-  summarise(.pred = mean(.pred), .by = value)
-
-tibble(Model = c("Six inputs", "Six inputs and position"),
-       `Test RMSE` = round(c(test_rmse(forest), test_rmse(forest_place)), 2),
-       `Depth curve's peak (m)` = round(c(peak_of(partial$depth_m),
-                                          peak_of(place_depth)), 1))
-```
-
-## Python
-
-```{python}
-place = ["longitude", "latitude"]
-forest_place = forest_on(numeric + place)
-
-def test_rmse(fitted):
-    return root_mean_squared_error(
-        test["abundance"], fitted.predict(test[fitted.feature_names_in_]))
-
-grid, place_depth = sweep(forest_place, "depth_m")
-
-pd.DataFrame({
-    "Model": ["Six inputs", "Six inputs and position"],
-    "Test RMSE": [test_rmse(forest), test_rmse(forest_place)],
-    "Depth curve's peak (m)": [peaks["depth_m"]["Partial dependence"],
-                               grid[place_depth.argmax()]],
-}).round({"Test RMSE": 2, "Depth curve's peak (m)": 1})
-```
-
-:::
-
-```{r}
-#| label: position-numbers
-#| include: false
-two <- \(x) format(round(x, 2), nsmall = 2)
-```
-
-Position helps the predictions: the test RMSE falls from
-`r two(test_rmse(forest))` to `r two(test_rmse(forest_place))` individuals. The depth
-curve keeps its shape. Its peak is still at `r round(peak_of(place_depth))` m, and at
-`r true_peak[["depth_m"]]` m it stands at
-`r percent(at_true_depth(place_depth))` of that peak, against
-`r percent(at_true_depth(partial$depth_m))` without position.
-
-Position predicts depth closely. A linear regression on longitude and latitude,
-fitted to the training sites, predicts the depth of the test stations:
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: depth-from-place
-depth_from_place <- linear_reg() |>
-  fit(depth_m ~ longitude + latitude, data = train)
-
-augment(depth_from_place, test) |> rmse(depth_m, .pred)
-```
-
-## Python
-
-```{python}
-depth_from_place = LinearRegression().fit(train[place], train["depth_m"])
-
-root_mean_squared_error(test["depth_m"],
-                        depth_from_place.predict(test[place]))
-```
-
-:::
-
-```{r}
-#| label: place-numbers
-#| include: false
-depth_rmse <- augment(depth_from_place, test) |>
-  rmse(depth_m, .pred) |>
-  pull(.estimate)
-```
-
-Its RMSE is `r round(depth_rmse)` m: once the place is known, depth is known to
-within about that. The survey holds few stations that differ in depth but not in place, and
-no model can tell from these data which of the two the catch follows. The forest is
-free to give the effect to either, and the curve shows what it chose.
-
-## Partial effects describe the model, and the data decide how far they describe the species
+## A curve reads as a response only where its input varies on its own
 
 A partial dependence plot and its ICE curves are a faithful picture of what a model
-predicts. On the survey they found the temperature hump at nearly every station, and
-they showed that the depth curve is not the species' response. Reading a curve as the
-species' response needs data in which the input varies on its own, for depth,
-stations at different depths in the same area.
-[Black boxes and interpretable models](black-box-or-not.qmd) compares the forest with
-models whose curves can be read directly.
+predicts, not a measurement of the species. As
+[Feature importance](feature-importance.qmd) showed, inputs that carry the same
+information share the work, and the forest may give an effect to either of them. A
+curve reads as the species' response only where the data let that input vary on its
+own. [Interpretable models and surrogates](interpretable-models.qmd) turns to models
+whose parts can be read directly.
 
 ## Key points
 
 ::: {.key-points}
 - A **partial dependence plot** sets one input to each value in turn in every row,
-  predicts, and averages. It works for any model and does not depend on where the
-  other inputs are held.
+  predicts, and averages. It works for any model and shows the direction and shape of
+  an effect.
 - **ICE curves** are the same sweep for each row before averaging. Curves that share a
   shape show the average describes them; curves that peak in different places show an
   interaction.
 - Draw the curves where the data are: a sweep pairs each value with every row's other
   inputs, including combinations the survey never had.
-- On the survey the forest's temperature curves rose and fell at nearly every
-  station, by amounts that differed from station to station.
-- The depth curve stayed highest in shallow water, even with position as an input.
-  Depth follows position on the survey, and no curve can separate what the data
-  do not.
+- On the survey the forest predicted most animals in cool water and in shallow water,
+  and the temperature hump appeared at nearly every station, at different heights.
+- The curves describe the model; they describe the species only where the data let
+  the input vary on its own.
 :::
 
 ## Try it yourself
@@ -523,5 +339,5 @@ models whose curves can be read directly.
 1. Draw the partial dependence of `substrate`: set every training station to each
    level in turn and average the predictions. Which level does the forest predict
    most animals on?
-2. Leave `temperature_c` out of the inputs, refit the forest and redraw the depth
-   curve. Does depth take over part of the temperature hump?
+2. Draw the ICE curves for depth. Do the stations share one shape, as they did for
+   temperature?

@@ -782,9 +782,6 @@ terms:
   - term: "Permutation importance"
     definition: "The rise in a model's error on test data when one input is shuffled, so its values no longer belong to their rows; it works for any model."
     page: chapters/10-interpretation/feature-importance.qmd
-  - term: "Impurity importance"
-    definition: "A random forest's built-in score: how much each input's splits lowered the error on the training data, summed over every tree; it favours inputs with many values."
-    page: chapters/10-interpretation/feature-importance.qmd
 
   # 10 · Interpretation: Partial effects
   - term: "Partial effect"
@@ -797,43 +794,38 @@ terms:
     definition: "Individual conditional expectation: one row's prediction as one input moves and the rest of the row stays as recorded; the partial dependence is their average."
     page: chapters/10-interpretation/partial-effects.qmd
 
-  # 10 · Interpretation: Black boxes and interpretable models
+  # 10 · Interpretation: Explaining one prediction
+  - term: "SHAP value"
+    definition: "One input's share of one prediction: the change it makes to the prediction when it is revealed, averaged over every order of revealing the inputs; the average prediction plus every input's SHAP value equals the prediction."
+    page: chapters/10-interpretation/explaining-one-prediction.qmd
+
+  # 10 · Interpretation: Interpretable models and surrogates
   - term: "Interpretable model"
     definition: "A model whose fitted parts can be read directly, such as a linear regression's slopes, a GAM's curves or a small tree's questions."
-    page: chapters/10-interpretation/black-box-or-not.qmd
+    page: chapters/10-interpretation/interpretable-models.qmd
   - term: "Black box"
-    definition: "A model, such as a random forest, boosting or a neural network, with no part that means anything alone; it is read from outside, with feature importance and partial dependence."
-    page: chapters/10-interpretation/black-box-or-not.qmd
+    definition: "A model, such as a random forest, boosting or a neural network, with no part that means anything alone; it is read from outside, by changing its inputs and watching its predictions, or through a surrogate."
+    page: chapters/10-interpretation/interpretable-models.qmd
   - term: "Generalised additive model (GAM)"
     definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
-    page: chapters/10-interpretation/black-box-or-not.qmd
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Surrogate model"
+    definition: "A small, readable model fitted to a black box's predictions in place of the recorded outcomes, so its parts summarise what the black box predicts."
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Fidelity"
+    definition: "How closely a surrogate's predictions follow the black box's, measured as the R² between the two; 1 means an exact copy."
+    page: chapters/10-interpretation/interpretable-models.qmd
 
-  # 10 · Interpretation: Communicating uncertainty
-  - term: "Prediction interval"
-    definition: "A range for one new observation, wider than an interval for the average because it adds the scatter of single observations; it stays wide however much data there is."
-    page: chapters/10-interpretation/communicating-uncertainty.qmd
-  - term: "Coverage"
-    definition: "The share of new observations that fall inside their prediction intervals; a 90% interval should hold 9 in 10 at sites the model never saw."
-    page: chapters/10-interpretation/communicating-uncertainty.qmd
-  - term: "Conformal prediction"
-    definition: "An interval for any model that reaches either side of a prediction as far as 90% of its errors on a calibration set; it holds at stations like the calibration ones."
-    page: chapters/10-interpretation/communicating-uncertainty.qmd
-  - term: "Calibration set"
-    definition: "Data held out from fitting and testing, used to measure a model's errors and so set the width of a conformal interval."
-    page: chapters/10-interpretation/communicating-uncertainty.qmd
-  - term: "Quantile forest"
-    definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
-    page: chapters/10-interpretation/communicating-uncertainty.qmd
-
-  # 10 · Interpretation: Reproducibility and transparent reporting
+  # 10 · Interpretation: Reporting a model
   - term: "Reproducible"
     definition: "Of an analysis that gives the same numbers when someone else runs it on the same data with the same code."
-    page: chapters/10-interpretation/reproducibility.qmd
+    page: chapters/10-interpretation/reporting-a-model.qmd
   - term: "Seed"
-    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly, though it does not show how far its numbers would move with other data."
-    page: chapters/10-interpretation/reproducibility.qmd
-
-  # 10 · Interpretation: From a model to a claim
+    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly as long as the draws come in the same order."
+    page: chapters/10-interpretation/reporting-a-model.qmd
+  - term: "Model card"
+    definition: "A short document that travels with a model: what it is, what it is for, its data and inputs, its score on new sites, what it relies on, where it holds and its limits."
+    page: chapters/10-interpretation/reporting-a-model.qmd
   - term: "Claim"
-    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found, how sure the finding is, and how far it reaches."
-    page: chapters/10-interpretation/from-model-to-claim.qmd
+    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found and how far it reaches."
+    page: chapters/10-interpretation/reporting-a-model.qmd

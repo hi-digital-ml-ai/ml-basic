@@ -3,65 +3,34 @@
 #
 # Each table is built with with(env, ...), which looks names up in the page's
 # environment, and written outside it: inside, `dir` would find base R's dir().
+# Single numbers the narration speaks go into a "<page>-numbers" table of name and
+# value, so a scene can show the page's own value.
 
 write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, ".csv")))
+numbers <- function(...) tibble::tibble(name = names(c(...)), value = unname(c(...)))
 
 exports <- list(
-  # Scenes 7-9: the forest's impurity importance, permutation importance on one
-  # split's test sites, how many test sites that split held, and on how many of the
-  # ten splits each input beat the random columns.
+  # Scene 5: each input's rise in test RMSE when shuffled, and the RMSE before.
+  # Scene 18: the same with the forest fitted without temperature.
   "feature-importance.qmd" = function(env, dir) {
-    write(with(env, impurity_table), dir, "impurity")
-    write(with(env, one_split), dir, "permutation")
-    write(with(env, tibble::tibble(test_sites = dplyr::n_distinct(test$site_id),
-                                   splits = nrow(splits))), dir, "one-split")
-    write(with(env, beats), dir, "beats")
+    write(with(env, dplyr::bind_rows("all six" = all_six, "without temperature" = without,
+                                     .id = "forest")), dir, "importance")
+    write(with(env, numbers(rmse = before_all, rmse_without = errors$rmse[2])),
+          dir, "feature-importance-numbers")
   },
 
-  # Scene 11: the forest's partial dependence on temperature, every station's ICE
-  # curve, and how many stations rise to the peak and fall from it.
+  # Scene 10: the forest's partial dependence on temperature.
   "partial-effects.qmd" = function(env, dir) {
     write(with(env, partial$temperature_c), dir, "partial")
-    write(with(env, ice$temperature_c), dir, "ice")
-    write(with(env, tibble::tibble(stations = nrow(changes),
-                                   rise = sum(changes$rise > 0),
-                                   fall = sum(changes$fall > 0),
-                                   peak = top)), dir, "ice-changes")
   },
 
-  # Scene 12: the GAM's temperature curve with its interval, and the models' RMSEs
-  # on the same folds.
-  "black-box-or-not.qmd" = function(env, dir) {
-    write(with(env, curves$temperature_c), dir, "gam-curve")
-    write(with(env, comparison), dir, "comparison")
-  },
-
-  # Scenes 17-20: the forest's two intervals at the test sites, its conformal
-  # interval, and the same forest calibrated on low chlorophyll, beside a quantile
-  # forest fitted to the same sites.
-  "communicating-uncertainty.qmd" = function(env, dir) {
-    write(with(env, dplyr::summarise(two_intervals, coverage = mean(inside),
-                                     width = mean(high - low), .by = interval)),
-          dir, "two-intervals")
-    write(with(env, tibble::tibble(coverage = mean(conformal$inside),
-                                   width = 2 * half_width)), dir, "conformal")
-    write(with(env, dplyr::summarise(shifted, coverage = mean(inside),
-                                     width = mean(high - low),
-                                     .by = c(stations, interval))), dir, "shift")
-  },
-
-  # Scene 29, the quiz's answer: the forest's RMSE across seeds, splits and folds.
-  "reproducibility.qmd" = function(env, dir) {
-    write(with(env, tibble::tibble(run = 1:10, seed = by_seed, split = by_split,
-                                   folds = by_folds)), dir, "spread")
-  },
-
-  # Scenes 24-25: the forest report as recorded and with half the animals on mud
-  # missed: the cross-validated RMSE against the average, folds better, coverage and
-  # mud's ratio to sand across the fold models.
-  "from-model-to-claim.qmd" = function(env, dir) {
-    write(with(env, dplyr::bind_rows("As recorded" = summary_of(recorded),
-                                     "Half missed on mud" = summary_of(missed),
-                                     .id = "records")), dir, "gear")
+  # Scenes 12 and 15: the forest's predictions at the training stations, whose average
+  # starts every explanation, and the chosen station's inputs and SHAP values.
+  "explaining-one-prediction.qmd" = function(env, dir) {
+    write(with(env, tibble::tibble(.pred = predict(forest, train)$.pred)), dir, "train-predictions")
+    write(with(env, tibble::tibble(input = inputs, value = shown(chosen[1, ]),
+                                   shap = explained$S[1, ])), dir, "shap")
+    write(with(env, numbers(average = explained$baseline, prediction = chosen$.pred[1])),
+          dir, "explaining-one-prediction-numbers")
   }
 )

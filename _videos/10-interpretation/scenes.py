@@ -4,11 +4,9 @@
     manim -ql scenes.py Scene08                      # draft
     manim -qh --frame_rate 30 -a scenes.py           # all, 1080p, for the rough cut
 
-The video is built on three ideas from the section, each with the reason it matters:
-test what a model relies on against random numbers and on more than one split, name
-the interval you quote and check its coverage, and a good score cannot check the
-records. Scenes marked "page results" read visuals/data/*.csv, which
-tools/figures-for-video.R writes from the pages. The others are schematic: made-up
+Scenes marked "page results" read visuals/data/*.csv, which tools/figures-for-video.R
+writes from the pages through exports.R. Single numbers come from the "<page>-numbers"
+tables, so a scene shows the page's own value. The other scenes are schematic: made-up
 shapes, never numbers that could pass for survey results. The opening, key-point,
 recap, quiz and end-card scenes are shared (mlbasic_video.py) and read PROMISES,
 ANSWERS and RECAP from here. Consecutive scenes about one picture share a builder, so
@@ -26,24 +24,31 @@ class Title(TitleScene):
     pass
 
 
-PROMISES = ["Which inputs a model relies on",
-            "Which interval to quote",
-            "What a good score cannot check"]
-ANSWERS = ["Test it against random numbers,\non more than one split",
-           "Name the interval,\nand check its coverage\nat new sites",
-           "A score compares the model\nwith the records,\nnever the records with the sea"]
-RECAP = ["Test importance against random numbers",
-         "Name the interval and check its coverage",
-         "A good score cannot check the records"]
+PROMISES = ["Shuffle each input in turn",
+            "Draw each input's effect",
+            "Split one prediction into parts"]
+ANSWERS = ["The more the error rises,\nthe more the model\nrelies on that input",
+           "Set it to each value\nat every station, and\naverage the predictions",
+           "Each input's SHAP value:\nhow far it moves the\nprediction from the average"]
+RECAP = PROMISES
 
-# The pages' colours: real inputs and the models in blue, the random columns in orange,
-# anything that fails a check in vermilion.
 LIGHT = "#C9CED2"
 PALE_BLUE = "#EAF2F8"
 
+UNITS = {"depth_m": " m", "temperature_c": " °C", "chlorophyll_mg_m3": " mg/m³",
+         "salinity_psu": "", "substrate": "", "season": ""}
 INPUT_NAMES = {"depth_m": "depth", "temperature_c": "temperature",
                "chlorophyll_mg_m3": "chlorophyll", "salinity_psu": "salinity",
                "substrate": "seabed", "season": "season"}
+
+
+class Scene01(LearnScene):
+    number = 1
+
+    def setup(self):
+        super().setup()
+        self.times = tuple(position(self, p) for p in
+                           ("shuffling each", "drawing each", "and splitting"))
 
 
 # Helpers ----------------------------------------------------------------------------------
@@ -71,21 +76,10 @@ def cue(scene, phrase):
     at(scene, position(scene, phrase))
 
 
-def input_name(term):
-    """A page's input or level as the video says it: "substrate: mud" is "seabed: mud"."""
-    if term.startswith("random_"):
-        return "random " + term.split("_")[1]
-    base, _, level = term.partition(": ")
-    name = INPUT_NAMES.get(base, base)
-    return f"{name}: {level}" if level else name
-
-
-def is_random(term):
-    return term.startswith("random")
-
-
-def pct(value):
-    return f"{100 * value:.0f}%"
+def value(scene, page, name):
+    """One number from a page's "<page>-numbers" table."""
+    table = scene.data(f"{page}-numbers").set_index("name")["value"]
+    return table[name]
 
 
 def plain_axes(x_range, y_range, x_length, y_length):
@@ -114,132 +108,44 @@ def polyline(axes, xs, ys, colour, width=6, opacity=1.0):
         [axes.c2p(x, y) for x, y in zip(xs, ys)])
 
 
-def ribbon(axes, xs, lower, upper, colour, opacity=0.25):
-    points = [axes.c2p(x, y) for x, y in zip(xs, upper)] + \
-             [axes.c2p(x, y) for x, y in zip(list(xs)[::-1], list(lower)[::-1])]
-    return Polygon(*points, stroke_width=0, fill_color=colour, fill_opacity=opacity)
-
-
-def card(text, colour=PURPLE, size=40):
-    words = VGroup(*[label(t, size, colour, weight=BOLD) for t in text.split("\n")]).arrange(DOWN, buff=0.15)
-    box = SurroundingRectangle(words, color=colour, buff=0.3, corner_radius=0.15, fill_color=BACKGROUND,
-                               fill_opacity=0.95)
-    return VGroup(box, words)
-
-
 def panel(width, height, colour, fill=BACKGROUND):
     return RoundedRectangle(width=width, height=height, corner_radius=0.2, stroke_color=colour,
                             stroke_width=5, fill_color=fill, fill_opacity=1)
 
 
-def hbars(names, values, colours, top, length=6.4, height=0.34, step=0.46, size=26, digits=None):
+def hbars(names, values, colours, top, length=6.4, height=0.34, step=0.46, size=26, digits=None,
+          texts=None):
     """Horizontal bars from a common left edge, the names right-aligned beside it.
 
-    Returns rows of (name, bar, value label) and the x of the zero line, so a reference
-    line can be drawn at any value."""
+    `texts`, if given, label the bars in place of their lengths."""
     rows = VGroup()
-    for i, (name, value, colour) in enumerate(zip(names, values, colours)):
+    for i, (name, amount, colour) in enumerate(zip(names, values, colours)):
         y = -i * step
-        bar = Rectangle(width=max(value / top * length, 0.001), height=height, stroke_width=0,
+        bar = Rectangle(width=max(amount / top * length, 0.001), height=height, stroke_width=0,
                         fill_color=colour, fill_opacity=1).move_to([0, y, 0], aligned_edge=LEFT)
         words = label(name, size, colour if colour != LIGHT else SUBDUED).next_to([0, y, 0], LEFT, 0.25)
-        value_text = label(f"{value:.{digits}f}", size - 2, SUBDUED).next_to(bar, RIGHT, 0.15) \
-            if digits is not None else VGroup()
-        rows.add(VGroup(words, bar, value_text))
+        if texts is not None:
+            amount_text = label(texts[i], size - 2, SUBDUED).next_to(bar, RIGHT, 0.15)
+        elif digits is not None:
+            amount_text = label(f"{amount:.{digits}f}", size - 2, SUBDUED).next_to(bar, RIGHT, 0.15)
+        else:
+            amount_text = VGroup()
+        rows.add(VGroup(words, bar, amount_text))
     return rows
 
 
-def dots_table(rows, columns, colours, cell=0.42, gap=0.08, seed=1):
+def dots_table(rows, columns, colours, cell=0.42, gap=0.08, seed=1, width=None):
     """A small table drawn as shaded cells: one column per input, schematic."""
     rng = np.random.default_rng(seed)
     table = VGroup()
     for c, colour in zip(range(columns), colours):
-        column = VGroup(*[Square(cell, stroke_width=0, fill_color=colour,
-                                 fill_opacity=rng.uniform(0.25, 1.0)) for _ in range(rows)])
+        column = VGroup(*[Rectangle(width=width or cell, height=cell, stroke_width=0, fill_color=colour,
+                                    fill_opacity=rng.uniform(0.25, 1.0)) for _ in range(rows)])
         column.arrange(DOWN, buff=gap)
         table.add(column)
     table.arrange(RIGHT, buff=gap)
     return table
 
-
-# The opening (scenes 1–3) ------------------------------------------------------------------
-
-class Scene01(LearnScene):
-    number = 1
-
-    @property
-    def times(self):
-        return tuple(position(self, p) for p in ("Which inputs", "Which interval", "And what"))
-
-
-class Scene02(VideoScene):
-    """Schematic: a score card, then the three questions a study has to answer as well."""
-
-    number = 2
-
-    def construct(self):
-        score = VGroup(panel(4.0, 2.6, BLUE, PALE_BLUE),
-                       VGroup(label("a score", 40, BLUE, weight=BOLD),
-                              label("how well it predicts", 28, INK),
-                              label("new sites", 28, INK)).arrange(DOWN, buff=0.15))
-        score[1].move_to(score[0])
-        score.move_to(4.2 * LEFT)
-        questions = VGroup(*[VGroup(badge(i + 1, 0.26), label(t, 34)).arrange(RIGHT, buff=0.3)
-                             for i, t in enumerate(["What did the model find?", "How sure is it?",
-                                                    "Can the records be trusted?"])])
-        questions.arrange(DOWN, buff=0.55, aligned_edge=LEFT).move_to(2.6 * RIGHT)
-        more = label("a study has to say more", 32, SUBDUED, weight=BOLD).next_to(questions, UP, 0.7)
-        brace = Brace(questions, LEFT, color=GRID)
-        # "A score says how well a model predicts new sites."
-        self.play(FadeIn(score, scale=0.9), run_time=self.share(0.12))
-        # "A study has to say more: ..."
-        cue(self, "A study")
-        self.play(FadeIn(more), GrowFromCenter(brace), run_time=self.share(0.08))
-        for row, phrase in zip(questions, ("what the", "how sure", "whether the")):
-            cue(self, phrase)
-            self.play(FadeIn(row, shift=0.3 * RIGHT), run_time=self.share(0.08))
-        self.finish()
-
-
-class Scene03(VideoScene):
-    """Schematic: stations along a coast, then one station's columns as they are named."""
-
-    number = 3
-
-    def construct(self):
-        rng = np.random.default_rng(10)
-        coast = VMobject(color=GREY, stroke_width=5).set_points_smoothly(
-            [[-6.4, 2.6, 0], [-5.2, 1.4, 0], [-5.6, 0.0, 0], [-4.6, -1.2, 0], [-5.0, -2.8, 0]])
-        land = label("coast", 26, SUBDUED).move_to([-6.1, -0.6, 0])
-        xs, ys = rng.uniform(-4.2, -0.8, 40), rng.uniform(-2.6, 2.6, 40)
-        stations = VGroup(*[Dot([x, y, 0], radius=0.08, color=BLUE) for x, y in zip(xs, ys)])
-        chosen = stations[7]
-        ring = Circle(0.22, color=ORANGE, stroke_width=5).move_to(chosen)
-        sim = label("one simulated survey", 32, SUBDUED, weight=BOLD).to_edge(UP, buff=0.5).shift(2.6 * LEFT)
-
-        box = panel(5.0, 4.6, ORANGE).move_to(3.6 * RIGHT)
-        head = label("one station", 32, ORANGE, weight=BOLD).next_to(box.get_top(), DOWN, 0.3)
-        fields = VGroup(*[label(t, 32) for t in ("count of the species", "depth", "water temperature",
-                                                   "seabed", "season")])
-        fields.arrange(DOWN, buff=0.28, aligned_edge=LEFT).next_to(head, DOWN, 0.35)
-        fields[0].set_color(BLUE)
-        link = DashedLine(ring.get_right(), box.get_left(), color=ORANGE, stroke_width=3)
-        # "As throughout the course, the data are one simulated survey: ..."
-        self.play(Create(coast), FadeIn(land), FadeIn(sim), run_time=self.share(0.1))
-        self.play(LaggedStart(*[FadeIn(s, scale=0.5) for s in stations], lag_ratio=0.02),
-                  run_time=self.share(0.15))
-        # "... counts of one species at coastal stations, ..."
-        cue(self, "counts of one")
-        self.play(Create(ring), Create(link), FadeIn(box), FadeIn(head), run_time=self.share(0.08))
-        self.play(FadeIn(fields[0], shift=0.2 * RIGHT), run_time=self.share(0.05))
-        # "... with the depth, the water temperature, the seabed and the season at each."
-        for row, phrase in zip(fields[1:], ("the depth", "the water", "the seabed", "the season")):
-            cue(self, phrase)
-            self.play(FadeIn(row, shift=0.2 * RIGHT), run_time=self.share(0.05))
-        self.finish()
-
-
-# What a model relies on (scenes 4–13) -----------------------------------------------------
 
 def tree_icon(colour=GREEN, height=0.7):
     crown = Triangle(color=colour, fill_color=colour, fill_opacity=1, stroke_width=0).scale(height / 2)
@@ -248,18 +154,20 @@ def tree_icon(colour=GREEN, height=0.7):
     return VGroup(crown, trunk)
 
 
-class Scene04(VideoScene):
-    """Schematic: a linear model's coefficients beside a forest with nothing to read."""
+# Shuffle each input in turn (scenes 2–6) ---------------------------------------------------
 
-    number = 4
+class Scene02(VideoScene):
+    """Schematic: linear regression's coefficients beside a forest with nothing to read."""
+
+    number = 2
 
     def construct(self):
         left = panel(5.6, 4.6, BLUE).move_to(3.3 * LEFT + 0.2 * DOWN)
-        left_head = label("linear model", 34, BLUE, weight=BOLD).next_to(left.get_top(), DOWN, 0.3)
+        left_head = label("linear regression", 34, BLUE, weight=BOLD).next_to(left.get_top(), DOWN, 0.3)
         coefficients = VGroup()
-        for i, (name, size) in enumerate((("depth", -1.0), ("temperature", 1.4), ("chlorophyll", 0.65),
-                                          ("salinity", 0.15))):
-            words = label(name, 28).move_to([-3.5, 0.8 - 0.75 * i, 0], aligned_edge=RIGHT)
+        for i, (name, size) in enumerate((("depth", -1.0), ("temperature", 1.4), ("salinity", 0.65),
+                                          ("chlorophyll", 0.15))):
+            words = label(name, 28).move_to([-3.6, 0.8 - 0.75 * i, 0], aligned_edge=RIGHT)
             bar = Rectangle(width=abs(size), height=0.36, stroke_width=0, fill_color=BLUE, fill_opacity=1)
             bar.move_to([-2.2, 0.8 - 0.75 * i, 0], aligned_edge=LEFT if size > 0 else RIGHT)
             coefficients.add(VGroup(words, bar))
@@ -272,976 +180,751 @@ class Scene04(VideoScene):
         trees.move_to(right.get_center() + 0.1 * DOWN)
         question = label("?", 120, VERMILION, weight=BOLD).move_to(trees)
         forest_name = label("no numbers to read", 26, VERMILION, weight=BOLD).next_to(right.get_bottom(), UP, 0.3)
-        # "A linear model shows what it relies on through its coefficients."
-        self.play(FadeIn(left), FadeIn(left_head), Create(zero), run_time=self.share(0.1))
+        # "Linear regression shows what it learned through its coefficients: ..."
+        cue(self, "Linear regression")
+        self.play(FadeIn(left), FadeIn(left_head), Create(zero), run_time=self.share(0.08))
         self.play(LaggedStart(*[FadeIn(c[0]) for c in coefficients], lag_ratio=0.2),
                   LaggedStart(*[GrowFromEdge(c[1], LEFT if c[1].get_left()[0] >= -2.21 else RIGHT)
                                 for c in coefficients], lag_ratio=0.2),
-                  FadeIn(coef_name), run_time=self.share(0.25))
-        # "A random forest averages hundreds of trees, ..."
+                  FadeIn(coef_name), run_time=self.share(0.2))
+        # "A random forest averages hundreds of trees, each asking its own questions, ..."
         cue(self, "A random forest")
-        self.play(FadeIn(right), FadeIn(right_head), run_time=self.share(0.08))
-        self.play(LaggedStart(*[FadeIn(t, scale=0.5) for t in trees], lag_ratio=0.04), run_time=self.share(0.2))
-        # "... and has no such numbers to read."
-        cue(self, "and has no")
-        self.play(trees.animate.set_opacity(0.3), FadeIn(question, scale=1.4), FadeIn(forest_name),
+        self.play(FadeIn(right), FadeIn(right_head), run_time=self.share(0.06))
+        self.play(LaggedStart(*[FadeIn(t, scale=0.5) for t in trees], lag_ratio=0.04), run_time=self.share(0.18))
+        # "... so it has no such numbers to read."
+        cue(self, "so it has no")
+        self.play(trees.animate.fade(0.7), FadeIn(question, scale=1.4), FadeIn(forest_name),
                   run_time=self.share(0.1))
         self.finish()
 
 
+SHUFFLE_ROWS = 7
+SHUFFLE_INPUTS = ("temperature", "depth", "salinity")
+# the rise in the error when each input is shuffled, as heights: schematic
+SHUFFLE_RISES = (1.6, 0.6, 0.08)
+
+
+def shuffled_order(seed):
+    return np.random.default_rng(seed).permutation(SHUFFLE_ROWS)
+
+
 def shuffle_layout():
-    """The schematic table of scenes 5 and 6: three inputs, the outcome, an error bar."""
-    colours = [BLUE, BLUE, BLUE]
-    table = dots_table(7, 3, colours, seed=3)
-    outcome = dots_table(7, 1, [INK], seed=9)
-    outcome.next_to(table, RIGHT, 0.35)
-    whole = VGroup(table, outcome).move_to(3.2 * LEFT + 0.4 * DOWN)
-    heads = VGroup(*[label(t, 28, BLUE if t != "count" else INK, weight=BOLD).next_to(col, UP, 0.2)
-                     for t, col in zip(("A", "B", "C", "count"), [*table, outcome[0]])])
-    return table, outcome, heads
+    """The schematic of scenes 3 and 4: the test stations' inputs and counts, one row each."""
+    table = dots_table(SHUFFLE_ROWS, 3, [BLUE] * 3, seed=3, width=1.6, gap=0.14)
+    outcome = dots_table(SHUFFLE_ROWS, 1, [INK], seed=9, width=1.0, gap=0.14)
+    outcome.next_to(table, RIGHT, 0.3)
+    VGroup(table, outcome).move_to(3.4 * LEFT + 0.5 * DOWN)
+    heads = VGroup(*[label(t, 26, BLUE if t != "count" else INK, weight=BOLD).next_to(col, UP, 0.2)
+                     for t, col in zip((*SHUFFLE_INPUTS, "count"), [*table, outcome[0]])])
+    stations = label("test stations, one per row", 26, SUBDUED).next_to(VGroup(table, outcome), DOWN, 0.3)
+    outlines = VGroup(*[SurroundingRectangle(column, color=ORANGE, buff=0.08, stroke_width=5)
+                        for column in table])
+    homes = [[cell.get_center() for cell in column] for column in table]
+    return table, outcome, heads, stations, outlines, homes
 
 
-def error_bars(before, after, x=0.6):
-    base = -2.0
-    first = Rectangle(width=1.0, height=before, stroke_width=0, fill_color=GREY, fill_opacity=1
+def shuffle(scene, column, home, seed, run_time):
+    order = shuffled_order(seed)
+    scene.play(*[cell.animate.move_to(home[i]) for cell, i in zip(column, order)],
+               run_time=run_time, rate_func=smooth)
+
+
+def unshuffle(column, home):
+    return [cell.animate.move_to(spot) for cell, spot in zip(column, home)]
+
+
+def error_bars(before, after, x=1.6):
+    base = -2.2
+    first = Rectangle(width=1.1, height=before, stroke_width=0, fill_color=GREY, fill_opacity=1
                       ).move_to([x, base, 0], aligned_edge=DOWN)
-    second = Rectangle(width=1.0, height=after, stroke_width=0, fill_color=GREY, fill_opacity=1
-                       ).move_to([x + 1.8, base, 0], aligned_edge=DOWN)
-    rise = Rectangle(width=1.0, height=after - before, stroke_width=0, fill_color=VERMILION, fill_opacity=1
-                     ).move_to([x + 1.8, base + before, 0], aligned_edge=DOWN)
-    floor = Line([x - 0.8, base, 0], [x + 2.6, base, 0], color=GRID, stroke_width=3)
+    second = Rectangle(width=1.1, height=after, stroke_width=0, fill_color=GREY, fill_opacity=1
+                       ).move_to([x + 2.0, base, 0], aligned_edge=DOWN)
+    rise = Rectangle(width=1.1, height=after - before, stroke_width=0, fill_color=VERMILION, fill_opacity=1
+                     ).move_to([x + 2.0, base + before, 0], aligned_edge=DOWN)
+    floor = Line([x - 0.9, base, 0], [x + 2.9, base, 0], color=GRID, stroke_width=3)
     names = VGroup(label("before", 26, SUBDUED).next_to(first, DOWN, 0.2),
-                   label("after", 26, SUBDUED).next_to(second, DOWN, 0.2))
-    head = label("error on test sites", 28, SUBDUED, weight=BOLD).move_to([x + 0.9, 2.6, 0])
+                   label("shuffled", 26, ORANGE).next_to(second, DOWN, 0.2))
+    head = label("error on the test stations", 28, SUBDUED, weight=BOLD).move_to([x + 1.0, 2.4, 0])
     return first, second, rise, floor, names, head
 
 
+BEFORE = 1.6
+
+
+class Scene03(VideoScene):
+    """Schematic: the test stations scored, then temperature's column shuffled between rows."""
+
+    number = 3
+
+    def construct(self):
+        table, outcome, heads, stations, outlines, homes = shuffle_layout()
+        first, second, rise, floor, names, head = error_bars(BEFORE, BEFORE + SHUFFLE_RISES[0])
+        name = label("read it from outside", 40, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
+        row = SurroundingRectangle(VGroup(*[column[2] for column in [*table, outcome[0]]]), color=INK,
+                                   buff=0.06, stroke_width=4)
+        row_name = label("one station", 26, INK, weight=BOLD).next_to(row, RIGHT, 0.2)
+        # "Yet any model can be read from outside."
+        self.play(FadeIn(name, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "Take the test stations, which the model never saw while learning."
+        cue(self, "Take the test")
+        self.play(FadeIn(table), FadeIn(outcome), FadeIn(heads), FadeIn(stations), run_time=self.share(0.07))
+        # "Each row is one station: its inputs, and the count recorded there."
+        cue(self, "Each row")
+        self.play(Create(row), FadeIn(row_name), run_time=self.share(0.05))
+        cue(self, "its inputs")
+        self.play(Indicate(VGroup(*heads[:3]), color=BLUE), run_time=self.share(0.05))
+        cue(self, "and the count")
+        self.play(Indicate(heads[3], color=INK), run_time=self.share(0.05))
+        # "Score the model's predictions against those counts."
+        cue(self, "Score the model")
+        self.play(FadeOut(row), FadeOut(row_name), FadeIn(head), Create(floor), GrowFromEdge(first, DOWN),
+                  FadeIn(names[0]), run_time=self.share(0.07))
+        # "Then take one input, say temperature, and shuffle its column, ..."
+        cue(self, "say temperature")
+        self.play(Create(outlines[0]), heads[0].animate.set_color(ORANGE), run_time=self.share(0.05))
+        cue(self, "and shuffle its")
+        shuffle(self, table[0], homes[0], 5, self.share(0.12))
+        # "The other columns stay as they were, so any change comes from temperature alone."
+        cue(self, "The other columns")
+        self.play(Indicate(VGroup(table[1], table[2], outcome), color=SUBDUED, scale_factor=1.03),
+                  run_time=self.share(0.1))
+        self.finish()
+
+
+class Scene04(VideoScene):
+    """Schematic: score again; the rise is temperature's importance; then depth, then salinity."""
+
+    number = 4
+
+    def construct(self):
+        table, outcome, heads, stations, outlines, homes = shuffle_layout()
+        first, second, rise, floor, names, head = error_bars(BEFORE, BEFORE + SHUFFLE_RISES[0])
+        order = shuffled_order(5)
+        for cell, i in zip(table[0], order):
+            cell.move_to(homes[0][i])
+        heads[0].set_color(ORANGE)
+        name = label("read it from outside", 40, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
+        self.add(name, table, outcome, heads, stations, outlines[0], first, floor, names[0], head)
+        shuffled_name = label("temperature\nshuffled", 26, ORANGE).next_to(second, DOWN, 0.2)
+        rise_name = label("the rise:\nits importance", 28, VERMILION, weight=BOLD).next_to(rise, RIGHT, 0.3)
+        new_name = label("permutation importance", 40, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
+        repeat = label("each many times, the rises averaged", 28, INK, weight=BOLD).to_edge(DOWN, buff=0.3)
+
+        def bars_for(k):
+            """The second bar and its rise when input k is shuffled."""
+            after = BEFORE + SHUFFLE_RISES[k]
+            bar = second.copy().stretch_to_fit_height(after).align_to(first, DOWN)
+            top = rise.copy().stretch_to_fit_height(SHUFFLE_RISES[k]).move_to(
+                bar.get_top(), aligned_edge=UP)
+            words = label(f"{SHUFFLE_INPUTS[k]}\nshuffled", 26, ORANGE).next_to(bar, DOWN, 0.2)
+            return bar, top, words
+
+        # "Score the model again."
+        self.play(GrowFromEdge(second, DOWN), FadeIn(shuffled_name), run_time=self.share(0.07))
+        # "If it relied on temperature, its predictions get worse, and the error rises."
+        cue(self, "and the error rises")
+        self.play(FadeIn(rise), run_time=self.share(0.05))
+        # "That rise is temperature's importance, called permutation importance."
+        cue(self, "That rise")
+        self.play(FadeIn(rise_name, shift=0.2 * LEFT), run_time=self.share(0.05))
+        cue(self, "called permutation")
+        self.play(ReplacementTransform(name, new_name), run_time=self.share(0.05))
+        # "Then put temperature back, and do the same with depth, then salinity: one input at a time."
+        for k, phrase in ((1, "put temperature back"), (2, "then salinity")):
+            cue(self, phrase)
+            bar, top, words = bars_for(k)
+            self.play(*unshuffle(table[k - 1], homes[k - 1]), heads[k - 1].animate.set_color(BLUE),
+                      ReplacementTransform(outlines[k - 1], outlines[k]), heads[k].animate.set_color(ORANGE),
+                      run_time=self.share(0.05))
+            shuffle(self, table[k], homes[k], 5 + k, self.share(0.06))
+            self.play(Transform(second, bar), Transform(rise, top), Transform(shuffled_name, words),
+                      rise_name.animate.next_to(top, RIGHT, 0.3), run_time=self.share(0.05))
+        # "Shuffling is random, so each input is shuffled many times and the rises are averaged."
+        cue(self, "Shuffling is random")
+        self.play(FadeIn(repeat, shift=0.2 * UP), run_time=self.share(0.05))
+        for seed in (11, 13):
+            shuffle(self, table[2], homes[2], seed, self.share(0.05))
+        self.finish()
+
+
+def importance_bars(scene, forest="all six", top=0.4, length=6.4, colour=BLUE):
+    table = scene.data("importance")
+    table = table[table["forest"] == forest].sort_values("rise", ascending=False)
+    shown = table["rise"].clip(lower=0)
+    rows = hbars([INPUT_NAMES[t] for t in table["input"]], shown, [colour] * len(table), top,
+                 length=length, height=0.42, step=0.62, size=30,
+                 texts=[f"{rise:.2f}" for rise in table["rise"]])
+    return table, rows
+
+
 class Scene05(VideoScene):
-    """Schematic: score, shuffle one input so its values change rows, score again."""
+    """Page results: the forest's RMSE on the test stations, then each input's rise."""
 
     number = 5
 
     def construct(self):
-        table, outcome, heads = shuffle_layout()
-        first, second, rise, floor, names, head = error_bars(1.6, 3.2)
-        name = label("permutation importance", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
-        rise_name = label("the rise:\nits importance", 28, VERMILION, weight=BOLD)
-        rise_name.next_to(rise, RIGHT, 0.3)
-        # "Permutation importance asks from outside."
-        self.play(FadeIn(name, shift=0.2 * DOWN), run_time=self.share(0.08))
-        # "Score the model on test sites."
-        cue(self, "Score the model")
-        self.play(FadeIn(table), FadeIn(outcome), FadeIn(heads), run_time=self.share(0.08))
-        self.play(FadeIn(head), Create(floor), GrowFromEdge(first, DOWN), FadeIn(names[0]),
-                  run_time=self.share(0.08))
-        # "Then shuffle one input, so its values land on the wrong stations, ..."
-        cue(self, "Then shuffle")
-        column = table[1]
-        order = np.random.default_rng(5).permutation(len(column))
-        targets = [column[i].get_center() for i in order]
-        outline = SurroundingRectangle(column, color=ORANGE, buff=0.08, stroke_width=5)
-        self.play(Create(outline), heads[1].animate.set_color(ORANGE), run_time=self.share(0.05))
-        self.play(*[cell.animate.move_to(target) for cell, target in zip(column, targets)],
-                  run_time=self.share(0.15), rate_func=smooth)
-        # "... and score again."
-        cue(self, "and score again")
-        self.play(GrowFromEdge(VGroup(second), DOWN), FadeIn(names[1]), run_time=self.share(0.06))
-        # "The more the error rises, the more the model relied on that input."
-        cue(self, "The more the error")
-        self.play(FadeIn(rise), FadeIn(rise_name, shift=0.2 * LEFT), run_time=self.share(0.1))
-        self.finish()
-
-
-class Scene06(VideoScene):
-    """Schematic: random columns join the inputs; their best score is the line to beat."""
-
-    number = 6
-
-    def construct(self):
-        table, outcome, heads = shuffle_layout()
-        heads[1].set_color(ORANGE)
-        name = label("permutation importance", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
-        self.add(name, table, outcome, heads)
-        noise = dots_table(7, 3, [ORANGE] * 3, seed=11).next_to(table, RIGHT, 0.08)
-        noise_head = label("random numbers", 26, ORANGE, weight=BOLD).next_to(noise, UP, 0.65)
-        everything = VGroup(table, noise, outcome, heads, noise_head)
-
-        # The schematic scores: three inputs, three random columns, the best random as a line.
-        scores = [("A", 2.6, BLUE), ("B", 1.9, BLUE), ("C", 0.45, LIGHT), ("random", 0.7, ORANGE),
-                  ("random", 0.5, ORANGE), ("random", 0.3, ORANGE)]
-        rows = hbars([s[0] for s in scores], [s[1] for s in scores], [s[2] for s in scores], 3.0,
-                     length=4.0, height=0.36, step=0.55, size=28)
-        rows.move_to(3.3 * RIGHT + 0.4 * DOWN)
-        zero_x = rows[0][1].get_left()[0]
-        line_x = zero_x + 0.7 / 3.0 * 4.0
-        line = DashedLine([line_x, rows.get_top()[1] + 0.3, 0], [line_x, rows.get_bottom()[1] - 0.3, 0],
-                          color=ORANGE, stroke_width=4)
-        bar_name = label("every input gets some score", 28, SUBDUED).next_to(rows, UP, 0.5)
-        noise_name = label("no better than noise", 28, VERMILION, weight=BOLD).next_to(rows, DOWN, 0.45)
-        # "But every input gets some score."
-        self.play(FadeIn(bar_name), *[FadeIn(r[0]) for r in rows[:3]],
-                  *[GrowFromEdge(r[1], LEFT) for r in rows[:3]], run_time=self.share(0.12))
-        # "To see what an unused input scores, add columns of random numbers as extra inputs."
-        cue(self, "add columns")
-        self.play(outcome.animate.shift((noise.width + 0.08) * RIGHT),
-                  heads[3].animate.shift((noise.width + 0.08) * RIGHT), run_time=self.share(0.06))
-        self.play(FadeIn(noise, shift=0.2 * DOWN), FadeIn(noise_head), run_time=self.share(0.08))
-        self.play(*[FadeIn(r[0]) for r in rows[3:]], *[GrowFromEdge(r[1], LEFT) for r in rows[3:]],
-                  run_time=self.share(0.08))
-        # "An input that cannot beat them is used no more than noise."
-        cue(self, "An input that")
-        self.play(Create(line), run_time=self.share(0.06))
-        self.play(Indicate(rows[2], color=VERMILION, scale_factor=1.05), FadeIn(noise_name),
-                  run_time=self.share(0.12))
-        self.finish()
-
-
-class Scene07(VideoScene):
-    """Page results: the forest's impurity importance, the random columns among the inputs."""
-
-    number = 7
-
-    def construct(self):
-        table = self.data("impurity").sort_values("importance", ascending=False)
-        names = [input_name(t) for t in table["input"]]
-        top_random = max(i for i, t in enumerate(table["input"]) if is_random(t))
-        colours = [ORANGE if is_random(t) else (BLUE if i < top_random else VERMILION)
-                   for i, t in enumerate(table["input"])]
-        rows = hbars(names, table["importance"], colours, 1.0, length=5.6, height=0.27, step=0.38, size=24)
-        rows.move_to(1.4 * RIGHT + 0.45 * DOWN)
-        head = VGroup(label("impurity importance", 40, GREEN, weight=BOLD),
-                      label("the forest's own score, from its splits on the training data", 26, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.3)
-        below = VGroup(*[rows[i] for i in range(top_random + 1, len(rows))])
-        brace = Brace(below, LEFT, color=VERMILION).shift(0.1 * LEFT)
-        brace.next_to(VGroup(*[r[0] for r in below]), LEFT, 0.15)
-        below_name = label("below the\nrandom\ncolumns", 26, VERMILION, weight=BOLD).next_to(brace, LEFT, 0.15)
-        why = label("a random column: hundreds of places to split", 26, ORANGE, weight=BOLD
-                    ).to_edge(DOWN, buff=0.15)
-        # "A forest also has a quicker score built in, from its own splits on the training data."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(r[0]), GrowFromEdge(r[1], LEFT)) for r in rows],
-                              lag_ratio=0.08), run_time=self.share(0.22))
-        # "It ranked the three random columns above the seabed and the season."
-        cue(self, "It ranked")
-        randoms = VGroup(*[r for r, t in zip(rows, table["input"]) if is_random(t)])
-        self.play(Indicate(randoms, color=ORANGE, scale_factor=1.05), run_time=self.share(0.1))
-        self.play(GrowFromCenter(brace), FadeIn(below_name), run_time=self.share(0.08))
-        # "A random column offers a tree hundreds of places to split, ..."
-        cue(self, "A random column")
-        self.play(FadeIn(why, shift=0.2 * UP), run_time=self.share(0.08))
-        self.finish()
-
-
-def rise_colours(table, best_random):
-    return [ORANGE if is_random(t) else (BLUE if r > best_random else LIGHT)
-            for t, r in zip(table["input"], table["rise"])]
-
-
-class Scene08(VideoScene):
-    """Page results: permutation importance on one split's test sites."""
-
-    number = 8
-
-    def construct(self):
-        table = self.data("permutation").sort_values("rise", ascending=False)
-        sites = int(self.data("one-split")["test_sites"].iloc[0])
-        best_random = table.loc[table["input"].map(is_random), "rise"].max()
-        shown = table["rise"].clip(lower=0)
-        top = table["rise"].max() * 1.05
-        rows = hbars([input_name(t) for t in table["input"]], shown, rise_colours(table, best_random), top,
-                     length=6.0, height=0.34, step=0.5, size=28)
-        rows.move_to(1.0 * RIGHT + 0.5 * DOWN)
-        zero_x = rows[0][1].get_left()[0]
-        line_x = zero_x + best_random / top * 6.0
-        line = DashedLine([line_x, rows.get_top()[1] + 0.25, 0], [line_x, rows.get_bottom()[1] - 0.25, 0],
-                          color=ORANGE, stroke_width=4)
-        line_name = label("best random column", 24, ORANGE, weight=BOLD).next_to(line, DOWN, 0.1)
-        head = VGroup(label("permutation importance", 40, BLUE, weight=BOLD),
-                      label("rise in RMSE when shuffled, on one split's test sites", 26, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.3)
-        held = label(f"{sites} test sites", 32, VERMILION, weight=BOLD).to_corner(DR, buff=0.5)
-        above = VGroup(*[r for r, t, v in zip(rows, table["input"], table["rise"])
-                         if not is_random(t) and v > best_random])
-        # "Permutation importance on test sites does better."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.1))
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(r[0]), GrowFromEdge(r[1], LEFT)) for r in rows],
-                              lag_ratio=0.08), run_time=self.share(0.2))
-        # "But one split holds back only 39 sites, ..."
-        cue(self, "But one split")
-        self.play(FadeIn(held, scale=1.2), run_time=self.share(0.08))
-        # "... and on it, only temperature and the seabed beat the random columns."
-        cue(self, "and on it")
-        self.play(Create(line), FadeIn(line_name), run_time=self.share(0.08))
-        self.play(Indicate(above, color=BLUE, scale_factor=1.05), run_time=self.share(0.12))
-        self.finish()
-
-
-class Scene09(VideoScene):
-    """Page results: on how many of the ten splits each input beat the random columns."""
-
-    number = 9
-
-    def construct(self):
-        beats = self.data("beats").sort_values("splits_above_random", ascending=False)
-        splits = int(self.data("one-split")["splits"].iloc[0])
-        names = [input_name(t) for t in beats["input"]]
-        counts = beats["splits_above_random"].astype(int)
-        colours = [BLUE if c > splits / 2 else LIGHT for c in counts]
-        bars = hbars(names, counts, colours, splits, length=6.4, height=0.42, step=0.66, size=32)
-        bars.move_to(0.6 * DOWN)
-        rows = VGroup(*[VGroup(b[0], b[1], label(f"{c} of {splits}", 30, INK, weight=BOLD).next_to(
-            [b[1].get_right()[0], b[1].get_y(), 0], RIGHT, 0.2)) for b, c in zip(bars, counts)])
-        head = VGroup(label(f"on {splits} splits of the sites", 40, BLUE, weight=BOLD),
-                      label("how often each input beat all three random columns", 28, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.35)
-        report = label("report the count, not a rank from one split", 30, INK, weight=BOLD
-                       ).to_edge(DOWN, buff=0.3)
-        order = list(beats["input"])
+        rmse = value(self, "feature-importance", "rmse")
+        table, rows = importance_bars(self)
+        rows.move_to(1.0 * RIGHT + 0.9 * DOWN)
+        head = label("rise in the typical miss when shuffled (animals)", 30, SUBDUED, weight=BOLD
+                     ).next_to(rows, UP, 0.5)
+        miss = VGroup(label("the forest's typical miss on the test stations:", 32, INK),
+                      label(f"{rmse:.2f} animals", 40, BLUE, weight=BOLD)).arrange(RIGHT, buff=0.25)
+        miss.to_edge(UP, buff=0.5)
+        order = list(table["input"])
 
         def row_of(term):
             return rows[order.index(term)]
 
-        # "So repeat it on ten splits."
-        self.play(FadeIn(head, shift=0.2 * DOWN), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.1))
-        # "Temperature beats the random columns on all ten; ..."
-        cue(self, "Temperature beats")
-        self.play(GrowFromEdge(row_of("temperature_c")[1], LEFT), FadeIn(row_of("temperature_c")[2]),
-                  run_time=self.share(0.08))
-        # "... depth, chlorophyll and the seabed on most; ..."
-        cue(self, "depth, chlorophyll")
-        most = [row_of(t) for t in ("depth_m", "chlorophyll_mg_m3", "substrate")]
-        self.play(*[GrowFromEdge(r[1], LEFT) for r in most], *[FadeIn(r[2]) for r in most],
-                  run_time=self.share(0.1))
-        # "... salinity on one."
-        cue(self, "salinity on one")
-        rest = [row_of(t) for t in order if t not in ("temperature_c", "depth_m", "chlorophyll_mg_m3",
-                                                      "substrate")]
+        # "On the survey, a random forest predicts the count of one species at each station."
+        # "On the test stations its typical miss, the RMSE, is 3.93 animals."
+        cue(self, "On the test stations")
+        self.play(FadeIn(miss[0]), run_time=self.share(0.06))
+        cue(self, "is 3.93")
+        self.play(FadeIn(miss[1], scale=1.2), run_time=self.share(0.05))
+        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.06))
+        # "Shuffle temperature, and that miss grows by 0.34: ..."
+        cue(self, "Shuffle temperature")
+        t = row_of("temperature_c")
+        self.play(GrowFromEdge(t[1], LEFT), FadeIn(t[2]), run_time=self.share(0.08))
+        # "... more than three times as much as for depth, the next input."
+        cue(self, "more than three")
+        d = row_of("depth_m")
+        self.play(GrowFromEdge(d[1], LEFT), FadeIn(d[2]), run_time=self.share(0.06))
+        rest = [row_of(x) for x in ("substrate", "season")]
         self.play(*[GrowFromEdge(r[1], LEFT) for r in rest], *[FadeIn(r[2]) for r in rest],
-                  run_time=self.share(0.08))
-        # "That count is the number worth reporting, not a rank from one split."
-        cue(self, "That count")
-        self.play(FadeIn(report, shift=0.2 * UP), *[Indicate(r[2], color=BLUE) for r in rows],
-                  run_time=self.share(0.12))
+                  run_time=self.share(0.05))
+        # "Shuffle chlorophyll or salinity, and it hardly moves."
+        cue(self, "Shuffle chlorophyll")
+        low = [row_of(x) for x in ("chlorophyll_mg_m3", "salinity_psu")]
+        self.play(*[GrowFromEdge(r[1], LEFT) for r in low], *[FadeIn(r[2]) for r in low],
+                  run_time=self.share(0.05))
+        self.play(*[Indicate(r[0], color=SUBDUED) for r in low], run_time=self.share(0.08))
         self.finish()
 
 
+class Scene06(KeyPointScene):
+    number, point = 6, 1
+
+
+# Draw each input's effect (scenes 7–11) ----------------------------------------------------
+
+class Scene07(VideoScene):
+    """Page results and schematic: temperature's importance, then which way?"""
+
+    number = 7
+
+    def construct(self):
+        table, rows = importance_bars(self, length=5.0)
+        t = rows[list(table["input"]).index("temperature_c")]
+        t.move_to(1.0 * UP + 0.6 * RIGHT)
+        how_much = label("how much", 34, BLUE, weight=BOLD).next_to(t, UP, 0.5)
+        axes = plain_axes([0, 4, 1], [0, 3, 1], 4.4, 2.6).move_to(2.0 * DOWN + 0.4 * RIGHT)
+        rising = Arrow(axes.c2p(0.3, 0.4), axes.c2p(1.7, 2.6), color=BLUE, stroke_width=8, buff=0)
+        falling = Arrow(axes.c2p(2.3, 2.6), axes.c2p(3.7, 0.4), color=ORANGE, stroke_width=8, buff=0)
+        x_name = label("temperature", 26, SUBDUED).next_to(axes, DOWN, 0.2)
+        y_name = label("count", 26, SUBDUED).rotate(PI / 2).next_to(axes, LEFT, 0.2)
+        which = label("which way?", 40, VERMILION, weight=BOLD).next_to(axes, RIGHT, 0.6)
+        # "Importance says how much the forest relies on temperature, ..."
+        cue(self, "Importance says")
+        self.play(FadeIn(t[0]), GrowFromEdge(t[1], LEFT), FadeIn(t[2]), FadeIn(how_much),
+                  run_time=self.share(0.12))
+        # "... but not which way."
+        cue(self, "but not which")
+        self.play(FadeIn(axes), FadeIn(x_name), FadeIn(y_name), FadeIn(which), run_time=self.share(0.1))
+        # "Does the count rise in warmer water, or fall?"
+        cue(self, "Does the count rise")
+        self.play(GrowArrow(rising), run_time=self.share(0.1))
+        cue(self, "or fall")
+        self.play(GrowArrow(falling), run_time=self.share(0.1))
+        self.finish()
+
+
+SWEEP_XS = np.linspace(0, 10, 41)
+
+
+def sweep_layout():
+    """The schematic of scenes 8 and 9: stations' prediction curves and their average."""
+    axes, frame = chart([0, 10, 1], [0, 1.2, 0.5], 9.0, 4.0, [], [], "temperature", "prediction")
+    VGroup(axes, frame).shift(0.7 * DOWN)
+    rng = np.random.default_rng(2)
+    scales = rng.uniform(0.3, 1.0, 8)
+    shapes = [s * np.exp(-((SWEEP_XS - 4.0 - rng.normal(0, 0.3)) / 2.4) ** 2) + 0.1 for s in scales]
+    average = np.mean(shapes, axis=0)
+    return axes, frame, shapes, average
+
+
+SWEEP_STEPS = (8, 12, 16, 20, 24, 28, 32, 36)
+
+
+class Scene08(VideoScene):
+    """Schematic: every station's prediction at one temperature, then their average."""
+
+    number = 8
+
+    def construct(self):
+        axes, frame, shapes, average = sweep_layout()
+        k = SWEEP_STEPS[0]
+        line = DashedLine(axes.c2p(SWEEP_XS[k], 0), axes.c2p(SWEEP_XS[k], 1.15), color=ORANGE, stroke_width=4)
+        one = label("one value", 26, ORANGE, weight=BOLD).next_to(line, UP, 0.1)
+        marks = VGroup(*[Dot(axes.c2p(SWEEP_XS[k], ys[k]), radius=0.08, color=GREY) for ys in shapes])
+        mean_dot = Dot(axes.c2p(SWEEP_XS[k], average[k]), radius=0.12, color=BLUE)
+        step_text = VGroup(label("every station given the same temperature", 28, INK),
+                           label("predict", 28, SUBDUED), label("average", 28, SUBDUED)
+                           ).arrange(RIGHT, buff=0.6).to_edge(UP, buff=0.4)
+        # "To find out, ask the forest a what-if question."
+        self.play(FadeIn(frame), run_time=self.share(0.08))
+        # "Take every station it learned from, and give them all the same temperature, ..."
+        cue(self, "give them all")
+        self.play(Create(line), FadeIn(one), FadeIn(step_text[0]), run_time=self.share(0.1))
+        # "The forest predicts each station's count, ..."
+        cue(self, "The forest predicts")
+        self.play(step_text[1].animate.set_color(INK),
+                  LaggedStart(*[FadeIn(m, scale=0.5) for m in marks], lag_ratio=0.1), run_time=self.share(0.12))
+        # "... and the predictions are averaged into one point."
+        cue(self, "and the predictions")
+        self.play(step_text[2].animate.set_color(INK), *[m.animate.move_to(mean_dot) for m in marks],
+                  FadeIn(mean_dot), run_time=self.share(0.1))
+        self.remove(marks)
+        self.finish()
+
+
+class Scene09(VideoScene):
+    """Schematic: the same at each warmer value; the averages joined into a curve."""
+
+    number = 9
+
+    def construct(self):
+        axes, frame, shapes, average = sweep_layout()
+        k0 = SWEEP_STEPS[0]
+        line = DashedLine(axes.c2p(SWEEP_XS[k0], 0), axes.c2p(SWEEP_XS[k0], 1.15), color=ORANGE, stroke_width=4)
+        dots = VGroup(Dot(axes.c2p(SWEEP_XS[k0], average[k0]), radius=0.12, color=BLUE))
+        self.add(frame, line, dots)
+        name = label("partial dependence plot", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
+        # "Then do the same at a slightly warmer temperature, and again, across the whole range."
+        each = self.share(0.45) / (len(SWEEP_STEPS) - 1)
+        for k in SWEEP_STEPS[1:]:
+            self.play(line.animate.move_to(axes.c2p(SWEEP_XS[k], 0.575)), run_time=each * 0.5)
+            dot = Dot(axes.c2p(SWEEP_XS[k], average[k]), radius=0.12, color=BLUE)
+            self.play(FadeIn(dot, scale=0.5), run_time=each * 0.5)
+            dots.add(dot)
+        # "Joined up, the points draw a curve, called a partial dependence plot: ..."
+        cue(self, "Joined up")
+        self.play(FadeOut(line), Create(polyline(axes, SWEEP_XS, average, BLUE, 8)), run_time=self.share(0.15))
+        cue(self, "called a partial")
+        self.play(FadeIn(name, shift=0.2 * DOWN), run_time=self.share(0.08))
+        self.finish()
+
+
+def hump_chart(scene, width=8.0, height=4.4, centre=0.5 * DOWN):
+    partial = scene.data("partial").sort_values("value")
+    lo, hi = partial["value"].min(), partial["value"].max()
+    top = np.ceil(partial[".pred"].max() + 0.5)
+    axes, frame = chart([np.floor(lo), np.ceil(hi), 1], [0, top, 1], width, height,
+                        list(range(int(np.ceil(lo)), int(np.floor(hi)) + 1, 2)),
+                        list(range(0, int(top) + 1, 2)), "temperature (°C)", "average prediction (animals)")
+    VGroup(axes, frame).move_to(centre)
+    curve = polyline(axes, partial["value"], partial[".pred"], BLUE, 8)
+    return partial, axes, frame, curve
+
+
 class Scene10(VideoScene):
-    """Schematic: set one input to each value at every station, predict, average, repeat."""
+    """Page results: the forest's partial dependence on temperature, a hump peaking at 7.7 °C."""
 
     number = 10
 
     def construct(self):
-        axes, frame = chart([0, 10, 1], [0, 1.2, 0.5], 9.0, 4.0, [], [], "temperature", "prediction")
-        VGroup(axes, frame).shift(0.7 * DOWN)
-        rng = np.random.default_rng(2)
-        xs = np.linspace(0, 10, 41)
-        scales = rng.uniform(0.3, 1.0, 8)
-        shapes = [s * np.exp(-((xs - 4.0 - rng.normal(0, 0.3)) / 2.4) ** 2) + 0.1 for s in scales]
-        stations = VGroup(*[polyline(axes, xs, ys, GREY, 3, 0.7) for ys in shapes])
-        average = np.mean(shapes, axis=0)
-        name = label("partial dependence", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.35)
-        how = label("importance says how much, not in which direction", 28, SUBDUED).next_to(name, DOWN, 0.15)
-        steps = VGroup(*[label(t, 26, INK) for t in ("set temperature to one value at every station",
-                                                     "predict", "average", "repeat along its range")])
-        steps.arrange(RIGHT, buff=0.45).to_edge(DOWN, buff=0.2)
-        for i in range(1, len(steps)):
-            steps[i].set_color(SUBDUED)
-        if steps.width > 13:
-            steps.scale_to_fit_width(13)
-
-        # "Importance says how much, but not in which direction."
-        self.play(FadeIn(how), FadeIn(frame), run_time=self.share(0.12))
-        # "A partial dependence plot shows the shape: ..."
-        cue(self, "A partial dependence")
-        self.play(FadeIn(name, shift=0.2 * DOWN), run_time=self.share(0.08))
-        # "... set temperature to one value at every station, ..."
-        cue(self, "set temperature")
-        k = 12
-        sweep = DashedLine(axes.c2p(xs[k], 0), axes.c2p(xs[k], 1.15), color=ORANGE, stroke_width=4)
-        marks = VGroup(*[Dot(axes.c2p(xs[k], ys[k]), radius=0.07, color=GREY) for ys in shapes])
-        self.play(FadeIn(steps[0]), Create(sweep), run_time=self.share(0.08))
-        # "... predict, ..."
-        cue(self, "predict,")
-        self.play(steps[1].animate.set_color(INK), LaggedStart(*[FadeIn(m, scale=0.5) for m in marks],
-                                                               lag_ratio=0.1), run_time=self.share(0.06))
-        # "... average, ..."
-        cue(self, "average,")
-        mean_dot = Dot(axes.c2p(xs[k], average[k]), radius=0.11, color=BLUE)
-        self.play(steps[2].animate.set_color(INK), *[m.animate.move_to(mean_dot) for m in marks],
-                  FadeIn(mean_dot), run_time=self.share(0.06))
-        self.remove(marks)
-        # "... and repeat along its range."
-        cue(self, "and repeat")
-        curve = polyline(axes, xs, average, BLUE, 8)
-        self.play(steps[3].animate.set_color(INK), Create(curve),
-                  sweep.animate.move_to(axes.c2p(xs[-1], 0.575)), run_time=self.share(0.15))
-        self.play(FadeOut(sweep), FadeIn(stations), run_time=self.share(0.06))
+        partial, axes, frame, curve = hump_chart(self)
+        top_row = partial.loc[partial[".pred"].idxmax()]
+        peak = top_row["value"]
+        head = label("the forest's partial dependence on temperature", 34, BLUE, weight=BOLD
+                     ).to_edge(UP, buff=0.35)
+        peak_line = DashedLine(axes.c2p(peak, 0), axes.c2p(peak, top_row[".pred"] + 0.6), color=BLUE,
+                               stroke_width=4)
+        peak_name = label(f"{peak:.1f} °C", 32, BLUE, weight=BOLD).next_to(peak_line, UP, 0.1)
+        rising = partial[partial["value"] <= peak]
+        falling = partial[partial["value"] >= peak]
+        up = polyline(axes, rising["value"], rising[".pred"], BLUE, 8)
+        down = polyline(axes, falling["value"], falling[".pred"], BLUE, 8)
+        hump = label("a hump", 40, INK, weight=BOLD).move_to(axes.c2p(11.4, top_row[".pred"] + 0.4))
+        # "For the forest, the curve rises from the coldest water to a peak at 7.7 degrees, ..."
+        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.08))
+        cue(self, "the curve rises")
+        self.play(Create(up), run_time=self.share(0.15))
+        cue(self, "a peak at")
+        self.play(Create(peak_line), FadeIn(peak_name), run_time=self.share(0.07))
+        # "... then falls again in warmer water: a hump."
+        cue(self, "falls again")
+        self.play(Create(down), run_time=self.share(0.12))
+        cue(self, "a hump")
+        self.play(FadeIn(hump, scale=1.2), run_time=self.share(0.05))
         self.finish()
 
 
-class Scene11(VideoScene):
-    """Page results: the forest's partial dependence on temperature, then each station's curve."""
+class Scene11(KeyPointScene):
+    number, point = 11, 2
 
-    number = 11
 
-    def construct(self):
-        partial = self.data("partial").sort_values("value")
-        ice = self.data("ice")
-        changes = self.data("ice-changes").iloc[0]
-        top = np.ceil(max(ice[".pred"].quantile(0.99), partial[".pred"].max()) * 1.05)
-        lo, hi = partial["value"].min(), partial["value"].max()
-        axes, frame = chart([np.floor(lo), np.ceil(hi), 1], [0, top, 2], 7.4, 4.4,
-                            list(range(int(np.ceil(lo)), int(np.floor(hi)) + 1, 2)),
-                            list(range(0, int(top) + 1, 4)), "temperature (°C)", "predicted count")
-        VGroup(axes, frame).shift(0.4 * DOWN + 2.0 * LEFT)
-        rng = np.random.default_rng(1)
-        highest = ice.groupby("station")[".pred"].max()
-        chosen = rng.choice(highest[highest <= top].index, 80, replace=False)
-        curves = VGroup()
-        for station in chosen:
-            rows = ice[ice["station"] == station].sort_values("value")
-            curves.add(polyline(axes, rows["value"], rows[".pred"], GREY, 2, 0.45))
-        average = polyline(axes, partial["value"], partial[".pred"], BLUE, 9)
-        peak = changes["peak"]
-        peak_line = DashedLine(axes.c2p(peak, 0), axes.c2p(peak, top), color=BLUE, stroke_width=4)
-        peak_name = label(f"{peak:.1f} °C", 30, BLUE, weight=BOLD).next_to(peak_line, UP, 0.1)
-        head = label("the forest's partial dependence", 34, BLUE, weight=BOLD).to_edge(UP, buff=0.35)
-        stations = int(changes["stations"])
-        rows_text = VGroup(label(f"one curve per station: {stations}", 28, SUBDUED, weight=BOLD),
-                           label(f"rise to the peak: all but {stations - int(changes['rise'])}", 26, INK),
-                           label(f"fall after it: all but {stations - int(changes['fall'])}", 26, INK)
-                           ).arrange(DOWN, buff=0.15, aligned_edge=LEFT).move_to(4.6 * RIGHT + 0.4 * DOWN)
-        # "The forest predicts the most animals in cool water, near 7.7 degrees."
-        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.1))
-        self.play(Create(average), run_time=self.share(0.18))
-        cue(self, "near")
-        self.play(Create(peak_line), FadeIn(peak_name), run_time=self.share(0.08))
-        # "Drawn station by station, the curve rises and falls at nearly every one of the 598."
-        cue(self, "Drawn station")
-        self.play(LaggedStart(*[Create(c) for c in curves], lag_ratio=0.02), run_time=self.share(0.25))
-        self.add_foreground_mobjects(average)
-        cue(self, "rises and falls")
-        self.play(FadeIn(rows_text, shift=0.2 * UP), run_time=self.share(0.1))
-        self.finish()
-
+# Split one prediction into parts (scenes 12–16) --------------------------------------------
 
 class Scene12(VideoScene):
-    """Page results: the GAM's temperature curve with its interval, then RMSE on the same folds."""
+    """Page results: the training stations' predictions, their average, and one station's."""
 
     number = 12
 
     def construct(self):
-        curves = self.data("gam-curve")
-        gam = curves[curves["model"] == "GAM"].sort_values("value")
-        lo, hi = gam["value"].min(), gam["value"].max()
-        axes, frame = chart([np.floor(lo), np.ceil(hi), 1], [0, 1.3, 0.5], 5.4, 3.6,
-                            list(range(int(np.ceil(lo)), int(np.floor(hi)) + 1, 3)), [0, 0.5, 1],
-                            "temperature (°C)", "relative to its peak")
-        VGroup(axes, frame).move_to(3.4 * LEFT + 0.5 * DOWN)
-        band = ribbon(axes, gam["value"], gam["lower"], gam["upper"].clip(upper=1.3), BLUE, 0.2)
-        line = polyline(axes, gam["value"], gam[".pred"], BLUE, 8)
-        left_head = label("a GAM, read from its parts", 30, BLUE, weight=BOLD).next_to(frame, UP, 0.35)
-        band_name = label("with its interval", 26, BLUE).next_to(axes, DOWN, 1.0)
-
-        comparison = self.data("comparison").set_index("Model")
-        models = [("GAM", "GAM", BLUE), ("Random forest", "random forest", GREEN),
-                  ("Predicting the average", "the average", GREY)]
-        values = [comparison.loc[m, "RMSE"] for m, _, _ in models]
-        top = np.ceil(max(values))
-        rows = hbars([n for _, n, _ in models], values, [c for _, _, c in models], top,
-                     length=3.6, height=0.5, step=0.85, size=30, digits=2)
-        rows.move_to(3.6 * RIGHT + 0.3 * DOWN)
-        right_head = label("RMSE on new sites (individuals)", 26, SUBDUED, weight=BOLD).next_to(rows, UP, 0.5)
-        folds = label("the same folds of sites", 26, SUBDUED).next_to(right_head, UP, 0.12)
-        cost = label("reading cost no accuracy", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.3)
-        # "A GAM draws the same hump from its own parts, with an interval."
-        self.play(FadeIn(left_head), FadeIn(frame), run_time=self.share(0.08))
-        self.play(Create(line), run_time=self.share(0.12))
-        cue(self, "with an interval")
-        self.play(FadeIn(band), FadeIn(band_name), run_time=self.share(0.06))
-        # "Scored on the same folds of sites, it predicted new sites as well as the forest: ..."
-        cue(self, "Scored on")
-        self.play(FadeIn(folds), FadeIn(right_head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.08))
-        # "... an RMSE of 4.34 against 4.43."
-        cue(self, "an RMSE")
-        self.play(GrowFromEdge(rows[0][1], LEFT), FadeIn(rows[0][2]), run_time=self.share(0.06))
-        self.play(GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.06))
-        self.play(GrowFromEdge(rows[2][1], LEFT), FadeIn(rows[2][2]), run_time=self.share(0.05))
-        # "On this survey, reading the model cost no accuracy."
-        cue(self, "On this survey")
-        self.play(FadeIn(cost, shift=0.2 * UP), run_time=self.share(0.08))
+        predictions = self.data("train-predictions")[".pred"]
+        average = value(self, "explaining-one-prediction", "average")
+        prediction = value(self, "explaining-one-prediction", "prediction")
+        top = np.ceil(predictions.max() / 2) * 2
+        axes, frame = chart([0, top, 2], [0, 1, 1], 11.0, 2.6, list(range(0, int(top) + 1, 4)), [],
+                            "predicted count (animals)", None)
+        VGroup(axes, frame).move_to(0.9 * DOWN)
+        rng = np.random.default_rng(4)
+        dots = VGroup(*[Dot(axes.c2p(p, rng.uniform(0.1, 0.9)), radius=0.05, color=GREY, fill_opacity=0.5)
+                        for p in predictions])
+        head = label("the forest's predictions at the stations it learned from", 30, SUBDUED, weight=BOLD
+                     ).to_edge(UP, buff=0.4)
+        mean_line = Line(axes.c2p(average, 0), axes.c2p(average, 1.15), color=BLUE, stroke_width=7)
+        mean_tag = VGroup(label("average", 30, BLUE, weight=BOLD),
+                          label(f"{average:.2f}", 36, BLUE, weight=BOLD)).arrange(DOWN, buff=0.1)
+        mean_tag.next_to(mean_line, UP, 0.15).align_to(mean_line, RIGHT)
+        station = Dot(axes.c2p(prediction, 0.5), radius=0.16, color=VERMILION).set_z_index(10)
+        station_line = DashedLine(axes.c2p(prediction, 0), axes.c2p(prediction, 1.15), color=VERMILION,
+                                  stroke_width=5)
+        station_tag = VGroup(label("this station", 30, VERMILION, weight=BOLD),
+                             label(f"{prediction:.2f}", 36, VERMILION, weight=BOLD)).arrange(DOWN, buff=0.1)
+        station_tag.next_to(station_line, UP, 0.15).align_to(station_line, LEFT)
+        question = label("which inputs raised it?", 40, VERMILION, weight=BOLD).next_to(frame, DOWN, 0.4)
+        # "Importance and the curve describe the forest over all the stations, ..."
+        cue(self, "Importance and")
+        self.play(FadeIn(head), FadeIn(frame), run_time=self.share(0.06))
+        self.play(LaggedStart(*[FadeIn(d) for d in dots], lag_ratio=0.002), run_time=self.share(0.12))
+        # "... but often the question is about one station."
+        cue(self, "but often")
+        self.play(FadeIn(station, scale=0.5), run_time=self.share(0.06))
+        # "Over the stations it learned from, the forest predicts 4.11 animals on average."
+        cue(self, "Over the stations")
+        self.play(dots.animate.fade(0.5), Create(mean_line), run_time=self.share(0.06))
+        cue(self, "4.11")
+        self.play(FadeIn(mean_tag, shift=0.2 * DOWN), run_time=self.share(0.06))
+        # "At this station it predicts 6.53."
+        cue(self, "At this station")
+        self.play(Create(station_line), FadeIn(station_tag, shift=0.2 * DOWN), run_time=self.share(0.07))
+        # "Which inputs raised it?"
+        cue(self, "Which inputs")
+        self.play(FadeIn(question, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
-class Scene13(KeyPointScene):
-    number, point = 13, 1
+class Scene13(VideoScene):
+    """Schematic: from the average, each input's bar pushes the prediction up or down."""
+
+    number = 13
+
+    def construct(self):
+        axes, frame = chart([0, 10, 1], [0, 1, 1], 9.0, 0.01, [], [], "predicted count", None)
+        VGroup(axes, frame).move_to(2.4 * DOWN + 0.6 * RIGHT)
+        moves = (("depth", 2.2), ("temperature", 1.4), ("seabed", -1.0))
+        start = 3.0
+        rows, running = VGroup(), start
+        for i, (name, move) in enumerate(moves):
+            y = 1.0 - i * 0.95
+            x0, x1 = axes.c2p(min(running, running + move), 0)[0], axes.c2p(max(running, running + move), 0)[0]
+            running += move
+            colour = BLUE if move > 0 else ORANGE
+            bar = Rectangle(width=x1 - x0, height=0.5, stroke_width=0, fill_color=colour, fill_opacity=1
+                            ).move_to([(x0 + x1) / 2, y, 0])
+            words = label(name, 30, INK).move_to([axes.c2p(0, 0)[0] - 0.2, y, 0], aligned_edge=RIGHT)
+            rows.add(VGroup(words, bar))
+        top_y, bottom_y = 1.6, -1.95
+        mean_line = DashedLine([axes.c2p(start, 0)[0], top_y, 0], [axes.c2p(start, 0)[0], bottom_y, 0],
+                               color=GREY, stroke_width=4)
+        end_line = DashedLine([axes.c2p(running, 0)[0], top_y, 0], [axes.c2p(running, 0)[0], bottom_y, 0],
+                              color=INK, stroke_width=4)
+        mean_tag = label("average", 28, SUBDUED, weight=BOLD).next_to(mean_line, UP, 0.1)
+        mean_tag.align_to(mean_line, RIGHT)
+        end_tag = label("this station's prediction", 28, INK, weight=BOLD).next_to(end_line, UP, 0.1)
+        end_tag.align_to(end_line, LEFT)
+        head = label("one SHAP value per input", 40, BLUE, weight=BOLD).to_edge(UP, buff=0.35)
+        edge = max(r[1].get_right()[0] for r in rows) + 0.6
+        up = label("+ adds animals", 28, BLUE, weight=BOLD).move_to([edge, rows[0].get_y(), 0], aligned_edge=LEFT)
+        down = label("− takes some away", 28, ORANGE, weight=BOLD).move_to([edge, rows[2].get_y(), 0],
+                                                                         aligned_edge=LEFT)
+        # "SHAP values answer that."
+        self.play(FadeIn(head), FadeIn(frame), Create(mean_line), FadeIn(mean_tag), run_time=self.share(0.08))
+        # "Each input gets one number for this station: the animals it adds to the average, or takes away."
+        cue(self, "Each input gets")
+        for i in range(len(rows)):
+            self.play(FadeIn(rows[i][0]), GrowFromEdge(rows[i][1], LEFT if moves[i][1] > 0 else RIGHT),
+                      run_time=self.share(0.07))
+        # "A positive value pushes the prediction up, ..."
+        cue(self, "A positive value")
+        self.play(Indicate(VGroup(rows[0][1], rows[1][1]), color=BLUE, scale_factor=1.05), FadeIn(up),
+                  run_time=self.share(0.08))
+        # "... a negative one pushes it down."
+        cue(self, "a negative one")
+        self.play(Indicate(rows[2][1], color=ORANGE, scale_factor=1.05), FadeIn(down), run_time=self.share(0.08))
+        # "Added together, they lead exactly from the average to this station's prediction."
+        cue(self, "Added together")
+        self.play(Create(end_line), FadeIn(end_tag, scale=1.1), run_time=self.share(0.1))
+        self.finish()
 
 
-# How sure a prediction is (scenes 14–21) ---------------------------------------------------
+def player(colour, name, size=26):
+    disc = Circle(0.38, color=colour, fill_color=colour, fill_opacity=0.25, stroke_width=4)
+    return VGroup(disc, label(name, size, INK).next_to(disc, DOWN, 0.15))
 
-def interval_layout():
-    """Schematic: one station's prediction with a narrow and a wide interval, on a count axis."""
-    axis = NumberLine(x_range=[0, 10, 1], length=10, include_ticks=False, color=GRID, stroke_width=3)
-    axis.move_to(1.6 * DOWN)
-    axis_name = label("animals caught at one station", 26, SUBDUED).next_to(axis, DOWN, 0.75)
-    centre = 3.4
-    prediction = Dot(axis.n2p(centre), radius=0.14, color=INK)
-    pred_name = label("prediction", 26, INK).next_to(prediction, DOWN, 0.2)
 
-    def bar(low, high, y, colour):
-        return VGroup(Line(axis.n2p(low) + y * UP, axis.n2p(high) + y * UP, color=colour, stroke_width=10),
-                      Line(axis.n2p(low) + (y - 0.2) * UP, axis.n2p(low) + (y + 0.2) * UP, color=colour,
-                           stroke_width=6),
-                      Line(axis.n2p(high) + (y - 0.2) * UP, axis.n2p(high) + (y + 0.2) * UP, color=colour,
-                           stroke_width=6))
+SHARES = (8, 4, -4)   # arrow widths: the biggest share, a smaller one, a negative one
 
-    narrow = bar(2.9, 3.9, 1.6, BLUE)
-    wide = bar(0.3, 8.3, 0.5, ORANGE)
-    narrow_name = label("confidence interval", 30, BLUE, weight=BOLD).next_to(narrow, UP, 0.2)
-    wide_name = label("prediction interval", 30, ORANGE, weight=BOLD).next_to(wide, UP, 0.2).shift(2.4 * RIGHT)
-    return axis, axis_name, prediction, pred_name, narrow, wide, narrow_name, wide_name
+
+def sharing(head, prize, names, colour, note=None):
+    """A prize box split by arrows among three players, the last share negative: schematic."""
+    words = label(prize, 28, INK, weight=BOLD)
+    if note:
+        words = VGroup(words, label(note, 22, SUBDUED)).arrange(DOWN, buff=0.08)
+    box = RoundedRectangle(width=max(3.2, words.width + 0.4), height=1.05, corner_radius=0.12,
+                           stroke_color=YELLOW, stroke_width=4, fill_color=YELLOW, fill_opacity=0.25)
+    words.move_to(box)
+    players = VGroup(*[player(colour, n) for n in names]).arrange(RIGHT, buff=0.55)
+    players.next_to(box, DOWN, 1.0)
+    arrows = VGroup()
+    for p, width in zip(players, SHARES):
+        ends = (box.get_bottom(), p[0].get_top())
+        if width < 0:   # a negative share runs back to the prize
+            ends = ends[::-1]
+        arrows.add(Arrow(*ends, color=BLUE if width > 0 else ORANGE, stroke_width=abs(width) + 1, buff=0.1,
+                         max_tip_length_to_length_ratio=0.2))
+    signs = VGroup(*[label("+" if w > 0 else "−", 34, BLUE if w > 0 else ORANGE, weight=BOLD
+                           ).next_to(a, LEFT if i == 0 else RIGHT, 0.08)
+                     for i, (a, w) in enumerate(zip(arrows, SHARES))])
+    name = label(head, 30, colour, weight=BOLD).next_to(box, UP, 0.3)
+    return VGroup(name, VGroup(box, words), arrows, players, signs)
+
+
+def show_share(scene, panel_, i, share=0.06):
+    scene.play(GrowArrow(panel_[2][i]), FadeIn(panel_[4][i]), Indicate(panel_[3][i], color=panel_[2][i].get_color()),
+               run_time=scene.share(share))
 
 
 class Scene14(VideoScene):
+    """Schematic: the name spelled out; a quiz team sharing a prize, then the inputs sharing the gap."""
+
     number = 14
 
     def construct(self):
-        axis, axis_name, prediction, pred_name, narrow, wide, _, _ = interval_layout()
-        head = label("a prediction needs a range", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        two = label("two ranges, two questions", 32, SUBDUED).next_to(head, DOWN, 0.2)
-        # "A prediction needs a range, ..."
-        self.play(FadeIn(head), Create(axis), FadeIn(axis_name), run_time=self.share(0.15))
-        self.play(FadeIn(prediction, scale=0.5), FadeIn(pred_name), run_time=self.share(0.1))
-        # "... and there are two."
-        cue(self, "and there are two")
-        self.play(GrowFromCenter(narrow), run_time=self.share(0.12))
-        self.play(GrowFromCenter(wide), run_time=self.share(0.12))
-        # "They answer different questions."
-        cue(self, "They answer")
-        self.play(FadeIn(two), run_time=self.share(0.1))
+        average = value(self, "explaining-one-prediction", "average")
+        prediction = value(self, "explaining-one-prediction", "prediction")
+        shap = label("SHAP", 72, BLUE, weight=BOLD).to_edge(UP, buff=0.3)
+        full = label("SHapley Additive exPlanations", 44, INK, weight=BOLD,
+                     t2c={"SH": BLUE, "A": BLUE, "P": BLUE}).next_to(shap, DOWN, 0.25)
+        adds = label("average + the parts = the prediction", 30, SUBDUED).next_to(full, DOWN, 0.3)
+        team = sharing("a quiz team shares its prize", "prize", ("most answers", "some", "cost points"), PURPLE)
+        inputs = sharing("the inputs share the gap", "the gap",
+                         ("depth", "temperature", "seabed"), BLUE,
+                         note=f"{prediction:.2f} − {average:.2f} = {prediction - average:.2f} animals")
+        VGroup(team, inputs).arrange(RIGHT, buff=1.2).to_edge(DOWN, buff=0.35)
+        # "SHAP stands for SHapley Additive exPlanations."
+        self.play(FadeIn(shap, scale=1.2), run_time=self.share(0.04))
+        cue(self, "stands for")
+        self.play(FadeIn(full, shift=0.2 * DOWN), run_time=self.share(0.05))
+        # "Additive, because the parts add up."
+        cue(self, "Additive, because")
+        self.play(Indicate(full[7:15], color=BLUE, scale_factor=1.08), FadeIn(adds), run_time=self.share(0.05))
+        # "Shapley, after the mathematician Lloyd Shapley, who worked out a fair way to share a
+        # team's prize among its players."
+        cue(self, "Shapley, after")
+        self.play(Indicate(full[0:7], color=BLUE, scale_factor=1.08), run_time=self.share(0.04))
+        # "Think of a quiz team that wins a prize."
+        cue(self, "Think of")
+        self.play(FadeIn(team[0]), FadeIn(team[1]), FadeIn(team[3]), run_time=self.share(0.05))
+        # "The player who answered the most questions gets the biggest share, ..."
+        cue(self, "The player who")
+        show_share(self, team, 0)
+        show_share(self, team, 1, 0.04)
+        # "... and a player who cost the team points gets a negative one."
+        cue(self, "cost the team")
+        show_share(self, team, 2)
+        # "Here the players are the inputs, ..."
+        cue(self, "Here the players")
+        self.play(FadeIn(inputs[0]), FadeIn(inputs[3]), run_time=self.share(0.05))
+        # "... and the prize is the gap between the average and this station's prediction: 2.42 animals."
+        cue(self, "and the prize")
+        self.play(FadeIn(inputs[1]), run_time=self.share(0.05))
+        # "The input that raised the prediction most gets the biggest share, ..."
+        cue(self, "The input that raised")
+        show_share(self, inputs, 0)
+        show_share(self, inputs, 1, 0.04)
+        # "... and an input that pulled it down gets a negative one."
+        cue(self, "pulled it down")
+        show_share(self, inputs, 2)
         self.finish()
+
+
+WATERFALL_TOP = 1.9
+WATERFALL_STEP = 0.66
+
+
+def waterfall(scene, length=6.4, x=1.2):
+    """Page results: the station's SHAP values as bars from the average to its prediction."""
+    shap = scene.data("shap")
+    shap = shap.reindex(shap["shap"].abs().sort_values(ascending=False).index)
+    average = value(scene, "explaining-one-prediction", "average")
+    prediction = value(scene, "explaining-one-prediction", "prediction")
+    axes, frame = chart([0, 8, 1], [0, 1, 1], length, 0.01, [0, 2, 4, 6, 8], [], "predicted count (animals)", None)
+    VGroup(axes, frame).shift([x - axes.get_x(), -2.6 - axes.get_y(), 0])
+    rows = VGroup()
+    running = average
+    for i, (_, row) in enumerate(shap.iterrows()):
+        y = WATERFALL_TOP - i * WATERFALL_STEP
+        start, end = running, running + row["shap"]
+        running = end
+        colour = BLUE if row["shap"] > 0 else ORANGE
+        x0, x1 = axes.c2p(min(start, end), 0)[0], axes.c2p(max(start, end), 0)[0]
+        bar = Rectangle(width=max(x1 - x0, 0.02), height=0.44, stroke_width=0, fill_color=colour,
+                        fill_opacity=1).move_to([(x0 + x1) / 2, y, 0])
+        words = label(f"{INPUT_NAMES[row['input']]} = {row['value']}{UNITS[row['input']]}", 28, INK).move_to(
+            [axes.c2p(0, 0)[0] - 0.2, y, 0], aligned_edge=RIGHT)
+        amount = label(f"{row['shap']:+.2f}", 28, colour, weight=BOLD).move_to(
+            [axes.c2p(8, 0)[0] + 0.9, y, 0])
+        row_group = VGroup(words, bar, amount)
+        row_group.lifts = row["shap"] > 0
+        rows.add(row_group)
+    top_y, bottom_y = WATERFALL_TOP + 0.5, WATERFALL_TOP - (len(shap) - 1) * WATERFALL_STEP - 0.5
+    lines = VGroup(*[DashedLine([axes.c2p(v, 0)[0], top_y, 0], [axes.c2p(v, 0)[0], bottom_y, 0],
+                                color=GREY, stroke_width=3) for v in (average, prediction)])
+    # each tag above its line, on the side away from the other line
+    start_tag = label(f"average {average:.2f}", 26, SUBDUED, weight=BOLD)
+    end_tag = label(f"prediction {prediction:.2f}", 28, INK, weight=BOLD)
+    for tag, line, outward in ((start_tag, lines[0], prediction > average),
+                               (end_tag, lines[1], prediction < average)):
+        tag.next_to(line, UP, 0.1)
+        tag.align_to(line, RIGHT if outward else LEFT)
+    return shap, rows, lines, start_tag, end_tag, frame
+
+
+def reveal(scene, rows, i, share=0.07):
+    scene.play(FadeIn(rows[i][0]), GrowFromEdge(rows[i][1], LEFT if rows[i].lifts else RIGHT),
+               FadeIn(rows[i][2]), run_time=scene.share(share))
 
 
 class Scene15(VideoScene):
+    """Page results: the station's SHAP values, from the average 4.11 to its prediction 6.53."""
+
     number = 15
 
     def construct(self):
-        axis, axis_name, prediction, pred_name, narrow, wide, narrow_name, wide_name = interval_layout()
-        self.add(axis, axis_name, prediction, pred_name, narrow, wide)
-        narrow_q = label("where the average catch lies", 26, BLUE).next_to(narrow_name, UP, 0.1)
-        wide_q = label("where one new catch may land", 26, ORANGE).next_to(wide_name, UP, 0.1)
-        rng = np.random.default_rng(8)
-        catches = np.clip(rng.gamma(2.0, 1.7, 26), 0.1, 9.6)
-        dots = VGroup(*[Dot(axis.n2p(c) + (0.14 + 0.1 * (i % 3)) * UP, radius=0.07, color=GREY)
-                        for i, c in enumerate(catches)])
-        # "A confidence interval says where the average catch lies, at stations like this one."
-        self.play(FadeIn(narrow_name), Indicate(narrow, color=BLUE, scale_factor=1.05), run_time=self.share(0.12))
-        cue(self, "says where the average")
-        self.play(FadeIn(narrow_q, shift=0.2 * UP), run_time=self.share(0.1))
-        # "A prediction interval says where one new catch may land, ..."
-        cue(self, "A prediction interval")
-        self.play(FadeIn(wide_name), Indicate(wide, color=ORANGE, scale_factor=1.03), run_time=self.share(0.1))
-        self.play(FadeIn(wide_q, shift=0.2 * UP), run_time=self.share(0.08))
-        # "... so it adds the scatter of single catches."
-        cue(self, "so it adds")
-        self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in dots], lag_ratio=0.05), run_time=self.share(0.2))
+        shap, rows, lines, start_tag, end_tag, frame = waterfall(self)
+        depth = shap.set_index("input").loc["depth_m", "value"]
+        head = label(f"this station, {depth} m deep", 36, BLUE, weight=BOLD).to_edge(UP, buff=0.3)
+        reasons = label("a prediction with its reasons", 36, BLUE, weight=BOLD).to_edge(UP, buff=0.3)
+        order = list(shap["input"])
+        # "At this station, 44.9 metres deep, depth adds 0.95 animals to the average."
+        self.play(FadeIn(head), FadeIn(frame), Create(lines[0]), FadeIn(start_tag), run_time=self.share(0.06))
+        cue(self, "depth adds")
+        reveal(self, rows, order.index("depth_m"))
+        # "Chlorophyll adds 0.8, temperature 0.63, and salinity 0.58."
+        for term, phrase in (("chlorophyll_mg_m3", "Chlorophyll adds"), ("temperature_c", "temperature 0.63"),
+                             ("salinity_psu", "and salinity")):
+            cue(self, phrase)
+            reveal(self, rows, order.index(term), 0.04)
+        # "Its sandy seabed takes off 0.49, and the season almost nothing."
+        cue(self, "Its sandy")
+        reveal(self, rows, order.index("substrate"), 0.04)
+        cue(self, "and the season")
+        reveal(self, rows, order.index("season"), 0.04)
+        self.play(Create(lines[1]), FadeIn(end_tag, scale=1.2), run_time=self.share(0.05))
+        # "So each prediction comes with its reasons: check them against what you know of the
+        # species, or show them to whoever acts on the prediction."
+        cue(self, "So each prediction")
+        self.play(ReplacementTransform(head, reasons), run_time=self.share(0.06))
+        self.play(Indicate(VGroup(*[r[1] for r in rows]), color=INK, scale_factor=1.03), run_time=self.share(0.1))
         self.finish()
 
 
-class Scene16(VideoScene):
-    """Schematic: catches at new sites fall on an interval and are counted inside or outside."""
-
-    number = 16
-
-    def construct(self):
-        axis = NumberLine(x_range=[0, 10, 1], length=10, include_ticks=False, color=GRID, stroke_width=3)
-        axis.move_to(0.4 * DOWN)
-        low, high = 1.0, 7.2
-        band = Rectangle(width=axis.n2p(high)[0] - axis.n2p(low)[0], height=0.9, stroke_color=ORANGE,
-                         stroke_width=5, fill_color=ORANGE, fill_opacity=0.12
-                         ).move_to((axis.n2p(low) + axis.n2p(high)) / 2)
-        head = label("checking an interval", 40, INK, weight=BOLD).to_edge(UP, buff=0.5)
-        sub = label("catches at new sites", 28, SUBDUED).next_to(head, DOWN, 0.15)
-        rng = np.random.default_rng(12)
-        values = np.concatenate([rng.uniform(low + 0.2, high - 0.2, 16), [0.4, 8.4, 9.3]])
-        rng.shuffle(values)
-        dots = VGroup(*[Dot(axis.n2p(v) + 2.4 * UP, radius=0.1, color=GREY) for v in values])
-        inside, outside = VGroup(), VGroup()
-        tally_in = label("inside", 30, GREEN, weight=BOLD).move_to(5.4 * LEFT + 2.2 * DOWN)
-        tally_out = label("outside", 30, VERMILION, weight=BOLD).move_to(3.4 * RIGHT + 2.2 * DOWN)
-        coverage = label("coverage: the share inside", 36, INK, weight=BOLD).to_edge(DOWN, buff=0.25)
-        # "To check an interval, count how many catches at new sites fall inside it."
-        self.play(FadeIn(head), FadeIn(sub), Create(axis), FadeIn(band), run_time=self.share(0.12))
-        self.play(FadeIn(tally_in), FadeIn(tally_out), run_time=self.share(0.05))
-        moves = []
-        for i, (d, v) in enumerate(zip(dots, values)):
-            ok = low <= v <= high
-            colour = GREEN if ok else VERMILION
-            target = (tally_in if ok else tally_out).get_right() + RIGHT * (0.35 + 0.28 * (len(inside) if ok
-                                                                                           else len(outside)))
-            (inside if ok else outside).add(d)
-            moves.append(Succession(FadeIn(d, shift=0.3 * DOWN, run_time=0.3),
-                                    d.animate(run_time=0.3).move_to(axis.n2p(v)).set_color(colour),
-                                    d.animate(run_time=0.3).move_to(target).set_color(colour)))
-        self.play(LaggedStart(*moves, lag_ratio=0.25), run_time=self.share(0.55))
-        # "That share is its coverage."
-        cue(self, "That share")
-        self.play(FadeIn(coverage, shift=0.2 * UP), run_time=self.share(0.08))
-        self.finish()
+class Scene16(KeyPointScene):
+    number, point = 16, 3
 
 
-def coverage_rows(items, promise=0.9, length=6.0, step=1.25):
-    """Coverage bars from 0 to 100%, each with a name and a width, and a dashed line at the promise."""
-    rows = VGroup()
-    for i, (name, colour, coverage, width) in enumerate(items):
-        y = -i * step
-        track = Rectangle(width=length, height=0.55, stroke_color=GRID, stroke_width=2
-                          ).move_to([0, y, 0], aligned_edge=LEFT)
-        bar = Rectangle(width=max(coverage * length, 0.001), height=0.55, stroke_width=0, fill_color=colour,
-                        fill_opacity=1).move_to([0, y, 0], aligned_edge=LEFT)
-        value = label(pct(coverage), 34, colour, weight=BOLD).next_to(track, RIGHT, 0.25)
-        words = VGroup(label(name, 28, colour, weight=BOLD),
-                       label(f"{width:.1f} animals wide", 24, SUBDUED)).arrange(DOWN, buff=0.06, aligned_edge=RIGHT)
-        words.next_to([0, y, 0], LEFT, 0.3)
-        rows.add(VGroup(words, track, bar, value))
-    x = promise * length
-    line = DashedLine([x, 0.6, 0], [x, -(len(items) - 1) * step - 0.6, 0], color=INK, stroke_width=4)
-    line_name = label(f"{pct(promise)} promised", 24, INK).next_to(line, UP, 0.1)
-    return rows, VGroup(line, line_name)
+# The quiz (scenes 17–18) --------------------------------------------------------------------
 
-
-class Scene17(VideoScene):
-    """Page results: the forest's two intervals, their widths and their coverage at the test sites."""
-
+class Scene17(QuizScene):
     number = 17
-
-    def construct(self):
-        table = self.data("two-intervals").set_index("interval")
-        average, catch = table.loc["For the average"], table.loc["For a new catch"]
-        rows, promise = coverage_rows([("for the average", BLUE, average["coverage"], average["width"]),
-                                       ("for a new catch", ORANGE, catch["coverage"], catch["width"])])
-        VGroup(rows, promise).move_to(0.8 * RIGHT + 0.2 * DOWN)
-        head = VGroup(label("the forest's 90% intervals", 38, INK, weight=BOLD),
-                      label("share of catches inside, at the test sites", 26, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.4)
-        wrong = label(f"as a range for the next catch: wrong at {pct(1 - average['coverage'])} of stations",
-                      30, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.35)
-        # "A random forest refitted on resampled sites gives an interval for the average."
-        self.play(FadeIn(head), FadeIn(promise), *[FadeIn(r[1]) for r in rows], run_time=self.share(0.1))
-        # "It was 2.8 animals wide, and held 24 per cent of the catches at the test sites."
-        cue(self, "It was 2.8")
-        self.play(FadeIn(rows[0][0]), run_time=self.share(0.05))
-        cue(self, "and held 24")
-        self.play(GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.07))
-        # "A quantile forest, ..., gives an interval for a new catch. It was 11.6 wide, and held 92 per cent."
-        cue(self, "It was 11.6")
-        self.play(FadeIn(rows[1][0]), run_time=self.share(0.05))
-        cue(self, "and held 92")
-        self.play(GrowFromEdge(rows[1][2], LEFT), FadeIn(rows[1][3]), run_time=self.share(0.07))
-        # "Quote the narrow one as a range for the next catch, and it is wrong about three times in four."
-        cue(self, "Quote the narrow")
-        self.play(Indicate(rows[0], color=VERMILION, scale_factor=1.03), FadeIn(wrong, shift=0.2 * UP),
-                  run_time=self.share(0.12))
-        self.finish()
+    question = ("Shuffling salinity barely changes", "the forest's error. Does that mean",
+                "salinity has no effect on the species?")
 
 
 class Scene18(VideoScene):
-    """Schematic: a model's errors on calibration sites, sorted; nine in ten become the half-width."""
+    """Page results: season's importance with temperature in the forest, and without it."""
 
     number = 18
 
     def construct(self):
-        rng = np.random.default_rng(4)
-        errors = np.sort(rng.gamma(1.6, 0.55, 20))
-        errors = errors / errors.max() * 2.6
-        bars = VGroup(*[Rectangle(width=0.26, height=e, stroke_width=0, fill_color=GREY, fill_opacity=1)
-                        for e in errors]).arrange(RIGHT, buff=0.08, aligned_edge=DOWN)
-        bars.move_to(3.0 * LEFT + 0.6 * DOWN)
-        head = label("conformal prediction", 44, BLUE, weight=BOLD).to_edge(UP, buff=0.4)
-        none = label("any model, from its errors alone", 28, SUBDUED).next_to(head, DOWN, 0.15)
-        bars_name = label("its errors on calibration sites, sorted", 26, SUBDUED).next_to(bars, DOWN, 0.3)
-        held = label("held back from fitting", 24, SUBDUED).next_to(bars_name, DOWN, 0.1)
-        k = int(np.ceil(0.9 * len(errors))) - 1
-        mark = bars[k]
-        nine = label("nine in ten are smaller", 26, BLUE, weight=BOLD)
-        level = DashedLine([bars.get_left()[0], mark.get_top()[1], 0], mark.get_corner(UR), color=BLUE,
-                           stroke_width=4)
-        nine.next_to(level, UP, 0.15).align_to(level, LEFT)
-
-        centre = np.array([3.6, -0.6, 0])
-        half = errors[k]
-        prediction = Dot(centre, radius=0.14, color=INK)
-        pred_name = label("a prediction", 26, INK).next_to(prediction, LEFT, 0.3)
-        up = Line(centre, centre + half * UP, color=BLUE, stroke_width=8)
-        down = Line(centre, centre + half * DOWN, color=BLUE, stroke_width=8)
-        caps = VGroup(Line(centre + half * UP + 0.25 * LEFT, centre + half * UP + 0.25 * RIGHT, color=BLUE,
-                           stroke_width=6),
-                      Line(centre + half * DOWN + 0.25 * LEFT, centre + half * DOWN + 0.25 * RIGHT, color=BLUE,
-                           stroke_width=6))
-        either = label("as far either side", 26, BLUE, weight=BOLD).next_to(up, RIGHT, 0.3)
-        # "Conformal prediction gives any model an interval, ..."
-        self.play(FadeIn(head, shift=0.2 * DOWN), run_time=self.share(0.08))
-        # "... from its errors alone."
-        cue(self, "from its errors")
-        self.play(FadeIn(none), run_time=self.share(0.08))
-        # "Measure the errors on calibration sites, held back from fitting, ..."
-        cue(self, "Measure the errors")
-        self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.05), FadeIn(bars_name),
-                  run_time=self.share(0.2))
-        cue(self, "held back")
-        self.play(FadeIn(held), run_time=self.share(0.05))
-        # "... and reach as far either side as nine errors in ten."
-        cue(self, "and reach")
-        self.play(mark.animate.set_color(BLUE), Create(level), FadeIn(nine), run_time=self.share(0.1))
-        self.play(FadeIn(prediction), FadeIn(pred_name), run_time=self.share(0.05))
-        self.play(TransformFromCopy(mark, up), TransformFromCopy(mark, down), run_time=self.share(0.12))
-        self.play(FadeIn(caps), FadeIn(either), run_time=self.share(0.06))
+        table = self.data("importance").set_index(["forest", "input"])["rise"]
+        answer = label("Not necessarily", 56, VERMILION, weight=BOLD).to_edge(UP, buff=0.4)
+        top = 0.4
+        length = 6.0
+        groups = VGroup()
+        for i, term in enumerate(("temperature_c", "season")):
+            y = 0.6 - i * 1.8
+            name = label(INPUT_NAMES[term], 34, INK, weight=BOLD).move_to([-2.6, y - 0.3, 0], aligned_edge=RIGHT)
+            bars = VGroup()
+            for j, (forest, colour) in enumerate((("all six", BLUE), ("without temperature", ORANGE))):
+                rise = table.get((forest, term), np.nan)
+                yy = y - j * 0.6
+                if np.isnan(rise):
+                    bar = label("left out", 26, ORANGE).move_to([-2.2, yy, 0], aligned_edge=LEFT)
+                    bars.add(VGroup(bar))
+                    continue
+                bar = Rectangle(width=rise / top * length, height=0.44, stroke_width=0, fill_color=colour,
+                                fill_opacity=1).move_to([-2.2, yy, 0], aligned_edge=LEFT)
+                amount = label(f"{rise:.2f}", 28, colour, weight=BOLD).next_to(bar, RIGHT, 0.15)
+                bars.add(VGroup(bar, amount))
+            groups.add(VGroup(name, bars))
+        key = VGroup(VGroup(Square(0.3, fill_color=BLUE, fill_opacity=1, stroke_width=0),
+                            label("all six inputs", 26, BLUE)).arrange(RIGHT, buff=0.15),
+                     VGroup(Square(0.3, fill_color=ORANGE, fill_opacity=1, stroke_width=0),
+                            label("fitted without temperature", 26, ORANGE)).arrange(RIGHT, buff=0.15)
+                     ).arrange(RIGHT, buff=0.6).next_to(answer, DOWN, 0.4)
+        shared = label("the same information, shared", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.35)
+        temperature, season = groups
+        # "Not necessarily."
+        self.play(FadeIn(answer, scale=1.2), run_time=self.share(0.05))
+        # "Importance says what this forest relies on, given its other inputs."
+        cue(self, "Importance says")
+        self.play(FadeIn(key), FadeIn(temperature[0]), FadeIn(season[0]),
+                  GrowFromEdge(temperature[1][0][0], LEFT), FadeIn(temperature[1][0][1]),
+                  GrowFromEdge(season[1][0][0], LEFT), FadeIn(season[1][0][1]), run_time=self.share(0.1))
+        # "Two inputs that carry the same information share the work."
+        cue(self, "Two inputs")
+        self.play(Indicate(VGroup(temperature[0], season[0]), color=BLUE), run_time=self.share(0.08))
+        # "Fitted again without temperature, the forest leaned on season instead: ..."
+        cue(self, "Fitted again")
+        self.play(FadeIn(temperature[1][1]), run_time=self.share(0.06))
+        # "... its importance rose from 0.04 to 0.15, ..."
+        cue(self, "its importance rose")
+        self.play(GrowFromEdge(season[1][1][0], LEFT), FadeIn(season[1][1][1]), run_time=self.share(0.08))
+        # "... because summer water is warm and winter water cold."
+        # "A low score can mean another input already told the model the same thing."
+        cue(self, "A low score")
+        self.play(FadeIn(shared, shift=0.2 * UP), run_time=self.share(0.08))
         self.finish()
 
 
-class Scene19(VideoScene):
-    """Page results: the forest's conformal interval at the test sites."""
+# Key points and end card (scenes 19–22) ----------------------------------------------------
 
-    number = 19
-
-    def construct(self):
-        conformal = self.data("conformal").iloc[0]
-        rows, promise = coverage_rows([("random forest", GREEN, conformal["coverage"], conformal["width"])])
-        VGroup(rows, promise).move_to(0.6 * RIGHT + 0.2 * UP)
-        head = VGroup(label("a conformal 90% interval", 38, INK, weight=BOLD),
-                      label("share of catches inside, at the test sites", 26, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.5)
-        note = label("from nothing but the model's errors", 32, BLUE, weight=BOLD).to_edge(DOWN, buff=0.8)
-        # "At the test sites, the forest's conformal interval held 89 per cent of the catches, ..."
-        self.play(FadeIn(head), FadeIn(rows[0][0]), FadeIn(rows[0][1]), FadeIn(promise), run_time=self.share(0.15))
-        cue(self, "held 89")
-        self.play(GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.12))
-        # "... close to the 90 promised, ..."
-        cue(self, "close to")
-        self.play(Indicate(promise, color=GREEN), run_time=self.share(0.1))
-        # "... with nothing but the model's errors to go on."
-        cue(self, "with nothing but")
-        self.play(FadeIn(note, shift=0.2 * UP), run_time=self.share(0.1))
-        self.finish()
+class Scene19(RecapScene):
+    number, point = 19, 1
 
 
-class Scene20(VideoScene):
-    """Page results: calibrated on little chlorophyll, used where chlorophyll is highest."""
-
-    number = 20
-
-    def construct(self):
-        shift = self.data("shift")
-        forest = shift[shift["interval"] == "Forest, conformal"].set_index("stations")
-        same, rich = forest.loc["Like the calibration sites"], forest.loc["Most chlorophyll"]
-        rows, promise = coverage_rows([("like the calibration sites", GREEN, same["coverage"], same["width"]),
-                                       ("most chlorophyll", VERMILION, rich["coverage"], rich["width"])])
-        VGroup(rows, promise).move_to(0.6 * RIGHT + 0.4 * DOWN)
-        head = VGroup(label("calibrated on stations with little chlorophyll", 34, INK, weight=BOLD),
-                      label("the forest's conformal 90% interval, share of catches inside", 26, SUBDUED)
-                      ).arrange(DOWN, buff=0.12).to_edge(UP, buff=0.4)
-        silent = label("same label, same width, no warning", 32, VERMILION, weight=BOLD).to_edge(DOWN, buff=0.3)
-        # "Now calibrate it on stations with little chlorophyll, ..."
-        self.play(FadeIn(head), FadeIn(promise), *[FadeIn(r[1]) for r in rows], run_time=self.share(0.1))
-        self.play(FadeIn(rows[0][0]), GrowFromEdge(rows[0][2], LEFT), FadeIn(rows[0][3]), run_time=self.share(0.1))
-        # "... and use it where chlorophyll is highest."
-        cue(self, "and use it")
-        self.play(FadeIn(rows[1][0]), run_time=self.share(0.06))
-        # "It holds only 82 per cent, under the same label and at the same width."
-        cue(self, "It holds only")
-        self.play(GrowFromEdge(rows[1][2], LEFT), FadeIn(rows[1][3]), run_time=self.share(0.1))
-        cue(self, "under the same")
-        self.play(Indicate(VGroup(rows[0][0][1], rows[1][0][1]), color=INK), run_time=self.share(0.1))
-        # "Nothing in the interval says its promise has lapsed."
-        cue(self, "Nothing in")
-        self.play(FadeIn(silent, shift=0.2 * UP), run_time=self.share(0.1))
-        self.finish()
+class Scene20(RecapScene):
+    number, point = 20, 2
 
 
-class Scene21(KeyPointScene):
-    number, point = 21, 2
+class Scene21(RecapScene):
+    number, point = 21, 3
 
 
-# What a good score cannot check (scenes 22–27) ---------------------------------------------
-
-def ground(kind, colour, centre, rng, kept=1.0):
-    """Schematic: a patch of seabed with its animals; a share of them missed by the gear."""
-    box = panel(5.2, 3.4, colour).move_to(centre)
-    name = label(kind, 32, colour, weight=BOLD).next_to(box, UP, 0.2)
-    xs, ys = rng.uniform(-2.2, 2.2, 16), rng.uniform(-1.2, 0.9, 16)
-    animals = VGroup(*[Dot(centre + np.array([x, y, 0]), radius=0.13, color=INK) for x, y in zip(xs, ys)])
-    missed = VGroup(*[a for i, a in enumerate(animals) if i % 2 == 1]) if kept < 1 else VGroup()
-    return box, name, animals, missed
-
-
-class Scene22(VideoScene):
+class Scene22(EndCardScene):
     number = 22
-
-    def construct(self):
-        rng = np.random.default_rng(3)
-        sand = ground("sand", ORANGE, 3.3 * LEFT + 0.4 * DOWN, rng)
-        mud = ground("mud", PURPLE, 3.3 * RIGHT + 0.4 * DOWN, rng, kept=0.5)
-        chain = VGroup(*[label(t, 30, INK, weight=BOLD) for t in ("the gear", "the records", "the model")])
-        arrows = VGroup()
-        chain.arrange(RIGHT, buff=1.2).to_edge(UP, buff=0.4)
-        for a, b in zip(chain[:-1], chain[1:]):
-            arrows.add(Arrow(a.get_right(), b.get_left(), color=INK, stroke_width=4, buff=0.15))
-        missed_name = label("missed", 28, VERMILION, weight=BOLD).next_to(mud[0], DOWN, 0.2)
-        # "A model learns from the records, and the records come from a gear."
-        self.play(FadeIn(chain[2]), FadeIn(chain[1]), GrowArrow(arrows[1]), run_time=self.share(0.15))
-        cue(self, "and the records come")
-        self.play(FadeIn(chain[0]), GrowArrow(arrows[0]), run_time=self.share(0.1))
-        # "Grabs and dredges catch different shares of the animals on different ground."
-        cue(self, "Grabs and dredges")
-        self.play(*[FadeIn(VGroup(g[0], g[1])) for g in (sand, mud)], run_time=self.share(0.1))
-        self.play(*[LaggedStart(*[FadeIn(a, scale=0.5) for a in g[2]], lag_ratio=0.05) for g in (sand, mud)],
-                  run_time=self.share(0.15))
-        cue(self, "different shares")
-        self.play(mud[3].animate.set_color(LIGHT).shift(0.15 * DOWN), FadeIn(missed_name),
-                  run_time=self.share(0.15))
-        self.finish()
-
-
-class Scene23(VideoScene):
-    """Schematic: the records on mud halved, everything else unchanged."""
-
-    number = 23
-
-    def construct(self):
-        rng = np.random.default_rng(14)
-        kinds = ["sand", "mud", "rock", "sand", "rock", "mud", "sand", "rock"]
-        counts = rng.uniform(0.6, 2.6, len(kinds))
-        rows = VGroup()
-        for i, (kind, count) in enumerate(zip(kinds, counts)):
-            y = 1.6 - 0.5 * i
-            words = label(kind, 26, PURPLE if kind == "mud" else SUBDUED,
-                          weight=BOLD if kind == "mud" else NORMAL).move_to([-3.6, y, 0], aligned_edge=RIGHT)
-            bar = Rectangle(width=count * 1.6, height=0.34, stroke_width=0, fill_color=BLUE, fill_opacity=1
-                            ).move_to([-3.3, y, 0], aligned_edge=LEFT)
-            rows.add(VGroup(words, bar))
-        head = label("the survey's records", 32, SUBDUED, weight=BOLD).next_to(rows, UP, 0.4)
-        name = VGroup(label("half the animals on mud missed", 27, VERMILION, weight=BOLD),
-                      label("everything else unchanged", 26, SUBDUED)).arrange(DOWN, buff=0.1)
-        name.move_to(3.7 * RIGHT + 1.0 * UP)
-        again = card("the same report,\nthe same folds", BLUE, 32).move_to(3.9 * RIGHT + 1.4 * DOWN)
-        # "Suppose the survey's gear missed half the animals on mud, ..."
-        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], *[GrowFromEdge(r[1], LEFT) for r in rows],
-                  run_time=self.share(0.15))
-        cue(self, "missed half")
-        halve = [r[1].animate.stretch(0.5, 0, about_edge=LEFT).set_color(VERMILION)
-                 for r, k in zip(rows, kinds) if k == "mud"]
-        self.play(*halve, FadeIn(name), run_time=self.share(0.2))
-        # "... and run the whole analysis again, on the same folds."
-        cue(self, "and run the whole")
-        self.play(FadeIn(again, scale=0.9), run_time=self.share(0.12))
-        self.finish()
-
-
-def ratio_layout(scene):
-    """Mud's ratio to sand across the ten fold models, as recorded and with half missed on mud."""
-    gear = scene.data("gear").set_index("records")
-    axes, frame = chart([0.8, 1.25, 0.05], [0, 3, 1], 8.0, 3.0, [0.8, 0.9, 1.0, 1.1, 1.2], [],
-                        "mud's ratio to sand, the forest of each fold", None, x_text=lambda v: f"{v:.1f}")
-    VGroup(axes, frame).move_to(1.2 * RIGHT + 0.3 * DOWN)
-    one = DashedLine(axes.c2p(1, 0), axes.c2p(1, 3), color=INK, stroke_width=4)
-    one_name = label("1: the same as sand", 24, INK).next_to(one, UP, 0.1)
-    rows = {}
-    for key, y, colour, name in (("As recorded", 2.1, BLUE, "as recorded"),
-                                 ("Half missed on mud", 0.9, VERMILION, "half missed on mud")):
-        g = gear.loc[key]
-        line = Line(axes.c2p(g["mud_low"], y), axes.c2p(g["mud_high"], y), color=colour, stroke_width=14)
-        value = label(f"{g['mud_low']:.2f} to {g['mud_high']:.2f}", 26, colour, weight=BOLD
-                      ).next_to(line, UP, 0.15)
-        value.add_background_rectangle(color=BACKGROUND, opacity=1, buff=0.05)
-        words = label(name, 28, colour, weight=BOLD).next_to(axes.c2p(0.8, y), LEFT, 0.3)
-        rows[key] = VGroup(words, line, value)
-    return gear, axes, frame, one, one_name, rows
-
-
-class Scene24(VideoScene):
-    """Page results: mud's ratio to sand across the fold models, as recorded and with the biased records."""
-
-    number = 24
-
-    def construct(self):
-        _, axes, frame, one, one_name, rows = ratio_layout(self)
-        recorded, missed = rows["As recorded"], rows["Half missed on mud"]
-        head = label("at the same other inputs, across the ten folds", 32, SUBDUED, weight=BOLD
-                     ).to_edge(UP, buff=0.35)
-        more = label("more on mud", 26, BLUE, weight=BOLD).next_to(recorded[1], DOWN, 0.15)
-        fewer = label("fewer on mud", 26, VERMILION, weight=BOLD).next_to(missed[1], DOWN, 0.15)
-        gear_not = label("the change is the gear's, not the species'", 32, INK, weight=BOLD
-                         ).to_edge(DOWN, buff=0.25)
-        # "As recorded, the forest predicted more animals on mud than on sand: ..."
-        self.play(FadeIn(head), FadeIn(frame), Create(one), FadeIn(one_name), run_time=self.share(0.08))
-        self.play(FadeIn(recorded[0]), run_time=self.share(0.05))
-        # "... 1.10 to 1.16 times as many, across the ten folds."
-        cue(self, "1.10 to")
-        self.play(GrowFromCenter(recorded[1]), FadeIn(recorded[2]), run_time=self.share(0.08))
-        self.play(FadeIn(more), run_time=self.share(0.05))
-        # "With half missed on mud, every fold put mud below sand, at 0.90 to 0.95, ..."
-        cue(self, "With half missed")
-        self.play(FadeIn(missed[0]), run_time=self.share(0.05))
-        cue(self, "at 0.90")
-        self.play(GrowFromCenter(missed[1]), FadeIn(missed[2]), run_time=self.share(0.08))
-        # "... and a study would report fewer animals on mud."
-        cue(self, "and a study")
-        self.play(FadeIn(fewer), run_time=self.share(0.06))
-        # "The change is the gear's, not the species'."
-        cue(self, "The change")
-        self.play(FadeIn(gear_not, shift=0.2 * UP), run_time=self.share(0.08))
-        self.finish()
-
-
-class Scene25(VideoScene):
-    """Page results: the forest's cross-validated RMSE, folds and coverage, as recorded and biased."""
-
-    number = 25
-
-    def construct(self):
-        gear = self.data("gear").set_index("records")
-        keys = ["As recorded", "Half missed on mud"]
-        values = [gear.loc[k, "forest_rmse"] for k in keys]
-        top = np.ceil(max(values))
-        rows = hbars(["as recorded", "half missed on mud"], values, [BLUE, VERMILION], top,
-                     length=6.0, height=0.6, step=1.5, size=32, digits=2)
-        rows.move_to(0.6 * LEFT + 0.1 * DOWN)
-        notes = VGroup(*[
-            label(f"better than the average on {int(gear.loc[k, 'folds_better'])} of 10 folds,"
-                  f"  intervals held {pct(gear.loc[k, 'coverage'])}", 24, SUBDUED
-                  ).next_to(r[1], DOWN, 0.12, aligned_edge=LEFT)
-            for k, r in zip(keys, rows)])
-        head = VGroup(label("the forest's cross-validated RMSE (individuals)", 32, SUBDUED, weight=BOLD),
-                      label("lower is better", 26, SUBDUED)).arrange(DOWN, buff=0.1).to_edge(UP, buff=0.5)
-        improved = label("improved", 34, VERMILION, weight=BOLD).next_to(rows[1][2], RIGHT, 0.4)
-        why = label("every fold carries the same bias", 32, INK, weight=BOLD).to_edge(DOWN, buff=0.4)
-        # "The score did not warn."
-        self.play(FadeIn(head), *[FadeIn(r[0]) for r in rows], run_time=self.share(0.1))
-        # "The forest's cross-validated RMSE fell, from 4.41 to 3.86."
-        cue(self, "from 4.41")
-        self.play(GrowFromEdge(rows[0][1], LEFT), FadeIn(rows[0][2]), run_time=self.share(0.07))
-        cue(self, "to 3.86")
-        self.play(GrowFromEdge(rows[1][1], LEFT), FadeIn(rows[1][2]), run_time=self.share(0.07))
-        self.play(FadeIn(improved, shift=0.2 * LEFT), run_time=self.share(0.05))
-        # "It still beat the average on nine folds of ten, and its intervals still held 95 per cent."
-        cue(self, "It still beat")
-        self.play(FadeIn(notes, shift=0.1 * UP), run_time=self.share(0.1))
-        # "Every fold carries the same bias, so the model matches the records as well as ever."
-        cue(self, "Every fold")
-        self.play(FadeIn(why, shift=0.2 * UP), run_time=self.share(0.1))
-        self.finish()
-
-
-class Scene26(VideoScene):
-    """Schematic: three checks from outside the model."""
-
-    number = 26
-
-    def construct(self):
-        head = label("checks on the records come from outside the model", 30, INK, weight=BOLD
-                     ).to_edge(UP, buff=0.5)
-        texts = [("two gears", "on the same ground"), ("another way of counting", "video or divers"),
-                 ("the gear and the effort", "reported")]
-        cards = VGroup()
-        for main, sub in texts:
-            box = panel(4.2, 2.4, BLUE, PALE_BLUE)
-            words = VGroup(label(main, 27, BLUE, weight=BOLD), label(sub, 25, INK)).arrange(DOWN, buff=0.15)
-            cards.add(VGroup(box, words.move_to(box)))
-        cards.arrange(RIGHT, buff=0.35).move_to(0.4 * DOWN)
-        # "Checks on the records come from outside the model: ..."
-        self.play(FadeIn(head), run_time=self.share(0.12))
-        # "... fishing the same ground with two gears, counting the animals another way, with video or
-        # divers, and reporting the gear and the effort."
-        for c, phrase in zip(cards, ("fishing", "counting", "and reporting")):
-            cue(self, phrase)
-            self.play(FadeIn(c, shift=0.2 * UP), run_time=self.share(0.08))
-        self.finish()
-
-
-class Scene27(KeyPointScene):
-    number, point = 27, 3
-
-
-# The quiz (scenes 28–29) --------------------------------------------------------------------
-
-class Scene28(QuizScene):
-    number = 28
-    question = ("A random forest is scored", "on held-out sites. Which moves",
-                "its score more: the seed,", "or which sites are held out?")
-
-
-class Scene29(VideoScene):
-    """Page results: the forest's RMSE across ten seeds, ten splits and ten seeds for the folds."""
-
-    number = 29
-
-    def construct(self):
-        spread = self.data("spread")
-        lo = np.floor(min(spread[["seed", "split", "folds"]].min()) * 2) / 2
-        hi = np.ceil(max(spread[["seed", "split", "folds"]].max()) * 2) / 2
-        ticks = list(np.arange(lo, hi + 0.01, 0.5))
-        axes, frame = chart([lo, hi, 0.5], [0, 3, 1], 8.4, 3.3, ticks, [], "RMSE on new sites (individuals)", None,
-                            x_text=lambda v: f"{v:.1f}")
-        VGroup(axes, frame).move_to(1.6 * RIGHT + 0.5 * DOWN)
-        rows = {}
-        for column, y, colour, name in (("seed", 2.6, BLUE, "ten seeds, one split"),
-                                        ("split", 1.7, VERMILION, "ten splits, one seed"),
-                                        ("folds", 0.8, GREEN, "cross-validation")):
-            values = spread[column]
-            dots = VGroup(*[Dot(axes.c2p(v, y), radius=0.1, color=colour, fill_opacity=0.8) for v in values])
-            span = Line(axes.c2p(values.min(), y - 0.3), axes.c2p(values.max(), y - 0.3), color=colour,
-                        stroke_width=4)
-            width = values.max() - values.min()
-            value = label(f"{width:.2f}", 26, colour, weight=BOLD).next_to(span, DOWN, 0.08)
-            words = label(name, 26, colour, weight=BOLD).next_to(axes.c2p(lo, y), LEFT, 0.3)
-            rows[column] = VGroup(words, dots, span, value)
-        answer = label("The sites.", 64, VERMILION, weight=BOLD).to_edge(UP, buff=0.3)
-        ratio = (spread["split"].max() - spread["split"].min()) / (spread["seed"].max() - spread["seed"].min())
-        times = label(f"about {ratio:.0f} times as much", 30, VERMILION, weight=BOLD).next_to(answer, DOWN, 0.15)
-        # "The sites."
-        self.play(FadeIn(answer, scale=1.3), FadeIn(frame), run_time=self.share(0.06))
-        # "Ten seeds moved the forest's RMSE by 0.07; ..."
-        cue(self, "Ten seeds")
-        r = rows["seed"]
-        self.play(FadeIn(r[0]), LaggedStart(*[FadeIn(d, scale=0.5) for d in r[1]], lag_ratio=0.1),
-                  run_time=self.share(0.08))
-        self.play(Create(r[2]), FadeIn(r[3]), run_time=self.share(0.04))
-        # "... ten splits of the sites moved it by 1.84, about 27 times as much."
-        cue(self, "ten splits")
-        r = rows["split"]
-        self.play(FadeIn(r[0]), LaggedStart(*[FadeIn(d, scale=0.5) for d in r[1]], lag_ratio=0.1),
-                  run_time=self.share(0.08))
-        self.play(Create(r[2]), FadeIn(r[3]), run_time=self.share(0.04))
-        cue(self, "about 27")
-        self.play(FadeIn(times), run_time=self.share(0.05))
-        # "A seed makes a run repeat exactly, but it cannot show how far the score would move with
-        # other sites."
-        cue(self, "A seed makes")
-        self.play(Indicate(rows["seed"][1], color=BLUE), run_time=self.share(0.1))
-        cue(self, "but it cannot")
-        self.play(Indicate(rows["split"][1], color=VERMILION), run_time=self.share(0.1))
-        # "Cross-validation steadies it."
-        cue(self, "Cross-validation")
-        r = rows["folds"]
-        self.play(FadeIn(r[0]), LaggedStart(*[FadeIn(d, scale=0.5) for d in r[1]], lag_ratio=0.1),
-                  Create(r[2]), FadeIn(r[3]), run_time=self.share(0.08))
-        self.finish()
-
-
-# The recap (scenes 30–32) and the end card (scene 33) --------------------------------------
-
-class Scene30(RecapScene):
-    number, point = 30, 1
-
-
-class Scene31(RecapScene):
-    number, point = 31, 2
-
-
-class Scene32(RecapScene):
-    number, point = 32, 3
-
-
-class Scene33(EndCardScene):
-    number = 33
