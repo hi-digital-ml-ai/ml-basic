@@ -9,6 +9,37 @@
 
 terms:
 
+  # Toolkit: R with tidymodels
+  - term: "tidymodels"
+    definition: "A collection of R packages that sets up different models in the same steps: split, recipe, model specification, workflow, fit, predict and score."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Package"
+    definition: "A bundle of functions that someone has written and shared, loaded into R with library() or into Python with import."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Pipe"
+    definition: "R's |> operator, which passes the result on its left into the function on its right; read it as \"and then\"."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Model specification"
+    definition: "In tidymodels, the choice of method and its settings, such as linear_reg(), made before any data are seen."
+    page: toolkit/r-with-tidymodels.qmd
+
+  # Toolkit: Python with scikit-learn
+  - term: "scikit-learn"
+    definition: "The most widely used Python package for machine learning; the course's Python tabs are written with it."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Method (Python)"
+    definition: "A function that belongs to an object and is reached with a dot, such as model.fit()."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Transformer"
+    definition: "In scikit-learn, an object that prepares columns, such as filling gaps or turning categories into numbers, learning what it needs from the training data."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Estimator"
+    definition: "In scikit-learn, a model object, such as LinearRegression(), that learns from data with .fit() and predicts with .predict()."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Pipeline"
+    definition: "In scikit-learn, transformers and an estimator joined into one object that is fitted and applied as a whole; tidymodels' workflow does the same job."
+    page: toolkit/python-with-scikit-learn.qmd
+
   # 1 · Introduction: Types of learning
   - term: "Supervised learning"
     definition: "Learning from examples whose answer is known, in order to predict the answer for new examples."

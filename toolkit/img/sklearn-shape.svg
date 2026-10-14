@@ -1,44 +1,101 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 244" width="100%" role="img" aria-label="A scikit-learn Pipeline drawn as nested objects: a ColumnTransformer holding one transformer per group of columns, followed by the estimator, with fit and predict called on the outside">
-  <defs>
-    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/>
-    </marker>
-    <style>
-      .outer { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.8; rx: 10; }
-      .mid   { fill: #ffffff; stroke: #1b6a87; stroke-width: 1.4; rx: 8; }
-      .inner { fill: #f6f8fa; stroke: #b9c4cb; stroke-width: 1.2; rx: 6; }
-      .fn    { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1b6a87; }
-      .head  { font: bold 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
-      .body  { font: 13px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
-      .cols  { font: 12px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #8a949c; }
-      .link  { stroke: #8a949c; stroke-width: 1.8; fill: none; }
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -24 1020 924" width="100%" role="img" aria-label="The seven steps of a scikit-learn fit, drawn as a flow. Step 1, train_test_split(), splits the data into a larger training set and a smaller test set. Inside a dashed box labelled as describing the model, with nothing computed yet: step 2, ColumnTransformer(), prepares the inputs; step 3, LinearRegression(), names the model; both lead into step 4, Pipeline(), which holds the preparation and the model. The training set and the Pipeline() both lead into step 5, .fit(X_train, y_train), which works out the medians and fits the model on the training set. Step 5 leads to step 6, .predict(X_test), which also receives the test set and predicts it, and then to step 7, root_mean_squared_error(), which compares the predictions with the recorded values.">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a949c"/></marker>
+<style>
+      .box  { fill: #f4f8fa; stroke: #1b6a87; stroke-width: 1.6; }
+      .band { fill: none; stroke: #8a949c; stroke-width: 1.6; stroke-dasharray: 7 6; }
+      .title{ font: bold 22px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .code { font: bold 19px "Source Code Pro", Menlo, Consolas, monospace; fill: #1b6a87; }
+      .code2{ font: bold 16px "Source Code Pro", Menlo, Consolas, monospace; fill: #1b6a87; }
+      .body { font: 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #3d4852; }
+      .tab  { font: bold 18px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #1f2933; }
+      .lab  { font: bold 14px "Source Sans Pro", Helvetica, Arial, sans-serif; letter-spacing: 0.5px; }
+      .note { font: italic 17px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .sm   { font: italic 15px "Source Sans Pro", Helvetica, Arial, sans-serif; fill: #55606a; }
+      .ln   { fill: none; stroke: #8a949c; stroke-width: 1.8; }
     </style>
-  </defs>
+</defs>
+<text class="title" x="470" y="26" text-anchor="middle">Seven steps from data to a scored model</text>
+<!-- 1: split -->
+<rect class="box" x="0" y="48" width="940" height="212" rx="8"/><rect x="0" y="48" width="940" height="6" rx="3" fill="#CC79A7"/>
+<text class="lab" x="22" y="78" fill="#CC79A7">1 · HOLD BACK A TEST SET</text>
+<text class="code" x="22" y="108">train_test_split()</text>
+<rect x="410" y="74" width="120" height="110" rx="3" fill="#ffffff" stroke="#8a949c" stroke-width="1.2"/>
+<rect x="410" y="74" width="120" height="14" rx="3" fill="#8a949c" fill-opacity="0.7"/>
+<rect x="416" y="92" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="104" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="116" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="128" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="140" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="152" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="164" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<rect x="416" y="176" width="108" height="7" rx="2" fill="#8a949c" fill-opacity="0.35"/>
+<text class="tab" x="470" y="200" text-anchor="middle">the data</text>
+<rect x="40" y="132" width="120" height="86" rx="3" fill="#ffffff" stroke="#8a949c" stroke-width="1.2"/>
+<rect x="40" y="132" width="120" height="14" rx="3" fill="#0072B2" fill-opacity="0.6"/>
+<rect x="46" y="150" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="46" y="162" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="46" y="174" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="46" y="186" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="46" y="198" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<rect x="46" y="210" width="108" height="7" rx="2" fill="#0072B2" fill-opacity="0.3"/>
+<text class="tab" x="100" y="240" text-anchor="middle">training set</text>
+<rect x="780" y="156" width="120" height="38" rx="3" fill="#ffffff" stroke="#8a949c" stroke-width="1.2"/>
+<rect x="780" y="156" width="120" height="14" rx="3" fill="#E69F00" fill-opacity="0.8"/>
+<rect x="786" y="174" width="108" height="7" rx="2" fill="#E69F00" fill-opacity="0.4"/>
+<rect x="786" y="186" width="108" height="7" rx="2" fill="#E69F00" fill-opacity="0.4"/>
+<text class="tab" x="840" y="240" text-anchor="middle">test set</text>
+<path class="ln" d="M 404 140 C 300 140 260 180 166 180" marker-end="url(#arr)"/>
+<path class="ln" d="M 536 140 C 640 140 680 180 774 180" marker-end="url(#arr)"/>
+<text class="sm" x="292" y="128" text-anchor="middle">three quarters</text>
+<text class="sm" x="652" y="128" text-anchor="middle">one quarter</text>
 
-  <rect class="outer" x="220" y="14" width="640" height="216"/>
-  <text class="fn" x="240" y="40">Pipeline</text>
+<!-- 2-4: descriptions only -->
+<rect class="band" x="150" y="290" width="640" height="350" rx="12"/>
+<text class="note" x="470" y="320" text-anchor="middle">Steps 2 to 4 describe the model: nothing is computed yet</text>
+<rect class="box" x="170" y="340" width="285" height="130" rx="8"/><rect x="170" y="340" width="285" height="6" rx="3" fill="#0072B2"/>
+<text class="lab" x="192" y="370" fill="#0072B2">2 · PREPARE THE INPUTS</text>
+<text class="code" x="192" y="400">ColumnTransformer()</text>
+<text class="body" x="192" y="430">Fills gaps, turns categories</text>
+<text class="body" x="192" y="454">into numbers</text>
+<rect class="box" x="485" y="340" width="285" height="130" rx="8"/><rect x="485" y="340" width="285" height="6" rx="3" fill="#E69F00"/>
+<text class="lab" x="507" y="370" fill="#E69F00">3 · NAME THE MODEL</text>
+<text class="code" x="507" y="400">LinearRegression()</text>
+<text class="body" x="507" y="430">The method and its settings,</text>
+<text class="body" x="507" y="454">but no data</text>
+<rect class="box" x="325" y="496" width="290" height="130" rx="8"/><rect x="325" y="496" width="290" height="6" rx="3" fill="#009E73"/>
+<text class="lab" x="347" y="526" fill="#009E73">4 · JOIN THE TWO</text>
+<text class="code" x="347" y="556">Pipeline()</text>
+<text class="body" x="347" y="586">Holds the preparation</text>
+<text class="body" x="347" y="610">and the model</text>
+<path class="ln" d="M 312 470 C 312 486 400 482 410 492" marker-end="url(#arr)"/>
+<path class="ln" d="M 628 470 C 628 486 540 482 530 492" marker-end="url(#arr)"/>
 
-  <rect class="mid" x="242" y="54" width="360" height="156"/>
-  <text class="fn" x="258" y="80">ColumnTransformer</text>
+<!-- 5-7: computed -->
+<rect class="box" x="0" y="690" width="280" height="154" rx="8"/><rect x="0" y="690" width="280" height="6" rx="3" fill="#D55E00"/>
+<text class="lab" x="22" y="720" fill="#D55E00">5 · FIT</text>
+<text class="code2" x="22" y="750">.fit(X_train, y_train)</text>
+<text class="body" x="22" y="780">Works out the medians,</text>
+<text class="body" x="22" y="804">then fits the model,</text>
+<text class="body" x="22" y="828">on the training set</text>
+<rect class="box" x="330" y="690" width="280" height="154" rx="8"/><rect x="330" y="690" width="280" height="6" rx="3" fill="#D55E00"/>
+<text class="lab" x="352" y="720" fill="#D55E00">6 · PREDICT</text>
+<text class="code2" x="352" y="750">.predict(X_test)</text>
+<text class="body" x="352" y="780">Prepares the test set the</text>
+<text class="body" x="352" y="804">same way, then predicts</text>
+<text class="body" x="352" y="828">each station</text>
+<rect class="box" x="660" y="690" width="280" height="154" rx="8"/><rect x="660" y="690" width="280" height="6" rx="3" fill="#D55E00"/>
+<text class="lab" x="682" y="720" fill="#D55E00">7 · SCORE</text>
+<text class="code2" x="682" y="750">root_mean_squared_error()</text>
+<text class="body" x="682" y="780">Compares the predictions</text>
+<text class="body" x="682" y="804">with the recorded values</text>
+<line class="ln" x1="280" y1="767" x2="326" y2="767" marker-end="url(#arr)"/>
+<line class="ln" x1="610" y1="767" x2="656" y2="767" marker-end="url(#arr)"/>
+<line class="ln" x1="100" y1="260" x2="100" y2="686" marker-end="url(#arr)"/>
+<path class="ln" d="M 420 626 C 420 660 200 650 200 686" marker-end="url(#arr)"/>
+<path class="ln" d="M 840 260 V 662 H 520 V 686" marker-end="url(#arr)"/>
+<text class="sm" x="112" y="672">training set</text>
+<text class="sm" x="852" y="600">test set</text>
 
-  <rect class="inner" x="260" y="96" width="324" height="46"/>
-  <text class="body" x="274" y="116">SimpleImputer(strategy="median")</text>
-  <text class="cols" x="274" y="134">depth_m, temperature_c, chlorophyll_mg_m3</text>
-
-  <rect class="inner" x="260" y="152" width="324" height="46"/>
-  <text class="body" x="274" y="172">OneHotEncoder(drop="first")</text>
-  <text class="cols" x="274" y="190">substrate</text>
-
-  <rect class="mid" x="646" y="98" width="196" height="68"/>
-  <text class="fn"   x="662" y="126">LogisticRegression</text>
-  <text class="body" x="662" y="148">The estimator.</text>
-
-  <line class="link" x1="602" y1="132" x2="642" y2="132" marker-end="url(#arrow2)"/>
-
-  <text class="fn"   x="10" y="127">pipe.fit(X_train, y_train)</text>
-  <line class="link" x1="202" y1="122" x2="216" y2="122" marker-end="url(#arrow2)"/>
-
-  <text class="fn"   x="880" y="127">pipe.predict(X_test)</text>
-  <line class="link" x1="862" y1="122" x2="876" y2="122" marker-end="url(#arrow2)"/>
-
+<text class="note" x="470" y="884" text-anchor="middle">The test set is used once, at the end; nothing is learned from it.</text>
 </svg>
