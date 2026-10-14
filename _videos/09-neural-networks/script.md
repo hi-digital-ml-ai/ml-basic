@@ -94,8 +94,8 @@ bend, and the bends add up to curves.
 visual: manim Weights: three inputs and four hidden neurons, every arrow lit, 21 weights against 4 for linear regression; "many weights: room to fit the noise" (page results, what-a-network-is.qmd)
 
 Next, stopping training at the right step. Every arrow in a network is a weight to
-learn. Three inputs and four hidden neurons make 21 weights, where linear regression has
-4. With so many weights, a network can fit the noise in its training stations as well as
+learn, and so is each neuron's constant. Three inputs and four hidden neurons make 21
+weights, where linear regression has 4. With so many weights, a network can fit the noise in its training stations as well as
 the pattern. That is overfitting, which the Supervised learning video showed.
 
 ## Scene 10

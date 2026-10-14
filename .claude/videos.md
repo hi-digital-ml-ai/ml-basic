@@ -1173,7 +1173,7 @@ algorithms learn video, and taught backpropagation, the gradient check, ReLU, se
 the true mean counts, ROC AUC and the sample sizes besides. Rebuilt as an introduction
 like Assumptions, Validation and Unsupervised learning, one new concept per part with
 one example and one picture, and plain imperative key points used for the opening, the
-cards and the recap (`RECAP = PROMISES`): 27 scenes, 923 words, 7:12 on the draft voice.
+cards and the recap (`RECAP = PROMISES`): 27 scenes, 929 words, 7:08 narrated.
 
 - *Build curves from simple bends*: a neuron is a weighted sum (schematic); on its own
   that is linear regression, so the sum passes through a bend, the activation, an
@@ -1182,7 +1182,8 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 923 words, 7:12 on the draf
   to a hump peaking at 8.7 °C with 7 weights. "Hidden units" are "hidden neurons"
   throughout. The many-layers-still-a-line point is kept for the quiz.
 - *Stop training at the right step*: 21 weights against 4 give room to fit the noise
-  (overfitting, as the Supervised learning video showed); gradient descent gets a
+  (the counts include each neuron's constant, as `nnet` and the page count them, so
+  scene 9 says so: its picture has only 16 arrows; overfitting, as the Supervised learning video showed); gradient descent gets a
   clause; the 40-neuron network's training error falls for 8,000 steps while the
   validation error is lowest at step 1,937 and 4% worse by the end: early stopping.
 - *Let a network find combinations*: on the survey's noisy counts the forest's error is
