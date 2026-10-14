@@ -782,9 +782,6 @@ terms:
   - term: "Permutation importance"
     definition: "The rise in a model's error on test data when one input is shuffled, so its values no longer belong to their rows; it works for any model."
     page: chapters/10-interpretation/feature-importance.qmd
-  - term: "Impurity importance"
-    definition: "A random forest's built-in score: how much each input's splits lowered the error on the training data, summed over every tree; it favours inputs with many values."
-    page: chapters/10-interpretation/feature-importance.qmd
 
   # 10 · Interpretation: Partial effects
   - term: "Partial effect"
