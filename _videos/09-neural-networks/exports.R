@@ -57,7 +57,8 @@ exports <- list(
                                    true_means = checked$`Trained on true means`)),
           dir, "survey-scores")
     write(with(env, water_train), dir, "water-train")
-    write(with(env, dplyr::transmute(water_scores, model = Model, auc = `Test ROC AUC`)), dir, "water-auc")
+    write(with(env, dplyr::transmute(water_scores, model = Model, auc = `Test ROC AUC`,
+                                                 accuracy = `Test accuracy`)), dir, "water-auc")
     write(with(env, {
       grid <- tidyr::expand_grid(
         temperature_c = seq(2, 16, length.out = 120),
@@ -78,6 +79,7 @@ exports <- list(
     }), dir, "water-units")
     write(with(env, dplyr::rename(by_size, n = `Training stations`)), dir, "water-sizes")
     write(with(env, numbers(baseline = baseline, n_train = nrow(train),
+                            core_pct = round(100 * mean(water_train$water_mass == "core")),
                             n_weights = band_weights, n_test = nrow(water_test), named_auc = named_auc,
                             n_coefficients = nrow(tidy(named_fit)))),
           dir, "when-a-network-pays-off-numbers")

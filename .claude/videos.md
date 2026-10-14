@@ -1166,6 +1166,38 @@ schematic of real groups splitting the same way in three samples while random po
 split differently (16). The 29.4% variance scene went, to keep the part on one concept.
 26 scenes, 7:36 on the draft voice.
 
+## §9 Neural networks introduction version (2026-10-14)
+
+The 44-scene cut (7:34) re-ran gradient descent and the learning rate from the How
+algorithms learn video, and taught backpropagation, the gradient check, ReLU, seeds,
+the true mean counts, ROC AUC and the sample sizes besides. Rebuilt as an introduction
+like Assumptions, Validation and Unsupervised learning, one new concept per part with
+one example and one picture, and plain imperative key points used for the opening, the
+cards and the recap (`RECAP = PROMISES`): 27 scenes, 923 words, 7:12 on the draft voice.
+
+- *Build curves from simple bends*: a neuron is a weighted sum (schematic); on its own
+  that is linear regression, so the sum passes through a bend, the activation, an
+  S-curve; several neurons make a hidden layer; the temperature hump, where a straight
+  line misses the peak and two hidden neurons' bends, one rising and one falling, add up
+  to a hump peaking at 8.7 °C with 7 weights. "Hidden units" are "hidden neurons"
+  throughout. The many-layers-still-a-line point is kept for the quiz.
+- *Stop training at the right step*: 21 weights against 4 give room to fit the noise
+  (overfitting, as the Supervised learning video showed); gradient descent gets a
+  clause; the 40-neuron network's training error falls for 8,000 steps while the
+  validation error is lowest at step 1,937 and 4% worse by the end: early stopping.
+- *Let a network find combinations*: on the survey's noisy counts the forest's error is
+  4.20 and the network's 4.52; the water-mass band, where neither input alone decides,
+  scored by accuracy rather than ROC AUC, which no earlier video introduces (44% of the
+  training stations are core, so accuracy is not misleading): logistic regression 66%,
+  tree 77%, forest 86%, network with two hidden neurons 98%; each neuron's tilted line
+  along one edge; naming the combination lets logistic regression match; images.
+  `exports.R` now adds each model's accuracy to `water-auc` and `core_pct` to the
+  numbers.
+- Quiz: ten layers with no bends fit only a straight line.
+- Dropped, left to the pages: the learning rate, backpropagation and the gradient
+  check, ReLU, 241 weights, the seeds, the true mean counts, the sample sizes,
+  autoencoders. The end card names some of them.
+
 ## Cheers at the key points (2026-10-10)
 
 At the user's request, each key point now ends with a pixel-art sea animal popping up
