@@ -41,8 +41,10 @@ input revealed moves the prediction up or down, and that move is credited to the
 input. The credit depends on the order: temperature revealed first may move the
 prediction more than temperature revealed after season, which carries some of the
 same information. So the moves are averaged over every order of revealing. An
-input's average move is its **SHAP value**, named after Shapley values, a way of
-sharing out a team's winnings fairly among its players.
+input's average move is its **SHAP value**. SHAP stands for SHapley Additive
+exPlanations: Shapley after the mathematician Lloyd Shapley, whose Shapley values
+share out a team's winnings fairly among its players, and additive because the values
+add up to the prediction, as shown below.
 
 ::: {.diagram}
 ![SHAP values in three steps: start from the average prediction, reveal the station's inputs in turn and credit each with the change it makes, averaged over every order, then add the contributions to reach the prediction.](img/shap-values.svg){fig-alt="Three cards. Start from the average, no inputs known: three cells for inputs A, B and C, each showing a question mark, above a row of grey dots for the training stations' predictions with a blue line at their average. Reveal inputs in turn, each step shifts the guess: a step line that starts at a dashed average level, steps up when A is revealed, down a little when B is revealed and up again when C is revealed. Add the contributions, average plus contributions equals prediction: a bar for each input running from a dashed line at the average to a dashed line at the prediction, A and C blue and pointing right, B orange and pointing left. A note says that an input not yet revealed takes its values from the training stations, and the predictions are averaged."}

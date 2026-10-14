@@ -796,7 +796,7 @@ terms:
 
   # 10 · Interpretation: Explaining one prediction
   - term: "SHAP value"
-    definition: "One input's share of one prediction: the change it makes to the prediction when it is revealed, averaged over every order of revealing the inputs; the average prediction plus every input's SHAP value equals the prediction."
+    definition: "SHAP is short for SHapley Additive exPlanations. One input's share of one prediction: the change it makes to the prediction when it is revealed, averaged over every order of revealing the inputs; the average prediction plus every input's SHAP value equals the prediction."
     page: chapters/10-interpretation/explaining-one-prediction.qmd
 
   # 10 · Interpretation: Interpretable models and surrogates
