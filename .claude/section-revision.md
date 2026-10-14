@@ -17,7 +17,10 @@ evaluating models. The revision makes each section **introduce its concepts and 
 step by step**: a method is explained in plain English before it is used, and each
 section adds something new instead of re-evaluating the same models.
 
-The Welcome page and the two Toolkit pages are out of scope for now.
+The Welcome page is out of scope for now. The two Toolkit pages were revised for
+beginners on 2026-10-14: a regression on abundance (linear regression against a random
+forest, scored by RMSE beside the training average), three pieces of syntax, one
+house-style diagram each, and the Python page's code run through reticulate.
 
 **A second, site-wide pass started on 2026-10-07**: fewer pages, each idea taught once,
 machine learning before statistics, and every term explained at first use. Its target
