@@ -174,10 +174,8 @@ website:
             text: "Interpretable models and surrogates"
           - href: chapters/10-interpretation/communicating-uncertainty.qmd
             text: "Communicating uncertainty"
-          - href: chapters/10-interpretation/reproducibility.qmd
-            text: "Reproducibility and reporting"
-          - href: chapters/10-interpretation/from-model-to-claim.qmd
-            text: "From a model to a claim"
+          - href: chapters/10-interpretation/reporting-a-model.qmd
+            text: "Reporting a model"
       - section: "More"
         contents:
           - href: glossary.qmd

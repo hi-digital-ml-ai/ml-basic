@@ -420,8 +420,8 @@ moves on without going back. This **greedy** search is fast, but it can miss a b
 tree whose first split looks worse on its own. Random forests and boosting grow many
 trees this way, and forests also draw stations and inputs at random, so without a set
 seed each run gives a slightly different model;
-[Reproducibility and transparent reporting](../10-interpretation/reproducibility.qmd)
-measures how much.
+[Reporting a model](../10-interpretation/reporting-a-model.qmd) shows how to keep a
+seed's draws in place.
 
 ## Each sign of a failed search has its own fix
 

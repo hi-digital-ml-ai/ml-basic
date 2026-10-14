@@ -833,15 +833,16 @@ terms:
     definition: "A random forest that keeps every training outcome in each leaf and reads chosen points, such as the 5% and 95% points, off those that land with a new observation, which gives a prediction interval."
     page: chapters/10-interpretation/communicating-uncertainty.qmd
 
-  # 10 · Interpretation: Reproducibility and transparent reporting
+  # 10 · Interpretation: Reporting a model
   - term: "Reproducible"
     definition: "Of an analysis that gives the same numbers when someone else runs it on the same data with the same code."
-    page: chapters/10-interpretation/reproducibility.qmd
+    page: chapters/10-interpretation/reporting-a-model.qmd
   - term: "Seed"
-    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly, though it does not show how far its numbers would move with other data."
-    page: chapters/10-interpretation/reproducibility.qmd
-
-  # 10 · Interpretation: From a model to a claim
+    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly as long as the draws come in the same order."
+    page: chapters/10-interpretation/reporting-a-model.qmd
+  - term: "Model card"
+    definition: "A short document that travels with a model: what it is, what it is for, its data and inputs, its score on new sites, what it relies on, where it holds and its limits."
+    page: chapters/10-interpretation/reporting-a-model.qmd
   - term: "Claim"
-    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found, how sure the finding is, and how far it reaches."
-    page: chapters/10-interpretation/from-model-to-claim.qmd
+    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found and how far it reaches."
+    page: chapters/10-interpretation/reporting-a-model.qmd
