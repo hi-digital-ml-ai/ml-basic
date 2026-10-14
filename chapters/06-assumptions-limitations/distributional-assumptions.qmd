@@ -263,8 +263,7 @@ shape_plot + spread_plot
 
 Neither stops the forest. Each tree predicts the average catch of similar stations, and
 an average needs no bell curve and no equal spread. The shape matters again when a range
-is put around a prediction, which
-[Communicating uncertainty](../10-interpretation/communicating-uncertainty.qmd) builds.
+is put around a prediction, since the range has to follow the errors' spread.
 
 ### Training on log counts predicts far fewer animals than were caught
 

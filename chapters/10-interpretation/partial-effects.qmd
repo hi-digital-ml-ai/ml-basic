@@ -307,7 +307,7 @@ Stations where the forest predicts many animals anyway gain most from the right
 temperature, so the curves share a shape and differ in scale. The partial dependence
 shows where the hump lies; how large it is depends on the station.
 
-## Partial effects describe the model
+## A curve reads as a response only where its input varies on its own
 
 A partial dependence plot and its ICE curves are a faithful picture of what a model
 predicts, not a measurement of the species. As

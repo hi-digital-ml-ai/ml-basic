@@ -1,7 +1,7 @@
 ---
 title: "10 · Interpretation and responsible application"
-description: "A model that predicts well can be read, and what it learned put into words. The section reads a forest from outside and a GAM from its parts, puts intervals on predictions, makes the analysis re-runnable, and ends with the paragraphs a study would write and the claims the survey can support."
-categories: [interpretation, reproducibility, uncertainty]
+description: "A model that predicts well can be read, and what it learned put into words. The section reads a random forest's inputs, effects and single predictions from outside, reads a GAM from its parts and the forest through a surrogate, and ends with a re-runnable analysis and a model card."
+categories: [interpretation, reproducibility]
 listing:
   id: pages
   contents: "*.qmd"
@@ -14,59 +14,46 @@ toc: false
 ---
 
 The earlier sections built models and scored them on new sites. A score says how well a
-model predicts; a study also has to say what the model found, how sure the finding is,
-and how far it reaches. This section takes that last step, on the same simulated survey
-as the rest of the course.
-The first two pages read a black box from outside:
+model predicts, not what it learned. This section reads a fitted model and its
+predictions, on the same simulated survey as the rest of the course, and ends with the
+report that goes with it.
+The first three pages read a random forest from outside, by changing its inputs and
+watching its predictions:
 
-- **feature importance**: shuffling one input on test sites shows how much a random
-  forest relies on it, and columns of random numbers show what an unused input scores;
-  the forest's own measure ranked them above the seabed;
-- **partial effects**: a partial dependence plot draws how a prediction changes along
-  one input, and ICE curves draw it station by station; the forest finds the
-  temperature hump at nearly every station, while its depth curve follows position.
+- **feature importance**: shuffling one input on the test sites shows how much the
+  forest relies on it, and inputs that carry the same information share the credit;
+- **partial effects**: a partial dependence plot draws how the prediction changes along
+  one input, and ICE curves draw it station by station; the temperature hump appears at
+  nearly every station;
+- **explaining one prediction**: SHAP values split a single station's prediction into a
+  contribution from each input, starting from the average prediction.
 
-The next two read a model from its parts and say how sure its predictions are:
+The next one reads a model from its parts:
 
-- **black boxes and interpretable models**: scored on the same folds of sites, a GAM
-  predicts new sites as well as a random forest, and its curves and multipliers read
-  as a habitat description; a black box earns its place where inputs work in
-  combination;
-- **communicating uncertainty**: an interval for the average and an interval for a new
-  catch answer different questions; a random forest gets the first from bootstrap
-  refits and the second as a quantile forest, and conformal prediction gives any model
-  an interval that holds at stations like the ones that set it.
+- **interpretable models and surrogates**: a GAM's curves read as a habitat
+  description, and a small tree fitted to the forest's predictions copies its broad
+  shape, as far as its fidelity goes.
 
-The last two turn the analysis into a report:
+The last one turns the analysis into a report:
 
-- **reproducibility and transparent reporting**: a seed makes a run repeat, but the
-  split of sites moves a forest's score far more than its seed, and a short report
-  lets a reader re-run the whole analysis;
-- **from a model to a claim**: a random forest's Methods and Results paragraphs are
-  written from the code, the simulation confirms the temperature shape but not a depth
-  peak, and a gear that misses half the animals on mud turns more animals on mud into
-  fewer while the cross-validated score improves.
+- **reporting a model**: the raw data, the code, the seeds and the software versions
+  let anyone re-run the analysis, and a model card, written from the code, says what the
+  model is for, how well it predicts and where it holds.
 
 The section picks up threads from earlier ones.
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built
-the forest that [Feature importance](feature-importance.qmd) and
-[Partial effects](partial-effects.qmd) read from outside.
+the forest that the first three pages read.
 [Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-drew a random forest's temperature hump; [Partial effects](partial-effects.qmd)
-finds its depth curve wrong and shows why no model gets it right on this survey, and
-[Black boxes and interpretable models](black-box-or-not.qmd) reads the GAM's parts with
-the multipliers of
-[Regression for counts](../03-supervised-learning/count-regression.qmd).
-[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-found the forest's errors skewed and widening, and
-[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) put an
-interval on a score; [Communicating uncertainty](communicating-uncertainty.qmd) checks
-intervals on predictions by their coverage at new sites.
-[Reproducibility and transparent reporting](reproducibility.qmd) measures how far a
-forest moves without a seed and compares that with the split of sites.
-[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
-by vessel, and [From a model to a claim](from-model-to-claim.qmd) shows
-the bias that no comparison of a model with its records can find.
+drew the forest's temperature hump, and [Partial effects](partial-effects.qmd) draws it
+station by station.
+[Interpretable models and surrogates](interpretable-models.qmd) reads the GAM's parts
+with the multipliers of
+[Regression for counts](../03-supervised-learning/count-regression.qmd), and judges a
+surrogate with the R² of
+[Information leakage](../02-marine-data/information-leakage.qmd).
+[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
+showed where a model's data run out, and [Reporting a model](reporting-a-model.qmd)
+writes that range into the model card.
 
 ## Pages in this section
 
@@ -81,7 +68,9 @@ the bias that no comparison of a model with its records can find.
 - [Explaining models and predictions](https://www.tmwr.org/explain.html), Tidy Modeling with R. Local and global explanations through `DALEX`, in tidymodels idiom.
 - [DALEX](https://modeloriented.github.io/DALEX/), Przemyslaw Biecek and others. Model-agnostic explanation for R and Python both.
 - [Permutation importance](https://scikit-learn.org/stable/modules/permutation_importance.html) and [partial dependence and ICE](https://scikit-learn.org/stable/modules/partial_dependence.html), scikit-learn user guide. The permutation page shows what inputs that move together do to the scores.
+- [SHAP](https://shap.readthedocs.io/), Scott Lundberg and others. The Python package for SHAP values, with worked examples for many kinds of model.
 - [Interpretable Machine Learning](https://christophm.github.io/interpretable-ml-book/), Christoph Molnar. A free book, and the standard reference for every method named here.
+- [Model Cards for Model Reporting](https://arxiv.org/abs/1810.03993), Margaret Mitchell and others (2019). The paper that proposed the model card.
 
 **Video**
 

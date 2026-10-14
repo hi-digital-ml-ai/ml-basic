@@ -172,8 +172,6 @@ website:
             text: "Explaining one prediction"
           - href: chapters/10-interpretation/interpretable-models.qmd
             text: "Interpretable models and surrogates"
-          - href: chapters/10-interpretation/communicating-uncertainty.qmd
-            text: "Communicating uncertainty"
           - href: chapters/10-interpretation/reporting-a-model.qmd
             text: "Reporting a model"
       - section: "More"
