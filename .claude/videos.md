@@ -1182,9 +1182,8 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
   to a hump peaking at 8.7 °C with 7 weights, counted on screen in scene 7 (4 arrows
   and a constant for each of the 3 neurons), where the number first appears. "Hidden units" are "hidden neurons"
   throughout. The many-layers-still-a-line point is kept for the quiz.
-- *Stop training at the right step*: 21 weights against 4 give room to fit the noise
-  (the counts include each neuron's constant, as `nnet` and the page count them, so
-  scene 9 says so: its picture has only 16 arrows; overfitting, as the Supervised learning video showed); gradient descent gets a
+- *Stop training at the right step*: 21 weights (16 arrows and 5 constants, counted as
+  in scene 7) give room to fit the noise (overfitting, as the Supervised learning video showed); gradient descent gets a
   clause; the 40-neuron network's training error falls for 8,000 steps while the
   validation error is lowest at step 1,937 and 4% worse by the end: early stopping.
 - *Let a network find combinations*: on the survey's noisy counts the forest's error is
@@ -1198,7 +1197,8 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
   `exports.R` now adds each model's accuracy to `water-auc` and `core_pct` to the
   numbers.
 - Quiz: ten layers with no bends fit only a straight line.
-- Dropped, left to the pages: the learning rate, backpropagation and the gradient
+- Dropped, left to the pages: linear regression's 4 weights (the comparison sent
+  viewers back to scene 3's "on its own is linear regression"), the learning rate, backpropagation and the gradient
   check, ReLU, 241 weights, the seeds, the true mean counts, the sample sizes,
   autoencoders. The end card names some of them.
 

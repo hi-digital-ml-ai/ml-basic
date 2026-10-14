@@ -371,25 +371,30 @@ class Scene09(VideoScene):
 
     def construct(self):
         small = int(value(self, "what-a-network-is", "small_net"))
-        small_linear = int(value(self, "what-a-network-is", "small_linear"))
         layers, edges = network([3, 4, 1], [-6.0, -3.8, -1.6], height=3.4, radius=0.28,
                                 glyphs=[None, "bend", None], y=0.4)
-        rows = [("3 inputs, 4 hidden neurons", f"{small} weights", ORANGE),
-                ("Linear regression", f"{small_linear} weights", SUBDUED)]
-        counts = VGroup(*[VGroup(label(name, 32, INK).move_to([3.7, 1.4 - 1.0 * i, 0], aligned_edge=RIGHT),
-                                 label(count, 36, colour, weight=BOLD).move_to([4.0, 1.4 - 1.0 * i, 0],
-                                                                                aligned_edge=LEFT))
-                          for i, (name, count, colour) in enumerate(rows)])
+        # As in scene 7: the arrows are weights, and so is each neuron's constant.
+        n_arrows = sum(len(group) for group in edges)
+        constants = VGroup(*[label("+c", 24, GREEN, weight=BOLD).next_to(unit, UR, 0.0).shift(0.05 * LEFT)
+                             for unit in (*layers[1], *layers[2])])
+        assert n_arrows + len(constants) == small
+        name = label("3 inputs, 4 hidden neurons", 32, INK).move_to([3.7, 1.4, 0], aligned_edge=RIGHT)
+        total = label(f"{small} weights", 36, ORANGE, weight=BOLD).move_to([4.0, 1.4, 0], aligned_edge=LEFT)
+        parts = VGroup(label(f"{n_arrows} arrows", 30, ORANGE, weight=BOLD),
+                       label(f"+ {len(constants)} constants", 30, GREEN, weight=BOLD)
+                       ).arrange(RIGHT, buff=0.2).next_to(total, DOWN, 0.3).align_to(total, RIGHT)
         noise = lines_of("Many weights: room to fit\nthe noise as well as the pattern", 32, VERMILION, BOLD
                          ).move_to([0, -2.3, 0])
         overfit = label("Overfitting", 36, VERMILION, weight=BOLD).next_to(noise, DOWN, 0.3)
         self.add(layers, edges)
         cue(self, "Every arrow")
-        self.play(edges.animate.set_color(ORANGE).set_stroke(width=4), run_time=self.share(0.1))
+        self.play(edges.animate.set_color(ORANGE).set_stroke(width=4), run_time=self.share(0.08))
+        cue(self, "and so is")
+        self.play(FadeIn(constants, lag_ratio=0.2), run_time=self.share(0.08))
         cue(self, "Three inputs")
-        self.play(FadeIn(counts[0], shift=0.2 * LEFT), run_time=self.share(0.08))
-        cue(self, "where linear")
-        self.play(FadeIn(counts[1], shift=0.2 * LEFT), run_time=self.share(0.08))
+        self.play(FadeIn(name, shift=0.2 * LEFT), FadeIn(total, shift=0.2 * LEFT), run_time=self.share(0.08))
+        cue(self, "16 arrows")
+        self.play(FadeIn(parts, shift=0.2 * UP), run_time=self.share(0.08))
         cue(self, "With so many")
         self.play(FadeIn(noise, shift=0.2 * UP), run_time=self.share(0.1))
         cue(self, "That is overfitting")
