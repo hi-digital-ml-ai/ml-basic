@@ -285,7 +285,7 @@ rests on, whether or not the prediction is accurate; permutation importance says
 much the accuracy rests on an input. The forest uses chlorophyll in its predictions,
 but its test error hardly depends on it. Like
 the other tools in this section, SHAP values describe the model, not the species.
-[Interpretable models and surrogates](black-box-or-not.qmd) turns to models whose
+[Interpretable models and surrogates](interpretable-models.qmd) turns to models whose
 parts can be read directly.
 
 ## Key points

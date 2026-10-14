@@ -170,8 +170,8 @@ website:
             text: "Partial effects"
           - href: chapters/10-interpretation/explaining-one-prediction.qmd
             text: "Explaining one prediction"
-          - href: chapters/10-interpretation/black-box-or-not.qmd
-            text: "Black boxes and interpretable models"
+          - href: chapters/10-interpretation/interpretable-models.qmd
+            text: "Interpretable models and surrogates"
           - href: chapters/10-interpretation/communicating-uncertainty.qmd
             text: "Communicating uncertainty"
           - href: chapters/10-interpretation/reproducibility.qmd

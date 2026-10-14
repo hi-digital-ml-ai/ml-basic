@@ -314,7 +314,7 @@ predicts, not a measurement of the species. As
 [Feature importance](feature-importance.qmd) showed, inputs that carry the same
 information share the work, and the forest may give an effect to either of them. A
 curve reads as the species' response only where the data let that input vary on its
-own. [Interpretable models and surrogates](black-box-or-not.qmd) turns to models
+own. [Interpretable models and surrogates](interpretable-models.qmd) turns to models
 whose parts can be read directly.
 
 ## Key points
