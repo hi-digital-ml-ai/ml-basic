@@ -55,5 +55,7 @@ _videos/**/*.wav
 _videos/**/*.mp3
 !_videos/intro-music.wav
 _videos/*/chapters.txt
+_videos/*/thumbnail.png
+_videos/media/
 
 /_*.local
