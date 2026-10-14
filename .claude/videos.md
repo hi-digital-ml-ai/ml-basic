@@ -1173,7 +1173,7 @@ algorithms learn video, and taught backpropagation, the gradient check, ReLU, se
 the true mean counts, ROC AUC and the sample sizes besides. Rebuilt as an introduction
 like Assumptions, Validation and Unsupervised learning, one new concept per part with
 one example and one picture, and plain imperative key points used for the opening, the
-cards and the recap (`RECAP = PROMISES`): 27 scenes, 929 words, 7:08 narrated.
+cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
 
 - *Build curves from simple bends*: a neuron is a weighted sum (schematic); on its own
   that is linear regression, so the sum passes through a bend, the activation, an
@@ -1191,7 +1191,9 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 929 words, 7:08 narrated.
   scored by accuracy rather than ROC AUC, which no earlier video introduces (44% of the
   training stations are core, so accuracy is not misleading): logistic regression 66%,
   tree 77%, forest 86%, network with two hidden neurons 98%; each neuron's tilted line
-  along one edge; naming the combination lets logistic regression match; images.
+  along one edge; naming the combination lets logistic regression match; images and sound, one
+  example each (pixels to an edge to a fish; pitches to a whale's call), so that
+  "nobody can list them all" follows from more than one case.
   `exports.R` now adds each model's accuracy to `water-auc` and `core_pct` to the
   numbers.
 - Quiz: ten layers with no bends fit only a straight line.

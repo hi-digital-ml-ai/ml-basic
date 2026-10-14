@@ -174,10 +174,12 @@ temperature. Then logistic regression matches the network. So a network pays off
 nobody can name the combination.
 
 ## Scene 20
-visual: manim Images: pixels into an edge, edges into a shape (schematic)
+visual: manim Images and sound: pixels into an edge, edges into a fish; a sound wave into pitches, pitches into a whale's call (schematic)
 
-That is why networks lead on images and sound. An edge in a photo is a combination of
-pixels, a fish is a combination of edges, and nobody can list them all.
+That is why networks lead on images and sound. In a photo, an edge is a combination of
+pixels, and a fish is a combination of edges. In a recording, a whale's call is a
+combination of pitches, rising and falling over time. There are countless combinations
+like these, and nobody can list them all.
 
 ## Scene 21
 visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers

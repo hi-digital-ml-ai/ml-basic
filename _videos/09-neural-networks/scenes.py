@@ -716,32 +716,58 @@ class Scene20(VideoScene):
     number = 20
 
     def construct(self):
-        # Schematic: a grid of pixels, a 3x3 patch that is an edge, and edges that make a fish.
+        # Schematic, two rows. Top: a grid of pixels, a 3x3 patch that is an edge, and edges
+        # that make a fish. Bottom: a sound wave, the pitches in it, and the pitches joined
+        # into a whale's call that rises and falls.
+        top, low = 1.5, -1.7
         rng = np.random.default_rng(43)
         n = 9
         shade = rng.uniform(0.1, 0.35, (n, n))
         shade[:, 4:] += 0.5            # a vertical edge down the middle
-        pixels = VGroup(*[Square(0.4, stroke_width=1, stroke_color=BACKGROUND, fill_color=INK,
+        pixels = VGroup(*[Square(0.28, stroke_width=1, stroke_color=BACKGROUND, fill_color=INK,
                                  fill_opacity=float(np.clip(shade[i, j], 0, 1)))
-                          for i in range(n) for j in range(n)]).arrange_in_grid(n, n, buff=0).move_to([-4.2, -0.3, 0])
+                          for i in range(n) for j in range(n)]).arrange_in_grid(n, n, buff=0).move_to([-4.2, top, 0])
         patch = SurroundingRectangle(VGroup(*[pixels[i * n + j] for i in range(3, 6) for j in range(3, 6)]),
                                      color=ORANGE, buff=0.02, stroke_width=6)
-        pixel_name = label("Pixels", 32, SUBDUED, weight=BOLD).next_to(pixels, UP, 0.3)
-        arrow1 = Arrow([-2.2, -0.3, 0], [-0.6, -0.3, 0], color=INK, stroke_width=5)
-        edge = Line([0.2, -1.1, 0], [0.2, 0.5, 0], color=ORANGE, stroke_width=10)
-        edge_name = label("An edge", 32, ORANGE, weight=BOLD).next_to(edge, UP, 0.3)
-        arrow2 = Arrow([1.0, -0.3, 0], [2.6, -0.3, 0], color=INK, stroke_width=5)
-        body = Ellipse(width=2.4, height=1.2, color=BLUE, stroke_width=8).move_to([4.4, -0.3, 0])
-        tail = Polygon([5.6, -0.3, 0], [6.4, 0.2, 0], [6.4, -0.8, 0], color=BLUE, stroke_width=8)
-        shape_name = label("A fish", 32, BLUE, weight=BOLD).next_to(body, UP, 0.5)
-        nobody = label("Nobody can list them all", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.7)
-        self.play(FadeIn(pixels, lag_ratio=0.01), FadeIn(pixel_name), run_time=self.share(0.15))
-        cue(self, "An edge")
-        self.play(Create(patch), GrowArrow(arrow1), FadeIn(edge), FadeIn(edge_name), run_time=self.share(0.15))
-        cue(self, "a fish")
-        self.play(GrowArrow(arrow2), Create(body), Create(tail), FadeIn(shape_name), run_time=self.share(0.15))
+        pixel_name = label("Pixels", 30, SUBDUED, weight=BOLD).next_to(pixels, UP, 0.2)
+        arrow1 = Arrow([-2.4, top, 0], [-0.8, top, 0], color=INK, stroke_width=5)
+        edge = Line([0.2, top - 0.75, 0], [0.2, top + 0.75, 0], color=ORANGE, stroke_width=10)
+        edge_name = label("An edge", 30, ORANGE, weight=BOLD).next_to(edge, UP, 0.2)
+        arrow2 = Arrow([1.0, top, 0], [2.6, top, 0], color=INK, stroke_width=5)
+        body = Ellipse(width=2.2, height=1.1, color=BLUE, stroke_width=8).move_to([4.3, top, 0])
+        tail = Polygon([5.4, top, 0], [6.2, top + 0.5, 0], [6.2, top - 0.5, 0], color=BLUE, stroke_width=8)
+        shape_name = label("A fish", 30, BLUE, weight=BOLD).next_to(body, UP, 0.35)
+
+        ts = np.linspace(0, 1, 400)
+        wave = VMobject(color=SUBDUED, stroke_width=3).set_points_as_corners(
+            [[-5.5 + 2.6 * t, low + 0.6 * np.sin(2 * np.pi * (6 + 10 * t) * t) * (0.5 + 0.5 * np.sin(np.pi * t)), 0]
+             for t in ts])
+        wave_name = label("A sound wave", 30, SUBDUED, weight=BOLD).next_to(wave, UP, 0.35)
+        arrow3 = Arrow([-2.4, low, 0], [-0.8, low, 0], color=INK, stroke_width=5)
+        heights = np.array([-0.5, -0.2, 0.2, 0.5, 0.3, -0.1, -0.4])
+        steps = np.linspace(-0.4, 0.8, len(heights))
+        pitches = VGroup(*[Line([x - 0.09, low + h, 0], [x + 0.09, low + h, 0], color=ORANGE, stroke_width=10)
+                           for x, h in zip(steps, heights)])
+        pitch_name = label("Pitches", 30, ORANGE, weight=BOLD).next_to(pitches, UP, 0.35)
+        arrow4 = Arrow([1.0, low, 0], [2.6, low, 0], color=INK, stroke_width=5)
+        call = VMobject(color=BLUE, stroke_width=8).set_points_smoothly(
+            [[3.2 + 2.4 * (x + 0.4) / 1.2, low + h, 0] for x, h in zip(steps, heights)])
+        call_name = label("A whale's call", 30, BLUE, weight=BOLD).next_to(call, UP, 0.35)
+        nobody = label("Nobody can list them all", 34, INK, weight=BOLD).to_edge(DOWN, buff=0.45)
+
+        self.play(FadeIn(pixels, lag_ratio=0.01), FadeIn(pixel_name), run_time=self.share(0.08))
+        cue(self, "an edge is")
+        self.play(Create(patch), GrowArrow(arrow1), FadeIn(edge), FadeIn(edge_name), run_time=self.share(0.08))
+        cue(self, "and a fish")
+        self.play(GrowArrow(arrow2), Create(body), Create(tail), FadeIn(shape_name), run_time=self.share(0.08))
+        cue(self, "In a recording")
+        self.play(Create(wave), FadeIn(wave_name), run_time=self.share(0.08))
+        cue(self, "combination of pitches")
+        self.play(GrowArrow(arrow3), FadeIn(pitches, lag_ratio=0.2), FadeIn(pitch_name), run_time=self.share(0.08))
+        cue(self, "rising and falling")
+        self.play(GrowArrow(arrow4), Create(call), FadeIn(call_name), run_time=self.share(0.08))
         cue(self, "and nobody")
-        self.play(FadeIn(nobody, shift=0.2 * UP), run_time=self.share(0.12))
+        self.play(FadeIn(nobody, shift=0.2 * UP), run_time=self.share(0.06))
         self.finish()
 
 
