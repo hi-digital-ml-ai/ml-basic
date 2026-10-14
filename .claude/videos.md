@@ -1179,7 +1179,8 @@ cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
   that is linear regression, so the sum passes through a bend, the activation, an
   S-curve; several neurons make a hidden layer; the temperature hump, where a straight
   line misses the peak and two hidden neurons' bends, one rising and one falling, add up
-  to a hump peaking at 8.7 °C with 7 weights. "Hidden units" are "hidden neurons"
+  to a hump peaking at 8.7 °C with 7 weights, counted on screen in scene 7 (4 arrows
+  and a constant for each of the 3 neurons), where the number first appears. "Hidden units" are "hidden neurons"
   throughout. The many-layers-still-a-line point is kept for the quiz.
 - *Stop training at the right step*: 21 weights against 4 give room to fit the noise
   (the counts include each neuron's constant, as `nnet` and the page count them, so

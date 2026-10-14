@@ -74,11 +74,11 @@ Now give a network two hidden neurons, and each adds one bend. One bend rises wi
 temperature, and the other falls. Added together, they make a hump.
 
 ## Scene 7
-visual: manim Hump: the hump's peak at 8.7 °C, inside the 8–9 °C bin marked as the highest; "shape not given, found with 7 weights" (page results)
+visual: manim Hump: the hump's peak at 8.7 °C, inside the 8–9 °C bin marked as the highest; "shape not given"; the small network drawn beside it, its 4 arrows lit, then a constant on each of its 3 neurons: "4 + 3 = 7 weights" (page results)
 
 Its peak is at 8.7 degrees, inside the one-degree band where the stations hold the most
-animals. Nobody told the network that shape. The two bends found it, with just seven
-weights.
+animals. Nobody told the network that shape. The two bends found it with just seven
+weights: one on each of the four arrows, and one constant for each of the three neurons.
 
 ## Scene 8
 visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers

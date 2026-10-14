@@ -329,14 +329,34 @@ class Scene07(VideoScene):
         bin_name = VGroup(label("Most animals:", 26, GREEN, weight=BOLD),
                           label(f"{top_low}–{top_low + 1} °C", 26, GREEN, weight=BOLD)
                           ).arrange(DOWN, buff=0.06).next_to(axes.c2p(top_low + 1, 0.3), RIGHT, 0.15)
-        found = lines_of(f"Shape not given,\nfound with {n_weights} weights", 32, INK, BOLD
-                         ).move_to([2.2, -1.2, 0], aligned_edge=LEFT)
+        found = label("Shape not given", 32, INK, weight=BOLD).move_to([2.2, 1.0, 0], aligned_edge=LEFT)
+        # The two-neuron network itself: its arrows are 4 weights, its neurons' constants 3 more.
+        layers, edges = network([1, 2, 1], [0, 1.4, 2.8], glyphs=[None, "bend", None])
+        small = VGroup(edges, layers).scale(1.15).move_to([4.5, -1.0, 0])
+        input_name = label("Temperature", 24, SUBDUED).next_to(layers[0], DOWN, 0.15)
+        arrows = VGroup(*[e for group in edges for e in group])
+        arrow_count = len(arrows)
+        constants = VGroup(*[label("+c", 24, GREEN, weight=BOLD).next_to(unit, UR, 0.0).shift(0.05 * LEFT)
+                             for unit in (*layers[1], *layers[2])])
+        assert arrow_count + len(constants) == n_weights
+        tally_arrows = label(f"{arrow_count} arrows", 30, BLUE, weight=BOLD)
+        tally_constants = label(f"+ {len(constants)} constants", 30, GREEN, weight=BOLD)
+        tally_total = label(f"= {n_weights} weights", 30, INK, weight=BOLD)
+        tally = VGroup(VGroup(tally_arrows, tally_constants).arrange(RIGHT, buff=0.2), tally_total
+                       ).arrange(DOWN, buff=0.15).move_to([4.5, -2.9, 0])
         self.play(FadeOut(panel), FadeOut(ones), FadeOut(names), FadeIn(peak, scale=2), FadeIn(peak_name),
-                  run_time=self.share(0.12))
+                  run_time=self.share(0.1))
         cue(self, "inside the one-degree")
-        self.play(FadeIn(bin_band), FadeIn(bin_name), run_time=self.share(0.12))
+        self.play(FadeIn(bin_band), FadeIn(bin_name), run_time=self.share(0.1))
         cue(self, "Nobody told")
-        self.play(FadeIn(found, shift=0.2 * UP), run_time=self.share(0.12))
+        self.play(FadeIn(found, shift=0.2 * UP), run_time=self.share(0.08))
+        cue(self, "with just seven")
+        self.play(FadeIn(small), FadeIn(input_name), run_time=self.share(0.08))
+        cue(self, "one on each")
+        self.play(arrows.animate.set_stroke(BLUE, width=5), FadeIn(tally_arrows), run_time=self.share(0.08))
+        cue(self, "and one constant")
+        self.play(FadeIn(constants, lag_ratio=0.3), FadeIn(tally_constants), run_time=self.share(0.08))
+        self.play(FadeIn(tally_total), run_time=self.share(0.05))
         self.finish()
 
 
