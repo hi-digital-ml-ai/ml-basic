@@ -10,7 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/06-assumptions-limitations/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/06-assumptions-limitations/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 6 |
-| Embed on | `chapters/06-assumptions-limitations/index.qmd` |
+| YouTube | <https://www.youtube.com/watch?v=cQogf2VKM1s> (uploaded 2026-10-15) |
+| Embed on | `chapters/06-assumptions-limitations/index.qmd` (done) |
 
 ## Title
 

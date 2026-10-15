@@ -10,7 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/04-how-algorithms-learn/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/04-how-algorithms-learn/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 4 |
-| Embed on | `chapters/04-how-algorithms-learn/index.qmd` |
+| YouTube | <https://www.youtube.com/watch?v=flduAVOF2rk> (uploaded 2026-10-15) |
+| Embed on | `chapters/04-how-algorithms-learn/index.qmd` (done) |
 
 ## Title
 
