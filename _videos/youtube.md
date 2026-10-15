@@ -6,9 +6,9 @@ all ten, and the order of work.
 
 ## Before uploading
 
-- **The site is password-protected.** Every description, and every end card ("linked
-  below"), sends viewers to `ml-basic.pages.dev`. Until the site is public, upload the
-  videos as **Unlisted**, or remove the password first.
+- **The site is public** on GitHub Pages, at `hi-digital-ml-ai.github.io/ml-basic`.
+  Every description, and every end card ("linked below"), sends viewers there, so the
+  videos can be **Public**.
 - **The files are the rough cuts** (`rough-cut.mp4`, 1080p, 30 fps), all on the Gemini
   voice. The planned Kdenlive pass (zooms, quiet music) has not been done; upload them as
   they are, or polish them first.
@@ -45,7 +45,7 @@ Machine Learning Basics for Marine Science
 ```
 A free introductory course in machine learning for marine researchers: ten short videos, one for each section of the course, from the kinds of learning to reading a model once it is built. Every example uses the same simulated coastal survey. Each video goes with a section of the course website, which has more examples and all the code in R (tidymodels) and Python (scikit-learn).
 
-https://ml-basic.pages.dev/
+https://hi-digital-ml-ai.github.io/ml-basic/
 
 The narration is an AI-generated voice reading scripts written for the course.
 ```
@@ -60,8 +60,10 @@ The narration is an AI-generated voice reading scripts written for the course.
 5. Once all ten are up, they go on the site: each embedded on its section's
    `index.qmd`, above *Pages in this section*, with Quarto's `video` shortcode.
 
-All ten were uploaded on 2026-10-15 and embedded the same day; each sheet holds its
-link.
+All ten were first uploaded on 2026-10-15, with `ml-basic.pages.dev` on the end card.
+The site then moved to GitHub Pages, so all ten are uploaded again with the new end
+card. Once a new upload is embedded on the site, delete the first one; each sheet holds
+both links until then.
 
 ## The ten videos
 

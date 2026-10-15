@@ -192,42 +192,27 @@ Never commit directly to `main`. Commit and push only when asked.
 
 ## Publishing to GitHub Pages
 
-Target: GitHub Action that renders on push to `main` and deploys to Pages.
+The site is published at <https://hi-digital-ml-ai.github.io/ml-basic/> by `.github/workflows/publish.yml` (since
+2026-10-15). It runs on every push to `main`, which only receives release and hotfix
+merges, so a push to `main` is a release; it can also be run by hand from the Actions
+tab. Watch a run with `gh run watch`.
 
-```yaml
-# .github/workflows/publish.yml, sketch
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-jobs:
-  build-deploy:
-    runs-on: ubuntu-latest
-    permissions: { contents: read, pages: write, id-token: write }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: quarto-dev/quarto-actions/setup@v2
-      - uses: quarto-dev/quarto-actions/render@v2
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: _site }
-      - uses: actions/deploy-pages@v4
-```
+- The workflow installs Quarto only (the same version as the laptop) and runs
+  `quarto render`, then uploads `_site/` to Pages. The repo setting is Pages, source
+  "GitHub Actions".
+- It installs no R or Python packages, which works *because* `_freeze/` is committed:
+  a page whose cache is missing or out of date fails in the workflow. Render it
+  locally and commit its `_freeze/` folder with it. If that ever stops being
+  practical, add `r-lib/actions/setup-r` and `setup-renv` and expect slow builds.
+- The repo is public, so everything in its history is public too: never commit
+  embargoed participant data (see `.claude/contributed-pages.md`).
+- `site-url` in `_quarto.yml` and `SITE_URL` in `tools/extract-code.py` carry the
+  address; the videos' end cards carry it as `SITE` in `_videos/mlbasic_video.py`.
 
-This works without an R setup step *because* `_freeze/` is committed. If that ever
-stops being true, add `r-lib/actions/setup-r` and `setup-renv` and expect slow builds.
-
-Simpler interim route, run locally: `quarto publish gh-pages`.
-
-**Two things to settle before the first publish:**
-
-1. The repo is private. GitHub Pages from a private repo needs a paid plan
-   (Pro / Team / Enterprise); on a free org the repo must be made public. Decide
-   which before wiring the Action.
-2. Making the repo public publishes everything in its history, so check no embargoed
-   participant data was ever committed (see `.claude/contributed-pages.md`).
-
-`_quarto.yml` needs `site-url: https://hi-digital-ml-ai.github.io/ml-basic/` for
-correct absolute links, and a `.nojekyll` file at the site root.
+Until 2026-10-15 the site's only home was Cloudflare Pages at `ml-basic.pages.dev`. GitHub
+Pages became the main address because institutional networks, the institute's among
+them, block all of `*.pages.dev`. The Cloudflare copy is kept as a second address; every
+public link (descriptions, end cards, `site-url`) points to GitHub Pages.
 
 ## Before pushing
 

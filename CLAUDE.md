@@ -7,7 +7,7 @@ Audience: marine researchers with mixed backgrounds (ecology, oceanography,
 fisheries, genomics) who are motivated and numerate, but not ML specialists. Pages that
 participants produce from their own data are published under `contributed/`.
 
-Repo: <https://github.com/hi-digital-ml-ai/ml-basic> (private; publishes to GitHub Pages).
+Repo: <https://github.com/hi-digital-ml-ai/ml-basic> (public; published to GitHub Pages at <https://hi-digital-ml-ai.github.io/ml-basic/>).
 
 ## Layout
 

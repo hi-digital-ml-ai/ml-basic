@@ -24,7 +24,6 @@ website:
       - href: contributed/index.qmd
         text: Contributed
     right:
-      # The repo is private, so this link only opens for people with access.
       - icon: github
         href: https://github.com/hi-digital-ml-ai/ml-basic
         aria-label: "Source on GitHub"
