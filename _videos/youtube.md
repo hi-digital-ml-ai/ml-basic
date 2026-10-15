@@ -57,9 +57,11 @@ The narration is an AI-generated voice reading scripts written for the course.
 2. Upload `thumbnail.png` as the thumbnail, and add `captions.srt` under Subtitles.
 3. Add the video to the playlist, in course order (1 to 10).
 4. Note the video ID (the `v=` part of the link) in the sheet.
-5. Once all ten are up, they go on the site: each on its section's `index.qmd`, with
-   its thumbnail in `img/video/<video-id>.jpg` (see `.claude/authoring-guide.md`,
-   Further resources).
+5. Once all ten are up, they go on the site: each embedded on its section's
+   `index.qmd`, above *Pages in this section*, with Quarto's `video` shortcode.
+
+All ten were uploaded on 2026-10-15 and embedded the same day; each sheet holds its
+link.
 
 ## The ten videos
 

@@ -167,7 +167,9 @@ Then we give it next year's survey, and it falls apart.
 - Put the section number in the title and description only; the video has none.
 - State in the description that the narration is AI-generated; check YouTube's current
   rules on labelling synthetic content.
-- Embed the video on the section's `index.qmd`, thumbnail in `img/video/`.
+- Embed the video on the section's `index.qmd`, just above *Pages in this section*,
+  with a one-line lead-in and `{{< video https://www.youtube.com/watch?v=<id> title="..." >}}`
+  (Quarto renders a 16:9 YouTube player; no thumbnail file is needed).
 
 ## Gemini account, key and cost
 
@@ -1262,9 +1264,10 @@ with a cheering sound, to encourage the viewer, and after the recap all three re
 with all three sounds, a beat apart.
 
 - Animals: `_videos/sea_friends.py`, character grids drawn as squares by `sprite()` in
-  `mlbasic_video.py` (crab, octopus, clownfish, turtle, whale, pufferfish, jellyfish,
-  starfish). Sounds: `tools/make-cheers.py` writes `_videos/cheer-*.wav`, all made on
-  this laptop, so there is no licence to track.
+  `mlbasic_video.py`: crab, octopus, clownfish, turtle, whale, pufferfish, jellyfish,
+  starfish, and since 2026-10-15 seahorse, seal, shark, dolphin, sea otter (holding a
+  shell), manta ray, puffin and anglerfish. Sounds: `tools/make-cheers.py` writes
+  `_videos/cheer-*.wav`, all made on this laptop, so there is no licence to track.
 - Two kinds of cheer (2026-10-11, at the user's request for more variety). An
   **effect** is a sound with its own picture: `clap` (applause, the animal bounces
   between two flashing stars), `fireworks` (a rocket bursts beside it) and `bubbles`
@@ -1286,15 +1289,27 @@ with all three sounds, a beat apart.
 - Script: `cheer: 1|2|3` on the key-point scenes with `pause-after: 2.0`, and
   `cheer: all` on the last recap scene with `pause-after: 4.0`. The line changes no
   Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
-- Introduction: clownfish "Great work!" (wiggle), jellyfish "Brilliant!" (spin), whale
-  and applause. Marine data: turtle and bubbles, starfish and fireworks, pufferfish
-  "Well done!" (jump). Supervised learning: crab and applause, octopus "Spot on!"
-  (spin), clownfish "Nice one!" (wiggle). How algorithms learn: jellyfish and
-  fireworks, whale and bubbles, turtle "Keep going!" (jump). Generalisation: starfish
-  "Hooray!" (wiggle), pufferfish "Fantastic!" (spin), crab and applause. Assumptions and
-  limitations: octopus and bubbles, clownfish "Brilliant!" (jump), jellyfish and
-  fireworks. Validation: whale and applause, turtle "Well done!" (wiggle), starfish
-  "Great work!" (spin).
+- Fireworks (2026-10-15, at the user's request for more variety): each burst has a
+  style, dealt in turn from `video_script.FIREWORKS` and drawn by the `*_burst`
+  functions in `mlbasic_video.py`: `peony` (two rings of coloured stars, the original),
+  `willow` (golden trails that droop), `crossette` (six stars that each split in four),
+  `heart`, and `glitter` (stars that twinkle with the crackle). Every style bursts at
+  0.75 s, on the sound's bang, so the one sound serves them all. The five fireworks in
+  the series each get a different style.
+- The casts since 2026-10-15 (`cheer_cast()`; 16 animals over 30 cheers, so each
+  appears once or twice and never twice in a video): Introduction: octopus "Great
+  work!" (wiggle), clownfish "Brilliant!" (spin), seahorse and applause. Marine data:
+  anglerfish and bubbles, seal and a peony firework, puffin "Well done!" (jump).
+  Supervised learning: turtle and applause, shark "Spot on!" (spin), otter "Nice one!"
+  (wiggle). How algorithms learn: whale and a willow firework, jellyfish and bubbles,
+  crab "Keep going!" (jump). Generalisation: starfish "Hooray!" (wiggle), ray
+  "Fantastic!" (spin), dolphin and applause. Assumptions and limitations: pufferfish and
+  bubbles, octopus "Brilliant!" (jump), clownfish and a crossette firework. Validation:
+  seahorse and applause, anglerfish "Well done!" (wiggle), seal "Great work!" (spin).
+  Unsupervised learning: puffin "Spot on!" (jump), turtle and bubbles, shark and a heart
+  firework. Neural networks: otter "Keep going!" (wiggle), whale "Nice one!" (spin),
+  jellyfish and applause. Interpretation: crab and bubbles, starfish "Fantastic!"
+  (jump), ray and a glitter firework.
 
 Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
 station" or "22 stations above 15 not shown", goes through `plated()` in

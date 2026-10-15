@@ -10,7 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/08-unsupervised-learning/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/08-unsupervised-learning/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 8 |
-| Embed on | `chapters/08-unsupervised-learning/index.qmd` |
+| YouTube | <https://www.youtube.com/watch?v=bt6kDcavjY4> (uploaded 2026-10-15) |
+| Embed on | `chapters/08-unsupervised-learning/index.qmd` (done) |
 
 ## Title
 

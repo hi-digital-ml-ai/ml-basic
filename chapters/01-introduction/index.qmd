@@ -1,28 +1,35 @@
 ---
 title: "1 · Introduction to machine learning in marine science"
-description: "What machine learning is, the kinds of problem it solves, and why a model that predicts well need not explain why. Four pages on one simulated coastal survey."
+description: "A map of machine learning, drawn on one simulated coastal survey."
 categories: [foundations]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: types-of-learning.qmd
+      description: "Supervised learning predicts a known answer and unsupervised learning looks for groups, shown with k-nearest neighbours and k-means."
+    - path: prediction-and-explanation.qmd
+      description: "A model built to predict is judged on new data and one built to explain on whether its effects are real, so the two aims need different checks."
+    - path: applications-in-marine-science.qmd
+      description: "Most marine applications fall into six tasks, each with one typical way of going wrong."
+    - path: discriminative-and-generative-models.qmd
+      description: "A discriminative model learns only the answer, while a generative model learns the data well enough to invent new examples."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Machine learning builds a model from examples. Instead of writing down the rule that
+Machine learning builds a model from examples: instead of writing down the rule that
 links water temperature to where a species lives, you give a method many stations where
-the answer is known, and it finds the rule itself. The test of the result is how well it
-predicts stations it has never seen.
+the answer is known, and it finds the rule itself. This section sets out the ideas the
+rest of the course builds on: the main kinds of learning, the difference between
+predicting and explaining, the tasks machine learning does in marine science, and the
+two things a model can learn. Every page works on the same simulated coastal survey, and
+the pages build on each other, so read them in order.
 
-This section sets out the ideas the rest of the course builds on: the main kinds of
-learning, the difference between predicting and explaining, where machine learning
-helps in marine science, and the two things a model can learn. Every page works on the
-same simulated coastal survey, so you can see one set of data answer different
-questions. The pages build on each other, so read them in order.
+{{< video https://www.youtube.com/watch?v=PKAsQDUK98E title="Introduction: a map of machine learning" >}}
 
 ## Pages in this section
 

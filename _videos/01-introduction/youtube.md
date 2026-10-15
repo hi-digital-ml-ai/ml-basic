@@ -10,7 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/01-introduction/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/01-introduction/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 1 |
-| Embed on | `chapters/01-introduction/index.qmd` |
+| YouTube | <https://www.youtube.com/watch?v=PKAsQDUK98E> (uploaded 2026-10-15) |
+| Embed on | `chapters/01-introduction/index.qmd` (done) |
 
 ## Title
 

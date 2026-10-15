@@ -1,63 +1,39 @@
 ---
 title: "8 · Unsupervised learning"
-description: "Finding structure when there is no answer to learn from. Clustering sorts stations into groups, principal components turn many columns into a map, and three checks say whether a pattern is a real group, a cut through a gradient, or nothing at all."
+description: "Finding structure without labels, and checking it before reporting it."
 categories: [unsupervised, interpretation]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: clustering.qmd
+      description: "k-means sorts stations into a set number of groups by how alike they are, and where it ends depends on where it starts."
+    - path: choosing-the-number-of-clusters.qmd
+      description: "The sum of squares always falls as groups are added, so the silhouette width and shuffled data judge how many to keep."
+    - path: hierarchical-clustering.qmd
+      description: "A tree of joins holds every number of groups at once, and the linkage rule decides what it finds."
+    - path: principal-component-analysis.qmd
+      description: "Principal component analysis turns twenty-four taxon columns into a map of the stations, read from its loadings."
+    - path: dimensionality-reduction.qmd
+      description: "A share of the variance, shuffled data or cross-validation decides how many components to keep, and UMAP makes a map just for looking."
+    - path: interpreting-patterns.qmd
+      description: "A pattern should come back in bootstrap samples, be a real group rather than a cut through a gradient, and match a variable the method never saw."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Sometimes there is no answer to learn from: hundreds of CTD profiles and no water-mass
-classification, or counts of two dozen taxa at every station and no list of the habitats
-they come from. Unsupervised methods look for structure in the data itself, and they
-return an answer for any table, so checking what they find matters as much as finding
-it. This section works on a community matrix of taxon counts from the same simulated
-survey as the rest of the course. The first three pages cover clustering:
+Sometimes there is no answer to learn from: counts of two dozen taxa at every station
+and no list of the habitats they come from. Unsupervised methods look for structure in
+the data itself, and they return an answer for any table, so checking what they find
+matters as much as finding it. This section works on the taxon counts of the same
+simulated survey as the rest of the course: three pages on sorting stations into groups,
+two on principal components, which turn many columns into a map, and one on the checks a
+pattern must pass before it is reported.
 
-- **clustering with k-means**: k-means sorts the stations into a set number of groups,
-  each round making them tighter, and where it ends depends on where it starts;
-- **choosing the number of clusters**: the sum of squares always falls as groups are
-  added, so the silhouette width and a shuffled copy of the data with the groups removed
-  judge how many to keep;
-- **hierarchical clustering**: a tree of joins holds every number of groups at once, the
-  linkage rule decides what it finds, and the adjusted Rand index scores how far two
-  groupings agree.
-
-The next two cover components:
-
-- **principal component analysis**: new axes built from the columns make a map of the
-  stations, read from their loadings, on which nothing makes an axis line up with one
-  driver;
-- **how many components to keep**: a set share of the variance keeps noise as well,
-  parallel analysis keeps the components that hold structure, and cross-validation keeps
-  those a model needs; UMAP makes a map for looking at.
-
-The last page checks what the others found:
-
-- **checking a pattern before reporting it**: a pattern should come back in bootstrap
-  samples, leave a gap between its groups rather than cut a gradient, and match a
-  recorded variable the method never saw.
-
-The section picks up threads from earlier ones.
-[Types of learning](../01-introduction/types-of-learning.qmd) ran k-means on
-temperature, salinity and depth; [Clustering with k-means](clustering.qmd) runs it on
-species counts and shows why one run is not enough.
-[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) put the columns on a
-common scale; every method in this section measures distance or spread, so each needs it.
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) chose a
-setting by cross-validation, and [Avoiding information
-leakage](../02-marine-data/information-leakage.qmd) kept each step inside the folds;
-[How many components to keep](dimensionality-reduction.qmd) tunes the number of
-components the same way. [Uncertainty and
-stability](../07-validation/uncertainty-and-stability.qmd) resampled the sites to put an
-interval on a score; [Checking a pattern before reporting it](interpreting-patterns.qmd)
-resamples them to see whether a grouping comes back.
+{{< video https://www.youtube.com/watch?v=bt6kDcavjY4 title="Unsupervised learning: finding structure without labels" >}}
 
 ## Pages in this section
 

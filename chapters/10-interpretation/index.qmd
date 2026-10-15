@@ -1,59 +1,35 @@
 ---
 title: "10 · Interpretation and responsible application"
-description: "A model that predicts well can be read, and what it learned put into words. The section reads a random forest's inputs, effects and single predictions from outside, reads a GAM from its parts and the forest through a surrogate, and ends with a re-runnable analysis and a model card."
+description: "Reading a model after it is built, and reporting it."
 categories: [interpretation, reproducibility]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: feature-importance.qmd
+      description: "Shuffling one input at a time shows how much a random forest relies on it, and inputs that carry the same information share the credit."
+    - path: partial-effects.qmd
+      description: "A partial dependence plot draws how the prediction changes along one input, and ICE curves draw it station by station."
+    - path: explaining-one-prediction.qmd
+      description: "SHAP values split one station's prediction into a contribution from each input, starting from the average prediction."
+    - path: interpretable-models.qmd
+      description: "A GAM is read from its parts, and a small tree fitted to a forest's predictions copies its broad shape."
+    - path: reporting-a-model.qmd
+      description: "The data, code, seeds and software versions let anyone re-run an analysis, and a model card says what the model is for and where it holds."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-The earlier sections built models and scored them on new sites. A score says how well a
-model predicts, not what it learned. This section reads a fitted model and its
-predictions, on the same simulated survey as the rest of the course, and ends with the
-report that goes with it.
-The first three pages read a random forest from outside, by changing its inputs and
-watching its predictions:
+A score says how well a model predicts, not what it learned. This section reads a fitted
+random forest from the outside, by changing its inputs and watching its predictions,
+then reads a model from its parts, on the same simulated survey as the rest of the
+course. It ends with the report that goes with a model: everything needed to re-run the
+analysis, and a model card that says what the model is for and where it holds.
 
-- **feature importance**: shuffling one input on the test sites shows how much the
-  forest relies on it, and inputs that carry the same information share the credit;
-- **partial effects**: a partial dependence plot draws how the prediction changes along
-  one input, and ICE curves draw it station by station; the temperature hump appears at
-  nearly every station;
-- **explaining one prediction**: SHAP values split a single station's prediction into a
-  contribution from each input, starting from the average prediction.
-
-The next one reads a model from its parts:
-
-- **interpretable models and surrogates**: a GAM's curves read as a habitat
-  description, and a small tree fitted to the forest's predictions copies its broad
-  shape, as far as its fidelity goes.
-
-The last one turns the analysis into a report:
-
-- **reporting a model**: the raw data, the code, the seeds and the software versions
-  let anyone re-run the analysis, and a model card, written from the code, says what the
-  model is for, how well it predicts and where it holds.
-
-The section picks up threads from earlier ones.
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built
-the forest that the first three pages read.
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-drew the forest's temperature hump, and [Partial effects](partial-effects.qmd) draws it
-station by station.
-[Interpretable models and surrogates](interpretable-models.qmd) reads the GAM's parts
-with the multipliers of
-[Regression for counts](../03-supervised-learning/count-regression.qmd), and judges a
-surrogate with the R² of
-[Information leakage](../02-marine-data/information-leakage.qmd).
-[Uneven sampling and extrapolation](../06-assumptions-limitations/sampling-and-extrapolation.qmd)
-showed where a model's data run out, and [Reporting a model](reporting-a-model.qmd)
-writes that range into the model card.
+{{< video https://www.youtube.com/watch?v=anfrxEKV4Xk title="Interpretation: reading a model after it is built" >}}
 
 ## Pages in this section
 

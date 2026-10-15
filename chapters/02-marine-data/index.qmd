@@ -1,34 +1,39 @@
 ---
 title: "2 · Understanding and preparing marine data"
-description: "Six pages that take the simulated coastal survey from the raw file to a table a model can use, and test a model on it without fooling yourself."
+description: "Taking a raw survey to a table a model can use, without fooling yourself."
 categories: [data-preparation, marine-data, eda]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: the-coastal-survey.qmd
+      description: "The simulated survey the course works on, whose 800 rows hold fewer independent observations than they seem to."
+    - path: marine-data-types.qmd
+      description: "Continuous, categorical, circular, temporal, spatial, profile and compositional data each need their own preparation before a model can use them."
+    - path: exploring-and-cleaning.qmd
+      description: "A fixed order of checks finds the raw survey's problems, and each fix starts from the reason a value is missing or strange."
+    - path: scaling-and-encoding.qmd
+      description: "Standardising, log transforms and dummy columns put the inputs in a form a model can use, worked out from the training data alone."
+    - path: splitting-data.qmd
+      description: "Training, validation and test sets, split by site rather than at random so that the test stations are truly new."
+    - path: information-leakage.qmd
+      description: "Four common ways the test set shapes a model before it is tested, and the habit that prevents each."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-A model learns only from the table it is given. If that table holds a salinity of
-−999, twelve spellings of four seabed types or the same site counted as five separate
-observations, the model learns from those too, and nothing in its output says so.
-Preparing the data takes most of the work in machine learning, and most of the
-mistakes that invalidate a result are made there.
+A model learns only from the table it is given, errors included, and nothing in its
+output says when the table was wrong. This section introduces the simulated coastal
+survey the course works on and takes its raw file to a table ready for a model: the
+kinds of variable it holds, the checks that find its problems, the scaling and encoding
+many methods need, and the split that keeps stations back for testing. It ends on
+information leakage, where the test set reaches the model before the model is tested and
+makes it look better than it is. The pages build on each other, so read them in order.
 
-This section introduces the simulated coastal survey that the rest of the course works
-on, then takes its raw file, as it came off the ship, to a table ready for a model: the
-kinds of variable in its columns, the checks that find its problems and the fix for
-each, the scaling and encoding that many methods need, and the split that keeps some
-stations back to test a model. The pages build on each other, so read them in order.
-
-The section ends on **information leakage**: information from the test set reaching the
-model before it is tested, which makes the model look better than it is and gives no
-warning. Every later section depends on avoiding it,
-[Model validation and performance assessment](../07-validation/index.qmd) most of all.
+{{< video https://www.youtube.com/watch?v=O2wC2O4xb9w title="Marine data: understanding and preparing a survey" >}}
 
 ## Pages in this section
 
