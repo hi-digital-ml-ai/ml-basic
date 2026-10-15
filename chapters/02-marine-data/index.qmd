@@ -25,6 +25,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 A model learns only from the table it is given, errors included, and nothing in its
 output says when the table was wrong. This section introduces the simulated coastal
 survey the course works on and takes its raw file to a table ready for a model: the
@@ -32,6 +34,8 @@ kinds of variable it holds, the checks that find its problems, the scaling and e
 many methods need, and the split that keeps stations back for testing. It ends on
 information leakage, where the test set reaches the model before the model is tested and
 makes it look better than it is. The pages build on each other, so read them in order.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=O2wC2O4xb9w title="Marine data: understanding and preparing a survey" >}}
 

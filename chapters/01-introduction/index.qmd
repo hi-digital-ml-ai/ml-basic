@@ -21,6 +21,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Machine learning builds a model from examples: instead of writing down the rule that
 links water temperature to where a species lives, you give a method many stations where
 the answer is known, and it finds the rule itself. This section sets out the ideas the
@@ -28,6 +30,8 @@ rest of the course builds on: the main kinds of learning, the difference between
 predicting and explaining, the tasks machine learning does in marine science, and the
 two things a model can learn. Every page works on the same simulated coastal survey, and
 the pages build on each other, so read them in order.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=PKAsQDUK98E title="Introduction: a map of machine learning" >}}
 

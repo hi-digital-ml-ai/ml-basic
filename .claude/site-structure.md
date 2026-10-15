@@ -109,9 +109,17 @@ index, not as a restatement of the title.
 
 ## Listings
 
-Each `chapters/NN-slug/index.qmd` is kept short (since 2026-10-15): the title and
-description, **one paragraph** on what the section covers, the section's video, a card
-grid of its pages with **one sentence each**, then Further resources.
+Each `chapters/NN-slug/index.qmd` is kept short (since 2026-10-15): the title and a
+one-line description, then four headings, the same on every overview:
+
+- **Overview**: one paragraph on what the section covers;
+- **A short tour**: the section's video;
+- **Pages in this section**: a card grid of its pages, one sentence each, the page
+  names bold in the link colour;
+- **Further resources**.
+
+These four are structural, like a book's contents, so they are the exception to
+page-specific headings.
 
 ```yaml
 listing:
@@ -145,7 +153,9 @@ document; with it, the cards render where the matching div sits:
 :::
 ```
 
-The video sits just above that heading, as `{{< video https://www.youtube.com/watch?v=<id> title="..." >}}`.
+Under *A short tour* the video is `{{< video https://www.youtube.com/watch?v=<id> title="..." >}}`.
+While a video is being replaced, a `::: {.video-placeholder}` div with one line of
+text holds its place at the same size.
 
 `chapters/index.qmd` and `contributed/index.qmd` use `type: table` with
 `categories: true`, so the topic filter is the point of those pages.
