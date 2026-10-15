@@ -1,43 +1,34 @@
 ---
 title: "4 · How machine-learning algorithms learn"
-description: "Fitting a model means searching for the parameters that make one number, the loss, as small as possible. Where that number comes from, how the search finds it, and how to check that the search worked."
+description: "The loss, the search for the parameters, and the assumptions behind them."
 categories: [optimisation]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: loss-functions.qmd
+      description: "A fit makes one number, the loss, as small as it can, and squared and absolute error weigh the same misses very differently."
+    - path: parameter-estimation.qmd
+      description: "A few models get their parameters from a formula and the rest search for them, and a failed search still prints coefficients."
+    - path: gradient-descent.qmd
+      description: "Gradient descent steps downhill; the step size decides whether it arrives, and the units of the inputs how long it takes."
+    - path: likelihood-and-priors.qmd
+      description: "Naming the distribution behind the data gives the loss, and a belief about the size of the coefficients gives the penalty."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-"Fitting a model" sounds like a single act. It is really a search. The algorithm scores
-how wrong the model currently is, changes the parameters to make that score a little
-smaller, and repeats until further changes stop helping. Each page in this section takes
-one part of that loop, on the same simulated survey as the rest of the course:
+Fitting a model sounds like a single act, but it is a search: the algorithm scores how
+wrong the model is, changes its parameters to make that score a little smaller, and
+repeats until further changes stop helping. The four pages in this section take that
+loop apart on the same simulated survey as the rest of the course: the score being made
+smaller, the ways the parameters are found, the simplest search, and where each score
+and penalty comes from.
 
-- **loss functions**, the score being made smaller, and how squared and absolute error
-  draw different lines through the same stations;
-- **finding the parameters**, by a formula for a few models and by a search for the rest;
-- **gradient descent**, the simplest search, and why it needs standardised inputs;
-- **maximum likelihood**, where each loss comes from: name the distribution behind the
-  data, and the loss follows;
-- **priors and ridge regression**, a penalty on the parameters that is a belief about
-  them written into the loss;
-- **checking a fit**, the signs that a search stopped early, had no lowest point or gives
-  a different answer each run.
-
-The section also pays back debts from earlier ones.
-[Scaling and encoding](../02-marine-data/scaling-and-encoding.qmd) asked you to
-standardise inputs without giving the full reason, and
-[Gradient descent](gradient-descent.qmd) supplies it. Section 3's
-[polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd)
-predicted a negative count, and [Maximum likelihood](maximum-likelihood.qmd) shows that
-squared error assumes a Normal response, which allows one. The penalty that
-[5 · Generalisation and model complexity](../05-generalisation/index.qmd) uses to stop models overfitting
-is the prior from [Priors and ridge regression](map-and-priors.qmd).
+{{< video https://www.youtube.com/watch?v=flduAVOF2rk title="How algorithms learn: the loss, the search and its assumptions" >}}
 
 ## Pages in this section
 

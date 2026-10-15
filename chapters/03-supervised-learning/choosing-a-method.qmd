@@ -241,7 +241,7 @@ models = {
 
 Each model is fitted twice: on the fitting sites and scored on the validation sites,
 and on all the training sites and scored once on the test sites, with the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss)
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations)
 and
 [$R^2$](../02-marine-data/information-leakage.qmd#one-linear-regression-shows-each-kind).
 The last column counts the test stations predicted to hold fewer than zero animals.

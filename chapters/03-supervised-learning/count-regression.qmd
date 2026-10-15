@@ -81,8 +81,8 @@ The **negative binomial** model adds one number for the extra spread, estimated 
 the data along with the coefficients. Its predictions follow the same kind of curve as
 Poisson's; what changes is how much scatter it expects around each one. That matters
 whenever a model reports a range: under Poisson, the confidence intervals for the
-coefficients and the ranges for new stations come out too narrow
-([Communicating uncertainty](../10-interpretation/communicating-uncertainty.qmd)).
+coefficients and the ranges for new stations come out too narrow, and hold fewer new
+catches than they promise.
 
 ::: {.diagram}
 ![Linear regression models the count itself and can fall below zero. Poisson regression is a straight line in the log of the count, so the count nears zero but never crosses it. The negative binomial keeps the curve and allows a wider spread.](img/counts-model.svg){fig-alt="Three cards. Linear regression, the count itself: count equals a plus b times the input; a straight line through falling counts crosses a dashed line marking zero; a straight line in the count keeps falling, even below zero. Poisson regression, a straight line in the log: count equals e to the power a plus b times the input; a curve falls towards the zero line and levels off above it; each unit multiplies the count, so the curve nears zero but never crosses it. Negative binomial, room for extra spread: the same rising curve with two shaded bands, a narrow one for Poisson and a wider one for the negative binomial, both growing as the count grows; counts of animals that gather in groups vary more than Poisson expects. A note says a count never falls below zero, and its spread grows with its size."}
@@ -291,7 +291,7 @@ A muddy station is expected to hold `r mud` times the count of a sandy one, and 
 rocky one `r rock` times, fewer than on sand. A multiplier reads the same whatever the
 count: mud adds `r scales::percent(mud - 1)` to 2 animals or to 200.
 
-### The count models score better on new sites
+### Both count models beat polynomial regression on new sites
 
 scikit-learn has no negative binomial model, so the Python tab takes it from
 statsmodels; in R it comes from the MASS package. Both are fitted on the recipe's

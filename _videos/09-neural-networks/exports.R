@@ -35,53 +35,40 @@ exports <- list(
           dir, "forward-and-backward-numbers")
   },
 
-  # The learning-rate sweep, the long run and the ten seeds.
+  # The long run and the ten seeds.
   "training-a-network.qmd" = function(env, dir) {
-    write(with(env, sweeps), dir, "rates")
     write(with(env, tibble::tibble(step = seq_along(big$training), training = big$training,
                                    validation = big$validation)), dir, "early-stopping")
     write(with(env, tibble::tibble(seed = seq_along(seed_mse), validation = seed_mse)), dir, "seeds")
     write(with(env, numbers(
-      linear_mse = linear_mse, n_train = nrow(X_train), n_valid = nrow(X_valid),
-      passes_001 = at_rate("Passes linear regression at step", "0.01"),
-      final_02 = at_rate("Final training MSE", "0.2"),
-      over_1000 = over_1000, nan_at = nan_at,
+      n_train = nrow(X_train), n_valid = nrow(X_valid),
       best_step = best_step, last_step = last_step, worse_pct = worse_pct,
       seed_spread = max(seed_mse) - min(seed_mse), averaged_mse = averaged_mse,
       n_beaten = n_beaten)),
       dir, "training-a-network-numbers")
   },
 
-  # The learning curves on the counts and on the expected counts, the baseline and the
-  # tuned network.
-  "how-much-data.qmd" = function(env, dir) {
-    write(with(env, dplyr::summarise(curves, lower = min(rmse), upper = max(rmse),
-                                     rmse = mean(rmse), .by = c(n, model))),
-          dir, "learning-curves")
-    write(with(env, dplyr::summarise(checked, rmse = mean(rmse), .by = c(n, model))),
-          dir, "expected-curves")
-    write(with(env, numbers(baseline = baseline, n_train = full,
-                            hidden_units = best$hidden_units, penalty = best$penalty,
-                            tuned_rmse = tuned_rmse, gain = gain, leads = leads)),
-          dir, "how-much-data-numbers")
-  },
-
-  # The water-mass band: training stations, scores, each model's predicted class over
-  # the plane (a coarser grid than the page's figure), the network's hidden units, the
-  # three sample sizes and the named combination.
-  "when-to-use-one.qmd" = function(env, dir) {
-    write(with(env, train), dir, "water-train")
-    write(with(env, dplyr::transmute(scores, model = Model, auc = `Test ROC AUC`)), dir, "water-auc")
+  # The survey's counts: each model's test RMSE on the counts, and against the true mean
+  # counts when trained on them. Then the water-mass band: training stations, scores,
+  # each model's predicted class over the plane (a coarser grid than the page's figure),
+  # the network's hidden units, the three sample sizes and the named combination.
+  "when-a-network-pays-off.qmd" = function(env, dir) {
+    write(with(env, tibble::tibble(model = scores$Model, counts = scores$`Test RMSE`,
+                                   true_means = checked$`Trained on true means`)),
+          dir, "survey-scores")
+    write(with(env, water_train), dir, "water-train")
+    write(with(env, dplyr::transmute(water_scores, model = Model, auc = `Test ROC AUC`,
+                                                 accuracy = `Test accuracy`)), dir, "water-auc")
     write(with(env, {
       grid <- tidyr::expand_grid(
         temperature_c = seq(2, 16, length.out = 120),
-        salinity_psu = seq(min(train$salinity_psu), max(train$salinity_psu), length.out = 120))
-      purrr::imap_dfr(fits, \(fitted, nm)
+        salinity_psu = seq(min(water_train$salinity_psu), max(water_train$salinity_psu), length.out = 120))
+      purrr::imap_dfr(water_fits, \(fitted, nm)
         dplyr::mutate(grid, model = nm, core = predict(fitted, grid)$.pred_class == "core"))
     }), dir, "water-plane")
     write(with(env, {
-      net <- extract_fit_engine(fits$`Neural network`)
-      steps <- extract_recipe(fits$`Neural network`)$steps[[1]]
+      net <- extract_fit_engine(water_fits$`Neural network`)
+      steps <- extract_recipe(water_fits$`Neural network`)$steps[[1]]
       w <- coef(net)
       units <- seq_len(net$n[2])
       tibble::tibble(unit = units,
@@ -91,8 +78,10 @@ exports <- list(
                      s_mean = steps$means[["salinity_psu"]], s_sd = steps$sds[["salinity_psu"]])
     }), dir, "water-units")
     write(with(env, dplyr::rename(by_size, n = `Training stations`)), dir, "water-sizes")
-    write(with(env, numbers(n_weights = n_weights, n_test = nrow(test), named_auc = named_auc,
+    write(with(env, numbers(baseline = baseline, n_train = nrow(train),
+                            core_pct = round(100 * mean(water_train$water_mass == "core")),
+                            n_weights = band_weights, n_test = nrow(water_test), named_auc = named_auc,
                             n_coefficients = nrow(tidy(named_fit)))),
-          dir, "when-to-use-one-numbers")
+          dir, "when-a-network-pays-off-numbers")
   }
 )

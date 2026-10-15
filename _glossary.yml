@@ -9,6 +9,37 @@
 
 terms:
 
+  # Toolkit: R with tidymodels
+  - term: "tidymodels"
+    definition: "A collection of R packages that sets up different models in the same steps: split, recipe, model specification, workflow, fit, predict and score."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Package"
+    definition: "A bundle of functions that someone has written and shared, loaded into R with library() or into Python with import."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Pipe"
+    definition: "R's |> operator, which passes the result on its left into the function on its right; read it as \"and then\"."
+    page: toolkit/r-with-tidymodels.qmd
+  - term: "Model specification"
+    definition: "In tidymodels, the choice of method and its settings, such as linear_reg(), made before any data are seen."
+    page: toolkit/r-with-tidymodels.qmd
+
+  # Toolkit: Python with scikit-learn
+  - term: "scikit-learn"
+    definition: "The most widely used Python package for machine learning; the course's Python tabs are written with it."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Method (Python)"
+    definition: "A function that belongs to an object and is reached with a dot, such as model.fit()."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Transformer"
+    definition: "In scikit-learn, an object that prepares columns, such as filling gaps or turning categories into numbers, learning what it needs from the training data."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Estimator"
+    definition: "In scikit-learn, a model object, such as LinearRegression(), that learns from data with .fit() and predicts with .predict()."
+    page: toolkit/python-with-scikit-learn.qmd
+  - term: "Pipeline"
+    definition: "In scikit-learn, transformers and an estimator joined into one object that is fitted and applied as a whole; tidymodels' workflow does the same job."
+    page: toolkit/python-with-scikit-learn.qmd
+
   # 1 · Introduction: Types of learning
   - term: "Supervised learning"
     definition: "Learning from examples whose answer is known, in order to predict the answer for new examples."
@@ -320,7 +351,512 @@ terms:
     definition: "A sample of the same size as the data, drawn from it with replacement, so some examples appear twice or more and others not at all."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
     more: chapters/07-validation/uncertainty-and-stability.qmd
+  - term: "Out-of-bag error"
+    definition: "A random forest's error when each training example is predicted only by the trees whose bootstrap samples left it out; a score on unseen examples without holding data back."
+    page: chapters/03-supervised-learning/forests-and-boosting.qmd
   - term: "Learning rate"
     definition: "A number that scales each step of learning: in boosting, the share of each new tree's prediction added to the total; in gradient descent, how far each step goes."
     page: chapters/03-supervised-learning/forests-and-boosting.qmd
     more: chapters/04-how-algorithms-learn/gradient-descent.qmd
+
+  # 4 · How algorithms learn: Loss functions
+  - term: "Residual"
+    definition: "How far one prediction missed: the observed value minus the predicted one."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Noise"
+    definition: "The part of an outcome that the conditions do not decide, such as patchy animals or chance, which no model can predict."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+    more: chapters/05-generalisation/bias-variance.qmd
+  - term: "Loss function"
+    definition: "A rule that turns a residual into a penalty: zero for a perfect prediction, and larger the worse the miss."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Squared error"
+    definition: "A loss that multiplies the residual by itself, so a miss of 10 costs a hundred times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Absolute error"
+    definition: "A loss that drops the residual's sign, so a miss of 10 costs ten times a miss of 1."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Objective"
+    definition: "The loss averaged over the data, possibly with a penalty added: the one number a fit makes as small as it can."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Mean squared error"
+    definition: "The squared error averaged over the data; its square root is the RMSE."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Poisson deviance"
+    definition: "The loss for counts, which prices a miss by how many animals were expected, so missing by 5 costs more where few were expected."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+  - term: "Log loss"
+    definition: "The loss for a predicted probability, which grows with how little probability the model gave to what happened."
+    page: chapters/04-how-algorithms-learn/loss-functions.qmd
+
+  # 4 · How algorithms learn: Finding the parameters
+  - term: "Parameter"
+    definition: "A number the fit chooses from the data, such as a slope or the value a tree splits at."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Normal equations"
+    definition: "The equations whose solution gives linear regression's coefficients directly, in one step, without a search."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Converged"
+    definition: "Said of a search that stopped because its steps no longer improved the fit by more than a set amount, rather than because it ran out of steps."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Separation"
+    definition: "When one input splits the two classes completely, so a classifier's coefficient grows without limit and the search never finds a lowest point."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+  - term: "Greedy"
+    definition: "Said of a search that takes the best step now and never goes back to change it, as a decision tree does with its splits."
+    page: chapters/04-how-algorithms-learn/parameter-estimation.qmd
+
+  # 4 · How algorithms learn: Gradient descent
+  - term: "Gradient descent"
+    definition: "A search that finds which way is downhill on the objective and takes a step that way, again and again, until the ground is flat."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Gradient"
+    definition: "The slope of the objective along each parameter, which together point uphill."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+  - term: "Stochastic gradient descent"
+    definition: "Gradient descent in which each step uses a small random batch of the observations instead of all of them."
+    page: chapters/04-how-algorithms-learn/gradient-descent.qmd
+    more: chapters/09-neural-networks/training-a-network.qmd
+
+  # 4 · How algorithms learn: Likelihood and priors
+  - term: "Maximum likelihood"
+    definition: "Fitting by choosing the parameter values that make the observed data most probable under a stated distribution."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Likelihood"
+    definition: "The probability of the observed data, read as a function of the parameter values."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum likelihood estimate"
+    definition: "The parameter value at the peak of the likelihood, the one that makes the data most probable."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Negative log-likelihood"
+    definition: "Minus the logarithm of the likelihood: a loss, which the fit makes as small as it can. Squared error, Poisson deviance and log loss are examples."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Prior"
+    definition: "What is believed about a parameter before seeing the data, written as a distribution; its negative log is a penalty."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Maximum a posteriori"
+    definition: "Fitting by choosing the parameter values that best balance the likelihood and the prior: the highest point of the posterior."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+  - term: "Posterior"
+    definition: "The likelihood combined with the prior: what is believed about the parameters after seeing the data."
+    page: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+
+  # 5 · Generalisation: Underfitting and overfitting
+  - term: "Training error"
+    definition: "A model's error on the examples it was fitted to; fitting noise lowers it, so it flatters the model."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Flexibility (complexity)"
+    definition: "How wide a family of shapes a model can take: a straight line has little, a tree with many leaves a lot."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+    more: chapters/05-generalisation/regularisation.qmd
+  - term: "Underfitting"
+    definition: "A model too rigid to follow the pattern in the data, so its errors on the training data and on new data are both high and close together."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "U-shaped error curve"
+    definition: "The error on new data plotted against flexibility: it falls while the model picks up the pattern, then rises as it fits noise."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+  - term: "Minimum node size"
+    definition: "The smallest group of examples a decision tree may split in two (min_n); smaller values let the tree grow larger."
+    page: chapters/05-generalisation/underfitting-and-overfitting.qmd
+
+  # 5 · Generalisation: The bias–variance trade-off
+  - term: "Bias"
+    definition: "How far a model's average prediction, over many surveys, sits from the expected value: the miss a model makes in the same direction every time."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Variance (of a model)"
+    definition: "How much a model's predictions change when it is fitted to a different survey of the same place."
+    page: chapters/05-generalisation/bias-variance.qmd
+  - term: "Bias–variance trade-off"
+    definition: "More flexibility lowers a model's bias and raises its variance, so the lowest error on new data lies in between."
+    page: chapters/05-generalisation/bias-variance.qmd
+
+  # 5 · Generalisation: Regularisation
+  - term: "Regularisation"
+    definition: "Adding a penalty to the loss so that a model fits its own data a little worse and new data better."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Penalty"
+    definition: "A second term added to the loss that grows with the size of the coefficients, weighted by λ (lambda): the larger λ, the harder it pulls them towards zero."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Ridge regression"
+    definition: "A linear regression with a penalty on the sum of its squared coefficients, which shrinks every coefficient but sets none to zero."
+    page: chapters/05-generalisation/regularisation.qmd
+  - term: "Lasso"
+    definition: "A linear regression with a penalty on the sum of the absolute values of its coefficients, which sets the smallest to exactly zero and so drops their inputs."
+    page: chapters/05-generalisation/regularisation.qmd
+
+  # 5 · Generalisation: Hyperparameter selection
+  - term: "k-fold cross-validation"
+    definition: "Cutting the training data into k folds and letting each take a turn as new data while the model is fitted to the rest; the k errors are averaged."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Fold"
+    definition: "One of the k groups the training data are cut into for cross-validation; with data in sites, each fold holds whole sites."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Cross-validated error"
+    definition: "The average of the errors on the held-out folds, used to compare candidate settings."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "Standard error"
+    definition: "How far an average could move with a different draw of data; for a cross-validated error, the spread of the fold errors over the square root of the number of folds."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+  - term: "One-standard-error rule"
+    definition: "Among the settings whose cross-validated error is within one standard error of the lowest, choosing the simplest."
+    page: chapters/05-generalisation/hyperparameter-selection.qmd
+
+  # 6 · Assumptions: Linearity and nonlinearity
+  - term: "Assumption"
+    definition: "Something a method takes for granted about its data, such as a straight line; when it is wrong, the model still answers, but the answer can be wrong."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+  - term: "Linear model"
+    definition: "A model that predicts from a starting value plus a fixed amount for each input, added up; linear, polynomial, Poisson and logistic regression are linear models."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+  - term: "Interaction"
+    definition: "An effect of one input that depends on the value of another, such as a preferred temperature that shifts with depth."
+    page: chapters/06-assumptions-limitations/linearity-and-nonlinearity.qmd
+
+  # 6 · Assumptions: Distributional assumptions
+  - term: "Equal spread"
+    definition: "Errors whose spread is the same whatever the prediction; homogeneity of variance, in statistics."
+    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+  - term: "Skewed"
+    definition: "Of data with a long tail on one side, such as counts with a few very large catches, so that the average and the median differ."
+    page: chapters/06-assumptions-limitations/distributional-assumptions.qmd
+
+  # 6 · Assumptions: Dependent data
+  - term: "Dependent data"
+    definition: "Observations that share conditions, such as visits to one site, so one says something about another beyond what their inputs say."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+  - term: "Effective sample size"
+    definition: "The number of independent observations a set of dependent rows is worth for an estimate; if resampling groups spreads the estimate k times wider than resampling rows, the rows are worth k² times fewer."
+    page: chapters/06-assumptions-limitations/dependent-data.qmd
+
+  # 6 · Assumptions: Uneven sampling and extrapolation
+  - term: "Uneven sampling"
+    definition: "Survey effort that covers some conditions thinly, so a model's fit there rests on a few stations."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Extrapolation"
+    definition: "Predicting for conditions the data did not cover, where a model still answers but nothing in the answer shows that it is guessing."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "Distance to the nearest surveyed station"
+    definition: "How far a station lies from the closest station in the survey, measured across all the inputs at once after standardising them; a large distance flags extrapolation."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+  - term: "True mean count"
+    definition: "In a simulated survey, the number each station's count was drawn around; no real study knows it, but it shows a model's error free of the noise in single counts."
+    page: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
+
+  # 6 · Assumptions: Class imbalance
+  - term: "Imbalanced"
+    definition: "Of classes where one answer is much rarer than the other, so that accuracy mostly counts the easy calls of the common answer."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Downsampling"
+    definition: "Dropping cases of the common class at random, before fitting, until they match the rare one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+  - term: "Upsampling"
+    definition: "Copying cases of the rare class at random, before fitting, until they match the common one."
+    page: chapters/06-assumptions-limitations/class-imbalance.qmd
+
+  # 7 · Validation: Cross-validation
+  - term: "Out-of-fold prediction"
+    definition: "A station's prediction from the model fitted without its fold, so that every station is predicted once as new data."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Pooled score"
+    definition: "One score worked out from every station's out-of-fold prediction together, rather than the average of the folds' own scores."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Selection optimism"
+    definition: "The part of a search winner's score that is luck: the lowest of many scores gathers the most, so the more candidates, the more the winner's score flatters it."
+    page: chapters/07-validation/cross-validation.qmd
+  - term: "Nested cross-validation"
+    definition: "Running a whole search inside each round of an outer cross-validation and scoring its choice on the outer fold, which scores the search as well as the model it picks."
+    page: chapters/07-validation/cross-validation.qmd
+
+  # 7 · Validation: Spatial and temporal cross-validation
+  - term: "Spatial block"
+    definition: "A square of the map with every site in it, held out as one group so that neighbouring sites stay together."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Distance to the nearest fitted station"
+    definition: "For a held-out station, how far away the closest station the model was fitted to lies; the folds set it, and a score holds only for predictions that far from the data."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+  - term: "Expanding window"
+    definition: "Cross-validation for forecasts that fits each round only to the years before the year it tests, adding a year each round."
+    page: chapters/07-validation/spatial-and-temporal-cv.qmd
+
+  # 7 · Validation: Regression performance measures
+  - term: "Performance measure"
+    definition: "A number that sums up how far a model's predictions fall from the observed values, such as the RMSE or MAE."
+    page: chapters/07-validation/regression-metrics.qmd
+  - term: "MAE (mean absolute error)"
+    definition: "The average size of a prediction's error, its sign dropped; smallest when a model predicts the median. Lower is better."
+    page: chapters/07-validation/regression-metrics.qmd
+  - term: "Squared correlation"
+    definition: "The square of the correlation between observed and predicted values, often reported as R²; it cannot see predictions that are all too low or too high by the same proportion."
+    page: chapters/07-validation/regression-metrics.qmd
+
+  # 7 · Validation: Classification performance measures
+  - term: "Sensitivity"
+    definition: "Of the cases that are truly yes, the share a model calls yes; also called recall. Misses lower it."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Specificity"
+    definition: "Of the cases that are truly no, the share a model calls no. False alarms lower it."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Precision"
+    definition: "Of the cases a model calls yes, the share that are truly yes. False alarms lower it, and easily outnumber the true yeses when yes is rare."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Confusion matrix"
+    definition: "The two-by-two table of a model's calls against the truth: true presences, false alarms, misses and true absences."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Balanced accuracy"
+    definition: "The average of sensitivity and specificity, so presence and absence count alike; 0.5 for a rule that calls every case the same."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "ROC curve"
+    definition: "A model's sensitivity drawn against its specificity at every threshold."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "ROC AUC"
+    definition: "The area under the ROC curve: the share of pairs, one yes and one no, in which the yes gets the higher probability; 1 is a perfect ranking and 0.5 no better than random."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Calibrated"
+    definition: "Of probabilities that can be read as chances: of the stations given 0.8, about 8 in 10 hold the species."
+    page: chapters/07-validation/classification-metrics.qmd
+  - term: "Calibration plot"
+    definition: "A plot of groups of stations' average predicted probability against the share where the species was found; calibrated probabilities lie on the diagonal."
+    page: chapters/07-validation/classification-metrics.qmd
+
+  # 7 · Validation: Uncertainty and stability
+  - term: "Paired comparison"
+    definition: "Comparing two models by the difference in their scores within each resample of the same data, so that what makes a resample hard for both cancels."
+    page: chapters/07-validation/uncertainty-and-stability.qmd
+
+  # 7 · Validation: Choosing measures that match the objective
+  - term: "Budget"
+    definition: "The fixed number of stations a survey has time to visit, which a shortlist must fill."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Shortlist"
+    definition: "The stations a model predicts the most animals at, up to the budget; scored on the animals caught there."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Perfect shortlist"
+    definition: "The stations that really held the most animals, up to the budget; the best any shortlist can find."
+    page: chapters/07-validation/choosing-a-metric.qmd
+  - term: "Expected cost"
+    definition: "The average cost of a model's calls per station, counting each false alarm at k times the cost of a miss; with calibrated probabilities it is lowest at a threshold of k/(1 + k)."
+    page: chapters/07-validation/choosing-a-metric.qmd
+
+  # 8 · Unsupervised learning: Clustering with k-means
+  - term: "Clustering"
+    definition: "Sorting rows into groups so that rows in the same group resemble each other more than rows in other groups, with no answer to learn from."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Within-cluster sum of squares"
+    definition: "Every point's distance to the centre of its own cluster, squared and added up; small when every cluster is compact, and what k-means makes smaller."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+  - term: "Community matrix"
+    definition: "A table with one row per sample and one column per taxon, holding the counts or another measure of how many were found."
+    page: chapters/08-unsupervised-learning/clustering.qmd
+
+  # 8 · Unsupervised learning: Choosing the number of clusters
+  - term: "Elbow"
+    definition: "A bend in the within-cluster sum of squares plotted against the number of clusters, where adding clusters stops helping much; real data often show none."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Silhouette width"
+    definition: "For one row, how much nearer it sits to its own cluster than to the nearest other, from −1 to 1; the average over all rows scores a whole clustering."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+  - term: "Shuffled baseline"
+    definition: "The score the same steps reach on a copy of the data with each column shuffled on its own, so every column keeps its values and any groups are gone."
+    page: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
+
+  # 8 · Unsupervised learning: Hierarchical clustering
+  - term: "Hierarchical clustering"
+    definition: "Clustering that starts from single rows, joins the two closest groups again and again, and records the joins as a tree that can be cut into any number of groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Dendrogram"
+    definition: "The tree that hierarchical clustering draws, each join at the height of the distance it bridged; a cut across it gives a grouping."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Linkage"
+    definition: "The rule for the distance between two groups in hierarchical clustering: their nearest members (single), their furthest (complete), all pairs on average (average), or the rise in the sum of squares if joined (Ward)."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Rand index"
+    definition: "The share of pairs of rows that two groupings agree about, both putting the pair in one group or both putting it in different groups."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Adjusted Rand index (ARI)"
+    definition: "The Rand index corrected for the agreement expected by chance: 1 for identical groupings, about 0 for no more agreement than chance."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+  - term: "Chaining"
+    definition: "Linkage joining groups through threads of in-between rows, so that nearly every row ends up in one group and the rest are peeled off one or two at a time."
+    page: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
+
+  # 8 · Unsupervised learning: Principal component analysis
+  - term: "Principal component analysis (PCA)"
+    definition: "A method that builds new axes from the columns, each a weighted sum of them, ordered by how much of the variance they hold and each at right angles to the last."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Ordination"
+    definition: "A map of samples, usually in two dimensions, on which samples with similar communities sit close together."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Principal component"
+    definition: "One of the new axes that PCA builds: the direction of most remaining spread at right angles to the components before it."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Loadings"
+    definition: "The weights that build a principal component from the original columns, one per column; they say what the component is made of."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Score"
+    definition: "A row's value on a principal component: where it sits along that new axis."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+  - term: "Horseshoe effect"
+    definition: "The arch that rows along a long gradient bend into on a PCA map, because PCA can follow only straight-line directions."
+    page: chapters/08-unsupervised-learning/principal-component-analysis.qmd
+
+  # 8 · Unsupervised learning: How many components to keep
+  - term: "Parallel analysis"
+    definition: "Choosing how many principal components to keep by comparing each component's share of the variance with the share it reaches in copies of the table with every column shuffled, and keeping those above it."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+  - term: "UMAP"
+    definition: "Uniform manifold approximation and projection: a method that draws a flat map on which each row's nearest neighbours stay close to it; distances between groups and the sizes of groups on the map carry no meaning."
+    page: chapters/08-unsupervised-learning/dimensionality-reduction.qmd
+
+  # 8 · Unsupervised learning: Checking a pattern before reporting it
+  - term: "Cluster stability"
+    definition: "How often a clustering comes back when it is refitted on resamples of the data, measured by its agreement with the original grouping; a split through a steady gradient can be stable too."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+  - term: "External validation"
+    definition: "Checking a pattern found without labels against a variable recorded separately and left out of the analysis, such as the seabed type for clusters of counts."
+    page: chapters/08-unsupervised-learning/interpreting-patterns.qmd
+
+  # 9 · Neural networks: Neurons, layers and activations
+  - term: "Neural network"
+    definition: "A model built from many small regressions joined together, each taking a weighted sum of its inputs and bending the result, with the bent results added up into a prediction."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Neuron"
+    definition: "One unit of a neural network: a weighted sum of its inputs plus a bias, passed through an activation function."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Weight"
+    definition: "The number a neuron multiplies one of its inputs by; a network learns its weights from the data, as a regression learns its coefficients."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Bias (of a neuron)"
+    definition: "The constant a neuron adds to its weighted sum, like the intercept of a regression."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Activation function"
+    definition: "The bend a neuron applies to its weighted sum; without it, a network of any size adds up to one straight line."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Hidden layer"
+    definition: "Several neurons that read the same inputs and pass their results on to the next layer; nothing outside the network sees their values."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Hidden unit"
+    definition: "One neuron in a hidden layer."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Logistic function"
+    definition: "The S-shaped curve of logistic regression, rising from 0 to 1; used as an activation function."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "Tanh"
+    definition: "An S-shaped activation function rising from −1 to 1, the logistic function stretched and shifted."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+  - term: "ReLU"
+    definition: "Rectified linear unit: an activation function that is zero below zero and a straight line above it, the usual choice in large networks."
+    page: chapters/09-neural-networks/what-a-network-is.qmd
+
+  # 9 · Neural networks: Forward propagation and backpropagation
+  - term: "Backpropagation"
+    definition: "Passing a network's error back through its layers, from the output to the inputs, to find the slope of the loss for every weight in one pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Forward propagation"
+    definition: "Pushing the inputs through a network layer by layer to the prediction, keeping every value on the way for the backward pass."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Plateau"
+    definition: "A nearly flat stretch of the loss during training, where the slopes are tiny and progress pauses before the loss falls again."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "BFGS"
+    definition: "A search for the lowest loss that also tracks how the slopes change from step to step and chooses its own step size, so it needs no learning rate; the nnet package uses it."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+  - term: "Vanishing gradient"
+    definition: "Slopes that shrink as they pass back through many layers of flat-ended bends such as tanh, so the weights near the inputs barely move."
+    page: chapters/09-neural-networks/forward-and-backward.qmd
+
+  # 9 · Neural networks: Training a network
+  - term: "Early stopping"
+    definition: "Keeping a network's weights from the training step where the error on validation data was lowest, instead of the last step; it restrains the weights as a penalty does."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Mini-batch"
+    definition: "A small random group of the training rows used for one step of gradient descent, so each step is quick on a large dataset."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Epoch"
+    definition: "One pass through all the mini-batches, so that every training row has been used once; the usual unit for how long a network trains."
+    page: chapters/09-neural-networks/training-a-network.qmd
+  - term: "Multilayer perceptron"
+    definition: "The usual name for a network of fully connected layers like those in this course; tidymodels fits one with mlp()."
+    page: chapters/09-neural-networks/training-a-network.qmd
+
+  # 9 · Neural networks: When a network pays off
+  - term: "T–S diagram"
+    definition: "A plot of temperature against salinity, on which a water mass shows up as a band or cluster because it is identified by how the two go together."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Feature engineering"
+    definition: "Building new inputs from domain knowledge, such as a combination of two measurements, so that a simpler model can use what matters directly."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+  - term: "Transfer learning"
+    definition: "Starting from a network already trained on a large general dataset, such as millions of photographs, and retraining it on a few hundred examples of your own."
+    page: chapters/09-neural-networks/when-a-network-pays-off.qmd
+
+  # 9 · Neural networks: Autoencoders
+  - term: "Autoencoder"
+    definition: "A network trained to rebuild its own input through a narrow middle, so it learns a small map of the rows with no response to predict."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Encoder"
+    definition: "The half of an autoencoder that takes each row's many columns down to a few values, the code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Code (autoencoder)"
+    definition: "The few values in an autoencoder's narrow middle; they place each row on a small map, like PCA's scores, but nothing says what each value means."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Decoder"
+    definition: "The half of an autoencoder that rebuilds the row from its code."
+    page: chapters/09-neural-networks/autoencoders.qmd
+  - term: "Reconstruction error"
+    definition: "The mean squared difference between a row and its rebuilt version; the loss an autoencoder makes small, and large for rows unlike the training data."
+    page: chapters/09-neural-networks/autoencoders.qmd
+
+  # 10 · Interpretation: Feature importance
+  - term: "Feature importance"
+    definition: "A score for each input of how much a fitted model relies on it; it says what the model uses, not the direction of an effect or its cause."
+    page: chapters/10-interpretation/feature-importance.qmd
+  - term: "Permutation importance"
+    definition: "The rise in a model's error on test data when one input is shuffled, so its values no longer belong to their rows; it works for any model."
+    page: chapters/10-interpretation/feature-importance.qmd
+
+  # 10 · Interpretation: Partial effects
+  - term: "Partial effect"
+    definition: "How a model's prediction changes along one input, drawn as a curve; it describes the model, and describes the species only where the data let that input vary on its own."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "Partial dependence plot"
+    definition: "A curve made by setting one input to the same value in every row, predicting each row and averaging, then repeating along the input's range; it works for any model."
+    page: chapters/10-interpretation/partial-effects.qmd
+  - term: "ICE curve"
+    definition: "Individual conditional expectation: one row's prediction as one input moves and the rest of the row stays as recorded; the partial dependence is their average."
+    page: chapters/10-interpretation/partial-effects.qmd
+
+  # 10 · Interpretation: Explaining one prediction
+  - term: "SHAP value"
+    definition: "SHAP is short for SHapley Additive exPlanations. One input's share of one prediction: the change it makes to the prediction when it is revealed, averaged over every order of revealing the inputs; the average prediction plus every input's SHAP value equals the prediction."
+    page: chapters/10-interpretation/explaining-one-prediction.qmd
+
+  # 10 · Interpretation: Interpretable models and surrogates
+  - term: "Interpretable model"
+    definition: "A model whose fitted parts can be read directly, such as a linear regression's slopes, a GAM's curves or a small tree's questions."
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Black box"
+    definition: "A model, such as a random forest, boosting or a neural network, with no part that means anything alone; it is read from outside, by changing its inputs and watching its predictions, or through a surrogate."
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Generalised additive model (GAM)"
+    definition: "A model that gives each input a smooth curve in place of a straight line and adds the curves up, so each input keeps one curve that can be drawn and read."
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Surrogate model"
+    definition: "A small, readable model fitted to a black box's predictions in place of the recorded outcomes, so its parts summarise what the black box predicts."
+    page: chapters/10-interpretation/interpretable-models.qmd
+  - term: "Fidelity"
+    definition: "How closely a surrogate's predictions follow the black box's, measured as the R² between the two; 1 means an exact copy."
+    page: chapters/10-interpretation/interpretable-models.qmd
+
+  # 10 · Interpretation: Reporting a model
+  - term: "Reproducible"
+    definition: "Of an analysis that gives the same numbers when someone else runs it on the same data with the same code."
+    page: chapters/10-interpretation/reporting-a-model.qmd
+  - term: "Seed"
+    definition: "The starting point of a random number generator; the same seed gives the same sequence of draws, so a run repeats exactly as long as the draws come in the same order."
+    page: chapters/10-interpretation/reporting-a-model.qmd
+  - term: "Model card"
+    definition: "A short document that travels with a model: what it is, what it is for, its data and inputs, its score on new sites, what it relies on, where it holds and its limits."
+    page: chapters/10-interpretation/reporting-a-model.qmd
+  - term: "Claim"
+    definition: "A sentence in a report that puts a model's result into words; a good claim says what was found and how far it reaches."
+    page: chapters/10-interpretation/reporting-a-model.qmd

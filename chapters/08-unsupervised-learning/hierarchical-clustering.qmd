@@ -1,0 +1,411 @@
+---
+title: "Hierarchical clustering"
+description: "Hierarchical clustering joins stations step by step into a tree that can be cut into any number of groups. How the linkage rule decides what the tree finds, and the adjusted Rand index for comparing two groupings."
+order: 3
+categories: [unsupervised]
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(tidymodels)
+library(tidyclust)
+library(tidyverse)
+library(mclust, include.only = "adjustedRandIndex")
+library(patchwork)
+source(here::here("R/theme.R"))
+source(here::here("R/data.R"))
+source(here::here("R/python-tabs.R"))
+```
+
+{{< new-terms >}}
+
+## A dendrogram nests groups within groups
+
+Groups in data often sit inside larger groups. **Hierarchical clustering** gives every
+level at once: it builds a tree, the **dendrogram**, which can be cut afterwards into two
+groups, three, or any number. Benthic survey reports often show one, with hard and soft
+bottom split first and finer assemblages within each.
+[Clustering with k-means](clustering.qmd) returns one grouping for one $k$; the tree holds
+them all.
+
+This page builds that tree for the community matrix, shows the one setting that decides
+what it finds, and introduces a score for how far two groupings agree, which the rest of
+the section uses to compare clusterings.
+
+{{< include ../../_snippets/simulated-data.qmd >}}
+
+{{< include ../../_snippets/python-tabs-run.qmd >}}
+
+## The tree records every join of the two closest groups
+
+Hierarchical clustering starts with every station in a group of its own. It joins the two
+closest groups, then the two closest of what remains, and carries on until everything is
+in one group. The record of those joins is the tree. Each join sits at a height equal to
+how far apart the two groups were, so a cut across the tree at any height gives a
+grouping: a high cut gives a few large groups, a lower cut more and smaller ones.
+
+::: {.diagram}
+![Hierarchical clustering joins the two closest groups again and again, and records the joins as a tree; cutting the tree at a height gives groups. How far apart two groups are is set by the linkage rule: the nearest members (single), the furthest members (complete), all pairs on average (average), or the rise in the sum of squares if they were joined (Ward).](img/hierarchical-tree.svg){fig-alt="Two cards joined by an arrow, with four small cards below. 1 Join: six points, a to f, in two loose groups; dashed outlines numbered 1 to 4 show the order of joins, a with b first, then d with e, then c joins a and b, then f joins d and e. 2 Cut: the same joins drawn as a tree over the leaves a to f, each join at the height of the distance it bridged; a dashed line high on the tree cuts it into 2 groups, a lower one into 4. Below, under the heading how far apart are two groups, the linkage rule decides, four cards each show a blue and an orange group of three points. Single draws one line between the two nearest members; complete one line between the two furthest; average draws all nine lines between the groups; Ward marks each group's centre and dashed lines from every point to the centre of the two joined, with the caption how much the sum of squares rises if joined."}
+:::
+
+## The linkage rule sets the distance between two groups
+
+Distance between two stations is the same straight-line distance k-means uses, so the
+counts need the same log and common scale. Once groups hold more than one station,
+"closest" needs a rule for the distance between two groups. That rule is the **linkage**:
+
+| Linkage | Distance between two groups |
+| --- | --- |
+| single | between their two nearest members |
+| complete | between their two furthest members |
+| average | averaged over every pair, one member from each group |
+| Ward | how much the within-cluster sum of squares rises if they are joined |
+
+Ward's rule is k-means' own measure, the within-cluster sum of squares, used one join at a
+time. The others measure plain distances. The four can sound like small variants of one
+method, but on the same stations they give very different trees.
+
+## Worked example
+
+### One tree holds every number of groups
+
+The community matrix and recipe are those of [Clustering with k-means](clustering.qmd).
+tidyclust's `hier_clust()` takes the linkage; R calls Ward's rule `"ward.D2"`. The tree is
+fitted once, and `extract_cluster_assignment()` cuts it at whatever number of groups is
+asked for, here two and three.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: ward-tree
+survey <- load_coastal_survey_clean()
+community <- load_coastal_community()
+taxa_only <- community |> dplyr::select(starts_with("tax"))
+
+cluster_recipe <- recipe(~ ., data = taxa_only) |>
+  step_log(all_numeric_predictors(), offset = 1) |>
+  step_normalize(all_numeric_predictors())
+
+ward_fit <- workflow() |>
+  add_recipe(cluster_recipe) |>
+  add_model(hier_clust(linkage_method = "ward.D2")) |>
+  fit(data = taxa_only)
+
+# One tree, cut twice.
+stations <- community |>
+  mutate(two_groups = extract_cluster_assignment(ward_fit, num_clusters = 2)$.cluster,
+         three_groups = extract_cluster_assignment(ward_fit, num_clusters = 3)$.cluster) |>
+  inner_join(dplyr::select(survey, station_id, depth_m, substrate),
+             by = "station_id") |>
+  mutate(bottom = if_else(substrate %in% c("rock", "gravel"), "hard", "soft"))
+
+stations |>
+  summarise(stations = n(),
+            `hard bottom` = sum(bottom == "hard"),
+            `soft bottom` = sum(bottom == "soft"),
+            `median depth (m)` = round(median(depth_m)),
+            .by = c(two_groups, three_groups)) |>
+  arrange(two_groups, three_groups)
+```
+
+## Python
+
+```{python}
+import numpy as np
+import pandas as pd
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
+
+from mlbasic_data import load_coastal_community, load_coastal_survey_clean
+
+survey = load_coastal_survey_clean()
+community = load_coastal_community()
+taxa_only = community.filter(like="tax")
+
+cluster_recipe = Pipeline([
+    ("log", FunctionTransformer(np.log1p, feature_names_out="one-to-one")),
+    ("normalise", StandardScaler()),
+])
+
+# scikit-learn cuts the tree as it fits, so each number of groups is one fit.
+def tree_groups(k, linkage="ward"):
+    model = Pipeline([
+        ("recipe", cluster_recipe),
+        ("model", AgglomerativeClustering(n_clusters=k, linkage=linkage)),
+    ]).fit(taxa_only)
+    return model["model"].labels_ + 1
+
+stations = community.assign(two_groups=tree_groups(2),
+                            three_groups=tree_groups(3)).merge(
+    survey[["station_id", "depth_m", "substrate"]], on="station_id")
+stations["bottom"] = np.where(stations["substrate"].isin(["rock", "gravel"]),
+                              "hard", "soft")
+
+(stations.groupby(["two_groups", "three_groups"])
+    .apply(lambda g: pd.Series({
+        "stations": len(g),
+        "hard bottom": (g["bottom"] == "hard").sum(),
+        "soft bottom": (g["bottom"] == "soft").sum(),
+        "median depth (m)": round(g["depth_m"].median()),
+    }), include_groups=False)
+    .reset_index())
+```
+
+:::
+
+```{r}
+#| label: tree-numbers
+#| include: false
+cuts <- stations |>
+  summarise(n = n(), hard = sum(bottom == "hard"), depth = median(depth_m),
+            .by = c(two_groups, three_groups))
+hard_group <- cuts |> slice_max(hard / n, n = 1)
+soft_split <- cuts |> filter(two_groups != hard_group$two_groups) |> arrange(depth)
+ward_misplaced <- stations |>
+  count(two_groups, bottom) |>
+  filter(n != max(n), .by = two_groups) |>
+  pull(n) |> sum()
+```
+
+Cut at two groups, the tree splits the seabed: `r hard_group$hard` of the
+`r hard_group$n` stations in the smaller group are hard bottom, and only `r ward_misplaced`
+stations of `r nrow(stations)` sit with the other kind. Cut at three, the hard-bottom
+group stays whole and the soft-bottom group splits in two, a shallow one of
+`r soft_split$n[1]` stations (median depth `r round(soft_split$depth[1])` m) and a deep one
+of `r soft_split$n[2]` (`r round(soft_split$depth[2])` m). The groups nest: every group at
+three is part of one at two.
+
+That third group follows depth, which [Clustering with k-means](clustering.qmd) found to
+be a gradient with no gap in it. A tree will always offer a next split, and the next split
+can cut a gradient as readily as a real boundary.
+[Checking a pattern before reporting it](interpreting-patterns.qmd) shows how to tell the
+two apart.
+
+### The adjusted Rand index shows Ward and k-means nearly agree
+
+Ward's two groups look much like k-means' two groups from the first page. A single number
+for "how alike" makes that precise, and makes it possible to compare any two groupings,
+including a grouping with the recorded seabed.
+
+Take every pair of stations. Two groupings agree about a pair if both put the pair in
+the same group, or both put it in different groups. The share of pairs they agree about is
+the **Rand index**. Even two random groupings agree about many pairs, so the **adjusted
+Rand index** (ARI) subtracts the agreement expected by chance and rescales:
+
+- 1 means the groupings are identical. The group numbers do not matter, only which
+  stations are together.
+- 0 means no more agreement than chance.
+- The groupings can have different numbers of groups.
+
+`adjustedRandIndex()` from the mclust package computes it in R, `adjusted_rand_score()` in
+scikit-learn. The k-means fit is the one from [Clustering with k-means](clustering.qmd).
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: ari
+set.seed(41)
+habitat_fit <- workflow() |>
+  add_recipe(cluster_recipe) |>
+  add_model(k_means(num_clusters = 2) |>
+              set_engine("stats", nstart = 25, iter.max = 100)) |>
+  fit(data = taxa_only)
+kmeans_groups <- extract_cluster_assignment(habitat_fit)$.cluster
+
+agreement <- tibble(
+  comparison = c("Ward and k-means",
+                 "Ward and recorded seabed",
+                 "k-means and recorded seabed"),
+  ARI = c(adjustedRandIndex(stations$two_groups, kmeans_groups),
+          adjustedRandIndex(stations$two_groups, stations$bottom),
+          adjustedRandIndex(kmeans_groups, stations$bottom)))
+agreement |> mutate(ARI = round(ARI, 3))
+```
+
+## Python
+
+```{python}
+from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score
+
+habitat_fit = Pipeline([
+    ("recipe", cluster_recipe),
+    ("model", KMeans(n_clusters=2, n_init=25, max_iter=100, random_state=41)),
+]).fit(taxa_only)
+kmeans_groups = habitat_fit["model"].labels_ + 1
+
+agreement = pd.DataFrame({
+    "comparison": ["Ward and k-means",
+                   "Ward and recorded seabed",
+                   "k-means and recorded seabed"],
+    "ARI": [adjusted_rand_score(stations["two_groups"], kmeans_groups),
+            adjusted_rand_score(stations["two_groups"], stations["bottom"]),
+            adjusted_rand_score(kmeans_groups, stations["bottom"])],
+})
+agreement.round({"ARI": 3})
+```
+
+:::
+
+```{r}
+#| label: ari-numbers
+#| include: false
+ari <- set_names(agreement$ARI, c("methods", "ward", "kmeans"))
+```
+
+Ward and k-means agree almost entirely, with an ARI of `r round(ari[["methods"]], 2)`.
+That is no coincidence: both minimise the within-cluster sum of squares, one join at a
+time or one centre move at a time. Both match the recorded seabed closely, k-means at
+`r round(ari[["kmeans"]], 2)` and Ward at `r round(ari[["ward"]], 2)`.
+
+### Linkage decides whether the tree chains or finds the seabed
+
+Now the same stations, the same distances and the same recipe, with each of the four
+linkage rules in turn. Each tree is cut at two to six groups, and each grouping is scored
+against the recorded seabed with the ARI. The share of stations in the largest group shows
+what each tree is doing.
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: linkage-sweep
+fit_tree <- function(linkage) {
+  workflow() |>
+    add_recipe(cluster_recipe) |>
+    add_model(hier_clust(linkage_method = linkage)) |>
+    fit(data = taxa_only)
+}
+
+trees <- map(c(single = "single", average = "average",
+               complete = "complete", Ward = "ward.D2"), fit_tree)
+
+linkages <- expand_grid(linkage = names(trees), k = 2:6) |>
+  mutate(groups = map2(linkage, k, \(linkage, k)
+           extract_cluster_assignment(trees[[linkage]], num_clusters = k)$.cluster),
+         ARI = map_dbl(groups, \(g) adjustedRandIndex(g, stations$bottom)),
+         largest_share = map_dbl(groups, \(g) max(table(g)) / length(g))) |>
+  dplyr::select(-groups)
+
+linkages |>
+  dplyr::select(linkage, k, ARI) |>
+  pivot_wider(names_from = k, values_from = ARI, names_prefix = "k = ") |>
+  mutate(across(where(is.double), \(x) round(x, 3)))
+```
+
+## Python
+
+```{python}
+rows = []
+for linkage in ("single", "average", "complete", "ward"):
+    for k in range(2, 7):
+        groups = tree_groups(k, linkage)
+        rows.append({"linkage": linkage, "k": k,
+                     "ARI": adjusted_rand_score(groups, stations["bottom"]),
+                     "largest_share": np.bincount(groups).max() / len(groups)})
+linkages = pd.DataFrame(rows)
+
+(linkages.pivot(index="linkage", columns="k", values="ARI")
+    .add_prefix("k = ")
+    .round(3)
+    .reset_index())
+```
+
+:::
+
+```{r}
+#| label: linkage-numbers
+#| include: false
+pick <- \(l, kk) filter(linkages, linkage == l, k == kk)
+single_share <- min(filter(linkages, linkage == "single")$largest_share)
+average_share <- pick("average", 6)$largest_share
+complete_groups <- extract_cluster_assignment(trees$complete, num_clusters = 2)$.cluster
+complete_small <- stations$bottom[complete_groups != names(which.max(table(complete_groups)))]
+complete_hard_small <- sum(complete_small == "hard")
+best_complete <- linkages |> filter(linkage == "complete") |> slice_max(ARI, n = 1)
+```
+
+::: {.panel-tabset group="language"}
+
+## R
+
+```{r}
+#| label: fig-linkage
+#| fig-cap: "The same stations and distances under four linkage rules, each tree cut at two to six groups. Left: agreement with the recorded seabed (ARI). Right: the share of stations in the largest group."
+#| fig-alt: !expr 'glue::glue("Two line charts against the number of groups from 2 to 6, one line per linkage rule. Left, the adjusted Rand index against the recorded seabed: Ward is highest at 2 groups, {round(pick(\"Ward\", 2)$ARI, 2)}, then falls; complete is {round(pick(\"complete\", 2)$ARI, 2)} at 2 groups and peaks at {round(best_complete$ARI, 2)} at {best_complete$k}; average stays below 0.3 and single near 0. Right, the share of stations in the largest group: single stays above {floor(100 * single_share)}% throughout and average above {floor(100 * average_share)}%, while complete and Ward fall as groups are added.")'
+#| fig-width: 9
+#| fig-height: 4.2
+linkage_panel <- function(column, label) {
+  ggplot(linkages, aes(k, .data[[column]], colour = str_to_sentence(linkage))) +
+    geom_line(linewidth = 0.8) +
+    geom_point(size = 2.2) +
+    scale_x_continuous(breaks = 2:6) +
+    labs(x = "number of groups", y = label, colour = NULL)
+}
+
+(linkage_panel("ARI", "ARI with recorded seabed") |
+   linkage_panel("largest_share", "share of stations in largest group")) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+:::
+
+**Single linkage finds no groups at all.** At every cut it leaves more than
+`r floor(100 * single_share)`% of stations in one group and peels off the rest one or two at
+a time. This is **chaining**. Single linkage joins two groups as soon as any two of their
+members are close, so a thread of in-between stations links everything into one. Wherever a
+gradient runs through the data, such a thread exists. Average linkage chains more
+slowly, and still holds `r round(100 * average_share)`% of stations in one group at six
+groups.
+
+**Complete linkage and Ward both find the seabed**, at different cuts. Ward finds it at two
+groups, with an ARI of `r round(pick("Ward", 2)$ARI, 2)`. Complete linkage's first split
+sets apart `r length(complete_small)` stations, `r complete_hard_small` of them hard bottom,
+so it first divides the hard bottom itself; it reaches the seabed split at
+`r best_complete$k` groups, scoring `r round(best_complete$ARI, 2)`.
+
+One table, one set of distances and five numbers of groups gave ARIs from
+`r round(min(linkages$ARI), 3)` to `r round(max(linkages$ARI), 2)`. The default linkage
+also differs between toolkits: tidyclust's `hier_clust()` and R's `hclust()` use complete
+linkage, and scikit-learn uses Ward. When the aim is compact groups, as with k-means, Ward
+is the rule to ask for, and it is worth setting by name.
+
+## A dendrogram depends on its linkage and never undoes a join
+
+A dendrogram looks like a fixed picture of the data, but it records one linkage's joins,
+and a different linkage gives a different tree from the same stations. Joins are also
+never undone, so an early poor join stays in every grouping above it. Trees suit surveys
+of hundreds or a few thousand stations: the method keeps the distance between every pair,
+`r format(round(50000 * 49999 / 2 * 8 / 1e9), big.mark = ",")` GB of memory for 50,000 CTD
+profiles.
+
+## Key points
+
+::: {.key-points}
+- **Hierarchical clustering** joins the two closest groups again and again, and records
+  the joins as a tree. Cutting the tree gives any number of groups, and the groups nest.
+- The **linkage** rule sets the distance between two groups. On the same stations, ARIs
+  against the seabed ran from `r round(min(linkages$ARI), 3)` (single) to
+  `r round(max(linkages$ARI), 2)` (Ward).
+- Single and average linkage **chain**, leaving nearly every station in one group. A
+  group that holds almost everything is the sign to look for.
+- Ward's linkage uses k-means' own measure, and its two groups matched k-means' with an ARI of
+  `r round(ari[["methods"]], 2)`.
+- The **adjusted Rand index** compares two groupings pair by pair: 1 is identical, 0 is
+  chance.
+:::
+
+## Try it yourself
+
+1. Cut Ward's tree at four groups with
+   `extract_cluster_assignment(ward_fit, num_clusters = 4)`. Which of the three groups
+   splits, and does the split follow the seabed or depth?
+2. Complete linkage cut at `r best_complete$k` groups and Ward cut at two both match the
+   seabed well. Compare them with `adjustedRandIndex()`: how alike are they to each other?

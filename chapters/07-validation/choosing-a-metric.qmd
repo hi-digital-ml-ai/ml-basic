@@ -1,6 +1,6 @@
 ---
 title: "Choosing measures that match the objective"
-description: "The use the predictions are put to decides the measure. A shortlist of stations to revisit is scored on the animals it finds, which depend only on the order of the predictions, and a call at each station is scored on what its mistakes cost, which sets the threshold."
+description: "The use of the predictions decides the measure. A shortlist of stations to revisit is scored on the animals it finds, and a call at each station on what its mistakes cost, which sets the threshold."
 order: 6
 categories: [validation, metrics]
 ---
@@ -10,23 +10,23 @@ categories: [validation, metrics]
 #| include: false
 library(tidymodels)
 library(tidyverse)
-library(poissonreg)
 source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## The measure is chosen before any model is fitted
 
 [Regression performance measures](regression-metrics.qmd) and
 [Classification performance measures](classification-metrics.qmd) showed that measures can
 rank the same models in different orders. So the measure should be chosen before any model is
-fitted, from what the predictions will be used for. A map of abundance, a stock total, a list
-of stations to revisit and a decision at each station ask different things of a model, and a
-model that is best at one can be poor at another. This page sets out which measure suits
-which use, and adds two the earlier pages did not cover: the catch found by a shortlist, and
-the cost of the calls at a threshold chosen from what each mistake costs.
+fitted, from what the predictions will be used for. A map of abundance, a list of stations to
+revisit and a decision at each station ask different things of a model, and a model that is
+best at one can be poor at another. This page adds two measures: the catch found by a
+shortlist, and the cost of the calls at a threshold chosen from what each mistake costs.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -36,28 +36,25 @@ the cost of the calls at a threshold chosen from what each mistake costs.
 
 | The predictions are used for | Score them with |
 | --- | --- |
-| A map of abundance | the RMSE or the Poisson deviance, aimed at the average count |
-| A total, such as a stock estimate | the predicted total over the observed one, beside a per-station measure |
+| A map of abundance | the RMSE, aimed at the average count, and R² |
+| A total, such as a stock estimate | the predicted total over the observed one, beside the RMSE |
+| The typical station, where totals do not matter | MAE, aimed at the median |
 | A shortlist of the most promising stations | the animals the shortlist finds, against a perfect and a random shortlist |
-| A map of the chance of presence | log loss, with a calibration plot |
+| A map of the chance of presence | a calibration plot, beside ROC AUC |
 | Comparing models before a threshold is chosen | ROC AUC |
-| A call at each station | the expected cost of the calls, at a threshold chosen from the costs |
+| A call at each station | the expected cost of the calls, at a threshold chosen from the costs; balanced accuracy while the costs are unknown |
 
-The two earlier pages covered the map, the total, the map of chances and the comparison
-before a threshold is chosen; this page adds the shortlist and the call at each station. A
-total alone is never enough: predicting the average gets the total right and says nothing about any
-station. None of these measures says whether an input causes what it predicts, which
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-showed a good predictor need not do.
+A total alone is never enough: predicting the average gets the total right and says nothing
+about any station.
 
 ## A shortlist is scored on what it finds
 
 Suppose a ship has time to revisit a fixed number of stations, its **budget**, and goes to
-the ones a model predicts the most animals at. The measure is the number of animals caught
+the ones a model predicts the most animals at: a **shortlist**. The measure is the number of animals caught
 at those stations. Two benchmarks make it readable: a **perfect shortlist**, the stations
 that really held the most, and a random one, which finds the budget times the average catch.
 
-The shortlist depends only on the **order** of the predictions. Halving every prediction
+The shortlist depends only on the order of the predictions. Halving every prediction
 changes the RMSE and leaves the shortlist exactly as it was, so a model whose predictions
 run low, which the RMSE and R² punish, loses nothing here as long as it puts the stations in
 the right order. This is the same property as ROC AUC for presence, applied to a fixed number
@@ -65,11 +62,12 @@ of stations.
 
 ## The costs of the two mistakes set the threshold
 
-[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#the-costs-of-the-two-mistakes-set-the-threshold)
-said that the threshold should come from what each mistake costs. This can be made exact.
-Call a **false alarm** a station called present where the species is absent, and a **miss** a
-station called absent where it is present. If a false alarm costs $k$ times as much as a
-miss, the **expected cost** of the calls is
+[Class imbalance](../06-assumptions-limitations/class-imbalance.qmd#a-threshold-set-from-the-costs-does-the-work-of-rebalancing)
+said that the threshold should come from what each mistake costs. This can be made exact
+with the two mistakes of [Logistic regression](../03-supervised-learning/logistic-regression.qmd#the-threshold-trades-false-alarms-for-misses):
+a false alarm, a station called present where the species is absent, and a miss, a station
+called absent where it is present. If a false alarm costs $k$ times as much as a miss, the
+**expected cost** of the calls is
 
 $$
 \text{expected cost} = \frac{\text{misses} + k \times \text{false alarms}}{\text{stations}},
@@ -85,15 +83,15 @@ times a miss, it is 0.75.
 ![The threshold from the costs. Left, a false alarm costs three times a miss, and two stations are weighed: at a probability of presence of 0.6, calling it present expects a cost of 1.2 and calling it absent 0.6, so it is called absent; at 0.9, calling it present expects 0.3 and absent 0.9, so it is called present. Right, the threshold k over 1 plus k on the probability scale: 0.5 when the two mistakes cost the same, 0.75 when a false alarm costs three times a miss, 0.83 when it costs five times.](img/cost-threshold.svg){fig-alt="Two cards. Left, a false alarm costs 3 misses: for a station with probability 0.6, a bar for calling it present shows an expected cost of 3 times 0.4, which is 1.2, and a bar for calling it absent shows 0.6, so the cheaper call is absent. For a station with probability 0.9, calling it present costs 3 times 0.1, which is 0.3, and calling it absent costs 0.9, so the cheaper call is present. Right, the threshold is k over 1 plus k: an axis of probability of presence from 0 to 1, with three marks, 0.5 when k is 1, 0.75 when k is 3 and 0.83 when k is 5. Stations above the mark are called present. A note says the rule holds only when the probabilities are calibrated."}
 :::
 
-The rule needs **calibrated** probabilities, as
-[Classification performance measures](classification-metrics.qmd#log-loss-rewards-probabilities-that-are-spread-out-and-calibrated)
+The rule needs calibrated probabilities, as
+[Classification performance measures](classification-metrics.qmd#a-calibration-plot-checks-that-probabilities-can-be-read-as-chances)
 checked with a calibration plot. If a model's 0.8 does not mean 8 in 10, the cheapest
 threshold has to be found by working out the expected cost at every threshold instead.
 
 ## Worked example
 
 The shortlist is drawn from three of the models on
-[Regression performance measures](regression-metrics.qmd): **Poisson regression**, the
+[Regression performance measures](regression-metrics.qmd): **linear regression**, the
 **random forest**, and the **random forest on log counts**, whose predictions add up to well
 below the catch. The calls come from **logistic regression**, from
 [Classification performance measures](classification-metrics.qmd), whose probabilities were
@@ -131,7 +129,7 @@ forest <- rand_forest(trees = 500) |>
 log_forest <- "Random forest on log counts"
 
 models <- list(
-  "Poisson regression"          = with_inputs("abundance", poisson_reg()),
+  "Linear regression"           = with_inputs("abundance", linear_reg()),
   "Random forest"               = with_inputs("abundance", forest),
   "Random forest on log counts" = with_inputs("log_abundance", forest)
 )
@@ -162,7 +160,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression, PoissonRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
@@ -194,7 +192,7 @@ forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
                                min_samples_leaf=5, random_state=1)
 
 models = {
-    "Poisson regression": PoissonRegressor(alpha=0, max_iter=1000),
+    "Linear regression": LinearRegression(),
     "Random forest": forest,
     # fitted to log counts, each prediction turned back into animals
     "Random forest on log counts": TransformedTargetRegressor(
@@ -216,7 +214,6 @@ pd.DataFrame({"stations": [len(survey)], "animals caught": [caught.sum()],
 #| label: helpers
 #| include: false
 f2 <- function(x) sprintf("%.2f", x)
-f3 <- function(x) sprintf("%.3f", x)
 pct <- function(x) scales::percent(x, accuracy = 1)
 ```
 
@@ -285,19 +282,17 @@ list_of <- function(name, measure) shortlists[[measure]][shortlists$model == nam
 found_ratio <- mean(shortlists[["animals found"]]) / at_random
 ```
 
-A perfect shortlist of `r budget` stations would find `r perfect` animals, and
+A perfect shortlist of `r budget` stations would find `r format(perfect, big.mark = ",")` animals, and
 `r budget` stations chosen at random about `r round(at_random)`. The forest on log counts
 has the highest RMSE of the three, `r f2(list_of(log_forest, "RMSE"))`, and predicts only
 `r pct(list_of(log_forest, "predicted / caught"))` of the animals caught. Its shortlist
 finds `r list_of(log_forest, "animals found")` animals, against
 `r list_of("Random forest", "animals found")` for the same forest fitted to the counts and
-`r list_of("Poisson regression", "animals found")` for Poisson regression. Its predictions
+`r list_of("Linear regression", "animals found")` for linear regression. Its predictions
 run low, but in much the same order, and the order is all a shortlist uses.
 
-The gaps between the three are small. The Python tab, with its own folds and forests, puts
-them in another order, and
-[Uncertainty and stability](uncertainty-and-stability.qmd) showed that gaps this size need a
-paired comparison before they count as a ranking. The result shared by all three is plainer:
+The gaps between the three are too small to rank the models without the paired comparison
+of [Uncertainty and stability](uncertainty-and-stability.qmd). What all three share is plainer:
 each shortlist finds about `r pct(mean(shortlists[["share of a perfect shortlist"]]))` of
 what a perfect one would, and `r sprintf("%.1f", found_ratio)` times what a random one
 finds. A sentence such as "revisiting the `r budget` stations this model ranks highest
@@ -441,7 +436,7 @@ cheapest threshold costs `r f2(cost_of(5, "cost there"))`, a saving of
 A model is worth using only at a threshold that suits the costs, and only if it beats the
 rules that need none.
 
-## Say what the measure assumes
+## The report states what the measure assumes
 
 A measure carries assumptions, and the report should state them. A shortlist measure assumes
 a budget, and the order of the models can change with it, so compute it at the budget the
@@ -449,10 +444,6 @@ survey really has. A threshold assumes a ratio of costs. Leaving it at 0.5 assum
 false alarm and a miss cost the same, which is rarely true and rarely written down. "Stations
 above 0.75 were called present, as a wasted dive costs about three times a missed record" is
 a sentence a reader can check, and one that lets someone with other costs reuse the model.
-
-Every measure in this section compares predictions with what the survey recorded. If the
-records themselves are biased, by the gear, the observers or where the effort went, a model
-that matches them well matches the bias too, and no measure can show it.
 
 ## Key points
 
@@ -462,14 +453,12 @@ that matches them well matches the bias too, and no measure can show it.
 - A **shortlist** is scored on the animals it finds, against a perfect and a random one. It
   depends only on the order of the predictions: the forest on log counts predicted
   `r pct(list_of(log_forest, "predicted / caught"))` of the catch, yet its shortlist of
-  `r budget` stations found as many animals as the other models'.
+  `r budget` stations found about as many animals as the other models'.
 - The **expected cost** of the calls counts misses and false alarms by what each costs. If a
   false alarm costs $k$ misses, calibrated probabilities are cheapest at a threshold of
-  $k/(1+k)$.
-- For logistic regression the cheapest thresholds fell at
-  `r f2(cost_of(1, "cheapest threshold"))`, `r f2(cost_of(3, "cheapest threshold"))` and
-  `r f2(cost_of(5, "cheapest threshold"))`. At five to one, a threshold of 0.5 cost more
-  than calling no station present at all.
+  $k/(1+k)$: for logistic regression, `r f2(cost_of(1, "cheapest threshold"))`,
+  `r f2(cost_of(3, "cheapest threshold"))` and `r f2(cost_of(5, "cheapest threshold"))`
+  against 0.50, 0.75 and 0.83.
 - State the budget and the cost ratio behind a measure. A threshold of 0.5 assumes the two
   mistakes cost the same.
 :::

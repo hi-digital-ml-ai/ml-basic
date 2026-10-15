@@ -23,6 +23,10 @@ from the scene's visual line:
                                         tools/figures-for-video.R
     visual: card: [Heading |] text     a text card drawn here
 
+A scene with a cheer line (cheer: 1, 2, 3 or all) has its animals' sounds
+(_videos/cheer-*.wav, from tools/make-cheers.py) mixed in as the narration ends, at
+the moments the Manim scene shows the animals, both read from cheer_plan.
+
 Each scene's voice is its Gemini take (audio/scene-NN.wav) when the take's text is
 current, and otherwise the offline draft voice (audio/draft/, tools/draft-narration.py),
 so a video can be cut before any speech is bought. The summary says how many scenes
@@ -50,13 +54,15 @@ from scipy.io import wavfile
 from scipy.signal import resample_poly
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from video_script import caption_text, narration_audio, pronunciations, read_script  # noqa: E402
+from video_script import (caption_text, cheer_plan, narration_audio,  # noqa: E402
+                          pronunciations, read_script)
 
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
 GAP = 1.0              # seconds between scenes, unless the script's front matter sets gap
 RATE = 24000           # Gemini TTS: 24 kHz, mono, 16-bit
 MIX_RATE = 48000       # the soundtrack: 48 kHz stereo, so the jingle keeps its top end
 MUSIC = Path(__file__).resolve().parent.parent / "_videos" / "intro-music.wav"
+CHEERS = MUSIC.parent    # cheer-clap.wav, cheer-well-done.wav, ... (tools/make-cheers.py)
 CAPTION_CHARS = 84     # at most two lines of 42 characters per caption
 CARD_TEXT_WIDTH = 1500  # pixels
 
@@ -128,10 +134,10 @@ def speech_samples(path):
     return np.stack([mono, mono], axis=1)
 
 
-def music_samples():
-    rate, music = wavfile.read(MUSIC)
+def music_samples(path=MUSIC):
+    rate, music = wavfile.read(path)
     if rate != MIX_RATE:
-        sys.exit(f"{MUSIC}: expected {MIX_RATE} Hz")
+        sys.exit(f"{path}: expected {MIX_RATE} Hz")
     music = music / 32768 if music.dtype == np.int16 else music.astype(float)
     return music if music.ndim == 2 else np.stack([music, music], axis=1)
 
@@ -239,7 +245,15 @@ def main():
         frames = math.ceil(round((spoken + scene.pause_after + gap) * FPS, 6))
         length = frames / FPS
 
-        sound.append(padded(speech, length))
+        track = padded(speech, length)
+        for animal, name, move, start in cheer_plan(folder, scene):
+            cheer = music_samples(CHEERS / f"cheer-{name}.wav")
+            at = round((spoken + start) * MIX_RATE)
+            if at + len(cheer) > len(track):
+                sys.exit(f"scene {scene.number}: the {name} cheer runs past the scene's end; "
+                         f"lengthen its pause-after")
+            track[at:at + len(cheer)] += cheer
+        sound.append(track)
         captions += caption_cues(caption_text(scene.narration), t, spoken)
         if not chapters or chapters[-1][1] != scene.chapter:
             # YouTube wants the first chapter at 0:00, so it takes in the title.

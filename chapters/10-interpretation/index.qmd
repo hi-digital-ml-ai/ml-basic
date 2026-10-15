@@ -1,71 +1,35 @@
 ---
 title: "10 · Interpretation and responsible application"
-description: "A model that predicts well can be read, and what it learned put into words. The section reads a forest from outside and a GAM from its parts, puts intervals on predictions, makes the analysis re-runnable, and ends with the paragraphs a study would write and the claims the survey can support."
-categories: [interpretation, reproducibility, uncertainty]
+description: "Reading a model after it is built, and reporting it."
+categories: [interpretation, reproducibility]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: feature-importance.qmd
+      description: "Shuffling one input at a time shows how much a random forest relies on it, and inputs that carry the same information share the credit."
+    - path: partial-effects.qmd
+      description: "A partial dependence plot draws how the prediction changes along one input, and ICE curves draw it station by station."
+    - path: explaining-one-prediction.qmd
+      description: "SHAP values split one station's prediction into a contribution from each input, starting from the average prediction."
+    - path: interpretable-models.qmd
+      description: "A GAM is read from its parts, and a small tree fitted to a forest's predictions copies its broad shape."
+    - path: reporting-a-model.qmd
+      description: "The data, code, seeds and software versions let anyone re-run an analysis, and a model card says what the model is for and where it holds."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-The earlier sections built models and scored them on new sites. A score says how well a
-model predicts; a study also has to say what the model found, how sure the finding is,
-and how far it reaches. This section takes that last step, on the same simulated survey
-as the rest of the course.
-The first two pages read a black box from outside:
+A score says how well a model predicts, not what it learned. This section reads a fitted
+random forest from the outside, by changing its inputs and watching its predictions,
+then reads a model from its parts, on the same simulated survey as the rest of the
+course. It ends with the report that goes with a model: everything needed to re-run the
+analysis, and a model card that says what the model is for and where it holds.
 
-- **feature importance**: shuffling one input on test sites shows how much a random
-  forest relies on it, and columns of random numbers show what an unused input scores;
-  the forest's own measure ranked them above the seabed;
-- **partial effects**: a partial dependence plot draws how a prediction changes along
-  one input, and ICE curves draw it station by station; the forest finds the
-  temperature hump at nearly every station, while its depth curve follows position.
-
-The next two read a model from its parts and say how sure its predictions are:
-
-- **black boxes and interpretable models**: scored on the same folds of sites, a GAM
-  predicts new sites as well as a random forest, and its curves and multipliers read
-  as a habitat description; a black box earns its place where inputs work in
-  combination;
-- **communicating uncertainty**: an interval for the average and an interval for a new
-  catch answer different questions, and conformal prediction gives any model an
-  interval that holds at stations like the ones that set it.
-
-The last two turn the analysis into a report:
-
-- **reproducibility and transparent reporting**: a seed makes a run repeat, but the
-  split of sites moves a forest's score far more than its seed, and a short report
-  lets a reader re-run the whole analysis;
-- **from a model to a claim**: the Methods and Results paragraphs are written from the
-  code, the simulation confirms the temperature curve but not a depth peak, and a gear
-  that misses animals on rock improves the cross-validated score.
-
-The section picks up threads from earlier ones.
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built
-the forest that [Feature importance](feature-importance.qmd) and
-[Partial effects](partial-effects.qmd) read from outside.
-[Linearity and nonlinearity](../06-assumptions-limitations/linearity-and-nonlinearity.qmd)
-fitted the GAM and found its depth curve wrong; [Partial effects](partial-effects.qmd)
-shows why no model gets it right on this survey, and
-[Black boxes and interpretable models](black-box-or-not.qmd) reads the GAM's parts with
-the multipliers of
-[Regression for counts](../03-supervised-learning/count-regression.qmd).
-[Distributional assumptions](../06-assumptions-limitations/distributional-assumptions.qmd)
-gave the forest intervals from a quantile forest, and
-[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) put an
-interval on a score; [Communicating uncertainty](communicating-uncertainty.qmd) checks
-intervals on predictions by their coverage at new sites.
-[Checking a fit](../04-how-algorithms-learn/reading-a-fit.qmd) measured how far a forest
-moves without a seed; [Reproducibility and transparent reporting](reproducibility.qmd)
-compares that with the split of sites.
-[Exploring and cleaning the data](../02-marine-data/exploring-and-cleaning.qmd) compared records
-by vessel, and [From a model to a claim](from-model-to-claim.qmd) shows
-the bias that no comparison of a model with its records can find.
+{{< video https://www.youtube.com/watch?v=anfrxEKV4Xk title="Interpretation: reading a model after it is built" >}}
 
 ## Pages in this section
 
@@ -80,7 +44,9 @@ the bias that no comparison of a model with its records can find.
 - [Explaining models and predictions](https://www.tmwr.org/explain.html), Tidy Modeling with R. Local and global explanations through `DALEX`, in tidymodels idiom.
 - [DALEX](https://modeloriented.github.io/DALEX/), Przemyslaw Biecek and others. Model-agnostic explanation for R and Python both.
 - [Permutation importance](https://scikit-learn.org/stable/modules/permutation_importance.html) and [partial dependence and ICE](https://scikit-learn.org/stable/modules/partial_dependence.html), scikit-learn user guide. The permutation page shows what inputs that move together do to the scores.
+- [SHAP](https://shap.readthedocs.io/), Scott Lundberg and others. The Python package for SHAP values, with worked examples for many kinds of model.
 - [Interpretable Machine Learning](https://christophm.github.io/interpretable-ml-book/), Christoph Molnar. A free book, and the standard reference for every method named here.
+- [Model Cards for Model Reporting](https://arxiv.org/abs/1810.03993), Margaret Mitchell and others (2019). The paper that proposed the model card.
 
 **Video**
 

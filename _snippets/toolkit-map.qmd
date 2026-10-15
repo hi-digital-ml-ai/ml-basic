@@ -1,11 +1,9 @@
-| Stage | tidymodels | scikit-learn |
+| Step | tidymodels | scikit-learn |
 | --- | --- | --- |
-| Hold out a test set | `rsample::initial_split()`, `training()`, `testing()` | `train_test_split()` |
-| Describe the preprocessing | `recipes::recipe()` plus `step_*()` | `ColumnTransformer` plus transformers |
-| Choose the model | `parsnip::logistic_reg()`, `rand_forest()`, `boost_tree()` | `LogisticRegression()`, `RandomForestClassifier()`, `HistGradientBoostingClassifier()` |
-| Bind the two together | `workflows::workflow()` | `Pipeline` |
-| Estimate it | `fit()` | `.fit()` |
-| Use it | `predict()`, `augment()` | `.predict()`, `.predict_proba()` |
-| Score it | `yardstick::rmse()`, `roc_auc()`, `metric_set()` | `mean_squared_error`, `roc_auc_score` |
-| Resample | `rsample::vfold_cv()` | `KFold`, `StratifiedKFold` |
-| Tune | `tune::tune()`, `tune_grid()` | `GridSearchCV`, `RandomizedSearchCV` |
+| 1. Hold out a test set | `initial_split()`, `training()`, `testing()` | `train_test_split()` |
+| 2. Prepare the inputs | `recipe()` plus `step_*()` | `ColumnTransformer` plus transformers |
+| 3. Name the model | `linear_reg()`, `rand_forest()` | `LinearRegression()`, `RandomForestRegressor()` |
+| 4. Join the two | `workflow()` | `Pipeline` |
+| 5. Fit | `fit()` | `.fit()` |
+| 6. Predict | `augment()`, `predict()` | `.predict()` |
+| 7. Score | `rmse()` | `root_mean_squared_error()` |

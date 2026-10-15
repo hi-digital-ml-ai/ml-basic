@@ -16,13 +16,17 @@ source(here::here("R/theme.R"))
 source(here::here("R/data.R"))
 ```
 
+{{< new-terms >}}
+
 ## A network is built from regressions
 
-Neural networks sound like a new kind of method, but they are built from one you
-already know. This page shows that a single neuron is linear regression, and that a
-layer of neurons, each with a bend, can follow a temperature optimum that a straight
-line misses, without being told what shape to look for. The next pages show how such a
-network learns its weights.
+A **neural network** is a model built from many small regressions joined together. Each
+one takes a weighted sum of its inputs and bends the result, and the network adds the
+bent results up into a prediction. Networks read images, sound and DNA sequences, yet
+their parts are ones you already know. This page shows that a single neuron is linear
+regression, and that a layer of neurons, each with a bend, can follow a temperature
+optimum that a straight line misses, without being told what shape to look for. The next
+pages show how a network learns its weights.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -39,8 +43,8 @@ the bias is the intercept. With the logistic function as $g$, it is logistic reg
 A **hidden layer** is several neurons that read the same inputs. An output neuron adds
 up their results, each with a weight of its own, to make the prediction. The layer is
 hidden because nothing outside the network sees its values, and its neurons are called
-**hidden units**. Inputs, one hidden layer and an output make the simplest **neural
-network**.
+**hidden units**. Inputs, one hidden layer and an output make the simplest neural
+network.
 
 ::: {.diagram}
 ![A neuron is a regression with a bend; a hidden layer is several of them reading the same inputs; and opposing bends add up to curves.](img/network-schematic.svg){#fig-schematic fig-alt="Three cards. One neuron, a regression: inputs x1 to x3, each multiplied by a weight w1 to w3, enter a circle that adds them and a bias and passes the total through an S-shaped bend to give the output; a weighted sum of the inputs plus a bias, through a bend; with no bend, it is linear regression. A hidden layer, several neurons: three inputs, each joined to four hidden units, each joined to one output; several neurons read the same inputs and the output adds them up; every arrow is a weight to fit. Bends add up to curves, the activation: a rising S-curve plus a falling S-curve equals a hump; opposing bends add up to a shape no straight line can follow; without the bend, it is still a line."}
@@ -73,7 +77,7 @@ tibble(z = rep(grid_z, 4),
   labs(x = "Weighted sum entering the neuron", y = NULL)
 ```
 
-The **logistic** function and **tanh** are S-shaped: flat, rising, then flat again. They
+The **logistic function** and **tanh** are S-shaped: flat, rising, then flat again. They
 differ only in range, zero to one against minus one to one. **ReLU** (rectified linear
 unit) is flat below zero and a straight line above it; it is the usual choice in large
 networks because it is quick to compute. The networks on this page are fitted with the
@@ -270,7 +274,7 @@ top / bottom
 ```{r}
 #| label: bend-numbers
 #| include: false
-out_w <- round(c(w[["h1->o"]], w[["h2->o"]]), 1)
+out_w <- sub("-", "−", round(c(w[["h1->o"]], w[["h2->o"]]), 1))
 ```
 
 Unit 1 enters the output with weight `r out_w[1]` and rises towards zero as the water
@@ -325,8 +329,8 @@ matter how large $H$ is.
   function it is logistic regression.
 - A **hidden layer** is several neurons reading the same inputs; the output adds up
   their results.
-- **The activation's bend does the work.** Without it, any number of layers adds up to
-  a straight line; with it, opposing bends add up to curves.
+- The activation's bend does the work. Without it, any number of layers adds up to a
+  straight line; with it, opposing bends add up to curves.
 - Two hidden units, `r length(coef(fit_units(2)))` weights, found the temperature
   optimum without being told its shape. One unit was not enough, and more added little.
 - Weights multiply quickly: inputs times hidden units. Networks are fitted with a

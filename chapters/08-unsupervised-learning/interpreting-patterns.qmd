@@ -17,12 +17,15 @@ source(here::here("R/data.R"))
 source(here::here("R/python-tabs.R"))
 ```
 
+{{< new-terms >}}
+
 ## An unsupervised result has no answers to test against
 
-k-means and hierarchical clustering return groups for any table, and PCA returns
-components for any table. A supervised model can be checked against held-out answers;
-an unsupervised one has no answers to hold out. Three checks take their place, and
-together they show whether a pattern is worth reporting and what kind of pattern it is.
+A supervised model can be checked against held-out answers. An unsupervised method has no
+answers to hold out, and it returns a result for any table: k-means and hierarchical
+clustering always return groups, and PCA always returns components. Three checks take the
+place of the answers, and together they show whether a pattern is worth reporting and
+what kind of pattern it is.
 
 This page puts the two-cluster result from [Clustering with k-means](clustering.qmd)
 through all three, and then a second split that passes the first check and fails the
@@ -32,7 +35,7 @@ others.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The idea
+## Three checks stand in for held-out answers
 
 ::: {.diagram}
 ![Three checks before reporting a pattern. Refit on bootstrap samples and see whether the same grouping comes back; look at where the stations sit between the two cluster centres, where real groups leave a gap and a gradient does not; and compare the grouping with a recorded variable that the method was never given.](img/pattern-checks.svg){fig-alt="Three cards side by side with a strip of definitions below. 1 Replication: three small bootstrap samples, each clustered into a blue and an orange group, give the same grouping, captioned the same grouping comes back in every sample. 2 Group or gradient: two small histograms of where stations sit between the two cluster centres, with a dashed boundary line half way; the upper one, labelled groups: a gap, has two humps and almost nothing at the boundary; the lower one, labelled gradient: no gap, is flat from end to end. 3 External check: a column of cluster points, three blue and three orange, each beside a recorded seabed label, hard for every blue point and soft for every orange one, captioned matches a variable the method was never given. The strip reads: bootstrap sample, sites drawn at random with replacement, each with all its stations; ARI, agreement of two groupings, pair by pair, 1 for identical and 0 for chance; recorded variable, measured separately and left out of the analysis."}
@@ -40,27 +43,27 @@ others.
 
 1. **Replication.** Refit the clustering on many bootstrap samples and compare each new
    grouping with the original using the adjusted Rand index (ARI) from
-   [Hierarchical clustering](beyond-k-means.qmd). A real pattern comes back.
+   [Hierarchical clustering](hierarchical-clustering.qmd). How often the same grouping
+   comes back measures **cluster stability**, and a real pattern comes back.
 2. **Group or gradient.** k-means cuts a gradient as readily as it finds a gap, and a
    steady gradient is cut in the same place every time, so it comes back too. Where the
    stations sit between the two centres tells the two apart: groups leave a gap at the
    boundary, a gradient does not.
 3. **An external variable.** Compare the grouping with something recorded separately and
-   left out of the analysis, such as the seabed type. Agreement with a variable the method
-   never saw is the strongest evidence available.
+   left out of the analysis, such as the seabed type. This is **external validation**, and
+   agreement with a variable the method never saw is the strongest evidence available.
 
 ## Worked example
 
 ### Sixty bootstrap samples give two answers
 
-A **bootstrap sample**, from
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd), draws
-rows at random with replacement. Stations at the same site are more alike than stations
-from different sites, so here whole sites are drawn, as in
-[Independence of observations](../06-assumptions-limitations/independence-of-observations.qmd);
-`group_bootstraps()` in rsample does this. k-means, with the recipe of
-[Clustering with k-means](clustering.qmd), is refitted on each of 60 samples, and the
-refitted model assigns every station of the survey to its nearest centre. Each grouping is
+The bootstrap samples draw whole sites, as in
+[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd#resampling-the-sites-gives-a-score-its-interval),
+with `group_bootstraps()`; the bootstrap itself is introduced in
+[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd).
+k-means, with the recipe of [Clustering with k-means](clustering.qmd), is refitted on each
+of 60 samples, and the refitted model assigns every station of the survey to its nearest
+centre. Each grouping is
 then compared with the original one, with the recorded seabed, and by how far apart in
 depth its two clusters sit.
 
@@ -456,8 +459,8 @@ The seabed split matches the recorded seabed at an ARI of
 category it was never shown. The soft-bottom split matches sand and mud at
 `r ext[[2]][2]` and depth bands at `r ext[[3]][2]`.
 
-Agreement with a recorded **category**, such as the seabed, is evidence of groups.
-Agreement with a **continuous** variable cut into bands is not: cutting a gradient into
+Agreement with a recorded category, such as the seabed, is evidence of groups.
+Agreement with a continuous variable cut into bands is not: cutting a gradient into
 two clusters and depth into three bands gives part agreement whether or not groups exist.
 What it shows is a gradient, and a gradient is a finding too.
 
@@ -475,17 +478,17 @@ on new data.
 ## Key points
 
 ::: {.key-points}
-- Check three things before reporting a cluster: does it come back in **bootstrap
-  samples**, is it a **group or a cut through a gradient**, and does it match a
-  **recorded variable** the method never saw.
+- Check three things before reporting a cluster: does it come back in bootstrap samples
+  (**cluster stability**), is it a group or a cut through a gradient, and does it match a
+  recorded variable the method never saw (**external validation**).
 - Draw whole sites in the bootstrap when stations at one site are alike. Report how often
   each answer came back: here `r nrow(same)` of 60 samples gave the seabed split and
   `r nrow(different)` a depth split, and the average ARI described neither.
-- **Coming back is not enough.** A split through a steady gradient falls in the same place
+- Coming back is not enough. A split through a steady gradient falls in the same place
   every time: no bootstrap sample of the soft bottom gave a different answer.
-- Groups leave a **gap** at the boundary between their centres; a gradient leaves
+- Groups leave a gap at the boundary between their centres; a gradient leaves
   stations all along it.
-- Agreement with a recorded **category** is evidence of groups. Agreement with a
+- Agreement with a recorded category is evidence of groups. Agreement with a
   continuous variable cut into bands shows a gradient, which is a finding in its own
   right.
 :::

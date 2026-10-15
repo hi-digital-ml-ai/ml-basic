@@ -140,7 +140,7 @@ close together share more than their depth: they sit in the same patch of sea, s
 their counts tend to be alike. That matters when stations are held back to test a
 model, as the count of sites further down shows.
 
-## Depth shapes the water
+## Deeper water is colder and saltier
 
 The water measurements do not vary independently. Deeper water here is colder and
 saltier:
@@ -197,7 +197,7 @@ stations hold `r median(survey$abundance)` animals or fewer, and the largest cou
 tail, are typical of survey catches, and they are why the course treats abundance with
 some care.
 
-## The stations come from far fewer sites
+## Repeat visits to the same sites are not independent
 
 The survey returns to fixed sites, and each visit to a site is one station. The clean
 file leaves the site out, but the raw file, the survey as it came off the ship, keeps
@@ -249,14 +249,16 @@ A model treats every row as independent evidence. These rows are not, in three w
   observation than to separate ones. Treating them as separate is called
   **pseudo-replication**.
 - **Nearby sites.** Two sites a few kilometres apart share a water mass and a depth;
-  [Spatial and temporal dependence](../06-assumptions-limitations/spatial-and-temporal-dependence.qmd)
+  [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
   comes back to this.
 
 So the number of independent observations is nearer `r n_distinct(raw$site_id)` than
 `r nrow(survey)`, and a score computed as if it were `r nrow(survey)` looks better
 than it should. The fix is not to throw rows away, since repeat visits show how much a
 site varies, but to keep each site's rows together when the data are split to test a
-model. [Splitting the data](splitting-data.qmd) shows how.
+model. [Splitting the data](splitting-data.qmd) shows how, and
+[Dependent data](../06-assumptions-limitations/dependent-data.qmd) measures what the
+visits are worth.
 
 ## One survey in four files
 
@@ -279,7 +281,7 @@ Each has its own loader, so a page never reads a file directly:
 - `load_coastal_community()`: counts of 24 species at the same stations, for finding
   groups of stations.
 
-## The true answers are known
+## The survey is simulated, so its answers are known
 
 The survey is simulated: a script decided how the species responds to its
 surroundings, then drew counts that follow those rules with realistic noise added. So

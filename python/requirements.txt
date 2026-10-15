@@ -17,6 +17,9 @@ statsmodels>=0.14
 # scikit-learn equivalent.
 umap-learn>=0.5
 
+# Section 10 only: SHAP values, which scikit-learn does not compute.
+shap>=0.46
+
 # A contributed page written in Python (engine: jupyter) executes under Jupyter, which
 # the course pages do not use, so it needs these two as well. Install them only if you
 # are writing or re-rendering such a page:

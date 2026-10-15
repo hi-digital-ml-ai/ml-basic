@@ -79,12 +79,28 @@ categories: [...]
 **Headings are declarative, and named for the page.** The first, fourth and fifth
 slots used to read "Why this matters", "What the results mean" and "Where this breaks
 down" on every page, which told a reader scanning the sidebar nothing and made
-seventy pages look like one. Write what the section actually says instead: "A debt
-from two earlier pages", "Two measures, two winners", "Limits of a single split".
+seventy pages look like one. Write what the section actually shows instead, so that a
+reader of the table of contents alone could say it: "Deeper water is colder and
+saltier", "Both count models beat polynomial regression on new sites", "A threshold
+turns a probability into yes or no". Name the subject and the result, in a full
+sentence with a subject:
+
+- Say what is compared, not how many: "Poisson regression predicts new sites better
+  than k-nearest neighbours", not "Poisson regression predicts new sites better" or
+  "Three trees on one input".
+- No dangling "the X" that only the section explains: not "The test error is a
+  typical miss" or "The kinds in the survey".
+- No teasers, metaphors or process words: not "Linear regression is the yardstick",
+  "A probability is not yet an answer" or "Reading the two ends".
+
 Avoid opening a heading with Why, What, Where, How, Which, When or Does; a question
 as a heading postpones the answer that the section is about to give. `The idea`,
-`Worked example`, `Key points` and `Try it yourself` stay fixed, because they are
-labels rather than claims.
+`Worked example`, `Preparing the data`, `Key points`, `Try it yourself` and `The maths,
+if you want it` stay fixed, because they are labels rather than claims. A number that
+announces a list is fine ("Four kinds of leakage").
+
+Renaming a heading changes its anchor. Before renaming, search the site for
+`#old-anchor` links and repoint them, then re-render every page whose source changed.
 
 Aim for 1,000–1,800 words plus code, and no more than about 2,000. If a page runs
 longer, cut what another page teaches before splitting it. Quote at most about three

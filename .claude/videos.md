@@ -167,7 +167,9 @@ Then we give it next year's survey, and it falls apart.
 - Put the section number in the title and description only; the video has none.
 - State in the description that the narration is AI-generated; check YouTube's current
   rules on labelling synthetic content.
-- Embed the video on the section's `index.qmd`, thumbnail in `img/video/`.
+- Embed the video on the section's `index.qmd`, just above *Pages in this section*,
+  with a one-line lead-in and `{{< video https://www.youtube.com/watch?v=<id> title="..." >}}`
+  (Quarto renders a 16:9 YouTube player; no thumbnail file is needed).
 
 ## Gemini account, key and cost
 
@@ -421,7 +423,7 @@ Built like §7, to a rough cut on the draft voice: `_videos/08-unsupervised-lear
   and 41° directions, 16/7/3 against two by cross-validation, the UMAP null), stable
   is not the same as real (bimodal bootstrap 53/7, the continuum, external checks).
 - `exports.R` writes 19 CSVs from the six pages (under a minute). Every spoken number
-  was checked against them. `beyond-k-means.qmd` must knit first: the pages attach
+  was checked against them. `hierarchical-clustering.qmd` must knit first: the pages attach
   `mclust` with `include.only`, and a later `library()` call cannot add
   `adjustedRandIndex` to a package already attached. `tools/figures-for-video.R` now
   knits with `error = FALSE`, so a failing chunk stops the export instead of leaving
@@ -794,7 +796,7 @@ narrated. The old 52-scene puzzle (the soft-bottom split) became the quiz.
   1,146 words); merging four pairs of scenes and dropping UMAP brought it to 7:35. The
   user asked for UMAP back, as one scene: 7:48.
 - The page names its linkages `Ward`, `single`, `average`, `complete` (`trees` in
-  `beyond-k-means.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
+  `hierarchical-clustering.qmd`), not R's `ward.D2`; `scenes.py` keys on those names.
 - A chart whose x axis starts at k = 2 keeps Manim's zero-based axes and hides the
   empty stretch with a white strip (`axis_mask()`).
 - A dot stack sizes its dots from its tallest bin (`dot_stack()`): 52 bootstrap
@@ -934,3 +936,388 @@ between them. Changes from the first version:
   (`exports.R` predicts with `predict.all = TRUE` outside `with()`, where `grid` would
   find `graphics::grid()`). The comparison has seven models, k-nearest neighbours in;
   Poisson regression first on test, the tree first on validation.
+
+## §4 How algorithms learn rebuilt (2026-10-08)
+
+Rebuilt from the second-pass pages (`feature/revise-how-algorithms-learn`): 26 scenes,
+6:45, all narrated with Gemini (8 new takes, 6 reused, about $0.03). The first two
+points stay (the loss decides what the model attends to; check that the search
+finished). The third is now "the assumptions inside the loss":
+
+- Two new schematic scenes: a Normal, a Poisson and a present-or-absent distribution
+  each giving its loss (squared error, Poisson deviance, log loss), then the Normal
+  curve running below zero against Poisson bars stopping at zero, which explains the
+  negative count from *Linear and polynomial regression*.
+- The forty-station scene keeps its words; the prior scene reads
+  `likelihood-and-priors.qmd` (9.23 to 0.26, −6.78 to −0.18) and no longer claims
+  better predictions. The RMSE scene (4.85, 4.76, 4.45) is cut, since no page computes
+  it now.
+- Scene 3 teaches noise instead of the residual against the true average. The quiz
+  answer reads `parameter-estimation.qmd`: stopped after two steps, 0.268 against
+  0.348, 23 per cent out.
+- The Gemini takes ran 0.89 to 1.17 of the draft's length; the scenes follow their
+  cues, so the layout reviewed on the draft should hold.
+
+## §5 Generalisation second pass (2026-10-08)
+
+Rebuilt from the second-pass pages (`feature/revise-generalisation`), where six pages
+became four: *Underfitting and overfitting*, *The bias–variance trade-off*,
+*Regularisation* and *Hyperparameter selection*. The three points and 37 scenes stay;
+7:23, all narrated with Gemini. Five scenes change their words (7, 20, 26, 28, 29)
+and got new takes (about $0.01); the other 32 kept theirs.
+
+- `exports.R` reads the four pages: the five models now come from *Underfitting and
+  overfitting*, the random columns from *Regularisation*.
+- Scene 7 says "pattern", the page's word, instead of "signal".
+- The forest on *The bias–variance trade-off* now has 100 trees (render time), so it
+  cuts the tree's variance about thirteen-fold (10.89 against 0.82).
+- *Hyperparameter selection* runs 20 repeats instead of 40: one validation split
+  claimed 3.72–5.37, cross-validation 4.45–4.64. The repeats caption counts the runs
+  from the data.
+- Both leads are taken from the rounded errors (0.28 on the test sites against the
+  0.26 cross-validation promised), so the video and page agree with the table.
+
+## §6 Assumptions second pass (2026-10-09)
+
+Rebuilt from the second-pass pages (`feature/revise-assumptions`), where *Independence
+of observations* and *Spatial and temporal dependence* became *Dependent data* and the
+GAM left the linearity page. The three points stay; 31 scenes, 945 words, 7:12 on the
+draft voice. Six scenes kept their Gemini takes and 13 renumbered scenes reused theirs
+(same words), so the narration needed only 12 requests (about $0.04); the final cut runs
+7:04.
+
+- Chapter one drops the GAM: the forest alone finds the temperature hump and puts
+  depth's peak at 17 m against 80. The error check is linear regression's average
+  error (caught − predicted), as on the page, not Poisson regression's caught ÷
+  predicted.
+- Chapter two reads *Dependent data*, on the whole survey (800 stations, 160 sites, 20
+  blocks): sites 1.31 times wider, worth about 470; blocks 2.34, worth about 150. The
+  position-only R² scenes left with their page; two scenes now resample the forest's
+  errors (1.25 by site, so score on unseen sites; 1.36 by block, so its inputs explain
+  most of what neighbours share). Key point two became "score a model on sites it has
+  never seen".
+- Chapter three gains scene 20: the ten polynomial regressions fan out below the
+  survey (0.7 to 3.7 times the truth), as the page's figure now shows beside the
+  forests. Both methods share the axes in `beyond_layout(scene, model)`.
+- The end card names forecasts and rare species; prediction intervals left the pages.
+
+## §7 Validation second pass (2026-10-09)
+
+Rebuilt from the second-pass pages (`feature/revise-validation`) as the middle version
+the user chose after the page review: the 7:32 cut updated, not the short version. Same
+three points; 31 scenes, about 900 words, 7:09 on the draft voice and 7:02 narrated with
+Gemini (8 new takes for scenes 4, 5, 6, 8, 9, 11, 15 and 24; 20 reused, renumbered
+ones included; about $0.03). The user ran `narrate.py`, as the auto-mode classifier
+blocks it.
+
+- The spatial part is one scene (4): the pooled RMSE against the distance to the
+  nearest fitted station (4.23 to 4.41), closing on "hold out what the model will
+  face". The reach schematic and the two-uses scene left, as Dependent data now
+  introduces the distance.
+- The search and nested cross-validation use linear regression, as the page does: the
+  winner scores 4.51 with two noise columns; claimed 4.43, nested 4.46, the eight
+  measured inputs with no search 4.37. The narration calls the gap small and says it
+  grows with fewer sites or more flexible models. Scene 9's axis runs 4.2 to 4.7.
+- The skewed-catch histogram (average 3.9, median 2) left as a repeat of
+  Distributional assumptions; scene 11 says where each measure is lowest, and
+  `catch.csv` is no longer exported.
+- Poisson regression is linear regression throughout: the shortlist (860, 784 and 847
+  animals, "about as many"), the intervals, and the paired comparison (80%, the
+  interval covering zero).
+
+## §8 Unsupervised learning second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-unsupervised`), where
+*Beyond k-means* became *Hierarchical clustering* (`hierarchical-clustering.qmd`, also
+the key in `exports.R`). The pages' numbers did not change, so the script stays as built
+on 2026-10-05: three points, 35 scenes, 7:50 on the draft voice. The user approved it as
+it stands and ran `narrate.py` (35 requests, about $0.09); the final cut runs 7:49.
+
+- The re-export matched every spoken number: 15 of 800 out of place, silhouette 0.179
+  against about 0.05 shuffled, single linkage over 99% in one group, 29.4%, about 39°,
+  16, 3 and 2 components, 52 of 60, 2% against 11% near the boundary, ARI 0.92.
+- Possible trims, not taken: fold the adjusted Rand index scene (24) into the bootstrap
+  result, and the second component into the first (about 33 scenes, 7:20).
+
+## §9 Neural networks second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-neural-networks`), where *How much
+data a network needs* and *When to use one* merged into *When a network pays off*
+(`when-a-network-pays-off.qmd`, also the key in `exports.R`) and the learning-rate
+sweep left *Training a network*. Same three points and 44 scenes, 7:32 on the draft
+voice (was 7:48). The user ran `narrate.py` on the revised script (44 requests, about
+$0.09); the final cut runs 7:34. Old `visuals/scenes/Scene45`–`50.mp4` are leftovers
+from the 50-scene first build and are not in the cut.
+
+- Scenes 18–19 are now schematic: too short a step crawls, too long a step overshoots
+  further each time until the error is "not a number". No rates or step counts.
+- Scenes 25–30 replace the learning curves with the page's single fits on 539
+  stations: on the counts the forest scores 4.20, linear regression 4.32 and the
+  network last at 4.52, against 4.72 for predicting the mean; trained on the true mean
+  counts (a check only, scene 27 schematic) the network leads at 1.43, the forest 1.62,
+  linear regression 2.12. "Short of signal, not of rows."
+- Unchanged numbers were re-checked against the re-export: early stopping at step
+  1,937, 4% worse by the end; seeds spanning 0.055, the average beating seven; the band
+  at 0.715, 0.827, 0.926 and 0.999 with 9 weights, 0.997 from 100 stations, 1.000 named.
+
+## §10 Interpretation second pass (2026-10-10)
+
+Rebuilt from the second-pass pages (`feature/revise-interpretation`), where
+*Communicating uncertainty* moved to the random forest and *From a model to a claim*
+became a forest report with the gear bias on mud. Same three points and 33 scenes;
+7:44 on the draft voice (was 7:27). The first Gemini narration of this video: the user
+ran `narrate.py` on all 33 scenes (about $0.09); the final cut runs 7:28.
+
+- Chapter one is unchanged; the re-export matched every number (impurity ranking the
+  three random columns above salinity, the seabed and the season; 39 test sites;
+  temperature 10 of 10 splits, salinity 1; the peak at 7.7 °C over 598 stations; GAM
+  4.34 against the forest's 4.43). The quiz too: seeds 0.07, splits 1.84.
+- Scene 17 is the forest's two intervals: refits on resampled sites give the interval
+  for the average (2.8 wide, 24%), the quantile forest the interval for a new catch
+  (11.6 wide, 92%), "wrong about three times in four". `exports.R` writes
+  `two-intervals.csv`; `gam-intervals.csv` is gone.
+- Scene 18 no longer says a forest has no interval of its own (the quantile forest is
+  one): conformal prediction gives *any* model an interval from its errors. Scene 19:
+  89% at 12.5 wide, "close to the 90 promised". Scene 20: calibrated on low chlorophyll,
+  93% at like sites and 82% where chlorophyll is highest (was 73%).
+- Scenes 22–25 move from rock to mud, drawn in purple. Scene 24 draws mud's ratio to
+  sand across the ten fold models (1.10–1.16 as recorded, 0.90–0.95 with half missed);
+  scene 25 the forest's RMSE (4.41 to 3.86) with "better than the average on 9 of 10
+  folds, intervals held 95%" under both bars. `gear.csv` is the claim page's
+  `summary_of()` for both reports.
+
+## §7 Validation introduction version (2026-10-13)
+
+The beginners' cut (31 scenes, 10:05) was "very difficult to follow": cross-validation
+re-explained, nested cross-validation, and about 25 concepts. Rebuilt from scratch as an
+introduction, one new concept per part with one example and one picture, as the
+Assumptions video was: 22 scenes, 695 words, 5:26 on the draft voice.
+
+- *Test on what the model will face*: a held-out station's own site stays in the training
+  data; a held-out block of the map is an area never seen; the same forest scores 4.23
+  against 4.41. Cross-validation gets a clause, not a re-run.
+- *Measure what matters*: the Assumptions video's rare species (92% accurate, 1 in 6
+  found) names sensitivity and specificity (96%), and why accuracy hid the misses; which
+  matters depends on what each mistake costs, with no threshold arithmetic. This delivers
+  what the Assumptions video promised Validation would measure.
+- *A score needs an interval*: the forest's 4.32 comes from one survey; resampling the
+  sites gives 3.75 to 4.94, and all three models' intervals overlap.
+- Quiz: mapping unsurveyed coast, single stations or whole blocks?
+- Dropped, left to the pages (the user kept nested cross-validation on the page):
+  the search over noise columns and nested cross-validation, RMSE against MAE and the
+  log-count forest, the shortlist, the cost threshold, the paired comparison.
+- `exports.R` reads three pages, one of them `../06-assumptions-limitations/class-imbalance.qmd`;
+  `tools/figures-for-video.R` names a page's figure folder by its file name, so a page
+  from another section works.
+
+Second round, same day: the user found key points full of why and what ("Why to test a
+model on what it will face") hard to follow, and the 5:27 cut short enough to take a
+little more. The key points became plain imperatives, *Test on new places*, *Look beyond
+accuracy*, *Put an interval on a score*, used for the opening, the key-point cards and
+the recap alike (`RECAP = PROMISES`), and the narration lost its other why/what phrasing.
+Two scenes were added, each deepening its part's one concept rather than adding one:
+*Distance* (a held-out station's nearest training station is about 4 km away with
+folds of stations, 13 km with blocks, from the page's `by_scheme`) before the forest's
+two scores, and *Threshold* (lowering the threshold from 0.19 to 0.05, the page's
+`same`, takes sensitivity from 1 in 6 to 72% and specificity from 96% to 71%, and
+accuracy falls to 71% though the model finds far more) before the costs, which now say
+the threshold trades one mistake for the other. 24 scenes, 6:07 on the draft voice.
+Then, at the user's request, the purpose of resampling got its own scene before the
+mechanics: a single test set gives a single error; resampling tests the same model on
+many slightly different test sets made from the survey, each giving its own error, so
+together they show a range (schematic). The forest's score is now "one set of test
+data", and the mechanics scene ends "That is one new test set." 25 scenes, 6:24.
+
+## §8 Unsupervised learning introduction version (2026-10-14)
+
+The 35-scene cut (7:49) taught about twenty concepts: the community matrix, the
+silhouette, shuffled baselines, hierarchical clustering and linkage, loadings, the 80%
+rule, parallel analysis, cross-validated components, UMAP, the bootstrap, the adjusted
+Rand index, the gap between clusters, and a record. Rebuilt as an introduction like
+Assumptions and Validation, one new concept per part with one example and one picture,
+and plain imperative key points used for the opening, the cards and the recap
+(`RECAP = PROMISES`): 24 scenes, 771 words, 6:07 on the draft voice.
+
+- *Find groups without labels*: the counts with no habitat column; stations as points
+  placed by two made-up taxa's counts (schematic), then k-means step by step; k-means
+  on the 800 stations against the recorded seabed, 15 out of place.
+- *Draw many columns as one map*: PCA's first and second components on a tilted cloud,
+  each a mix of all 24 taxa (schematic); the ordination in grey, then shaped by seabed
+  (two arms) and coloured by depth (a smooth change), which PCA never saw; 29.4% of the
+  variance as a summary. Loadings and the angles are left to the page.
+- *Check that groups come back*: k-means cuts random numbers into four tidy groups;
+  resampling the sites, as in the Validation video, and refitting; 52 of 60 refits
+  give the hard and soft groups, 8 shallow against deep: report how often each came
+  back. The agreement axis is described, not named (no "adjusted Rand index").
+- Quiz: five groups of plankton samples from k-means; not yet, resample and refit.
+- `exports.R` now reads three pages (clustering, PCA, interpreting patterns); the
+  re-export matched the earlier CSVs byte for byte. Scenes use `cue()` as Validation does.
+
+Second round, same day, at the user's request to explain more for beginners. PCA must
+be said not to make groups: it only places the stations, but colours and shapes on its
+map show how well groups fit, here the seabed, known beforehand because it was recorded
+(the k-means groups are the fallback when nothing was recorded; they are not drawn). The
+refits are framed as judging whether the chosen k is reasonable: k = 2 gives the same
+groups in 52 of 60, so two is a reasonable choice, and another k is judged by repeating
+the check with it; the quiz asks whether five is a good choice. Added: supervised
+learning learns from answers (scene 2), same habitat means similar counts (3), distance
+as difference (4), k is chosen before k-means starts and the result is a group per
+station (5), k-means numbers its groups and a record names them (6), spread is where
+stations differ (9), a no-groups scene (11), the seabed marked on the map (12), and a
+schematic of real groups splitting the same way in three samples while random points
+split differently (16). The 29.4% variance scene went, to keep the part on one concept.
+26 scenes, 7:36 on the draft voice.
+
+## §9 Neural networks introduction version (2026-10-14)
+
+The 44-scene cut (7:34) re-ran gradient descent and the learning rate from the How
+algorithms learn video, and taught backpropagation, the gradient check, ReLU, seeds,
+the true mean counts, ROC AUC and the sample sizes besides. Rebuilt as an introduction
+like Assumptions, Validation and Unsupervised learning, one new concept per part with
+one example and one picture, and plain imperative key points used for the opening, the
+cards and the recap (`RECAP = PROMISES`): 27 scenes, 952 words.
+
+- *Build curves from simple bends*: a neuron is a weighted sum (schematic); on its own
+  that is linear regression, so the sum passes through a bend, the activation, an
+  S-curve; several neurons make a hidden layer; the temperature hump, where a straight
+  line misses the peak and two hidden neurons' bends, one rising and one falling, add up
+  to a hump peaking at 8.7 °C with 7 weights, counted on screen in scene 7 (4 arrows
+  and a constant for each of the 3 neurons), where the number first appears. "Hidden units" are "hidden neurons"
+  throughout. The many-layers-still-a-line point is kept for the quiz.
+- *Stop training at the right step*: 21 weights (16 arrows and 5 constants, counted as
+  in scene 7) give room to fit the noise (overfitting, as the Supervised learning video showed); gradient descent gets a
+  clause; the 40-neuron network's training error falls for 8,000 steps while the
+  validation error is lowest at step 1,937 and 4% worse by the end: early stopping.
+- *Let a network find combinations*: on the survey's noisy counts the forest's error is
+  4.20 and the network's 4.52; the water-mass band, where neither input alone decides,
+  scored by accuracy rather than ROC AUC, which no earlier video introduces (44% of the
+  training stations are core, so accuracy is not misleading): logistic regression 66%,
+  tree 77%, forest 86%, network with two hidden neurons 98%; each neuron's tilted line
+  along one edge; naming the combination lets logistic regression match; images and sound, one
+  example each (pixels to an edge to a fish; pitches to a whale's call), so that
+  "nobody can list them all" follows from more than one case.
+  `exports.R` now adds each model's accuracy to `water-auc` and `core_pct` to the
+  numbers.
+- Quiz: ten layers with no bends fit only a straight line.
+- Dropped, left to the pages: linear regression's 4 weights (the comparison sent
+  viewers back to scene 3's "on its own is linear regression"), the learning rate, backpropagation and the gradient
+  check, ReLU, 241 weights, the seeds, the true mean counts, the sample sizes,
+  autoencoders. The end card names some of them.
+
+## §10 Interpretation introduction version (2026-10-14)
+
+The user rejected the beginners' rebuild (`feature/video-interpretation-beginners`,
+111f1bf): it re-ran cross-validation, splits and error ranges as the Validation video
+had, and mixed random columns with permutation importance. The section's pages were
+rebuilt first (`feature/rebuild-interpretation`: permutation importance alone, partial
+dependence, SHAP values, interpretable models and surrogates, a model card), then the
+video from them (`feature/video-interpretation-rebuild`), as an introduction like the
+four before it: one new concept per part with one example and one picture, plain
+imperative key points (`RECAP = PROMISES`). 22 scenes, 884 words, 6:50 cut on the Gemini voice.
+
+The first draft's third part, SHAP values, was hard to follow: it never said what SHAP
+stands for, what the values do or how to use them, and spent its words on averaging
+over every order of revealing the inputs. A model card replaced it for one draft; the
+user then asked for SHAP back, explained from the basics. The part now says what the
+values do for one station (each input adds animals to the average or takes some away,
+and they add up to the prediction), spells out SHapley Additive exPlanations (additive:
+the parts add up; Shapley: Lloyd Shapley's fair way to share a team's prize, the inputs
+as players and the gap between average and prediction as the prize), shows one station,
+and ends on the use: a prediction with its reasons, to check against what is known of
+the species or show to whoever acts on it. The averaging over orders is left to the
+page. The first draft's shuffle table
+was labelled A, B, C, which read as station names, and shuffled only B without saying
+why; it now names its columns (temperature, depth, salinity, count) and its rows (one
+per test station), says the other columns stay put so any change comes from that input
+alone, then puts temperature back and shuffles depth, then salinity.
+
+- *Shuffle each input in turn*: linear regression's coefficients beside a forest with
+  none to read; the test stations as a table, one row per station; temperature's column
+  shuffled, scored again, the rise named permutation importance; then depth's, then
+  salinity's (schematic heights); the forest's typical miss of 3.93 animals,
+  temperature's rise of 0.34, more than three times depth's 0.10, chlorophyll and
+  salinity near zero.
+- *Draw each input's effect*: importance says how much, not which way; a what-if
+  question, every training station given the same temperature, predicted and averaged
+  into one point, then repeated along the range (schematic), named a partial dependence
+  plot; the forest's hump peaking at 7.7 °C.
+- *Split one prediction into parts*: the training stations' predictions, their average
+  4.11, and one station's 6.53, "which inputs raised it?"; bars pushing from the average
+  to the prediction, one SHAP value per input (schematic); the name spelled out, then a
+  quiz team sharing its prize (the best player the biggest share, one who cost points a
+  negative one) beside the inputs sharing the gap, 6.53 − 4.11 = 2.42 animals, depth's
+  share biggest and the seabed's negative (schematic shares); the station 44.9 m
+  deep as a waterfall, depth +0.95, chlorophyll +0.80, temperature +0.63, salinity
+  +0.58, sand −0.49, season −0.05, to 6.53.
+- Quiz: salinity barely moves the error; does it have no effect? Not necessarily:
+  without temperature, season's importance rose from 0.04 to 0.15.
+- No cross-validation, splits, score ranges or intervals. ICE curves, the GAM, the
+  surrogate tree and the model card are left to the pages; the end card names them.
+- `exports.R` reads the three pages behind the parts, and only the one station the
+  video shows. The sweep schematic and the waterfall were kept; the shuffle table was
+  relabelled; the push and name schematics are new.
+
+## Cheers at the key points (2026-10-10)
+
+At the user's request, each key point now ends with a pixel-art sea animal popping up
+with a cheering sound, to encourage the viewer, and after the recap all three return
+with all three sounds, a beat apart.
+
+- Animals: `_videos/sea_friends.py`, character grids drawn as squares by `sprite()` in
+  `mlbasic_video.py`: crab, octopus, clownfish, turtle, whale, pufferfish, jellyfish,
+  starfish, and since 2026-10-15 seahorse, seal, shark, dolphin, sea otter (holding a
+  shell), manta ray, puffin and anglerfish. Sounds: `tools/make-cheers.py` writes
+  `_videos/cheer-*.wav`, all made on this laptop, so there is no licence to track.
+- Two kinds of cheer (2026-10-11, at the user's request for more variety). An
+  **effect** is a sound with its own picture: `clap` (applause, the animal bounces
+  between two flashing stars), `fireworks` (a rocket bursts beside it) and `bubbles`
+  (bubbles stream up either side and pop, each a rising "bloop"). A **shout** is a word
+  in a speech bubble, heard as a small crowd of Piper voices: Hooray!, Well done!,
+  Brilliant!, Great work!, Fantastic!, Nice one!, Spot on!, Keep going!
+  (`video_script.SHOUTS`), with a move: `jump`, `spin` (turns round twice) or `wiggle`.
+- `cheer_cast()` in `tools/video_script.py` deals the cheers out in turn from fixed
+  shuffles, continuing from video to video by folder number: odd videos get two shouts
+  and one effect, even ones one and two. So each effect and each move appears five
+  times across the ten videos, each word about twice, and no video repeats an animal,
+  word, move or effect. `cheer_plan()` gives each scene's (animal, sound, move, start);
+  `VideoScene.celebrate()` draws them and `rough-cut.py` mixes the sounds from the same plan.
+- Everything stays below the text: a key point's speech bubble sits beside the animal
+  and under the answer, the recap's over each animal under the last line, and bubbles
+  rise beside the animal rather than over it.
+- Render cheer scenes with `--disable_caching` after changing the cheer code: Manim's
+  cache does not see changes inside an updater, so it reuses the old animation.
+- Script: `cheer: 1|2|3` on the key-point scenes with `pause-after: 2.0`, and
+  `cheer: all` on the last recap scene with `pause-after: 4.0`. The line changes no
+  Gemini take. In a video with cheers, the key-point and recap text sits 0.6 higher.
+- Fireworks (2026-10-15, at the user's request for more variety): each burst has a
+  style, dealt in turn from `video_script.FIREWORKS` and drawn by the `*_burst`
+  functions in `mlbasic_video.py`: `peony` (two rings of coloured stars, the original),
+  `willow` (golden trails that droop), `crossette` (six stars that each split in four),
+  `heart`, and `glitter` (stars that twinkle with the crackle). Every style bursts at
+  0.75 s, on the sound's bang, so the one sound serves them all. The five fireworks in
+  the series each get a different style.
+- The casts since 2026-10-15 (`cheer_cast()`; 16 animals over 30 cheers, so each
+  appears once or twice and never twice in a video): Introduction: octopus "Great
+  work!" (wiggle), clownfish "Brilliant!" (spin), seahorse and applause. Marine data:
+  anglerfish and bubbles, seal and a peony firework, puffin "Well done!" (jump).
+  Supervised learning: turtle and applause, shark "Spot on!" (spin), otter "Nice one!"
+  (wiggle). How algorithms learn: whale and a willow firework, jellyfish and bubbles,
+  crab "Keep going!" (jump). Generalisation: starfish "Hooray!" (wiggle), ray
+  "Fantastic!" (spin), dolphin and applause. Assumptions and limitations: pufferfish and
+  bubbles, octopus "Brilliant!" (jump), clownfish and a crossette firework. Validation:
+  seahorse and applause, anglerfish "Well done!" (wiggle), seal "Great work!" (spin).
+  Unsupervised learning: puffin "Spot on!" (jump), turtle and bubbles, shark and a heart
+  firework. Neural networks: otter "Keep going!" (wiggle), whale "Nice one!" (spin),
+  jellyfish and applause. Interpretation: crab and bubbles, starfish "Fantastic!"
+  (jump), ray and a glitter firework.
+
+Text over a chart (2026-10-11): a label that sits over dots or lines, such as "a new
+station" or "22 stations above 15 not shown", goes through `plated()` in
+mlbasic_video.py, a plate of the background colour at z-index 5 (above the chart, below
+a marker kept on top at 10). Check each video's chart labels for this when revising it.
+
+Dimming (2026-10-11): dim with `.animate.fade(0.75)`, never `.animate.set_opacity(...)`.
+`set_opacity` sets the fill too, so a curve drawn as a line fills the area under it and a
+pale shade turns solid (Supervised learning, scene 27). `fade` scales each part's own
+opacity. Remaining `set_opacity` dims to check when revising: Generalisation, Assumptions
+and limitations, Neural networks, Interpretation.

@@ -13,14 +13,16 @@ scene; "page results" means R writes the numbers the page computed to a CSV;
 "schematic" means drawn shapes with no numbers. Every number spoken comes from the
 section's pages. No section numbers anywhere in the video: other sections are named.
 
-This video is an overview built on three ideas, each with one or two examples: a score
-is only as honest as its folds (the distance to the fitted data, and a search over
-noise caught by nested cross-validation), the measure must follow the use (RMSE and MAE
-pick different forests, a shortlist uses only the order, costs set the threshold), and
-a score needs an interval (a bootstrap of the sites, and a paired comparison). The quiz
-applies the second idea to the cost rule on the choosing-a-measure page. It does not
-tour every page: the number of folds, the correlogram, forecasts, R² and the measures
-for presence are left to the pages, and the end card names some of them.
+Rebuilt 2026-10-13 as an introduction, one new concept per part, each with one example
+and one picture: test on new places (folds of stations against blocks of the map, and
+how far each leaves the nearest training station), look beyond accuracy (sensitivity and
+specificity, on the Assumptions video's rare species, which that video promised
+Validation would measure, and the threshold trading one for the other), and put an
+interval on a score (resampling the sites: many
+slightly different test sets, so a range of errors). The key points avoid why and what. Cross-validation is known from the Generalisation
+video and gets a clause, not a re-run. Nested cross-validation, RMSE against MAE,
+shortlists, the cost threshold and the paired comparison stay on the pages; the end
+card names some of them.
 -->
 
 # In this video
@@ -29,228 +31,184 @@ for presence are left to the pages, and the end card names some of them.
 visual: manim Learn: three points appear one by one as they are spoken
 pause-after: 0.5
 
-In this video, you will learn three things. Why a score is only as honest as its
-folds. Why the measure must follow the use of the predictions. And why a score needs an
-interval.
+Welcome back to Machine Learning Basics for Marine Science. This video is about
+validation: how far to trust a model's score. It covers three things: testing a model on
+new places, looking beyond accuracy, and putting an interval on a score.
+
+# Test on new places
 
 ## Scene 2
 visual: manim Claim: a model, a score card, and an arrow to sites not yet surveyed (schematic)
 
-Every model in this course has been given a score: roughly how far its predictions land
-from what new sites caught. A score is a claim about the future. This video asks when to
-believe it.
-
-# A score is only as honest as its folds
+First, testing on new places. A model's score says how far its predictions land from
+data it was not fitted to. It is a promise about new places: this is how well the model
+will do where it has not been. So the test data should be as new as those places.
 
 ## Scene 3
-visual: manim Folds: sites dealt into five folds; each fold held out in turn, its stations predicted by a model fitted to the rest (schematic)
+visual: manim Neighbours: sites as clusters of visits; single held-out stations, each next to visits to its own site that stay in the training data (schematic)
 
-Cross-validation deals the sites into folds. Each fold is held out in turn and predicted
-by a model fitted to the others. So every station gets one out-of-fold prediction, from a
-model that never saw its site.
+Say the test holds out single stations. Most sites in the survey were visited several
+times, so a held-out station's own site, visited at other times, is usually still in the
+training data. The model has, in effect, already seen that place.
 
 ## Scene 4
-visual: manim Reach: one held-out station and a line to the nearest fitted station, short for folds of stations, longer for folds of sites, longest for blocks (schematic)
+visual: manim Blocks: the survey's sites on the map, cut into squares; every site in one square held out (schematic)
 
-What a score claims depends on what the folds hold out. Folds of single stations often
-leave a station's own site in the fitted data. Folds of sites push the nearest fitted
-station out to the next site, and spatial blocks push it across the block.
+Now hold out a whole block of the map instead: a square, with every site in it. The
+model must predict an area it has never seen, just as a map of new areas would ask of
+it.
 
 ## Scene 5
-visual: manim DistanceScore: pooled RMSE against the distance to the nearest fitted station, ten runs per scheme and their averages (page results, spatial-and-temporal-cv.qmd#fig-distance)
+visual: manim Distance: how far a held-out station is from the nearest training station, for each test, as two bars (page results, spatial-and-temporal-cv.qmd)
 
-A random forest was scored all three ways, ten times each. The further away its fitted
-data, the larger its error: from 4.23 with folds of stations to 4.41 with blocks.
+The difference shows in distance. Holding out single stations, the nearest station in
+the training data is typically about 4 kilometres away. Holding out blocks, it is about
+13 kilometres. The model has to reach three times as far.
 
 ## Scene 6
-visual: manim Use: two uses side by side, gaps between monitored sites with folds of sites, an unsurveyed area with blocks (schematic)
+visual: manim BlockResult: the same random forest's error, held-out stations against held-out blocks (page results, spatial-and-temporal-cv.qmd)
 
-No distance is right in general. To fill the gaps between monitored sites, use folds of
-sites; to map an area nobody has surveyed, use blocks. Report the distance with the
-score.
+Here is one random forest, scored both ways. Holding out single stations, its error is
+4.23. Holding out blocks, it is 4.41. The model is the same; only the test is harder.
+So test a model the way it will be used.
 
 ## Scene 7
-visual: manim Search: eight measured columns and twenty columns of random numbers; a hundred candidates of five columns each (schematic)
+visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 1
+pause-after: 2.0
 
-Folds can also flatter a model they helped to choose. Add twenty columns of random
-numbers to the survey, try a hundred models, each Poisson regression on five columns,
-and keep the lowest cross-validated error.
+Key point one. Test on new places: to map new areas, hold out whole areas.
+
+# Look beyond accuracy
 
 ## Scene 8
-visual: manim Search: the hundred candidates' RMSEs as dots; the lowest picked out, its five columns below it, two of them noise (page results, cross-validation.qmd)
+visual: manim Rare: the Assumptions video's grid of stations, the rare species lit, the model's calls as squares; its accuracy (page results, ../06-assumptions-limitations/class-imbalance.qmd)
 
-The winner scores 4.50, the lowest of the hundred. Two of its five columns are pure
-noise. They just happen to suit these folds.
+Next, looking beyond accuracy. Remember the rare species from the Assumptions and
+limitations video. A model was 92 per cent accurate, yet found only one presence in six.
+Accuracy hid the misses. So we need measures that see them.
 
 ## Scene 9
-visual: manim Luck: each score drawn as skill plus a random nudge; the lowest of many has the biggest nudge (schematic)
+visual: manim Rare: the presences ringed; sensitivity, one in six (page results)
 
-Every score is partly luck, and the lowest of many scores has gathered the most. So the
-more models a search tries, the more its winner's score flatters it.
+The share of the presences a model finds is called its sensitivity. Here it is one in
+six. Sensitivity counts the misses.
 
 ## Scene 10
-visual: manim Nested: an outer fold of sites held out; the whole search runs on the rest, with folds of its own; its choice predicts the outer fold (schematic)
+visual: manim Rare: the absences picked out; specificity, 96 per cent; "accuracy is almost all specificity" (page results)
 
-Nested cross-validation measures what the search is worth. An outer fold of sites is
-held out, the whole search runs on the other sites, and its choice is scored on the
-outer fold, which played no part in choosing.
+The share of the absences it calls absent is called its specificity. Here it is 96 per
+cent. Specificity counts the false alarms. With so few presences, accuracy is almost all
+specificity, which is why it looked so good.
 
 ## Scene 11
-visual: manim NestedResult: three bars, the search's claim, its choices on the outer folds, and the eight measured inputs with no search (page results, cross-validation.qmd#fig-nested)
+visual: manim Threshold: sensitivity, specificity and accuracy as bars, at the threshold so far and at a lower one (page results, ../06-assumptions-limitations/class-imbalance.qmd)
 
-Inside each round, the search claimed an error of 4.42. On the outer folds, its choices
-scored 4.86. Poisson regression on the eight measured inputs, with no search at all,
-scored 4.37.
+The model calls a station present when its probability passes a threshold. Lower that
+threshold, and it finds nearly three presences in four. But it raises more false alarms
+too: specificity falls to 71 per cent. Accuracy falls with it, to 71 per cent, though
+the model now finds far more of the species.
 
 ## Scene 12
-visual: manim KeyPoint: badge 1, the promise from the opening, and its answer, ticked
-pause-after: 0.5
+visual: manim Costs: a miss, a record lost, and a false alarm, a wasted dive, as squares sized by what they cost (schematic)
 
-Key point one. A score is only as honest as its folds: hold out what the model will
-face, and keep the search out of the score.
-
-# The measure must follow the use
+So the threshold trades one kind of mistake for the other, and the right trade depends
+on their costs. For a protected species, a miss means a record lost. For a survey with
+costly dives, a false alarm means a wasted dive. So start from the use of the
+predictions, then choose the measure.
 
 ## Scene 13
-visual: manim Misses: misses at a row of stations, turned into one number two ways, squared for the RMSE and as they are for MAE (schematic)
+visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 2
+pause-after: 2.0
 
-A performance measure turns every miss into one number. The RMSE minds large misses
-most. The mean absolute error, or MAE, counts every animal missed the same.
+Key point two. Look beyond accuracy: report sensitivity and specificity, not accuracy
+alone.
+
+# Put an interval on a score
 
 ## Scene 14
-visual: manim Middle: the skewed catch per station, with the average and the median marked (page results, regression-metrics.qmd)
+visual: manim OneSurvey: the survey's sites and the forest's score; other sites the survey might have drawn, the score moving with them (schematic)
 
-On skewed counts, the two aim at different targets. The RMSE is lowest when a model
-predicts the average catch, 3.9 animals. MAE is lowest at the median, just 2.
+Finally, putting an interval on a score. Scored by cross-validation by site, the random
+forest's error is 4.32. But that number comes from one set of test data. With slightly
+different test data, it would have come out higher or lower.
 
 ## Scene 15
-visual: manim Picks: the four models' RMSE and MAE as two rows of bars; the RMSE's lowest is the random forest, MAE's the random forest on log counts (page results, regression-metrics.qmd)
+visual: manim Purpose: one test set gives one error; many slightly different test sets give many errors, spread into a range (schematic)
 
-So the two measures pick different models. The RMSE picks the random forest. MAE picks
-the same forest fitted to log counts, which aims at the median.
+A single test set gives a single error. Resampling tests the same model on many slightly
+different test sets instead, all made from the survey itself. Each gives its own error,
+and together they show a range: how far the score could move.
 
 ## Scene 16
-visual: manim Picks: a bar of the animals caught, and the forest on log counts' predicted total, 69 per cent of it (page results)
-
-Add up that forest's predictions, and they reach only 69 per cent of the animals caught.
-For a stock estimate, MAE has picked a model that misses almost a third of them.
-
-## Scene 17
-visual: manim Shortlist: stations ranked by a model's prediction; a ship visits the top hundred (schematic)
-
-Other uses ask other things. A ship has time to revisit 100 stations, and goes where a
-model predicts the most animals. Only the order of the predictions matters.
-
-## Scene 18
-visual: manim ShortlistResult: animals found by each model's shortlist, between a random hundred and a perfect hundred (page results, choosing-a-metric.qmd)
-
-The forest on log counts finds 847 animals, as many as the other models. Each shortlist
-finds 2.1 times what a hundred random stations would. Predictions that run low lose
-nothing here.
-
-## Scene 19
-visual: manim Mistakes: a two-by-two table of called and true presence; "false alarm" and "miss" placed in their cells (schematic)
-
-Calls of present or absent need something else. A false alarm is a station called
-present where the species is absent. A miss is a station called absent where it is
-present.
-
-## Scene 20
-visual: manim Costs: a dive boat for a false alarm, a blank record for a miss, on a balance that tips; the threshold slides away from 0.5 (schematic)
-
-If a false alarm wastes a dive, it may cost far more than a miss. Then the threshold for
-calling a station present should come from those costs, not sit at 0.5.
-
-## Scene 21
-visual: manim KeyPoint: badge 2, the promise from the opening, and its answer, ticked
-pause-after: 0.5
-
-Key point two. The measure must follow the use: decide what the predictions are for,
-then choose the measure.
-
-# A score needs an interval
-
-## Scene 22
-visual: manim OneSurvey: the survey's sites, then other sites the survey might have drawn, the score moving with them (schematic)
-
-A score comes from one survey. Had other sites been sampled, it would have come out
-higher or lower, and two models might have swapped places.
-
-## Scene 23
 visual: manim Resample: the 160 sites drawn again with replacement, some twice, some not at all; each draw gives one error (schematic)
 
-To see how far, resample the sites. Draw the 160 sites again, with replacement, keep
-their stations' out-of-fold predictions, and work out the error. Do it a thousand times.
+Here is how. Draw 160 sites from the survey's own 160, with replacement, so some come up
+twice and some not at all. That is one new test set. Score the forest on it, and do it a
+thousand times.
 
-## Scene 24
-visual: manim Intervals: the three models' RMSEs with their 95% intervals, all overlapping (page results, uncertainty-and-stability.qmd)
+## Scene 17
+visual: manim Interval: the thousand errors as a histogram; the middle 95 per cent shaded, from 3.75 to 4.94 (page results, uncertainty-and-stability.qmd)
 
-The middle 95 per cent of those errors is an interval. For the random forest it runs
-from 3.75 to 4.94, and all three models' intervals overlap. Read alone, they cannot even
-say whether the forest beats predicting the average.
+The middle 95 per cent of those thousand errors is a 95 per cent interval. For the
+forest, it runs from 3.75 to 4.94. Its error on new sites could be anywhere in that
+range, not exactly 4.32.
 
-## Scene 25
-visual: manim Pairs: two models' errors over a few resamples, rising and falling together; their difference drawn below, nearly constant (schematic)
+## Scene 18
+visual: manim Intervals: the forest's interval, then linear regression's and predicting the average's, all overlapping (page results, uncertainty-and-stability.qmd)
 
-But a hard sample is hard for every model, so their errors rise and fall together.
-Compare them in pairs: take the difference within each sample, and what they share
-cancels.
+Add linear regression and predicting the average, and all three intervals overlap. So a
+small gap between two scores is not, on its own, a ranking: with other sites, the order
+could change.
 
-## Scene 26
-visual: manim PairScatter: the forest's RMSE against predicting the average's, one dot per sample, nearly all below the diagonal (page results, uncertainty-and-stability.qmd#fig-pairs)
+## Scene 19
+visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked; then an animal cheers
+cheer: 3
+pause-after: 2.0
 
-In pairs, the forest beats predicting the average in 99 per cent of the samples.
-
-## Scene 27
-visual: manim PairScatter: the second panel, against Poisson regression, a narrow band along the diagonal (page results)
-
-Against Poisson regression, it wins in only 79 per cent, and the paired interval covers
-zero. On this survey, the RMSE cannot tell those two apart.
-
-## Scene 28
-visual: manim KeyPoint: badge 3, the promise from the opening, and its answer, ticked
-pause-after: 0.5
-
-Key point three. A score needs an interval: resample the sites, and compare models in
-pairs.
+Key point three. Put an interval on a score: resample the sites to see how far it could
+move.
 
 # Quiz
 
-## Scene 29
+## Scene 20
 visual: manim Quiz: the question, then a countdown bar through the pause
 pause-after: 8
 
-Quick quiz. A false alarm wastes a dive, and costs three times as much as a missed
-record. The model's probabilities can be read as chances. Above what probability should
-a station be called present?
+Quick quiz. You will use a model to map a stretch of coast that nobody has surveyed.
+Which test gives the honest score: holding out single stations, or whole blocks of the
+map?
 
-## Scene 30
-visual: manim QuizAnswer: "0.75"; the two expected costs against the probability, crossing at 0.75; logistic regression's cost curve with its lowest point (page results, choosing-a-metric.qmd#fig-cost)
+## Scene 21
+visual: manim QuizAnswer: "whole blocks"; the two scores again, the blocks' one picked out (page results)
 
-0.75. At probability p, calling a station present risks a false alarm: three times one
-minus p. Calling it absent risks a miss: p. The two match at 0.75, where logistic
-regression's calls were cheapest on the survey.
+Whole blocks. Holding out single stations leaves each station's neighbours in the
+training data, so the score flatters the model. On the survey, that was 4.23 against
+4.41.
 
 # Key points
 
-## Scene 31
+## Scene 22
 visual: manim KeyPoints: the three key points, the first ticked
 
-To sum up the three key points. <short pause> One: a score is only as honest as its
-folds.
+To sum up. <short pause> One: test on new places.
 
-## Scene 32
+## Scene 23
 visual: manim KeyPoints: the second ticked
 
-Two: the measure must follow the use.
+Two: look beyond accuracy.
 
-## Scene 33
-visual: manim KeyPoints: the third ticked
+## Scene 24
+visual: manim KeyPoints: the third ticked; then all three animals cheer
+cheer: all
+pause-after: 4.0
 
-Three: a score needs an interval.
+Three: put an interval on a score.
 
-## Scene 34
+## Scene 25
 visual: manim EndCard: the site's address and a thank-you
 
-The pages also cover how many folds to use, forecasts tested on later years, and the
-measures for presence, with all the code. They are linked below. Thanks for watching.
+The pages go further: forecasts tested on later years, measures for counts, comparing
+two models fairly, and choosing among many models without fooling yourself, with all the
+code. They are linked below. Thanks for watching.

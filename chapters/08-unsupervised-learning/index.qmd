@@ -1,70 +1,43 @@
 ---
 title: "8 · Unsupervised learning"
-description: "Finding structure when there are no labels, with k-means, hierarchical clustering, PCA and UMAP, and checking whether a group is real or a cut through a gradient."
+description: "Finding structure without labels, and checking it before reporting it."
 categories: [unsupervised, interpretation]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: clustering.qmd
+      description: "k-means sorts stations into a set number of groups by how alike they are, and where it ends depends on where it starts."
+    - path: choosing-the-number-of-clusters.qmd
+      description: "The sum of squares always falls as groups are added, so the silhouette width and shuffled data judge how many to keep."
+    - path: hierarchical-clustering.qmd
+      description: "A tree of joins holds every number of groups at once, and the linkage rule decides what it finds."
+    - path: principal-component-analysis.qmd
+      description: "Principal component analysis turns twenty-four taxon columns into a map of the stations, read from its loadings."
+    - path: dimensionality-reduction.qmd
+      description: "A share of the variance, shuffled data or cross-validation decides how many components to keep, and UMAP makes a map just for looking."
+    - path: interpreting-patterns.qmd
+      description: "A pattern should come back in bootstrap samples, be a real group rather than a cut through a gradient, and match a variable the method never saw."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Sometimes there is no answer column. You have hundreds of CTD profiles and no water-mass
-classification, or counts of two dozen taxa at every station and no list of the habitats
-they come from. Unsupervised methods find structure in the data itself: **clustering**
-sorts stations into groups, and **principal component analysis** turns many columns into
-a few that can be mapped or passed to a model.
+Sometimes there is no answer to learn from: counts of two dozen taxa at every station
+and no list of the habitats they come from. Unsupervised methods look for structure in
+the data itself, and they return an answer for any table, so checking what they find
+matters as much as finding it. This section works on the taxon counts of the same
+simulated survey as the rest of the course: three pages on sorting stations into groups,
+two on principal components, which turn many columns into a map, and one on the checks a
+pattern must pass before it is reported.
 
-[Types of learning](../01-introduction/types-of-learning.qmd) ran k-means on temperature,
-salinity and depth. This section takes clustering and PCA further on a community matrix
-of 24 taxa, and shows how to check what they find. Every one of these methods returns an
-answer for any table, so the checks matter as much as the methods: a shuffled copy of the
-data as a baseline, bootstrap samples, and variables the method never saw.
+{{< video https://www.youtube.com/watch?v=bt6kDcavjY4 title="Unsupervised learning: finding structure without labels" >}}
 
 ## Pages in this section
 
 ::: {#pages}
-:::
-
-## Findings from this section
-
-- Two k-means clusters recovered the **hard and soft seabed** from species counts alone,
-  with **15 of 800** stations in the other kind's cluster.
-- The average silhouette width of those clusters was **0.179**, below the rule-of-thumb
-  0.25 for "no substantial structure". Shuffled counts gave a baseline of about 0.05, and
-  two clusters stood furthest above it, at **3.5 times** the baseline.
-- One table and one set of distances gave agreement with the seabed from **0.005** to
-  **0.89**, depending only on the linkage rule. Ward's two groups matched k-means' at an
-  adjusted Rand index of 0.94.
-- The first two principal components held **29.4%** of the variance, which is usual for
-  species counts. Depth and hard bottom both ran about **39°** from the nearest axis,
-  because the two components held almost the same share.
-- Three rules for the number of components kept **16**, **3** and **2**: a share of the
-  variance, a shuffled baseline, and cross-validation for predicting depth. The third
-  component held real structure, rock against gravel, that depth did not need.
-- In **52 of 60** bootstrap samples the seabed split came back, and in 8 a depth split took
-  its place. The average adjusted Rand index, 0.87, described neither.
-- Splitting the soft-bottom stations came back in every bootstrap sample, yet **11%** of
-  them sat near the boundary between the clusters, against **2%** for the seabed split. It
-  was a cut through a depth gradient, not two groups.
-
-::: {.callout-important}
-A pattern that comes back in every bootstrap sample can still be a cut through a gradient,
-because k-means cuts a steady gradient in the same place every time. Look for a gap
-between the groups, and compare them with a recorded category, before calling them groups.
-:::
-
-::: {.callout-note}
-Two habits run through these pages. **Run the same steps on a shuffled copy of the data**,
-each column shuffled on its own, so every column keeps its values and the groups are gone:
-silhouette widths and shares of the variance have no fixed scale, and the shuffled copy
-gives them one. And **compare the result with a variable the method never saw**, such as
-the recorded seabed. A gradient that turns up this way is a finding too: "composition
-changes steadily with depth" is worth reporting.
 :::
 
 

@@ -22,7 +22,7 @@ set.seed(123)
 
 ## A tree predicts by asking questions
 
-[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#a-decision-tree-finds-its-own-shape)
+[Prediction and explanation](../01-introduction/prediction-and-explanation.qmd#a-decision-tree-finds-the-optimum-without-being-told)
 fitted a decision tree: it splits the stations in two at a threshold, then splits each
 half again, and predicts the average count in each final group. Like
 [k-nearest neighbours](nearest-neighbours.qmd), it assumes no shape. Unlike the
@@ -218,7 +218,7 @@ values with a biological meaning; the first exercise below shows how much they m
 ### Validation sites choose the depth
 
 Trees of each depth from 1 to 15 are fitted on the fitting sites and scored with the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss),
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations),
 the typical miss in animals, on the stations they were fitted to and on the validation
 sites.
 

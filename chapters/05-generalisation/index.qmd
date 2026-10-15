@@ -1,44 +1,34 @@
 ---
 title: "5 · Generalisation and model complexity"
-description: "A model can fit its training stations closely and still fail on new sites. The section traces that failure to the model's complexity, splits its error into bias, variance and noise, and chooses complexity settings by cross-validation."
+description: "A perfect fit to the training stations is a warning sign, not a success."
 categories: [generalisation, tuning]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: underfitting-and-overfitting.qmd
+      description: "A model that fits its training stations too loosely or too closely predicts new sites badly, and the error traces a U as flexibility grows."
+    - path: bias-variance.qmd
+      description: "The error on new stations splits into bias, variance and noise, and averaging trees in a forest cuts the variance."
+    - path: regularisation.qmd
+      description: "A penalty on the size of the coefficients holds a model back: ridge regression shrinks them all, and the lasso sets some to zero."
+    - path: hyperparameter-selection.qmd
+      description: "Settings such as a tree's node size are chosen by cross-validation on the training sites, and the test sites are opened once, at the end."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-A flexible enough model can fit its training stations almost perfectly and still predict
-new sites no better than the average count. Its error on the data it was fitted to says
-little about new data, and the gap grows with how freely the model can bend. Each page in
-this section takes one step, on the same simulated survey as the rest of the course:
+How well a model predicts data it has never seen is called generalisation, and it is the
+reason for fitting a model at all. A flexible model can fit its training stations
+perfectly and still predict new sites worse than the average count. This section splits
+the error on new sites into bias, variance and noise, and chooses a model's complexity
+honestly, with a penalty and with cross-validation, on the same simulated survey as the
+rest of the course.
 
-- **training error and the error on new data**, two scores from one model, and the gap
-  between them;
-- **underfitting and overfitting**, the two ways to fail on new data, and the signs each
-  leaves in the two errors;
-- **model complexity**, the setting in each method that controls how freely it bends, and
-  the reason counting parameters measures it only for a linear model;
-- **the bias–variance trade-off**, which splits the error on new data into bias, variance
-  and noise;
-- **regularisation**, a penalty that makes a linear model simpler: ridge regression shrinks
-  every coefficient, and the lasso sets some to zero;
-- **hyperparameter selection**, choosing a setting by cross-validation by site, with the
-  test sites kept for one final score.
-
-The section picks up threads from earlier ones.
-[Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
-validation sites, and [Underfitting and overfitting](underfitting-and-overfitting.qmd)
-shows the cost of choosing badly. The penalty in [Regularisation](regularisation.qmd) is
-the prior from [Priors and ridge regression](../04-how-algorithms-learn/map-and-priors.qmd).
-[Splitting the data](../02-marine-data/splitting-data.qmd) set validation sites aside for
-choosing a model; [Hyperparameter selection](hyperparameter-selection.qmd) replaces them
-with cross-validation, which lets every training site take a turn.
+{{< video https://www.youtube.com/watch?v=p60IZT5nnQU title="Generalisation: why a perfect fit is a bad sign" >}}
 
 ## Pages in this section
 

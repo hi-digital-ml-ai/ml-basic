@@ -1,6 +1,6 @@
 ---
 title: "Feature importance"
-description: "A random forest has no coefficients to read, but shuffling one input at a time shows how much its predictions rely on each. Columns of random numbers show what an unused input scores, and repeating the measure on new splits shows which scores hold."
+description: "A random forest has no coefficients to read, but shuffling one input at a time shows how much its predictions rely on each. Inputs that carry the same information share the credit, so a score depends on which other inputs the model had."
 order: 1
 categories: [interpretation]
 ---
@@ -16,14 +16,16 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## Importance scores say which inputs a model relies on
 
-A linear model shows how much each input matters through its coefficients: one number
-for each input, in the outcome's units. A random forest averages hundreds of trees and
-has no such numbers. **Feature importance** gives every input a score for how much a
-fitted model relies on it, and works for any model. This page measures it in two ways,
-adds columns of random numbers to show what an unused input scores, and repeats the
-measurement to find the scores that hold.
+Once a model is fitted, the first question is usually which inputs it uses. A linear
+model answers through its coefficients: one number for each input, in the outcome's
+units. A random forest averages hundreds of trees and has no such numbers.
+**Feature importance** gives every input a score for how much a fitted model relies on
+it, and works for any model. This page shows the most widely used score, and why a
+score depends on the other inputs the model was given.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -33,7 +35,7 @@ measurement to find the scores that hold.
 
 **Permutation importance** works on any fitted model. Predict the test data and
 measure the error, here the
-[RMSE](../01-introduction/prediction-and-explanation.qmd#the-test-error-is-a-typical-miss). Then shuffle one input: mix up
+[RMSE](../01-introduction/prediction-and-explanation.qmd#rmse-measures-a-typical-miss-on-the-test-stations). Then shuffle one input: mix up
 its values, so each row gets another row's value. The input's values are all still
 there, but they no longer belong to their rows. If the model relied on that input, its
 predictions get worse and the error rises; if it did not, the error stays about the
@@ -45,38 +47,34 @@ same. The rise is the input's importance.
 
 Shuffling is random, so it is repeated several times and the rises are averaged. It
 is done on test data, so the score is about predicting new sites. A category such as
-substrate is shuffled as one column, so it gets one score.
+substrate is shuffled as one column, so it gets one score. Random forests also report a
+built-in score from their own splits on the training data; this course uses
+permutation importance, which means the same thing for every model.
 
-## Impurity importance scores inputs by a forest's own splits
+## Inputs that carry the same information share their importance
 
-A random forest has a quicker measure built in. Each split in a tree is chosen to lower
-the squared errors on the training data, as in
-[Decision trees](../03-supervised-learning/decision-trees.qmd). **Impurity importance**
-adds up how much each input's splits lowered them, over every tree in the forest. It
-comes free with the fit, but it is measured on the training data, which the trees have
-already fitted, so it also credits splits that only fitted noise.
+Two inputs that rise and fall together, with a high
+[correlation](../02-marine-data/the-coastal-survey.qmd), tell a model much the same
+thing. A model fitted with both can lean on either, and splits the work between them.
+Shuffling one then costs it little, because the other still carries most of the
+information, so each scores lower than it would alone. Fit the model without one of
+them and the other takes over its work, and its score rises.
 
-## Random columns show what an unused input scores
-
-An importance score has no natural zero, and every input gets some score. Columns of
-random numbers, unrelated to anything in the data, give a reference: they are added as
-extra inputs, and an input that scores no higher than they do is used no more than
-noise. [Choosing the number of clusters](../08-unsupervised-learning/choosing-the-number-of-clusters.qmd)
-made the same move, shuffling the data to see what no groups would score.
+So an importance score belongs to a model **and its set of inputs**. A low score does
+not mean an input is unrelated to the outcome; it may mean another input already told
+the model the same thing.
 
 ## Worked example
 
 A random forest of 500 trees, as in
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
 predicts abundance from the six inputs of
-[Regression for counts](../03-supervised-learning/count-regression.qmd) and three
-columns of random numbers. The two measures are compared on one split by site, then
-permutation importance is repeated on ten.
+[Regression for counts](../03-supervised-learning/count-regression.qmd): depth,
+temperature, chlorophyll, salinity, substrate and season. It is fitted to the training
+sites of one split by site and scored on its test sites, then fitted again without
+temperature.
 
 ### Preparing the data
-
-The random columns are drawn before the split, and the ten extra splits straight after
-it.
 
 ::: {.panel-tabset group="language"}
 
@@ -88,24 +86,21 @@ survey <- load_coastal_survey_clean()
 
 inputs <- c("depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
             "substrate", "season")
-
-# three columns of random numbers, unrelated to anything in the survey
-modelling <- survey |>
-  select(site_id, abundance, all_of(inputs)) |>
-  mutate(random_1 = rnorm(n()), random_2 = rnorm(n()), random_3 = rnorm(n()))
+modelling <- survey |> select(site_id, abundance, all_of(inputs))
 
 split <- group_initial_split(modelling, group = site_id, prop = 0.75)
 train <- training(split)
 test  <- testing(split)
-splits <- group_mc_cv(modelling, group = site_id, prop = 0.75, times = 10)
 
-forest_recipe <- recipe(abundance ~ ., data = train) |>
-  update_role(site_id, new_role = "site") |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors())
+forest_recipe <- function(data) {
+  recipe(abundance ~ ., data = data) |>
+    update_role(site_id, new_role = "site") |>
+    step_impute_median(all_numeric_predictors()) |>
+    step_dummy(all_nominal_predictors())
+}
 
 forest_model <- rand_forest(trees = 500) |>
-  set_engine("ranger", seed = 123, importance = "impurity") |>
+  set_engine("ranger", seed = 123) |>
   set_mode("regression")
 ```
 
@@ -118,6 +113,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
+from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
@@ -126,22 +122,12 @@ from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
 
-# three columns of random numbers, unrelated to anything in the survey
-rng = np.random.default_rng(123)
-for i in (1, 2, 3):
-    survey[f"random_{i}"] = rng.standard_normal(len(survey))
+grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
+train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
+train = survey.iloc[train_rows]
+test = survey.iloc[test_rows]
 
-numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu",
-           "random_1", "random_2", "random_3"]
-categorical = ["substrate", "season"]
-predictors = numeric + categorical
-
-grouper = GroupShuffleSplit(n_splits=11, train_size=0.75, random_state=123)
-first, *ten = grouper.split(survey, groups=survey["site_id"])
-train = survey.iloc[first[0]]
-test = survey.iloc[first[1]]
-
-def new_forest():
+def new_forest(numeric, categorical):
     recipe = ColumnTransformer(
         [("numeric", SimpleImputer(strategy="median"), numeric),
          ("categorical", OneHotEncoder(drop="first", sparse_output=False),
@@ -151,76 +137,14 @@ def new_forest():
     model = RandomForestRegressor(n_estimators=500, max_features="sqrt",
                                   min_samples_leaf=5, random_state=123)
     return Pipeline([("recipe", recipe), ("model", model)])
+
+numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "salinity_psu"]
+categorical = ["substrate", "season"]
 ```
 
 :::
 
-### Impurity importance ranks random numbers above the seabed
-
-The forest is fitted to the training sites, and its impurity importance is divided by
-the largest, so the top input scores 1. The recipe turns substrate and season into one
-column for each level but the first, so each level gets its own score.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: impurity
-forest <- workflow(forest_recipe, forest_model) |> fit(train)
-
-impurity <- extract_fit_engine(forest)$variable.importance
-impurity_table <- tibble(input = names(impurity),
-                         importance = impurity / max(impurity)) |>
-  mutate(input = str_replace(input, "^(substrate|season)_", "\\1: ")) |>
-  arrange(desc(importance))
-
-impurity_table |> mutate(importance = round(importance, 2))
-```
-
-## Python
-
-```{python}
-forest = new_forest().fit(train[predictors], train["abundance"])
-
-# feature_importances_ is impurity importance, scaled to sum to 1
-impurity = pd.Series(forest["model"].feature_importances_,
-                     index=forest["recipe"].get_feature_names_out())
-impurity.index = impurity.index.str.replace(r"^(substrate|season)_", r"\1: ",
-                                            regex=True)
-
-(impurity.div(impurity.max())
-    .sort_values(ascending=False)
-    .round(2)
-    .rename_axis("input")
-    .reset_index(name="importance"))
-```
-
-:::
-
-```{r}
-#| label: impurity-numbers
-#| include: false
-impurity_rank <- impurity_table |> mutate(rank = row_number())
-random_rank <- impurity_rank |>
-  filter(str_starts(input, "random")) |>
-  pull(rank)
-below_random <- impurity_rank |>
-  filter(!str_starts(input, "random"), rank > max(random_rank))
-```
-
-The three random columns rank `r min(random_rank)` to `r max(random_rank)` of
-`r nrow(impurity_table)`. Below them come `r nrow(below_random)` real columns:
-salinity and every level of substrate and season. A column of numbers drawn at random
-looks more useful to the forest than the seabed.
-
-This follows from how trees choose splits. A random column has a different value at
-every station, so a tree can try hundreds of places to split it, and on the training
-data some of them lower the error by chance. A level of substrate offers a single
-split. Impurity importance favours inputs with many values, and the random columns
-show by how much.
-
-### On one split's test sites only temperature and the seabed beat the random columns
+### Temperature is the input the forest relies on most
 
 Each input is shuffled 20 times on the test sites, and its importance is the average
 rise in RMSE. Substrate and season are shuffled as whole columns, before the recipe
@@ -233,7 +157,7 @@ turns them into levels.
 ```{r}
 #| label: shuffle
 # the rise in test RMSE when an input is shuffled, averaged over the shuffles
-shuffle_importance <- function(fitted, data, repeats = 10) {
+shuffle_importance <- function(fitted, data, repeats = 20) {
   error <- \(d) rmse_vec(d$abundance, predict(fitted, d)$.pred)
   before <- error(data)
   columns <- setdiff(names(data), c("site_id", "abundance"))
@@ -248,25 +172,27 @@ shuffle_importance <- function(fitted, data, repeats = 10) {
     list_rbind()
 }
 
-one_split <- shuffle_importance(forest, test, repeats = 20)
-one_split |> arrange(desc(rise)) |> mutate(rise = round(rise, 3))
+forest <- workflow(forest_recipe(train), forest_model) |> fit(train)
+all_six <- shuffle_importance(forest, test)
+all_six |> arrange(desc(rise)) |> mutate(rise = round(rise, 3))
 ```
 
 ## Python
 
 ```{python}
-# permutation_importance shuffles each column of test[predictors], so
+# permutation_importance shuffles each column of the data it is given, so
 # substrate and season are shuffled whole, before the recipe. Its score is
 # minus the RMSE, so a rise in error is a positive importance.
-def shuffle_importance(fitted, data, repeats=10):
+def shuffle_importance(fitted, data, columns, repeats=20):
     result = permutation_importance(
-        fitted, data[predictors], data["abundance"], n_repeats=repeats,
+        fitted, data[columns], data["abundance"], n_repeats=repeats,
         random_state=123, scoring="neg_root_mean_squared_error")
-    return pd.DataFrame({"input": predictors,
-                         "rise": result.importances_mean})
+    return pd.DataFrame({"input": columns, "rise": result.importances_mean})
 
-one_split = shuffle_importance(forest, test, repeats=20)
-(one_split.sort_values("rise", ascending=False)
+forest = new_forest(numeric, categorical).fit(
+    train[numeric + categorical], train["abundance"])
+all_six = shuffle_importance(forest, test, numeric + categorical)
+(all_six.sort_values("rise", ascending=False)
     .round(3)
     .reset_index(drop=True))
 ```
@@ -277,129 +203,107 @@ one_split = shuffle_importance(forest, test, repeats=20)
 #| label: shuffle-numbers
 #| include: false
 three <- \(x) format(round(x, 3), nsmall = 3)
-single <- deframe(one_split)
-single_random <- max(single[str_starts(names(single), "random")])
+two <- \(x) format(round(x, 2), nsmall = 2)
 input_names <- c(depth_m = "depth", temperature_c = "temperature",
                  chlorophyll_mg_m3 = "chlorophyll", salinity_psu = "salinity",
                  substrate = "substrate", season = "season")
-real <- single[names(input_names)]
-below_zero <- input_names[names(real)[real < 0]]
+six <- deframe(all_six)
+ranked <- names(sort(six, decreasing = TRUE))
+before_all <- rmse_vec(test$abundance, predict(forest, test)$.pred)
 ```
 
-Shuffling temperature raises the RMSE by `r three(single[["temperature_c"]])`
-individuals and shuffling substrate by `r three(single[["substrate"]])`. Every other
-input scores less than the best of the random columns, `r three(single_random)`, and
-`r knitr::combine_words(below_zero, oxford_comma = FALSE)` score below zero: on these test sites, the
-forest predicted slightly better with them shuffled. This split held back
-`r n_distinct(test$site_id)` sites, and on so few, chance can outweigh what the
-forest learned from an input. Repeating the whole measurement on other splits shows
-which scores hold.
+The forest's test RMSE is `r two(before_all)` individuals. Shuffling temperature raises
+it by `r three(six[["temperature_c"]])`, `r round(six[["temperature_c"]] / six[[ranked[2]]], 1)` times as much as
+shuffling `r input_names[[ranked[2]]]`, the next input. `r str_to_sentence(input_names[[ranked[5]]])` and
+`r input_names[[ranked[6]]]` barely move it: shuffled, they cost the forest almost
+nothing. The Python tab, with its own split of the sites, ranks chlorophyll above
+temperature.
 
-### Ten splits show which inputs beat the random columns again and again
+### Without temperature the forest leans on season instead
 
-The forest is refitted on each of the ten splits, and each input is shuffled 10 times
-on its test sites. On each split, an input either beats all three random columns or
-it does not.
+The forest is fitted again to the same training sites with temperature left out, and
+scored and shuffled on the same test sites.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: ten-splits
-importance_on_split <- function(one) {
-  fitted <- workflow(forest_recipe, forest_model) |> fit(training(one))
-  shuffle_importance(fitted, testing(one))
-}
+#| label: without-temperature
+train_five <- select(train, -temperature_c)
+test_five  <- select(test, -temperature_c)
 
-repeated <- map(splits$splits, importance_on_split) |>
-  list_rbind(names_to = "split") |>
-  mutate(random_top = max(rise[str_starts(input, "random")]), .by = split)
+forest_five <- workflow(forest_recipe(train_five), forest_model) |> fit(train_five)
+without <- shuffle_importance(forest_five, test_five)
 
-beats <- repeated |>
-  filter(!str_starts(input, "random")) |>
-  summarise(splits_above_random = sum(rise > random_top),
-            median_rise = median(rise), .by = input) |>
-  arrange(desc(median_rise))
-
-beats |> mutate(median_rise = round(median_rise, 3))
+errors <- tibble(
+  inputs = c("All six", "Without temperature"),
+  rmse = c(rmse_vec(test$abundance, predict(forest, test)$.pred),
+           rmse_vec(test$abundance, predict(forest_five, test_five)$.pred)))
+errors |> mutate(rmse = round(rmse, 2))
 ```
 
 ## Python
 
 ```{python}
-rows = []
-for number, (train_rows, test_rows) in enumerate(ten, start=1):
-    part = survey.iloc[train_rows]
-    fitted = new_forest().fit(part[predictors], part["abundance"])
-    scores = shuffle_importance(fitted, survey.iloc[test_rows])
-    random = scores["input"].str.startswith("random")
-    scores["random_top"] = scores.loc[random, "rise"].max()
-    rows.append(scores.assign(split=number))
-repeated = pd.concat(rows, ignore_index=True)
+five = ["depth_m", "chlorophyll_mg_m3", "salinity_psu"]
+forest_five = new_forest(five, categorical).fit(
+    train[five + categorical], train["abundance"])
+without = shuffle_importance(forest_five, test, five + categorical)
 
-real = repeated[~repeated["input"].str.startswith("random")]
-(real.assign(above=real["rise"] > real["random_top"])
-    .groupby("input")
-    .agg(splits_above_random=("above", "sum"),
-         median_rise=("rise", "median"))
-    .sort_values("median_rise", ascending=False)
-    .round(3)
-    .reset_index())
+pd.DataFrame({
+    "inputs": ["All six", "Without temperature"],
+    "rmse": [root_mean_squared_error(test["abundance"],
+                                     forest.predict(test[numeric + categorical])),
+             root_mean_squared_error(test["abundance"],
+                                     forest_five.predict(test[five + categorical]))]
+}).round(2)
 ```
 
 :::
 
 ```{r}
-#| label: fig-ten-splits
-#| fig-cap: "Permutation importance on the test sites of ten splits by site, one point for each split. The random columns (grey) score close to zero; temperature scores well above them on every split, and the other inputs spread from below zero to well above the random columns."
-#| fig-alt: "A dot plot with one row for each input and ten points per row, the rise in test RMSE on the horizontal axis. Temperature's points lie far to the right of all others. Chlorophyll, depth, substrate and season have points spread from around zero to well right of the random columns. Salinity's points sit among the three rows of random columns, which cluster around zero."
+#| label: fig-shared
+#| fig-cap: "Permutation importance on the test sites, for the forest with all six inputs and for the forest fitted without temperature. Without temperature, season's importance rises several times over."
+#| fig-alt: !expr 'glue::glue("Horizontal bars, one row for each input, two bars per row: the forest with all six inputs in blue and the forest without temperature in orange, the rise in test RMSE when shuffled on the horizontal axis. Temperature has a long blue bar, {three(six[[\"temperature_c\"]])}, and no orange bar. Season grows from {three(six[[\"season\"]])} in blue to {three(deframe(without)[[\"season\"]])} in orange. The other inputs change little.")'
 #| fig-width: 7.5
-#| fig-height: 4.5
-labels <- c(input_names, random_1 = "random 1", random_2 = "random 2",
-            random_3 = "random 3")
-
-repeated |>
-  mutate(kind = if_else(str_starts(input, "random"), "Random column", "Input"),
-         input = str_to_sentence(labels[input]),
-         input = fct_reorder(input, rise, .fun = median)) |>
-  ggplot(aes(rise, input, colour = kind)) +
+#| fig-height: 4
+bind_rows("All six inputs" = all_six, "Without temperature" = without,
+          .id = "forest") |>
+  # the first level is drawn lowest, so the forest with all six inputs comes last
+  mutate(forest = factor(forest, levels = c("Without temperature", "All six inputs")),
+         input = str_to_sentence(input_names[input]),
+         input = factor(input, levels = rev(str_to_sentence(input_names[ranked])))) |>
+  ggplot(aes(rise, input, fill = forest)) +
+  geom_col(position = position_dodge(preserve = "single"), width = 0.75) +
   geom_vline(xintercept = 0, colour = ml_palette[["grey"]], linewidth = 0.4) +
-  geom_point(size = 2.4, alpha = 0.7) +
-  scale_colour_manual(values = c(Input = ml_palette[["blue"]],
-                                 "Random column" = ml_palette[["grey"]])) +
-  labs(x = "Rise in test RMSE when shuffled (individuals)", y = NULL,
-       colour = NULL)
+  scale_fill_manual(values = c("All six inputs" = ml_palette[["blue"]],
+                               "Without temperature" = ml_palette[["orange"]])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  labs(x = "Rise in test RMSE when shuffled (individuals)", y = NULL, fill = NULL)
 ```
 
 ```{r}
-#| label: ten-numbers
+#| label: without-numbers
 #| include: false
-above <- deframe(select(beats, input, splits_above_random))
-n_splits <- nrow(splits)
-every <- \(k) {
-  if (k == n_splits) paste("all", k) else paste(k, "of the", n_splits)
-}
-often <- above[names(above) %in% c("depth_m", "chlorophyll_mg_m3", "substrate")]
+five_scores <- deframe(without)
+cost <- errors$rmse[2] - errors$rmse[1]
 ```
 
-Temperature beats the random columns on `r every(above[["temperature_c"]])`
-splits. Chlorophyll, depth and substrate beat them on
-`r min(often)` to `r max(often)`, season on `r above[["season"]]` and salinity on
-`r above[["salinity_psu"]]`. The split above was an unlucky one for chlorophyll and
-depth, which most splits put clearly above the random columns, as @fig-ten-splits
-shows.
-
-A ranking from one split moves around; the count of splits on which an input beats the
-random columns is steadier, and it is the number worth reporting.
+Left out altogether, temperature costs the forest only `r two(cost)` in RMSE, from
+`r two(errors$rmse[1])` to `r two(errors$rmse[2])`, far less than the
+`r three(six[["temperature_c"]])` that shuffling it cost. Season does the work instead:
+its importance rises from `r three(six[["season"]])` to `r three(five_scores[["season"]])`
+(@fig-shared). Summer water is warm and winter water cold, so season carries much of
+what temperature told the forest. With both inputs, temperature took the credit; without
+temperature, season does.
 
 ## Importance shows what a model uses, not what the species needs
 
 A high score means the fitted model leans on that input to predict. A low score means
 the model managed without it, which can happen because another input carries the same
-information: on the survey, deeper water is colder, saltier and lower in chlorophyll,
-so a forest that has one of them can do without much of the others. Scores also say nothing about
-the direction or shape of an effect, whether abundance rises or falls with depth.
+information, as season did for temperature. Scores also say nothing about the
+direction or shape of an effect, whether abundance rises or falls with temperature.
 [Partial effects](partial-effects.qmd) draws that shape.
 
 ## Key points
@@ -408,19 +312,16 @@ the direction or shape of an effect, whether abundance rises or falls with depth
 - **Feature importance** scores how much a fitted model relies on each input, for any
   model.
 - **Permutation importance** shuffles one input on test data and measures the rise in
-  error. A forest's built-in **impurity importance** is measured on the training data
-  and favours inputs with many values: on the survey it ranked three columns of random
-  numbers above the seabed.
-- **Columns of random numbers** show what an unused input scores. An input that does
-  not beat them is used no more than noise.
-- One split's test sites can mislead. **Repeat on several splits** and report how
-  often each input beats the random columns.
-- A score says what the model uses, not the direction of an effect or its cause.
+  error: on the survey, temperature mattered most to the forest.
+- **Inputs that carry the same information share their importance.** Without
+  temperature, the forest leaned on season, and lost little accuracy.
+- A score belongs to a model and its set of inputs. It says what the model uses, not
+  the direction of an effect or its cause.
 :::
 
 ## Try it yourself
 
-1. Swap the random forest for boosted trees (`boost_tree()` with the `xgboost`
-   engine) and repeat the ten splits. Do the same inputs beat the random columns?
-2. Leave `depth_m` out of the inputs and repeat the ten splits. Does chlorophyll or
-   temperature score higher without it?
+1. Leave depth out instead of temperature. Which inputs take over its work, and how
+   much does the RMSE change?
+2. Swap the random forest for boosted trees (`boost_tree()` with the `xgboost`
+   engine). Does temperature still lead?

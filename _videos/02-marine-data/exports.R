@@ -8,13 +8,15 @@ write <- function(x, dir, name) readr::write_csv(x, file.path(dir, paste0(name, 
 
 exports <- list(
   # The file's rows, its rows once duplicates are removed, and its sites.
-  "observations-and-features.qmd" = function(env, dir) {
+  "the-coastal-survey.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(rows = nrow(raw), unique = nrow(dplyr::distinct(raw)),
                                    sites = dplyr::n_distinct(raw$site_id))), dir, "counts")
   },
 
-  # The raw file's range table as the page prints it, and the substrate spellings.
-  "exploratory-analysis.qmd" = function(env, dir) {
+  # The raw file's range table as the page prints it, the substrate spellings,
+  # salinity's mean before and after -999 is marked missing, rounded as the page
+  # rounds them, and the stations per season before and after dropping incomplete rows.
+  "exploring-and-cleaning.qmd" = function(env, dir) {
     write(with(env, raw |>
       dplyr::summarise(dplyr::across(dplyr::where(is.numeric),
                                      list(min = \(x) min(x, na.rm = TRUE),
@@ -25,11 +27,6 @@ exports <- list(
       tidyr::pivot_wider(names_from = stat, values_from = value) |>
       dplyr::mutate(dplyr::across(dplyr::where(is.numeric), \(x) round(x, 2)))), dir, "ranges")
     write(with(env, dplyr::count(raw, substrate, sort = TRUE)), dir, "substrate-spellings")
-  },
-
-  # Salinity's mean before and after -999 is marked missing, rounded as the page
-  # rounds them, and the stations per season before and after dropping incomplete rows.
-  "missing-values-and-outliers.qmd" = function(env, dir) {
     write(with(env, tibble::tibble(
       raw_mean = round(mean(raw$salinity_psu), 2),
       clean_mean = round(mean(clean$salinity_psu, na.rm = TRUE), 1))), dir, "salinity-means")

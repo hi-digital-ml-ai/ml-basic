@@ -154,7 +154,7 @@ Two consequences to keep in mind before adding one:
 - A real deep-learning demonstration (convolutional or recurrent architectures on imagery
   or acoustics) needs libtorch, a ~2 GB runtime download beyond the R package, or a
   Python/TensorFlow stack, and would make CI restores heavy. §9's
-  `when-to-use-one.qmd` explains why those architectures matter and deliberately stops
+  `when-a-network-pays-off.qmd` explains why those architectures matter and deliberately stops
   short of running one.
 
 ## Freeze

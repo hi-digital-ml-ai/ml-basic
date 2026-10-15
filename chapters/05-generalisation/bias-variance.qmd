@@ -1,7 +1,7 @@
 ---
 title: "The bias–variance trade-off"
 description: "Fit the same model to many surveys of the same shelf and its predictions differ. Its error on new stations then splits into bias, variance and noise, and on the survey the noise is the largest part."
-order: 4
+order: 2
 categories: [generalisation]
 ---
 
@@ -16,6 +16,8 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
+{{< new-terms >}}
+
 ## The U-shaped curve has two causes
 
 On [Underfitting and overfitting](underfitting-and-overfitting.qmd), the error on new sites
@@ -27,12 +29,11 @@ model can touch.
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
 
-## The error at a new station splits into three parts
+## The error on new data splits into bias, variance and noise
 
 Picture the survey repeated many times: the same shelf, the same design, different sites
-each time. Each survey gives a different set of stations, so the same method fitted to each
-gives a slightly different model, and each model predicts something slightly different at
-a new station. Set those predictions beside the station's **expected count**, the average
+each time. The same method fitted to each survey gives a slightly different model, and
+each model predicts something slightly different at a new station. Set those predictions beside the station's expected count, the average
 count the station would give if it could be sampled again and again, and three parts of the
 error appear.
 
@@ -41,7 +42,8 @@ error appear.
   survey, and more surveys do not help.
 - **Variance** is how much the predictions differ from survey to survey. A flexible model
   follows whichever stations it happened to get, so each survey gives it a different shape.
-- **Noise** is how far a single count falls from its expected count. A station expected to
+- [Noise](../04-how-algorithms-learn/loss-functions.qmd#averaging-the-misses-gives-the-objective)
+  is how far a single count falls from its expected count. A station expected to
   hold four animals may yield none, or a dozen. No model can predict that part, because it
   does not depend on the inputs.
 
@@ -159,7 +161,7 @@ pd.Series({"pool": len(pool), "evaluation": len(evaluation)})
 
 :::
 
-### Trees refitted to 100 replicate surveys
+### Replicate surveys show how much a tree's predictions move
 
 For every replicate survey, trees with 11 minimum node sizes, from 200 down to 2, are
 fitted, and each predicts every evaluation station.
@@ -214,7 +216,7 @@ len(predictions)
 
 :::
 
-### Measuring bias and variance at each station
+### Bias and variance come from the spread of predictions at each station
 
 At each evaluation station, the 100 predictions give the two parts that belong to the
 model. Their average, set against the expected count, gives the bias; their spread gives
@@ -338,18 +340,16 @@ parts |>
 ### Bias falling and variance rising make the U
 
 **Bias falls, then stops.** The most rigid trees, with about
-`r in_words(round(stiff$leaves))` leaves, have a bias² of `r f2(stiff$bias_squared)`.
-Bigger trees bring it down to about `r f2(lowest_bias$bias_squared)` by about `r round(lowest_bias$leaves)` leaves, and no further.
-What remains is a shape that trees on these inputs cannot reach, however finely they cut.
-It even edges back up at the flexible end, to `r f2(loose$bias_squared)`, but only because
-the replicate surveys share sites: a tree with tiny leaves copies its own stations' counts,
-and the luck in those counts survives the averaging and is counted as bias.
+`r in_words(round(stiff$leaves))` leaves, give very different stations the same
+prediction, and have a bias² of `r f2(stiff$bias_squared)`. Bigger trees bring it down to
+about `r f2(lowest_bias$bias_squared)` by about `r round(lowest_bias$leaves)` leaves, and
+no further. What remains is a shape that trees on these inputs cannot reach, however
+finely they cut.
 
-**Variance keeps rising.** It grows from `r f2(stiff$variance)` to `r f2(loose$variance)`,
-about `r in_words(round(loose$variance / stiff$variance))` times as much, and faster at
-each step. The most flexible trees differ so much from survey to survey that their
-variance is about `r in_words(round(loose$variance / loose$bias_squared))` times their bias². Shared sites make the replicate surveys more alike than
-truly separate surveys would be, so the real variance is, if anything, larger.
+**Variance keeps rising.** A leaf predicts the average count of its stations, and more
+leaves mean fewer stations in each. An average of a few counts depends on which stations
+a survey happened to catch, so the variance grows from `r f2(stiff$variance)` to
+`r f2(loose$variance)`, faster at each step.
 
 **Their sum is the U-shaped error curve.** Bias² plus variance is lowest, at `r f2(best$model_error)`, for a
 node size of `r best$min_n`, about `r in_words(round(best$leaves))` leaves. To the left, bias costs
@@ -363,15 +363,14 @@ on [Underfitting and overfitting](underfitting-and-overfitting.qmd) beat predict
 little: most of what is left is chance in the counts, which no model removes.
 
 No real study can draw this chart, because no real survey knows its expected counts. In
-practice only the sum shows, as the error on new sites of the last three pages. The
-variance alone can still be seen: refit the model on resampled data and watch how much
-its predictions move.
+practice only the sum shows, as the error on new sites on
+[Underfitting and overfitting](underfitting-and-overfitting.qmd).
 
 ### Averaging trees cuts the variance
 
 [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) built a
 forest by averaging many trees. The same decomposition shows what the averaging does. Here
-a forest whose trees have a node size of 5 is fitted to the same 100 replicate surveys and
+a forest of 100 trees, each with a node size of 5, is fitted to the same 100 replicate surveys and
 set beside a single tree with the same node size.
 
 ::: {.panel-tabset group="language"}
@@ -380,7 +379,7 @@ set beside a single tree with the same node size.
 
 ```{r}
 #| label: forest
-forest_model <- rand_forest(mode = "regression", min_n = 5) |>
+forest_model <- rand_forest(mode = "regression", trees = 100, min_n = 5) |>
   set_engine("ranger", seed = 123)
 
 forest_predictions <- imap(surveys$splits, \(s, i) {
@@ -408,7 +407,7 @@ rows = []
 for i, survey_rows in enumerate(surveys):
     one_survey = pool.iloc[survey_rows]
     # max_features="sqrt" draws a few inputs at each question, as ranger does.
-    forest = RandomForestRegressor(n_estimators=500, max_features="sqrt",
+    forest = RandomForestRegressor(n_estimators=100, max_features="sqrt",
                                    min_samples_split=5, random_state=123,
                                    n_jobs=-1)
     fitted = (Pipeline([("recipe", tree_recipe), ("model", forest)])
@@ -442,10 +441,7 @@ bias where it was. Its variance is `r f2(forest$variance)` against
 `r f2(one_tree$variance)`: the single tree's is about
 `r in_words(round(one_tree$variance / forest$variance))` times as large. Each tree
 still follows its own stations, but the trees follow different ones, and their mistakes
-partly cancel in the average. Adding trees to a forest therefore cuts the variance without
-adding bias, which is why
-[Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) found that
-more trees did no harm.
+partly cancel in the average.
 
 [Regularisation](regularisation.qmd) goes the other way: it adds a little bias on purpose,
 to cut more variance than it costs.
@@ -455,15 +451,11 @@ to cut more variance than it costs.
 ::: {.key-points}
 - Over many surveys, the squared error at a new station splits into **bias²**, the average
   model's systematic miss; **variance**, how much the model changes from survey to
-  survey; and **noise**, how far a count falls from its expected count.
-- More flexibility lowers the bias and raises the variance. The lowest error on new data
-  lies where one more step of flexibility would cost more in variance than it saves in
-  bias.
-- On the survey, the noise was larger than the bias² and variance of the best tree put
-  together. Most of the error in a count model can be chance that no model removes.
+  survey; and noise, how far a count falls from its expected count.
+- More flexibility lowers the bias and raises the variance, and their sum is the U-shaped
+  error curve. On the survey, the noise was larger than the bias² and variance of the best
+  tree put together: most of the error was chance that no model removes.
 - A random forest keeps the bias of its trees and cuts their variance by averaging them.
-- The split needs the expected counts, which no real survey has. In practice only the
-  total shows, as the error on new data.
 :::
 
 ## Try it yourself

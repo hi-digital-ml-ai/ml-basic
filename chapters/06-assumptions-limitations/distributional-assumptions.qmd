@@ -1,6 +1,6 @@
 ---
 title: "Distributional assumptions"
-description: "Most machine-learning models predict without Normal data or equal spread, but the distribution still decides what a prediction means and how sure it can be. A random forest's errors fail both checks; trained on log counts it predicts far fewer animals than were caught, and a quantile forest gives intervals that follow the errors."
+description: "Most machine-learning models predict without Normal errors or equal spread, but the loss still decides what a prediction means. A random forest's errors fail both checks and it predicts well anyway; trained on log counts, it predicts far fewer animals than were caught."
 order: 2
 categories: [assumptions]
 ---
@@ -17,19 +17,25 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## Normal data and equal spread are not requirements of machine learning
+{{< new-terms >}}
 
-Statistics courses teach two checks before a model is fitted: that the model's errors
-follow a **Normal distribution** (the bell curve), and that their spread is the same
-everywhere, **equal spread** (homogeneity of variance, in statistics). Counts of animals
-usually fail both. Most machine-learning models predict without either: trees, forests
-and boosting split the data by the order of its values, whatever its shape. The
-exception is the generative model of
-[Discriminative and generative models](../01-introduction/discriminative-and-generative-models.qmd),
-which describes the data with a shape.
+## Normal errors and equal spread are not requirements of machine learning
 
-The distribution still matters in two places: what a prediction means, and how sure it
-can be. This page follows one random forest through both.
+A model's errors are the gaps between what was caught and what was predicted, the
+[residuals](../04-how-algorithms-learn/loss-functions.qmd) of Loss functions.
+Statistics courses teach two checks on them before a model is trusted: that they follow
+a [Normal distribution](../01-introduction/discriminative-and-generative-models.qmd)
+(the bell curve), and that their spread is the same everywhere, **equal spread**
+(homogeneity of variance, in statistics). Models of animal counts usually fail both,
+because the counts are **skewed**: most catches are small, with a long tail of large
+ones on one side.
+
+Most machine-learning models predict well without either assumption. The exception is a
+[generative model](../01-introduction/discriminative-and-generative-models.qmd), which
+describes the data with a shape. The shape of the data still matters in one way: it
+decides what a prediction means. This page fits a random forest to the survey's counts,
+checks its errors, and shows how a common fix for skewed counts changes what the forest
+predicts.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
@@ -39,20 +45,17 @@ can be. This page follows one random forest through both.
 
 A prediction is one number standing for all the catches a station could give, and the
 loss decides which number. [Loss functions](../04-how-algorithms-learn/loss-functions.qmd)
-set squared error against absolute error. Squared error is smallest at the **average**
-of the catches, and absolute error at the **median**, the middle catch. A **quantile
-loss** aims at any chosen point: its 95% version at the catch that only 1 in 20 stations
-exceed.
+set squared error against absolute error. Squared error is smallest at the average of
+the catches, and absolute error at the median, the middle catch.
 
-For a symmetric bell curve the average and the median are the same. For counts with a
-long right tail they are not: a few large catches pull the average above the typical
-one. A model fitted with squared error predicts the average, which is what a total needs:
-predicted animals per station times the number of stations. Any step that changes what
-the loss aims at changes that total, and the second part of the worked example shows a
-common one.
+For a symmetric bell curve the average and the median are the same. For skewed counts
+they are not: a few large catches pull the average above the typical one. A model
+fitted with squared error predicts the average, which is what a total needs: predicted
+animals per station times the number of stations. Any step that changes what
+the loss aims at changes that total, and the worked example shows a common one.
 
 ::: {.diagram}
-![The errors of a model fitted to counts are skewed and spread wider where more is predicted. Squared error on log counts aims at the typical catch, below the average, so totals come out short. A Normal interval has one width and reaches below zero, while intervals from quantiles widen where the catches do.](img/spread.svg){fig-alt="Three cards. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway, and the checks say where to take care. Log counts, aim below the average: a histogram with a long right tail, a dashed line at the median marked log counts aim here and a solid line further right at the average marked a total needs this; squared error on log counts aims at the typical catch, so totals come out short. Intervals, follow the errors: the fan-shaped scatter with a dashed band of one width, marked Normal, that reaches below zero on the left, and a blue band from quantiles that starts narrow above zero and widens to the right; a Normal band has one width, and quantiles widen where the catches do. A note says the distribution decides what a prediction means and how sure it can be."}
+![The errors of a model fitted to counts are skewed and spread wider where more is predicted. Each loss aims at a different point of the catches: absolute error at the median, squared error at the average.](img/spread.svg){fig-alt="Two cards. Skewed errors, widen as predictions grow: a scatter of points that fans out to the right around a rising line; most models predict well anyway. Each loss aims at a different point: a histogram of catches with a long right tail, a dashed line at the median and a solid line further right at the average; absolute error aims at the median, squared error at the average. A note says that for skewed counts the loss decides which middle a prediction stands for."}
 :::
 
 ## Worked example
@@ -76,7 +79,6 @@ survey <- load_coastal_survey_clean()
 split <- group_initial_split(survey, group = site_id, prop = 0.75)
 train <- training(split) |>
   mutate(log_abundance = log(abundance + 1))
-test  <- testing(split)
 
 # ten folds of training sites
 folds <- group_vfold_cv(train, group = site_id, v = 10)
@@ -101,7 +103,7 @@ tibble(stations = nrow(train),
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import root_mean_squared_error
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, cross_val_predict
@@ -118,7 +120,7 @@ predictors = numeric + categorical
 
 grouper = GroupShuffleSplit(n_splits=1, train_size=0.75, random_state=123)
 train_rows, test_rows = next(grouper.split(survey, groups=survey["site_id"]))
-train, test = survey.iloc[train_rows], survey.iloc[test_rows]
+train = survey.iloc[train_rows]
 
 # ten folds of training sites
 folds = GroupKFold(n_splits=10, shuffle=True, random_state=123)
@@ -232,7 +234,7 @@ largest, `r one(last(spread$error_sd))`: `r one(sd_ratio)` times as wide.
 ```{r}
 #| label: fig-errors
 #| fig-cap: "The random forest's errors on sites it did not see, one for each training station. Left: their histogram, against a Normal curve with the same mean and spread; the errors bunch below zero and trail far above it. Right: each error against the prediction, with the middle 90% of the errors in each fifth of the predictions shaded; the errors spread wider as the prediction grows."
-#| fig-alt: !expr 'glue::glue("Two panels. Left, a histogram of the errors in animals, with a Normal curve of the same mean and standard deviation drawn over it: the histogram peaks just below zero, where {percent(below)} of the errors lie, and has a long tail to the right reaching {round(max(errors$error))}, which the symmetric Normal curve does not follow. Right, the errors against the predicted count, with five shaded boxes, one for each fifth of the predictions, covering the middle 90% of the errors: the box for the smallest predictions is narrow and the boxes grow taller to the right, where the standard deviation reaches {one(last(spread$error_sd))} animals against {one(first(spread$error_sd))} on the left.")'
+#| fig-alt: !expr 'glue::glue("Two panels. Left, a histogram of the errors in individuals, with a Normal curve of the same mean and standard deviation drawn over it: the histogram peaks just below zero, where {percent(below)} of the errors lie, and has a long tail to the right reaching {round(max(errors$error))}, which the symmetric Normal curve does not follow. Right, the errors against the predicted count, with five shaded boxes, one for each fifth of the predictions, covering the middle 90% of the errors: the box for the smallest predictions is narrow and the boxes grow taller to the right, where the standard deviation reaches {one(last(spread$error_sd))} animals against {one(first(spread$error_sd))} on the left.")'
 #| fig-width: 8.5
 #| fig-height: 3.8
 middle_90 <- errors |>
@@ -243,7 +245,7 @@ shape_plot <- ggplot(errors, aes(error)) +
   geom_histogram(binwidth = 1, fill = ml_palette[["blue"]], alpha = 0.7) +
   geom_function(fun = \(x) nrow(errors) * dnorm(x, mean(errors$error), sd(errors$error)),
                 colour = ml_palette[["vermilion"]], linewidth = 1) +
-  labs(x = "Error (animals caught − predicted)", y = "Stations",
+  labs(x = "Error, caught − predicted (individuals)", y = "Stations",
        title = "Skewed, not bell-shaped")
 
 spread_plot <- ggplot(errors, aes(predicted, error)) +
@@ -251,7 +253,7 @@ spread_plot <- ggplot(errors, aes(predicted, error)) +
             inherit.aes = FALSE, fill = ml_palette[["blue"]], alpha = 0.15) +
   geom_hline(yintercept = 0, colour = "grey50") +
   geom_point(alpha = 0.4, size = 1.2) +
-  labs(x = "Predicted count", y = "Error (animals)",
+  labs(x = "Predicted count", y = "Error (individuals)",
        title = "Wider where more is predicted")
 
 shape_plot + spread_plot
@@ -259,17 +261,16 @@ shape_plot + spread_plot
 
 :::
 
-Neither stops the forest. Its predictions are averages of the catches at similar
-stations, and an average needs no particular shape and no equal spread. What the shape
-changes is what a prediction means, and how sure the forest can be.
+Neither stops the forest. Each tree predicts the average catch of similar stations, and
+an average needs no bell curve and no equal spread. The shape matters again when a range
+is put around a prediction, since the range has to follow the errors' spread.
 
 ### Training on log counts predicts far fewer animals than were caught
 
-A common recipe for skewed data is to make it more Normal first: fit the model to the
-log of the count, plus 1 so that empty stations stay at zero, and turn each prediction
-back with the exponential, minus 1. The second forest does exactly that, and both are
-scored on the same cross-validated stations: by RMSE, and by the total number of animals
-they predict across the `r nrow(train)` stations against the total caught.
+A common fix for skewed counts is to shrink the large catches first: fit the model to
+the log of the count, plus 1 so that empty stations stay at zero, and turn each
+prediction back into animals. A second forest does that, and both are scored on the same
+stations, by RMSE and by the total number of animals they predict.
 
 ::: {.panel-tabset group="language"}
 
@@ -328,241 +329,41 @@ totals.round({"rmse": 2, "predicted_total": 0})
 plain <- filter(totals, model == "Random forest")
 logged <- filter(totals, model == "Random forest on log counts")
 shortfall <- 1 - logged$predicted_total / logged$caught_total
-by_fifth <- errors |>
-  summarise(Caught = mean(caught), "Random forest" = mean(predicted),
-            "Random forest on log counts" = mean(log_predicted), .by = fifth) |>
-  arrange(fifth)
-log_series <- by_fifth[["Random forest on log counts"]]
 ```
 
-The two forests score almost the same: an RMSE of
+The two forests score almost the same RMSE:
 `r format(round(plain$rmse, 2), nsmall = 2)` on raw counts and
-`r format(round(logged$rmse, 2), nsmall = 2)` on log counts. Their totals do not. The
-stations caught `r plain$caught_total` animals; the forest on raw counts predicts
+`r format(round(logged$rmse, 2), nsmall = 2)` on log counts. Their totals do not match.
+The stations caught `r plain$caught_total` animals; the forest on raw counts predicts
 `r round(plain$predicted_total)`, and the forest on log counts
-`r round(logged$predicted_total)`, `r percent(shortfall)` short. @fig-log shows that
-the shortfall runs through every fifth of the stations, not just the largest.
+`r round(logged$predicted_total)`, `r percent(shortfall)` short.
 
-On the log scale, squared error aims at the average log count. Turned back into
-animals, that is close to the median, the typical catch, and for skewed counts the
-typical catch sits below the average. The forest on log counts answers a different
-question, and the RMSE does not show it. A survey that sums its predictions into a
-stock estimate, a biomass or a map total would come out `r percent(shortfall)` short
-with no warning.
+On the log scale, squared error aims at the average log count. Turned back into animals,
+that is close to the median, the typical catch, which for skewed counts sits below the
+average. A stock estimate or a map total summed from these predictions would come out
+`r percent(shortfall)` short, and the RMSE gives no warning. Keep the counts as they are
+when the totals matter.
 
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-log
-#| fig-cap: "The average catch per station in each fifth of the forest's predictions, against the average each forest predicts there. The forest on raw counts follows the catch; the forest on log counts falls short in every fifth."
-#| fig-alt: !expr 'glue::glue("Points joined by lines for five groups of training stations, ordered by the forest prediction, with the average animals per station on the vertical axis. The caught averages, in grey, rise from {one(by_fifth$Caught[1])} to {one(by_fifth$Caught[5])}. The forest on raw counts, in blue, lies close to them. The forest on log counts, in vermilion, lies below them in every group, from {one(log_series[1])} to {one(log_series[5])}.")'
-#| fig-width: 7
-#| fig-height: 3.8
-by_fifth |>
-  pivot_longer(-fifth, names_to = "series", values_to = "animals") |>
-  mutate(series = fct_inorder(series)) |>
-  ggplot(aes(fifth, animals, colour = series)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5) +
-  scale_colour_manual(values = c("Caught" = "grey40",
-                                 "Random forest" = ml_palette[["blue"]],
-                                 "Random forest on log counts" = ml_palette[["vermilion"]])) +
-  scale_y_continuous(limits = c(0, NA)) +
-  labs(x = "Fifth of the stations, by the forest's prediction",
-       y = "Animals per station", colour = NULL)
-```
-
-:::
-
-Keep the counts as they are when the totals matter. For a skewed outcome, a loss built
-for it, such as the Poisson deviance of
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd), changes the weights
-without changing what the prediction aims at.
-
-### A quantile forest gives intervals that follow the errors
-
-A prediction says how many animals to expect. A **prediction interval** says how far
-the catch may land from it: a 90% interval should contain 9 catches in 10. The textbook
-interval makes both assumptions: it is symmetric, as a bell curve is, and it has one
-width, 1.64 standard deviations of the errors either side of every prediction.
-
-A **quantile forest** makes neither. It grows the same trees as the forest, but keeps
-every training catch in each leaf instead of only their average, and reads the 5% and
-95% points off the catches that land with a new station. Both intervals are built from
-a forest fitted on all the training stations, and checked on the test sites.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: intervals
-half_width <- qnorm(0.95) * sd(errors$error)   # 1.64 standard deviations
-
-quantile_fit <- workflow(
-  tree_recipe,
-  rand_forest(mode = "regression", trees = 500) |>
-    set_engine("ranger", seed = 123, quantreg = TRUE)
-) |>
-  fit(train)
-
-# ranger reads the quantiles off the recipe's output
-ends <- predict(extract_fit_engine(quantile_fit),
-                bake(extract_recipe(quantile_fit), new_data = test),
-                type = "quantiles", quantiles = c(0.05, 0.95))$predictions
-
-covered <- tibble(predicted = predict(quantile_fit, test)$.pred,
-                  caught = test$abundance) |>
-  mutate(fifth = ntile(predicted, 5),
-         order = rank(predicted, ties.method = "first"))
-
-intervals <- bind_rows(
-  "Normal" = mutate(covered, low = predicted - half_width,
-                    high = predicted + half_width),
-  "Quantile forest" = mutate(covered, low = ends[, 1], high = ends[, 2]),
-  .id = "interval"
-) |>
-  mutate(inside = caught >= low & caught <= high)
-
-intervals |>
-  summarise(inside = mean(inside), width = mean(high - low),
-            below_zero = mean(low < 0), .by = c(interval, fifth)) |>
-  arrange(interval, fifth) |>
-  mutate(across(c(inside, width, below_zero), \(x) round(x, 2)))
-```
-
-## Python
-
-```{python}
-from scipy.stats import norm
-
-half_width = norm.ppf(0.95) * errors["error"].std()   # 1.64 standard deviations
-
-forest_fit = forest.fit(train[predictors], counts)
-covered = pd.DataFrame({"predicted": forest_fit.predict(test[predictors]),
-                        "caught": test["abundance"].to_numpy()})
-covered["fifth"] = pd.qcut(covered["predicted"].rank(method="first"), 5,
-                           labels=False) + 1
-
-# scikit-learn has no quantile forest, so boosting with a quantile loss gives
-# the two ends, one model for each.
-def end(quantile):
-    model = pipeline(HistGradientBoostingRegressor(
-        loss="quantile", quantile=quantile, random_state=123))
-    fitted = model.fit(train[predictors], counts)
-    return fitted.predict(test[predictors])
-
-intervals = pd.concat({
-    "Normal": covered.assign(low=covered["predicted"] - half_width,
-                             high=covered["predicted"] + half_width),
-    "Quantile boosting": covered.assign(low=end(0.05), high=end(0.95)),
-}, names=["interval"]).reset_index(level="interval")
-intervals["inside"] = intervals["caught"].between(intervals["low"], intervals["high"])
-
-(intervals
- .assign(width=intervals["high"] - intervals["low"],
-         below_zero=intervals["low"] < 0)
- .groupby(["interval", "fifth"])
- .agg(inside=("inside", "mean"), width=("width", "mean"),
-      below_zero=("below_zero", "mean"))
- .reset_index().round(2))
-```
-
-:::
-
-```{r}
-#| label: interval-numbers
-#| include: false
-summary_of <- function(which) {
-  rows <- filter(intervals, interval == which)
-  list(inside = mean(rows$inside),
-       above = sum(rows$caught > rows$high), below = sum(rows$caught < rows$low),
-       below_zero = mean(rows$low < 0),
-       by_fifth = summarise(rows, inside = mean(inside), width = mean(high - low),
-                            .by = fifth) |> arrange(fifth))
-}
-normal <- summary_of("Normal")
-quantile <- summary_of("Quantile forest")
-smallest <- filter(covered, fifth == 1)
-```
-
-The Normal interval runs `r one(half_width)` animals either side of every prediction
-and holds `r percent(normal$inside)` of the test catches, against the 90% it promises.
-Both assumptions show in where it goes wrong (@fig-intervals). It is symmetric, but
-the errors are not: for `r percent(normal$below_zero)` of the stations its lower end is
-below zero, a catch no survey can make, and `r normal$above` of the
-`r normal$above + normal$below` catches outside it lie above it. It has one width, but
-the spread does not: where the forest predicts least it is `r round(2 * half_width)`
-animals wide, though `r percent(mean(smallest$caught <= 1))` of the catches there were
-0 or 1.
-
-The quantile forest's intervals
-`r if (quantile$below_zero == 0) "never reach below zero" else paste("reach below zero for", percent(quantile$below_zero), "of the stations")`.
-They widen from
-`r one(first(quantile$by_fifth$width))` animals in the fifth with the smallest
-predictions to `r one(last(quantile$by_fifth$width))` in the fifth with the largest,
-and hold between `r percent(min(quantile$by_fifth$inside))` and
-`r percent(max(quantile$by_fifth$inside))` of the catches in every fifth. They are a
-little wider than they need to be, but they are wide in the right places.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: fig-intervals
-#| fig-cap: "The 90% prediction intervals for the test stations, ordered by the forest's prediction. Left: the Normal interval, one width everywhere, reaching below zero wherever little is predicted. Right: the quantile forest's, narrow and above zero where little is predicted, widening where more is. Catches outside their interval are in vermilion."
-#| fig-alt: !expr 'glue::glue("Two panels, one for each kind of interval, each showing every test station as a vertical line from its interval low end to its high end, in order of its forest prediction from left to right, with the caught count as a point; a shaded strip marks values below zero. Left, the Normal interval: every line is {round(2 * half_width)} animals long, and for {percent(normal$below_zero)} of the stations it reaches into the shaded strip; {normal$above + normal$below} catches lie outside, {normal$above} of them above. Right, the quantile forest: the lines start short and above zero at small predictions and grow longer to the right, from about {one(first(quantile$by_fifth$width))} to {one(last(quantile$by_fifth$width))} animals; {quantile$above + quantile$below} catches lie outside.")'
-#| fig-width: 8.5
-#| fig-height: 4
-ggplot(intervals, aes(order)) +
-  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0,
-           fill = "grey85") +
-  geom_linerange(aes(ymin = low, ymax = high), colour = ml_palette[["blue"]],
-                 alpha = 0.5, linewidth = 0.6) +
-  geom_point(aes(y = caught, colour = inside), size = 1.2) +
-  facet_wrap(~interval) +
-  scale_colour_manual(values = c("TRUE" = "grey40",
-                                 "FALSE" = ml_palette[["vermilion"]]),
-                      labels = c("TRUE" = "Inside", "FALSE" = "Outside")) +
-  labs(x = "Test stations, from the smallest prediction to the largest",
-       y = "Animals caught", colour = "Catch")
-```
-
-:::
-
-For a statistical model the same assumptions set its confidence intervals:
-[Regression for counts](../03-supervised-learning/count-regression.qmd) found Poisson
-regression's too narrow for counts this spread out. Every check on this page also
-treats the stations as independent, which
-[Independence of observations](independence-of-observations.qmd) tests.
+Every check on this page also treats the stations as independent, which
+[Dependent data](dependent-data.qmd) tests.
 
 ## Key points
 
 ::: {.key-points}
-- Most machine-learning models predict without Normal data or equal spread. The
-  distribution still decides what a prediction means and how sure it can be.
-- Squared error aims at the **average**, absolute error at the **median**, and a
-  **quantile loss** at any chosen point. For skewed counts they differ.
-- The random forest's errors on unseen sites were skewed, and `r one(sd_ratio)` times
-  as spread out at the largest predictions as at the smallest. Its predictions did not
-  need either assumption.
+- A model's errors need not be Normal or have **equal spread** for it to predict
+  well. The random forest's errors on unseen sites were **skewed**, and
+  `r one(sd_ratio)` times as spread out at the largest predictions as at the smallest.
+- Squared error aims at the average, absolute error at the median. For skewed counts
+  these differ, so the loss decides what a prediction means.
 - Trained on log counts, the forest scored about the same RMSE but predicted
   `r percent(shortfall)` fewer animals than were caught: it aimed at the typical catch,
-  not the average.
-- A Normal **prediction interval** reached below zero for `r percent(normal$below_zero)`
-  of the test stations and missed mostly large catches. A **quantile forest** gave
-  intervals that widened where the catches did.
+  not the average. Keep the counts as they are when totals matter.
 :::
 
 ## Try it yourself
 
-1. Fit the forest on log counts to all the training stations and predict the test
-   sites. Ask the quantile forest for its 50% point, the median, at the same stations.
-   How close are the two?
-2. Fit the boosted model of
-   [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd) to the raw
-   counts with Poisson deviance, `set_engine("xgboost", objective = "count:poisson")`,
-   and compare its total with the forest's.
+1. Replace the forest with linear regression, `linear_reg()`, and fit it to the raw
+   counts and to the log counts. Is the shortfall in the total larger or smaller than
+   the forest's?
+2. Keep only the stations that caught nothing. What does the forest predict for them on
+   average, and why can it never predict fewer than zero animals?

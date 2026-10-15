@@ -109,21 +109,31 @@ index, not as a restatement of the title.
 
 ## Listings
 
-Each `chapters/NN-slug/index.qmd` is a dashboard: title, a short framing, then a
-card grid of its pages, then the section's findings. The cards come *before* the
-findings, because the findings run to ten dense bullets and would bury the navigation.
+Each `chapters/NN-slug/index.qmd` is kept short (since 2026-10-15): the title and
+description, **one paragraph** on what the section covers, the section's video, a card
+grid of its pages with **one sentence each**, then Further resources.
 
 ```yaml
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: underfitting-and-overfitting.qmd
+      description: "A model that fits its training stations too loosely or too closely ..."
+    - path: bias-variance.qmd
+      description: "..."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ```
+
+The card sentences live in the overview, not in a field on each page: the render
+cache (`_freeze/`) is keyed on the whole page file, front matter included, so a new
+field on a page would re-run all of its R code. A page's own `description` stays
+longer; it sits under the page's title and in the course index. A new page needs a
+line here as well as in the sidebar.
 
 The `id:` matters. Without it Quarto appends the listing at the end of the
 document; with it, the cards render where the matching div sits:
@@ -135,8 +145,7 @@ document; with it, the cards render where the matching div sits:
 :::
 ```
 
-`max-description-length` defaults to 175, which truncates most of these page
-descriptions mid-sentence (the longest is 210 characters).
+The video sits just above that heading, as `{{< video https://www.youtube.com/watch?v=<id> title="..." >}}`.
 
 `chapters/index.qmd` and `contributed/index.qmd` use `type: table` with
 `categories: true`, so the topic filter is the point of those pages.

@@ -43,15 +43,15 @@ only one working on the site). Every syllabus subtopic keeps a heading somewhere
 | 1 Introduction | Types of learning; Prediction and explanation; Applications in marine science; Discriminative and generative models | *Statistical modelling and machine learning* and *Prediction and explanation* merge: the two aims, the line and the tree, the RMSE built by hand, the confounder |
 | 2 Marine data | The coastal survey; Kinds of marine data; Exploring and cleaning the data; Scaling and encoding; Splitting the data; Avoiding information leakage | *Observations and features* merges into *The coastal survey*; *Exploring the data first* and *Missing values and outliers* merge (one finds the six problems, the other fixes them); *Splitting* drops its rebalancing section for a link to *Class imbalance* |
 | 3 Supervised learning | Linear and polynomial regression; Regression for counts; Logistic regression; k-nearest neighbours; Decision trees; Random forests and boosting; Choosing a method | *Regression and classification* folds into the overview and the linear regression page; **k-nearest neighbours is new** (user, 2026-10-07): the simplest machine-learning method, predicting from the most similar stations, which ties together distance, scaling, k-means and the distance-to-the-survey check |
-| 4 How algorithms learn | Loss functions; Finding the parameters; Gradient descent; Likelihood and priors | *Maximum likelihood* and *Priors and ridge regression* merge into one page on where losses and penalties come from, statistics in the maths callouts; *Checking a fit* folds into *Finding the parameters* (did the search work), its seeds part into *Reproducibility* |
+| 4 How algorithms learn | Loss functions; Finding the parameters; Gradient descent; Likelihood and priors | *Maximum likelihood* and *Priors and ridge regression* merge into one page on where losses and penalties come from, statistics in the maths callouts; *Checking a fit* folds into *Finding the parameters* (did the search work), its seeds part into *Reporting a model* |
 | 5 Generalisation | Underfitting and overfitting; The bias–variance trade-off; Regularisation; Hyperparameter selection | *Training error and new data* merges into *Underfitting and overfitting* (same splits, same curve); *Model complexity* folds into *Regularisation* (same random columns); ridge is taught here, §4 only says a penalty is a prior |
-| 6 Assumptions | Linearity and nonlinearity; Distributional assumptions; Dependent data; Uneven sampling and extrapolation; Class imbalance | *Independence of observations* and *Spatial and temporal dependence* merge into one page on repeat visits, neighbours and time (the why; the folds go to §7); *Distributional assumptions* becomes what a loss aims at, its prediction intervals moving to *Communicating uncertainty* |
+| 6 Assumptions | Linearity and nonlinearity; Distributional assumptions; Dependent data; Uneven sampling and extrapolation; Class imbalance | *Independence of observations* and *Spatial and temporal dependence* merge into one page on repeat visits, neighbours and time (the why; the folds go to §7); *Distributional assumptions* becomes what a loss aims at, its prediction intervals moved to *Communicating uncertainty*, cut in the 2026-10-14 rebuild of §10 |
 | 7 Validation | Cross-validation; Spatial and temporal cross-validation; Regression performance measures; Classification performance measures; Uncertainty and stability; Choosing measures that match the objective | Same pages; *Spatial and temporal CV* takes the site-against-block comparison from §6; *Classification measures* starts from *Class imbalance* |
 | 8 Unsupervised learning | Clustering with k-means; Choosing the number of clusters; Hierarchical clustering; Principal component analysis; How many components to keep; Checking a pattern before reporting it | Same pages |
 | 9 Neural networks | Neurons, layers and activations; Forward propagation and backpropagation; Training a network; When a network pays off; Autoencoders | *How much data a network needs* and *When a network is the right tool* merge; *Training a network* drops its repeat of §4's learning-rate lesson |
-| 10 Interpretation | Feature importance; Partial effects; Black boxes and interpretable models; Communicating uncertainty; Reproducibility and transparent reporting; From a model to a claim | Same pages; fewer coefficient intervals; the claim is written as a machine-learning report (a score against a baseline, shapes, prediction intervals) |
+| 10 Interpretation | Feature importance; Partial effects; Explaining one prediction; Interpretable models and surrogates; Reporting a model | Rebuilt 2026-10-14 to interpret a fitted model and its outputs only: SHAP and surrogates are new, *Communicating uncertainty* is cut, and *Reproducibility* and *From a model to a claim* merge into *Reporting a model* (see §10 below) |
 
-Fifty-three pages, against sixty-two before. File names may change with the titles.
+Fifty-two pages, against sixty-two before. File names may change with the titles.
 
 ### One page teaches each idea; the others link to it
 
@@ -72,7 +72,7 @@ Fifty-three pages, against sixty-two before. File names may change with the titl
 | Overdispersion and the negative binomial | *Regression for counts* | Link |
 | Rebalancing; sensitivity, specificity, precision | *Class imbalance* | Link |
 | False alarms and misses; a threshold from their costs | Named on *Logistic regression*; the rule on *Choosing measures* | Link |
-| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why (the patches in the errors) |
+| Site against block cross-validation | *Spatial and temporal cross-validation* | *Dependent data* shows why sites are held out (repeat visits); neighbours and blocks are §7's |
 | Extrapolation | *Uneven sampling and extrapolation* | One line each on the method pages |
 | Depth confounded with position | Confounding on *Prediction and explanation*; resolved on *Partial effects* | Name it and link |
 | The simulated truth as a check | *The coastal survey* | One sentence and a link |
@@ -167,14 +167,8 @@ extrapolation with a link. The video was rebuilt from these pages the same day (
 
 Found during this pass, to fix when those sections are revised:
 
-- **Poisson intervals called too narrow.** Pages still say Poisson regression's
-  intervals are too narrow for the survey's counts, a statistical-modelling point the
-  revised §3 no longer makes: `reading-a-fit.qmd:385`, `maximum-likelihood.qmd:390`,
-  `distributional-assumptions.qmd:537`, `independence-of-observations.qmd:65` and
-  `:324`, `spatial-and-temporal-dependence.qmd:53`, `black-box-or-not.qmd:66`.
 - **Squared-correlation R².** These still compute `rsq()` or a squared correlation:
-  §5 `model-complexity.qmd`, §6 `spatial-and-temporal-dependence.qmd`, §9
-  `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
+  §9 `autoencoders.qmd`, §7 `regression-metrics.qmd:67`.
 
 ## 4. How machine-learning algorithms learn
 `chapters/04-how-algorithms-learn/` · categories: `optimisation`
@@ -195,17 +189,23 @@ same order, retitled *Loss functions*, *Finding the parameters*, *Gradient desce
 *Maximum likelihood*, *Priors and ridge regression* and *Checking a fit*. The file names
 are unchanged, since sections 5, 6 and 9 link to them.
 
-Three deliberate spillovers outside the section's own subject:
+**Second pass 2026-10-08** (`feature/revise-how-algorithms-learn`): four pages, in order
+*Loss functions*, *Finding the parameters*, *Gradient descent*, *Likelihood and priors*.
+*Checking a fit* (`reading-a-fit.qmd`) folded into *Finding the parameters* (separation and
+a table of failure signs and fixes); its seeds part went to §10 *Reproducibility*.
+*Maximum likelihood* and *Priors and ridge regression* merged into
+`likelihood-and-priors.qmd`, statistics kept to the maths callouts; the negative binomial,
+standard errors and posterior figure were cut.
+
+Spillovers outside the section's own subject:
 
 - *Gradient descent* carries the real justification for §2's scaling advice: the same
-  model takes many times more steps in raw units. §2 could only assert it.
-- *Priors and ridge regression* derives ridge from a Normal prior, which §5 then presents
-  as a technique. The two pages must stay consistent: §5 should refer back rather than
-  re-deriving.
-- *Checking a fit* uses §2's leaked `catch_weight_kg` column to produce separation, and
-  measures the spread of ten unseeded forests as the resolution limit for comparing
-  models, which §3's two count models fall inside. §5's *Training versus new data* points
-  to it without quoting a number.
+  model takes many times more steps in raw units. §2 could only assert it. Its learning
+  rate is tied to boosting's.
+- *Likelihood and priors* derives ridge from a Normal prior, which §5 then presents as a
+  technique. The two pages must stay consistent: §5 refers back rather than re-deriving.
+- *Finding the parameters* uses separation in logistic regression to show a search with
+  no lowest point.
 
 ## 5. Generalisation and model complexity
 `chapters/05-generalisation/` · categories: `generalisation`, `tuning`
@@ -233,9 +233,10 @@ deliberately chooses its complexity by looking at the test set"):
   that one validation split picks unstable winners. §2's pointer to cross-validation points
   here; §7's *Cross-validation* page builds on it with spatial and temporal versions.
 
-`regularisation.qmd` must not re-derive ridge and lasso from scratch: §4's
-[Priors and ridge regression](../chapters/04-how-algorithms-learn/map-and-priors.qmd) derives them from priors,
-and §5 refers back. The same applies in reverse if §4 is edited.
+*Regularisation* teaches ridge regression, the lasso and λ as tools for prediction. §4's
+[Likelihood and priors](../chapters/04-how-algorithms-learn/likelihood-and-priors.qmd) only
+shows that each penalty is a prior's negative log, and *Regularisation* links there rather
+than repeating it. The same applies in reverse if §4 is edited.
 
 ### New dataset: `data/coastal-survey-truth.csv`
 
@@ -246,6 +247,18 @@ change `coastal-survey.csv`: same seed, same bytes, verified.
 
 Rules for using it are in `data/README.md`: join on `station_id`, never pass it to a model,
 never quote a score against it without saying no real study could compute one.
+
+**Beginners' pass 2026-10-13** (`feature/simplify-generalisation`): the four pages were
+cut back to what the section video teaches, keeping their structure and every number the
+video quotes, and the overview now groups them under the video's three ideas: a perfect
+fit is a warning sign (Underfitting and overfitting), the U-shaped curve comes from bias
+and variance (Bias–variance), and complexity is chosen honestly (Regularisation,
+Hyperparameter selection). *Underfitting and overfitting* lost the "too much flexibility
+costs more" comparison; *Bias–variance* lost the shared-sites asides; *Regularisation*
+lost the coefficient-counting section and the elastic net (glossary entry removed);
+*Hyperparameter selection* keeps the one-standard-error rule, briefly, because §8 uses
+it. The video's numbers (6.21 against 4.83; 72% noise; about 13-fold; 6.41 and 4.55;
+4.45–4.64 against 3.72–5.37; 0.28 against 0.26) come from these pages and must not drift.
 
 ## 6. Model assumptions and limitations
 `chapters/06-assumptions-limitations/` · categories: `assumptions`, `spatial-temporal`,
@@ -312,24 +325,67 @@ it does not.
 - Running Python tabs on every page. scikit-learn has no GAM: its tab uses
   `SplineTransformer` with a ridge-penalised `PoissonRegressor`.
 
+**Second pass 2026-10-09** (`feature/revise-assumptions`): five pages, as in the target
+table. The default models are a random forest and one simple baseline; statistics stay
+out unless the lesson needs them.
+
+- *Linearity and nonlinearity*: linear regression's errors averaged along each input
+  show where a straight line fails, and a random forest finds the temperature curve.
+  The GAM moved to §10 *Black boxes and interpretable models* (with `gam.svg`). The
+  linear model scored no worse than the forest on the test sites (RMSE 3.75 against
+  3.98), so the page claims no win for the forest.
+- *Distributional assumptions*: two parts, the forest's errors skewed and widening, and
+  log counts aiming at the median (about 30% too few animals in total). The quantile
+  forest's intervals moved to §10 *Communicating uncertainty*, since cut.
+- *Dependent data* merges *Independence of observations* and *Spatial and temporal
+  dependence*: resampling stations, whole sites and half-degree spatial blocks measures
+  the effective sample size of the average catch and of the forest's errors. Cut: the
+  negative binomial, the patches map and a position-only forest (a permutation check
+  found no clustering of errors beyond chance). The spatial-blocks diagram moved to §7
+  *Spatial and temporal cross-validation*, which now owns the folds. The 2026-10
+  beginners' pass cut it further to stations against whole sites for the average catch
+  (800 stations worth about 470): spatial blocks, neighbours and the forest's errors
+  went to §7, which now introduces spatial blocks itself; years, enough groups and
+  identifiers are a sentence each, and mixed models are gone.
+- *Uneven sampling and extrapolation*: how each method carries on past the data is §3's
+  (*Choosing a method* draws it), so the page links there and gives its own diagram to
+  the range check against the distance to the nearest surveyed station, which it ties
+  to k-nearest neighbours. The 2026-10 beginners' pass cut the forest against
+  polynomial regression below the survey's depths; the worked example is now only the
+  summer and autumn survey asked about spring and winter: cold, shallow winter stations
+  pass every range check, the distance flags them, and the forest's error grows with it.
+- *Class imbalance*: false alarm and miss are §3's terms and are linked, not bolded.
+
+Every page has glossary entries and a new-terms box.
+
+**Beginners' pass 2026-10-13** (`feature/simplify-assumptions-limitations`): the five
+pages were cut back to what the section video teaches, keeping their structure, and
+the overview now groups them under the video's three ideas: what machine learning frees
+a model from (Linearity, Distributional), what it does not (Dependent data, Uneven
+sampling), and why a rare answer fools accuracy (Class imbalance). *Linearity* lost the
+GAM and the depth peak; *Distributional* lost quantile loss and keeps log counts as a
+short part; sensitivity, specificity and precision moved from *Class imbalance* to §7
+*Classification performance measures*. The video's numbers (598 stations, 129 at zero,
+median 3, largest 40; about 470 of 800; the rare species at 29 of 598, 1 in 6 found
+at 92% accuracy) come from these
+pages and must not drift.
+
 ### Two threads that must be kept if these pages are edited
 
 **RMSE is not comparable across resampling schemes.** Different folds or splits hold
 different distributions of the response, so a "harder" scheme can report a *lower* RMSE.
-Use R², or the same test set for both. §2's leakage page found it first;
-`spatial-and-temporal-dependence.qmd` meets it when it compares cross-validation by site
-with spatial blocks, says so in the prose and repeats it in its Key points.
+Use R², or the same test set for both. §2's leakage page found it first. No §6 page
+compares schemes any more; §7's `spatial-and-temporal-cv.qmd` does, and must keep it.
 
-**A curve that fits the data can still be wrong.** `linearity-and-nonlinearity.qmd` ends on this:
-the forest and the GAM
-recover the temperature hump, but both put depth's peak in shallow water, because depth
-is confounded with position, which carries an unmodelled spatial field. The page keeps
-this to one paragraph and links to §1 and §10's partial-effects page, which teach
-confounding; the page itself stays on linearity.
+**A curve that fits the data can still be wrong.** The forest recovers the temperature hump
+but puts depth's peak in shallow water, because depth is confounded with position, which
+carries an unmodelled spatial field. Since the 2026-10 beginners' pass this lives only in
+§10's `partial-effects.qmd` (with §1 teaching confounding); `linearity-and-nonlinearity.qmd`
+stays on the straight line against the forest's temperature hump.
 
 ### Uses of `coastal-survey-truth.csv`
 
-`linearity-and-nonlinearity.qmd` compares fitted smooths against the true generating curves,
+`partial-effects.qmd` compares the forest's curves against the true generating curves,
 and `sampling-and-extrapolation.qmd` measures extrapolation bias against `true_mean` rather
 than observed counts. Both say in the text that no real study could do this.
 
@@ -383,6 +439,46 @@ in three pairs: the folds (cross-validation, spatial and temporal), the measures
   expected cost of the calls, with the cheapest threshold at k/(1+k) for calibrated
   probabilities. The mean-only total argument is on page 3 and is not repeated.
 
+**Second pass from 2026-10-09** (`feature/revise-validation`): the same six pages.
+Decisions agreed with the user:
+
+- Poisson regression leaves the section. Counts use predicting the average (no skill),
+  linear regression (the simple baseline) and the random forest, with the forest on log
+  counts only where a measure's point needs it (*Regression performance measures*,
+  *Choosing measures*). Presence keeps the share present, logistic regression and the
+  forest.
+- *Cross-validation*: the search and nested cross-validation use linear regression. Its
+  selection optimism on the full survey is small (nested 4.46 against a claim of 4.43),
+  and the page says so: the search still keeps noise columns and loses to the eight
+  inputs, and optimism grows with more candidates, flexible models and fewer sites
+  (user, 2026-10-09: show the honest small effect, not a 40-site subset or Poisson).
+- *Regression performance measures*: two parts; the Poisson deviance leaves the table
+  (linear regression can predict below zero) and the scaling curves go (they restate
+  *Distributional assumptions*). The R² section says other software often reports the
+  squared correlation; the course uses the textbook R² throughout.
+- *Spatial and temporal cross-validation* keeps the correlogram but drops "patches": the
+  errors' correlations are weak (about 0.04 up to 40 km).
+- *Choosing measures*' table is the one place that matches a use to a measure; pages 3
+  and 4 link to it. False alarm and miss link to *Logistic regression*.
+
+**Beginners' pass 2026-10-13** (`feature/simplify-validation`): the six pages were cut
+back to what the section video teaches, and the overview now groups them under the
+video's three ideas: a score is only as honest as its folds (Cross-validation, Spatial
+and temporal CV), the measure must follow the use (the two measures pages, Choosing
+measures), and a score needs an interval (Uncertainty and stability).
+*Cross-validation* lost the pooled-against-averaged experiment and leave-one-site-out;
+*Spatial and temporal CV* lost the correlogram and the range, and now explains the
+half-degree blocks (about 41 by 56 km) in plain words; *Regression performance measures*
+lost MAPE, the Poisson deviance aside and the worked squared-correlation comparison (a
+short note and its diagram stay, and R² joins the worked table); *Classification
+performance measures* lost F1, MCC and log loss, gained balanced accuracy, and keeps a
+short calibration part because *Choosing measures*' cost rule needs calibrated
+probabilities; *Choosing measures* lost the causal and biased-records asides. Glossary
+entries for the cut terms were removed. The video's numbers (4.51 for the search; 4.43
+claimed, 4.46 nested, 4.37 for the eight inputs; 4.23, 4.34 and 4.41 for the schemes;
+69% of the catch; 847 animals and 2.1 times random; thresholds 0.51, 0.75 and 0.83;
+3.75 to 4.94; 99% and 80%) come from these pages and must not drift.
+
 ### Two conventions that hold the section together
 
 **Pool the out-of-fold predictions before computing a metric.** Every v-fold scheme holds out
@@ -396,8 +492,9 @@ either model's own score.
 
 ### Aimed at §10
 
-`choosing-a-metric.qmd` ends on observation bias: a model that reproduces biased survey data
-reproduces the bias, and no validation scheme detects it. That is the handover to §10.
+`choosing-a-metric.qmd` used to end on observation bias: a model that reproduces biased
+survey data reproduces the bias, and no validation scheme detects it. The beginners' pass
+cut it; §10's *From a model to a claim* introduces the gear on its own and never linked back.
 
 ## 8. Unsupervised learning
 `chapters/08-unsupervised-learning/` · categories: `unsupervised`, `interpretation`
@@ -410,7 +507,7 @@ reproduces the bias, and no validation scheme detects it. That is the handover t
 
 **Written as six pages, splitting one subtopic and merging two.** "Clustering" became three
 pages: k-means (`clustering.qmd`), the number of clusters (`choosing-the-number-of-clusters.qmd`)
-and hierarchical clustering (`beyond-k-means.qmd`, which also introduces the adjusted Rand
+and hierarchical clustering (`hierarchical-clustering.qmd`, which also introduces the adjusted Rand
 index the later pages use). PCA is `principal-component-analysis.qmd`; "dimensionality
 reduction" is `dimensionality-reduction.qmd`, on how many components to keep, ending with
 UMAP briefly. "Pattern detection in marine datasets" and "interpretation and limitations"
@@ -488,6 +585,21 @@ Neurons, layers and activations; Forward propagation and backpropagation; Traini
 network; How much data a network needs; When a network is the right tool; Autoencoders.
 The section is R-only: no Python tabs.
 
+**Second pass 2026-10-10** (`feature/revise-neural-networks`): five pages, as in the
+target table. Decisions agreed with the user:
+
+- *How much data a network needs* and *When a network is the right tool* merge into
+  `when-a-network-pays-off.qmd`. The learning curves, the cross-validated tuning and
+  `learning-curves.svg` go, so the page runs in about half a minute: linear regression,
+  the forest and the network are fitted once, scored on the counts, then trained again
+  on the true mean counts (§6's term, replacing "expected counts"). The water-mass band
+  keeps its 100/400/1,600-station table, and the closing checklist covers both signal
+  against noise and combinations nobody can name.
+- *Training a network* drops its learning-rate sweep, §4's lesson, for one paragraph
+  linking to *Gradient descent* and *Scaling and encoding*; early stopping and the seeds
+  stay as the worked parts, mini-batches and epochs as prose, with a redrawn diagram.
+- Every page gets a new-terms box. *Autoencoders* computes R² with `rsq_trad_vec()`.
+
 ### The engine decision
 
 **No `torch`, `brulee` or `keras`.** Everything runs on `nnet` (already installed for §3),
@@ -507,20 +619,21 @@ Two consequences must be kept if these pages are edited:
 - **parsnip squeezes two-class `nnet` probabilities into 0.269–0.731**, that is
   1/(1 + e) to e/(1 + e): `parsnip:::nnet_softmax()` turns nnet's single output p into
   the pair (1 − p, p) and then applies a softmax to it, as if they were scores. The ranking is untouched, so ROC AUC and predicted classes are right,
-  but the probabilities are not. `when-to-use-one.qmd` therefore reports AUC and draws
+  but the probabilities are not. `when-a-network-pays-off.qmd` therefore reports AUC and draws
   predicted classes, never probability maps or calibration. The old page's "a good score
   and an uncalibrated model" lesson was this artefact, not a property of networks.
 
 ### Three findings the pages are built on
 
-- **The network was short of signal, not of rows.** `how-much-data.qmd` draws learning
-  curves for linear regression, a random forest and an eight-unit network on the survey.
-  The forest leads at every size; cross-validation shrinks the network to one hidden unit
-  with the largest penalty. Scored against the simulated expected counts instead of the
-  observed ones, the network learned the response best (27% better than linear
-  regression): the count noise buried the gain. This is the section's headline; the page
-  says the expected counts are available only because the survey is simulated.
-- **A hidden unit bends along a tilted line.** `when-to-use-one.qmd` simulates a water-mass
+- **The network was short of signal, not of rows.** `when-a-network-pays-off.qmd` fits
+  linear regression, a random forest and an eight-unit network once on the survey's 539
+  training stations. On the counts the forest leads (4.20) and the network is last
+  (4.52, against 4.72 for predicting the mean). Trained on the true mean counts of the
+  same stations and scored against them, the network comes first (1.43, forest 1.62,
+  linear regression 2.12; 33% better than linear regression): the count noise buried the
+  gain. This is the section's headline; the page says the true mean counts are available
+  only because the survey is simulated.
+- **A hidden unit bends along a tilted line.** The same page simulates a water-mass
   band in T–S space, the one place this section steps outside the course datasets. A
   two-unit network (9 weights) reaches ROC AUC 0.999 from 200 stations where a 500-tree
   forest reaches 0.926 and logistic regression stays near 0.72 at every size; the forest
@@ -541,10 +654,10 @@ Two consequences must be kept if these pages are edited:
   without being told its shape; one is not enough and more add little.
 - `forward-and-backward.qmd`: all 21 hand-written slopes agree with the nudged ones to 10
   decimal places, and a run can pause on a plateau before it beats a straight line.
-- `training-a-network.qmd`: learning rate 0.2 goes lowest, 0.5 bounces, 2 becomes NaN
-  without a warning; early stopping keeps step 1,937 of 8,000; ten seeds vary by 0.055 in
-  validation MSE. The old unscaled-inputs comparison was cut; the page now simply
-  standardises every input.
+- `training-a-network.qmd`: early stopping keeps step 1,937 of 8,000, and the last step's
+  validation error is 4% worse; ten seeds vary by 0.055 in validation MSE, and
+  their average beats seven of them. The learning rate and standardising are prose with
+  links, since *Gradient descent* and *Scaling and encoding* teach them.
 
 ### Aimed at §10
 
@@ -560,6 +673,32 @@ tools are the route to an effect. Ten identical runs varying by 0.055 in validat
 - Reproducibility and transparent reporting
 - Communicating uncertainty and limitations
 - Practical marine-science examples and exercises
+
+**Rebuilt 2026-10-14** (`feature/rebuild-interpretation`) as five pages, after the user
+rejected a video that re-ran cross-validation, splits and error ranges. The section now
+teaches only what is new: interpreting a fitted model and its outputs. Everything below
+this block, from the first writing to the second pass, describes the earlier six pages and
+is kept as history.
+
+- *Feature importance*: permutation importance alone, on the test sites of one split;
+  inputs that carry the same information share the credit. No random columns, no
+  impurity importance, no repeated splits.
+- *Partial effects*: partial dependence and ICE curves for depth and temperature. No
+  check against the simulation's truth, no confounding section.
+- *Explaining one prediction* (new): SHAP values for the stations nearest the 90th and
+  10th percentiles of prediction; R `kernelshap`, Python `shap.TreeExplainer`
+  (interventional, one-hot columns summed per input). A waterfall figure.
+- *Interpretable models and surrogates* (was *Black boxes*): the GAM read from its curves
+  (one test RMSE sentence against the forest), and a depth-3 tree fitted to the forest's
+  predictions, with **fidelity** as the R² between them (0.50 on the training stations).
+- *Reporting a model* (merges *Reproducibility* and *From a model to a claim*): the four
+  things a re-run needs, the hidden-draw trap (23 of 40 test sites kept), a **model
+  card** written in inline R, and three claims checked against it.
+- Cut: *Communicating uncertainty* (intervals, coverage, conformal, quantile forest), the
+  seed-against-split comparison, the ten-fold report, the gear-bias demonstration and
+  every check against the simulation. The forest is the same on every page: one split
+  by site, ranger with 500 trees and seed 123, factor inputs (RMSE 3.96; *Feature
+  importance* dummy-codes them and gets 3.93).
 
 **Written as six pages, splitting the first subtopic and turning the last into a capstone.**
 "Feature importance and model interpretation" became two pages, because a ranking and a shape
@@ -597,6 +736,25 @@ are, and the last two turn the analysis into a report.
   `SplineTransformer` with a ridge penalty, statsmodels' negative binomial for intervals,
   and boosting with a quantile loss for the quantile forest.
 
+**Second pass 2026-10-10** (`feature/revise-interpretation`): the same six pages, each
+with a new-terms box. Decisions agreed with the user:
+
+- *Black boxes and interpretable models* is trimmed to one interpretable model, the GAM,
+  scored against the forest and boosting on the same folds. Poisson regression and the
+  multiplier table go; mud and summer are one sentence, and paired comparison is linked.
+- *Communicating uncertainty* is rebuilt on the random forest: bootstrap refits of the
+  sites give the interval for the average, the quantile forest the interval for a new
+  catch, and conformal prediction any model's interval. The GAM, the negative binomial
+  and statsmodels leave the page.
+- *From a model to a claim* is a random forest report: the cross-validated score against
+  predicting the average, the inputs that beat three random columns on most folds,
+  partial-dependence shapes, and a 90% quantile-forest interval with its held-out
+  coverage, all in inline R. The gear bias moves from rock to **mud**, half the animals
+  missed; the rock version (55 stations) is the first Try it yourself exercise. The
+  Python tab uses `GradientBoostingRegressor(loss="quantile")` for the interval ends,
+  since `HistGradientBoostingRegressor` spent about 5 s per fit on threads with data
+  this small.
+
 ### Three findings the pages are built on
 
 - **No curve separates what the design confounds.** The simulation's depth peak is at 80 m;
@@ -608,8 +766,10 @@ are, and the last two turn the analysis into a report.
   new sites as well as the random forest and better than untuned boosting, and its curves
   match the forest's. A black box earns its place where inputs work in combination, inputs
   are raw, or prediction is the whole job.
-- **Observation bias defeats validation.** A gear that keeps half the animals on rock turns
-  "cannot tell" into a confident rock multiplier while the cross-validated RMSE improves.
+- **Observation bias defeats validation.** A gear that misses half the animals on mud
+  turns the forest's "mud holds 1.10–1.16 times as many as sand" into 0.90–0.95 on every
+  fold model, while the cross-validated RMSE falls from 4.41 to 3.86 and the intervals
+  still hold 95%.
   This is §7's `choosing-a-metric.qmd` handover landing, and it is the last thing the
   course says: checks on the records come from outside the model.
 
@@ -633,6 +793,8 @@ sites is the evidence an interval works.
 *new scalar*, silently collapsing every ribbon to its line. The same shadowing bit §7 and §8.
 Put derived columns before the column they are derived from, or rename. The revision
 met it again in `from-model-to-claim.qmd`, where a column `rock` shadowed a local `rock`.
+The rebuilt page computes `folds_better` before `forest_rmse = mean(forest_rmse)` for the
+same reason.
 
 ---
 
@@ -657,9 +819,9 @@ Repeat these deliberately rather than treating them as one section's property:
 - **Axis-aligned splitting** is the limitation trees and forests share (§3, §9) and the one
   thing a single hidden unit fixes. It is also why the tree in §9 extrapolates "high
   salinity means core" sideways into empty space, which is §6's extrapolation thread again.
-- **Identifiability** (§10) is the limit on everything §6 to §10 do. A confounded design
+- **Identifiability** (§1's confounder) is the limit on everything §6 to §10 do. A confounded design
   cannot be rescued by a better model, a better plot or a bigger sample; the honest output is
   the sentence naming the confounding.
 - **Simulation with a known truth** is what makes §5's bias/variance, §8's cluster validity
-  and §10's interpretation checks possible at all. Any new dataset added to `data/` should
+  possible at all. Any new dataset added to `data/` should
   come with its generator and, where useful, its truth file.

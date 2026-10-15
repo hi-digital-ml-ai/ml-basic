@@ -92,21 +92,13 @@ website:
             text: "Finding the parameters"
           - href: chapters/04-how-algorithms-learn/gradient-descent.qmd
             text: "Gradient descent"
-          - href: chapters/04-how-algorithms-learn/maximum-likelihood.qmd
-            text: "Maximum likelihood"
-          - href: chapters/04-how-algorithms-learn/map-and-priors.qmd
-            text: "Priors and ridge regression"
-          - href: chapters/04-how-algorithms-learn/reading-a-fit.qmd
-            text: "Checking a fit"
+          - href: chapters/04-how-algorithms-learn/likelihood-and-priors.qmd
+            text: "Likelihood and priors"
       - section: "5 · Generalisation"
         href: chapters/05-generalisation/index.qmd
         contents:
-          - href: chapters/05-generalisation/training-versus-new-data.qmd
-            text: "Training error and the error on new data"
           - href: chapters/05-generalisation/underfitting-and-overfitting.qmd
             text: "Underfitting and overfitting"
-          - href: chapters/05-generalisation/model-complexity.qmd
-            text: "Model complexity"
           - href: chapters/05-generalisation/bias-variance.qmd
             text: "The bias–variance trade-off"
           - href: chapters/05-generalisation/regularisation.qmd
@@ -120,10 +112,8 @@ website:
             text: "Linearity and nonlinearity"
           - href: chapters/06-assumptions-limitations/distributional-assumptions.qmd
             text: "Distributional assumptions"
-          - href: chapters/06-assumptions-limitations/independence-of-observations.qmd
-            text: "Independence of observations"
-          - href: chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd
-            text: "Spatial and temporal dependence"
+          - href: chapters/06-assumptions-limitations/dependent-data.qmd
+            text: "Dependent data"
           - href: chapters/06-assumptions-limitations/sampling-and-extrapolation.qmd
             text: "Uneven sampling and extrapolation"
           - href: chapters/06-assumptions-limitations/class-imbalance.qmd
@@ -150,7 +140,7 @@ website:
             text: "Clustering with k-means"
           - href: chapters/08-unsupervised-learning/choosing-the-number-of-clusters.qmd
             text: "Choosing the number of clusters"
-          - href: chapters/08-unsupervised-learning/beyond-k-means.qmd
+          - href: chapters/08-unsupervised-learning/hierarchical-clustering.qmd
             text: "Hierarchical clustering"
           - href: chapters/08-unsupervised-learning/principal-component-analysis.qmd
             text: "Principal component analysis"
@@ -167,10 +157,8 @@ website:
             text: "Forward propagation and backpropagation"
           - href: chapters/09-neural-networks/training-a-network.qmd
             text: "Training a network"
-          - href: chapters/09-neural-networks/how-much-data.qmd
-            text: "How much data a network needs"
-          - href: chapters/09-neural-networks/when-to-use-one.qmd
-            text: "When a network is the right tool"
+          - href: chapters/09-neural-networks/when-a-network-pays-off.qmd
+            text: "When a network pays off"
           - href: chapters/09-neural-networks/autoencoders.qmd
             text: "Autoencoders"
       - section: "10 · Interpretation"
@@ -180,14 +168,12 @@ website:
             text: "Feature importance"
           - href: chapters/10-interpretation/partial-effects.qmd
             text: "Partial effects"
-          - href: chapters/10-interpretation/black-box-or-not.qmd
-            text: "Black boxes and interpretable models"
-          - href: chapters/10-interpretation/communicating-uncertainty.qmd
-            text: "Communicating uncertainty"
-          - href: chapters/10-interpretation/reproducibility.qmd
-            text: "Reproducibility and reporting"
-          - href: chapters/10-interpretation/from-model-to-claim.qmd
-            text: "From a model to a claim"
+          - href: chapters/10-interpretation/explaining-one-prediction.qmd
+            text: "Explaining one prediction"
+          - href: chapters/10-interpretation/interpretable-models.qmd
+            text: "Interpretable models and surrogates"
+          - href: chapters/10-interpretation/reporting-a-model.qmd
+            text: "Reporting a model"
       - section: "More"
         contents:
           - href: glossary.qmd

@@ -1,61 +1,36 @@
 ---
 title: "9 · Introduction to neural networks"
-description: "A neural network is a stack of regressions, each followed by a bend, trained by gradient descent. The section builds one in base R, trains it with tidymodels, measures how much data it needs, and shows where networks lead: combinations of inputs that nobody has named, and maps learned without a response."
+description: "Neural networks as sums with a bend, and when they pay off."
 categories: [neural-networks, optimisation]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: what-a-network-is.qmd
+      description: "A neuron is a regression you already know, and a layer of them, each with a bend, can follow a curve without being told its shape."
+    - path: forward-and-backward.qmd
+      description: "A forward pass computes the prediction, and backpropagation gives every weight its slope at once."
+    - path: training-a-network.qmd
+      description: "Validation error shows when to stop training, and runs from different random starts end in different places."
+    - path: when-a-network-pays-off.qmd
+      description: "A network pays off when the data carry more signal than noise and the inputs matter in combinations nobody has named."
+    - path: autoencoders.qmd
+      description: "An autoencoder rebuilds its own input through a narrow middle and finds the same plane as principal component analysis."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
 Every part of a neural network is something the course has already met: weighted sums
 like those of linear regression, each followed by a bend, with weights learned by the
-same walk downhill as in [Gradient descent](../04-how-algorithms-learn/gradient-descent.qmd).
-The section builds a small network in base R, checks it against arithmetic, then trains
-one with tidymodels on the simulated survey. The first two pages open the network up:
+same walk downhill as gradient descent. This section builds a small network by hand and
+checks it against arithmetic, trains one on the same simulated survey as the rest of the
+course, and compares it with a random forest to find when a network is worth it. It ends
+with an autoencoder, a network that learns with no response to predict.
 
-- **neurons, layers and activations**: one neuron with no bend is linear regression,
-  and two hidden units with opposing bends follow the temperature optimum without being
-  told its shape;
-- **forward propagation and backpropagation**: a forward pass computes the prediction
-  and a backward pass gives every weight its slope, which small nudges of each weight
-  confirm.
-
-The next two cover training:
-
-- **training a network**: the learning rate, when to stop and the random start each
-  change the result, and the validation error shows how to set them;
-- **how much data a network needs**: learning curves compare the network with linear
-  regression and a random forest as the survey grows, and the expected counts show that
-  the network is short of signal rather than of rows.
-
-The last two show where networks lead:
-
-- **when a network is the right tool**: a water mass forms a diagonal band in
-  temperature and salinity, a combination nobody has named, and the network draws it
-  from a few hundred stations;
-- **autoencoders**: a network that rebuilds its own input through a narrow middle finds
-  the plane that principal component analysis finds, with no response to predict.
-
-The section picks up threads from earlier ones.
-[Neurons, layers and activations](what-a-network-is.qmd) starts from
-[Linear and polynomial regression](../03-supervised-learning/linear-and-polynomial-regression.qmd),
-and [Forward propagation and backpropagation](forward-and-backward.qmd) applies
-[Gradient descent](../04-how-algorithms-learn/gradient-descent.qmd) to every weight at
-once. [Training a network](training-a-network.qmd) sets its settings on validation data,
-as [Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) does,
-and finds that stopping early restrains the weights as
-[Regularisation](../05-generalisation/regularisation.qmd) does.
-[How much data a network needs](how-much-data.qmd) and
-[When a network is the right tool](when-to-use-one.qmd) compare the network with the
-forest of [Random forests and boosting](../03-supervised-learning/forests-and-boosting.qmd),
-and [Autoencoders](autoencoders.qmd) sets a network beside
-[Principal component analysis](../08-unsupervised-learning/principal-component-analysis.qmd).
+{{< video https://www.youtube.com/watch?v=FK9WCkGyZhk title="Neural networks: sums with a bend, and when they pay off" >}}
 
 ## Pages in this section
 

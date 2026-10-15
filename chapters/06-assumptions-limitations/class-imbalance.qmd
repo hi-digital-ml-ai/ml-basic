@@ -1,7 +1,7 @@
 ---
 title: "Class imbalance"
-description: "When one answer is rare, a model can be right 95% of the time by never giving it. Sensitivity, specificity and precision count the two kinds of mistake apart, and show that rebalancing the training data does no more than move the threshold."
-order: 6
+description: "When one answer is rare, a model can be highly accurate and still miss most of the rare cases. Logistic regression finds one presence of a rare species in six yet is 92% accurate, and rebalancing the training data turns out to do no more than move the threshold."
+order: 5
 categories: [assumptions, class-imbalance, metrics]
 ---
 
@@ -17,52 +17,37 @@ source(here::here("R/python-tabs.R"))
 set.seed(123)
 ```
 
-## Accuracy rewards a model that ignores the rare class
+{{< new-terms >}}
+
+## Accuracy hides the misses when one answer is rare
 
 Some of the outcomes marine scientists most want to predict are rare: a protected
 species in a haul, a harmful algal bloom, a bleaching event. When one answer is much
-rarer than the other the classes are **imbalanced**, and a model can score well by
-never giving the rare answer. If a species is caught at 5% of stations, calling it
-absent everywhere is right 95% of the time and finds nothing. This page counts the rare
-cases such a model actually finds, and tests the usual fix.
+rarer than the other, the classes are **imbalanced**.
 
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) turned a
-predicted probability into yes or no with a threshold, and named the two ways that
-answer can be wrong: a **false alarm** says yes where the truth is no, and a **miss**
-says no where the truth is yes. It also warned that for a rare species the
-probabilities may never reach the default threshold of 0.5.
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd#a-threshold-turns-a-probability-into-yes-or-no)
+gives each station a probability of presence, and a threshold turns it into a call of
+present or absent. A call can be wrong in two ways: a false alarm calls a station
+present where the species is absent, and a miss calls it absent where the species is
+present. Accuracy is the share of calls that are right.
+
+With a rare species, nearly every station is an absence, and calling an absence absent
+is easy. Accuracy mostly counts those easy calls, so it stays high even when the model
+misses most of the stations that matter. With a rare answer, count how many of the rare
+cases a model finds, not just how often it is right.
+[Classification performance measures](../07-validation/classification-metrics.qmd)
+names that share and the measures that go with it.
 
 {{< include ../../_snippets/simulated-data.qmd >}}
 
 {{< include ../../_snippets/python-tabs-run.qmd >}}
-
-## Three measures count misses and false alarms apart
-
-Accuracy adds up both kinds of right answer. Three measures keep them apart, each the
-share of one group of cases:
-
-- **Sensitivity**, also called recall: of the cases that are truly yes, the share
-  called yes. Misses lower it.
-- **Specificity**: of the cases that are truly no, the share called no. False alarms
-  lower it.
-- **Precision**: of the cases called yes, the share that are truly yes. False alarms
-  lower it too, and when yes is rare they easily outnumber the true yeses: with 5
-  yeses in 100 cases, calling one no in ten yes gives about 10 false alarms.
-
-When nearly every case is no, accuracy is mostly specificity, so a model can miss
-every yes and still look good.
-
-::: {.diagram}
-![The same twenty cases, four truly yes and sixteen truly no, with six called yes. Sensitivity is the share of true yeses called yes, lowered by misses. Specificity is the share of true noes called no, lowered by false alarms. Precision is the share of yes calls that are true, also lowered by false alarms.](img/three-measures.svg){fig-alt="Three cards show the same twenty cases in two rows: four truly yes, drawn filled, and sixteen truly no, drawn open. A dashed box marks the six the model called yes: three true yeses and three noes. One true yes lies outside the box. Sensitivity, lowered by misses: of the four true yeses, three were called yes and one, the miss, was not; 3 of 4. Specificity, lowered by false alarms: of the sixteen true noes, thirteen were called no and three, the false alarms, sit in the box; 13 of 16. Precision, lowered by false alarms: of the six yes calls, three are true and three are false alarms; 3 of 6. A note says accuracy, 16 of 20, hides the miss, because when yeses are few it mostly counts the noes."}
-:::
 
 ## Rebalancing evens out the classes before fitting
 
 The common fix for imbalance is to change the data the model is fitted to, so that
 both answers are equally common. **Downsampling** drops cases of the common class at
 random until they match the rare one. **Upsampling** copies cases of the rare class at
-random until they match the common one. **SMOTE**, a popular variant of upsampling,
-makes new rare cases between pairs of real ones instead of copying them.
+random until they match the common one.
 
 In R these are recipe steps from the `themis` package, so they change only the stations
 a model is fitted to. The stations it is scored on keep their real mix, as they must:
@@ -73,15 +58,12 @@ both sides of the split, a kind of
 ## Worked example
 
 The outcome is `rare_species`, a second species caught at only a few stations. The
-model is logistic regression on the six inputs, each entering the log-odds as a
-straight line: with so few presences, squared terms would leave too little data for
-each coefficient. The split by site is that of
-[Independence of observations](independence-of-observations.qmd), and the scores come
-from cross-validation by site, introduced in
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). One
-round of ten folds holds only a few presences in each, so the round is repeated five
-times, and every training station is predicted five times by models that never saw its
-site.
+model is logistic regression on the six inputs, each entering as a straight line. The
+scores come from cross-validation by site, introduced in
+[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd). With so
+few presences, each of ten folds holds only a handful, so cross-validation is repeated
+five times with different folds, and every training station is predicted five times by
+models that never saw its site.
 
 ### Preparing the data
 
@@ -177,13 +159,15 @@ prevalence <- mean(train$rare_species == "yes")
 The `r nrow(train)` training stations include only `r n_present` with the rare species,
 `r round(100 * prevalence, 1)`% of them.
 
-### The default threshold calls almost no station present
+### Logistic regression finds one presence in six yet is 92% accurate
 
 Each recipe is fitted in every fold, and its predictions for the left-out sites are
-kept. `calls()` is the function of
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd), with the three
-measures added. The counts cover all five repeats, so each station is counted five
-times.
+kept. `calls()` turns the predictions into calls at a threshold, as in
+[Logistic regression](../03-supervised-learning/logistic-regression.qmd), and gives
+three shares: of all stations, those called present; of the presences, those found; and
+of the absences, those called present, the false alarms. Applied at every threshold
+from 0 to 1 to the model fitted without rebalancing, it traces the model's whole range
+of answers.
 
 ::: {.panel-tabset group="language"}
 
@@ -201,22 +185,26 @@ predictions <- recipes |>
   list_rbind()
 
 calls <- function(probability, truth, threshold) {
-  called  <- probability >= threshold
+  yes     <- probability >= threshold
   present <- truth == "yes"
   tibble(threshold,
-         called_present = sum(called),
-         false_alarms   = sum(called & !present),
-         misses         = sum(!called & present),
-         sensitivity    = mean(called[present]),
-         specificity    = mean(!called[!present]),
-         precision      = mean(present[called]),
-         accuracy       = mean(called == present))
+         called       = mean(yes),
+         found        = mean(yes[present]),
+         false_alarms = mean(yes[!present]),
+         accuracy     = mean(yes == present))
 }
 
-at_default <- predictions |>
-  summarise(calls(.pred_yes, rare_species, 0.5), .by = training)
+plain_predictions <- filter(predictions, training == "No rebalancing")
+by_threshold <- function(threshold) {
+  calls(plain_predictions$.pred_yes, plain_predictions$rare_species,
+        threshold)
+}
+curve <- map(seq(0, 1, by = 0.002), by_threshold) |> list_rbind()
 
-at_default |> mutate(across(sensitivity:accuracy, \(x) round(x, 3)))
+# the threshold that calls about as many stations present as hold the species
+matched <- curve |>
+  slice_min(abs(called - prevalence), n = 1, with_ties = FALSE)
+matched |> mutate(across(everything(), \(x) round(x, 3)))
 ```
 
 ## Python
@@ -240,87 +228,12 @@ def calls(probability, is_present, threshold):
     called = probability >= threshold
     return {
         "threshold": threshold,
-        "called_present": int(called.sum()),
-        "false_alarms": int((called & ~is_present).sum()),
-        "misses": int((~called & is_present).sum()),
-        "sensitivity": called[is_present].mean(),
-        "specificity": (~called[~is_present]).mean(),
-        "precision": is_present[called].mean() if called.any() else np.nan,
+        "called": called.mean(),
+        "found": called[is_present].mean(),
+        "false_alarms": called[~is_present].mean(),
         "accuracy": (called == is_present).mean(),
     }
 
-at_default = pd.DataFrame([
-    {"training": training,
-     **calls(group["pred_yes"].to_numpy(), group["present"].to_numpy(), 0.5)}
-    for training, group in predictions.groupby("training", sort=False)
-])
-at_default.round(3)
-```
-
-:::
-
-```{r}
-#| label: default-numbers
-#| include: false
-row_of <- \(name) filter(at_default, training == name)
-plain <- row_of("No rebalancing")
-upsampled <- row_of("Upsampling")
-downsampled <- row_of("Downsampling")
-top <- predictions |>
-  filter(training == "No rebalancing") |>
-  pull(.pred_yes) |>
-  max()
-presences <- plain$misses + plain$called_present - plain$false_alarms
-```
-
-Without rebalancing, the highest probability logistic regression gives any station is
-`r round(top, 2)`, so the default threshold calls only `r plain$called_present` of the
-`r nrow(train) * 5` predictions present and catches
-`r plain$called_present - plain$false_alarms` of the `r presences` presences. Its
-sensitivity is `r round(plain$sensitivity, 2)` and its accuracy
-`r round(100 * plain$accuracy)`%: reported as accuracy alone, a model that finds
-nothing would sound like a success.
-
-Both kinds of rebalancing raise the sensitivity to about
-`r round(mean(c(upsampled$sensitivity, downsampled$sensitivity)), 1)`, so most
-presences are now found. The price is the specificity: about
-`r round(100 * (1 - mean(c(upsampled$specificity, downsampled$specificity))))`% of
-the absences become false alarms, and accuracy falls to about
-`r round(100 * mean(c(upsampled$accuracy, downsampled$accuracy)))`%. Precision stays low
-whichever way: about one station in `r round(1 / upsampled$precision)` called present by
-the upsampled model holds the species.
-
-### Upsampling gives the same answers as a lower threshold
-
-Lowering the threshold is the other way to call more stations present. The curve below
-applies every threshold from 0 to 1 to the predictions made without rebalancing: each
-point is a sensitivity and specificity the same probabilities can give.
-
-::: {.panel-tabset group="language"}
-
-## R
-
-```{r}
-#| label: thresholds
-plain_predictions <- filter(predictions, training == "No rebalancing")
-by_threshold <- function(threshold) {
-  calls(plain_predictions$.pred_yes, plain_predictions$rare_species,
-        threshold)
-}
-
-curve <- map(seq(0, 1, by = 0.002), by_threshold) |> list_rbind()
-
-bind_rows(
-  "Upsampling, threshold 0.5"             = select(upsampled, -training),
-  "No rebalancing, threshold = prevalence" = by_threshold(prevalence),
-  .id = "model"
-) |>
-  mutate(across(threshold:accuracy, \(x) round(x, 3)))
-```
-
-## Python
-
-```{python}
 plain_predictions = predictions[predictions["training"] == "No rebalancing"]
 prevalence = present.mean()
 
@@ -330,156 +243,154 @@ def by_threshold(threshold):
 
 curve = pd.DataFrame([by_threshold(t) for t in np.arange(0, 1.001, 0.002)])
 
-upsampled = at_default[at_default["training"] == "Upsampling"]
-pd.DataFrame([
-    {"model": "Upsampling, threshold 0.5",
-     **upsampled.drop(columns="training").iloc[0].to_dict()},
-    {"model": "No rebalancing, threshold = prevalence",
-     **by_threshold(prevalence)},
-]).round(3)
+# the threshold that calls about as many stations present as hold the species
+matched = curve.loc[[(curve["called"] - prevalence).abs().idxmin()]]
+matched.round(3).reset_index(drop=True)
 ```
 
 :::
 
 ```{r}
-#| label: fig-curve
-#| fig-cap: "Sensitivity against specificity for logistic regression on the rare species, from cross-validation by site. The grey curve is the model fitted without rebalancing, at every threshold. The cross is that model at the default threshold of 0.5, and the open circle at a threshold equal to the share of stations with the species. The coloured points are the downsampled and upsampled models at 0.5."
-#| fig-alt: !expr 'paste0("A plot of sensitivity from 0 to 1 against specificity running from 1 on the left to 0 on the right. A grey curve rises steeply from the bottom left corner and flattens towards the top right. A black cross sits in the bottom left corner, at specificity 1 and sensitivity 0. An orange point for upsampling sits on the curve at specificity ", round(upsampled$specificity, 2), " and sensitivity ", round(upsampled$sensitivity, 2), ", over an open circle for the model without rebalancing at a threshold equal to the prevalence. A blue point for downsampling, at specificity ", round(downsampled$specificity, 2), " and sensitivity ", round(downsampled$sensitivity, 2), ", sits below the curve.")'
-#| fig-width: 7
-#| fig-height: 4.6
-rebalanced <- filter(at_default, training != "No rebalancing")
-
-ggplot(curve, aes(specificity, sensitivity)) +
-  geom_path(colour = "grey60", linewidth = 1) +
-  geom_point(data = by_threshold(prevalence), shape = 1, size = 6,
-             stroke = 1.2) +
-  geom_point(data = rebalanced, aes(colour = training), size = 3.6) +
-  geom_point(data = plain, shape = 4, size = 4, stroke = 1.3) +
-  scale_colour_manual(values = c(Downsampling = ml_palette[["blue"]],
-                                 Upsampling   = ml_palette[["orange"]])) +
-  scale_x_reverse() +
-  labs(x = "Specificity", y = "Sensitivity", colour = NULL,
-       title = "Rebalancing moves along the threshold's curve, not above it",
-       subtitle = paste("Grey: logistic regression without rebalancing,",
-                        "at every threshold"))
-```
-
-```{r}
-#| label: curve-numbers
+#| label: matched-numbers
 #| include: false
-copies <- (nrow(train) - n_present) / n_present
-same <- by_threshold(prevalence)
-three <- \(x) sprintf("%.3f", x)
-reached <- curve |>
-  filter(specificity >= downsampled$specificity) |>
-  pull(sensitivity) |>
-  max()
+top <- max(plain_predictions$.pred_yes)
+one_in <- round(1 / matched$found)
 ```
 
-Upsampling at 0.5 and no rebalancing at a threshold of `r round(prevalence, 3)`, the
-share of training stations with the species, are the same point: a sensitivity of
-`r three(upsampled$sensitivity)` against `r three(same$sensitivity)`, and a
-specificity of `r three(upsampled$specificity)` against
-`r three(same$specificity)`. The odds from
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) explain the match.
-Copying each presence about `r round(copies)` times multiplies every station's odds of
-presence by about `r round(copies)`, which leaves the order of the stations as it was.
-A probability of 0.5 after upsampling is therefore one near the prevalence before it.
+Logistic regression gives no station a probability much above
+`r round(top, 2)`, so the default threshold of 0.5 would call almost none present.
+Here the threshold is lowered to `r round(matched$threshold, 2)`, where the model
+calls about as many stations present as hold the species. It finds about one presence
+in `r one_in`, and calls `r round(100 * matched$false_alarms)`% of the absences
+present. Yet it is `r round(100 * matched$accuracy)`% accurate: reported as accuracy
+alone, a model that misses most of the presences would sound like a success.
 
-Downsampling lands below the curve. At its specificity of
-`r round(downsampled$specificity, 2)`, a lower threshold on the model without
-rebalancing reaches a sensitivity of `r round(reached, 2)`, where downsampling reaches
-`r round(downsampled$sensitivity, 2)`. Each downsampled fit keeps only as many
-absences as there are presences, about one absence in `r round(copies)`, so it learns
-the absences from far fewer stations.
+### Upsampling gives the same answers as a lower threshold
 
-### Rebalanced probabilities overstate the chance of presence
-
-A predicted probability should match the rate of the event: of the stations given
-0.1, about one in ten should hold the species. The table compares each model's average
-predicted probability with the share of its predictions where the species was present.
+The rebalanced models are scored at the default threshold of 0.5, next to the model
+without rebalancing at a threshold equal to the share of training stations with the
+species.
 
 ::: {.panel-tabset group="language"}
 
 ## R
 
 ```{r}
-#| label: probabilities
-predictions |>
-  summarise(average_probability = round(mean(.pred_yes), 3),
-            share_present       = round(mean(rare_species == "yes"), 3),
-            .by = training)
+#| label: thresholds
+at_default <- predictions |>
+  filter(training != "No rebalancing") |>
+  summarise(calls(.pred_yes, rare_species, 0.5), .by = training)
+
+bind_rows(at_default,
+          mutate(by_threshold(prevalence),
+                 training = "No rebalancing, threshold = prevalence")) |>
+  mutate(across(threshold:accuracy, \(x) round(x, 3)))
 ```
 
 ## Python
 
 ```{python}
-(predictions.groupby("training", sort=False)
- .agg(average_probability=("pred_yes", "mean"),
-      share_present=("present", "mean"))
- .round(3).reset_index())
+at_default = pd.DataFrame([
+    {"training": training,
+     **calls(group["pred_yes"].to_numpy(), group["present"].to_numpy(), 0.5)}
+    for training, group in predictions.groupby("training", sort=False)
+    if training != "No rebalancing"
+])
+pd.concat([at_default,
+           pd.DataFrame([{"training": "No rebalancing, threshold = prevalence",
+                          **by_threshold(prevalence)}])],
+          ignore_index=True).round(3)
 ```
 
 :::
 
 ```{r}
-#| label: probability-numbers
+#| label: default-numbers
 #| include: false
-averages <- predictions |>
-  summarise(average = mean(.pred_yes), .by = training)
-average_of <- \(name) averages$average[averages$training == name]
-high <- predictions |>
-  filter(training == "Upsampling", .pred_yes > 0.8)
+row_of <- \(name) filter(at_default, training == name)
+upsampled <- row_of("Upsampling")
+downsampled <- row_of("Downsampling")
+same <- by_threshold(prevalence)
+copies <- (nrow(train) - n_present) / n_present
+reached <- curve |>
+  filter(false_alarms <= downsampled$false_alarms) |>
+  pull(found) |>
+  max()
 ```
 
-Without rebalancing, the average probability, `r round(average_of("No rebalancing"), 3)`,
-matches the share of stations with the species, as it should. After upsampling it
-averages `r round(average_of("Upsampling"), 2)`, about
-`r round(average_of("Upsampling") / prevalence)` times too high: of the
-`r nrow(high)` predictions above 0.8, only
-`r round(100 * mean(high$rare_species == "yes"))`% are stations with the species.
-A rebalanced model can still rank stations, but its probabilities are no longer chances.
-To report "a 10% chance of the species here", leave the data alone and move the
-threshold.
+::: {.panel-tabset group="language"}
 
-## The costs of the two mistakes set the threshold
+## R
+
+```{r}
+#| label: fig-curve
+#| fig-cap: "The share of presences found against the share of absences called present, for logistic regression on the rare species, from cross-validation by site. The grey curve is the model fitted without rebalancing, at every threshold from 1 at the bottom left to 0 at the top right. The black point is that model at the threshold that calls about as many stations present as hold the species, and the open circle at a threshold equal to the share of stations with the species. The coloured points are the downsampled and upsampled models at the default threshold of 0.5."
+#| fig-alt: !expr 'paste0("A plot of the share of presences found, from 0 to 1, against the share of absences called present, from 0 to 1. A grey curve rises steeply from the bottom left corner and flattens towards the top right. A black point sits low on the curve, at ", round(matched$false_alarms, 2), " of absences called present and ", round(matched$found, 2), " of presences found. An orange point for upsampling sits on the curve at ", round(upsampled$false_alarms, 2), " and ", round(upsampled$found, 2), ", over an open circle for the model without rebalancing at a threshold equal to the prevalence. A blue point for downsampling, at ", round(downsampled$false_alarms, 2), " and ", round(downsampled$found, 2), ", sits below the curve.")'
+#| fig-width: 7
+#| fig-height: 4.6
+ggplot(curve, aes(false_alarms, found)) +
+  geom_path(colour = "grey60", linewidth = 1) +
+  geom_point(data = same, shape = 1, size = 6, stroke = 1.2) +
+  geom_point(data = at_default, aes(colour = training), size = 3.6) +
+  geom_point(data = matched, size = 3) +
+  scale_colour_manual(values = c(Downsampling = ml_palette[["blue"]],
+                                 Upsampling   = ml_palette[["orange"]])) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Absences called present (false alarms)",
+       y = "Presences found", colour = NULL,
+       title = "Rebalancing moves along the threshold's curve, not above it",
+       subtitle = paste("Grey: logistic regression without rebalancing,",
+                        "at every threshold"))
+```
+
+:::
+
+Upsampling at 0.5 and no rebalancing at a threshold of `r round(prevalence, 3)`, the
+share of training stations with the species, give the same calls: both find
+`r round(100 * upsampled$found)`% of the presences and call
+`r round(100 * upsampled$false_alarms)`% of the absences present. Copying each presence about `r round(copies)` times makes
+presence look about `r round(copies)` times as common to the model, so it raises every
+station's probability but leaves the stations in the same order. Calling present above
+0.5 after upsampling picks the same stations as calling present above about
+`r round(prevalence, 2)` without it.
+
+The rebalanced model now finds most presences, and its accuracy falls to
+`r round(100 * upsampled$accuracy)`%, because it calls many absences present. Lower
+accuracy, yet far more useful for finding the species: another reason not to judge a
+model on a rare answer by accuracy alone.
+
+Downsampling lands a little below the curve: at the same share of false alarms, a
+lower threshold on the model without rebalancing finds `r round(100 * reached)`% of the
+presences where downsampling finds `r round(100 * downsampled$found)`%. Each downsampled
+fit keeps only as many absences as there are presences, so it learns the absences from
+far fewer stations.
+
+## A threshold set from the costs does the work of rebalancing
 
 Neither rebalancing nor a lower threshold makes the model better at telling presence
 from absence. Both choose where on the same curve to work, and the threshold does it
-without discarding stations or distorting the probabilities. The place to work comes
-from what each mistake costs, as
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) said: if a
-miss leaves a protected species unprotected, work far up the curve and accept the false
-alarms; if every station called present sends out a dive team, work lower down. At a
-sensitivity of about `r round(same$sensitivity, 1)` here, each presence found comes with
-about `r round(same$false_alarms / (same$called_present - same$false_alarms))` false
-alarms.
-[Classification performance measures](../07-validation/classification-metrics.qmd)
-summarises a whole curve in one number, so that models can be compared before a
-threshold is chosen, and
+without discarding stations. It also leaves the probabilities as they were: after
+upsampling, every station's probability is pushed up, so a probability of 0.6 no longer
+means a 60% chance of the species.
+
+Where to work depends on what each mistake costs. If a miss leaves a protected species
+unprotected, work far up the curve and accept the false alarms; if every station called
+present sends out a dive team, work lower down.
 [Choosing measures that match the objective](../07-validation/choosing-a-metric.qmd)
 turns the costs of the two mistakes into a threshold.
 
 ## Key points
 
 ::: {.key-points}
-- With a rare class, accuracy mostly measures a model's success on the common
-  class. Logistic regression without rebalancing was
-  `r round(100 * plain$accuracy)`% accurate and found
-  `r plain$called_present - plain$false_alarms` of `r presences` presences.
-- Sensitivity is the share of true yeses called yes, which misses lower. Specificity is
-  the share of true noes called no, and precision the share of yes calls that are true;
-  false alarms lower both.
-- Rebalancing belongs in the recipe, so that it changes only the stations a model is
-  fitted to.
-- Rebalancing moves a model along the curve that the threshold traces. Upsampling at 0.5
-  matched no rebalancing at a threshold of `r round(prevalence, 3)`, and downsampling
-  landed below the curve.
-- A rebalanced model's probabilities are no longer chances: upsampling's averaged
-  `r round(average_of("Upsampling"), 2)` where the species was at
-  `r round(100 * prevalence, 1)`% of stations.
-- Choose the threshold from the cost of each mistake. With a rare class, precision stays
-  low wherever it is set.
+- With a rare answer, accuracy mostly counts the easy calls of the common answer.
+  Logistic regression found one presence in `r one_in` and was still
+  `r round(100 * matched$accuracy)`% accurate.
+- Count how many of the rare cases a model finds, not just how often it is right.
+- Rebalancing, done in the recipe so that it changes only the stations a model is
+  fitted to, moves a model along the curve the threshold traces: upsampling at 0.5
+  matched no rebalancing at a threshold of `r round(prevalence, 3)`.
+- Leave the data alone and choose the threshold from the cost of each mistake.
 :::
 
 ## Try it yourself

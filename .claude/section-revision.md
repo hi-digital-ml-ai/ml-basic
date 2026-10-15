@@ -17,7 +17,10 @@ evaluating models. The revision makes each section **introduce its concepts and 
 step by step**: a method is explained in plain English before it is used, and each
 section adds something new instead of re-evaluating the same models.
 
-The Welcome page and the two Toolkit pages are out of scope for now.
+The Welcome page is out of scope for now. The two Toolkit pages were revised for
+beginners on 2026-10-14: a regression on abundance (linear regression against a random
+forest, scored by RMSE beside the training average), three pieces of syntax, one
+house-style diagram each, and the Python page's code run through reticulate.
 
 **A second, site-wide pass started on 2026-10-07**: fewer pages, each idea taught once,
 machine learning before statistics, and every term explained at first use. Its target
@@ -445,7 +448,7 @@ over six pages, is 37 scenes, about 900 words, 7:22. Use
 | 7 Validation | `feature/improve-validation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
 | 8 Unsupervised learning | `feature/improve-unsupervised-learning` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
 | 9 Neural networks | `feature/improve-neural-networks` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
-| 10 Interpretation | `feature/improve-interpretation` | Pages rebuilt; merged into `develop` 2026-10-07. Video a rough cut on the draft voice; narration approved 2026-10-07 but blocked by Gemini's 403 (see `videos.md`) |
+| 10 Interpretation | `feature/improve-interpretation` | Pages rebuilt; merged into `develop` 2026-10-07. Second pass on `feature/revise-interpretation` 2026-10-10; video narrated with Gemini (33 requests, about $0.09), 7:28 |
 
 Loose ends from section 1: the overview page says "the size of an effect" where the
 other pages say "estimate an effect".

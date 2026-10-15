@@ -8,6 +8,7 @@ way. The format is described in the comment at the top of each script.md and in
 
 import hashlib
 import json
+import random
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,7 +19,26 @@ MODEL = "gemini-3.8-flash-tts"
 LANGUAGE = "en-GB"
 PRONUNCIATION = Path(__file__).resolve().parent.parent / "_videos" / "pronunciation.yml"
 
-DIRECTIVE = re.compile(r"^(visual|pause-after):\s*(.*)$")
+DIRECTIVE = re.compile(r"^(visual|pause-after|cheer):\s*(.*)$")
+
+# The cheers: an animal pops up with a sound when each key point is made ("cheer: 1",
+# "cheer: 2", "cheer: 3"), and all three together after the recap ("cheer: all"). The
+# animals are drawn in _videos/sea_friends.py, the sounds made by tools/make-cheers.py.
+ANIMALS = ["crab", "octopus", "clownfish", "turtle", "whale", "pufferfish", "jellyfish",
+           "starfish", "seahorse", "seal", "shark", "dolphin", "otter", "ray", "puffin",
+           "anglerfish"]
+# Two kinds of cheer. An effect is a sound with its own picture: applause, a firework,
+# bubbles rising. A shout is a word the animal calls out in a speech bubble, heard as
+# a small crowd, while it jumps, spins or wiggles. Each sound is _videos/cheer-<name>.wav.
+EFFECTS = ["clap", "fireworks", "bubbles"]
+SHOUTS = {"hooray": "Hooray!", "well-done": "Well done!", "brilliant": "Brilliant!",
+          "great-work": "Great work!", "fantastic": "Fantastic!", "nice-one": "Nice one!",
+          "spot-on": "Spot on!", "keep-going": "Keep going!"}
+MOVES = ["jump", "spin", "wiggle"]
+# Each firework bursts in its own style, dealt in this order: a ring of coloured stars,
+# golden trails that droop, stars that split again, a heart, and stars that twinkle.
+FIREWORKS = ["peony", "willow", "crossette", "heart", "glitter"]
+CHEER_STAGGER = 0.9    # seconds between the three cheers in "cheer: all"
 
 
 @dataclass
@@ -28,6 +48,7 @@ class Scene:
     narration: str
     visual: str = ""
     pause_after: float = 0.0
+    cheer: str = ""
     extra: dict = field(default_factory=dict)
 
     @property
@@ -65,6 +86,8 @@ def read_script(path):
                 key, value = m.groups()
                 if key == "visual":
                     current.visual = value.strip()
+                elif key == "cheer":
+                    current.cheer = value.strip()
                 else:
                     current.pause_after = float(value)
             elif line.strip() or body:
@@ -94,6 +117,49 @@ def read_script(path):
         raise ValueError(f"{path}: scenes must be numbered 1, 2, 3 … in order, got {numbers}")
 
     return Script(path, meta, scenes)
+
+
+def cheer_cast(folder):
+    """The video's three (animal, sound, move) cheers, one per key point, in order.
+
+    Odd-numbered videos get two shouts and one effect, even-numbered ones one shout and
+    two effects. The animals, shouts, moves and effects are each dealt in turn from a
+    fixed shuffle, continuing from video to video, so all ten videos share them out
+    evenly and no video repeats one. An effect's move is its own name, except a
+    firework's, which is its style, dealt in turn from FIREWORKS. The order within
+    a video is shuffled, seeded by the folder's name, so every render and every rough
+    cut of a video picks the same three.
+    """
+    name = Path(folder).resolve().name
+    n = int(name[:2]) - 1                   # 0 for _videos/01-introduction
+
+    def deal(things, start, count):
+        order = sorted(things)
+        random.Random("ml-basic cheers").shuffle(order)
+        return [order[(start + i) % len(order)] for i in range(count)]
+
+    shouts_before = sum(2 if k % 2 == 0 else 1 for k in range(n))
+    shouts = 2 if n % 2 == 0 else 1
+    effects_before = 3 * n - shouts_before
+    fireworks_before = deal(EFFECTS, 0, effects_before).count("fireworks")
+    style = FIREWORKS[fireworks_before % len(FIREWORKS)]
+    cheers = (list(zip(deal(SHOUTS, shouts_before, shouts), deal(MOVES, shouts_before, shouts)))
+              + [(e, style if e == "fireworks" else e)
+                 for e in deal(EFFECTS, effects_before, 3 - shouts)])
+    random.Random(name).shuffle(cheers)
+    return [(a, s, m) for a, (s, m) in zip(deal(ANIMALS, 3 * n, 3), cheers)]
+
+
+def cheer_plan(folder, scene):
+    """[(animal, sound, move, seconds after the narration ends)] for a scene's cheer line."""
+    cast = cheer_cast(folder)
+    if not scene.cheer:
+        return []
+    if scene.cheer == "all":
+        return [(*c, i * CHEER_STAGGER) for i, c in enumerate(cast)]
+    if scene.cheer in ("1", "2", "3"):
+        return [(*cast[int(scene.cheer) - 1], 0.0)]
+    raise ValueError(f"scene {scene.number}: cheer must be 1, 2, 3 or all, not {scene.cheer!r}")
 
 
 def caption_text(narration):

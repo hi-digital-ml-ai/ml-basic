@@ -1,247 +1,272 @@
 ---
 title: "Python with scikit-learn"
-description: "The same seven stages as the tidymodels page, written as a scikit-learn Pipeline, with the handful of differences that quietly change your results."
+description: "The same seven steps as the R page, written in scikit-learn and explained line by line: split the stations, prepare the inputs, name the model, join the two in a Pipeline, fit, predict and score. Then the three differences from tidymodels that show up in the course's Python tabs."
 order: 2
 categories: [toolkit]
 ---
 
-## The same pipeline, a different spelling
-
-The course is written in R, but nothing in it is about R. Every idea here has a
-scikit-learn equivalent, and most modelling pages carry a Python tab beside the R chunk
-for exactly that reason. This page is the orientation those tabs assume: the same
-worked example as
-[the tidymodels page](r-with-tidymodels.qmd), in scikit-learn, followed by the places
-where the two libraries disagree by default.
-
-If you already use scikit-learn, read the last section and skip the rest.
-
-::: {.callout-note collapse="true"}
-## About the code on this page
-The site's tables and figures are produced in R, so Quarto never runs anything below.
-It is still real code rather than pseudocode: `python/check-snippets.py` executes every
-Python block in the site, this page included, against the same data files through
-`python/mlbasic_data.py`. Run it with `python/` on the path:
-
-```bash
-python -m venv .venv && .venv/bin/pip install -r python/requirements.txt
-.venv/bin/python python/check-snippets.py
+```{r}
+#| label: setup
+#| include: false
+source(here::here("R/python-tabs.R"))
 ```
 
-Expect the numbers to differ slightly from the R page. R and Python draw their random
-splits from different generators, so `random_state=1` is not `set.seed(1)` and the two
-test sets are not the same stations. The conclusions match; the third decimal places do
-not.
-:::
+{{< new-terms >}}
+
+## The course's seven steps, written in scikit-learn
+
+The course is written in R, but nothing in it depends on R. Most modelling pages carry a
+Python tab beside each R chunk, with the same step written in **scikit-learn**, the most
+widely used Python package for machine learning. This page runs the seven steps of
+[the R page](r-with-tidymodels.qmd) once in scikit-learn and says what each line does,
+so the Python tabs on later pages read as small variations on it. It ends with the three
+places where scikit-learn behaves differently from tidymodels.
+
+This page is an orientation, not a course in Python. If Python itself is new, the
+official Python tutorial (in Further resources below) is the place to start.
 
 {{< include ../_snippets/simulated-data.qmd >}}
 
+## Three pieces of Python syntax carry most of the code
+
+- `import` loads a package, and `from ... import ...` loads one name from it.
+- `=` stores a result under a name, and square brackets make a list:
+  `["depth_m", "substrate"]`.
+- Most things in scikit-learn are objects with functions of their own, called
+  **methods**, which are reached with a dot: `model.fit(...)` fits `model`.
+
+```{python}
+#| label: syntax
+depths = [12, 40, 95]
+
+round(sum(depths) / len(depths), 1)
+```
+
+The second line adds the depths, divides by how many there are, and rounds to one
+decimal place. Python reads it from the inside out, where R's pipe reads left to right.
+
 ## The idea
 
-scikit-learn builds the same object as a workflow, `Pipeline`, but by nesting rather
-than by piping. A `Pipeline` is a list of named steps applied in order; a
-`ColumnTransformer` is one such step that routes different columns to different
-transformers, which is what a recipe does with `all_numeric_predictors()` and friends.
+A model is built in the same seven steps as in tidymodels. A **transformer** prepares
+columns, such as filling gaps; an **estimator** is a model, such as linear regression;
+and a **Pipeline** joins them into one object that behaves like a model. As in
+tidymodels, steps 2 to 4 only describe what to do. Nothing is computed until `.fit()`,
+which fits every step of the Pipeline on the training rows alone.
 
 ::: {.diagram}
-![The `Pipeline` is the workflow, spelled as nesting rather than as a chain. Calling `fit()` on the outer object fits every step inside it, in order, on the training rows alone, which is what keeps the test set out.](img/sklearn-shape.svg){fig-alt="A Pipeline object drawn as an outer box. Inside it, a ColumnTransformer box contains two transformer boxes: a median SimpleImputer applied to depth, temperature and chlorophyll, and a OneHotEncoder applied to substrate. An arrow leads from the ColumnTransformer to a LogisticRegression estimator box. Outside the Pipeline, arrows show fit called with the training data going in on the left and predict called with the test data coming out on the right."}
+![The seven steps of a scikit-learn fit. The training set goes to `.fit()` and the test set to `.predict()`; the ColumnTransformer, the estimator and the Pipeline only describe the model, so nothing is computed until `.fit()`.](img/sklearn-shape.svg){fig-alt="A flow of seven cards. Card 1, hold back a test set: train_test_split() splits the data into a larger training set, three quarters, and a smaller test set, one quarter. A dashed box says steps 2 to 4 describe the model and nothing is computed yet; inside it, card 2, prepare the inputs: ColumnTransformer() fills gaps and turns categories into numbers; card 3, name the model: LinearRegression(), the method and its settings but no data; both lead into card 4, join the two: Pipeline() holds the preparation and the model. The training set and card 4 both lead into card 5, fit: .fit(X_train, y_train) works out the medians, then fits the model, on the training set. Card 5 leads to card 6, predict: .predict(X_test), which also receives the test set, prepares it the same way and predicts each station. Card 6 leads to card 7, score: root_mean_squared_error() compares the predictions with the recorded values. A note says the test set is used once, at the end, and nothing is learned from it."}
 :::
 
-The important property is the one the workflow has too. Calling `fit()` on the outer
-object fits every step inside it on the training rows, and `predict()` then applies
-those fitted steps to new data without refitting them. Preprocessing outside a pipeline
-is the commonest way to leak the test set into the training set, in either language.
+The two libraries name the steps like this:
 
 {{< include ../_snippets/toolkit-map.qmd >}}
 
 ## Worked example
 
-Predicting whether a benthic species was present at a station, from depth, temperature,
-chlorophyll and seabed type.
+As on the R page, we predict the **abundance** of one species at each station, the
+number of animals counted there, from the station's depth, temperature, chlorophyll and
+seabed type.
 
-**Split first.** `stratify` is the equivalent of `strata`, keeping the presence rate the
-same in both halves.
+### The split holds back a quarter of the stations
 
-```python
-import pandas as pd
+```{python}
+#| label: split
 from sklearn.model_selection import train_test_split
 
 from mlbasic_data import load_coastal_survey_clean
 
 survey = load_coastal_survey_clean()
-
-predictors = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "substrate"]
+inputs = ["depth_m", "temperature_c", "chlorophyll_mg_m3", "substrate"]
 
 X_train, X_test, y_train, y_test = train_test_split(
-    survey[predictors],
-    survey["present"],
-    train_size=0.75,
-    stratify=survey["present"],
-    random_state=1,
+    survey[inputs], survey["abundance"], train_size=0.75, random_state=1
 )
+
+len(X_train), len(X_test)
 ```
 
-Note that the predictors and the response are separated here, where the R page keeps
-them in one data frame and names the response in a formula. That difference runs
-through everything: scikit-learn works on an `X` matrix and a `y` vector, so the columns
-have to be listed rather than described.
+`load_coastal_survey_clean()` is one of the course's own functions: it reads the survey
+with its recording errors already fixed, as a pandas DataFrame, Python's version of a
+data table. `train_test_split()` sets aside a random quarter of the stations as the
+**test set** and keeps the rest as the **training set**. `random_state=1` fixes the
+random draw, as `set.seed(1)` does in R.
 
-**Describe the preprocessing.** A `ColumnTransformer` takes triples of name,
-transformer and columns.
+Where tidymodels keeps one data table and names the outcome in a formula, scikit-learn
+takes the inputs and the outcome separately: `X` for the table of inputs and `y` for the
+outcome. So the split returns four pieces, the inputs and the outcome for each set.
 
-```python
+### A ColumnTransformer says how to prepare the inputs
+
+```{python}
+#| label: prepare
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 
-numeric = ["depth_m", "temperature_c", "chlorophyll_mg_m3"]
+numbers = ["depth_m", "temperature_c", "chlorophyll_mg_m3"]
 
-preprocess = ColumnTransformer([
-    ("numeric", SimpleImputer(strategy="median"), numeric),
-    # drop="first" matches step_dummy(), which also drops one level.
-    ("substrate", OneHotEncoder(drop="first"), ["substrate"]),
+prepare = ColumnTransformer([
+    ("fill_gaps", SimpleImputer(strategy="median"), numbers),
+    # drop="first" matches step_dummy(), which also leaves out the first type.
+    ("seabed", OneHotEncoder(drop="first"), ["substrate"]),
 ])
 ```
 
-Anything not listed is dropped, which is the opposite of a recipe's default of carrying
-columns through untouched. Pass `remainder="passthrough"` if you want the recipe's
-behaviour.
+A `ColumnTransformer` sends each group of columns to its own transformer, given as a
+name, the transformer and the columns:
 
-**Bind, fit, predict.**
+- Some stations have no chlorophyll reading, so `SimpleImputer(strategy="median")`
+  fills each gap with the median of the training stations.
+- Seabed type is a word, and linear regression needs numbers, so `OneHotEncoder` turns
+  it into columns of 0s and 1s, one for each type but the first.
 
-```python
-from sklearn.linear_model import LogisticRegression
+Nothing has been computed yet. The median is worked out when the Pipeline is fitted,
+from the training stations alone, so the test stations have no say in how the data are
+prepared. Filling the gaps across the whole survey first would let the test set
+[leak into the model](../chapters/02-marine-data/information-leakage.qmd).
+
+### A Pipeline joins the preparation to linear regression
+
+```{python}
+#| label: fit
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 
-pipe = Pipeline([
-    ("preprocess", preprocess),
-    # scikit-learn regularises by default (L2, C=1.0) where logistic_reg() does not,
-    # so this is a ridge-penalised fit and the R page is not. See below.
-    ("model", LogisticRegression(max_iter=1000)),
+linear = Pipeline([
+    ("prepare", prepare),
+    ("model", LinearRegression()),
 ])
 
-pipe.fit(X_train, y_train)
+fitted = linear.fit(X_train, y_train)
 ```
 
-**Score.** `predict_proba` returns one column per class in `classes_` order, so name the
-column you want rather than assuming it is the second one.
+`LinearRegression()` is an estimator: it names the method,
+[linear regression](../chapters/01-introduction/prediction-and-explanation.qmd), and
+holds no data until it is fitted. The `Pipeline` lists its steps in order, each with a
+name. `.fit(X_train, y_train)` does the work: it fits the ColumnTransformer to the
+training inputs, prepares them, and fits the model to the result.
 
-```python
-from sklearn.metrics import accuracy_score, roc_auc_score
+### The predictions sit beside the recorded counts
 
-yes = list(pipe.classes_).index("yes")
-probabilities = pipe.predict_proba(X_test)[:, yes]
+```{python}
+#| label: predict
+predicted = linear.predict(X_test)
 
-print("roc_auc ", roc_auc_score(y_test == "yes", probabilities))
-print("accuracy", accuracy_score(y_test, pipe.predict(X_test)))
+table = X_test.assign(abundance=y_test, predicted=predicted)
+
+table[["abundance", "predicted"]].head().reset_index(drop=True)
 ```
 
-## One class changed, a better model
+`.predict(X_test)` runs the test stations through the fitted Pipeline, so their gaps are
+filled with the training median before the model predicts them. It returns the
+predictions alone, so the code adds them to the test table beside the recorded
+abundance to show the first five stations.
 
-Only the estimator moves. The `ColumnTransformer` and the split stay as they are.
+### RMSE scores the predictions
 
-```python
-from sklearn.ensemble import RandomForestClassifier
+```{python}
+#| label: score
+from sklearn.metrics import root_mean_squared_error
+
+average = [y_train.mean()] * len(y_test)
+
+{
+    "linear regression": round(root_mean_squared_error(y_test, predicted), 2),
+    "training average": round(root_mean_squared_error(y_test, average), 2),
+}
+```
+
+The [RMSE](../chapters/01-introduction/prediction-and-explanation.qmd), or root mean
+squared error, is roughly how far a prediction usually lands from the recorded count,
+in animals. Beside it is the simplest prediction there is: the training stations'
+average count at every test station. Linear regression misses by less than the average
+does, so it has learned something from the inputs.
+
+These numbers differ a little from the R page's. R and Python draw random numbers in
+different ways, so `random_state=1` and `set.seed(1)` put different stations in the
+test set. The steps and the conclusions are the same; the decimals are not.
+
+## Changing the method takes one line
+
+The split, the ColumnTransformer and the scoring stay as they are. Only the estimator
+changes, here to a random forest.
+
+```{python}
+#| label: fit-forest
+from sklearn.ensemble import RandomForestRegressor
 
 forest = Pipeline([
-    ("preprocess", preprocess),
-    # ranger, the engine behind rand_forest(), grows 500 trees by default; this
-    # grows 100. Matched here so the two pages are comparing the same thing.
-    ("model", RandomForestClassifier(n_estimators=500, random_state=2)),
+    ("prepare", prepare),
+    # These settings match rand_forest() in R: 500 trees, the square root of the
+    # number of inputs tried at each split, and at least 5 stations in a leaf.
+    ("model", RandomForestRegressor(
+        n_estimators=500, max_features="sqrt", min_samples_leaf=5, random_state=2
+    )),
 ])
 
-forest.fit(X_train, y_train)
+fitted_forest = forest.fit(X_train, y_train)
 
-forest_probabilities = forest.predict_proba(X_test)[:, list(forest.classes_).index("yes")]
-print("roc_auc ", roc_auc_score(y_test == "yes", forest_probabilities))
-print("accuracy", accuracy_score(y_test, forest.predict(X_test)))
+round(root_mean_squared_error(y_test, forest.predict(X_test)), 2)
 ```
 
-The forest scores better on ROC AUC here, as it does on the R page and for the same
-reason: abundance in this survey peaks near 80 m and near 9 °C and falls away on both
-sides, and a logistic regression is linear in the log-odds, so it cannot bend to a hump.
-Accuracy, meanwhile, sits at the majority-class rate for both models, which is the sign
-that accuracy is measuring nothing here.
+A [random forest](../chapters/03-supervised-learning/forests-and-boosting.qmd) averages
+the predictions of hundreds of decision trees, each grown on a different random sample
+of the training stations, so it can follow relationships that bend. On one split the two
+models land close together, and another split could put them the other way round;
+[Cross-validation](../chapters/07-validation/cross-validation.qmd) compares models over
+many splits.
 
-## Five differences that bite
+## Three differences from tidymodels show up in the Python tabs
 
-**Regularisation is on by default.** `LogisticRegression` applies an L2 penalty with
-`C=1.0`; `glm()` and `logistic_reg()` apply none. Coefficients from the two will not
-match, and on a small or collinear dataset they can differ a lot. `Ridge` and `Lasso`
-are separate classes in scikit-learn because `LinearRegression` is the unpenalised one,
-but the logistic case hides the penalty inside the default.
+**A seed does not carry across languages.** As above, `random_state=1` and
+`set.seed(1)` give different splits, and so do the random choices inside a forest. A
+Python tab's numbers differ slightly from the R output beside it; that is expected, and
+not a mistake.
 
-**Penalised and distance-based models need scaled inputs; R's often do not.** Add a
-`StandardScaler` to the numeric branch whenever the estimator is penalised, uses
-gradient descent, or measures distances. `step_normalize()` is the recipe step that does
-it. [Section 4](../chapters/04-how-algorithms-learn/gradient-descent.qmd) shows what
-scaling is worth in iterations.
+**Some estimators shrink their coefficients by default.** `LogisticRegression`, used on
+the course's yes-or-no pages, quietly adds a penalty that pulls its coefficients
+towards zero, where R's `logistic_reg()` adds none. Its setting `C` limits the
+penalty, a larger `C` making it weaker, so the Python tabs write `C=np.inf` to remove it
+where the two should match. The penalty itself is a useful tool, the subject of
+[Regularisation](../chapters/05-generalisation/regularisation.qmd).
 
-**The positive class is chosen differently.** tidymodels treats the *first* factor level
-as the event. scikit-learn sorts the labels and calls the last one positive, so
-`classes_` for `["yes", "no"]` is `['no', 'yes']`. Here the two happen to agree, which
-is worse than disagreeing, because nothing warns you when they do not. Always index
-`classes_` by name, or pass `pos_label` explicitly.
+**For a yes-or-no outcome, the probabilities come one column per class.**
+`.predict_proba()` returns one column for each answer, sorted alphabetically, so for
+"no" and "yes" the probability of "yes" is the second column, written `[:, 1]` because
+Python counts from 0. tidymodels names the same column `.pred_yes`.
 
-**A random seed is not portable.** `random_state=1` and `set.seed(1)` produce different
-splits, different folds and different forests. Comparing a Python number with an R
-number on the same data is comparing two samples, not two methods.
-
-**Missing values are handled in more places than you expect.** `SimpleImputer` is
-explicit, but `HistGradientBoostingClassifier` accepts `NaN` natively and routes it
-during splitting, and `RandomForestClassifier` refuses it outright. Which of those is
-happening changes what "imputation" contributed to your score.
-
-## Limits of this tour
-
-**Nothing here was tuned or resampled.** One split, default settings, two models.
-`GridSearchCV` and `cross_val_score` are the equivalents of `tune_grid()` and
-`vfold_cv()`, and the reasons to use them are in
-[section 5](../chapters/05-generalisation/hyperparameter-selection.qmd) and
-[section 7](../chapters/07-validation/cross-validation.qmd).
-
-**Some pages have no Python tab, deliberately.** There is no scikit-learn equivalent of
-`mgcv`'s smooth table, and `statsmodels` appears in the course only where scikit-learn
-reports no standard errors. A missing tab is information rather than an omission.
-
-**Figures stay in R throughout**, because the site's plots all come from one ggplot2
-theme. Reading the plotting code is not part of following the course.
-
-**The random-split assumption is wrong for survey data in either language.** Stations
-near each other are not independent, so every score on this page is flattered. See
-[Spatial and temporal dependence](../chapters/06-assumptions-limitations/spatial-and-temporal-dependence.qmd).
-
-::: {.callout-tip}
 ## Key points
-- `Pipeline` is `workflow()`, and `ColumnTransformer` is the column-routing half of a
-  recipe. Fit the outer object, never the steps separately, or the test set leaks in.
-- scikit-learn separates `X` and `y` and takes column lists; tidymodels keeps one data
-  frame and takes a formula. Everything else follows from that.
-- `LogisticRegression` regularises by default and `logistic_reg()` does not, so matching
-  coefficients across the two requires saying so.
-- The positive class is the first factor level in tidymodels and the last sorted label
-  in scikit-learn. Index `classes_` by name rather than by position.
-- Seeds do not carry across languages, so small numeric differences between a Python tab
-  and the R output beside it are expected and are not errors.
+
+::: {.key-points}
+- scikit-learn fits a model in the same seven steps as tidymodels: split, prepare,
+  estimator, Pipeline, fit, predict and score.
+- A `Pipeline` is tidymodels' workflow, and a `ColumnTransformer` is the column steps of
+  a recipe. Fit the whole Pipeline, never its steps one at a time, so the test set
+  stays out of the preparation.
+- scikit-learn takes the inputs `X` and the outcome `y` separately, where tidymodels
+  keeps one table and a formula.
+- Changing the method changes one line; the rest of the code stays as it is.
+- Seeds do not carry across languages, so small differences between a Python tab and
+  the R output beside it are expected.
 :::
 
 ## Try it yourself
 
-1. Put a `StandardScaler` after the imputer in the numeric branch and refit the logistic
-   model. Does ROC AUC move? Does it move for the forest?
-2. Swap `RandomForestClassifier` for `HistGradientBoostingClassifier` and drop the
-   imputer. It accepts missing values directly. Is the score better than the imputed
-   forest, and what did imputation cost you?
-3. Set `C=1e6` on the logistic model to switch the penalty off in all but name, and
-   compare the coefficients with `tidy()` output from the R page.
+1. Swap `RandomForestRegressor` for `HistGradientBoostingRegressor` (from
+   `sklearn.ensemble`) and rerun the last chunk. Which lines had to change?
+2. Add `"salinity_psu"` to the inputs and to `numbers`, and refit both models. Does
+   either RMSE change by more than the gap between the two models?
+3. Change `random_state=1` in the split to `random_state=2` and rerun everything. Do the
+   two models keep their order?
 
 ## Further resources
 
 **Documentation**
 
+- [The Python Tutorial](https://docs.python.org/3/tutorial/), Python Software Foundation. The official introduction to the language itself, for readers new to Python.
 - [Getting started](https://scikit-learn.org/stable/getting_started.html), scikit-learn. Fitting, transforming, pipelines and evaluation in one short page.
-- [Pipelines and composite estimators](https://scikit-learn.org/stable/modules/compose.html), scikit-learn user guide. `Pipeline`, `ColumnTransformer` and the naming rules that make `GridSearchCV` able to tune inside them.
-- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Leakage, inconsistent preprocessing and the meaning of `random_state`, which is the third of the five differences above.
+- [Pipelines and composite estimators](https://scikit-learn.org/stable/modules/compose.html), scikit-learn user guide. `Pipeline` and `ColumnTransformer` in full.
+- [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Leakage, inconsistent preprocessing and the meaning of `random_state`.
 
 **Video**
 

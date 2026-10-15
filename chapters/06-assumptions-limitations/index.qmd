@@ -1,63 +1,38 @@
 ---
 title: "6 · Model assumptions and limitations"
-description: "Machine learning frees a model from straight lines, but not from the way the data were collected. The section tests what a model assumes about shape and spread, then what repeat visits, neighbouring sites, uneven survey effort and a rare species do to its scores and predictions."
+description: "What a good score cannot show about a model."
 categories: [assumptions, spatial-temporal, class-imbalance]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: linearity-and-nonlinearity.qmd
+      description: "A straight line misses the curve of a species' preferred temperature, and a random forest finds it without being told its shape."
+    - path: distributional-assumptions.qmd
+      description: "A random forest predicts well without Normal errors, but the loss still decides whether it aims at the average or the median."
+    - path: dependent-data.qmd
+      description: "Visits to one site repeat each other, so the survey's rows are worth fewer independent stations than their number."
+    - path: sampling-and-extrapolation.qmd
+      description: "A model also predicts for conditions its survey never reached, and the distance to the nearest surveyed station shows when it is guessing."
+    - path: class-imbalance.qmd
+      description: "When one answer is rare, a model can be highly accurate and still miss most of the rare cases."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Machine-learning methods are often called assumption-free. They make fewer assumptions
-about the shape of a relationship than a linear model does, but they still assume the
-data were collected in a way that lets the stations stand for the ocean. The section
-takes each assumption in turn, on the same simulated survey as the rest of the course.
-The first two pages cover what a model assumes about shape and spread, which machine
-learning relaxes:
+Every method takes something for granted about its data, and when that assumption is
+wrong the model still gives an answer, which can be wrong. Machine-learning methods
+assume less about the shape of a relationship than a linear model does, but they still
+need data collected in a way that lets the stations stand for the sea. On the same
+simulated survey as the rest of the course, the first two pages show machine learning
+doing without straight lines and bell curves; the other three show what it cannot
+escape: visits to one site that repeat each other, conditions the survey never reached,
+and a rare answer that makes accuracy look good.
 
-- **linearity and nonlinearity**: linear models assume straight lines and trees and
-  forests do not, yet a random forest and a generalised additive model fitted to the
-  survey both get the depth curve wrong;
-- **distributional assumptions**: a random forest predicts skewed, unevenly spread
-  counts without assuming a distribution, but trained on log counts it predicts too
-  few animals, and its intervals must follow the errors.
-
-The next three cover how the data were collected, which it does not relax:
-
-- **independence of observations**: repeat visits to a site are worth fewer stations
-  than their number, and resampling whole sites measures how many fewer;
-- **spatial and temporal dependence**: neighbouring sites share their water, and
-  holding out whole areas of the map measures what a model knows without them;
-- **uneven sampling and extrapolation**: each method carries on past the survey in its
-  own way, and the distance to the nearest surveyed station shows where that happens.
-
-The last page takes a rare answer:
-
-- **class imbalance**: sensitivity, specificity and precision count misses and false
-  alarms apart, and rebalancing the training data turns out to move the threshold.
-
-The section picks up threads from earlier ones. The penalty on bending in
-[Linearity and nonlinearity](linearity-and-nonlinearity.qmd) works like the ridge penalty
-in [Regularisation](../05-generalisation/regularisation.qmd).
-[Distributional assumptions](distributional-assumptions.qmd) asks what each loss of
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd) aims at, and what that
-does to a total.
-[Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
-side of the split; [Independence of observations](independence-of-observations.qmd)
-measures what those visits are worth. Cross-validation by site from
-[Hyperparameter selection](../05-generalisation/hyperparameter-selection.qmd) scores every
-model here, and [Spatial and temporal dependence](spatial-and-temporal-dependence.qmd)
-compares it with spatial blocks, which
-[Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-develops. [Class imbalance](class-imbalance.qmd) builds on the misses and false alarms of
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves
-whole-curve scores to
-[Classification performance measures](../07-validation/classification-metrics.qmd).
+{{< video https://www.youtube.com/watch?v=cQogf2VKM1s title="Assumptions: what a good score cannot show" >}}
 
 ## Pages in this section
 
@@ -69,7 +44,7 @@ whole-curve scores to
 
 **Documentation**
 
-- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, which is the concrete answer to most of this section.
+- [spatialsample](https://spatialsample.tidymodels.org/), tidymodels. Blocked, clustered and buffered resampling for data with a location, for when neighbouring sites share conditions too.
 - [Common pitfalls and recommended practices](https://scikit-learn.org/stable/common_pitfalls.html), scikit-learn. Independence is assumed silently in almost every default, and this page says where.
 
 **Video**
