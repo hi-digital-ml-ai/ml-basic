@@ -1,0 +1,477 @@
+---
+title: "Introduction to machine learning in marine science"
+subtitle: "A map of machine learning, drawn on one simulated coastal survey"
+description: "Kinds of learning, prediction and explanation, six marine tasks, and the two things a model can learn."
+order: 1
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 1"
+  data-section-href: "../chapters/01-introduction/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## The data decide the kind of learning {#types-of-learning .idea data-page="Types of learning" data-href="../chapters/01-introduction/types-of-learning.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Three cards. Supervised learning has a table where every station has an answer, found yes or no. Unsupervised learning has points with no answers, falling into three groups. Reinforcement learning, not in this course, is a loop where a vehicle acts and the sea returns a reward.">
+  <!-- Supervised -->
+  <rect class="card" x="0" y="0" width="380" height="420" rx="14"/>
+  <rect class="f-blue" x="0" y="0" width="380" height="10" rx="5"/>
+  <text class="head" x="28" y="62">Supervised</text>
+  <text class="lab f-blue" x="28" y="96">EVERY EXAMPLE HAS AN ANSWER</text>
+  <rect class="t-orange" x="242" y="124" width="116" height="200" rx="8"/>
+  <text class="sm mute" x="32" y="156">Temp</text>
+  <text class="sm mute" x="132" y="156">Depth</text>
+  <text class="sm f-red" x="258" y="156" font-weight="700">Found</text>
+  <line class="grid" x1="28" y1="172" x2="352" y2="172"/>
+  <text class="sm" x="32" y="208">11.2</text><text class="sm" x="132" y="208">99</text><text class="sm f-red" x="258" y="208" font-weight="700">yes</text>
+  <text class="sm" x="32" y="246">4.4</text><text class="sm" x="132" y="246">135</text><text class="sm f-red" x="258" y="246" font-weight="700">no</text>
+  <text class="sm" x="32" y="284">14.7</text><text class="sm" x="132" y="284">52</text><text class="sm f-red" x="258" y="284" font-weight="700">no</text>
+  <text class="sm" x="32" y="322">10.0</text><text class="sm" x="132" y="322">91</text><text class="sm f-red" x="258" y="322" font-weight="700">yes</text>
+  <text x="28" y="392">Learn to predict the answer</text>
+
+  <!-- Unsupervised -->
+  <rect class="card" x="410" y="0" width="380" height="420" rx="14"/>
+  <rect class="f-green" x="410" y="0" width="380" height="10" rx="5"/>
+  <text class="head" x="438" y="62">Unsupervised</text>
+  <text class="lab f-green" x="438" y="96">NO ANSWERS AT ALL</text>
+  <circle class="none s-muted dash" stroke-width="2.5" cx="510" cy="180" r="52"/>
+  <circle class="none s-muted dash" stroke-width="2.5" cx="690" cy="170" r="52"/>
+  <circle class="none s-muted dash" stroke-width="2.5" cx="600" cy="292" r="52"/>
+  <g class="f-grey">
+    <circle cx="492" cy="165" r="8"/><circle cx="520" cy="158" r="8"/><circle cx="505" cy="190" r="8"/><circle cx="535" cy="198" r="8"/><circle cx="483" cy="200" r="8"/><circle cx="515" cy="214" r="8"/>
+    <circle cx="672" cy="150" r="8"/><circle cx="700" cy="148" r="8"/><circle cx="688" cy="178" r="8"/><circle cx="716" cy="182" r="8"/><circle cx="667" cy="187" r="8"/><circle cx="703" cy="205" r="8"/>
+    <circle cx="582" cy="278" r="8"/><circle cx="610" cy="270" r="8"/><circle cx="598" cy="302" r="8"/><circle cx="628" cy="308" r="8"/><circle cx="574" cy="312" r="8"/><circle cx="606" cy="326" r="8"/>
+  </g>
+  <text x="438" y="392">Look for groups</text>
+
+  <!-- Reinforcement -->
+  <g opacity="0.55">
+    <rect class="card" x="820" y="0" width="380" height="420" rx="14"/>
+    <rect class="f-grey" x="820" y="0" width="380" height="10" rx="5"/>
+    <text class="head" x="848" y="62">Reinforcement</text>
+    <text class="lab mute" x="848" y="96">NOT IN THIS COURSE</text>
+    <rect class="panel" x="920" y="136" width="180" height="56" rx="10"/>
+    <text class="sm mid" x="1010" y="172">Vehicle</text>
+    <rect class="panel" x="920" y="266" width="180" height="56" rx="10"/>
+    <text class="sm mid" x="1010" y="302">The sea</text>
+    <path class="wire arrow" d="M1100,194 C1130,215 1130,245 1102,264"/>
+    <path class="wire arrow" d="M920,264 C890,245 890,215 918,194"/>
+    <text class="sm" x="1136" y="238" font-style="italic">act</text>
+    <text class="sm end" x="884" y="238" font-style="italic">reward</text>
+    <text x="848" y="392">Learn by acting</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Answers in the data mean supervised learning. No answers mean unsupervised.
+:::
+
+::: notes
+Start from the data, not the method. If every station has an answer, such as whether the species was found, the method can learn to predict it. If there are only measurements, the method can only look for structure. Regression predicts a quantity and classification predicts a category. Reinforcement learning learns from rewards for its own actions and is not part of this course.
+:::
+
+## k-nearest neighbours predicts from the most similar stations {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Survey stations plotted by temperature and depth, filled where the species was found and open where it was not. A new station sits in the middle with a circle around its five nearest stations, three of them filled. Two cards on the right. Presence, a classification, is the share of neighbours with the species, 3 of 5. Abundance, a regression, is the average count of the neighbours.">
+  <line class="axis" x1="90" y1="30" x2="90" y2="380"/>
+  <line class="axis" x1="90" y1="380" x2="650" y2="380"/>
+  <text class="sm mute mid" x="370" y="420">Temperature</text>
+  <text class="sm mute mid" transform="translate(60 205) rotate(-90)">Depth</text>
+  <g stroke-width="3">
+<circle cx="228" cy="86" r="9" class="f-blue dot"/>
+<circle cx="311" cy="102" r="9" class="f-blue dot"/>
+<circle cx="140" cy="177" r="9" class="f-blue dot"/>
+<circle cx="582" cy="299" r="9" class="f-bg s-grey"/>
+<circle cx="503" cy="123" r="9" class="f-blue dot"/>
+<circle cx="384" cy="139" r="9" class="f-blue dot"/>
+<circle cx="195" cy="87" r="9" class="f-bg s-grey"/>
+<circle cx="216" cy="338" r="9" class="f-blue dot"/>
+<circle cx="536" cy="301" r="9" class="f-bg s-grey"/>
+<circle cx="266" cy="246" r="9" class="f-blue dot"/>
+<circle cx="486" cy="316" r="9" class="f-blue dot"/>
+<circle cx="563" cy="81" r="9" class="f-bg s-grey"/>
+<circle cx="420" cy="260" r="9" class="f-bg s-grey"/>
+<circle cx="368" cy="109" r="9" class="f-bg s-grey"/>
+<circle cx="351" cy="82" r="9" class="f-blue dot"/>
+<circle cx="578" cy="230" r="9" class="f-bg s-grey"/>
+<circle cx="416" cy="186" r="9" class="f-blue dot"/>
+<circle cx="189" cy="148" r="9" class="f-bg s-grey"/>
+<circle cx="528" cy="68" r="9" class="f-blue dot"/>
+<circle cx="129" cy="246" r="9" class="f-bg s-grey"/>
+<circle cx="251" cy="218" r="9" class="f-blue dot"/>
+<circle cx="350" cy="160" r="9" class="f-blue dot"/>
+<circle cx="624" cy="115" r="9" class="f-bg s-grey"/>
+<circle cx="434" cy="139" r="9" class="f-bg s-grey"/>
+<circle cx="290" cy="283" r="9" class="f-bg s-grey"/>
+<circle cx="137" cy="125" r="9" class="f-bg s-grey"/>
+<circle cx="503" cy="243" r="9" class="f-blue dot"/>
+<circle cx="228" cy="156" r="9" class="f-blue dot"/>
+<circle cx="197" cy="195" r="9" class="f-bg s-grey"/>
+<circle cx="571" cy="346" r="9" class="f-bg s-grey"/>
+<circle cx="487" cy="348" r="9" class="f-blue dot"/>
+<circle cx="114" cy="143" r="9" class="f-blue dot"/>
+<circle cx="607" cy="291" r="9" class="f-bg s-grey"/>
+<circle cx="318" cy="343" r="9" class="f-blue dot"/>
+<circle cx="428" cy="304" r="9" class="f-blue dot"/>
+<circle cx="258" cy="113" r="9" class="f-bg s-grey"/>
+<circle cx="277" cy="58" r="9" class="f-blue dot"/>
+<circle cx="513" cy="166" r="9" class="f-blue dot"/>
+<circle cx="256" cy="85" r="9" class="f-blue dot"/>
+<circle cx="616" cy="184" r="9" class="f-bg s-grey"/>
+<circle cx="457" cy="101" r="9" class="f-bg s-grey"/>
+<circle cx="126" cy="205" r="9" class="f-bg s-grey"/>
+<circle cx="235" cy="359" r="9" class="f-bg s-grey"/>
+<circle cx="169" cy="216" r="9" class="f-bg s-grey"/>
+<circle cx="537" cy="207" r="9" class="f-blue dot"/>
+<circle cx="231" cy="118" r="9" class="f-bg s-grey"/>
+  </g>
+  <circle class="none s-accent dash" stroke-width="3.5" cx="380" cy="205" r="92"/>
+  <path class="f-orange s-fg" stroke-width="2" d="M380,183 L386,199 L403,199 L389,209 L394,226 L380,216 L366,226 L371,209 L357,199 L374,199 z"/>
+  <text class="sm mid" x="380" y="258" font-weight="700">new</text>
+
+  <rect class="card" x="720" y="20" width="480" height="170" rx="14"/>
+  <text class="lab f-blue" x="748" y="60">PRESENCE IS A CLASSIFICATION</text>
+  <text class="big f-blue" x="748" y="122">3 of 5</text>
+  <text class="sm mute" x="748" y="162">neighbours have the species</text>
+
+  <rect class="card" x="720" y="220" width="480" height="170" rx="14"/>
+  <text class="lab f-orange" x="748" y="260">ABUNDANCE IS A REGRESSION</text>
+  <text class="head" x="748" y="314">Average count</text>
+  <text class="sm mute" x="748" y="354">of the same five neighbours</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+No equation to fit. The survey itself is the model.
+:::
+
+::: notes
+To predict for a new station, k-nearest neighbours finds the survey stations most like it in temperature, salinity and depth, here the five nearest. For presence it reports the share of those neighbours where the species was found. For abundance it averages their counts. Scale the inputs first, or depth, with the largest numbers, decides on its own which stations count as near.
+:::
+
+## k-means sorts the stations into groups without an answer {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/01-introduction/types-of-learning/fig-clusters-1.png){fig-alt="Left, stations by depth and temperature coloured into three groups, shallow, mid-depth and deep. Right, boxplots of abundance in each group, highest in the shallow group and lowest in the deep group."}
+:::
+:::
+
+::: {.takeaway}
+The groups differ in abundance, which k-means never saw. Ask for six groups and you get six.
+:::
+
+::: notes
+k-means is given only temperature, salinity and depth, and asked for three groups. It places three centres, assigns every station to the nearest one, moves each centre to the middle of its stations, and repeats. The groups it finds follow depth, and they differ in abundance although abundance was never used. That is useful and tempting at once, because k-means always returns as many groups as you ask for.
+:::
+
+## One model can serve two aims {#prediction-and-explanation .idea data-page="Prediction and explanation" data-href="../chapters/01-introduction/prediction-and-explanation.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two cards. Prediction, the usual aim in machine learning, is shown as a target with hits near the centre and is checked on new stations. Explanation, the usual aim in statistics, is shown as an arrow from an input to the outcome with a question mark and rests on study design.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="62">Prediction</text>
+  <text class="lab f-blue" x="32" y="96">USUAL AIM IN MACHINE LEARNING</text>
+  <g transform="translate(150 245)">
+    <circle class="none s-line" stroke-width="16" r="105"/>
+    <circle class="none s-blue" stroke-width="16" r="70" opacity="0.5"/>
+    <circle class="f-blue" r="30"/>
+    <circle class="f-fg" cx="12" cy="-8" r="7"/><circle class="f-fg" cx="-22" cy="16" r="7"/><circle class="f-fg" cx="40" cy="30" r="7"/><circle class="f-fg" cx="-6" cy="-44" r="7"/>
+  </g>
+  <text x="300" y="220">How close are the</text>
+  <text x="300" y="254">predictions?</text>
+  <text class="sm mute" x="300" y="306">Checked on stations</text>
+  <text class="sm mute" x="300" y="334">held back from fitting</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="62">Explanation</text>
+  <text class="lab f-orange" x="652" y="96">USUAL AIM IN STATISTICS</text>
+  <rect class="panel" x="652" y="160" width="150" height="64" rx="10"/>
+  <text class="sm mid" x="727" y="200">Salinity</text>
+  <rect class="panel" x="652" y="300" width="150" height="64" rx="10"/>
+  <text class="sm mid" x="727" y="340">Abundance</text>
+  <line class="wire thick arrow" x1="727" y1="228" x2="727" y2="290"/>
+  <text class="big f-orange" x="750" y="276">?</text>
+  <text x="850" y="220">Does this input</text>
+  <text x="850" y="254">really matter?</text>
+  <text class="sm mute" x="850" y="306">Rests on study design</text>
+  <text class="sm mute" x="850" y="334">and knowledge of the sea</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A good fit is enough for prediction. Explanation asks for much more.
+:::
+
+::: notes
+Statistics and machine learning use the same models and the same fitting. They differ in aim. A model built to predict is judged by how close its predictions come on stations it never saw. A model built to explain claims that an input changes the outcome, and that claim rests on how the data were collected and on what we know about the system.
+:::
+
+## A straight line misses a temperature optimum {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/01-introduction/prediction-and-explanation/fig-shapes-1.png){fig-alt="Abundance against temperature. The linear regression is a nearly flat line. The decision tree steps up from low counts in cold water to the most animals at middle temperatures and down again in warm water."}
+:::
+:::
+
+::: {.takeaway}
+A flat slope can mean no effect, or a shape the model cannot draw.
+:::
+
+::: notes
+Linear regression gives one slope per input, so it can only say that abundance rises or falls with temperature. Here the animals are most common at middle temperatures, and the line comes out nearly flat. A decision tree finds the optimum without being told it exists. For explanation you choose the shape. Most machine-learning methods find the shape for you.
+:::
+
+## Depth makes salinity look important {.example}
+
+::: {.cols .wide-right}
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 470 400" role="img" aria-label="Depth at the top, with arrows down to salinity and to abundance. A dashed arrow from salinity to abundance is crossed out.">
+  <rect class="card" x="135" y="10" width="200" height="70" rx="12" style="stroke: var(--accent)"/>
+  <text class="head mid" x="235" y="56">Depth</text>
+  <rect class="panel" x="0" y="290" width="190" height="70" rx="12"/>
+  <text class="mid" x="95" y="334">Salinity</text>
+  <rect class="panel" x="280" y="290" width="190" height="70" rx="12"/>
+  <text class="mid" x="375" y="334">Abundance</text>
+  <line class="edge arrow-accent" x1="200" y1="86" x2="110" y2="280"/>
+  <line class="edge arrow-accent" x1="270" y1="86" x2="360" y2="280"/>
+  <line class="wire dash arrow" x1="196" y1="325" x2="272" y2="325"/>
+  <path class="none s-red" stroke-width="6" stroke-linecap="round" d="M218,302 L250,348 M250,302 L218,348"/>
+</svg>
+</div>
+```
+
+::: {.plot}
+::: {.card}
+![](figures/01-introduction/prediction-and-explanation/fig-salinity-1.png){fig-alt="The salinity slope with its confidence interval in two models. With temperature and salinity only, the slope is clearly below zero. With depth added, the slope sits close to zero and its interval crosses zero."}
+:::
+:::
+:::
+
+::: {.takeaway}
+Leave depth out and salinity seems to matter. Add depth and the effect almost vanishes.
+:::
+
+::: notes
+Salinity rises with depth, and depth also affects the animals. A model without depth gives salinity a confident slope, and that model still predicts well, because salinity stands in for depth. For explanation the slope is misleading. Depth is a confounder, and a low test error cannot reveal it.
+:::
+
+## Six tasks cover most marine applications {#applications-in-marine-science .idea data-page="Applications in marine science" data-href="../chapters/01-introduction/applications-in-marine-science.html"}
+
+```{=html}
+<div class="visual tall">
+<svg viewBox="0 0 1200 460" role="img" aria-label="Six tiles. Naming things, such as plankton, fish and whale calls. Mapping across space, such as species distributions. Filling gaps, such as cloud gaps in satellite images. Forecasting, such as algal blooms. Finding groups, such as water masses. Standing in for a slow ocean model with a fast emulator.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <rect class="panel" x="26" y="32" width="96" height="58" rx="8"/>
+    <path class="none s-fg" stroke-width="3" d="M42,61 C58,44 88,44 100,61 C88,78 58,78 42,61 z M100,61 L112,50 L112,72 z"/>
+    <line class="wire arrow" x1="132" y1="61" x2="172" y2="61"/>
+    <rect class="t-orange" x="182" y="40" width="96" height="42" rx="21"/>
+    <text class="sm mid" x="230" y="69">Fish</text>
+    <text class="head" x="26" y="148">Naming things</text>
+    <text class="sm mute" x="26" y="186">Plankton, fish, whale calls</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <g transform="translate(26 26)">
+      <rect class="t-blue" width="200" height="72"/>
+      <rect class="f-blue" x="0" width="50" height="72" opacity="0.7"/><rect class="f-blue" x="50" width="50" height="72" opacity="0.5"/><rect class="f-blue" x="100" width="50" height="72" opacity="0.3"/>
+      <circle class="f-fg" cx="24" cy="20" r="7"/><circle class="f-fg" cx="122" cy="50" r="7"/><circle class="f-fg" cx="176" cy="22" r="7"/>
+    </g>
+    <text class="head" x="26" y="148">Mapping across space</text>
+    <text class="sm mute" x="26" y="186">Species distributions, habitats</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <g transform="translate(26 26)">
+      <rect class="f-blue" width="200" height="72" opacity="0.45"/>
+      <rect class="f-bg s-orange dash" stroke-width="3" x="70" y="12" width="64" height="48"/>
+    </g>
+    <text class="head" x="26" y="148">Filling gaps</text>
+    <text class="sm mute" x="26" y="186">Cloud gaps in satellite images</text>
+  </g>
+  <g transform="translate(0 245)">
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <polyline class="none s-fg" stroke-width="3.5" points="28,90 58,62 84,80 112,50 138,72 164,48"/>
+    <path class="t-orange" d="M164,48 L250,22 L250,92 z"/>
+    <polyline class="none s-orange dash" stroke-width="3.5" points="164,48 196,58 222,44 250,54"/>
+    <line class="grid" x1="164" y1="20" x2="164" y2="100"/>
+    <text class="head" x="26" y="148">Forecasting</text>
+    <text class="sm mute" x="26" y="186">Algal blooms, recruitment</text>
+  </g>
+  <g transform="translate(410 245)">
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <g class="f-blue"><circle cx="50" cy="50" r="8"/><circle cx="70" cy="40" r="8"/><circle cx="62" cy="66" r="8"/></g>
+    <g class="f-green"><circle cx="140" cy="76" r="8"/><circle cx="160" cy="66" r="8"/><circle cx="154" cy="92" r="8"/></g>
+    <g class="f-orange"><circle cx="226" cy="40" r="8"/><circle cx="248" cy="34" r="8"/><circle cx="240" cy="58" r="8"/></g>
+    <text class="head" x="26" y="148">Finding groups</text>
+    <text class="sm mute" x="26" y="186">Water masses, marine regions</text>
+  </g>
+  <g transform="translate(820 245)">
+    <rect class="card" x="0" y="0" width="380" height="215" rx="14"/>
+    <rect class="panel" x="26" y="30" width="120" height="62" rx="8"/>
+    <text class="sm mid" x="86" y="58">Ocean</text><text class="sm mid" x="86" y="82">model</text>
+    <line class="wire arrow" x1="156" y1="61" x2="196" y2="61"/>
+    <rect class="t-blue s-blue" stroke-width="2" x="206" y="30" width="120" height="62" rx="8"/>
+    <text class="sm mid" x="266" y="69">Emulator</text>
+    <text class="head" x="26" y="148">Standing in</text>
+    <text class="sm mute" x="26" y="186">Fast copies of slow models</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Plankton images and whale calls are the same task. Group by task, not by field.
+:::
+
+::: notes
+Sorting applications by field hides how much they share. Sorted by what the model does, most fall into six tasks. Naming things puts each image or sound into a class. Mapping predicts at places never sampled. Filling gaps estimates missing values from their neighbours. Forecasting predicts the next values from the past. Finding groups is unsupervised. Standing in means copying a slow ocean model with a fast one. Each task has its own typical way of going wrong.
+:::
+
+## A few expert labels become predictions at scale {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Four steps from left to right. One, the data you have, plentiful. Two, expert labels on a small share, slow and costly. Three, the model learns. Four, it is used at scale, valid only where new data resemble the labelled data.">
+  <g>
+    <rect class="card" x="0" y="20" width="255" height="300" rx="14"/>
+    <circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">1</text>
+    <g class="f-grey" opacity="0.8">
+      <rect x="30" y="118" width="40" height="30" rx="4"/><rect x="78" y="118" width="40" height="30" rx="4"/><rect x="126" y="118" width="40" height="30" rx="4"/><rect x="174" y="118" width="40" height="30" rx="4"/>
+      <rect x="30" y="156" width="40" height="30" rx="4"/><rect x="78" y="156" width="40" height="30" rx="4"/><rect x="126" y="156" width="40" height="30" rx="4"/><rect x="174" y="156" width="40" height="30" rx="4"/>
+    </g>
+    <text class="head" x="28" y="240">Data</text>
+    <text class="sm f-green" x="28" y="280" font-weight="700">Plentiful</text>
+  </g>
+  <line class="wire arrow" x1="262" y1="170" x2="300" y2="170"/>
+  <g transform="translate(315 0)">
+    <rect class="card" x="0" y="20" width="255" height="300" rx="14"/>
+    <circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">2</text>
+    <g class="f-grey" opacity="0.8">
+      <rect x="78" y="118" width="40" height="30" rx="4"/><rect x="126" y="118" width="40" height="30" rx="4"/><rect x="174" y="118" width="40" height="30" rx="4"/>
+      <rect x="30" y="156" width="40" height="30" rx="4"/><rect x="78" y="156" width="40" height="30" rx="4"/><rect x="174" y="156" width="40" height="30" rx="4"/>
+    </g>
+    <rect class="f-orange" x="30" y="118" width="40" height="30" rx="4"/><rect class="f-orange" x="126" y="156" width="40" height="30" rx="4"/>
+    <text class="head" x="28" y="240">Expert labels</text>
+    <text class="sm f-red" x="28" y="280" font-weight="700">Slow and costly</text>
+  </g>
+  <line class="wire arrow" x1="577" y1="170" x2="615" y2="170"/>
+  <g transform="translate(630 0)">
+    <rect class="card" x="0" y="20" width="255" height="300" rx="14"/>
+    <circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">3</text>
+    <g class="none s-accent" stroke-width="3">
+      <line x1="60" y1="130" x2="128" y2="115"/><line x1="60" y1="130" x2="128" y2="155"/><line x1="60" y1="170" x2="128" y2="115"/><line x1="60" y1="170" x2="128" y2="155"/>
+      <line x1="128" y1="115" x2="190" y2="140"/><line x1="128" y1="155" x2="190" y2="140"/>
+    </g>
+    <g class="f-accent"><circle cx="60" cy="130" r="10"/><circle cx="60" cy="170" r="10"/><circle cx="128" cy="115" r="10"/><circle cx="128" cy="155" r="10"/><circle cx="190" cy="140" r="10"/></g>
+    <text class="head" x="28" y="240">Model learns</text>
+    <text class="sm mute" x="28" y="280">Fast once labelled</text>
+  </g>
+  <line class="wire arrow" x1="892" y1="170" x2="930" y2="170"/>
+  <g transform="translate(945 0)">
+    <rect class="card" x="0" y="20" width="255" height="300" rx="14"/>
+    <circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">4</text>
+    <g class="f-orange" opacity="0.85">
+      <rect x="30" y="118" width="40" height="30" rx="4"/><rect x="78" y="118" width="40" height="30" rx="4"/><rect x="126" y="118" width="40" height="30" rx="4"/><rect x="174" y="118" width="40" height="30" rx="4"/>
+      <rect x="30" y="156" width="40" height="30" rx="4"/><rect x="78" y="156" width="40" height="30" rx="4"/><rect x="126" y="156" width="40" height="30" rx="4"/><rect x="174" y="156" width="40" height="30" rx="4"/>
+    </g>
+    <text class="head" x="28" y="240">Used at scale</text>
+    <text class="sm mute" x="28" y="280">Every image, every year</text>
+  </g>
+  <text class="mid" x="600" y="385" font-weight="600">The value is in step 4. The risk is in step 2.</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Whatever the labelled examples miss, the model misses everywhere.
+:::
+
+::: notes
+Most supervised applications share one pipeline. The data are plentiful, but a specialist can label only a small share of them, such as naming the species in some of the images. The model learns from those labels and is then run on everything else. The labelled examples are rarely a random sample, and the model carries their gaps into every prediction. It is valid only where new data resemble the labelled data.
+:::
+
+## A model learns either the answer or the data {#discriminative-and-generative-models .idea data-page="Discriminative and generative models" data-href="../chapters/01-introduction/discriminative-and-generative-models.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two panels of the same points in two groups. In the discriminative panel a single line separates the groups. In the generative panel each group is described by an oval, and new open points are drawn from the ovals.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="58">Discriminative</text>
+  <text class="lab f-blue" x="32" y="92">LEARNS THE ANSWER</text>
+  <g transform="translate(60 120)">
+    <g class="f-blue"><circle cx="40" cy="60" r="10"/><circle cx="80" cy="40" r="10"/><circle cx="70" cy="100" r="10"/><circle cx="120" cy="70" r="10"/><circle cx="40" cy="140" r="10"/><circle cx="110" cy="130" r="10"/><circle cx="150" cy="30" r="10"/></g>
+    <g class="f-orange"><circle cx="300" cy="160" r="10"/><circle cx="340" cy="120" r="10"/><circle cx="380" cy="180" r="10"/><circle cx="260" cy="210" r="10"/><circle cx="420" cy="140" r="10"/><circle cx="330" cy="230" r="10"/><circle cx="410" cy="230" r="10"/></g>
+    <line class="edge thick" x1="140" y1="260" x2="300" y2="-10"/>
+  </g>
+  <text class="sm mute" x="32" y="390">Only the boundary between the groups</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="58">Generative</text>
+  <text class="lab f-green" x="652" y="92">LEARNS THE DATA</text>
+  <g transform="translate(680 120)">
+    <ellipse class="t-blue s-blue" stroke-width="3" cx="90" cy="85" rx="95" ry="75" opacity="0.9"/>
+    <ellipse class="t-orange s-orange" stroke-width="3" cx="340" cy="175" rx="110" ry="80" opacity="0.9"/>
+    <g class="f-blue"><circle cx="40" cy="60" r="10"/><circle cx="80" cy="40" r="10"/><circle cx="70" cy="100" r="10"/><circle cx="120" cy="70" r="10"/><circle cx="40" cy="140" r="10"/><circle cx="110" cy="130" r="10"/><circle cx="150" cy="30" r="10"/></g>
+    <g class="f-orange"><circle cx="300" cy="160" r="10"/><circle cx="340" cy="120" r="10"/><circle cx="380" cy="180" r="10"/><circle cx="260" cy="210" r="10"/><circle cx="420" cy="140" r="10"/><circle cx="330" cy="230" r="10"/><circle cx="410" cy="230" r="10"/></g>
+    <g class="f-bg" stroke-width="3.5"><circle class="s-blue" cx="150" cy="100" r="10"/><circle class="s-blue" cx="20" cy="100" r="10"/><circle class="s-orange" cx="270" cy="140" r="10"/><circle class="s-orange" cx="390" cy="100" r="10"/></g>
+  </g>
+  <text class="sm mute" x="652" y="390">A description of each group. Open points are new, invented examples</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The tools that write text or draw pictures are generative models.
+:::
+
+::: notes
+A discriminative model, such as k-nearest neighbours, learns only the answer, the chance of an outcome at each value of the inputs. A generative model learns a description of each group of data. From that description it can answer the same question, and it can also invent new examples. Both can be useful for the same question.
+:::
+
+## The two kinds part company where data are thin {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/01-introduction/discriminative-and-generative-models/fig-two-models-1.png){fig-alt="Left, temperatures at stations with and without the species, each summarised by a bell curve. Right, the chance of presence against temperature from the bell curves and from k-nearest neighbours. The two agree at middle temperatures and differ at the coldest and warmest stations."}
+:::
+:::
+
+::: {.takeaway}
+Where stations are many, both tell the same story. At the cold and warm edges, they disagree.
+:::
+
+::: notes
+The generative model describes the temperatures at stations with and without the species, each with a bell curve, and turns the two curves into a chance of presence. k-nearest neighbours learns that chance directly. Where there are many stations the two agree. At the edges, where there are few, each falls back on its own assumptions. The generative model is only as good as its description of the data.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Answers in the data mean supervised learning. No answers mean unsupervised.
+- Prediction is checked on new data. Explanation needs study design as well.
+- Most marine applications are one of six tasks.
+- A model learns either the answer or the data themselves.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/01-introduction/index.html).
+:::
+:::

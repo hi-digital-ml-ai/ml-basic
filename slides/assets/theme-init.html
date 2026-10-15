@@ -1,0 +1,9 @@
+<!-- Applies the remembered deck theme before the first paint (see controls.html). -->
+<script>
+try {
+  // ?theme=dark in the address chooses a theme for that visit, e.g. for a link.
+  var t = new URLSearchParams(location.search).get("theme") ||
+          localStorage.getItem("ml-basic-deck-theme");
+  if (t) document.documentElement.setAttribute("data-deck-theme", t);
+} catch (e) {}
+</script>

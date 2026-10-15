@@ -1,0 +1,22 @@
+# Every deck in this folder is a reveal.js presentation with the same look and
+# controls. The page that lists them is slides.qmd, one level up, because a page
+# in this folder would be rendered as a deck too.
+format:
+  revealjs:
+    theme: [default, assets/slides.scss]
+    width: 1280
+    height: 720
+    margin: 0.05
+    center: false
+    transition: fade
+    transition-speed: fast
+    slide-number: c/t
+    hash: true
+    progress: true
+    controls: true
+    menu: false
+    preview-links: false
+    navigation-mode: linear
+    auto-stretch: false
+    include-in-header: assets/theme-init.html
+    include-after-body: assets/controls.html

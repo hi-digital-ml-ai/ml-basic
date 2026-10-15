@@ -1,11 +1,12 @@
 # tools/
 
-Build-time scripts. Neither is part of the course; they run when the site is built.
+Build-time scripts. None is part of the course; they run when the site is built.
 
 | File | What it does |
 | --- | --- |
 | `extract-code.py` | Pulls the R and Python out of every page into runnable scripts, and zips them with the data |
 | `code-downloads.lua` | Puts the "Code from this page" line at the top of every page that has code |
+| `slide-figures.py` | Copies the pages' plots that the slide decks show out of `_freeze/` into `slides/figures/` |
 
 ## The pages are the source of truth
 

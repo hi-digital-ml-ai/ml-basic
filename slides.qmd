@@ -1,0 +1,59 @@
+---
+title: "Slides"
+description: "One slide deck for each course section, for teaching it or for a quick review."
+listing:
+  id: decks
+  # Explicit items, so each card can carry its section number.
+  contents:
+    - path: slides/01-introduction.qmd
+      title: "1 · Introduction to machine learning in marine science"
+    - path: slides/02-marine-data.qmd
+      title: "2 · Marine data for machine learning"
+    - path: slides/03-supervised-learning.qmd
+      title: "3 · Supervised learning"
+    - path: slides/04-how-algorithms-learn.qmd
+      title: "4 · How machine-learning algorithms learn"
+    - path: slides/05-generalisation.qmd
+      title: "5 · Generalisation"
+    - path: slides/06-assumptions-limitations.qmd
+      title: "6 · Assumptions and limitations"
+    - path: slides/07-validation.qmd
+      title: "7 · Validation and performance"
+    - path: slides/08-unsupervised-learning.qmd
+      title: "8 · Unsupervised learning"
+    - path: slides/09-neural-networks.qmd
+      title: "9 · Neural networks"
+    - path: slides/10-interpretation.qmd
+      title: "10 · Interpretation and reporting"
+  type: grid
+  grid-columns: 3
+  sort: "order"
+  fields: [title, description]
+toc: false
+---
+
+Each deck follows its section page by page, with one slide for the idea behind a page
+and one or two for its examples. A small label at the top of every slide names the
+page, and links to it.
+
+::: {#decks}
+:::
+
+## Presenting
+
+The buttons at the bottom left open the contents, change the theme, turn the laser
+pointer on and off, go full screen, and open the section on the course site.
+
+| Key | Action |
+| --- | --- |
+| Right arrow or space | Next slide |
+| Left arrow | Previous slide |
+| T | Change the theme (Light, Sand, Dark, Ocean, High contrast) |
+| L | Laser pointer on or off |
+| F | Full screen |
+| S | Speaker view, with notes for every slide |
+| O or Esc | Overview of all slides |
+| ? | All keys |
+
+To print a deck or save it as a PDF, add `?print-pdf` to its address and print from
+the browser. Adding `?theme=dark` to the address opens a deck in that theme.

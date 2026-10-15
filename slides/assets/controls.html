@@ -1,0 +1,318 @@
+<!--
+  Shared by every deck (slides/_metadata.yml). It adds:
+  - the signposts: each idea or example slide gets a small heading naming its
+    course page, tagged Idea or Example. The first slide of a page carries the
+    page in data-page and data-href; the slides after it inherit them;
+  - the contents slide's tiles, built from those pages;
+  - the controls at the bottom left: contents, theme, laser pointer, full screen
+    and the section's page on the course site;
+  - keys: T changes the theme, L turns the laser pointer on and off.
+  Themes are CSS variables in slides.scss, chosen by data-deck-theme on <html>.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="deck-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/>
+    </marker>
+    <marker id="deck-arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" style="fill: var(--accent)"/>
+    </marker>
+  </defs>
+</svg>
+
+<script>
+(function () {
+  "use strict";
+
+  var THEMES = [
+    { id: "light",    name: "Light",         swatch: "#ffffff" },
+    { id: "sand",     name: "Sand",          swatch: "#fbf6ec" },
+    { id: "dark",     name: "Dark",          swatch: "#161b21" },
+    { id: "ocean",    name: "Ocean",         swatch: "#0b2a3c" },
+    { id: "contrast", name: "High contrast", swatch: "#000000" }
+  ];
+  var KEY = "ml-basic-deck-theme";
+  var root = document.documentElement;
+
+  // Browser storage can be missing or blocked; the deck works without it.
+  function loadTheme() {
+    try { return localStorage.getItem(KEY); } catch (e) { return null; }
+  }
+  function saveTheme(id) {
+    try { localStorage.setItem(KEY, id); } catch (e) { /* not remembered */ }
+  }
+
+  function setTheme(id) {
+    if (!THEMES.some(function (t) { return t.id === id; })) id = "light";
+    root.setAttribute("data-deck-theme", id);
+    saveTheme(id);
+    document.querySelectorAll(".deck-theme-menu button").forEach(function (b) {
+      b.setAttribute("aria-checked", String(b.dataset.theme === id));
+    });
+  }
+
+  function nextTheme() {
+    var now = root.getAttribute("data-deck-theme") || "light";
+    var i = THEMES.findIndex(function (t) { return t.id === now; });
+    setTheme(THEMES[(i + 1) % THEMES.length].id);
+  }
+
+  setTheme(new URLSearchParams(location.search).get("theme") || loadTheme() || "light");
+
+  // ---- Signposts and contents -------------------------------------------
+
+  function signposts() {
+    var page = null, href = null;
+    document.querySelectorAll(".reveal .slides > section").forEach(function (s) {
+      // A slide without data-page belongs to the page before it, unless it is
+      // not an idea or example slide at all (the contents, the key points).
+      if (s.dataset.page) {
+        page = s.dataset.page;
+        href = s.dataset.href || null;
+      } else if (!(s.classList.contains("idea") || s.classList.contains("example"))) {
+        page = null;
+      }
+      if (!page || !(s.classList.contains("idea") || s.classList.contains("example"))) return;
+      var k = document.createElement("div");
+      k.className = "kicker";
+      var name = document.createElement(href ? "a" : "span");
+      name.textContent = page;
+      if (href) { name.href = href; name.title = "Open this page on the course site"; }
+      var tag = document.createElement("span");
+      var ex = s.classList.contains("example");
+      tag.className = "tag" + (ex ? " example" : "");
+      tag.textContent = ex ? "Example" : "Idea";
+      k.appendChild(name);
+      k.appendChild(tag);
+      s.insertBefore(k, s.firstChild);
+    });
+  }
+
+  function contents() {
+    var box = document.querySelector(".reveal .tiles[data-auto]");
+    if (!box) return;
+    var n = 0;
+    document.querySelectorAll(".reveal .slides > section.idea[data-page]").forEach(function (s) {
+      n += 1;
+      var a = document.createElement("a");
+      a.href = "#/" + s.id;
+      a.innerHTML = '<span class="n">' + n + "</span><span></span>";
+      a.lastChild.textContent = s.dataset.page;
+      box.appendChild(a);
+    });
+  }
+
+  var WAVES =
+    '<svg class="waves" viewBox="0 0 1400 200" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path d="M0,110 C200,60 350,160 560,110 C770,60 900,150 1120,105 C1250,80 1330,100 1400,95 L1400,200 L0,200 z" style="fill: var(--tint-blue)"/>' +
+    '<path d="M0,150 C230,110 380,190 620,150 C840,115 1000,185 1230,145 C1310,132 1360,140 1400,138 L1400,200 L0,200 z" style="fill: var(--accent); opacity: 0.55"/>' +
+    "</svg>";
+
+  function titleSlide() {
+    document.querySelectorAll(".reveal .slides > section.closing").forEach(function (s) {
+      s.insertAdjacentHTML("beforeend", WAVES);
+    });
+    var t = document.getElementById("title-slide");
+    if (!t) return;
+    if (t.dataset.kicker) {
+      var k = document.createElement("div");
+      k.className = "course-kicker";
+      k.textContent = t.dataset.kicker;
+      t.insertBefore(k, t.firstChild);
+    }
+    if (t.dataset.note) {
+      var n = document.createElement("p");
+      n.className = "simulated-note";
+      n.textContent = t.dataset.note;
+      t.appendChild(n);
+    }
+    t.insertAdjacentHTML("beforeend", WAVES);
+  }
+
+  // A plot's data-crop is the share of its height, from the top, that holds the
+  // plot's own title. The image keeps its width and loses that strip.
+  function crops() {
+    document.querySelectorAll(".reveal img[data-crop]").forEach(function (img) {
+      function apply() {
+        var c = parseFloat(img.dataset.crop) || 0;
+        if (!img.naturalWidth) return;
+        img.style.aspectRatio = img.naturalWidth + " / " + (img.naturalHeight * (1 - c));
+      }
+      if (img.complete) apply(); else img.addEventListener("load", apply);
+    });
+  }
+
+  // ---- Controls -----------------------------------------------------------
+
+  var ICON = {
+    contents: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+    theme: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" style="fill: currentColor"/></svg>',
+    laser: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" style="fill: currentColor"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>',
+    full: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    site: '<svg viewBox="0 0 24 24"><path d="M3 5.5c3-1.3 6-1.3 9 .8 3-2.1 6-2.1 9-.8v13c-3-1.3-6-1.3-9 .8-3-2.1-6-2.1-9-.8z"/><path d="M12 6.3v13"/></svg>'
+  };
+
+  function tool(tag, name, icon, label) {
+    var el = document.createElement(tag);
+    el.className = "deck-tool-" + name;
+    el.innerHTML = icon;
+    el.title = label;
+    el.setAttribute("aria-label", label);
+    if (tag === "button") el.type = "button";
+    return el;
+  }
+
+  function controls() {
+    var bar = document.createElement("div");
+    bar.className = "deck-tools";
+
+    var c = tool("button", "contents", ICON.contents, "Contents");
+    c.addEventListener("click", function () {
+      var s = document.getElementById("contents");
+      if (s) Reveal.slide(Reveal.getIndices(s).h);
+    });
+
+    var t = tool("button", "theme", ICON.theme, "Theme (T)");
+    t.setAttribute("aria-haspopup", "true");
+    var menu = document.createElement("div");
+    menu.className = "deck-theme-menu";
+    menu.setAttribute("role", "menu");
+    THEMES.forEach(function (th) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.dataset.theme = th.id;
+      b.setAttribute("role", "menuitemradio");
+      b.innerHTML = '<span class="swatch" style="background:' + th.swatch + '"></span>' + th.name;
+      b.addEventListener("click", function () { setTheme(th.id); menu.classList.remove("open"); });
+      menu.appendChild(b);
+    });
+    t.addEventListener("click", function (e) { e.stopPropagation(); menu.classList.toggle("open"); });
+    document.addEventListener("click", function (e) {
+      if (!menu.contains(e.target)) menu.classList.remove("open");
+    });
+
+    var l = tool("button", "laser", ICON.laser, "Laser pointer (L)");
+    l.setAttribute("aria-pressed", "false");
+    l.addEventListener("click", function () { laser.toggle(); });
+
+    var f = tool("button", "full", ICON.full, "Full screen (F)");
+    f.addEventListener("click", function () {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    });
+
+    bar.appendChild(c);
+    bar.appendChild(t);
+    bar.appendChild(l);
+    bar.appendChild(f);
+
+    var title = document.getElementById("title-slide");
+    if (title && title.dataset.sectionHref) {
+      var s = tool("a", "site", ICON.site, "This section on the course site");
+      s.href = title.dataset.sectionHref;
+      bar.appendChild(s);
+    }
+
+    document.body.appendChild(bar);
+    document.body.appendChild(menu);
+    setTheme(root.getAttribute("data-deck-theme"));
+  }
+
+  // ---- Laser pointer --------------------------------------------------------
+
+  var laser = (function () {
+    var on = false, canvas = null, ctx = null, pts = [], raf = 0, ratio = 1;
+    var TRAIL_MS = 260;
+
+    function size() {
+      ratio = window.devicePixelRatio || 1;
+      canvas.width = innerWidth * ratio;
+      canvas.height = innerHeight * ratio;
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+    }
+
+    function move(e) {
+      pts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (!raf) raf = requestAnimationFrame(draw);
+    }
+
+    function draw() {
+      raf = 0;
+      var now = performance.now();
+      pts = pts.filter(function (p) { return now - p.t < TRAIL_MS; });
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.lineCap = "round";
+      for (var i = 1; i < pts.length; i++) {
+        var a = 1 - (now - pts[i].t) / TRAIL_MS;
+        ctx.strokeStyle = "rgba(255, 40, 40," + (0.55 * a) + ")";
+        ctx.lineWidth = 3 + 6 * a;
+        ctx.beginPath();
+        ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+        ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+      }
+      if (last) {
+        ctx.shadowColor = "rgba(255, 30, 30, 0.9)";
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = "#ff2626";
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255, 220, 220, 0.95)";
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      if (pts.length) raf = requestAnimationFrame(draw);
+    }
+
+    var last = null;
+    function track(e) { last = { x: e.clientX, y: e.clientY }; move(e); }
+
+    function set(v) {
+      on = v;
+      root.classList.toggle("laser-on", on);
+      var b = document.querySelector(".deck-tool-laser");
+      if (b) b.setAttribute("aria-pressed", String(on));
+      if (on) {
+        if (!canvas) {
+          canvas = document.createElement("canvas");
+          canvas.className = "deck-laser";
+          document.body.appendChild(canvas);
+          ctx = canvas.getContext("2d");
+          window.addEventListener("resize", size);
+        }
+        size();
+        canvas.style.display = "block";
+        window.addEventListener("pointermove", track);
+      } else if (canvas) {
+        window.removeEventListener("pointermove", track);
+        canvas.style.display = "none";
+        pts = [];
+        last = null;
+      }
+    }
+
+    return { toggle: function () { set(!on); } };
+  })();
+
+  // ---- Start ----------------------------------------------------------------
+
+  function start() {
+    titleSlide();
+    signposts();
+    contents();
+    crops();
+    controls();
+    Reveal.addKeyBinding({ keyCode: 84, key: "T", description: "Change the theme" }, nextTheme);
+    Reveal.addKeyBinding({ keyCode: 76, key: "L", description: "Laser pointer on or off" }, laser.toggle);
+    Reveal.layout();
+  }
+
+  if (window.Reveal && Reveal.isReady && Reveal.isReady()) start();
+  else Reveal.on("ready", start);
+})();
+</script>
