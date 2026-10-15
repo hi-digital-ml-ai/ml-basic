@@ -1,0 +1,422 @@
+---
+title: "Interpretation and reporting"
+subtitle: "Reading what a model relies on, and saying only what it showed"
+description: "Feature importance, partial effects, explaining one prediction, interpretable models and surrogates, and reporting a model."
+order: 10
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 10"
+  data-section-href: "../chapters/10-interpretation/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## Shuffle one input and watch the error rise {#feature-importance .idea data-page="Feature importance" data-href="../chapters/10-interpretation/feature-importance.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Permutation importance in three steps. Score the test data as it is. Shuffle one input so its values change rows. Score again. The rise in error is the input's importance.">
+  <g>
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">1 SCORE</text>
+    <g transform="translate(40 80)">
+      <g class="f-blue"><rect x="0" y="0" width="80" height="34" rx="4"/><rect x="0" y="44" width="80" height="34" rx="4"/><rect x="0" y="88" width="80" height="34" rx="4"/><rect x="0" y="132" width="80" height="34" rx="4"/></g>
+      <g class="f-grey" opacity="0.5"><rect x="96" y="0" width="80" height="34" rx="4"/><rect x="96" y="44" width="80" height="34" rx="4"/><rect x="96" y="88" width="80" height="34" rx="4"/><rect x="96" y="132" width="80" height="34" rx="4"/><rect x="192" y="0" width="80" height="34" rx="4"/><rect x="192" y="44" width="80" height="34" rx="4"/><rect x="192" y="88" width="80" height="34" rx="4"/><rect x="192" y="132" width="80" height="34" rx="4"/></g>
+      <text class="sm mute mid" x="40" y="196">temperature</text>
+    </g>
+    <text class="sm" x="28" y="330">Error on the test data</text>
+    <rect class="f-green" x="28" y="356" width="160" height="30" rx="4"/>
+  </g>
+  <line class="wire arrow" x1="368" y1="205" x2="412" y2="205"/>
+  <g transform="translate(420 0)">
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">2 SHUFFLE ONE INPUT</text>
+    <g transform="translate(40 80)">
+      <rect class="f-blue" x="0" y="0" width="80" height="34" rx="4" opacity="0.55"/><rect class="f-blue" x="0" y="44" width="80" height="34" rx="4"/><rect class="f-blue" x="0" y="88" width="80" height="34" rx="4" opacity="0.75"/><rect class="f-blue" x="0" y="132" width="80" height="34" rx="4" opacity="0.4"/>
+      <g class="f-grey" opacity="0.5"><rect x="96" y="0" width="80" height="34" rx="4"/><rect x="96" y="44" width="80" height="34" rx="4"/><rect x="96" y="88" width="80" height="34" rx="4"/><rect x="96" y="132" width="80" height="34" rx="4"/><rect x="192" y="0" width="80" height="34" rx="4"/><rect x="192" y="44" width="80" height="34" rx="4"/><rect x="192" y="88" width="80" height="34" rx="4"/><rect x="192" y="132" width="80" height="34" rx="4"/></g>
+      <path class="none s-fg" stroke-width="3" d="M-14,17 C-30,60 -30,110 -14,149" style="marker-end: url(#deck-arrow)"/>
+    </g>
+    <text class="sm" x="28" y="330">Its values change rows,</text>
+    <text class="sm" x="28" y="362">the rest stay as they are</text>
+  </g>
+  <line class="wire arrow" x1="788" y1="205" x2="832" y2="205"/>
+  <g transform="translate(840 0)">
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">3 SCORE AGAIN</text>
+    <text class="sm" x="28" y="110">Error rises</text>
+    <rect class="f-green" x="28" y="140" width="160" height="30" rx="4"/>
+    <rect class="f-red" x="188" y="140" width="110" height="30" rx="4"/>
+    <text class="sm f-red" x="188" y="208" font-weight="700">the rise</text>
+    <text class="sm" x="28" y="330">The rise is the</text>
+    <text class="sm" x="28" y="362">input's importance</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Importance shows what a model uses, not what the species needs.
+:::
+
+::: notes
+A random forest has no coefficients to read. Permutation importance asks how much its predictions rely on each input. Score the model on test data, shuffle one input so its values land on the wrong stations, and score again. The rise in error is that input's importance. It works for any model, but it says what the model uses, not the direction of an effect or its cause.
+:::
+
+## Without temperature the forest leans on season {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/10-interpretation/feature-importance/fig-shared-1.png){fig-alt="Permutation importance on the test sites for six inputs. With all six inputs, temperature has by far the largest bar. Without temperature, season's bar grows several times over."}
+:::
+:::
+
+::: {.takeaway}
+Inputs that carry the same information share the credit. A score depends on the other inputs.
+:::
+
+::: notes
+With all six inputs the forest relies on temperature most. Fitted again without temperature, it leans on season instead, and loses little accuracy, because season and temperature carry much of the same information. An importance score belongs to a model and its set of inputs. Remove one input and the credit moves to whatever else carries its information.
+:::
+
+## A partial dependence plot averages one input's effect {#partial-effects .idea data-page="Partial effects" data-href="../chapters/10-interpretation/partial-effects.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Partial dependence in three steps. Give every station the same value of one input and keep the others. Predict each station, and move the value along its range so each station traces a curve. Average the curves into one.">
+  <g>
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">1 SET ONE VALUE</text>
+    <g transform="translate(40 80)">
+      <g class="f-orange"><rect x="0" y="0" width="80" height="34" rx="4"/><rect x="0" y="44" width="80" height="34" rx="4"/><rect x="0" y="88" width="80" height="34" rx="4"/><rect x="0" y="132" width="80" height="34" rx="4"/></g>
+      <g class="f-grey" opacity="0.5"><rect x="96" y="0" width="80" height="34" rx="4"/><rect x="96" y="44" width="80" height="34" rx="4"/><rect x="96" y="88" width="80" height="34" rx="4"/><rect x="96" y="132" width="80" height="34" rx="4"/><rect x="192" y="0" width="80" height="34" rx="4"/><rect x="192" y="44" width="80" height="34" rx="4"/><rect x="192" y="88" width="80" height="34" rx="4"/><rect x="192" y="132" width="80" height="34" rx="4"/></g>
+      <text class="sm mid" x="40" y="24" style="fill:#1f2933">8 °C</text><text class="sm mid" x="40" y="68" style="fill:#1f2933">8 °C</text><text class="sm mid" x="40" y="112" style="fill:#1f2933">8 °C</text><text class="sm mid" x="40" y="156" style="fill:#1f2933">8 °C</text>
+    </g>
+    <text class="sm" x="28" y="330">Same temperature for all,</text>
+    <text class="sm" x="28" y="362">the rest as recorded</text>
+  </g>
+  <line class="wire arrow" x1="368" y1="205" x2="412" y2="205"/>
+  <g transform="translate(420 0)">
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">2 SWEEP IT</text>
+    <g transform="translate(30 70)" class="none s-grey" stroke-width="3">
+      <path d="M0,180 C80,180 110,90 160,90 C210,90 240,170 300,170"/>
+      <path d="M0,150 C80,150 110,50 160,50 C210,50 240,140 300,140"/>
+      <path d="M0,200 C80,200 110,130 160,130 C210,130 240,190 300,190"/>
+      <path d="M0,120 C80,120 110,30 160,30 C210,30 240,110 300,110"/>
+    </g>
+    <text class="sm" x="28" y="330">Each station traces</text>
+    <text class="sm" x="28" y="362">its own curve, an ICE curve</text>
+  </g>
+  <line class="wire arrow" x1="788" y1="205" x2="832" y2="205"/>
+  <g transform="translate(840 0)">
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="46">3 AVERAGE</text>
+    <g transform="translate(30 70)" class="none">
+      <path class="s-grey" stroke-width="2" opacity="0.4" d="M0,180 C80,180 110,90 160,90 C210,90 240,170 300,170 M0,150 C80,150 110,50 160,50 C210,50 240,140 300,140 M0,200 C80,200 110,130 160,130 C210,130 240,190 300,190 M0,120 C80,120 110,30 160,30 C210,30 240,110 300,110"/>
+      <path class="s-blue" stroke-width="6" d="M0,162 C80,162 110,75 160,75 C210,75 240,152 300,152"/>
+    </g>
+    <text class="sm" x="28" y="330">One curve, the partial</text>
+    <text class="sm" x="28" y="362">dependence</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+It works for any model, and shows the direction and shape of an effect.
+:::
+
+::: notes
+A partial dependence plot shows how a model's prediction changes along one input. Give every station the same value of that input, keep everything else as recorded, and predict. Move the value along its range, so each station traces a curve, an ICE curve. Averaging the curves gives the partial dependence. Where the ICE curves share a shape, the average describes them. Where they peak in different places, the input interacts with others.
+:::
+
+## The forest predicts most animals in cool, shallow water {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/10-interpretation/partial-effects/fig-partial-1.png){fig-alt="Partial dependence of the random forest on depth and on temperature. Predictions fall with depth. Against temperature they rise between about 6 and 7 degrees, stay high to about 10 degrees and then fall."}
+:::
+:::
+
+::: {.takeaway}
+The curves describe the model. They describe the species only where the input varies on its own.
+:::
+
+::: notes
+The forest's partial dependence falls with depth and shows the temperature hump. A sweep pairs every temperature with every station's other inputs, including combinations the survey never had, such as warm water at great depth. So draw the curves only over the middle of each input's range, and remember that where inputs move together, as depth and temperature do, the curve mixes their effects.
+:::
+
+## The temperature hump appears at nearly every station {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/10-interpretation/partial-effects/fig-ice-1.png){fig-alt="ICE curves for temperature, one grey curve per training station, with their average in blue. Almost every curve rises between 6 and 7 degrees, stays high to about 10 degrees and then falls, at different heights."}
+:::
+:::
+
+::: {.takeaway}
+The curves share one shape at different heights, so the average describes them well.
+:::
+
+::: notes
+Each grey curve is one station's prediction as its temperature is moved and everything else stays as recorded. Almost every curve rises between 6 and 7 degrees, stays high to about 10 and then falls. They differ in height, set by each station's other inputs, but not in shape. So the average, in blue, is a fair summary, and the hump is not an artefact of averaging very different curves.
+:::
+
+## SHAP values share one prediction among the inputs {#explaining-one-prediction .idea data-page="Explaining one prediction" data-href="../chapters/10-interpretation/explaining-one-prediction.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A prediction built from the model's average prediction. Each input, revealed in turn, adds or subtracts its share, its SHAP value, averaged over every order of revealing the inputs. The shares add up exactly to the prediction.">
+  <g transform="translate(40 30)">
+    <line class="axis" x1="0" y1="330" x2="1100" y2="330"/>
+    <rect class="f-grey" x="0" y="230" width="200" height="100" rx="6"/>
+    <text class="sm mid" x="100" y="290" style="fill:#1f2933" font-weight="700">average</text>
+    <rect class="f-blue" x="230" y="170" width="200" height="60" rx="6"/>
+    <rect class="f-blue" x="460" y="110" width="200" height="60" rx="6"/>
+    <rect class="f-orange" x="690" y="110" width="200" height="40" rx="6"/>
+    <rect class="f-green" x="920" y="130" width="180" height="200" rx="6"/>
+    <text class="sm mid" x="1010" y="240" style="fill:#1f2933" font-weight="700">prediction</text>
+    <g class="none s-muted dash" stroke-width="2"><line x1="200" y1="230" x2="230" y2="230"/><line x1="430" y1="170" x2="460" y2="170"/><line x1="660" y1="110" x2="690" y2="110"/><line x1="890" y1="150" x2="920" y2="130"/></g>
+    <text class="sm mid" x="330" y="160">+ input A</text><text class="sm mid" x="560" y="100">+ input B</text><text class="sm mid" x="790" y="100">− input C</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The average prediction plus every input's share equals the prediction exactly.
+:::
+
+::: notes
+Importance describes a model as a whole. One prediction needs its own explanation, for example when a manager asks why a site was flagged. A SHAP value is one input's share of one prediction. Start from the model's average prediction, reveal the station's inputs one at a time, and credit each with the change it makes, averaged over every order of revealing them. The shares add up exactly to the prediction.
+:::
+
+## Shallow water lifts one station and warm water sinks another {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Two waterfalls from the forest's average prediction of 4.11. High station, prediction 6.53. Depth 44.9 metres adds 0.95, chlorophyll 2.1 adds 0.80, temperature 8.8 degrees adds 0.63, salinity adds 0.58, sand subtracts 0.49, spring subtracts 0.05. Low station, prediction 1.55. Temperature 13.4 degrees subtracts 1.63, summer subtracts 0.45, chlorophyll 1.0 subtracts 0.42, rock subtracts 0.14, salinity adds 0.06, depth adds 0.02.">
+  <rect class="card" x="0" y="0" width="590" height="420" rx="14"/>
+  <text class="head" x="28" y="48">High station, 6.53</text>
+  <g transform="translate(0 70)" class="sm">
+    <line class="grid dash" x1="300" y1="0" x2="300" y2="300"/><line class="grid dash" x1="477" y1="0" x2="477" y2="300"/>
+    <text x="28" y="30">Depth 44.9 m</text><rect class="f-blue" x="300" y="10" width="69" height="28" rx="3"/><text class="f-blue end" x="580" y="32">+0.95</text>
+    <text x="28" y="78">Chlorophyll 2.1</text><rect class="f-blue" x="369" y="58" width="58" height="28" rx="3"/><text class="f-blue end" x="580" y="80">+0.80</text>
+    <text x="28" y="126">Temperature 8.8 °C</text><rect class="f-blue" x="427" y="106" width="46" height="28" rx="3"/><text class="f-blue end" x="580" y="128">+0.63</text>
+    <text x="28" y="174">Salinity 33.3</text><rect class="f-blue" x="473" y="154" width="42" height="28" rx="3"/><text class="f-blue end" x="580" y="176">+0.58</text>
+    <text x="28" y="222">Sand</text><rect class="f-orange" x="479" y="202" width="36" height="28" rx="3"/><text class="f-orange end" x="580" y="224">−0.49</text>
+    <text x="28" y="270">Spring</text><rect class="f-orange" x="475" y="250" width="4" height="28" rx="2"/><text class="f-orange end" x="580" y="272">−0.05</text>
+    <text class="mute mid" x="300" y="330">average 4.11</text>
+  </g>
+  <rect class="card" x="610" y="0" width="590" height="420" rx="14"/>
+  <text class="head" x="638" y="48">Low station, 1.55</text>
+  <g transform="translate(610 70)" class="sm">
+    <line class="grid dash" x1="420" y1="0" x2="420" y2="300"/><line class="grid dash" x1="233" y1="0" x2="233" y2="300"/>
+    <text x="28" y="30">Temperature 13.4 °C</text><rect class="f-orange" x="301" y="10" width="119" height="28" rx="3"/><text class="f-orange end" x="580" y="32">−1.63</text>
+    <text x="28" y="78">Summer</text><rect class="f-orange" x="268" y="58" width="33" height="28" rx="3"/><text class="f-orange end" x="580" y="80">−0.45</text>
+    <text x="28" y="126">Chlorophyll 1.0</text><rect class="f-orange" x="237" y="106" width="31" height="28" rx="3"/><text class="f-orange end" x="580" y="128">−0.42</text>
+    <text x="28" y="174">Rock</text><rect class="f-orange" x="227" y="154" width="10" height="28" rx="3"/><text class="f-orange end" x="580" y="176">−0.14</text>
+    <text x="28" y="222">Salinity 33.4</text><rect class="f-blue" x="227" y="202" width="4" height="28" rx="2"/><text class="f-blue end" x="580" y="224">+0.06</text>
+    <text x="28" y="270">Depth 55.5 m</text><rect class="f-blue" x="231" y="250" width="3" height="28" rx="2"/><text class="f-blue end" x="580" y="272">+0.02</text>
+    <text class="mute mid" x="420" y="330">average 4.11</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A SHAP value explains a prediction, not whether it is right.
+:::
+
+::: notes
+Two test stations, each built up from the forest's average prediction of 4.11. At the high station, shallow depth, chlorophyll, temperature and salinity all lift the prediction, and sand and spring pull it down a little. At the low station, warm summer water does most of the work, pulling the prediction down to 1.55. The explanation says where the prediction came from. Whether the prediction is right is a separate question, answered by validation.
+:::
+
+## Some models can be read from their parts {#interpretable-models .idea data-page="Interpretable models and surrogates" data-href="../chapters/10-interpretation/interpretable-models.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two cards. A GAM gives each input one smooth curve and adds them up, so each curve can be read. A surrogate model is a small tree fitted to a black box's predictions, so the black box can be read through it, with its fidelity saying how closely it follows.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">A GAM</text>
+  <text class="lab f-green" x="32" y="90">ONE SMOOTH CURVE PER INPUT</text>
+  <g transform="translate(40 120)">
+    <rect class="panel" x="0" y="0" width="200" height="140" rx="10"/><path class="none s-green" stroke-width="5" d="M12,30 C60,30 80,110 188,120"/>
+    <text class="head mid" x="245" y="82">+</text>
+    <rect class="panel" x="290" y="0" width="200" height="140" rx="10"/><path class="none s-green" stroke-width="5" d="M302,128 C350,128 360,20 390,20 C420,20 440,120 478,124"/>
+    <text class="sm mute mid" x="100" y="176">depth</text><text class="sm mute mid" x="390" y="176">temperature</text>
+  </g>
+  <text class="sm" x="32" y="380">Each curve reads in words</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">A surrogate</text>
+  <text class="lab f-orange" x="652" y="90">A SMALL TREE COPIES A BLACK BOX</text>
+  <g transform="translate(660 130)">
+    <rect class="f-fg" x="0" y="20" width="140" height="100" rx="12"/>
+    <text class="sm mid f-bg" x="70" y="76">forest</text>
+    <line class="wire arrow" x1="150" y1="70" x2="230" y2="70"/>
+    <text class="sm mute mid" x="190" y="40">predictions</text>
+    <g transform="translate(250 10)"><line class="wire" x1="110" y1="20" x2="40" y2="100"/><line class="wire" x1="110" y1="20" x2="180" y2="100"/><circle class="f-orange" cx="110" cy="20" r="18"/><circle class="f-orange" cx="40" cy="104" r="16"/><circle class="f-orange" cx="180" cy="104" r="16"/></g>
+  </g>
+  <text class="sm" x="652" y="380">Read with its fidelity</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A surrogate's parts summarise the black box, not the data.
+:::
+
+::: notes
+An interpretable model can be read from its parts. A GAM gives each input one smooth curve, built from short bumps and held back by a penalty on bending, and adds the curves up, so each can be drawn and put into words. A black box, such as a forest, has no part that means anything alone. A surrogate is a small, readable model fitted to the black box's predictions. Read it with its fidelity, the share of the black box's variation it follows.
+:::
+
+## The GAM's curves read as a habitat description {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/10-interpretation/interpretable-models/fig-gam-curves-1.png){fig-alt="The GAM's curves for depth and temperature, each relative to its peak. Depth is highest in shallow water and falls to about a quarter of that at 150 metres. Temperature peaks near 7.7 degrees and falls on both sides."}
+:::
+:::
+
+::: {.takeaway}
+Most animals in shallow water and near 7.7 °C. The GAM predicted as well as the forest.
+:::
+
+::: notes
+The GAM's curves can be read as a habitat description. Expected counts are highest in shallow water and fall to about a quarter of that by 150 metres, and they peak in water near 7.7 degrees. On the test sites the GAM predicted about as well as the random forest, so here nothing was lost by choosing the readable model.
+:::
+
+## A three-level tree copies half of what the forest predicts {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A surrogate tree fitted to the forest's predictions. If chlorophyll is above 5.7, the forest predicts 15. Otherwise, in water colder than 6.4 degrees it predicts 1.7. In warmer water it predicts 2.7 in summer and 5.2 in other seasons. The tree's fidelity is 0.50.">
+  <rect class="card" x="210" y="0" width="300" height="64" rx="12" style="stroke: var(--accent)"/>
+  <text class="mid" x="360" y="41">Chlorophyll above 5.7</text>
+  <line class="wire" x1="430" y1="66" x2="560" y2="136"/><line class="wire" x1="290" y1="66" x2="170" y2="136"/>
+  <text class="sm f-green" x="510" y="104" font-weight="700">yes</text><text class="sm f-red" x="180" y="104" font-weight="700">no</text>
+  <circle class="t-blue s-blue" stroke-width="3" cx="580" cy="180" r="44"/><text class="head mid" x="580" y="191">15</text>
+  <rect class="card" x="20" y="140" width="300" height="64" rx="12"/>
+  <text class="mid" x="170" y="181">Colder than 6.4 °C</text>
+  <line class="wire" x1="110" y1="206" x2="70" y2="276"/><line class="wire" x1="230" y1="206" x2="300" y2="276"/>
+  <text class="sm f-green" x="50" y="246" font-weight="700">yes</text><text class="sm f-red" x="280" y="246" font-weight="700">no</text>
+  <circle class="t-blue s-blue" stroke-width="3" cx="70" cy="320" r="44"/><text class="head mid" x="70" y="331">1.7</text>
+  <rect class="card" x="200" y="280" width="200" height="64" rx="12"/>
+  <text class="mid" x="300" y="321">Summer</text>
+  <line class="wire" x1="260" y1="346" x2="230" y2="372"/><line class="wire" x1="340" y1="346" x2="380" y2="372"/>
+  <circle class="t-blue s-blue" stroke-width="3" cx="220" cy="390" r="30"/><text class="sm mid" x="220" y="398" font-weight="700">2.7</text>
+  <circle class="t-blue s-blue" stroke-width="3" cx="390" cy="390" r="30"/><text class="sm mid" x="390" y="398" font-weight="700">5.2</text>
+  <rect class="card" x="760" y="60" width="440" height="300" rx="14"/>
+  <text class="lab mute" x="790" y="110">FIDELITY</text>
+  <text class="big f-orange" x="790" y="190">0.50</text>
+  <text class="sm" x="790" y="260">Follows half of the</text>
+  <text class="sm" x="790" y="292">forest's variation</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A few questions give the broad shape. The rest is detail three questions cannot hold.
+:::
+
+::: notes
+A tree with three levels of questions was fitted to the forest's predictions. Its highest predictions are for the few stations with very high chlorophyll. Among the rest it splits cold from warm water, and summer from the other seasons. Its fidelity of 0.50 says it follows half of the variation in the forest's predictions. A deeper tree follows more but has more to read. A black box earns its place where inputs work in combination, where inputs are raw, or where prediction is the whole job.
+:::
+
+## A re-runnable analysis keeps four things {#reporting-a-model .idea data-page="Reporting a model" data-href="../chapters/10-interpretation/reporting-a-model.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Four things a re-run needs. The raw data, kept as collected. Every step in code, from the raw file to the score. A seed above each random draw. The versions of the software.">
+  <g class="tile">
+    <rect class="card" x="0" y="0" width="282" height="410" rx="14"/>
+    <g transform="translate(40 40)"><rect class="t-blue s-blue" stroke-width="2" x="0" y="0" width="200" height="130" rx="8"/><g class="s-blue" stroke-width="2"><line x1="0" y1="32" x2="200" y2="32"/><line x1="0" y1="64" x2="200" y2="64"/><line x1="0" y1="96" x2="200" y2="96"/><line x1="66" y1="0" x2="66" y2="130"/><line x1="133" y1="0" x2="133" y2="130"/></g></g>
+    <text class="head" x="28" y="240">Raw data</text>
+    <text class="sm mute" x="28" y="280">kept as collected</text>
+  </g>
+  <g transform="translate(306 0)">
+    <rect class="card" x="0" y="0" width="282" height="410" rx="14"/>
+    <g transform="translate(40 40)"><rect class="panel" x="0" y="0" width="200" height="130" rx="8"/><g class="f-accent"><rect x="16" y="20" width="120" height="12" rx="3"/><rect x="36" y="44" width="140" height="12" rx="3"/><rect x="36" y="68" width="100" height="12" rx="3"/><rect x="16" y="92" width="80" height="12" rx="3"/></g></g>
+    <text class="head" x="28" y="240">Every step in code</text>
+    <text class="sm mute" x="28" y="280">raw file to score</text>
+  </g>
+  <g transform="translate(612 0)">
+    <rect class="card" x="0" y="0" width="282" height="410" rx="14"/>
+    <g transform="translate(70 40)"><path class="f-green" d="M70,130 C20,110 0,60 20,20 C60,30 80,70 70,130 z"/><path class="f-green" d="M70,130 C120,110 140,60 120,20 C80,30 60,70 70,130 z" opacity="0.7"/></g>
+    <text class="head" x="28" y="240">A seed</text>
+    <text class="sm mute" x="28" y="280">above each random draw</text>
+  </g>
+  <g transform="translate(918 0)">
+    <rect class="card" x="0" y="0" width="282" height="410" rx="14"/>
+    <g transform="translate(40 60)"><rect class="t-orange s-orange" stroke-width="2" x="0" y="0" width="200" height="44" rx="22"/><text class="sm mid" x="100" y="30">R 4.6.1</text><rect class="t-orange s-orange" stroke-width="2" x="0" y="60" width="200" height="44" rx="22"/><text class="sm mid" x="100" y="90">ranger 0.18.0</text></g>
+    <text class="head" x="28" y="240">Versions</text>
+    <text class="sm mute" x="28" y="280">of the software</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+With all four, anyone can re-run the analysis and get the same numbers.
+:::
+
+::: notes
+A report should let a reader re-run the analysis and use the model within its limits. Re-running needs four things. The raw data, kept as collected. Every step in code, from the raw file to the final score. A seed set just above each random draw. And the versions of the software. A seed fixes where the random numbers start, not which step gets which, so one hidden extra draw left only 23 of 40 test sites in place.
+:::
+
+## A model card says what a model is and where it holds {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="A model card for the forest on the coastal survey. What it is, a random forest of 500 trees, for planning where to sample on this coast. How well it predicts, an RMSE of 3.96 animals on 40 held-out sites. Where it holds, depths of 5 to 195 metres and temperatures of 1.9 to 16 degrees.">
+  <rect class="card" x="0" y="0" width="1200" height="420" rx="16" style="stroke: var(--accent); stroke-width: 3"/>
+  <rect class="f-accent" x="0" y="0" width="1200" height="64" rx="16"/>
+  <rect class="f-accent" x="0" y="40" width="1200" height="24"/>
+  <text class="head f-bg" x="32" y="43">Model card · the forest on the coastal survey</text>
+  <g>
+    <text class="lab f-accent" x="32" y="120">WHAT IT IS</text>
+    <text class="sm" x="32" y="160">A random forest of 500 trees</text>
+    <text class="sm" x="32" y="194">To plan where to sample on this coast</text>
+    <text class="sm mute" x="32" y="228">Not for saying why the count changes</text>
+    <text class="lab f-accent" x="620" y="120">HOW WELL IT PREDICTS</text>
+    <text class="big" x="620" y="178">3.96 animals</text>
+    <text class="sm mute" x="620" y="218">RMSE on 40 sites held out whole</text>
+    <line class="grid" x1="32" y1="262" x2="1168" y2="262"/>
+    <text class="lab f-accent" x="32" y="306">WHERE IT HOLDS</text>
+    <text class="sm" x="32" y="346">Depths of 5 to 195 m, temperatures of 1.9 to 16.0 °C</text>
+    <text class="sm" x="32" y="380">All four seasons, on gravel, mud, rock and sand</text>
+    <text class="lab f-accent" x="760" y="306">RELIES ON</text>
+    <text class="sm" x="760" y="346">Temperature, season, substrate</text>
+    <text class="sm" x="760" y="380">Peak predictions near 7.7 °C</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Written from the code, the card's numbers cannot drift from the analysis.
+:::
+
+::: notes
+A model card travels with a model. It says what the model is and what it is for, the data and inputs, its score on sites it never saw, what it relies on, where it holds and its limits. On the course page every number in the card is computed by the code, so when the data or code change the card changes with them. Each sentence stays within what the model showed. A peak in the predictions, not a cause. The surveyed range, not warmer water.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Permutation importance shows what a model uses. Shared information shares the credit.
+- Partial dependence and ICE curves show the shape of an effect, within the data.
+- SHAP values explain one prediction, not whether it is right.
+- Read a model from its parts, or a black box through a surrogate and its fidelity.
+- Report with raw data, code, seeds and versions, and a model card.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/10-interpretation/index.html).
+:::
+:::

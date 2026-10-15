@@ -21,6 +21,8 @@ chapters/NN-slug/    one folder per course section (10 sections)
   *.qmd                one page per subtopic
   img/                 hand-made figures for that section
 contributed/         participant pages (one .qmd per contribution)
+slides.qmd           the Slides page, listing the decks
+slides/              one reveal.js deck per section (NN-slug.qmd) and its shared assets/
 data/                small example datasets committed to the repo
 R/                   shared helpers: ggplot theme, data loaders, tidymodels utils
 python/              the scikit-learn half of the code tabsets (never rendered)
@@ -81,4 +83,5 @@ gitflow: `main` (published site), `develop` (integration), `feature/*`, `release
 | `.claude/workflow.md` | Build, freeze, renv, gitflow, GitHub Pages deployment |
 | `tools/README.md` | How the downloadable code is generated from the pages |
 | `.claude/videos.md` | YouTube videos per section: decisions, pipeline, laptop setup, next step |
+| `.claude/slides.md` | The slide decks: the user's rules for them, a deck's anatomy, checking one |
 | `.claude/section-revision.md` | Checklist for revising a section's pages, diagrams and video, learned from §1 |

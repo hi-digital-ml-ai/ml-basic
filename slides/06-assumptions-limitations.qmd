@@ -1,0 +1,364 @@
+---
+title: "Assumptions and limitations"
+subtitle: "What every model takes for granted, and how to check it on the survey"
+description: "Straight lines, distributions, dependent data, uneven sampling and rare classes."
+order: 6
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 6"
+  data-section-href: "../chapters/06-assumptions-limitations/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## Only linear models assume straight lines {#linearity-and-nonlinearity .idea data-page="Linearity and nonlinearity" data-href="../chapters/06-assumptions-limitations/linearity-and-nonlinearity.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two cards. A linear model gives each input one fixed effect, drawn as straight lines, and adds the effects up. Trees and forests assume neither, drawn as a curve and a split that depends on another input.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Linear models</text>
+  <text class="lab mute" x="32" y="90">ONE FIXED EFFECT PER INPUT</text>
+  <g transform="translate(40 130)">
+    <rect class="panel" x="0" y="0" width="140" height="120" rx="10"/><line class="none s-blue" stroke-width="5" x1="16" y1="100" x2="124" y2="24"/>
+    <text class="head mid" x="170" y="72">+</text>
+    <rect class="panel" x="200" y="0" width="140" height="120" rx="10"/><line class="none s-blue" stroke-width="5" x1="216" y1="40" x2="324" y2="90"/>
+    <text class="head mid" x="370" y="72">+</text>
+    <text class="head" x="400" y="72">...</text>
+    <text class="sm mute mid" x="70" y="156">depth</text><text class="sm mute mid" x="270" y="156">temperature</text>
+  </g>
+  <text class="sm" x="32" y="370">No curves, effects simply add up</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Trees and forests</text>
+  <text class="lab f-green" x="652" y="90">ASSUME NEITHER</text>
+  <g transform="translate(660 130)">
+    <rect class="panel" x="0" y="0" width="200" height="120" rx="10"/>
+    <path class="none s-green" stroke-width="5" d="M14,104 C60,104 70,20 100,20 C130,20 140,104 186,104"/>
+    <rect class="panel" x="260" y="0" width="200" height="120" rx="10"/>
+    <rect class="t-green" x="260" y="0" width="90" height="120" rx="10"/>
+    <rect class="t-orange" x="350" y="0" width="110" height="60"/>
+    <text class="sm mute mid" x="100" y="156">curves</text><text class="sm mute mid" x="360" y="156">interactions</text>
+  </g>
+  <text class="sm" x="652" y="370">Found from the data, not told</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A linear model draws no curves and no interactions unless you give them to it.
+:::
+
+::: notes
+A linear model gives each input one fixed effect and adds the effects up. It draws no curves, and the effect of one input never depends on another, an interaction, unless we build those into it. Trees and random forests assume neither. That is not a reason to avoid linear models, but it is an assumption to check.
+:::
+
+## Linear regression's errors show the curve it missed {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/06-assumptions-limitations/linearity-and-nonlinearity/fig-errors-1.png){fig-alt="Linear regression's average error for ten groups of stations along each of four inputs. Depth, chlorophyll and salinity wander around zero. Temperature shows a hump, below zero in cold and warm water and well above it in between."}
+:::
+:::
+
+::: {.takeaway}
+Average the errors along each input. Temperature shows a hump the straight line missed.
+:::
+
+::: notes
+To check the straight-line assumption, sort the stations along one input, cut them into ten groups and average the model's errors in each. Where the line is right the average sits near zero. For depth, chlorophyll and salinity it wanders around zero. For temperature it forms a hump. The line predicts too many animals in cold and warm water and too few in between.
+:::
+
+## The random forest finds the temperature hump {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/06-assumptions-limitations/linearity-and-nonlinearity/fig-temperature-1.png){fig-alt="Predicted catch across temperature. Linear regression falls steadily. The random forest predicts the most animals between about 6 and 10 degrees and fewer on either side."}
+:::
+:::
+
+::: {.takeaway}
+Told nothing about the shape, the forest predicts the most animals at middle temperatures.
+:::
+
+::: notes
+The straight line can only rise or fall with temperature. The random forest was told nothing about the shape, and it finds the hump by itself, the most animals in the middle temperatures and fewer on either side. A linear model can also find it, but only if we add a squared term ourselves.
+:::
+
+## Each loss aims at a different middle {#distributional-assumptions .idea data-page="Distributional assumptions" data-href="../chapters/06-assumptions-limitations/distributional-assumptions.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A skewed histogram of catches, with most stations catching few animals and a long tail of large catches. The median, the target of absolute error, sits to the left of the average, the target of squared error. A model fitted to log counts aims lower still, at the typical catch.">
+  <g transform="translate(40 30)">
+    <line class="axis" x1="0" y1="320" x2="760" y2="320"/>
+    <g class="f-blue" opacity="0.75">
+      <rect x="10" y="60" width="56" height="260"/><rect x="70" y="40" width="56" height="280"/><rect x="130" y="120" width="56" height="200"/><rect x="190" y="180" width="56" height="140"/><rect x="250" y="226" width="56" height="94"/><rect x="310" y="256" width="56" height="64"/><rect x="370" y="276" width="56" height="44"/><rect x="430" y="292" width="56" height="28"/><rect x="490" y="300" width="56" height="20"/><rect x="550" y="306" width="56" height="14"/><rect x="610" y="310" width="56" height="10"/><rect x="670" y="314" width="56" height="6"/>
+    </g>
+    <line class="none s-green thick" x1="110" y1="0" x2="110" y2="330"/>
+    <line class="none s-orange thick" x1="180" y1="0" x2="180" y2="330"/>
+    <line class="none s-red thick" x1="260" y1="0" x2="260" y2="330"/>
+    <text class="sm mute" x="560" y="360">animals caught</text>
+  </g>
+  <rect class="card" x="840" y="20" width="360" height="380" rx="14"/>
+  <rect class="f-green" x="866" y="58" width="26" height="26" rx="4"/><text x="904" y="80">Log counts</text><text class="sm mute" x="904" y="112">the typical catch</text>
+  <rect class="f-orange" x="866" y="168" width="26" height="26" rx="4"/><text x="904" y="190">Absolute error</text><text class="sm mute" x="904" y="222">the median</text>
+  <rect class="f-red" x="866" y="278" width="26" height="26" rx="4"/><text x="904" y="300">Squared error</text><text class="sm mute" x="904" y="332">the average</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Normal errors are not required to predict. But the loss decides what a prediction means.
+:::
+
+::: notes
+Most machine-learning models predict well without Normal errors or equal spread, so those are not requirements. What does matter is which middle of the data the loss aims at. For skewed counts the middles differ. Squared error aims at the average, absolute error at the median, and a model fitted to log counts at the typical catch, which is lower still.
+:::
+
+## The forest's errors are skewed and widen with its predictions {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/06-assumptions-limitations/distributional-assumptions/fig-errors-1.png){fig-alt="Left, a histogram of the random forest's errors, bunched just below zero with a long tail above it, against a Normal curve. Right, errors against the predicted count, spreading wider where more is predicted."}
+:::
+:::
+
+::: {.takeaway}
+Neither check passes, and the forest predicts well anyway.
+:::
+
+::: notes
+The random forest's errors on sites it did not see fail both classic checks. They are skewed, bunched just below zero with a long tail above, and they are about four times as spread out at the largest predictions as at the smallest. The forest still predicts well. For machine learning these checks describe the errors. They do not decide whether the model may be used.
+:::
+
+## Trained on log counts, the forest undercounts by 30% {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 380" role="img" aria-label="Total animals. Caught at the test stations, a full bar. Predicted by the forest trained on counts, about the same. Predicted by the forest trained on log counts, 30 percent shorter, with about the same RMSE.">
+  <g>
+    <text x="0" y="80">Caught</text>
+    <rect class="f-grey" x="330" y="44" width="800" height="56" rx="6"/>
+    <text x="0" y="180">Trained on counts</text>
+    <rect class="f-blue" x="330" y="144" width="790" height="56" rx="6"/>
+    <text x="0" y="280">Trained on log counts</text>
+    <rect class="f-red" x="330" y="244" width="560" height="56" rx="6"/>
+    <text class="big f-red" x="910" y="288">30% short</text>
+  </g>
+  <text class="sm mute" x="330" y="350">Both forests have about the same RMSE</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Keep the counts as they are when totals matter. The RMSE gives no warning.
+:::
+
+::: notes
+A common fix for skewed counts is to model the log of the count and turn the predictions back into animals. The forest trained that way scored about the same RMSE, but its predictions add up to 30 percent fewer animals than were caught, because it aims at the typical catch, not the average. A stock estimate or a map total built from it would come out 30 percent short.
+:::
+
+## Rows that share conditions are not separate evidence {#dependent-data .idea data-page="Dependent data" data-href="../chapters/06-assumptions-limitations/dependent-data.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Sites drawn as groups of visits. Resampling stations draws single visits, scattered across sites. Resampling sites draws whole sites with all their visits.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Resample stations</text>
+  <text class="lab mute" x="32" y="90">SINGLE VISITS</text>
+  <g transform="translate(50 130)">
+    <g class="none s-line" stroke-width="2"><rect x="0" y="0" width="110" height="80" rx="12"/><rect x="160" y="0" width="110" height="80" rx="12"/><rect x="320" y="0" width="110" height="80" rx="12"/><rect x="0" y="120" width="110" height="80" rx="12"/><rect x="160" y="120" width="110" height="80" rx="12"/><rect x="320" y="120" width="110" height="80" rx="12"/></g>
+    <g class="f-grey" opacity="0.5"><circle cx="30" cy="40" r="11"/><circle cx="55" cy="40" r="11"/><circle cx="80" cy="40" r="11"/><circle cx="190" cy="40" r="11"/><circle cx="215" cy="40" r="11"/><circle cx="240" cy="40" r="11"/><circle cx="350" cy="40" r="11"/><circle cx="375" cy="40" r="11"/><circle cx="400" cy="40" r="11"/><circle cx="30" cy="160" r="11"/><circle cx="55" cy="160" r="11"/><circle cx="80" cy="160" r="11"/><circle cx="190" cy="160" r="11"/><circle cx="215" cy="160" r="11"/><circle cx="240" cy="160" r="11"/><circle cx="350" cy="160" r="11"/><circle cx="375" cy="160" r="11"/><circle cx="400" cy="160" r="11"/></g>
+    <g class="f-orange"><circle cx="55" cy="40" r="11"/><circle cx="240" cy="40" r="11"/><circle cx="350" cy="40" r="11"/><circle cx="30" cy="160" r="11"/><circle cx="215" cy="160" r="11"/><circle cx="400" cy="160" r="11"/></g>
+  </g>
+  <text class="sm" x="32" y="380">Treats every visit as new evidence</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Resample sites</text>
+  <text class="lab f-green" x="652" y="90">WHOLE SITES</text>
+  <g transform="translate(670 130)">
+    <g class="none s-line" stroke-width="2"><rect x="0" y="0" width="110" height="80" rx="12"/><rect x="160" y="0" width="110" height="80" rx="12"/><rect x="320" y="0" width="110" height="80" rx="12"/><rect x="0" y="120" width="110" height="80" rx="12"/><rect x="160" y="120" width="110" height="80" rx="12"/><rect x="320" y="120" width="110" height="80" rx="12"/></g>
+    <rect class="t-green s-green" stroke-width="3" x="160" y="0" width="110" height="80" rx="12"/><rect class="t-green s-green" stroke-width="3" x="0" y="120" width="110" height="80" rx="12"/>
+    <g class="f-grey" opacity="0.5"><circle cx="30" cy="40" r="11"/><circle cx="55" cy="40" r="11"/><circle cx="80" cy="40" r="11"/><circle cx="350" cy="40" r="11"/><circle cx="375" cy="40" r="11"/><circle cx="400" cy="40" r="11"/><circle cx="190" cy="160" r="11"/><circle cx="215" cy="160" r="11"/><circle cx="240" cy="160" r="11"/><circle cx="350" cy="160" r="11"/><circle cx="375" cy="160" r="11"/><circle cx="400" cy="160" r="11"/></g>
+    <g class="f-green"><circle cx="190" cy="40" r="11"/><circle cx="215" cy="40" r="11"/><circle cx="240" cy="40" r="11"/><circle cx="30" cy="160" r="11"/><circle cx="55" cy="160" r="11"/><circle cx="80" cy="160" r="11"/></g>
+  </g>
+  <text class="sm" x="652" y="380">Keeps each site's visits together</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Visits to one site share its water and seabed, so they repeat each other's catch.
+:::
+
+::: notes
+Visits to one site share its depth, its seabed and much of its water, so they are dependent data and not fully separate evidence. Resampling the survey shows how much this matters. Drawing single stations treats every visit as new. Drawing whole sites with all their visits keeps the dependence, and the estimates spread more widely. The ratio of the two spreads measures how many independent stations the rows are worth.
+:::
+
+## 800 stations were worth about 470 {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 360" role="img" aria-label="Two bars. 800 rows in the table. About 470 independent stations, for estimating the average catch.">
+  <text x="0" y="86">Rows in the table</text>
+  <rect class="f-grey" x="320" y="50" width="800" height="56" rx="6"/>
+  <text class="head f-bg" x="340" y="89">800</text>
+  <text x="0" y="206">Worth, for the average catch</text>
+  <rect class="f-accent" x="320" y="170" width="470" height="56" rx="6"/>
+  <text class="head f-bg" x="340" y="209">about 470</text>
+  <text class="sm mute" x="320" y="300">Measured by resampling whole sites instead of single stations</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Score models on whole sites held out, and keep the identifier of every unit sampled.
+:::
+
+::: notes
+For the average catch, resampling whole sites gave a spread that showed the 800 rows were worth about 470 independent stations. The same holds for models. A model scored on single stations held out is helped by the other visits to the same site, so it must be scored on whole sites. Neighbouring sites and successive years share conditions too, which the validation section takes up.
+:::
+
+## A range check misses new combinations {#sampling-and-extrapolation .idea data-page="Uneven sampling and extrapolation" data-href="../chapters/06-assumptions-limitations/sampling-and-extrapolation.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Surveyed stations by depth and temperature fall in a diagonal band, shallow and warm to deep and cold. A dashed box marks the range of each input. A new station that is shallow and cold sits inside the box but far from every surveyed station.">
+  <g transform="translate(60 20)">
+    <line class="axis" x1="0" y1="0" x2="0" y2="360"/><line class="axis" x1="0" y1="360" x2="640" y2="360"/>
+    <text class="sm mute mid" x="320" y="400">Depth</text>
+    <text class="sm mute mid" transform="translate(-26 180) rotate(-90)">Temperature</text>
+    <rect class="none s-muted dash" stroke-width="3" x="40" y="30" width="560" height="300"/>
+    <g class="f-grey" opacity="0.8">
+      <circle cx="70" cy="50" r="8"/><circle cx="100" cy="80" r="8"/><circle cx="90" cy="110" r="8"/><circle cx="140" cy="70" r="8"/><circle cx="150" cy="120" r="8"/><circle cx="190" cy="110" r="8"/><circle cx="210" cy="150" r="8"/><circle cx="250" cy="130" r="8"/><circle cx="260" cy="180" r="8"/><circle cx="300" cy="170" r="8"/><circle cx="320" cy="210" r="8"/><circle cx="360" cy="200" r="8"/><circle cx="380" cy="240" r="8"/><circle cx="420" cy="230" r="8"/><circle cx="440" cy="270" r="8"/><circle cx="480" cy="260" r="8"/><circle cx="500" cy="300" r="8"/><circle cx="540" cy="290" r="8"/><circle cx="570" cy="315" r="8"/><circle cx="120" cy="150" r="8"/><circle cx="330" cy="150" r="8"/><circle cx="470" cy="210" r="8"/>
+    </g>
+    <line class="none s-red dash" stroke-width="3" x1="110" y1="290" x2="250" y2="190"/>
+    <circle class="f-red" cx="110" cy="290" r="14"/>
+    <text class="sm f-red" x="134" y="320" font-weight="700">shallow and cold</text>
+  </g>
+  <rect class="card" x="780" y="40" width="420" height="320" rx="14"/>
+  <text class="sm" x="808" y="96" font-weight="700">Range check</text>
+  <text class="sm mute" x="808" y="130">Each input alone</text>
+  <text class="sm f-green" x="808" y="164" font-weight="700">Passes</text>
+  <text class="sm" x="808" y="236" font-weight="700">Distance to the survey</text>
+  <text class="sm mute" x="808" y="270">All inputs together</text>
+  <text class="sm f-red" x="808" y="304" font-weight="700">Flags it</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Nothing in a prediction shows that the model has left the data.
+:::
+
+::: notes
+Survey effort is uneven, and a model is often asked about conditions its survey never met. That is extrapolation, and the predictions look just as confident as anywhere else. A range check takes each input alone, so a shallow, cold station passes because its depth and its temperature are each within range. The distance to the nearest surveyed station, on standardised inputs, takes all the inputs together and flags it.
+:::
+
+## A summer survey never met shallow, cold winter water {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/06-assumptions-limitations/sampling-and-extrapolation/fig-novelty-1.png){fig-alt="Depth against temperature. Grey summer and autumn survey stations, a dashed box of their ranges, and spring and winter stations coloured as close to the survey, inside every range but far from the survey, or outside a range. The far ones are mostly shallow and cold."}
+:::
+:::
+
+::: {.takeaway}
+Of 279 winter and spring stations inside every range, 132 were far from any surveyed station.
+:::
+
+::: notes
+A model fitted to the summer and autumn survey is asked about spring and winter stations. Many of those pass the range check but lie far from every surveyed station, shown in orange. Most are shallow and cold, a combination summer never offers. A map of predictions for winter would show them with the same confidence as everywhere else.
+:::
+
+## The forest's error grows with distance from the survey {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 410" role="img" aria-label="The random forest's typical error as a factor, for the quarter of stations nearest the survey, 1.4, and the quarter furthest from it, 2.9.">
+  <g transform="translate(120 20)">
+    <line class="axis" x1="0" y1="300" x2="900" y2="300"/>
+    <rect class="f-green" x="160" y="160" width="220" height="140" rx="6"/>
+    <rect class="f-red" x="520" y="10" width="220" height="290" rx="6"/>
+    <text class="head mid" x="270" y="150">1.4</text><text class="head mid" x="630" y="0">2.9</text>
+    <text class="sm mute mid" x="270" y="336">nearest quarter of stations</text><text class="sm mute mid" x="630" y="336">furthest quarter</text>
+  </g>
+  <text class="sm mute" x="280" y="405">Typical error, as a factor of the catch</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Map the distance with the predictions. Far from the survey, a prediction is a guess.
+:::
+
+::: notes
+The forest's typical error, measured as a factor, grew from 1.4 at the quarter of stations nearest the survey to 2.9 at the quarter furthest from it. The distance is cheap to compute, so a prediction map should show it alongside the predictions, and treat areas far from the survey as extrapolation.
+:::
+
+## Accuracy hides the misses when one answer is rare {#class-imbalance .idea data-page="Class imbalance" data-href="../chapters/06-assumptions-limitations/class-imbalance.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="125 stations as squares. Six have the rare species. The model finds one of them and misses five, and calls five absences present. All the other squares are absences called absent, so the model is 92 percent accurate.">
+  <g transform="translate(40 20)">
+    <path class="f-grey" opacity="0.3" d="M0,0h38v38h-38z M44,0h38v38h-38z M88,0h38v38h-38z M132,0h38v38h-38z M176,0h38v38h-38z M220,0h38v38h-38z M264,0h38v38h-38z M308,0h38v38h-38z M352,0h38v38h-38z M396,0h38v38h-38z M440,0h38v38h-38z M484,0h38v38h-38z M528,0h38v38h-38z M572,0h38v38h-38z M616,0h38v38h-38z M660,0h38v38h-38z M704,0h38v38h-38z M748,0h38v38h-38z M792,0h38v38h-38z M836,0h38v38h-38z M880,0h38v38h-38z M924,0h38v38h-38z M968,0h38v38h-38z M1012,0h38v38h-38z M1056,0h38v38h-38z M0,44h38v38h-38z M44,44h38v38h-38z M88,44h38v38h-38z M132,44h38v38h-38z M176,44h38v38h-38z M220,44h38v38h-38z M264,44h38v38h-38z M308,44h38v38h-38z M352,44h38v38h-38z M396,44h38v38h-38z M440,44h38v38h-38z M484,44h38v38h-38z M528,44h38v38h-38z M572,44h38v38h-38z M616,44h38v38h-38z M660,44h38v38h-38z M704,44h38v38h-38z M748,44h38v38h-38z M792,44h38v38h-38z M836,44h38v38h-38z M880,44h38v38h-38z M924,44h38v38h-38z M968,44h38v38h-38z M1012,44h38v38h-38z M1056,44h38v38h-38z M0,88h38v38h-38z M44,88h38v38h-38z M88,88h38v38h-38z M132,88h38v38h-38z M176,88h38v38h-38z M220,88h38v38h-38z M264,88h38v38h-38z M308,88h38v38h-38z M352,88h38v38h-38z M396,88h38v38h-38z M440,88h38v38h-38z M484,88h38v38h-38z M528,88h38v38h-38z M572,88h38v38h-38z M616,88h38v38h-38z M660,88h38v38h-38z M704,88h38v38h-38z M748,88h38v38h-38z M792,88h38v38h-38z M836,88h38v38h-38z M880,88h38v38h-38z M924,88h38v38h-38z M968,88h38v38h-38z M1012,88h38v38h-38z M1056,88h38v38h-38z M0,132h38v38h-38z M44,132h38v38h-38z M88,132h38v38h-38z M132,132h38v38h-38z M176,132h38v38h-38z M220,132h38v38h-38z M264,132h38v38h-38z M308,132h38v38h-38z M352,132h38v38h-38z M396,132h38v38h-38z M440,132h38v38h-38z M484,132h38v38h-38z M528,132h38v38h-38z M572,132h38v38h-38z M616,132h38v38h-38z M660,132h38v38h-38z M704,132h38v38h-38z M748,132h38v38h-38z M792,132h38v38h-38z M836,132h38v38h-38z M880,132h38v38h-38z M924,132h38v38h-38z M968,132h38v38h-38z M1012,132h38v38h-38z M1056,132h38v38h-38z M0,176h38v38h-38z M44,176h38v38h-38z M88,176h38v38h-38z M132,176h38v38h-38z M176,176h38v38h-38z M220,176h38v38h-38z M264,176h38v38h-38z M308,176h38v38h-38z M352,176h38v38h-38z M396,176h38v38h-38z M440,176h38v38h-38z M484,176h38v38h-38z M528,176h38v38h-38z M572,176h38v38h-38z M616,176h38v38h-38z M660,176h38v38h-38z M704,176h38v38h-38z M748,176h38v38h-38z M792,176h38v38h-38z M836,176h38v38h-38z M880,176h38v38h-38z M924,176h38v38h-38z M968,176h38v38h-38z M1012,176h38v38h-38z M1056,176h38v38h-38z"/>
+    <rect class="f-red" x="484" y="0" width="38" height="38" rx="6"/><rect class="f-red" x="1012" y="0" width="38" height="38" rx="6"/><rect class="f-red" x="308" y="44" width="38" height="38" rx="6"/><rect class="f-red" x="616" y="44" width="38" height="38" rx="6"/><rect class="f-red" x="968" y="132" width="38" height="38" rx="6"/>
+    <rect class="f-green" x="792" y="88" width="38" height="38" rx="6"/>
+    <rect class="f-orange" x="88" y="88" width="38" height="38" rx="6"/><rect class="f-orange" x="352" y="88" width="38" height="38" rx="6"/><rect class="f-orange" x="396" y="88" width="38" height="38" rx="6"/><rect class="f-orange" x="132" y="176" width="38" height="38" rx="6"/><rect class="f-orange" x="924" y="176" width="38" height="38" rx="6"/>
+  </g>
+  <g class="sm" transform="translate(40 280)">
+    <rect class="f-green" x="0" y="0" width="26" height="26" rx="4"/><text x="38" y="22">presence found</text>
+    <rect class="f-red" x="260" y="0" width="26" height="26" rx="4"/><text x="298" y="22">presence missed</text>
+    <rect class="f-orange" x="530" y="0" width="26" height="26" rx="4"/><text x="568" y="22">false alarm</text>
+    <rect class="f-grey" opacity="0.3" x="760" y="0" width="26" height="26" rx="4"/><text x="798" y="22">absence, easy call</text>
+  </g>
+  <text class="big" x="40" y="390">92% accurate</text>
+  <text class="big f-red" x="460" y="390">1 in 6 presences found</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+With a rare answer, count how many of the rare cases a model finds.
+:::
+
+::: notes
+Some answers marine scientists most want are rare, a protected species in a haul or a harmful bloom. With a rare species nearly every station is an absence, and calling an absence absent is easy. Accuracy mostly counts those easy calls. Here logistic regression found one presence in six and was still 92 percent accurate.
+:::
+
+## Rebalancing only moves the threshold {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/06-assumptions-limitations/class-imbalance/fig-curve-1.png){data-crop="0.125" fig-alt="Presences found against absences called present. A grey curve traces logistic regression without rebalancing at every threshold. A black point marks the default threshold, low on the curve. Upsampling lands on the curve, and downsampling just below it."}
+:::
+:::
+
+::: {.takeaway}
+Upsampling at 0.5 matched no rebalancing at a threshold of 0.048. Choose the threshold from costs.
+:::
+
+::: notes
+A common fix is to rebalance the training data, copying the rare presences or dropping absences, done inside the recipe so the test stations are untouched. The grey curve is the original model at every threshold. Rebalancing does not lift the model above that curve. It only moves it along it, and upsampling lands exactly where a threshold of 0.048 would. Leave the data alone and choose the threshold from what each mistake costs.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Check a linear model's errors along each input for curves it missed.
+- Normal errors are not required, but the loss decides what a prediction means.
+- Visits to one site are not separate evidence. Score on whole sites.
+- A model is guessing far from its survey, and a range check will not tell you.
+- With a rare answer, count the rare cases found and set the threshold from costs.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/06-assumptions-limitations/index.html).
+:::
+:::

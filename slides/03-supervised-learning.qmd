@@ -1,0 +1,494 @@
+---
+title: "Supervised learning"
+subtitle: "Seven ways to predict a count or a presence, and how to choose between them"
+description: "Regression for numbers and counts, logistic regression, neighbours, trees, forests and boosting, and choosing a method."
+order: 3
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 3"
+  data-section-href: "../chapters/03-supervised-learning/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## A squared input bends the line into a curve {#linear-and-polynomial-regression .idea data-page="Linear and polynomial regression" data-href="../chapters/03-supervised-learning/linear-and-polynomial-regression.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two panels of the same points, which rise to a peak and fall. A straight line has one slope and misses the peak. Adding a squared input bends the line into a curve with one peak, which beyond the data keeps falling, below zero.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Linear regression</text>
+  <text class="lab mute" x="32" y="90">ONE SLOPE PER INPUT</text>
+  <g transform="translate(110 110)">
+    <line class="axis" x1="0" y1="0" x2="0" y2="240"/><line class="axis" x1="0" y1="200" x2="420" y2="200"/>
+    <g class="f-grey"><circle cx="40" cy="160" r="7"/><circle cx="70" cy="120" r="7"/><circle cx="100" cy="90" r="7"/><circle cx="135" cy="60" r="7"/><circle cx="170" cy="50" r="7"/><circle cx="205" cy="62" r="7"/><circle cx="240" cy="82" r="7"/><circle cx="275" cy="115" r="7"/><circle cx="310" cy="150" r="7"/><circle cx="345" cy="176" r="7"/></g>
+    <line class="none s-blue" stroke-width="6" x1="20" y1="92" x2="380" y2="128"/>
+    <text class="sm mute mid" x="210" y="236">Temperature</text>
+  </g>
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Polynomial regression</text>
+  <text class="lab f-orange" x="652" y="90">ADD TEMPERATURE SQUARED</text>
+  <g transform="translate(730 110)">
+    <line class="axis" x1="0" y1="0" x2="0" y2="240"/><line class="axis" x1="0" y1="200" x2="420" y2="200"/>
+    <g class="f-grey"><circle cx="40" cy="160" r="7"/><circle cx="70" cy="120" r="7"/><circle cx="100" cy="90" r="7"/><circle cx="135" cy="60" r="7"/><circle cx="170" cy="50" r="7"/><circle cx="205" cy="62" r="7"/><circle cx="240" cy="82" r="7"/><circle cx="275" cy="115" r="7"/><circle cx="310" cy="150" r="7"/><circle cx="345" cy="176" r="7"/></g>
+    <path class="none s-orange" stroke-width="6" d="M20,190 Q180,-80 350,190"/>
+    <path class="none s-orange dash" stroke-width="5" d="M350,190 Q362,215 372,240"/>
+    <text class="sm f-red end" x="350" y="236" font-weight="700">below zero</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Still linear regression, and it suits a species with a preferred temperature.
+:::
+
+::: notes
+Linear regression is the yardstick that every method in this section must beat on new sites. It gives each input one slope, so it can only rise or fall. Adding the square of temperature as a second input bends the line into a curve with one peak. It is fitted in exactly the same way. But nothing in it knows that a count stops at zero, and beyond the data the curve keeps falling.
+:::
+
+## Polynomial regression finds a peak the line misses {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/linear-and-polynomial-regression/fig-shapes-1.png){data-crop="0.067" fig-alt="Predicted count against temperature. Linear regression falls steadily. Polynomial regression rises to a peak near 7.5 degrees and falls below zero in the warmest water."}
+:::
+:::
+
+::: {.takeaway}
+The curve scores better on new sites, but predicts fewer than zero animals at 12 of 202 test stations.
+:::
+
+::: notes
+On the survey the line gives temperature a single slope of minus 0.33 animals per degree. The curve finds a peak at about 7.5 degrees and predicts new sites better. In the warmest water it predicts a negative count, which no survey can find. The next page fixes that.
+:::
+
+## A count never falls below zero {#count-regression .idea data-page="Regression for counts" data-href="../chapters/03-supervised-learning/count-regression.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three panels. Linear regression models the count itself and can cross below zero. Poisson regression is a straight line in the log of the count, so the curve nears zero but never crosses it. The negative binomial keeps the curve and allows a wider spread around it.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Linear</text>
+    <text class="lab mute" x="28" y="90">THE COUNT ITSELF</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="220"/><line class="grid" x1="0" y1="180" x2="300" y2="180"/>
+      <text class="sm mute" x="-30" y="188">0</text>
+      <line class="none s-blue" stroke-width="6" x1="10" y1="40" x2="300" y2="215"/>
+      <circle class="f-red" cx="300" cy="215" r="9"/>
+    </g>
+    <text class="sm f-red" x="28" y="388">Crosses zero</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Poisson</text>
+    <text class="lab f-green" x="28" y="90">THE LOG OF THE COUNT</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="220"/><line class="grid" x1="0" y1="180" x2="300" y2="180"/>
+      <text class="sm mute" x="-30" y="188">0</text>
+      <path class="none s-green" stroke-width="6" d="M10,30 C90,130 160,172 300,178"/>
+    </g>
+    <text class="sm f-green" x="28" y="388">Nears zero, never crosses</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Negative binomial</text>
+    <text class="lab f-purple" x="28" y="90">A WIDER SPREAD</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="220"/><line class="grid" x1="0" y1="180" x2="300" y2="180"/>
+      <text class="sm mute" x="-30" y="188">0</text>
+      <path class="t-red" d="M10,0 C90,90 160,150 300,170 L300,180 C160,180 90,170 10,70 z" opacity="0.9"/>
+      <path class="none s-purple" stroke-width="6" d="M10,30 C90,130 160,172 300,178"/>
+    </g>
+    <text class="sm" x="28" y="388" style="fill: var(--c-purple)">Same curve, honest spread</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Poisson regression is built for counts. The negative binomial allows for animals that clump.
+:::
+
+::: notes
+A count never falls below zero, and the larger it is, the more it varies. Poisson regression fits a straight line to the log of the expected count, so on the count scale the curve approaches zero but never crosses it. Counts of animals usually vary even more than Poisson expects, because animals clump. The negative binomial keeps the same curve and allows that wider spread. It changes the uncertainty a model reports far more than its predictions.
+:::
+
+## Poisson regression levels off above zero {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/count-regression/fig-shapes-1.png){data-crop="0.067" fig-alt="Predicted count against temperature. Poisson regression peaks close to where polynomial regression does and levels off above zero in cold and warm water, where the polynomial falls below zero."}
+:::
+:::
+
+::: {.takeaway}
+Each coefficient is a multiplier. A muddy station holds 1.34 times the count of a sandy one.
+:::
+
+::: notes
+Poisson regression finds a peak close to the polynomial's, and levels off above zero at both ends. Because it works on the log scale, each coefficient becomes a multiplier on the count, here 1.34 for mud compared with sand. On new sites both count models beat polynomial regression and predict almost the same counts.
+:::
+
+## Logistic regression keeps a probability between 0 and 1 {#logistic-regression .idea data-page="Logistic regression" data-href="../chapters/03-supervised-learning/logistic-regression.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three steps. A weighted sum of the inputs gives the log-odds, a straight line. An S-shaped curve turns it into a probability between 0 and 1. A threshold turns the probability into yes or no.">
+  <g>
+    <rect class="card" x="0" y="0" width="340" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">1 WEIGHTED SUM</text>
+    <g transform="translate(40 90)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="220"/><line class="axis" x1="0" y1="220" x2="260" y2="220"/>
+      <line class="none s-blue" stroke-width="6" x1="10" y1="210" x2="250" y2="10"/>
+    </g>
+    <text class="sm" x="28" y="380">The log-odds, any value</text>
+  </g>
+  <line class="wire arrow" x1="350" y1="205" x2="410" y2="205"/>
+  <g transform="translate(420 0)">
+    <rect class="card" x="0" y="0" width="340" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">2 S-SHAPED CURVE</text>
+    <g transform="translate(40 90)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="220"/><line class="axis" x1="0" y1="220" x2="260" y2="220"/>
+      <line class="grid dash" x1="0" y1="20" x2="260" y2="20"/>
+      <text class="sm mute" x="-28" y="28">1</text><text class="sm mute" x="-28" y="228">0</text>
+      <path class="none s-green" stroke-width="6" d="M5,214 C120,214 140,22 255,22"/>
+    </g>
+    <text class="sm" x="28" y="380">A probability, 0 to 1</text>
+  </g>
+  <line class="wire arrow" x1="770" y1="205" x2="830" y2="205"/>
+  <g transform="translate(840 0)">
+    <rect class="card" x="0" y="0" width="360" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">3 THRESHOLD</text>
+    <rect class="t-blue" x="40" y="96" width="280" height="96" rx="10"/>
+    <text class="head mid" x="180" y="156">yes</text>
+    <line class="none s-red thick dash" x1="30" y1="206" x2="330" y2="206"/>
+    <text class="sm f-red end" x="330" y="196">0.5</text>
+    <rect class="t-orange" x="40" y="220" width="280" height="96" rx="10"/>
+    <text class="head mid" x="180" y="280">no</text>
+    <text class="sm" x="28" y="380">A choice, not a fact</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The data give the probability. Where to cut it into yes or no is your choice.
+:::
+
+::: notes
+Whether a species is present is a yes or no question, best answered with a probability. Logistic regression fits a weighted sum of the inputs, called the log-odds, which can take any value. An S-shaped curve turns it into a probability that stays between 0 and 1. A threshold then turns the probability into yes or no, and the data cannot choose that threshold for you.
+:::
+
+## The chance of presence rises and falls with temperature {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/logistic-regression/fig-curve-1.png){data-crop="0.067" fig-alt="Predicted probability of presence against temperature, a hump that peaks near 0.85 at about 9 degrees, with training stations where the species was present along the top and absent along the bottom."}
+:::
+:::
+
+::: {.takeaway}
+Calling every station present is already right 75% of the time. Accuracy must beat that.
+:::
+
+::: notes
+With a squared temperature term, logistic regression finds the same preferred temperature as the count models, and its probability never passes 1. Turning the count into present or absent keeps where the species lives and loses how many there are. Most stations have the species, so a model that says present everywhere is right three times in four. Any accuracy has to be compared with that.
+:::
+
+## The threshold trades false alarms for misses {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Predicted probabilities at stations without the species, a grey hump on the left, and with it, a blue hump on the right. A threshold line divides them. Absent stations to the right of it are false alarms. Present stations to the left of it are misses. Raising the threshold gives fewer false alarms and more misses.">
+  <g transform="translate(20 20)">
+    <path class="f-grey" opacity="0.45" d="M40,317 L64,306 L88,290 L112,268 L136,240 L160,209 L184,177 L208,151 L232,134 L250,130 L268,134 L292,151 L316,177 L340,209 L364,240 L388,268 L412,290 L436,306 L460,317 L496,325 L544,329 L600,330 L760,330 L40,330 z"/>
+    <path class="f-blue" opacity="0.35" d="M40,330 L208,328 L256,323 L292,313 L328,294 L364,262 L400,218 L436,168 L472,125 L508,102 L520,100 L544,107 L580,138 L616,185 L652,234 L688,274 L724,301 L760,317 L760,330 z"/>
+    <path class="f-orange" opacity="0.9" d="M400,330 L400,280 L412,290 L424,299 L436,306 L448,312 L460,317 L478,322 L496,325 L520,328 L544,329 L580,330 z"/>
+    <path class="f-red" opacity="0.85" d="M190,330 L208,328 L232,326 L256,323 L280,317 L304,308 L328,294 L352,274 L376,248 L400,218 L400,330 z"/>
+    <line class="axis" x1="40" y1="330" x2="780" y2="330"/>
+    <text class="sm mute" x="40" y="370">probability 0</text><text class="sm mute end" x="780" y="370">1</text>
+    <line class="none s-fg thick" x1="400" y1="60" x2="400" y2="340"/>
+    <text class="sm mid" x="400" y="44" font-weight="700">threshold</text>
+    <text class="sm mute" x="150" y="110">absent</text><text class="sm f-blue" x="600" y="80">present</text>
+  </g>
+  <rect class="card" x="840" y="40" width="360" height="320" rx="14"/>
+  <rect class="f-orange" x="870" y="80" width="26" height="26" rx="4"/><text x="910" y="102">False alarms</text>
+  <rect class="f-red" x="870" y="140" width="26" height="26" rx="4"/><text x="910" y="162">Misses</text>
+  <text class="sm" x="870" y="240">Move the line right</text>
+  <text class="sm mute" x="870" y="276">fewer false alarms</text>
+  <text class="sm mute" x="870" y="308">more misses</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Choose the threshold from what each mistake costs.
+:::
+
+::: notes
+Stations without the species mostly get low probabilities and stations with it mostly get high ones, but the two overlap. Wherever the threshold sits, some absent stations are called present, the false alarms, and some present stations are called absent, the misses. Moving the threshold trades one for the other. Which trade is right depends on what each mistake costs, for example a missed protected species against a wasted survey visit.
+:::
+
+## The number of neighbours sets how smooth the predictions are {#nearest-neighbours .idea data-page="k-nearest neighbours" data-href="../chapters/03-supervised-learning/nearest-neighbours.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The same points in three panels. With one neighbour the prediction jumps to every point. With a few neighbours it follows the pattern smoothly. With all of them it is one flat average.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="390" rx="14"/>
+    <text class="head" x="28" y="54">One neighbour</text>
+    <g transform="translate(28 90)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="6"/><circle cx="28" cy="218" r="6"/><circle cx="43" cy="170" r="6"/><circle cx="55" cy="176" r="6"/><circle cx="62" cy="154" r="6"/><circle cx="74" cy="157" r="6"/><circle cx="88" cy="146" r="6"/><circle cx="98" cy="116" r="6"/><circle cx="113" cy="149" r="6"/><circle cx="123" cy="93" r="6"/><circle cx="139" cy="144" r="6"/><circle cx="145" cy="103" r="6"/><circle cx="155" cy="100" r="6"/><circle cx="172" cy="96" r="6"/><circle cx="178" cy="46" r="6"/><circle cx="191" cy="66" r="6"/><circle cx="204" cy="103" r="6"/><circle cx="213" cy="105" r="6"/><circle cx="228" cy="93" r="6"/><circle cx="239" cy="137" r="6"/><circle cx="250" cy="122" r="6"/><circle cx="263" cy="198" r="6"/><circle cx="271" cy="127" r="6"/><circle cx="288" cy="155" r="6"/><circle cx="298" cy="159" r="6"/><circle cx="304" cy="257" r="6"/></g>
+      <path class="none s-red" stroke-width="4" d="M20,212 L23,212 L23,218 L36,218 L36,170 L49,170 L49,176 L58,176 L58,154 L68,154 L68,157 L81,157 L81,146 L93,146 L93,116 L106,116 L106,149 L118,149 L118,93 L131,93 L131,144 L142,144 L142,103 L150,103 L150,100 L164,100 L164,96 L175,96 L175,46 L185,46 L185,66 L198,66 L198,103 L209,103 L209,105 L221,105 L221,93 L234,93 L234,137 L244,137 L244,122 L256,122 L256,198 L267,198 L267,127 L279,127 L279,155 L293,155 L293,159 L301,159 L301,257 L320,257"/>
+    </g>
+    <text class="sm f-red" x="28" y="376">Copies the noise</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="390" rx="14" style="stroke: var(--c-green); stroke-width: 3"/>
+    <text class="head" x="28" y="54">A few</text>
+    <g transform="translate(28 90)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="6"/><circle cx="28" cy="218" r="6"/><circle cx="43" cy="170" r="6"/><circle cx="55" cy="176" r="6"/><circle cx="62" cy="154" r="6"/><circle cx="74" cy="157" r="6"/><circle cx="88" cy="146" r="6"/><circle cx="98" cy="116" r="6"/><circle cx="113" cy="149" r="6"/><circle cx="123" cy="93" r="6"/><circle cx="139" cy="144" r="6"/><circle cx="145" cy="103" r="6"/><circle cx="155" cy="100" r="6"/><circle cx="172" cy="96" r="6"/><circle cx="178" cy="46" r="6"/><circle cx="191" cy="66" r="6"/><circle cx="204" cy="103" r="6"/><circle cx="213" cy="105" r="6"/><circle cx="228" cy="93" r="6"/><circle cx="239" cy="137" r="6"/><circle cx="250" cy="122" r="6"/><circle cx="263" cy="198" r="6"/><circle cx="271" cy="127" r="6"/><circle cx="288" cy="155" r="6"/><circle cx="298" cy="159" r="6"/><circle cx="304" cy="257" r="6"/></g>
+      <path class="none s-green" stroke-width="6" d="M19,176 L43,176 L55,176 L62,162 L74,153 L88,142 L98,137 L113,130 L123,122 L139,105 L145,105 L155,93 L172,94 L178,88 L191,87 L204,92 L213,96 L228,118 L239,126 L250,134 L263,142 L271,165 L304,165"/>
+    </g>
+    <text class="sm f-green" x="28" y="376">Follows the pattern</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="390" rx="14"/>
+    <text class="head" x="28" y="54">All of them</text>
+    <g transform="translate(28 90)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="6"/><circle cx="28" cy="218" r="6"/><circle cx="43" cy="170" r="6"/><circle cx="55" cy="176" r="6"/><circle cx="62" cy="154" r="6"/><circle cx="74" cy="157" r="6"/><circle cx="88" cy="146" r="6"/><circle cx="98" cy="116" r="6"/><circle cx="113" cy="149" r="6"/><circle cx="123" cy="93" r="6"/><circle cx="139" cy="144" r="6"/><circle cx="145" cy="103" r="6"/><circle cx="155" cy="100" r="6"/><circle cx="172" cy="96" r="6"/><circle cx="178" cy="46" r="6"/><circle cx="191" cy="66" r="6"/><circle cx="204" cy="103" r="6"/><circle cx="213" cy="105" r="6"/><circle cx="228" cy="93" r="6"/><circle cx="239" cy="137" r="6"/><circle cx="250" cy="122" r="6"/><circle cx="263" cy="198" r="6"/><circle cx="271" cy="127" r="6"/><circle cx="288" cy="155" r="6"/><circle cx="298" cy="159" r="6"/><circle cx="304" cy="257" r="6"/></g>
+      <line class="none s-blue" stroke-width="6" x1="10" y1="139" x2="315" y2="139"/>
+    </g>
+    <text class="sm f-blue" x="28" y="376">One flat average</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The number of neighbours, k, is a setting chosen on new sites, never on the training error.
+:::
+
+::: notes
+k-nearest neighbours assumes no shape at all. With one neighbour the prediction copies every chance high and low in the training stations. With every station as a neighbour it predicts one average everywhere. Somewhere between lies the right amount of smoothing, and only data the model has not seen can show where. Beyond the last station the neighbours never change, so the prediction levels off.
+:::
+
+## Validation sites choose the number of neighbours {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/nearest-neighbours/fig-neighbours-1.png){data-crop="0.071" fig-alt="RMSE against the number of neighbours on a log scale. On the fitting stations the error is zero with one neighbour and rises with more. On the validation sites it falls to a low point near 30 neighbours and rises again."}
+:::
+:::
+
+::: {.takeaway}
+One neighbour fits its own stations perfectly. New sites do best with about 30.
+:::
+
+::: notes
+On the stations it was fitted to, one neighbour has no error at all, because each station is its own nearest neighbour. On the validation sites the error is lowest at about 30 neighbours. Even then, on the test sites, Poisson regression's assumed curve predicts better. Flexibility needs many stations close by, and the survey does not have them.
+:::
+
+## A tree predicts by asking yes or no questions {#decision-trees .idea data-page="Decision trees" data-href="../chapters/03-supervised-learning/decision-trees.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A decision tree from the survey. The first question is whether chlorophyll is below 5.7. If yes, is temperature below 6.4, giving an average count of 1.5 if yes and 4.4 if no. If no, is depth below 12 metres, giving 3 if yes and 19 if no. Beside it, the tree's predictions change in steps and stay level beyond the data.">
+  <rect class="card" x="280" y="0" width="300" height="70" rx="12" style="stroke: var(--accent)"/>
+  <text class="mid" x="430" y="44">Chlorophyll below 5.7</text>
+  <rect class="card" x="40" y="150" width="300" height="70" rx="12"/>
+  <text class="mid" x="190" y="194">Temperature below 6.4</text>
+  <rect class="card" x="520" y="150" width="300" height="70" rx="12"/>
+  <text class="mid" x="670" y="194">Depth below 12 m</text>
+  <line class="wire" x1="380" y1="72" x2="220" y2="148"/><line class="wire" x1="480" y1="72" x2="640" y2="148"/>
+  <text class="sm f-green" x="262" y="114" font-weight="700">yes</text><text class="sm f-red" x="580" y="114" font-weight="700">no</text>
+  <g class="sm">
+    <line class="wire" x1="140" y1="222" x2="90" y2="298"/><line class="wire" x1="240" y1="222" x2="290" y2="298"/>
+    <line class="wire" x1="620" y1="222" x2="570" y2="298"/><line class="wire" x1="720" y1="222" x2="770" y2="298"/>
+    <text class="f-green" x="88" y="262" font-weight="700">yes</text><text class="f-red" x="272" y="262" font-weight="700">no</text>
+    <text class="f-green" x="568" y="262" font-weight="700">yes</text><text class="f-red" x="752" y="262" font-weight="700">no</text>
+  </g>
+  <g>
+    <circle class="t-blue s-blue" stroke-width="3" cx="90" cy="340" r="42"/><text class="head mid" x="90" y="351">1.5</text>
+    <circle class="t-blue s-blue" stroke-width="3" cx="290" cy="340" r="42"/><text class="head mid" x="290" y="351">4.4</text>
+    <circle class="t-blue s-blue" stroke-width="3" cx="570" cy="340" r="42"/><text class="head mid" x="570" y="351">3</text>
+    <circle class="t-blue s-blue" stroke-width="3" cx="770" cy="340" r="42"/><text class="head mid" x="770" y="351">19</text>
+  </g>
+  <text class="sm mute" x="40" y="412">Each leaf predicts the average count of its training stations</text>
+  <g transform="translate(900 60)">
+    <rect class="card" x="0" y="0" width="300" height="300" rx="14"/>
+    <line class="axis" x1="30" y1="40" x2="30" y2="250"/><line class="axis" x1="30" y1="250" x2="280" y2="250"/>
+    <rect class="t-orange" x="210" y="40" width="70" height="210"/>
+    <path class="none s-orange" stroke-width="6" d="M30,200 L95,200 L95,110 L160,110 L160,160 L280,160"/>
+    <text class="sm mute" x="44" y="284">steps, level beyond</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A short tree reads like an identification key.
+:::
+
+::: notes
+A decision tree asks one yes or no question at a time, each chosen as the best split at that step. Every station ends up in a leaf, and the leaf predicts the average count of the training stations that reached it. This is the top of the tree the survey grew. Its predictions change in steps, and beyond the last split they stay level.
+:::
+
+## Deeper trees fit their own stations better, new sites worse {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/decision-trees/fig-depth-1.png){data-crop="0.071" fig-alt="RMSE against tree depth. On the fitting stations the error falls steadily as the tree deepens. On the validation sites it is lowest at depth 5 and rises after that."}
+:::
+:::
+
+::: {.takeaway}
+Depth 5 wins on validation sites. Still, one tree lost to the plain average on new sites.
+:::
+
+::: notes
+Each extra level of questions fits the training stations more closely, and past a point it fits their noise. The validation sites choose the depth, here five. On the test sites that tree still predicted worse than simply using the average count, and well behind Poisson regression. A single tree is easy to read, but rarely the best predictor.
+:::
+
+## Many trees are steadier than one {#forests-and-boosting .idea data-page="Random forests and boosting" data-href="../chapters/03-supervised-learning/forests-and-boosting.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two ways to combine trees. A random forest grows many trees side by side, each on a resampled set of stations, and averages them. Boosting adds small trees one after another, each fitted to the errors left by those before it.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Random forest</text>
+  <text class="lab f-green" x="32" y="90">SIDE BY SIDE, THEN AVERAGE</text>
+  <g transform="translate(50 130)">
+    <g transform="translate(0 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g><g transform="translate(90 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g><g transform="translate(180 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g><g transform="translate(270 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g><g transform="translate(360 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g>
+    <line class="wire arrow" x1="30" y1="70" x2="215" y2="150"/><line class="wire arrow" x1="120" y1="70" x2="222" y2="146"/><line class="wire arrow" x1="210" y1="70" x2="230" y2="144"/><line class="wire arrow" x1="300" y1="70" x2="238" y2="146"/><line class="wire arrow" x1="390" y1="70" x2="245" y2="150"/>
+    <rect class="t-green s-green" stroke-width="3" x="160" y="160" width="140" height="56" rx="10"/>
+    <text class="mid" x="230" y="197">Average</text>
+  </g>
+  <text class="sm mute" x="32" y="390">Each tree sees a resampled survey</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Boosting</text>
+  <text class="lab f-orange" x="652" y="90">ONE AFTER ANOTHER</text>
+  <g transform="translate(660 150)">
+    <g transform="translate(0 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g>
+    <text class="head" x="78" y="40">+</text>
+    <g transform="translate(110 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g>
+    <text class="head" x="188" y="40">+</text>
+    <g transform="translate(220 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g>
+    <text class="head" x="298" y="40">+</text>
+    <g transform="translate(330 0)"><line class="wire" x1="30" y1="10" x2="12" y2="40"/><line class="wire" x1="30" y1="10" x2="48" y2="40"/><circle class="f-green" cx="30" cy="10" r="9"/><circle class="f-green" cx="12" cy="42" r="8"/><circle class="f-green" cx="48" cy="42" r="8"/></g>
+    <text class="head" x="408" y="40">. . .</text>
+    <path class="wire arrow" d="M70,90 C110,130 160,130 180,90"/>
+    <path class="wire arrow" d="M180,90 C220,130 270,130 290,90"/>
+    <path class="wire arrow" d="M290,90 C330,130 380,130 400,90"/>
+  </g>
+  <text class="sm" x="652" y="330">Each new tree fixes what</text>
+  <text class="sm" x="652" y="362">the others missed</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Resampling the survey moved one tree's first threshold from 2.6 to 12.6. Averages smooth that out.
+:::
+
+::: notes
+One tree changes a lot with a slightly different sample of stations. Resampling the survey kept the first question about chlorophyll but moved its threshold from 2.6 to 12.6. A random forest grows many trees, each on a resampled survey and choosing among a few random inputs at each question, and averages them. Boosting instead adds small trees one after another, each fitted to the errors the others left, and scaled down so that no single tree takes over.
+:::
+
+## More trees steady a forest but overfit boosting {.example}
+
+::: {.plot .short}
+::: {.card}
+::: {.panel-labels}
+[Random forest]{} [Boosting]{}
+:::
+![](figures/03-supervised-learning/forests-and-boosting/fig-trees-1.png){data-crop="0.093" fig-alt="RMSE against the number of trees on a log scale. For the forest both errors fall and level off. For boosting the error on the fitting stations keeps falling towards zero while the validation error turns up after about 200 trees."}
+:::
+:::
+
+::: {.takeaway}
+Adding trees never hurts a forest. Too many trees let boosting fit the noise.
+:::
+
+::: notes
+For the random forest, more trees steady the average, and after a few dozen they stop helping, but never hurt. Boosting keeps fitting its training stations ever more closely, and past a point the validation error rises, so its number of trees is chosen on validation sites. On the test sites both beat the single tree, the forest by most, and neither beat Poisson regression.
+:::
+
+## Five questions narrow the choice of method {#choosing-a-method .idea data-page="Choosing a method" data-href="../chapters/03-supervised-learning/choosing-a-method.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Five cards in a row. The aim, prediction or explanation. The outcome, a number, a count or a category. The range, whether predictions are needed beyond the sampled data. The data, how many stations. The audience, who has to accept the result.">
+  <g class="sm">
+    <g><rect class="card" x="0" y="20" width="220" height="330" rx="14"/><circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">1</text><text class="head" x="24" y="150">Aim</text><text x="24" y="210">Predict or</text><text x="24" y="242">explain</text></g>
+    <g transform="translate(245 0)"><rect class="card" x="0" y="20" width="220" height="330" rx="14"/><circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">2</text><text class="head" x="24" y="150">Outcome</text><text x="24" y="210">Number, count</text><text x="24" y="242">or category</text></g>
+    <g transform="translate(490 0)"><rect class="card" x="0" y="20" width="220" height="330" rx="14"/><circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">3</text><text class="head" x="24" y="150">Range</text><text x="24" y="210">Beyond the</text><text x="24" y="242">sampled data</text></g>
+    <g transform="translate(735 0)"><rect class="card" x="0" y="20" width="220" height="330" rx="14"/><circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">4</text><text class="head" x="24" y="150">Data</text><text x="24" y="210">How many</text><text x="24" y="242">stations</text></g>
+    <g transform="translate(980 0)"><rect class="card" x="0" y="20" width="220" height="330" rx="14"/><circle class="f-accent" cx="44" cy="68" r="24"/><text class="mid f-bg" x="44" y="77" font-weight="700">5</text><text class="head" x="24" y="150">Audience</text><text x="24" y="210">Who must</text><text x="24" y="242">accept it</text></g>
+  </g>
+  <text class="mid" x="600" y="402" font-weight="600">Not which method is most flexible</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The question comes before the method.
+:::
+
+::: notes
+The most flexible method is often not the right one. Start from the aim, then the kind of outcome. Ask whether predictions are needed beyond the range of the data, how much data there is, and who has to accept the result. A manager may need a model they can read. These questions narrow the choice before any model is fitted.
+:::
+
+## On new sites a curve built for counts predicted best {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/choosing-a-method/fig-comparison-1.png){data-crop="0.066" fig-alt="RMSE of seven models on validation sites and test sites. On the test sites Poisson regression is best and the decision tree and boosting are worst. The two sets of sites rank the models differently."}
+:::
+:::
+
+::: {.takeaway}
+598 noisy stations are too few for flexible methods to beat a curve with a few terms.
+:::
+
+::: notes
+All seven models were scored on the same new sites. Poisson regression predicted best and the tree models came last. The validation and test sites also rank the models differently, because one split cannot separate models that are close, and a model tuned on the validation sites looks best there.
+:::
+
+## Beyond the data each model follows its own rule {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/03-supervised-learning/choosing-a-method/fig-extrapolate-1.png){data-crop="0.066" fig-alt="Predicted count across temperatures from 0 to 22 degrees, with the ranges beyond the training data shaded. Linear regression keeps falling below zero, Poisson regression flattens towards zero and the random forest stays level."}
+:::
+:::
+
+::: {.takeaway}
+In the shaded ranges no station checks any of these rules.
+:::
+
+::: notes
+Asked about temperatures the survey never sampled, each model answers by its own rule. The line keeps falling and goes below zero, Poisson regression flattens towards zero, and the forest stays level at whatever its last stations showed. None of these answers is checked by data. If predictions are needed beyond the sampled range, the choice of method is a choice of rule.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Linear regression is the yardstick. A squared input lets it find a preferred temperature.
+- Match the model to the outcome. Poisson for counts, logistic for presence.
+- Neighbours and trees assume no shape, and need settings chosen on new sites.
+- Forests and boosting steady a single tree, but on this survey a simple curve did best.
+- Choose a method from the question, not from its flexibility.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/03-supervised-learning/index.html).
+:::
+:::

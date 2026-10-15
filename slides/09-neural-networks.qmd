@@ -1,0 +1,345 @@
+---
+title: "Neural networks"
+subtitle: "Regressions with a bend, stacked, and when that is worth the trouble"
+description: "Neurons and activations, forward and backward passes, training, when a network pays off, and autoencoders."
+order: 9
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 9"
+  data-section-href: "../chapters/09-neural-networks/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## A neuron is a weighted sum and a bend {#what-a-network-is .idea data-page="Neurons, layers and activations" data-href="../chapters/09-neural-networks/what-a-network-is.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Left, one neuron. Three inputs, each with a weight, feed a sum, which passes through a bend, the activation, to give an output. Right, a network. The same inputs feed two hidden neurons, each with its own bend, and the output adds up their results.">
+  <rect class="card" x="0" y="0" width="560" height="410" rx="14"/>
+  <text class="head" x="32" y="56">One neuron</text>
+  <g transform="translate(40 110)">
+    <g class="f-blue"><circle cx="20" cy="20" r="18"/><circle cx="20" cy="110" r="18"/><circle cx="20" cy="200" r="18"/></g>
+    <g class="wire"><line x1="40" y1="24" x2="200" y2="100"/><line x1="40" y1="110" x2="200" y2="110"/><line x1="40" y1="196" x2="200" y2="120"/></g>
+    <text class="sm mute" x="90" y="52">w₁</text><text class="sm mute" x="100" y="100">w₂</text><text class="sm mute" x="90" y="186">w₃</text>
+    <circle class="card" cx="240" cy="110" r="40" style="stroke: var(--accent); stroke-width: 3"/>
+    <text class="head mid" x="240" y="122">Σ</text>
+    <line class="wire arrow" x1="282" y1="110" x2="322" y2="110"/>
+    <rect class="card" x="330" y="70" width="110" height="80" rx="10" style="stroke: var(--c-orange); stroke-width: 3"/>
+    <path class="none s-orange" stroke-width="4" d="M342,138 C380,138 390,82 428,82"/>
+    <line class="wire arrow" x1="446" y1="110" x2="480" y2="110"/>
+    <text class="sm mute mid" x="240" y="190">weighted sum</text><text class="sm mute mid" x="385" y="190">bend</text>
+  </g>
+  <text class="sm" x="32" y="396">No bend gives linear regression</text>
+
+  <rect class="card" x="600" y="0" width="600" height="410" rx="14"/>
+  <text class="head" x="632" y="56">A hidden layer</text>
+  <g transform="translate(660 100)">
+    <g class="wire"><line x1="20" y1="30" x2="230" y2="60"/><line x1="20" y1="30" x2="230" y2="190"/><line x1="20" y1="125" x2="230" y2="60"/><line x1="20" y1="125" x2="230" y2="190"/><line x1="20" y1="220" x2="230" y2="60"/><line x1="20" y1="220" x2="230" y2="190"/><line x1="270" y1="60" x2="440" y2="125"/><line x1="270" y1="190" x2="440" y2="125"/></g>
+    <g class="f-blue"><circle cx="20" cy="30" r="18"/><circle cx="20" cy="125" r="18"/><circle cx="20" cy="220" r="18"/></g>
+    <g><circle class="card" cx="250" cy="60" r="32" style="stroke: var(--c-orange); stroke-width: 3"/><path class="none s-orange" stroke-width="4" d="M230,72 C246,72 252,48 270,48"/><circle class="card" cx="250" cy="190" r="32" style="stroke: var(--c-orange); stroke-width: 3"/><path class="none s-orange" stroke-width="4" d="M230,178 C246,178 252,202 270,202"/></g>
+    <circle class="f-green" cx="460" cy="125" r="24"/>
+    <text class="sm mute mid" x="20" y="262">inputs</text><text class="sm mute mid" x="250" y="262">hidden</text><text class="sm mute mid" x="460" y="262">output</text>
+  </g>
+  <text class="sm" x="632" y="396">Opposing bends add up to curves</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A neuron is a regression you already know. The bend does the work.
+:::
+
+::: notes
+A neuron takes a weighted sum of its inputs plus a bias and passes it through an activation function, a bend. With no bend it is linear regression, and with the logistic bend it is logistic regression. A hidden layer is several neurons reading the same inputs, and the output adds up their results. Without the bend, any number of layers still adds up to a straight line. With it, opposing bends can add up to curves.
+:::
+
+## Two hidden units follow the temperature optimum {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/what-a-network-is/fig-hump-1.png){fig-alt="Fitted temperature response with zero, one and two hidden units, over the mean abundance in each one-degree band. No hidden units give a straight line, one gives a single step, and two follow the rise and fall of the hump."}
+:::
+:::
+
+::: {.takeaway}
+A line cannot turn over and one bend cannot come back down. Two can, with only 7 weights.
+:::
+
+::: notes
+With no hidden units the network is a straight line. One hidden unit adds one bend, which can level off but never come back down. Two hidden units, seven weights in all, follow the temperature optimum without being told its shape. More units added little. A network's weights multiply quickly, though, inputs times hidden units, so networks are fitted with a penalty and their weights are not read one by one.
+:::
+
+## A rising and a falling bend make the hump {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/what-a-network-is/fig-bends-1.png){fig-alt="Top, each hidden unit's contribution against temperature, one rising from minus 5 towards zero and one falling from 5 towards zero. Bottom, their sum plus the output bias, a hump that follows the mean abundance."}
+:::
+:::
+
+::: {.takeaway}
+Each unit adds one S-shaped bend. Their sum turns over.
+:::
+
+::: notes
+Taking the two-unit network apart shows how it works. One hidden unit contributes a bend that rises with temperature, the other one that falls. Each alone is a simple S shape. Added together, with the output bias, they make the hump. That is the whole trick of a network, many simple bends added up.
+:::
+
+## A network learns by walking downhill {#forward-and-backward .idea data-page="Forward propagation and backpropagation" data-href="../chapters/09-neural-networks/forward-and-backward.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="One training step. A forward pass runs from the inputs through the hidden layer to the prediction and the loss. A backward pass runs back along the same arrows and gives every weight its slope. Then every weight takes a small step downhill. The step repeats.">
+  <g transform="translate(60 60)">
+    <g class="wire"><line x1="56" y1="40" x2="304" y2="40"/><line x1="56" y1="40" x2="304" y2="160"/><line x1="56" y1="160" x2="304" y2="40"/><line x1="56" y1="160" x2="304" y2="160"/><line x1="356" y1="40" x2="600" y2="100"/><line x1="356" y1="160" x2="600" y2="100"/><line x1="660" y1="100" x2="790" y2="100"/></g>
+    <g class="f-blue"><circle cx="30" cy="40" r="26"/><circle cx="30" cy="160" r="26"/></g>
+    <g class="f-orange"><circle cx="330" cy="40" r="26"/><circle cx="330" cy="160" r="26"/></g>
+    <circle class="f-green" cx="630" cy="100" r="30"/>
+    <rect class="card" x="790" y="60" width="200" height="80" rx="12" style="stroke: var(--c-red); stroke-width: 3"/>
+    <text class="head mid" x="890" y="112">Loss</text>
+    <text class="sm mute mid" x="30" y="230">inputs</text><text class="sm mute mid" x="330" y="230">hidden</text><text class="sm mute mid" x="630" y="230">prediction</text>
+  </g>
+  <path class="edge arrow-accent thick" d="M100,50 L1020,50"/>
+  <text class="head f-accent" x="100" y="36">Forward pass</text>
+  <path class="none s-red thick" d="M1040,320 L120,320" style="marker-end: url(#deck-arrow)"/>
+  <text class="head f-red" x="760" y="370">Backward pass</text>
+  <text class="sm" x="120" y="370">every weight gets its slope</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Backpropagation finds the slope for every weight at once. Then each takes a small step.
+:::
+
+::: notes
+A network is fitted by gradient descent, like any model in section 4. The forward pass runs the inputs through the network to a prediction and a loss, and keeps every value on the way. The backward pass sends the error back along the same arrows and gives every weight its slope in one pass. Each weight then moves a little way downhill, and the step repeats thousands of times. Software works out the backward pass for you.
+:::
+
+## The hand-written network overtakes linear regression {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/forward-and-backward/fig-descent-1.png){fig-alt="Training mean squared error over 3,000 steps on a log scale, against a dashed line for linear regression. The loss drops, pauses on a plateau just above the line, then falls well below it."}
+:::
+:::
+
+::: {.takeaway}
+The loss paused on a plateau before falling. Stopped early, it looked no better than a line.
+:::
+
+::: notes
+A small network written in a few lines of base R, with both passes by hand. Its slopes were checked by nudging each weight, and all 21 agreed. Over 3,000 steps the loss drops, pauses on a plateau level with linear regression, then falls again well below it. A run stopped on the plateau would suggest the network has nothing to add.
+:::
+
+## A network's training has to be watched {#training-a-network .idea data-page="Training a network" data-href="../chapters/09-neural-networks/training-a-network.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three things that shape training. Validation error says when to stop. The random starting weights decide which valley the walk ends in. Large datasets are walked one small group of rows at a time, a mini-batch.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">When to stop</text>
+    <g transform="translate(40 100)">
+      <line class="axis" x1="0" y1="0" x2="0" y2="180"/><line class="axis" x1="0" y1="180" x2="300" y2="180"/>
+      <path class="none s-blue" stroke-width="5" d="M5,20 C60,110 150,150 295,165"/>
+      <path class="none s-orange" stroke-width="5" d="M5,10 C60,100 120,130 170,128 C220,126 260,100 295,80"/>
+      <line class="none s-fg dash" stroke-width="3" x1="170" y1="0" x2="170" y2="180"/>
+    </g>
+    <text class="sm" x="28" y="340">Stop where validation</text><text class="sm" x="28" y="372">error is lowest</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Where it starts</text>
+    <g transform="translate(30 100)">
+      <path class="none s-muted" stroke-width="3" d="M0,40 C40,40 50,170 90,170 C130,170 140,90 170,90 C200,90 210,190 250,190 C290,190 300,40 320,40"/>
+      <circle class="f-red" cx="40" cy="70" r="10"/><circle class="f-red" cx="90" cy="168" r="10"/>
+      <circle class="f-blue" cx="290" cy="80" r="10"/><circle class="f-blue" cx="250" cy="188" r="10"/>
+    </g>
+    <text class="sm" x="28" y="340">Each random start ends</text><text class="sm" x="28" y="372">in its own valley</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Mini-batches</text>
+    <g transform="translate(40 100)">
+      <g class="f-grey" opacity="0.4"><rect x="0" y="0" width="300" height="24" rx="4"/><rect x="0" y="32" width="300" height="24" rx="4"/><rect x="0" y="64" width="300" height="24" rx="4"/><rect x="0" y="96" width="300" height="24" rx="4"/><rect x="0" y="128" width="300" height="24" rx="4"/><rect x="0" y="160" width="300" height="24" rx="4"/></g>
+      <g class="f-accent"><rect x="0" y="64" width="300" height="24" rx="4"/><rect x="0" y="96" width="300" height="24" rx="4"/></g>
+    </g>
+    <text class="sm" x="28" y="340">A few rows per step, one</text><text class="sm" x="28" y="372">epoch per pass through all</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Training error keeps falling after the network stops improving on new data.
+:::
+
+::: notes
+A network's training error keeps falling long after it has stopped improving on new data, so training is watched on validation data and stopped where the validation error is lowest. Its loss has many valleys, and the random starting weights decide which one the walk ends in. Large datasets are walked a small group of rows at a time, a mini-batch, and one pass through all of them is an epoch. The learning rate and standardised inputs matter as for any gradient descent.
+:::
+
+## Early stopping keeps the best weights {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/training-a-network/fig-early-stopping-1.png){fig-alt="Mean squared error over 8,000 steps on a log scale. Training error falls throughout. Validation error is lowest at step 1,937, marked by a dashed line, and then rises."}
+:::
+:::
+
+::: {.takeaway}
+Best at step 1,937 of 8,000. Ten random starts varied by 0.055 in validation error.
+:::
+
+::: notes
+A network with 40 hidden units was trained for 8,000 steps. Training error falls throughout. Validation error is lowest at step 1,937 and then rises, so early stopping keeps the weights from that step. It restrains the weights much as a penalty does. Ten runs that differed only in their random start varied noticeably in their validation error, so report the spread across seeds, or average several networks.
+:::
+
+## Two things decide whether a network pays off {#when-a-network-pays-off .idea data-page="When a network pays off" data-href="../chapters/09-neural-networks/when-a-network-pays-off.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two cards. A response with more signal than noise, drawn as points close to a clear curve. Inputs that matter in combinations nobody has named, drawn as a diagonal band across two inputs. A third, faded note says the number of rows alone does not decide it.">
+  <g>
+    <rect class="card" x="0" y="0" width="580" height="330" rx="14"/>
+    <text class="head" x="32" y="56">More signal than noise</text>
+    <g transform="translate(60 90)">
+      <path class="none s-green" stroke-width="5" d="M0,180 C120,180 160,20 240,20 C320,20 360,180 460,180"/>
+      <g class="f-grey"><circle cx="30" cy="172" r="7"/><circle cx="80" cy="150" r="7"/><circle cx="130" cy="96" r="7"/><circle cx="180" cy="44" r="7"/><circle cx="240" cy="30" r="7"/><circle cx="300" cy="46" r="7"/><circle cx="350" cy="100" r="7"/><circle cx="400" cy="156" r="7"/><circle cx="440" cy="176" r="7"/></g>
+    </g>
+  </g>
+  <g transform="translate(620 0)">
+    <rect class="card" x="0" y="0" width="580" height="330" rx="14"/>
+    <text class="head" x="32" y="56">Unnamed combinations</text>
+    <g transform="translate(70 90)">
+      <rect class="t-orange" x="0" y="0" width="440" height="200"/>
+      <path class="t-blue" d="M0,150 L360,0 L440,0 L440,30 L80,200 L0,200 z"/>
+      <text class="sm mute" x="300" y="190">temperature</text>
+      <text class="sm mute" x="10" y="26">salinity</text>
+    </g>
+  </g>
+  <text class="mid" x="600" y="390" font-weight="600">The number of rows alone does not decide it</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Start with a forest for noisy ecological counts. Try a network for images, spectra and sound.
+:::
+
+::: notes
+A network pays off when the response carries more signal than noise, and when the inputs matter in combinations nobody has named. The number of rows alone does not decide it. For a few hundred rows of noisy ecological counts, start with a random forest. For raw data with many inputs, such as images, spectra and sound, a network is often the right tool, frequently starting from one already trained on other data, transfer learning.
+:::
+
+## Two hidden units draw the diagonal band {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/when-a-network-pays-off/fig-boundaries-1.png){fig-alt="Four models' predictions over the temperature and salinity plane, from 200 training stations. Logistic regression draws one straight line, the tree and the forest draw steps, and the neural network draws a diagonal band that follows the water mass."}
+:::
+:::
+
+::: {.takeaway}
+The network reached a ROC AUC of 0.999 from 200 stations. The forest reached 0.926.
+:::
+
+::: notes
+A water mass forms a diagonal band on a temperature and salinity diagram. A hidden unit bends along a tilted line, so two of them fence in the band. Logistic regression draws one straight line, and the tree and forest draw staircases. If you can name the combination, add it as a column, feature engineering, and logistic regression then matches the network.
+:::
+
+## On the noisy counts the network trails a forest {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 380" role="img" aria-label="RMSE on the survey's counts. Random forest 4.20, neural network 4.52. Lower is better.">
+  <g>
+    <text x="0" y="96">Random forest</text>
+    <rect class="f-green" x="320" y="56" width="672" height="60" rx="6"/>
+    <text class="head" x="1010" y="98">4.20</text>
+    <text x="0" y="216">Neural network</text>
+    <rect class="f-orange" x="320" y="176" width="723" height="60" rx="6"/>
+    <text class="head" x="1060" y="218">4.52</text>
+  </g>
+  <text class="sm mute" x="320" y="300">RMSE on the survey's counts, lower is better</text>
+  <text class="sm" x="320" y="350" font-weight="700">With the counting noise removed, the network came first</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The network was short of signal, not of rows.
+:::
+
+::: notes
+On the survey's noisy counts the network scored behind the random forest. Trained instead on the expected counts at the same stations, with the counting noise removed, it came first. So the problem was not too few rows. The counts carry more chance than signal, and a flexible network spends its flexibility on the chance.
+:::
+
+## An autoencoder rebuilds its input through a narrow middle {#autoencoders .idea data-page="Autoencoders" data-href="../chapters/09-neural-networks/autoencoders.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="An autoencoder. The encoder takes a row's many columns down to a few values, the code, which places the row on a small map. The decoder rebuilds the row from the code. The gap between the rebuilt row and the input is the reconstruction error that training makes small.">
+  <g transform="translate(40 30)">
+    <g class="f-blue"><rect x="0" y="0" width="60" height="30" rx="4"/><rect x="0" y="40" width="60" height="30" rx="4"/><rect x="0" y="80" width="60" height="30" rx="4"/><rect x="0" y="120" width="60" height="30" rx="4"/><rect x="0" y="160" width="60" height="30" rx="4"/><rect x="0" y="200" width="60" height="30" rx="4"/><rect x="0" y="240" width="60" height="30" rx="4"/><rect x="0" y="280" width="60" height="30" rx="4"/></g>
+    <path class="t-blue" d="M90,0 L330,110 L330,200 L90,310 z"/>
+    <text class="head mid" x="210" y="164">encoder</text>
+    <g class="f-orange"><rect x="360" y="115" width="80" height="34" rx="6"/><rect x="360" y="161" width="80" height="34" rx="6"/></g>
+    <text class="sm mid" x="400" y="232" font-weight="700">code</text>
+    <path class="t-green" d="M470,110 L710,0 L710,310 L470,200 z"/>
+    <text class="head mid" x="590" y="164">decoder</text>
+    <g class="f-green"><rect x="740" y="0" width="60" height="30" rx="4"/><rect x="740" y="40" width="60" height="30" rx="4"/><rect x="740" y="80" width="60" height="30" rx="4"/><rect x="740" y="120" width="60" height="30" rx="4"/><rect x="740" y="160" width="60" height="30" rx="4"/><rect x="740" y="200" width="60" height="30" rx="4"/><rect x="740" y="240" width="60" height="30" rx="4"/><rect x="740" y="280" width="60" height="30" rx="4"/></g>
+    <text class="sm mute mid" x="30" y="350">input</text><text class="sm mute mid" x="770" y="350">rebuilt</text>
+  </g>
+  <rect class="card" x="880" y="40" width="320" height="300" rx="14"/>
+  <text class="head" x="906" y="100">Reconstruction</text>
+  <text class="head" x="906" y="140">error</text>
+  <text class="sm mute" x="906" y="200">The gap between the</text>
+  <text class="sm mute" x="906" y="232">input and the rebuilt</text>
+  <text class="sm mute" x="906" y="264">row, made small</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+No response to predict. The code places every station on a small map.
+:::
+
+::: notes
+An autoencoder is a network trained to rebuild its own input through a narrow middle. The encoder squeezes a row's 24 taxon counts down to two values, the code, and the decoder rebuilds the row from them. Training makes the reconstruction error small. The code places each station on a map, as PCA does. A linear autoencoder is PCA. With a bend, its code predicted depth a little better than PCA's two components.
+:::
+
+## Each seed draws different axes in the same plane {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/09-neural-networks/autoencoders/fig-rotations-1.png){fig-alt="The stations on the two code values of three autoencoders that differ only in their random start, coloured by seabed. Each map is the same shape turned or flipped."}
+:::
+:::
+
+::: {.takeaway}
+Report what the code predicts, not what one of its axes means.
+:::
+
+::: notes
+Three autoencoders that differ only in their random start give the same map turned or flipped. The plane they find is the same, but the axes drawn in it are not, so a single code value has no fixed meaning. Run PCA first. Autoencoders earn their place on large data with curved structure, and their reconstruction error can flag unusual rows.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- A neuron is a regression with a bend. Opposing bends add up to curves.
+- Networks learn by gradient descent, with slopes from backpropagation.
+- Watch training on validation data, and report the spread across random starts.
+- A network pays off with strong signal and unnamed combinations of inputs.
+- An autoencoder finds a map. Report its plane, not its axes.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/09-neural-networks/index.html).
+:::
+:::

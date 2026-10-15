@@ -6,6 +6,8 @@ project:
   # the pages so the links to it resolve. See tools/README.md.
   pre-render:
     - tools/extract-code.py
+    # Copies the plots the slide decks show from _freeze/ into slides/figures/.
+    - tools/slide-figures.py
   resources:
     - downloads/
 
@@ -21,6 +23,8 @@ website:
         text: Home
       - href: chapters/index.qmd
         text: Course
+      - href: slides.qmd
+        text: Slides
       - href: contributed/index.qmd
         text: Contributed
     right:
@@ -179,6 +183,8 @@ website:
             text: Glossary
           - href: chapters/index.qmd
             text: All pages
+          - href: slides.qmd
+            text: Slides
           - href: contributed/index.qmd
             text: Contributed pages
           - href: contributed/writing-a-contributed-page.qmd

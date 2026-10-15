@@ -1,0 +1,577 @@
+/*-- scss:defaults --*/
+
+// The decks share the course site's type and ocean blue, at projector sizes.
+$font-family-sans-serif: "Source Sans 3", "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+$presentation-font-size-root: 30px;
+$presentation-heading-font: $font-family-sans-serif;
+$presentation-heading-font-weight: 700;
+$presentation-h2-font-size: 1.45em;
+$presentation-title-slide-text-align: left;
+$link-color: #1b6a87;
+$presentation-heading-color: #1f2933;
+$body-color: #1f2933;
+
+/*-- scss:rules --*/
+
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap");
+
+// ---------------------------------------------------------------------------
+// Themes
+//
+// Every colour on a slide, the inline diagrams included, comes from these
+// variables, so switching theme (assets/controls.html) restyles the whole deck.
+// The plots are PNGs on white and sit on a white card in every theme.
+// ---------------------------------------------------------------------------
+
+:root,
+:root[data-deck-theme="light"] {
+  --bg: #ffffff;
+  --fg: #1f2933;
+  --muted: #55606a;
+  --faint: #8a949c;
+  --accent: #1b6a87;
+  --card: #f2f7f9;
+  --line: #cfdae1;
+  --c-blue: #0072B2;
+  --c-green: #009E73;
+  --c-orange: #E69F00;
+  --c-red: #D55E00;
+  --c-purple: #CC79A7;
+  --c-grey: #8a949c;
+  --tint-blue: #dcebf5;
+  --tint-green: #d9f0e7;
+  --tint-orange: #fbecd0;
+  --tint-red: #f8e0d1;
+}
+
+:root[data-deck-theme="sand"] {
+  --bg: #fbf6ec;
+  --fg: #2f2a24;
+  --muted: #6b6155;
+  --faint: #9c9184;
+  --accent: #155e75;
+  --card: #f2eadb;
+  --line: #ddd1bd;
+  --c-blue: #0a6aa6;
+  --c-green: #0b8a65;
+  --c-orange: #c98500;
+  --c-red: #c4520a;
+  --c-purple: #b0628f;
+  --c-grey: #8d8478;
+  --tint-blue: #dde8ee;
+  --tint-green: #dcebe2;
+  --tint-orange: #f5e3c2;
+  --tint-red: #f3dcca;
+}
+
+:root[data-deck-theme="dark"] {
+  --bg: #161b21;
+  --fg: #e7ecef;
+  --muted: #a9b4bc;
+  --faint: #76838d;
+  --accent: #6cc0dd;
+  --card: #212a32;
+  --line: #3a4652;
+  --c-blue: #56B4E9;
+  --c-green: #33c49c;
+  --c-orange: #f2b33d;
+  --c-red: #ff7f45;
+  --c-purple: #e8a1cd;
+  --c-grey: #8f9ba4;
+  --tint-blue: #1d3a4d;
+  --tint-green: #183d33;
+  --tint-orange: #44371c;
+  --tint-red: #4a2a1c;
+}
+
+:root[data-deck-theme="ocean"] {
+  --bg: #0b2a3c;
+  --fg: #eaf4f8;
+  --muted: #a9c6d4;
+  --faint: #6f93a5;
+  --accent: #7fd6ef;
+  --card: #123a51;
+  --line: #2d5a72;
+  --c-blue: #6cc4f0;
+  --c-green: #3fd1a8;
+  --c-orange: #f5bd4f;
+  --c-red: #ff8a55;
+  --c-purple: #eda9d3;
+  --c-grey: #8fb0c0;
+  --tint-blue: #1a4a66;
+  --tint-green: #15493f;
+  --tint-orange: #4a4426;
+  --tint-red: #4f3426;
+}
+
+:root[data-deck-theme="contrast"] {
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: #e6e6e6;
+  --faint: #bdbdbd;
+  --accent: #ffd400;
+  --card: #111111;
+  --line: #ffffff;
+  --c-blue: #5cc8ff;
+  --c-green: #3dffb0;
+  --c-orange: #ffd400;
+  --c-red: #ff6a3d;
+  --c-purple: #ff9ee0;
+  --c-grey: #cccccc;
+  --tint-blue: #00304a;
+  --tint-green: #003a26;
+  --tint-orange: #3d3300;
+  --tint-red: #4a1a0a;
+}
+
+:root {
+  // Quoted here: Sass drops the quotes from the font variables above, and an
+  // unquoted "Source Sans 3" makes the whole list invalid.
+  --deck-font: "Source Sans 3", "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --r-main-font: var(--deck-font);
+  --r-heading-font: var(--deck-font);
+  --r-background-color: var(--bg);
+  --r-main-color: var(--fg);
+  --r-heading-color: var(--fg);
+  --r-link-color: var(--accent);
+  --r-link-color-hover: var(--accent);
+  --r-selection-background-color: var(--accent);
+}
+
+.reveal-viewport,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  transition: background-color 0.25s ease;
+}
+
+.reveal {
+  color: var(--fg);
+
+  a { color: var(--accent); }
+
+  .slides section {
+    text-align: left;
+  }
+
+  h2 {
+    color: var(--fg);
+    margin-bottom: 0.5em;
+    line-height: 1.12;
+  }
+
+  p, li { line-height: 1.35; }
+
+  strong { color: var(--fg); }
+
+  // Quarto's own chrome takes the theme colours too.
+  .slide-number,
+  .slide-number a { color: var(--muted); background: transparent; }
+
+  .controls { color: var(--accent); }
+
+  .progress { color: var(--accent); }
+}
+
+// ---------------------------------------------------------------------------
+// Title slide
+// ---------------------------------------------------------------------------
+
+.reveal #title-slide {
+  padding-top: 110px;
+
+  .title {
+    font-size: 2.15em;
+    line-height: 1.08;
+    color: var(--fg);
+    max-width: 26ch;
+  }
+
+  .subtitle {
+    margin-top: 0.6em;
+    font-size: 1.05em;
+    color: var(--muted);
+    max-width: 34ch;
+  }
+
+  .course-kicker {
+    margin-bottom: 1.4em;
+    font-size: 0.62em;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+}
+
+// A band of waves along the foot of the first and the last slide.
+.reveal .waves {
+  position: absolute;
+  left: -64px;
+  top: 610px;
+  height: 120px;
+  width: calc(100% + 128px);
+}
+
+// ---------------------------------------------------------------------------
+// Signposts: each slide names its course page and says whether it holds the
+// idea or an example (assets/controls.html adds them from data-page).
+// ---------------------------------------------------------------------------
+
+.reveal .kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.35em;
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+
+  a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  a:hover { color: var(--accent); }
+
+  .tag {
+    padding: 0.12em 0.7em;
+    border-radius: 1em;
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--accent);
+  }
+
+  .tag.example { background: var(--c-orange); color: #1f2933; }
+}
+
+// ---------------------------------------------------------------------------
+// Slide parts
+// ---------------------------------------------------------------------------
+
+// One line that carries the slide's message, under the visual.
+.reveal .takeaway {
+  margin-top: 0.5em;
+  padding: 0.25em 0 0.25em 0.8em;
+  border-left: 6px solid var(--accent);
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.reveal .lead {
+  font-size: 1.05em;
+  color: var(--muted);
+  max-width: 40ch;
+}
+
+.reveal .muted { color: var(--muted); }
+
+.reveal .small { font-size: 0.75em; }
+
+.reveal .cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+
+  &.wide-left  { grid-template-columns: 1.4fr 1fr; }
+  &.wide-right { grid-template-columns: 1fr 1.4fr; }
+  &.three      { grid-template-columns: 1fr 1fr 1fr; }
+  &.top        { align-items: start; }
+}
+
+.reveal ul.points,
+.reveal .points ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    position: relative;
+    margin: 0 0 0.55em;
+    padding-left: 1.1em;
+  }
+
+  li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 0.45em;
+    height: 0.45em;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+}
+
+// A diagram drawn for the slide: it takes the theme colours.
+.reveal .visual {
+  display: flex;
+  justify-content: center;
+
+  svg {
+    width: 100%;
+    height: auto;
+    max-height: 470px;
+    overflow: visible;
+  }
+
+  &.short svg { max-height: 400px; }
+  &.tall  svg { max-height: 520px; }
+}
+
+// A plot from the course page: a white card in every theme. data-crop on the
+// image hides the plot's own title, which the slide heading replaces.
+.reveal .plot {
+  display: flex;
+  justify-content: center;
+
+  .card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  img {
+    display: block;
+    margin: 0;
+    max-height: 440px;
+    width: auto;
+    max-width: 100%;
+    object-fit: cover;
+    object-position: bottom;
+  }
+
+  // Names for the panels of a plot whose own titles were cropped off.
+  .panel-labels p {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 0 4px;
+    padding-left: 8%;
+    font-size: 0.62em;
+    font-weight: 700;
+    color: #1f2933;
+  }
+
+  &.short img { max-height: 380px; }
+  &.tall  img { max-height: 470px; }
+}
+
+// ---------------------------------------------------------------------------
+// Inline diagrams. Classes, not colours, so the themes reach inside.
+// ---------------------------------------------------------------------------
+
+.reveal svg {
+  font-family: var(--deck-font);
+
+  text { fill: var(--fg); font-size: 26px; }
+  .head  { font-weight: 700; font-size: 30px; }
+  .big   { font-weight: 700; font-size: 40px; }
+  .lab   { font-weight: 700; font-size: 19px; letter-spacing: 0.1em; }
+  .sm    { font-size: 21px; }
+  .note  { font-style: italic; fill: var(--muted); }
+  .mute  { fill: var(--muted); }
+  .faint { fill: var(--faint); }
+  .mid   { text-anchor: middle; }
+  .end   { text-anchor: end; }
+
+  .card  { fill: var(--card); stroke: var(--line); stroke-width: 2; }
+  .panel { fill: var(--bg); stroke: var(--line); stroke-width: 2; }
+  .edge  { fill: none; stroke: var(--accent); stroke-width: 3; }
+  .axis  { fill: none; stroke: var(--muted); stroke-width: 2.5; }
+  .grid  { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .wire  { fill: none; stroke: var(--muted); stroke-width: 3; }
+  .thick { stroke-width: 6; }
+  .dash  { stroke-dasharray: 10 8; }
+  .dot   { stroke: none; }
+
+  .f-accent { fill: var(--accent); }
+  .f-fg     { fill: var(--fg); }
+  .f-bg     { fill: var(--bg); }
+  .f-muted  { fill: var(--muted); }
+  .f-grey   { fill: var(--c-grey); }
+  .f-blue   { fill: var(--c-blue); }
+  .f-green  { fill: var(--c-green); }
+  .f-orange { fill: var(--c-orange); }
+  .f-red    { fill: var(--c-red); }
+  .f-purple { fill: var(--c-purple); }
+  .t-blue   { fill: var(--tint-blue); }
+  .t-green  { fill: var(--tint-green); }
+  .t-orange { fill: var(--tint-orange); }
+  .t-red    { fill: var(--tint-red); }
+
+  .s-accent { stroke: var(--accent); }
+  .s-fg     { stroke: var(--fg); }
+  .s-muted  { stroke: var(--muted); }
+  .s-grey   { stroke: var(--c-grey); }
+  .s-blue   { stroke: var(--c-blue); }
+  .s-green  { stroke: var(--c-green); }
+  .s-orange { stroke: var(--c-orange); }
+  .s-red    { stroke: var(--c-red); }
+  .s-purple { stroke: var(--c-purple); }
+  .s-line   { stroke: var(--line); }
+  .s-bg     { stroke: var(--bg); }
+
+  .none { fill: none; }
+
+  .arrow  { marker-end: url(#deck-arrow); }
+  .arrow-accent { marker-end: url(#deck-arrow-accent); }
+}
+
+// ---------------------------------------------------------------------------
+// Contents slide and the closing slide
+// ---------------------------------------------------------------------------
+
+.reveal .tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 22px;
+  margin-top: 0.4em;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    min-height: 110px;
+    padding: 0.5em 0.8em;
+    border-radius: 12px;
+    background: var(--card);
+    border: 2px solid var(--line);
+    color: var(--fg);
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+
+  a:hover { border-color: var(--accent); }
+
+  .n {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 1.8em;
+    height: 1.8em;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+  }
+}
+
+.reveal .closing {
+  .points { font-size: 1.1em; margin-top: 0.8em; }
+  .points li { margin-bottom: 0.75em; }
+
+  .more {
+    margin-top: 1.2em;
+    font-size: 0.75em;
+    color: var(--muted);
+  }
+}
+
+.reveal #title-slide .simulated-note {
+  margin-top: 1.4em;
+  font-size: 0.55em;
+  color: var(--muted);
+}
+
+// ---------------------------------------------------------------------------
+// Deck controls: contents, theme, laser pointer, full screen, course site
+// ---------------------------------------------------------------------------
+
+.deck-tools {
+  position: fixed;
+  left: 14px;
+  bottom: 12px;
+  z-index: 40;
+  display: flex;
+  gap: 6px;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+
+  &:hover, &:focus-within { opacity: 1; }
+
+  button, a {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+  }
+
+  button[aria-pressed="true"] {
+    background: #e0242b;
+    border-color: #e0242b;
+    color: #ffffff;
+  }
+
+  svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+}
+
+.deck-theme-menu {
+  position: fixed;
+  left: 14px;
+  bottom: 56px;
+  z-index: 41;
+  display: none;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  font-family: var(--deck-font);
+
+  &.open { display: block; }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg);
+    font: inherit;
+    font-size: 16px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  button:hover, button[aria-checked="true"] { background: var(--bg); }
+  button[aria-checked="true"] { font-weight: 700; }
+
+  .swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid rgba(127, 127, 127, 0.6);
+  }
+}
+
+// The laser pointer: the cursor is hidden and a red dot with a short trail
+// follows the mouse.
+html.laser-on,
+html.laser-on * { cursor: none !important; }
+
+.deck-laser {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+@media print {
+  .deck-tools, .deck-theme-menu, .deck-laser { display: none !important; }
+}

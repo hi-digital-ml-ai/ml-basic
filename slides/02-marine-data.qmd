@@ -1,0 +1,491 @@
+---
+title: "Marine data for machine learning"
+subtitle: "Taking a raw survey to a table a model can use, without fooling yourself"
+description: "The survey, kinds of data, cleaning, scaling, splitting and leakage."
+order: 2
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 2"
+  data-section-href: "../chapters/02-marine-data/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## One station is one visit {#the-coastal-survey .idea data-page="The coastal survey" data-href="../chapters/02-marine-data/the-coastal-survey.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="A ship at the surface records where and when. An instrument lowered through the water measures temperature, salinity and depth. The seabed is described, and a sample from it gives the count of the species. All of it becomes one row of the table.">
+  <rect class="t-blue" x="0" y="70" width="640" height="300"/>
+  <rect class="f-grey" x="0" y="370" width="640" height="50" opacity="0.6"/>
+  <path class="f-fg" d="M120,70 L300,70 L280,96 L140,96 z"/>
+  <rect class="f-fg" x="190" y="40" width="50" height="30"/>
+  <line class="wire" x1="250" y1="80" x2="250" y2="250"/>
+  <rect class="f-orange" x="236" y="250" width="28" height="56" rx="6"/>
+  <line class="wire" x1="420" y1="70" x2="420" y2="350"/>
+  <path class="f-accent" d="M392,350 L448,350 L438,380 L402,380 z"/>
+  <text class="sm" x="320" y="34">Where and when</text>
+  <text class="sm" x="40" y="196">Temperature</text><text class="sm" x="40" y="230">Salinity</text><text class="sm" x="40" y="264">Depth</text>
+  <text class="sm" x="460" y="320">Seabed sample</text>
+  <text class="sm" x="460" y="352">and its count</text>
+  <line class="wire arrow" x1="660" y1="220" x2="720" y2="220"/>
+  <rect class="card" x="740" y="80" width="460" height="290" rx="14"/>
+  <text class="lab mute" x="770" y="122">ONE ROW OF THE TABLE</text>
+  <g class="sm">
+    <text x="770" y="170">Position and date</text>
+    <text x="770" y="212">Temperature, salinity, depth</text>
+    <text x="770" y="254">Seabed type</text>
+    <text x="770" y="296" font-weight="700" class="f-red">Count of the species</text>
+  </g>
+  <text class="sm mute" x="770" y="346">800 rows like this</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Most pages predict the count, or whether the species is present, from the other columns.
+:::
+
+::: notes
+Every example in the course uses one simulated survey of a coastal shelf. At each station a ship records its position and the date, lowers an instrument that measures the water, describes the seabed and takes a sample that gives the count of one seabed species. One visit is one row of the table. The column we predict is the outcome, and the columns we predict it from are the inputs.
+:::
+
+## Deeper water is colder and saltier {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/02-marine-data/the-coastal-survey/fig-depth-1.png){fig-alt="Two scatter plots against depth. Temperature falls with depth and salinity rises with it."}
+:::
+:::
+
+::: {.takeaway}
+Depth, temperature and salinity move together, so they partly carry the same information.
+:::
+
+::: notes
+The shelf deepens offshore, and deeper water is colder and saltier. A model given all three columns is partly given the same information three times. That matters later, when we ask which input a model relies on.
+:::
+
+## 800 rows come from only 160 sites {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Rows of the table drawn as small squares, grouped by site. Each site is a column of about five squares of one colour, so 800 rows come from 160 sites.">
+  <g transform="translate(20 20)">
+    <g class="f-blue"><rect x="0" y="0" width="40" height="40" rx="6"/><rect x="0" y="50" width="40" height="40" rx="6"/><rect x="0" y="100" width="40" height="40" rx="6"/><rect x="0" y="150" width="40" height="40" rx="6"/><rect x="0" y="200" width="40" height="40" rx="6"/></g>
+    <g class="f-green"><rect x="60" y="0" width="40" height="40" rx="6"/><rect x="60" y="50" width="40" height="40" rx="6"/><rect x="60" y="100" width="40" height="40" rx="6"/><rect x="60" y="150" width="40" height="40" rx="6"/><rect x="60" y="200" width="40" height="40" rx="6"/></g>
+    <g class="f-orange"><rect x="120" y="0" width="40" height="40" rx="6"/><rect x="120" y="50" width="40" height="40" rx="6"/><rect x="120" y="100" width="40" height="40" rx="6"/><rect x="120" y="150" width="40" height="40" rx="6"/><rect x="120" y="200" width="40" height="40" rx="6"/></g>
+    <g class="f-purple"><rect x="180" y="0" width="40" height="40" rx="6"/><rect x="180" y="50" width="40" height="40" rx="6"/><rect x="180" y="100" width="40" height="40" rx="6"/><rect x="180" y="150" width="40" height="40" rx="6"/><rect x="180" y="200" width="40" height="40" rx="6"/></g>
+    <g class="f-red"><rect x="240" y="0" width="40" height="40" rx="6"/><rect x="240" y="50" width="40" height="40" rx="6"/><rect x="240" y="100" width="40" height="40" rx="6"/><rect x="240" y="150" width="40" height="40" rx="6"/><rect x="240" y="200" width="40" height="40" rx="6"/></g>
+    <g class="f-grey"><rect x="300" y="0" width="40" height="40" rx="6"/><rect x="300" y="50" width="40" height="40" rx="6"/><rect x="300" y="100" width="40" height="40" rx="6"/><rect x="300" y="150" width="40" height="40" rx="6"/><rect x="300" y="200" width="40" height="40" rx="6"/></g>
+    <text class="big mute" x="370" y="135">. . .</text>
+    <text class="sm mute mid" x="170" y="290">each colour is one site</text>
+  </g>
+  <rect class="card" x="560" y="10" width="640" height="300" rx="14"/>
+  <text class="big" x="600" y="90">800 rows</text>
+  <text class="big f-accent" x="600" y="160">160 sites</text>
+  <text x="600" y="220">About five visits to each site</text>
+  <text class="sm mute" x="600" y="270">Visits to one site are alike, so they are not new evidence</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The table holds far fewer independent observations than rows. Keep each site's rows together.
+:::
+
+::: notes
+The survey returns to fixed sites. Two visits to the same site share its depth, its seabed and much of its water, so the second visit tells the model little that is new. The table looks like 800 observations, but much of it repeats 160 places. Every split in the course keeps a site's rows together for this reason.
+:::
+
+## Marine data holds seven kinds of variable {#marine-data-types .idea data-page="Kinds of marine data" data-href="../chapters/02-marine-data/marine-data-types.html"}
+
+```{=html}
+<div class="visual tall">
+<svg viewBox="0 0 1200 460" role="img" aria-label="Seven tiles, each a kind of variable and what it needs. Continuous needs scaling. Categorical needs encoding. Circular needs sine and cosine. Temporal needs a known date format. Spatial needs splits by area. Profile needs one summary per cast. Compositional needs log-ratios.">
+  <g class="tile">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <line class="axis" x1="30" y1="70" x2="250" y2="70"/><circle class="f-blue" cx="90" cy="70" r="10"/><circle class="f-blue" cx="170" cy="70" r="10"/>
+    <text class="head" x="28" y="140">Continuous</text>
+    <text class="sm mute" x="28" y="180">Needs scaling</text>
+  </g>
+  <g transform="translate(306 0)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <rect class="t-orange s-orange" stroke-width="2" x="28" y="50" width="70" height="40" rx="20"/><rect class="t-green s-green" stroke-width="2" x="108" y="50" width="70" height="40" rx="20"/><rect class="t-blue s-blue" stroke-width="2" x="188" y="50" width="70" height="40" rx="20"/>
+    <text class="head" x="28" y="140">Categorical</text>
+    <text class="sm mute" x="28" y="180">Needs encoding</text>
+  </g>
+  <g transform="translate(612 0)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <circle class="none s-muted" stroke-width="3" cx="70" cy="70" r="38"/><circle class="f-blue" cx="70" cy="32" r="9"/><circle class="f-blue" cx="103" cy="51" r="9"/><circle class="f-blue" cx="37" cy="51" r="9"/>
+    <text class="head" x="28" y="140">Circular</text>
+    <text class="sm mute" x="28" y="180">Needs sine and cosine</text>
+  </g>
+  <g transform="translate(918 0)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <rect class="panel" x="28" y="36" width="90" height="72" rx="8"/><rect class="f-accent" x="28" y="36" width="90" height="20" rx="4"/>
+    <text class="sm" x="140" y="84">03/04</text>
+    <text class="head" x="28" y="140">Temporal</text>
+    <text class="sm mute" x="28" y="180">Needs a known date format</text>
+  </g>
+  <g transform="translate(150 245)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <path class="f-accent" d="M70,96 C50,66 40,56 40,44 a30,30 0 0 1 60,0 c0,12 -10,22 -30,52 z"/><circle class="f-bg" cx="70" cy="44" r="10"/>
+    <text class="head" x="28" y="140">Spatial</text>
+    <text class="sm mute" x="28" y="180">Needs splits by area</text>
+  </g>
+  <g transform="translate(459 245)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <polyline class="none s-blue" stroke-width="4" points="40,26 60,40 64,58 90,74 96,100"/>
+    <line class="axis" x1="30" y1="20" x2="30" y2="104"/>
+    <text class="head" x="28" y="140">Profile</text>
+    <text class="sm mute" x="28" y="180">Needs one summary per cast</text>
+  </g>
+  <g transform="translate(768 245)">
+    <rect class="card" x="0" y="0" width="282" height="215" rx="14"/>
+    <rect class="f-blue" x="28" y="50" width="110" height="40"/><rect class="f-green" x="138" y="50" width="60" height="40"/><rect class="f-orange" x="198" y="50" width="54" height="40"/>
+    <text class="head" x="28" y="140">Compositional</text>
+    <text class="sm mute" x="28" y="180">Needs log-ratios</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A model does arithmetic on whatever it is given. A column of numbers is not always a quantity.
+:::
+
+::: notes
+A model sees only numbers. Some columns are quantities, such as temperature. Others only look like numbers, such as a vessel code or a month. Each kind needs its own preparation. Categories become columns of zeros and ones, cycles go on a circle, dates need a known format, positions decide how the data can be split, a profile down the water becomes one summary per cast, and shares that add up to one need log-ratios.
+:::
+
+## Cycles belong on a circle {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/02-marine-data/marine-data-types/fig-circular-1.png){fig-alt="Left, twelve months on a number line, with December and January at opposite ends, eleven apart. Right, the same months on a circle, where December and January are neighbours."}
+:::
+:::
+
+::: {.takeaway}
+In the sea, December and January are neighbours. Sine and cosine keep them that way.
+:::
+
+::: notes
+Coded as the numbers 1 to 12, December is eleven months away from January, and a model treats it so. Placing the months on a circle, using the sine and cosine of the month, keeps winter together. The same holds for bearings, tidal phase and time of day.
+:::
+
+## Check the data in a fixed order {#exploring-and-cleaning .idea data-page="Exploring and cleaning the data" data-href="../chapters/02-marine-data/exploring-and-cleaning.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Seven checks in order, cheapest first. Shape and types, missing values, one column, every category, two columns, the outcome, and by group. The last, comparing groups such as vessels, is the one that finds a faulty instrument.">
+  <g class="sm">
+    <g><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">1</text><text x="20" y="130">Shape</text><text x="20" y="162">and types</text></g>
+    <g transform="translate(172 0)"><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">2</text><text x="20" y="130">Missing</text><text x="20" y="162">values</text></g>
+    <g transform="translate(344 0)"><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">3</text><text x="20" y="130">One column</text><text x="20" y="162">at a time</text></g>
+    <g transform="translate(516 0)"><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">4</text><text x="20" y="130">Every</text><text x="20" y="162">category</text></g>
+    <g transform="translate(688 0)"><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">5</text><text x="20" y="130">Two columns</text><text x="20" y="162">together</text></g>
+    <g transform="translate(860 0)"><rect class="card" x="0" y="20" width="150" height="190" rx="14"/><circle class="f-accent" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">6</text><text x="20" y="130">The</text><text x="20" y="162">outcome</text></g>
+    <g transform="translate(1032 0)"><rect class="t-orange s-orange" stroke-width="3" x="0" y="20" width="168" height="190" rx="14"/><circle class="f-orange" cx="40" cy="60" r="22"/><text class="mid f-bg" x="40" y="69" font-weight="700">7</text><text x="20" y="130" font-weight="700">By group</text><text x="20" y="162">vessel, year</text></g>
+  </g>
+  <line class="wire arrow" x1="20" y1="250" x2="1180" y2="250"/>
+  <text class="sm mute" x="20" y="290">cheapest first</text>
+  <rect class="card" x="640" y="300" width="560" height="110" rx="14"/>
+  <text x="670" y="345" font-weight="700">Most often skipped</text>
+  <text class="sm mute" x="670" y="385">and the one that finds a faulty instrument</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A model will not tell you the data are wrong. The output of a first look is a list of decisions.
+:::
+
+::: notes
+A model fits whatever it is given and never complains. So a first look at new data is a search for problems, in a fixed order from cheap to costly. The last step, comparing groups such as vessels, observers or years, is the one most often skipped, and the one that finds an instrument that reads too high on one ship.
+:::
+
+## Two problems a model would never report {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/02-marine-data/exploring-and-cleaning/fig-damage-1.png){fig-alt="Left, salinity values, with almost all near 34 and a separate bar of 25 rows at minus 999. Right, the share of missing chlorophyll by season, 19 percent in winter and 4 percent or less in the other seasons."}
+:::
+:::
+
+::: {.takeaway}
+A salinity of −999 is a missing value in disguise. Chlorophyll goes missing mostly in winter.
+:::
+
+::: notes
+The range of a column finds values that cannot be real. Here 25 salinities of minus 999 are a code for missing, and a model would read them as extremely fresh water. The pattern of missing values matters as much as their number. Chlorophyll is missing at one winter station in five, so whatever we do about it will change winter more than any other season.
+:::
+
+## Dropping incomplete rows deletes winter {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/02-marine-data/exploring-and-cleaning/fig-deletion-1.png){fig-alt="Stations per season before and after dropping rows with a missing value. Autumn falls from 199 to 187, spring from 207 to 197, summer from 195 to 177 and winter from 199 to 159."}
+:::
+:::
+
+::: {.takeaway}
+Ask why a value is missing before choosing the fix.
+:::
+
+::: notes
+Many tools drop every row with a missing value without saying so. In the survey that removes 40 winter stations and far fewer from any other season, so the data become less wintry than the survey that produced them. Gaps that follow a recorded column can be filled in from it, genuine extremes are kept, and every correction is recorded.
+:::
+
+## Different units give columns unequal weight {#scaling-and-encoding .idea data-page="Scaling and encoding" data-href="../chapters/02-marine-data/scaling-and-encoding.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 410" role="img" aria-label="Each column's share of the distance between stations. In raw units depth makes up 99.5 percent and temperature and salinity almost nothing. After standardising, each makes up a third.">
+  <rect class="card" x="0" y="0" width="580" height="400" rx="14"/>
+  <text class="head" x="32" y="58">In raw units</text>
+  <text class="lab mute" x="32" y="92">SHARE OF EVERY DISTANCE</text>
+  <g class="sm">
+    <text x="32" y="160">Depth</text><rect class="f-blue" x="180" y="134" width="360" height="36" rx="4"/><text class="end f-bg" x="530" y="161" font-weight="700">99.5%</text>
+    <text x="32" y="240">Temperature</text><rect class="f-green" x="180" y="214" width="3" height="36"/><text x="196" y="241">0.5%</text>
+    <text x="32" y="320">Salinity</text><rect class="f-orange" x="180" y="294" width="1" height="36"/><text x="196" y="321">0%</text>
+  </g>
+  <rect class="card" x="620" y="0" width="580" height="400" rx="14"/>
+  <text class="head" x="652" y="58">Standardised</text>
+  <text class="lab mute" x="652" y="92">MEAN 0, SPREAD 1</text>
+  <g class="sm">
+    <text x="652" y="160">Depth</text><rect class="f-blue" x="800" y="134" width="120" height="36" rx="4"/><text x="934" y="161">33%</text>
+    <text x="652" y="240">Temperature</text><rect class="f-green" x="800" y="214" width="120" height="36" rx="4"/><text x="934" y="241">33%</text>
+    <text x="652" y="320">Salinity</text><rect class="f-orange" x="800" y="294" width="120" height="36" rx="4"/><text x="934" y="321">33%</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Methods built on distances or penalties need standardised inputs. Tree methods do not.
+:::
+
+::: notes
+Depth is measured in metres and spans about 190 of them, while salinity spans less than two units. Any method that measures distance between stations then listens almost only to depth. Standardising subtracts each column's mean and divides by its standard deviation, so every column has a mean of zero and a spread of one and counts equally.
+:::
+
+## Skewed columns are logged {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/02-marine-data/scaling-and-encoding/fig-transform-1.png){fig-alt="Left, chlorophyll as measured, with most stations below 2 and a long tail to the right. Right, after a log transform, the values are close to symmetric."}
+:::
+:::
+
+::: {.takeaway}
+A log pulls in the long tail, so a few bloom stations no longer dominate.
+:::
+
+::: notes
+Chlorophyll is low at most stations and very high at a few. On its raw scale those few stations dominate a fit. A log transform pulls the tail in and makes the values close to symmetric. Categories such as seabed type are handled differently. They become columns of zeros and ones, one for each level after the first.
+:::
+
+## A recipe learns its numbers from the training set {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Three stages of a recipe. Specify the steps. Prep, which estimates the numbers the steps need, such as means and spreads, from the training data only. Bake, which applies those stored numbers to the training data and to the test data.">
+  <g>
+    <rect class="card" x="0" y="40" width="330" height="260" rx="14"/>
+    <text class="lab f-accent" x="30" y="86">1 SPECIFY</text>
+    <text class="sm" x="30" y="140">Log chlorophyll</text>
+    <text class="sm" x="30" y="180">Standardise inputs</text>
+    <text class="sm" x="30" y="220">Seabed into 0 and 1</text>
+    <text class="sm mute" x="30" y="270">No numbers yet</text>
+  </g>
+  <line class="wire arrow" x1="340" y1="170" x2="420" y2="170"/>
+  <g transform="translate(435 0)">
+    <rect class="card" x="0" y="40" width="330" height="260" rx="14" style="stroke: var(--c-blue); stroke-width: 3"/>
+    <text class="lab f-blue" x="30" y="86">2 PREP</text>
+    <rect class="t-blue" x="30" y="114" width="270" height="60" rx="8"/>
+    <text class="sm" x="48" y="152">Training data only</text>
+    <text class="sm" x="30" y="222">Means and spreads</text>
+    <text class="sm mute" x="30" y="270">worked out and stored</text>
+  </g>
+  <line class="wire arrow" x1="775" y1="170" x2="855" y2="170"/>
+  <g transform="translate(870 0)">
+    <rect class="card" x="0" y="40" width="330" height="260" rx="14"/>
+    <text class="lab f-accent" x="30" y="86">3 BAKE</text>
+    <rect class="t-blue" x="30" y="114" width="125" height="60" rx="8"/><text class="sm mid" x="92" y="152">Training</text>
+    <rect class="t-orange" x="175" y="114" width="125" height="60" rx="8"/><text class="sm mid" x="237" y="152">Test</text>
+    <text class="sm" x="30" y="222">Same stored numbers</text>
+    <text class="sm mute" x="30" y="270">applied to any data</text>
+  </g>
+  <text class="mid" x="600" y="370" font-weight="600">The test data never shape the preparation</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Preparation travels with the model, inside one workflow.
+:::
+
+::: notes
+A recipe separates what to do from the numbers needed to do it. The steps are written first. Prep works out the numbers, such as each column's mean and spread, from the training data alone. Bake applies those stored numbers to any data, the test data included. Kept inside a workflow, the preparation goes wherever the model goes.
+:::
+
+## Training fits, validation chooses, test reports {#splitting-data .idea data-page="Splitting the data" data-href="../chapters/02-marine-data/splitting-data.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="One bar split into three parts. The training set, the largest, fits the model. The validation set chooses between models. The test set is used once to report the result.">
+  <rect class="f-blue" x="0" y="60" width="700" height="90" rx="10"/>
+  <rect class="f-green" x="710" y="60" width="230" height="90" rx="10"/>
+  <rect class="f-orange" x="950" y="60" width="250" height="90" rx="10"/>
+  <text class="head f-bg" x="30" y="117">Training</text>
+  <text class="head f-bg" x="730" y="117">Validation</text>
+  <text class="head" x="970" y="117" style="fill:#1f2933">Test</text>
+  <g>
+    <text class="big" x="0" y="250">Fits</text>
+    <text class="sm mute" x="0" y="294">The model learns from it</text>
+    <text class="big" x="710" y="250">Chooses</text>
+    <text class="sm mute" x="710" y="294">Between models</text>
+    <text class="big" x="950" y="250">Reports</text>
+    <text class="sm mute" x="950" y="294">Once, at the end</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Choosing on the test set makes its score too high.
+:::
+
+::: notes
+A model must be tested on data it has not seen, because it can always fit the data it learned from. The training set fits the model. The validation set chooses between models or settings. The test set is used once, at the end, to report how well the chosen model does. Every look at the test set before that turns it into a validation set, and its score is then too high. A rare class should be kept in every part by stratifying.
+:::
+
+## A random split puts each site on both sides {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Four sites, A to D, each visited three times. In a random split one visit from every site goes to the test set, so every test site is also in training. In a split by site all three visits to site D go to the test set, so the test site is new to the model.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Random split</text>
+  <g transform="translate(60 100)" class="sm">
+    <text x="0" y="40">A</text><text x="0" y="110">B</text><text x="0" y="180">C</text><text x="0" y="250">D</text>
+    <g class="f-blue"><rect x="50" y="10" width="44" height="44" rx="6"/><rect x="110" y="10" width="44" height="44" rx="6"/><rect x="50" y="80" width="44" height="44" rx="6"/><rect x="170" y="80" width="44" height="44" rx="6"/><rect x="110" y="150" width="44" height="44" rx="6"/><rect x="170" y="150" width="44" height="44" rx="6"/><rect x="50" y="220" width="44" height="44" rx="6"/><rect x="110" y="220" width="44" height="44" rx="6"/></g>
+    <g class="f-orange"><rect x="170" y="10" width="44" height="44" rx="6"/><rect x="110" y="80" width="44" height="44" rx="6"/><rect x="50" y="150" width="44" height="44" rx="6"/><rect x="170" y="220" width="44" height="44" rx="6"/></g>
+  </g>
+  <text class="sm" x="330" y="160">Every test site</text>
+  <text class="sm" x="330" y="192">was also trained on</text>
+  <text class="big f-red" x="330" y="262">Too easy</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Split by site</text>
+  <g transform="translate(680 100)" class="sm">
+    <text x="0" y="40">A</text><text x="0" y="110">B</text><text x="0" y="180">C</text><text x="0" y="250">D</text>
+    <g class="f-blue"><rect x="50" y="10" width="44" height="44" rx="6"/><rect x="110" y="10" width="44" height="44" rx="6"/><rect x="170" y="10" width="44" height="44" rx="6"/><rect x="50" y="80" width="44" height="44" rx="6"/><rect x="110" y="80" width="44" height="44" rx="6"/><rect x="170" y="80" width="44" height="44" rx="6"/><rect x="50" y="150" width="44" height="44" rx="6"/><rect x="110" y="150" width="44" height="44" rx="6"/><rect x="170" y="150" width="44" height="44" rx="6"/></g>
+    <g class="f-orange"><rect x="50" y="220" width="44" height="44" rx="6"/><rect x="110" y="220" width="44" height="44" rx="6"/><rect x="170" y="220" width="44" height="44" rx="6"/></g>
+  </g>
+  <text class="sm" x="950" y="160">The test site is</text>
+  <text class="sm" x="950" y="192">new to the model</text>
+  <text class="big f-green" x="950" y="262">Honest</text>
+  <g class="sm"><rect class="f-blue" x="652" y="372" width="22" height="22" rx="4"/><text x="684" y="391">training</text><rect class="f-orange" x="800" y="372" width="22" height="22" rx="4"/><text x="832" y="391">test</text></g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Split along what you will predict for. New sites mean a split by site.
+:::
+
+::: notes
+Visits to the same site are alike. A random split of the survey puts visits to 120 of the 160 sites on both sides, so the test asks about places the model already knows. A split by site keeps each site whole, and the test sites are new. The rule is to split along whatever you intend to predict for, by site for new sites, by year for next year, by vessel for a new vessel.
+:::
+
+## Leakage takes four common forms {#information-leakage .idea data-page="Avoiding information leakage" data-href="../chapters/02-marine-data/information-leakage.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Four tiles. Target leakage, an input made from the outcome, fixed by dropping it. Group leakage, the same site in training and test, fixed by splitting by site. Selection leakage, inputs chosen by looking at every row, fixed by choosing on training rows only. Preprocessing leakage, numbers worked out from every row, fixed by putting every step in a recipe.">
+  <g>
+    <rect class="card" x="0" y="0" width="580" height="195" rx="14"/>
+    <text class="head" x="30" y="54">Target</text>
+    <text class="sm" x="30" y="100">An input made from the answer</text>
+    <text class="sm f-green" x="30" y="160" font-weight="700">Drop it</text>
+  </g>
+  <g transform="translate(620 0)">
+    <rect class="card" x="0" y="0" width="580" height="195" rx="14"/>
+    <text class="head" x="30" y="54">Group</text>
+    <text class="sm" x="30" y="100">The same site in training and test</text>
+    <text class="sm f-green" x="30" y="160" font-weight="700">Split by site</text>
+  </g>
+  <g transform="translate(0 220)">
+    <rect class="card" x="0" y="0" width="580" height="195" rx="14"/>
+    <text class="head" x="30" y="54">Selection</text>
+    <text class="sm" x="30" y="100">Inputs chosen by looking at every row</text>
+    <text class="sm f-green" x="30" y="160" font-weight="700">Choose on training rows only</text>
+  </g>
+  <g transform="translate(620 220)">
+    <rect class="card" x="0" y="0" width="580" height="195" rx="14"/>
+    <text class="head" x="30" y="54">Preprocessing</text>
+    <text class="sm" x="30" y="100">Numbers worked out from every row</text>
+    <text class="sm f-green" x="30" y="160" font-weight="700">Put every step in a recipe</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+In every case, the test set shapes the model before it is tested.
+:::
+
+::: notes
+Leakage is information from the test set reaching the model. It inflates the score and gives no warning. A useful habit is to ask of every line of code whether it uses rows you intend to test on. If it does, move it after the split, or into the recipe.
+:::
+
+## Leaks make a weak model look strong {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="R squared of one linear regression on the survey. With a random split it is 0.22. Adding catch weight, a target leak, raises it to 0.98. Splitting by site, which closes the group leak, lowers it to 0.04.">
+  <line class="axis" x1="300" y1="20" x2="300" y2="340"/>
+  <g class="sm">
+    <text class="end" x="280" y="80">Random split</text>
+    <rect class="f-grey" x="300" y="50" width="176" height="50" rx="4"/><text x="490" y="85" font-weight="700">0.22</text>
+    <text class="end" x="280" y="180">Plus catch weight</text>
+    <rect class="f-red" x="300" y="150" width="784" height="50" rx="4"/><text x="1098" y="185" font-weight="700">0.98</text>
+    <text class="end" x="280" y="280">Split by site</text>
+    <rect class="f-blue" x="300" y="250" width="32" height="50" rx="4"/><text x="346" y="285" font-weight="700">0.04</text>
+  </g>
+  <text class="sm mute" x="300" y="384">R² on the test stations, one linear regression</text>
+  <text class="sm f-red" x="560" y="128" font-style="italic">target leak, the answer in other units</text>
+  <text class="sm f-blue" x="420" y="330" font-style="italic">group leak closed, the honest score</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The score jumps, and nothing warns you.
+:::
+
+::: notes
+One linear regression shows the size of two leaks. Catch weight is the count in other units, and adding it takes R squared from 0.22 to 0.98. A random split also leaks, through repeat visits to the same sites. Kept whole by site, the test score falls to 0.04. Predicting a site never seen is much harder than predicting another visit to a familiar one.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- 800 rows from 160 sites hold fewer independent observations than they seem to.
+- Each kind of variable needs its own preparation before a model can use it.
+- Check new data in a fixed order, and ask why a value is missing before fixing it.
+- Learn every preparation step from the training data, inside the workflow.
+- Split along what you will predict for, and keep the test set out of every decision.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/02-marine-data/index.html).
+:::
+:::

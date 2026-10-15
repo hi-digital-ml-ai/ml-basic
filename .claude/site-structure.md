@@ -70,6 +70,8 @@ chapters/
 contributed/
   index.qmd                        listing of participant pages
   2026-<author-slug>-<topic>.qmd
+slides.qmd                         the Slides page (navbar): a listing of the decks
+slides/                            one reveal.js deck per section, see .claude/slides.md
 data/                              small (<5 MB) example datasets, CSV or RDS
 R/
   theme.R                          shared ggplot theme + palette
@@ -77,6 +79,7 @@ R/
 tools/
   extract-code.py                  pre-render: pages -> downloads/code/<section>/<page>.{R,py}
   code-downloads.lua               filter: the "Code from this page" line
+  slide-figures.py                 pre-render: the decks' plots, _freeze/ -> slides/figures/
   glossary.lua                     shortcodes: the "New terms on this page" box, the Glossary
 downloads/                         generated, git-ignored: the scripts and the zip
 _freeze/                           committed render cache

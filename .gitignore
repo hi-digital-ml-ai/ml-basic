@@ -5,6 +5,12 @@
 # Generated from the pages by tools/extract-code.py on every build, and copied
 # into the site as a resource. Never edit or commit it; edit the page.
 /downloads/
+
+# Copied from _freeze/ by tools/slide-figures.py on every build, like downloads/.
+/slides/figures/
+# reveal.js, which Quarto copies here on every deck render; the decks run no code,
+# so the GitHub build renders them, and their libraries, from scratch.
+/_freeze/site_libs/revealjs/
 *_files/
 *_cache/
 

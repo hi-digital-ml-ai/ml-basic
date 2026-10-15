@@ -36,8 +36,8 @@ jobs:
         with:
           version: 1.10.18
 
-      # The pre-render step (tools/extract-code.py) needs only the runner's own
-      # Python 3 and its standard library.
+      # The pre-render steps (tools/extract-code.py, tools/slide-figures.py) need
+      # only the runner's own Python 3 and its standard library.
       - name: Render the site
         run: quarto render
 

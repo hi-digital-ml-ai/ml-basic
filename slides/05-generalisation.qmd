@@ -1,0 +1,330 @@
+---
+title: "Generalisation"
+subtitle: "A perfect fit to the training stations is a warning sign, not a success"
+description: "Underfitting and overfitting, bias and variance, regularisation and choosing hyperparameters."
+order: 5
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 5"
+  data-section-href: "../chapters/05-generalisation/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## Two ways to fail on new data {#underfitting-and-overfitting .idea data-page="Underfitting and overfitting" data-href="../chapters/05-generalisation/underfitting-and-overfitting.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The same points in three panels. Too rigid, a flat line that misses the hump, with high error on both the training data and new data. About right, a smooth curve, with low error on both. Too flexible, a line through every point, with almost no training error and high error on new data.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Too rigid</text>
+    <text class="lab f-blue" x="28" y="86">UNDERFITS</text>
+    <g transform="translate(28 100) scale(0.95 0.8)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="7"/><circle cx="43" cy="170" r="7"/><circle cx="62" cy="154" r="7"/><circle cx="88" cy="146" r="7"/><circle cx="98" cy="116" r="7"/><circle cx="123" cy="93" r="7"/><circle cx="145" cy="103" r="7"/><circle cx="172" cy="96" r="7"/><circle cx="178" cy="46" r="7"/><circle cx="204" cy="103" r="7"/><circle cx="228" cy="93" r="7"/><circle cx="250" cy="122" r="7"/><circle cx="271" cy="127" r="7"/><circle cx="298" cy="159" r="7"/><circle cx="304" cy="210" r="7"/></g>
+      <line class="none s-blue" stroke-width="6" x1="10" y1="132" x2="320" y2="132"/>
+    </g>
+    <g class="sm"><text x="28" y="336">Training</text><rect class="f-red" x="150" y="318" width="160" height="22" rx="4"/><text x="28" y="378">New data</text><rect class="f-red" x="150" y="360" width="175" height="22" rx="4"/></g>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14" style="stroke: var(--c-green); stroke-width: 3"/>
+    <text class="head" x="28" y="54">About right</text>
+    <text class="lab f-green" x="28" y="86">GENERALISES</text>
+    <g transform="translate(28 100) scale(0.95 0.8)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="7"/><circle cx="43" cy="170" r="7"/><circle cx="62" cy="154" r="7"/><circle cx="88" cy="146" r="7"/><circle cx="98" cy="116" r="7"/><circle cx="123" cy="93" r="7"/><circle cx="145" cy="103" r="7"/><circle cx="172" cy="96" r="7"/><circle cx="178" cy="46" r="7"/><circle cx="204" cy="103" r="7"/><circle cx="228" cy="93" r="7"/><circle cx="250" cy="122" r="7"/><circle cx="271" cy="127" r="7"/><circle cx="298" cy="159" r="7"/><circle cx="304" cy="210" r="7"/></g>
+      <path class="none s-green" stroke-width="6" d="M10,205 C90,110 120,85 170,85 C230,85 270,120 320,200"/>
+    </g>
+    <g class="sm"><text x="28" y="336">Training</text><rect class="f-green" x="150" y="318" width="90" height="22" rx="4"/><text x="28" y="378">New data</text><rect class="f-green" x="150" y="360" width="105" height="22" rx="4"/></g>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Too flexible</text>
+    <text class="lab f-red" x="28" y="86">OVERFITS</text>
+    <g transform="translate(28 100) scale(0.95 0.8)">
+      <g class="f-grey" opacity="0.8"><circle cx="19" cy="212" r="7"/><circle cx="43" cy="170" r="7"/><circle cx="62" cy="154" r="7"/><circle cx="88" cy="146" r="7"/><circle cx="98" cy="116" r="7"/><circle cx="123" cy="93" r="7"/><circle cx="145" cy="103" r="7"/><circle cx="172" cy="96" r="7"/><circle cx="178" cy="46" r="7"/><circle cx="204" cy="103" r="7"/><circle cx="228" cy="93" r="7"/><circle cx="250" cy="122" r="7"/><circle cx="271" cy="127" r="7"/><circle cx="298" cy="159" r="7"/><circle cx="304" cy="210" r="7"/></g>
+      <polyline class="none s-red" stroke-width="5" points="19,212 43,170 62,154 88,146 98,116 123,93 145,103 172,96 178,46 204,103 228,93 250,122 271,127 298,159 304,210"/>
+    </g>
+    <g class="sm"><text x="28" y="336">Training</text><rect class="f-red" x="150" y="318" width="12" height="22" rx="4"/><text x="28" y="378">New data</text><rect class="f-red" x="150" y="360" width="190" height="22" rx="4"/></g>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Fitting noise lowers the training error as much as fitting the pattern does.
+:::
+
+::: notes
+A model can fail on new data in two opposite ways. Too rigid, it cannot follow the pattern, and its errors on the training data and on new data are both high and close together. That is underfitting. Too flexible, it bends through every point, noise included, so its training error is tiny and its error on new data is high. That is overfitting. The bars under each panel show the two errors.
+:::
+
+## The best fits to their own stations do worst on new sites {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/underfitting-and-overfitting/fig-crossing-1.png){data-crop="0.062" fig-alt="Each model's RMSE on the stations it was fitted to and on new sites. The grown-out tree and boosting have almost no error on their own stations and the highest errors on new sites. Linear regression changes little."}
+:::
+:::
+
+::: {.takeaway}
+The tree that fitted every station did worse on new sites than predicting the average.
+:::
+
+::: notes
+Five models, each scored on the stations it was fitted to and on new sites. Every line rises, but by very different amounts, so the order changes completely. The grown-out tree has no error at all on its own stations and the worst error on new sites, worse than the dashed line for simply predicting the average count. A perfect fit is a warning sign.
+:::
+
+## Sweeping the tree size draws a U-shaped curve {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/underfitting-and-overfitting/fig-sweep-1.png){data-crop="0.068" fig-alt="RMSE against the number of leaves in a tree, on a log scale. The error on the fitting stations falls all the way to zero. The error on new sites is lowest with a few leaves and rises above the line for predicting the average."}
+:::
+:::
+
+::: {.takeaway}
+Training error falls all the way. Error on new sites has a lowest point in between.
+:::
+
+::: notes
+Growing the tree step by step, from a few leaves to hundreds, makes it more flexible. The error on the stations it was fitted to falls all the way to zero. The error on new sites first falls, reaches its lowest point with a few leaves, then rises. The fixes are opposite. An underfitted model needs more flexibility or better inputs. An overfitted one needs less flexibility, a penalty or more data.
+:::
+
+## Error on new data has three parts {#bias-variance .idea data-page="The bias-variance trade-off" data-href="../chapters/05-generalisation/bias-variance.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three cards. Bias, a rigid model fitted to six surveys gives six similar predictions that all miss the expected count. Variance, a flexible model gives six predictions centred on the expected count but spread widely. Noise, counts at the same spot scatter around the expected count whatever the model.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Bias</text>
+    <text class="sm mute" x="28" y="92">Rigid, six surveys</text>
+    <line class="axis" x1="30" y1="250" x2="350" y2="250"/>
+    <line class="none s-fg thick" x1="190" y1="150" x2="190" y2="270"/>
+    <g class="f-blue"><circle cx="82" cy="232" r="11"/><circle cx="96" cy="210" r="11"/><circle cx="104" cy="232" r="11"/><circle cx="90" cy="188" r="11"/><circle cx="112" cy="210" r="11"/><circle cx="74" cy="210" r="11"/></g>
+    <text class="sm mid" x="190" y="140">expected count</text>
+    <text class="sm" x="28" y="340">Agree with each other,</text>
+    <text class="sm" x="28" y="372">all miss the same way</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Variance</text>
+    <text class="sm mute" x="28" y="92">Flexible, six surveys</text>
+    <line class="axis" x1="30" y1="250" x2="350" y2="250"/>
+    <line class="none s-fg thick" x1="190" y1="150" x2="190" y2="270"/>
+    <g class="f-orange"><circle cx="60" cy="232" r="11"/><circle cx="130" cy="210" r="11"/><circle cx="180" cy="232" r="11"/><circle cx="230" cy="210" r="11"/><circle cx="290" cy="232" r="11"/><circle cx="330" cy="210" r="11"/></g>
+    <text class="sm mid" x="190" y="140">expected count</text>
+    <text class="sm" x="28" y="340">Right on average,</text>
+    <text class="sm" x="28" y="372">far apart each time</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Noise</text>
+    <text class="sm mute" x="28" y="92">Counts at one spot</text>
+    <line class="axis" x1="30" y1="250" x2="350" y2="250"/>
+    <line class="none s-fg thick" x1="190" y1="150" x2="190" y2="270"/>
+    <g class="f-grey"><circle cx="90" cy="232" r="9"/><circle cx="140" cy="232" r="9"/><circle cx="170" cy="210" r="9"/><circle cx="205" cy="232" r="9"/><circle cx="240" cy="210" r="9"/><circle cx="300" cy="232" r="9"/><circle cx="120" cy="210" r="9"/><circle cx="260" cy="232" r="9"/></g>
+    <text class="sm mid" x="190" y="140">expected count</text>
+    <text class="sm" x="28" y="340">Chance that no</text>
+    <text class="sm" x="28" y="372">model can remove</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+More flexibility lowers the bias and raises the variance. Their sum makes the U.
+:::
+
+::: notes
+Imagine fitting the same model to many surveys of the same shelf. A rigid model gives similar predictions every time, but they all miss the expected count in the same way. That is bias. A flexible model is right on average, but its predictions change a lot from survey to survey. That is variance. On top of both, counts at the same spot scatter around their expected value by chance. That is noise, and no model removes it.
+:::
+
+## Bias falls and stops while variance keeps rising {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/bias-variance/fig-parts-1.png){data-crop="0.065" fig-alt="Squared error against the number of leaves in a tree, from trees fitted to 100 replicate surveys. Bias squared falls and levels off, variance rises steadily, and their sum has a shallow lowest point. A dashed line marks the noise, higher than the best sum."}
+:::
+:::
+
+::: {.takeaway}
+The noise was larger than bias and variance together. Most of the error was chance.
+:::
+
+::: notes
+Trees were fitted to 100 simulated replicate surveys and judged at the same stations. As the trees grow, bias falls and soon stops falling, while variance keeps rising, so their sum has a lowest point. The dashed line is the noise, and for the best tree it was larger than the bias and variance put together. A random forest keeps the bias of its trees and cuts their variance by averaging them.
+:::
+
+## A penalty holds the coefficients back {#regularisation .idea data-page="Regularisation" data-href="../chapters/05-generalisation/regularisation.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three cards of six coefficient bars. Least squares, no penalty, bars of different heights. Ridge regression shrinks every bar and sets none to zero. The lasso shrinks the large bars and sets the three small ones to exactly zero.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Least squares</text>
+    <text class="lab mute" x="28" y="86">NO PENALTY</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="110" x2="300" y2="110"/>
+      <g class="f-grey"><rect x="12" y="10" width="34" height="100"/><rect x="60" y="110" width="34" height="70"/><rect x="108" y="58" width="34" height="52"/><rect x="156" y="82" width="34" height="28"/><rect x="204" y="110" width="34" height="18"/><rect x="252" y="96" width="34" height="14"/></g>
+    </g>
+    <text class="sm" x="28" y="370">Fits as closely as it can</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Ridge</text>
+    <text class="lab f-blue" x="28" y="86">SQUARED PENALTY</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="110" x2="300" y2="110"/>
+      <g class="none s-muted dash" stroke-width="2"><rect x="12" y="10" width="34" height="100"/><rect x="60" y="110" width="34" height="70"/><rect x="108" y="58" width="34" height="52"/><rect x="156" y="82" width="34" height="28"/><rect x="204" y="110" width="34" height="18"/><rect x="252" y="96" width="34" height="14"/></g>
+      <g class="f-blue"><rect x="12" y="44" width="34" height="66"/><rect x="60" y="110" width="34" height="44"/><rect x="108" y="78" width="34" height="32"/><rect x="156" y="94" width="34" height="16"/><rect x="204" y="110" width="34" height="9"/><rect x="252" y="103" width="34" height="7"/></g>
+    </g>
+    <text class="sm" x="28" y="370">Shrinks every coefficient</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="54">Lasso</text>
+    <text class="lab f-orange" x="28" y="86">ABSOLUTE PENALTY</text>
+    <g transform="translate(40 120)">
+      <line class="axis" x1="0" y1="110" x2="300" y2="110"/>
+      <g class="none s-muted dash" stroke-width="2"><rect x="12" y="10" width="34" height="100"/><rect x="60" y="110" width="34" height="70"/><rect x="108" y="58" width="34" height="52"/><rect x="156" y="82" width="34" height="28"/><rect x="204" y="110" width="34" height="18"/><rect x="252" y="96" width="34" height="14"/></g>
+      <g class="f-orange"><rect x="12" y="34" width="34" height="76"/><rect x="60" y="110" width="34" height="46"/><rect x="108" y="88" width="34" height="22"/></g>
+      <g class="f-bg s-orange" stroke-width="4"><circle cx="173" cy="110" r="9"/><circle cx="221" cy="110" r="9"/><circle cx="269" cy="110" r="9"/></g>
+    </g>
+    <text class="sm" x="28" y="370">Sets the small ones to zero</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The weight λ trades a little bias for less variance. Standardise the inputs first.
+:::
+
+::: notes
+Every input added to a linear regression makes it more flexible. Regularisation adds a penalty on the size of the coefficients, weighted by lambda. Ridge regression uses the squared size, which shrinks every coefficient but sets none to zero. The lasso uses the absolute size, which can set small coefficients to exactly zero and drop their inputs. At lambda zero both are ordinary least squares, and at a very large lambda both predict the average.
+:::
+
+## Random columns raise R² and the error on new sites {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/regularisation/fig-noise-1.png){fig-alt="Two panels against the number of columns of random numbers added to a linear regression. R squared on the fitting stations rises from about 0.2 to 1. The error on new sites, on a log scale, rises slowly and then sharply."}
+:::
+:::
+
+::: {.takeaway}
+R² on the fitting data never falls when an input is added, even a column of random numbers.
+:::
+
+::: notes
+Here a linear regression on the four measured inputs is given more and more columns of pure random numbers. Its R squared on the stations it was fitted to climbs towards 1, because each column lets it fit a little more noise. Every random column made it worse on new sites. A high R squared on the fitting data is not evidence of a good model.
+:::
+
+## The lasso holds its own among 200 random columns {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/regularisation/fig-sweep-1.png){data-crop="0.067" fig-alt="Error on new sites against the penalty weight lambda on a log scale, for ridge regression and the lasso with four measured inputs and 200 random columns. The lasso dips to the level of a regression on the measured inputs alone. Ridge improves more slowly and less."}
+:::
+:::
+
+::: {.takeaway}
+The lasso matched a regression told which inputs were real. Its list of inputs is still not a finding.
+:::
+
+::: notes
+With 200 random columns among its inputs, an ordinary regression is badly overfitted. As lambda grows, the lasso throws out most of the random columns and predicts about as well as a regression that was told which four inputs were measured. Ridge only shrinks them and does less well. But the lasso kept some random columns and dropped some measured inputs, so its list of inputs is not evidence of which ones matter.
+:::
+
+## Cross-validation gives every site a turn as new data {#hyperparameter-selection .idea data-page="Hyperparameter selection" data-href="../chapters/05-generalisation/hyperparameter-selection.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The training sites cut into five folds. In each of five rounds a different fold is held out and scored as new sites while the model is fitted to the other four. The five errors are averaged, for every candidate setting.">
+  <g class="sm">
+    <text x="0" y="66">Round 1</text><text x="0" y="136">Round 2</text><text x="0" y="206">Round 3</text><text x="0" y="276">Round 4</text><text x="0" y="346">Round 5</text>
+  </g>
+  <g transform="translate(130 30)">
+    <g class="f-blue" opacity="0.85">
+      <rect x="130" y="0" width="120" height="50" rx="6"/><rect x="260" y="0" width="120" height="50" rx="6"/><rect x="390" y="0" width="120" height="50" rx="6"/><rect x="520" y="0" width="120" height="50" rx="6"/>
+      <rect x="0" y="70" width="120" height="50" rx="6"/><rect x="260" y="70" width="120" height="50" rx="6"/><rect x="390" y="70" width="120" height="50" rx="6"/><rect x="520" y="70" width="120" height="50" rx="6"/>
+      <rect x="0" y="140" width="120" height="50" rx="6"/><rect x="130" y="140" width="120" height="50" rx="6"/><rect x="390" y="140" width="120" height="50" rx="6"/><rect x="520" y="140" width="120" height="50" rx="6"/>
+      <rect x="0" y="210" width="120" height="50" rx="6"/><rect x="130" y="210" width="120" height="50" rx="6"/><rect x="260" y="210" width="120" height="50" rx="6"/><rect x="520" y="210" width="120" height="50" rx="6"/>
+      <rect x="0" y="280" width="120" height="50" rx="6"/><rect x="130" y="280" width="120" height="50" rx="6"/><rect x="260" y="280" width="120" height="50" rx="6"/><rect x="390" y="280" width="120" height="50" rx="6"/>
+    </g>
+    <g class="f-orange"><rect x="0" y="0" width="120" height="50" rx="6"/><rect x="130" y="70" width="120" height="50" rx="6"/><rect x="260" y="140" width="120" height="50" rx="6"/><rect x="390" y="210" width="120" height="50" rx="6"/><rect x="520" y="280" width="120" height="50" rx="6"/></g>
+    <g class="sm">
+      <line class="wire arrow" x1="660" y1="25" x2="720" y2="25"/><text x="730" y="33">error 1</text>
+      <line class="wire arrow" x1="660" y1="95" x2="720" y2="95"/><text x="730" y="103">error 2</text>
+      <line class="wire arrow" x1="660" y1="165" x2="720" y2="165"/><text x="730" y="173">error 3</text>
+      <line class="wire arrow" x1="660" y1="235" x2="720" y2="235"/><text x="730" y="243">error 4</text>
+      <line class="wire arrow" x1="660" y1="305" x2="720" y2="305"/><text x="730" y="313">error 5</text>
+    </g>
+    <path class="none s-accent" stroke-width="3" d="M830,20 Q860,20 860,60 L860,140 Q860,165 885,165 Q860,165 860,190 L860,270 Q860,310 830,310"/>
+    <text class="head" x="900" y="160">Average</text>
+    <text class="sm mute" x="900" y="196">for each setting</text>
+  </g>
+  <g class="sm"><rect class="f-blue" x="130" y="392" width="22" height="22" rx="4"/><text x="162" y="411">fitted on</text><rect class="f-orange" x="300" y="392" width="22" height="22" rx="4"/><text x="332" y="411">scored as new sites</text></g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The training error always favours the most flexible setting, so choose on held-out sites.
+:::
+
+::: notes
+A hyperparameter, such as how many stations a tree's node must hold, is fixed before fitting and limits it. It has to be chosen on data the model was not fitted to. k-fold cross-validation cuts the training sites into k folds. Each fold takes a turn as new data while the model is fitted to the rest, and the k errors are averaged. That is repeated for every candidate setting. The best setting is then refitted on all the training sites, and the test sites score it once.
+:::
+
+## The bottom of the error curve is flat {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/05-generalisation/hyperparameter-selection/fig-cv-1.png){data-crop="0.066" fig-alt="Cross-validated error against the number of leaves in a tree, with bars of one standard error. The error is nearly level from 3 to 30 leaves and then rises. A dotted line one standard error above the lowest point crosses most of the flat part."}
+:::
+:::
+
+::: {.takeaway}
+Settings within one standard error of the best cannot be told apart. Take the simplest.
+:::
+
+::: notes
+Each point is one candidate node size, scored by cross-validation, with bars for its standard error. Many settings tie at the bottom of the curve. The one-standard-error rule picks the simplest model whose error is within one standard error of the best, because the data cannot tell the others apart and the simpler model is less likely to be overfitted.
+:::
+
+## One validation split gives a noisy verdict {.example}
+
+::: {.plot .short}
+::: {.card}
+![](figures/05-generalisation/hyperparameter-selection/fig-repeats-1.png){data-crop="0.060" fig-alt="The node size chosen and the error claimed for it in 20 runs. With one validation split the chosen sizes and claimed errors scatter widely. With ten-fold cross-validation they cluster tightly."}
+:::
+:::
+
+::: {.takeaway}
+In 20 runs one split claimed 3.72 to 5.37. Ten-fold cross-validation claimed 4.45 to 4.64.
+:::
+
+::: notes
+The whole choice was run 20 times on different splits. A single validation split chose very different node sizes from run to run, and the error it claimed for its winner ranged widely. Ten-fold cross-validation chose similar settings each time and claimed similar errors. After the choice, the test sites score the chosen model once, and after that they are spent.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Training error always falls with flexibility. Only new data show overfitting.
+- Error on new data is bias, variance and noise. Flexibility trades the first two.
+- A penalty on the coefficients trades a little bias for less variance.
+- Choose settings by cross-validation, then score the test sites once.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/05-generalisation/index.html).
+:::
+:::
