@@ -27,6 +27,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Supervised learning learns from examples where the answer is already known, such as
 hauls where the catch was recorded or images where a specialist named the species, and
 then predicts the answer where it is unknown. Most marine work needs this family of
@@ -35,6 +37,8 @@ yardstick for everything after, through models for counts and for yes-or-no answ
 k-nearest neighbours, decision trees, random forests and boosting. All of them run on
 the same simulated survey, so each new method can be compared with the ones before it,
 and the last page narrows the choice between them.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=r9n5rdVd_hs title="Supervised learning: from a straight line to boosting" >}}
 

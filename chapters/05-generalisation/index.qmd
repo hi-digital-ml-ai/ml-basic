@@ -21,12 +21,16 @@ listing:
 toc: false
 ---
 
+## Overview
+
 How well a model predicts data it has never seen is called generalisation, and it is the
 reason for fitting a model at all. A flexible model can fit its training stations
 perfectly and still predict new sites worse than the average count. This section splits
 the error on new sites into bias, variance and noise, and chooses a model's complexity
 honestly, with a penalty and with cross-validation, on the same simulated survey as the
 rest of the course.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=p60IZT5nnQU title="Generalisation: why a perfect fit is a bad sign" >}}
 
