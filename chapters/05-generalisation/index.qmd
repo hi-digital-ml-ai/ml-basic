@@ -34,6 +34,11 @@ rest of the course.
 
 {{< video https://www.youtube.com/watch?v=p60IZT5nnQU title="Generalisation: why a perfect fit is a bad sign" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/05-generalisation.qmd) cover each page of the section in
+  two or three slides, with speaker notes, for teaching the section or a quick review.
+
 ## Pages in this section
 
 ::: {#pages}
