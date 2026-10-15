@@ -1,61 +1,42 @@
 ---
 title: "3 · Supervised learning"
-description: "From a straight line to hundreds of trees, every method in the section is fitted to one survey and scored on the same new sites. With a few hundred stations, a curve matched to the outcome is hard to beat."
+description: "From a straight line to boosting, one method per page on the same survey."
 categories: [supervised, regression, classification, trees-ensembles]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: linear-and-polynomial-regression.qmd
+      description: "Linear regression is the yardstick every later method must beat, and one squared input lets it follow a curve."
+    - path: count-regression.qmd
+      description: "Poisson and negative binomial regression are built for counts, which never fall below zero and vary more as they grow."
+    - path: logistic-regression.qmd
+      description: "Logistic regression predicts the probability that a species is present, and turning it into yes or no needs a threshold you choose."
+    - path: nearest-neighbours.qmd
+      description: "k-nearest neighbours predicts a station from the training stations most like it, with no shape assumed."
+    - path: decision-trees.qmd
+      description: "A decision tree predicts by asking yes-or-no questions about the inputs, and each extra level fits the training stations more closely."
+    - path: forests-and-boosting.qmd
+      description: "A random forest averages many trees and boosting adds small trees that fix earlier mistakes, and both are steadier than one tree."
+    - path: choosing-a-method.qmd
+      description: "A few questions about the aim, the data and the audience narrow the choice of method before any model is fitted."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Supervised learning means learning from examples where the answer is already known:
-casts where the water mass was identified, hauls where the catch was recorded, images
-where a specialist labelled the species. The model learns the relationship between the
-inputs and the answer, then applies it to cases where the answer is unknown. This is
-the family of methods most marine work needs.
+Supervised learning learns from examples where the answer is already known, such as
+hauls where the catch was recorded or images where a specialist named the species, and
+then predicts the answer where it is unknown. Most marine work needs this family of
+methods. The section introduces one method per page, from linear regression, the
+yardstick for everything after, through models for counts and for yes-or-no answers, to
+k-nearest neighbours, decision trees, random forests and boosting. All of them run on
+the same simulated survey, so each new method can be compared with the ones before it,
+and the last page narrows the choice between them.
 
-The kind of answer comes first, because it decides which models fit and how their
-errors are scored. [Types of learning](../01-introduction/types-of-learning.qmd) split
-the task into regression, for a quantity, and classification, for a category. Few
-marine outcomes fit either box neatly:
-
-| Outcome | What needs care |
-| --- | --- |
-| Catch weight | Skewed: a few very large catches |
-| Count of animals | Whole numbers, never negative, with a spread that grows with the average |
-| Count with many zeros | A zero can mean the species is absent, or present and missed |
-| Percentage cover | Cannot go below 0 or above 100 |
-| Present or absent | One of the two is usually much rarer |
-| Habitat class | Often ordered (poor, fair, good), and the order carries information |
-
-Turning a quantity into a category, such as a count into present or absent, makes it
-simpler but throws information away;
-[Logistic regression](logistic-regression.qmd#a-probability-stays-between-0-and-1)
-shows what goes.
-
-The section then introduces one method per page, each on the same simulated survey, so
-each new method can be compared with the ones before it:
-
-- linear and polynomial regression for a quantity, a straight line and then a curve,
-  the yardstick for everything after;
-- Poisson and negative binomial regression for a count, which never predict fewer than
-  zero animals;
-- logistic regression for a yes-or-no outcome, such as present or absent;
-- k-nearest neighbours, which predicts from the most similar stations and assumes no
-  shape;
-- decision trees, which predict by asking yes-or-no questions about the inputs;
-- random forests and boosting, which combine many trees into one prediction.
-
-It ends on choosing between them. The aim, the kind of outcome, the range the model
-must predict over, the amount of data and the people who must accept the result all
-narrow the choice before any model is fitted. Comparing the section's models on the
-same new sites then shows why one test split cannot settle a close contest, which
-[Uncertainty and stability](../07-validation/uncertainty-and-stability.qmd) takes up.
+{{< video https://www.youtube.com/watch?v=r9n5rdVd_hs title="Supervised learning: from a straight line to boosting" >}}
 
 ## Pages in this section
 

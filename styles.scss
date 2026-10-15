@@ -40,6 +40,12 @@ main {
   // Callouts are prose in a box; they follow the text measure.
   .callout { max-width: 48rem; }
 
+  // A section's video sits with the paragraph above it, not across the column.
+  .quarto-video {
+    max-width: 48rem;
+    margin-bottom: 1.5rem;
+  }
+
   // Figures get the room the layout was widened for, but stay below the
   // point where a 7in plot starts to look like a poster. The whole block is
   // capped and centred so the caption lines up with the image above it.

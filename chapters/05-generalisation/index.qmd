@@ -1,54 +1,34 @@
 ---
 title: "5 · Generalisation and model complexity"
-description: "A model is fitted to be used on sites it has never seen. The section shows why a perfect fit to the training stations is a warning sign, where the U-shaped error curve comes from, and how to choose a model's complexity honestly, with a penalty and cross-validation."
+description: "A perfect fit to the training stations is a warning sign, not a success."
 categories: [generalisation, tuning]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: underfitting-and-overfitting.qmd
+      description: "A model that fits its training stations too loosely or too closely predicts new sites badly, and the error traces a U as flexibility grows."
+    - path: bias-variance.qmd
+      description: "The error on new stations splits into bias, variance and noise, and averaging trees in a forest cuts the variance."
+    - path: regularisation.qmd
+      description: "A penalty on the size of the coefficients holds a model back: ridge regression shrinks them all, and the lasso sets some to zero."
+    - path: hyperparameter-selection.qmd
+      description: "Settings such as a tree's node size are chosen by cross-validation on the training sites, and the test sites are opened once, at the end."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-How well a model does on data it has never seen is called generalisation, and it is the
-reason for fitting a model at all. A flexible enough model can fit its training stations perfectly
-and still predict new sites worse than the average count. The four pages in this section
-cover three ideas, on the same simulated survey as the rest of the course.
+How well a model predicts data it has never seen is called generalisation, and it is the
+reason for fitting a model at all. A flexible model can fit its training stations
+perfectly and still predict new sites worse than the average count. This section splits
+the error on new sites into bias, variance and noise, and chooses a model's complexity
+honestly, with a penalty and with cross-validation, on the same simulated survey as the
+rest of the course.
 
-A perfect fit is a warning sign:
-
-- **underfitting and overfitting**: a tree that fits every training station does worse
-  on new sites than predicting the average, and making a tree more flexible step by step
-  draws the U-shaped error curve.
-
-The U-shaped curve comes from bias and variance:
-
-- **the bias–variance trade-off**: as a tree gets more flexible, its bias falls and its
-  variance rises; under both lies noise, the largest part of the error on the survey,
-  and a random forest cuts the variance by averaging trees.
-
-Complexity is chosen honestly:
-
-- **regularisation**: every input added to a linear regression makes it more flexible,
-  even a column of random numbers, and a penalty holds it back; ridge regression
-  shrinks every coefficient, and the lasso sets some to zero;
-- **hyperparameter selection**: a setting such as a tree's node size or the penalty's
-  weight is chosen by cross-validation on the training sites, and the test sites are
-  opened only once, at the end.
-
-The section picks up threads from earlier ones.
-[Decision trees](../03-supervised-learning/decision-trees.qmd) chose a tree's depth on
-validation sites, and [Underfitting and overfitting](underfitting-and-overfitting.qmd)
-names the two ways that choice can go wrong.
-[Likelihood and priors](../04-how-algorithms-learn/likelihood-and-priors.qmd) showed that
-a prior shrinks coefficients; [Regularisation](regularisation.qmd) tests whether that
-helps on new sites.
-[Splitting the data](../02-marine-data/splitting-data.qmd) set validation sites aside for
-choosing a model; [Hyperparameter selection](hyperparameter-selection.qmd) replaces them
-with cross-validation, which lets every training site take a turn.
+{{< video https://www.youtube.com/watch?v=p60IZT5nnQU title="Generalisation: why a perfect fit is a bad sign" >}}
 
 ## Pages in this section
 

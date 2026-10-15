@@ -1,60 +1,38 @@
 ---
 title: "6 · Model assumptions and limitations"
-description: "Machine learning frees a model from straight lines and bell curves, but not from the way the data were collected. The section tests what a model takes for granted about shape and spread, what repeat visits and uneven survey effort do to it, and why a rare answer fools accuracy."
+description: "What a good score cannot show about a model."
 categories: [assumptions, spatial-temporal, class-imbalance]
 listing:
   id: pages
-  contents: "*.qmd"
+  # Each card takes its title from the page and gives it one sentence here.
+  contents:
+    - path: linearity-and-nonlinearity.qmd
+      description: "A straight line misses the curve of a species' preferred temperature, and a random forest finds it without being told its shape."
+    - path: distributional-assumptions.qmd
+      description: "A random forest predicts well without Normal errors, but the loss still decides whether it aims at the average or the median."
+    - path: dependent-data.qmd
+      description: "Visits to one site repeat each other, so the survey's rows are worth fewer independent stations than their number."
+    - path: sampling-and-extrapolation.qmd
+      description: "A model also predicts for conditions its survey never reached, and the distance to the nearest surveyed station shows when it is guessing."
+    - path: class-imbalance.qmd
+      description: "When one answer is rare, a model can be highly accurate and still miss most of the rare cases."
   type: grid
   grid-columns: 3
-  max-description-length: 320
   sort: "order"
-  fields: [title, description, categories]
+  fields: [title, description]
 toc: false
 ---
 
-Every method takes something for granted about its data: an assumption. When an
-assumption is wrong, the model still gives an answer, but the answer can be wrong.
-Machine-learning methods are often called assumption-free. They take less for granted
-about the shape of a relationship than a linear model does, but they still need data
-collected in a way that lets the stations stand for the sea. The five pages in this
-section cover three ideas, on the same simulated survey as the rest of the course.
+Every method takes something for granted about its data, and when that assumption is
+wrong the model still gives an answer, which can be wrong. Machine-learning methods
+assume less about the shape of a relationship than a linear model does, but they still
+need data collected in a way that lets the stations stand for the sea. On the same
+simulated survey as the rest of the course, the first two pages show machine learning
+doing without straight lines and bell curves; the other three show what it cannot
+escape: visits to one site that repeat each other, conditions the survey never reached,
+and a rare answer that makes accuracy look good.
 
-Machine learning frees a model from straight lines and bell curves:
-
-- **linearity and nonlinearity**: a straight line misses the hump of a species'
-  preferred temperature, and a random forest finds it without being told its shape;
-- **distributional assumptions**: a random forest's errors are lopsided and widen with
-  the catch, yet it predicts well; the loss decides what it aims at, the average for
-  squared error and the median for absolute error.
-
-It does not free a model from how the data were collected:
-
-- **dependent data**: visits to one site repeat each other, and resampling whole sites
-  instead of single stations measures how many fewer independent stations the survey's
-  rows are worth;
-- **uneven sampling and extrapolation**: cold, shallow winter water that a summer survey
-  never met passes a range check on each input; the distance to the nearest surveyed
-  station finds it, and a random forest's error grows with that distance.
-
-And a rare answer fools accuracy:
-
-- **class imbalance**: a model can be highly accurate yet miss most of a rare species'
-  presences, and rebalancing the training data turns out to move the threshold.
-
-The section picks up threads from earlier ones and passes some on.
-[Distributional assumptions](distributional-assumptions.qmd) asks what each loss of
-[Loss functions](../04-how-algorithms-learn/loss-functions.qmd) aims at.
-[Splitting the data](../02-marine-data/splitting-data.qmd) kept each site's visits on one
-side of the split; [Dependent data](dependent-data.qmd) measures what those visits are
-worth, and [Spatial and temporal cross-validation](../07-validation/spatial-and-temporal-cv.qmd)
-holds out neighbouring sites and whole years.
-[Uneven sampling and extrapolation](sampling-and-extrapolation.qmd) measures how far a
-station lies from the survey as [k-nearest neighbours](../03-supervised-learning/nearest-neighbours.qmd)
-finds its neighbours. [Class imbalance](class-imbalance.qmd) builds on the threshold of
-[Logistic regression](../03-supervised-learning/logistic-regression.qmd) and leaves the
-measures that count misses and false alarms apart to
-[Classification performance measures](../07-validation/classification-metrics.qmd).
+{{< video https://www.youtube.com/watch?v=cQogf2VKM1s title="Assumptions: what a good score cannot show" >}}
 
 ## Pages in this section
 
