@@ -37,8 +37,11 @@ output and the laptop has the better graphics card. The laptop is now set up (se
 - **No section numbers in the video,** spoken or shown (decided 2026-09-29). Sections
   may be renumbered, and a number baked into a video cannot be changed. Numbers go in
   the YouTube title and description; other sections are named ("the validation
-  section"). The end card shows only the site, `ml-basic.pages.dev` (Cloudflare Pages,
-  the `SITE` constant), because page paths carry the section number too.
+  section"). The end card shows only the site, `hi-digital-ml-ai.github.io/ml-basic` (GitHub
+  Pages, the `SITE` constant), because page paths carry the section number too. It
+  showed `ml-basic.pages.dev` (Cloudflare Pages) until 2026-10-15, when GitHub Pages
+  became the main address because institutional networks block `*.pages.dev`; the
+  Cloudflare copy stays as a second address.
 
 ## Pipeline
 
@@ -163,7 +166,7 @@ Then we give it next year's survey, and it falls apart.
 
 - Upload `captions.srt` (more accurate than auto-captions).
 - Paste `chapters.txt` (timestamps from scene lengths) into the description, with a link
-  to the section page (e.g. `https://ml-basic.pages.dev/chapters/05-generalisation/`).
+  to the section page (e.g. `https://hi-digital-ml-ai.github.io/ml-basic/chapters/05-generalisation/`).
 - Put the section number in the title and description only; the video has none.
 - State in the description that the narration is AI-generated; check YouTube's current
   rules on labelling synthetic content.
