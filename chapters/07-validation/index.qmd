@@ -38,6 +38,11 @@ score, so two models can be compared fairly.
 
 {{< video https://www.youtube.com/watch?v=yVOEkCqrOec title="Validation: when to believe a score" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/07-validation.qmd) cover each page of the section in two
+  or three slides, with speaker notes, for teaching the section or a quick review.
+
 ## Pages in this section
 
 ::: {#pages}

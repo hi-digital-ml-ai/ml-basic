@@ -36,6 +36,12 @@ and penalty comes from.
 The video for this section is on its way.
 :::
 
+## Lecture notes
+
+- [Summary slides](../../slides/04-how-algorithms-learn.qmd) cover each page of the
+  section in two or three slides, with speaker notes, for teaching the section or a
+  quick review.
+
 ## Pages in this section
 
 ::: {#pages}

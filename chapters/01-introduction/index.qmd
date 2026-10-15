@@ -35,6 +35,11 @@ the pages build on each other, so read them in order.
 
 {{< video https://www.youtube.com/watch?v=PKAsQDUK98E title="Introduction: a map of machine learning" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/01-introduction.qmd) cover each page of the section in
+  two or three slides, with speaker notes, for teaching the section or a quick review.
+
 ## Pages in this section
 
 ::: {#pages}
