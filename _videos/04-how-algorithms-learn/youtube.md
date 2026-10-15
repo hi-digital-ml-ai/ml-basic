@@ -10,8 +10,9 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/04-how-algorithms-learn/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/04-how-algorithms-learn/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 4 |
-| YouTube | <https://www.youtube.com/watch?v=flduAVOF2rk> (uploaded 2026-10-15) |
-| Embed on | `chapters/04-how-algorithms-learn/index.qmd` (done) |
+| YouTube | New upload, with the GitHub Pages end card: (not yet) |
+| First upload | <https://www.youtube.com/watch?v=flduAVOF2rk> (2026-10-15, `ml-basic.pages.dev` on the end card; delete once the new one is embedded) |
+| Embed on | `chapters/04-how-algorithms-learn/index.qmd` (update to the new upload) |
 
 ## Title
 
@@ -39,10 +40,10 @@ In this video:
 9:16 Key points
 
 The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://ml-basic.pages.dev/chapters/04-how-algorithms-learn/
+https://hi-digital-ml-ai.github.io/ml-basic/chapters/04-how-algorithms-learn/
 
 The whole course:
-https://ml-basic.pages.dev/
+https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video
 - The coastal survey in the examples is simulated, not a real survey, so the numbers are not results about any real species.

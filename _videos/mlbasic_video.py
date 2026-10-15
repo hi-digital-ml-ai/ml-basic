@@ -45,8 +45,9 @@ sys.path.insert(0, str(ROOT / "_videos"))
 from sea_friends import grid  # noqa: E402
 
 SERIES = "Machine Learning Basics for Marine Science"
-SITE = "ml-basic.pages.dev"   # Cloudflare Pages. The end cards show only this: page
-                              # paths carry section numbers, which go in the description
+SITE = "hi-digital-ml-ai.github.io/ml-basic"   # GitHub Pages. The end cards show only
+                                              # this: page paths carry section numbers,
+                                              # which go in the description
 MUSIC = ROOT / "_videos" / "intro-music.wav"
 
 # The site's font. Pango silently substitutes another font if this name is wrong,

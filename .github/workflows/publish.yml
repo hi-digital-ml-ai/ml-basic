@@ -1,0 +1,58 @@
+# Builds the site and publishes it to GitHub Pages,
+# https://hi-digital-ml-ai.github.io/ml-basic/
+#
+# main only receives release and hotfix merges, so a push to main is a release.
+# It can also be run by hand from the Actions tab.
+#
+# No R or Python packages are installed: every page's results come from the
+# committed render cache in _freeze/. A page whose cache is missing or out of date
+# fails here, so render it locally and commit its _freeze/ folder with it.
+
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One publish at a time; a newer release waits rather than cancelling one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same Quarto as the laptop that renders _freeze/.
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
+
+      # The pre-render step (tools/extract-code.py) needs only the runner's own
+      # Python 3 and its standard library.
+      - name: Render the site
+        run: quarto render
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -10,8 +10,9 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/02-marine-data/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/02-marine-data/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 2 |
-| YouTube | <https://www.youtube.com/watch?v=O2wC2O4xb9w> (uploaded 2026-10-15) |
-| Embed on | `chapters/02-marine-data/index.qmd` (done) |
+| YouTube | New upload, with the GitHub Pages end card: (not yet) |
+| First upload | <https://www.youtube.com/watch?v=O2wC2O4xb9w> (2026-10-15, `ml-basic.pages.dev` on the end card; delete once the new one is embedded) |
+| Embed on | `chapters/02-marine-data/index.qmd` (update to the new upload) |
 
 ## Title
 
@@ -39,10 +40,10 @@ In this video:
 9:05 Key points
 
 The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://ml-basic.pages.dev/chapters/02-marine-data/
+https://hi-digital-ml-ai.github.io/ml-basic/chapters/02-marine-data/
 
 The whole course:
-https://ml-basic.pages.dev/
+https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video
 - The coastal survey in the examples is simulated, not a real survey, so the numbers are not results about any real species.

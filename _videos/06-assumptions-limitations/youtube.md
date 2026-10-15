@@ -10,8 +10,9 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/06-assumptions-limitations/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/06-assumptions-limitations/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 6 |
-| YouTube | <https://www.youtube.com/watch?v=cQogf2VKM1s> (uploaded 2026-10-15) |
-| Embed on | `chapters/06-assumptions-limitations/index.qmd` (done) |
+| YouTube | New upload, with the GitHub Pages end card: (not yet) |
+| First upload | <https://www.youtube.com/watch?v=cQogf2VKM1s> (2026-10-15, `ml-basic.pages.dev` on the end card; delete once the new one is embedded) |
+| Embed on | `chapters/06-assumptions-limitations/index.qmd` (update to the new upload) |
 
 ## Title
 
@@ -39,10 +40,10 @@ In this video:
 6:02 Key points
 
 The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://ml-basic.pages.dev/chapters/06-assumptions-limitations/
+https://hi-digital-ml-ai.github.io/ml-basic/chapters/06-assumptions-limitations/
 
 The whole course:
-https://ml-basic.pages.dev/
+https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video
 - The coastal survey in the examples is simulated, not a real survey, so the numbers are not results about any real species.
