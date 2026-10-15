@@ -1,0 +1,483 @@
+---
+title: "Validation and performance"
+subtitle: "Scoring a model honestly, with folds and measures that match its use"
+description: "Cross-validation, spatial and temporal folds, measures for numbers and for presence, uncertainty, and choosing a measure."
+order: 7
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 7"
+  data-section-href: "../chapters/07-validation/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## The folds that choose a model cannot also score it {#cross-validation .idea data-page="Cross-validation" data-href="../chapters/07-validation/cross-validation.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Nested cross-validation. In each outer round one fold of sites is held out. On the remaining sites a search scores every candidate on inner folds of its own and chooses one. The choice is fitted to those sites and predicts the held-out fold once.">
+  <text class="lab mute" x="0" y="30">ONE OUTER ROUND</text>
+  <g transform="translate(0 50)">
+    <rect class="f-orange" x="0" y="0" width="200" height="70" rx="10"/>
+    <text class="mid" x="100" y="44" style="fill:#1f2933" font-weight="700">Held out</text>
+    <rect class="t-blue s-blue" stroke-width="3" x="220" y="0" width="980" height="300" rx="14"/>
+    <text class="head" x="250" y="48">The search, on the other sites only</text>
+    <g transform="translate(250 80)">
+      <g class="f-blue" opacity="0.85"><rect x="60" y="0" width="54" height="34" rx="5"/><rect x="120" y="0" width="54" height="34" rx="5"/><rect x="180" y="0" width="54" height="34" rx="5"/><rect x="0" y="44" width="54" height="34" rx="5"/><rect x="120" y="44" width="54" height="34" rx="5"/><rect x="180" y="44" width="54" height="34" rx="5"/><rect x="0" y="88" width="54" height="34" rx="5"/><rect x="60" y="88" width="54" height="34" rx="5"/><rect x="180" y="88" width="54" height="34" rx="5"/><rect x="0" y="132" width="54" height="34" rx="5"/><rect x="60" y="132" width="54" height="34" rx="5"/><rect x="120" y="132" width="54" height="34" rx="5"/></g>
+      <g class="f-green"><rect x="0" y="0" width="54" height="34" rx="5"/><rect x="60" y="44" width="54" height="34" rx="5"/><rect x="120" y="88" width="54" height="34" rx="5"/><rect x="180" y="132" width="54" height="34" rx="5"/></g>
+      <text class="sm mute" x="0" y="204">inner folds</text>
+      <line class="wire arrow" x1="270" y1="83" x2="340" y2="83"/>
+      <text x="360" y="70">Score 100 candidates</text>
+      <text x="360" y="108">and choose one</text>
+    </g>
+  </g>
+  <path class="edge arrow-accent" d="M215,320 C140,320 100,250 100,128"/>
+  <text class="sm" x="0" y="408" font-weight="700">The choice predicts the held-out fold once</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The winner of a search has the lowest of many scores, and part of its lead is luck.
+:::
+
+::: notes
+Cross-validation scores a model from out-of-fold predictions, each made by a model fitted without that station's site, and pools them into one score. When the same folds are also used to choose among many candidates, the winner's score is too good, because it is the lowest of many noisy scores. Nested cross-validation runs the whole search inside each outer round, on the other sites only, and scores its choice on the held-out fold.
+:::
+
+## Nested cross-validation scores the search as well {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/cross-validation/fig-nested-1.png){data-crop="0.079" fig-alt="For each of five outer folds, the error the search claimed, the error of its choice on the outer fold, and the error of linear regression on eight inputs with no search. In four of the five folds the eight inputs did better than the search's choice."}
+:::
+:::
+
+::: {.takeaway}
+A search over 100 sets of inputs scored 4.46. Eight inputs and no search scored 4.37.
+:::
+
+::: notes
+The search tried 100 sets of inputs, some including random columns, and kept random columns in its choice. On the inner folds it claimed a better score than its choice achieved on the outer folds. Linear regression on the eight measured inputs, with no search at all, beat the search's choice in four of the five folds. Report the nested score, not the winner's.
+:::
+
+## Folds decide how far each prediction has to reach {#spatial-and-temporal-cv .idea data-page="Spatial and temporal cross-validation" data-href="../chapters/07-validation/spatial-and-temporal-cv.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two maps of sites. Folds of sites hold out scattered sites, each with fitted sites close by. Spatial blocks hold out every site in a square, so the nearest fitted site is further away.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Folds of sites</text>
+  <g transform="translate(70 110)">
+    <g class="f-blue" opacity="0.8"><circle cx="40" cy="40" r="11"/><circle cx="110" cy="30" r="11"/><circle cx="250" cy="35" r="11"/><circle cx="320" cy="45" r="11"/><circle cx="390" cy="30" r="11"/><circle cx="30" cy="110" r="11"/><circle cx="100" cy="120" r="11"/><circle cx="170" cy="105" r="11"/><circle cx="310" cy="110" r="11"/><circle cx="45" cy="190" r="11"/><circle cx="115" cy="180" r="11"/><circle cx="185" cy="200" r="11"/><circle cx="255" cy="185" r="11"/><circle cx="395" cy="180" r="11"/></g>
+    <g class="f-orange"><circle cx="180" cy="50" r="13"/><circle cx="240" cy="125" r="13"/><circle cx="380" cy="120" r="13"/><circle cx="325" cy="195" r="13"/></g>
+  </g>
+  <text class="sm" x="32" y="380">Every held-out site has a neighbour fitted</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Spatial blocks</text>
+  <g transform="translate(690 110)">
+    <rect class="t-orange s-orange dash" stroke-width="3" x="140" y="0" width="290" height="150" rx="8"/>
+    <g class="f-blue" opacity="0.8"><circle cx="40" cy="40" r="11"/><circle cx="110" cy="30" r="11"/><circle cx="30" cy="110" r="11"/><circle cx="100" cy="120" r="11"/><circle cx="45" cy="190" r="11"/><circle cx="115" cy="180" r="11"/><circle cx="185" cy="200" r="11"/><circle cx="255" cy="185" r="11"/><circle cx="325" cy="195" r="11"/><circle cx="395" cy="180" r="11"/></g>
+    <g class="f-orange"><circle cx="180" cy="50" r="13"/><circle cx="250" cy="35" r="13"/><circle cx="320" cy="45" r="13"/><circle cx="390" cy="30" r="13"/><circle cx="170" cy="105" r="13"/><circle cx="240" cy="125" r="13"/><circle cx="310" cy="110" r="13"/><circle cx="380" cy="120" r="13"/></g>
+  </g>
+  <text class="sm" x="652" y="380">Neighbours are held out together</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A score says how well a model predicts stations as far away as the held-out ones were.
+:::
+
+::: notes
+Folds decide how far each held-out station is from the stations the model was fitted to. Folds of sites hold out scattered sites, and each still has fitted neighbours close by. Spatial blocks cut the map into squares and hold out every site in a square, so the model has to reach further. Choose the folds whose distance matches the use. Sites suit filling gaps in a survey, and blocks suit mapping new areas.
+:::
+
+## The error grows as the fitted data lie further away {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/spatial-and-temporal-cv/fig-distance-1.png){data-crop="0.065" fig-alt="Pooled RMSE of a random forest against the median distance to the nearest fitted station. Folds of stations are nearest with the lowest error, folds of sites in the middle, and half-degree blocks furthest with the highest error. Single runs overlap."}
+:::
+:::
+
+::: {.takeaway}
+Averaged over ten runs, 4.23 by station, 4.34 by site and 4.41 with half-degree blocks.
+:::
+
+::: notes
+The same random forest was scored with folds of stations, of sites and of half-degree map blocks, ten times each. The further the held-out stations were from the fitted ones, the larger the error. Single runs overlap, so compare schemes over several runs. Report the distance to the nearest fitted station alongside the score.
+:::
+
+## A forecast is tested only on later years {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="An expanding window over six years. Each round is fitted only to the years before the one it tests, and the window grows by a year each round.">
+  <g class="sm">
+    <text class="mid mute" x="300" y="30">Year 1</text><text class="mid mute" x="440" y="30">Year 2</text><text class="mid mute" x="580" y="30">Year 3</text><text class="mid mute" x="720" y="30">Year 4</text><text class="mid mute" x="860" y="30">Year 5</text><text class="mid mute" x="1000" y="30">Year 6</text>
+    <text x="0" y="88">Round 1</text><text x="0" y="158">Round 2</text><text x="0" y="228">Round 3</text><text x="0" y="298">Round 4</text>
+  </g>
+  <g transform="translate(240 50)">
+    <g class="f-blue" opacity="0.85">
+      <rect x="0" y="10" width="260" height="50" rx="6"/>
+      <rect x="0" y="80" width="400" height="50" rx="6"/>
+      <rect x="0" y="150" width="540" height="50" rx="6"/>
+      <rect x="0" y="220" width="680" height="50" rx="6"/>
+    </g>
+    <g class="f-orange"><rect x="280" y="10" width="120" height="50" rx="6"/><rect x="420" y="80" width="120" height="50" rx="6"/><rect x="560" y="150" width="120" height="50" rx="6"/><rect x="700" y="220" width="120" height="50" rx="6"/></g>
+  </g>
+  <g class="sm"><rect class="f-blue" x="240" y="350" width="22" height="22" rx="4"/><text x="272" y="369">fitted on earlier years</text><rect class="f-orange" x="560" y="350" width="22" height="22" rx="4"/><text x="592" y="369">tested</text></g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Here the window scored 4.40, against 4.38 when later years were allowed in.
+:::
+
+::: notes
+A forecast never has data from the future, so it should be tested the same way. An expanding window fits each round only to the years before the year it tests, and grows by a year each round. Leaving one year out instead would let the model learn from later years too. In this survey the difference was small, but that has to be checked, not assumed.
+:::
+
+## Three measures weigh errors differently {#regression-metrics .idea data-page="Regression performance measures" data-href="../chapters/07-validation/regression-metrics.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three cards. RMSE squares the misses, so large misses count most, and it is best when a model predicts the average. MAE counts each miss as it is and is best at the median. R squared compares the squared misses with those of predicting the average.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">RMSE</text>
+    <g transform="translate(40 100)"><rect class="f-orange" x="0" y="100" width="30" height="30"/><rect class="f-orange" x="50" y="70" width="60" height="60"/><rect class="f-orange" x="130" y="10" width="120" height="120"/></g>
+    <text class="sm" x="28" y="300">Large misses count most</text>
+    <text class="sm f-accent" x="28" y="340" font-weight="700">Best at the average</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">MAE</text>
+    <g transform="translate(40 100)"><rect class="f-blue" x="0" y="100" width="30" height="30"/><rect class="f-blue" x="50" y="100" width="60" height="30"/><rect class="f-blue" x="130" y="100" width="120" height="30"/></g>
+    <text class="sm" x="28" y="300">Each miss as it is</text>
+    <text class="sm f-accent" x="28" y="340" font-weight="700">Best at the median</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">R²</text>
+    <g transform="translate(40 110)"><rect class="f-grey" x="0" y="0" width="290" height="44" rx="4"/><rect class="f-green" x="0" y="64" width="200" height="44" rx="4"/></g>
+    <text class="sm mute" x="40" y="250">predicting the average</text>
+    <text class="sm" x="28" y="300">Share of its squared</text>
+    <text class="sm" x="28" y="332">misses removed</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+On skewed counts the average and the median differ, so the measures can disagree.
+:::
+
+::: notes
+The RMSE squares each miss before averaging, so large misses count most, and it is smallest when a model predicts the average of what could be observed. The MAE takes each miss as it is and is smallest at the median. R squared compares a model's squared misses with those of simply predicting the average, so it ranks models in the same order as the RMSE.
+:::
+
+## RMSE and MAE choose different forests {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A table of four models. Predicting the average, RMSE 4.78, MAE 3.39, predicts 100 percent of the animals. Linear regression, 4.39, 3.11, 100 percent. Random forest, 4.32, best on RMSE, 2.95, 104 percent. Random forest on log counts, 4.47, 2.76, best on MAE, 69 percent.">
+  <g class="lab mute"><text x="0" y="30">MODEL</text><text x="560" y="30">RMSE</text><text x="760" y="30">MAE</text><text x="940" y="30">PREDICTED TOTAL</text></g>
+  <line class="grid" x1="0" y1="48" x2="1200" y2="48"/>
+  <g>
+    <text x="0" y="104">Predicting the average</text><text x="560" y="104">4.78</text><text x="760" y="104">3.39</text><text x="940" y="104">100%</text>
+    <text x="0" y="184">Linear regression</text><text x="560" y="184">4.39</text><text x="760" y="184">3.11</text><text x="940" y="184">100%</text>
+    <rect class="t-blue" x="530" y="226" width="160" height="60" rx="8"/>
+    <text x="0" y="264">Random forest</text><text x="560" y="264" font-weight="700">4.32</text><text x="760" y="264">2.95</text><text x="940" y="264">104%</text>
+    <rect class="t-orange" x="730" y="306" width="160" height="60" rx="8"/>
+    <rect class="t-red" x="910" y="306" width="200" height="60" rx="8"/>
+    <text x="0" y="344">Random forest on log counts</text><text x="560" y="344">4.47</text><text x="760" y="344" font-weight="700">2.76</text><text x="940" y="344" font-weight="700">69%</text>
+  </g>
+  <text class="sm mute" x="0" y="410">Best on each measure highlighted</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+MAE picked the model that misses 31% of the animals. Fine for a typical station, not for a total.
+:::
+
+::: notes
+On these skewed counts the RMSE picks the random forest and the MAE picks the forest fitted to log counts. That forest aims near the median catch, below the average, and its predictions add up to only 69 percent of the animals caught. For a stock estimate or a map total, MAE has picked the wrong model. The measure has to match the use.
+:::
+
+## Software often reports a different R² {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Predictions against observations. In the left panel the predictions follow the right pattern but are all too low, below the diagonal line where prediction equals observation. The squared correlation is perfect, while R squared is low. In the right panel the predictions are at the right level with scatter, and both measures agree.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Too low, right pattern</text>
+  <g transform="translate(70 90)">
+    <line class="axis" x1="0" y1="0" x2="0" y2="240"/><line class="axis" x1="0" y1="240" x2="260" y2="240"/>
+    <line class="grid dash" x1="0" y1="240" x2="240" y2="0"/>
+    <g class="f-blue"><circle cx="40" cy="236" r="8"/><circle cx="80" cy="216" r="8"/><circle cx="120" cy="196" r="8"/><circle cx="160" cy="176" r="8"/><circle cx="200" cy="156" r="8"/><circle cx="240" cy="136" r="8"/></g>
+  </g>
+  <text class="sm" x="380" y="160">Squared</text><text class="sm" x="380" y="190">correlation</text><text class="big f-green" x="380" y="236">1.00</text>
+  <text class="sm" x="380" y="290">R²</text><text class="big f-red" x="380" y="336">low</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">Right level, some scatter</text>
+  <g transform="translate(690 90)">
+    <line class="axis" x1="0" y1="0" x2="0" y2="240"/><line class="axis" x1="0" y1="240" x2="260" y2="240"/>
+    <line class="grid dash" x1="0" y1="240" x2="240" y2="0"/>
+    <g class="f-blue"><circle cx="40" cy="185" r="8"/><circle cx="80" cy="176" r="8"/><circle cx="120" cy="110" r="8"/><circle cx="160" cy="92" r="8"/><circle cx="200" cy="56" r="8"/><circle cx="230" cy="24" r="8"/></g>
+  </g>
+  <text class="sm" x="1000" y="190">Both</text><text class="sm" x="1000" y="220">agree</text>
+  <text class="sm mute" x="70" y="388">observed along the bottom, predicted up the side</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The squared correlation cannot see predictions that are too low across the board.
+:::
+
+::: notes
+Much software reports the squared correlation between predictions and observations as R squared. It only asks whether the predictions follow the right pattern, so predictions that are all too low can still score perfectly. The R squared used in the course measures the gap to the line where prediction equals observation, so it catches that. When predictions are at the right level, the two agree.
+:::
+
+## Misses and false alarms are counted apart {#classification-metrics .idea data-page="Classification performance measures" data-href="../chapters/07-validation/classification-metrics.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Twenty stations, four with the species and sixteen without. Six are called present. Three of the four with the species are found and one is missed. Three of the sixteen without it are false alarms. Sensitivity is 3 of 4, specificity 13 of 16, precision 3 of 6.">
+  <g transform="translate(0 20)">
+    <g class="f-green"><circle cx="30" cy="30" r="22"/><circle cx="90" cy="30" r="22"/><circle cx="150" cy="30" r="22"/></g>
+    <circle class="f-red" cx="210" cy="30" r="22"/>
+    <g class="f-orange"><circle cx="30" cy="100" r="22"/><circle cx="90" cy="100" r="22"/><circle cx="150" cy="100" r="22"/></g>
+    <g class="f-grey" opacity="0.4"><circle cx="210" cy="100" r="22"/><circle cx="30" cy="170" r="22"/><circle cx="90" cy="170" r="22"/><circle cx="150" cy="170" r="22"/><circle cx="210" cy="170" r="22"/><circle cx="30" cy="240" r="22"/><circle cx="90" cy="240" r="22"/><circle cx="150" cy="240" r="22"/><circle cx="210" cy="240" r="22"/><circle cx="30" cy="310" r="22"/><circle cx="90" cy="310" r="22"/><circle cx="150" cy="310" r="22"/><circle cx="210" cy="310" r="22"/></g>
+  </g>
+  <g class="sm" transform="translate(0 390)">
+    <circle class="f-green" cx="10" cy="-6" r="10"/><text x="28" y="2">found</text>
+    <circle class="f-red" cx="120" cy="-6" r="10"/><text x="138" y="2">missed</text>
+    <circle class="f-orange" cx="250" cy="-6" r="10"/><text x="268" y="2">false alarm</text>
+  </g>
+  <g transform="translate(330 0)">
+    <rect class="card" x="0" y="10" width="860" height="110" rx="14"/>
+    <text class="head" x="30" y="62">Sensitivity</text><text class="sm mute" x="30" y="98">share of presences found</text><text class="big f-green" x="700" y="80">3 of 4</text>
+    <rect class="card" x="0" y="140" width="860" height="110" rx="14"/>
+    <text class="head" x="30" y="192">Specificity</text><text class="sm mute" x="30" y="228">share of absences called absent</text><text class="big" x="700" y="210">13 of 16</text>
+    <rect class="card" x="0" y="270" width="860" height="110" rx="14"/>
+    <text class="head" x="30" y="322">Precision</text><text class="sm mute" x="30" y="358">share of present calls that are right</text><text class="big f-orange" x="700" y="340">3 of 6</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Scores at one threshold count calls. ROC AUC scores the ranking at every threshold.
+:::
+
+::: notes
+Presence can be scored in three ways. On the calls at one threshold, sensitivity is the share of presences found, specificity the share of absences called absent, and precision the share of present calls that are right. On the ranking, ROC AUC is the share of pairs, one station with the species and one without, ranked the right way round. On the probabilities themselves, a calibration plot asks whether a predicted 0.8 means 8 in 10.
+:::
+
+## The forest ranks the stations better {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/classification-metrics/fig-roc-1.png){fig-alt="ROC curves of logistic regression and a random forest, sensitivity against specificity. The forest's curve lies above along most of its length. Points mark the default threshold of 0.5, high on sensitivity and low on specificity."}
+:::
+:::
+
+::: {.takeaway}
+ROC AUC is 0.72 for the forest and 0.67 for logistic regression.
+:::
+
+::: notes
+The forest's ROC AUC is 0.72. In about 72 of 100 pairs of a station with the species and one without, it gives the station with the species the higher probability. Its curve lies above logistic regression's along most of its length. The points show the default threshold of 0.5, where both models call nearly every station present, high on sensitivity and low on specificity.
+:::
+
+## Both models' probabilities can be read as chances {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/classification-metrics/fig-calibration-1.png){fig-alt="Calibration of the two models. The share of stations with the species in each group of predictions lies close to the diagonal for both, so their probabilities can be read as chances."}
+:::
+:::
+
+::: {.takeaway}
+Points near the diagonal mean a predicted 0.8 comes true about 8 times in 10.
+:::
+
+::: notes
+Stations are grouped by their predicted probability, and each group's average prediction is plotted against the share that really had the species. Both models lie close to the diagonal, so their probabilities can be read as chances and used for a map of the chance of presence. ROC AUC cannot show this, because it ignores how high or low the probabilities are.
+:::
+
+## Two models are compared in pairs {#uncertainty-and-stability .idea data-page="Uncertainty and stability" data-href="../chapters/07-validation/uncertainty-and-stability.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two models scored on five resamples of the sites. Each model's error moves widely from one resample to the next, so their intervals overlap. The difference between the two errors is nearly the same in every resample, so its interval is short and clear of zero.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Scored alone</text>
+  <text class="sm mute" x="32" y="92">five resamples of the sites</text>
+  <g transform="translate(60 100)">
+    <line class="axis" x1="0" y1="250" x2="460" y2="250"/>
+    <polyline class="none s-blue" stroke-width="4" points="20,90 120,40 220,150 320,70 420,180"/>
+    <polyline class="none s-orange" stroke-width="4" points="20,120 120,70 220,180 320,100 420,210"/>
+    <g class="f-blue"><circle cx="20" cy="90" r="9"/><circle cx="120" cy="40" r="9"/><circle cx="220" cy="150" r="9"/><circle cx="320" cy="70" r="9"/><circle cx="420" cy="180" r="9"/></g>
+    <g class="f-orange"><circle cx="20" cy="120" r="9"/><circle cx="120" cy="70" r="9"/><circle cx="220" cy="180" r="9"/><circle cx="320" cy="100" r="9"/><circle cx="420" cy="210" r="9"/></g>
+  </g>
+  <text class="sm" x="32" y="396">Intervals overlap almost entirely</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">In pairs</text>
+  <text class="sm mute" x="652" y="92">the same five resamples</text>
+  <g transform="translate(680 100)">
+    <line class="axis" x1="0" y1="250" x2="460" y2="250"/>
+    <line class="grid dash" x1="0" y1="200" x2="460" y2="200"/>
+    <text class="sm mute" x="470" y="208">0</text>
+    <g class="f-green"><circle cx="20" cy="110" r="10"/><circle cx="120" cy="104" r="10"/><circle cx="220" cy="112" r="10"/><circle cx="320" cy="106" r="10"/><circle cx="420" cy="110" r="10"/></g>
+    <text class="sm f-green" x="20" y="70" font-weight="700">the difference</text>
+  </g>
+  <text class="sm" x="652" y="396">Short interval, clear of zero</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+What two models share cancels in pairs. Overlapping intervals do not show they are alike.
+:::
+
+::: notes
+A cross-validated score comes from one survey, and would move if other sites had been sampled. Drawing the sites again with replacement, a bootstrap, gives each score an interval. Here each model's interval was over a unit wide, wider than the gaps between the models. But two models scored on the same resample tend to do well or badly together. Their difference, taken within each resample, is much steadier, so compare models in pairs.
+:::
+
+## Pairing separates the forest from the average {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/uncertainty-and-stability/fig-pairs-1.png){fig-alt="The forest's RMSE against another model's in each of 1,000 bootstrap samples. Against predicting the average, nearly every point lies below the diagonal. Against linear regression the points lie along the diagonal, many on each side."}
+:::
+:::
+
+::: {.takeaway}
+The forest beat the average in 99% of samples, but linear regression in only 80%.
+:::
+
+::: notes
+Each point is one bootstrap sample of sites, with the forest's error against another model's. Against predicting the average, the forest was better in 99 percent of samples, although their separate intervals overlapped. Against linear regression it was better in 80 percent, and the paired interval covered zero. The survey cannot tell those two apart.
+:::
+
+## Each use has its own measure {#choosing-a-metric .idea data-page="Choosing measures that match the objective" data-href="../chapters/07-validation/choosing-a-metric.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Five uses and their measures. A map of abundance, the RMSE. A total such as a stock estimate, the predicted total over the observed. A shortlist of stations, the animals it finds. A map of the chance of presence, a calibration plot. A call at each station, the expected cost of the calls.">
+  <g class="tile">
+    <rect class="card" x="0" y="0" width="220" height="420" rx="14"/>
+    <g transform="translate(30 30)"><rect class="t-blue" width="160" height="100" rx="6"/><rect class="f-blue" x="0" y="0" width="60" height="50" opacity="0.6"/><rect class="f-blue" x="60" y="50" width="100" height="50" opacity="0.4"/></g>
+    <text class="head" x="24" y="190">A map</text>
+    <text class="sm mute" x="24" y="228">of abundance</text>
+    <text class="sm f-accent" x="24" y="330" font-weight="700">RMSE</text>
+  </g>
+  <g transform="translate(245 0)">
+    <rect class="card" x="0" y="0" width="220" height="420" rx="14"/>
+    <text class="big mid f-blue" x="110" y="100">Σ</text>
+    <text class="head" x="24" y="190">A total</text>
+    <text class="sm mute" x="24" y="228">a stock estimate</text>
+    <text class="sm f-accent" x="24" y="330" font-weight="700">Predicted over</text>
+    <text class="sm f-accent" x="24" y="360" font-weight="700">observed total</text>
+  </g>
+  <g transform="translate(490 0)">
+    <rect class="card" x="0" y="0" width="220" height="420" rx="14"/>
+    <g transform="translate(40 34)" class="f-blue"><rect width="140" height="18" rx="4"/><rect y="30" width="110" height="18" rx="4"/><rect y="60" width="80" height="18" rx="4"/></g>
+    <text class="head" x="24" y="190">A shortlist</text>
+    <text class="sm mute" x="24" y="228">stations to revisit</text>
+    <text class="sm f-accent" x="24" y="330" font-weight="700">Animals found</text>
+  </g>
+  <g transform="translate(735 0)">
+    <rect class="card" x="0" y="0" width="220" height="420" rx="14"/>
+    <g transform="translate(30 30)"><rect class="t-green" width="160" height="100" rx="6"/><rect class="f-green" x="80" y="0" width="80" height="100" opacity="0.5"/></g>
+    <text class="head" x="24" y="190">Chances</text>
+    <text class="sm mute" x="24" y="228">a map of presence</text>
+    <text class="sm f-accent" x="24" y="330" font-weight="700">Calibration</text>
+  </g>
+  <g transform="translate(980 0)">
+    <rect class="card" x="0" y="0" width="220" height="420" rx="14"/>
+    <g transform="translate(40 40)"><rect class="t-blue" width="140" height="36" rx="18"/><text class="sm mid" x="70" y="26">present</text><rect class="t-orange" y="50" width="140" height="36" rx="18"/><text class="sm mid" x="70" y="76">absent</text></g>
+    <text class="head" x="24" y="190">A call</text>
+    <text class="sm mute" x="24" y="228">at each station</text>
+    <text class="sm f-accent" x="24" y="330" font-weight="700">Expected cost</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Choose the measure from the use of the predictions, before any model is fitted.
+:::
+
+::: notes
+The use of the predictions decides how to score them. A map of abundance is scored with the RMSE. A total, such as a stock estimate, needs the predicted total beside the observed one. A shortlist of stations to revisit is scored on the animals it finds. A map of the chance of presence needs calibrated probabilities. A call at each station is scored by what its mistakes cost. Choose before fitting, so the score cannot be picked to flatter a model.
+:::
+
+## A shortlist is scored on what it finds {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Animals found by a shortlist of 100 of the 800 stations. A perfect shortlist, 1,367. Linear regression, 860. The forest on log counts, 847. The forest on counts, 784. 100 stations at random, about 390.">
+  <g>
+    <text x="0" y="56">Perfect</text><rect class="f-grey" x="400" y="26" width="760" height="44" rx="5" opacity="0.6"/><text class="end" x="1150" y="58" font-weight="700">1,367</text>
+    <text x="0" y="126">Linear regression</text><rect class="f-blue" x="400" y="96" width="478" height="44" rx="5"/><text x="892" y="128" font-weight="700">860</text>
+    <text x="0" y="196">Forest on log counts</text><rect class="f-orange" x="400" y="166" width="471" height="44" rx="5"/><text x="885" y="198" font-weight="700">847</text>
+    <text x="0" y="266">Forest on counts</text><rect class="f-green" x="400" y="236" width="436" height="44" rx="5"/><text x="850" y="268" font-weight="700">784</text>
+    <text x="0" y="336">At random</text><rect class="f-grey" x="400" y="306" width="217" height="44" rx="5"/><text x="631" y="338" font-weight="700">about 390</text>
+  </g>
+  <text class="sm mute" x="400" y="392">Animals found by a shortlist of 100 of the 800 stations</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The forest on log counts predicted only 69% of the catch, yet its shortlist found as many.
+:::
+
+::: notes
+The ship has time to revisit 100 of the 800 stations. A shortlist depends only on the order of the predictions, not on their level. The forest on log counts predicts far too few animals, yet it ranks the stations well, and its shortlist found about as many animals as the other models'. Scored against a perfect shortlist and a random one, all three do well.
+:::
+
+## The costs of the two mistakes set the threshold {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/07-validation/choosing-a-metric/fig-cost-1.png){fig-alt="Expected cost of logistic regression's calls at every threshold, when a false alarm costs one, three and five misses. The cheapest thresholds are 0.51, 0.75 and 0.83."}
+:::
+:::
+
+::: {.takeaway}
+A false alarm costing 3 misses moves the cheapest threshold from 0.5 to 0.75.
+:::
+
+::: notes
+A call at each station can go wrong in two ways, and they rarely cost the same. If a false alarm costs k misses, calibrated probabilities are cheapest at a threshold of k over 1 plus k. For logistic regression the cheapest thresholds were 0.51, 0.75 and 0.83 for costs of one, three and five, just as that rule predicts. A threshold of 0.5 quietly assumes the two mistakes cost the same.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- Score the search as well as the model, with nested cross-validation.
+- Choose folds that make the model reach as far as it will in use.
+- Measures weigh errors differently. Pick the one that matches the use.
+- Compare models in pairs, on the same resamples.
+- A threshold comes from the costs of the two mistakes, not from 0.5.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/07-validation/index.html).
+:::
+:::

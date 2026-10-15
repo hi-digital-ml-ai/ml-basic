@@ -14,8 +14,10 @@ committed.
 `quarto render` runs `tools/extract-code.py` first, which pulls the R and Python out
 of every page into `downloads/` as runnable scripts plus `ml-basic-code.zip`, and
 `tools/code-downloads.lua` puts the download links on each page. `downloads/` is
-generated and git-ignored; see `tools/README.md`. To refresh it without a full
-build:
+generated and git-ignored; see `tools/README.md`. It then runs
+`tools/slide-figures.py`, which copies the plots the slide decks show from `_freeze/`
+into `slides/figures/`, also git-ignored (see `.claude/slides.md`). To refresh the
+downloads without a full build:
 
 ```bash
 tools/extract-code.py

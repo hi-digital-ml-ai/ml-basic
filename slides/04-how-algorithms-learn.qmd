@@ -1,0 +1,380 @@
+---
+title: "How machine-learning algorithms learn"
+subtitle: "The loss a fit makes small, the search that finds the parameters, and the assumptions inside the loss"
+description: "Loss functions, finding the parameters, gradient descent, likelihood and priors."
+order: 4
+title-slide-attributes:
+  data-kicker: "ML Basics for Marine Science · Section 4"
+  data-section-href: "../chapters/04-how-algorithms-learn/index.html"
+  data-note: "Every example uses one simulated coastal survey. The numbers are not results about a real species."
+---
+
+## In this section {#contents}
+
+::: {.tiles data-auto=""}
+:::
+
+## Every fit makes one number as small as it can {#loss-functions .idea data-page="Loss functions" data-href="../chapters/04-how-algorithms-learn/loss-functions.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three steps. A residual is how far one prediction missed. A loss turns each miss into a penalty, and squared error grows much faster than absolute error, so a miss of 10 costs 100 instead of 10. Averaged over all stations the loss gives the objective, and the fit is the line that makes it smallest.">
+  <g>
+    <rect class="card" x="0" y="0" width="370" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">1 THE MISSES</text>
+    <g transform="translate(40 80)">
+      <line class="none s-blue" stroke-width="5" x1="0" y1="230" x2="290" y2="40"/>
+      <g class="s-red" stroke-width="3"><line x1="40" y1="204" x2="40" y2="150"/><line x1="100" y1="165" x2="100" y2="215"/><line x1="160" y1="125" x2="160" y2="90"/><line x1="220" y1="86" x2="220" y2="130"/><line x1="260" y1="60" x2="260" y2="20"/></g>
+      <g class="f-fg"><circle cx="40" cy="150" r="8"/><circle cx="100" cy="215" r="8"/><circle cx="160" cy="90" r="8"/><circle cx="220" cy="130" r="8"/><circle cx="260" cy="20" r="8"/></g>
+    </g>
+    <text class="sm" x="28" y="384">Residual, one per station</text>
+  </g>
+  <line class="wire arrow" x1="378" y1="205" x2="422" y2="205"/>
+  <g transform="translate(430 0)">
+    <rect class="card" x="0" y="0" width="370" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">2 THE LOSS</text>
+    <g transform="translate(40 80)">
+      <line class="axis" x1="0" y1="240" x2="290" y2="240"/><line class="grid" x1="145" y1="20" x2="145" y2="240"/>
+      <path class="none s-orange" stroke-width="5" d="M10,20 Q145,460 280,20"/>
+      <path class="none s-blue" stroke-width="5" d="M10,140 L145,240 L280,140"/>
+      <text class="sm f-orange" x="200" y="40" font-weight="700">squared</text>
+      <text class="sm f-blue" x="200" y="132" font-weight="700">absolute</text>
+    </g>
+    <text class="sm" x="28" y="384">A miss of 10 costs 100, not 10</text>
+  </g>
+  <line class="wire arrow" x1="808" y1="205" x2="852" y2="205"/>
+  <g transform="translate(860 0)">
+    <rect class="card" x="0" y="0" width="340" height="410" rx="14"/>
+    <text class="lab f-accent" x="28" y="50">3 THE OBJECTIVE</text>
+    <text class="head" x="28" y="140">Average</text>
+    <text class="head" x="28" y="180">the losses</text>
+    <text class="sm mute" x="28" y="250">The fit is the line</text>
+    <text class="sm mute" x="28" y="282">that makes it smallest</text>
+    <text class="sm" x="28" y="384">One number to make small</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The loss decides which misses the model cares about most.
+:::
+
+::: notes
+Every model in this course is fitted the same way. A residual is how far one prediction missed. A loss turns each residual into a penalty, and the objective averages those penalties over the data. Fitting means finding the parameters that make the objective as small as possible. Squared error prices a miss of 10 at a hundred times a miss of 1, absolute error at ten times, so the two care about very different stations.
+:::
+
+## Squared and absolute error draw different lines {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/04-how-algorithms-learn/loss-functions/fig-two-lines-1.png){data-crop="0.063" fig-alt="Abundance against chlorophyll with two fitted lines. A few very large catches pull the squared-error line up. The absolute-error line runs lower, through the bulk of the stations."}
+:::
+:::
+
+::: {.takeaway}
+The worst 5% of stations supply half of the squared error. Removing one moved the slope by 13.5%.
+:::
+
+::: notes
+Fitted to the same stations, the two losses draw different lines. Squared error is pulled up by a few very large catches. Absolute error follows the bulk of the stations, most of which caught only a few animals. Use absolute error when the extremes are doubtful and squared error when the extremes are the science, and report the choice with the model. Linear regression is the squared-error line.
+:::
+
+## Parameters are solved in one step or found by searching {#parameter-estimation .idea data-page="Finding the parameters" data-href="../chapters/04-how-algorithms-learn/parameter-estimation.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three ways to find parameters. Linear regression uses a formula, one exact step. Poisson and logistic regression search step by step downhill until the objective stops falling. Trees, forests and boosting choose one split at a time and never revisit it.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">A formula</text>
+    <text class="lab mute" x="28" y="90">LINEAR REGRESSION</text>
+    <rect class="panel" x="60" y="140" width="260" height="90" rx="12"/>
+    <text class="big mid" x="190" y="200" style="font-style: italic">data → β</text>
+    <text class="sm" x="28" y="330">One step, exact,</text>
+    <text class="sm" x="28" y="362">the same on every run</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">A search</text>
+    <text class="lab mute" x="28" y="90">POISSON, LOGISTIC</text>
+    <path class="none s-muted" stroke-width="3" d="M40,120 Q190,400 340,120"/>
+    <g class="f-orange"><circle cx="70" cy="174" r="10"/><circle cx="120" cy="230" r="10"/><circle cx="160" cy="252" r="10"/><circle cx="185" cy="258" r="10"/></g>
+    <text class="sm" x="28" y="330">Step downhill until</text>
+    <text class="sm" x="28" y="362">it stops falling</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">One split at a time</text>
+    <text class="lab mute" x="28" y="90">TREES, FORESTS, BOOSTING</text>
+    <rect class="panel" x="60" y="130" width="260" height="140" rx="6"/>
+    <line class="none s-green" stroke-width="5" x1="160" y1="130" x2="160" y2="270"/>
+    <line class="none s-green" stroke-width="5" x1="160" y1="200" x2="320" y2="200"/>
+    <line class="none s-green" stroke-width="5" x1="250" y1="130" x2="250" y2="200"/>
+    <text class="sm" x="28" y="330">Each split chosen once,</text>
+    <text class="sm" x="28" y="362">never revisited</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The fit sets the parameters. You set the hyperparameters, such as a tree's depth.
+:::
+
+::: notes
+Parameters are the numbers a fit chooses from the data, such as the slopes of a regression. Hyperparameters are set before fitting and limit what the fit may do, such as how deep a tree may grow. Linear regression has a formula that gives its parameters in one exact step. Almost every other model searches for them, step by step, and a tree chooses one split at a time and never goes back.
+:::
+
+## Fitting finds the lowest point of a landscape {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/04-how-algorithms-learn/parameter-estimation/fig-surface-1.png){data-crop="0.065" fig-alt="The mean squared error of a straight line for every intercept and slope, drawn as a coloured surface. It is a long tilted bowl, darkest in the middle, with a cross at its lowest point."}
+:::
+:::
+
+::: {.takeaway}
+For a straight line the landscape is a bowl with one lowest point.
+:::
+
+::: notes
+Every intercept and slope gives the line a mean squared error. Drawn over a grid of values, that error is a long tilted bowl, and the fitted line is the cross at its lowest point. Trying every combination like this is out of reach beyond two or three parameters, which is why models search. Logistic regression, started at zero, settled in five steps.
+:::
+
+## A search that went wrong still prints coefficients {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Two failures. Left, a search stopped after two steps gives a chlorophyll coefficient of 0.268 instead of 0.348, 23 percent out, and it looks normal. Right, an input that gives the answer away has a coefficient that keeps growing, 43 after 10 steps, 158 after 25 and 213 at the end.">
+  <rect class="card" x="0" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="32" y="56">Stopped too early</text>
+  <text class="lab mute" x="32" y="90">CHLOROPHYLL COEFFICIENT</text>
+  <g class="sm">
+    <text x="32" y="170">After 2 steps</text><rect class="f-orange" x="220" y="144" width="201" height="40" rx="4"/><text x="434" y="172" font-weight="700">0.268</text>
+    <text x="32" y="250">Finished</text><rect class="f-blue" x="220" y="224" width="261" height="40" rx="4"/><text x="494" y="252" font-weight="700">0.348</text>
+  </g>
+  <text class="f-red" x="32" y="340" font-weight="700">23% out, and it looks normal</text>
+  <text class="sm mute" x="32" y="380">Check that the search converged</text>
+
+  <rect class="card" x="620" y="0" width="580" height="410" rx="14"/>
+  <text class="head" x="652" y="56">No lowest point</text>
+  <text class="lab mute" x="652" y="90">CATCH WEIGHT, A LEAKED INPUT</text>
+  <g transform="translate(700 120)">
+    <line class="axis" x1="0" y1="200" x2="440" y2="200"/>
+    <rect class="f-red" x="20" y="160" width="90" height="40" rx="4"/>
+    <rect class="f-red" x="170" y="52" width="90" height="148" rx="4"/>
+    <rect class="f-red" x="320" y="0" width="90" height="200" rx="4"/>
+    <text class="sm mid" x="65" y="148">43</text><text class="sm mid" x="215" y="40">158</text><text class="sm mid" x="365" y="-12">213</text>
+    <text class="sm mute mid" x="65" y="232">10 steps</text><text class="sm mute mid" x="215" y="232">25 steps</text><text class="sm mute mid" x="365" y="232">to the end</text>
+  </g>
+  <text class="sm f-red" x="652" y="390" font-weight="700">Keeps growing, perfect training score</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A coefficient that grows with more steps means an input gives the answer away, usually a leak.
+:::
+
+::: notes
+A search that went wrong still returns numbers. Stopped after two steps, the chlorophyll coefficient was 23 percent too small and nothing about it looked odd, so check the converged flag. A worse failure is separation. Catch weight splits present from absent perfectly, so the objective has no lowest point, and the coefficient grows for as long as the search is allowed to run. That is not strong science. It is the answer leaking in.
+:::
+
+## Gradient descent walks downhill one step at a time {#gradient-descent .idea data-page="Gradient descent" data-href="../chapters/04-how-algorithms-learn/gradient-descent.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The same valley walked with three step sizes. A small step crawls and is still short of the bottom. A good step arrives in a few steps. A step that is too large overshoots further on every step and diverges.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Too small</text>
+    <g transform="translate(40 80)">
+      <path class="none s-muted" stroke-width="3" d="M0,50 Q150,450 300,50"/>
+      <g class="f-blue"><circle cx="20" cy="100" r="9"/><circle cx="40" cy="142" r="9"/><circle cx="56" cy="171" r="9"/><circle cx="70" cy="193" r="9"/><circle cx="82" cy="209" r="9"/></g>
+      <circle class="none s-fg" stroke-width="3" cx="150" cy="250" r="12"/>
+    </g>
+    <text class="sm f-blue" x="28" y="384" font-weight="700">Crawls</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14" style="stroke: var(--c-green); stroke-width: 3"/>
+    <text class="head" x="28" y="56">About right</text>
+    <g transform="translate(40 80)">
+      <path class="none s-muted" stroke-width="3" d="M0,50 Q150,450 300,50"/>
+      <polyline class="none s-green" stroke-width="3" points="20,100 120,242 145,250 150,250"/>
+      <g class="f-green"><circle cx="20" cy="100" r="9"/><circle cx="120" cy="242" r="9"/><circle cx="145" cy="250" r="9"/></g>
+      <circle class="none s-fg" stroke-width="3" cx="150" cy="250" r="12"/>
+    </g>
+    <text class="sm f-green" x="28" y="384" font-weight="700">Arrives in a few steps</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Too large</text>
+    <g transform="translate(40 80)">
+      <path class="none s-muted" stroke-width="3" d="M0,50 Q150,450 300,50"/>
+      <polyline class="none s-red" stroke-width="3" points="110,236 205,223 80,206 245,170 30,122 290,76"/>
+      <g class="f-red"><circle cx="110" cy="236" r="9"/><circle cx="205" cy="223" r="9"/><circle cx="80" cy="206" r="9"/><circle cx="245" cy="170" r="9"/><circle cx="30" cy="122" r="9"/><circle cx="290" cy="76" r="9"/></g>
+      <circle class="none s-fg" stroke-width="3" cx="150" cy="250" r="12"/>
+    </g>
+    <text class="sm f-red" x="28" y="384" font-weight="700">Overshoots, then diverges</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+The gradient gives the direction. The learning rate sets the size of each step.
+:::
+
+::: notes
+Gradient descent is the simplest search. At the current parameters it works out which way is downhill, the gradient, and takes a step that way, again and again. The size of the step is the learning rate. Too small and the walk crawls. Too large and every step overshoots the bottom by more than the last, and the walk never arrives. Neural networks are fitted this way.
+:::
+
+## The learning rate decides whether the walk arrives {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/04-how-algorithms-learn/gradient-descent/fig-paths-1.png){data-crop="0.060" fig-alt="Three walks across the contours of an objective from the same start. At a learning rate of 0.02 the walk is still short after 40 steps. At 0.3 it reaches the cross quickly. At 0.72 it zig-zags across the valley."}
+:::
+:::
+
+::: {.takeaway}
+At 0.3 the walk arrived in 11 steps. Above about 0.73 it never arrives.
+:::
+
+::: notes
+Three walks start from the same point on the same objective. At 0.02 the walk is still well short of the answer after 40 steps. At 0.3 it arrives in 11. At 0.72 it zig-zags from one side of the valley to the other. The largest safe step is set by the steepest direction of the objective.
+:::
+
+## Standardising cut the walk from 2,479 steps to 27 {.example}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 380" role="img" aria-label="Steps needed to arrive. With inputs in raw units, 2,479 steps. With standardised inputs, 27 steps. The answer is the same.">
+  <g>
+    <text x="0" y="96">Raw units</text>
+    <rect class="f-red" x="260" y="56" width="900" height="60" rx="6"/>
+    <text class="big f-bg" x="290" y="102">2,479 steps</text>
+    <text x="0" y="236">Standardised</text>
+    <rect class="f-green" x="260" y="196" width="12" height="60" rx="4"/>
+    <text class="big f-green" x="290" y="242">27 steps</text>
+  </g>
+  <text class="sm mute" x="260" y="330">Same answer, one ninetieth of the work</text>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Standardise the inputs of any model fitted by gradient descent.
+:::
+
+::: notes
+In raw units, depth in metres has a far larger spread than salinity, so the valley is long and narrow. The steep direction caps the step size, and the walk along the gentle direction takes thousands of steps. Standardised inputs make the valley round, and the same answer arrives in 27 steps. Linear and Poisson regression in R and trees are not fitted by gradient descent and do not need this.
+:::
+
+## Name the distribution and the loss follows {#likelihood-and-priors .idea data-page="Likelihood and priors" data-href="../chapters/04-how-algorithms-learn/likelihood-and-priors.html"}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three rows. A Normal outcome, a measurement, gives squared error. A Poisson outcome, a count, gives Poisson deviance. A Bernoulli outcome, presence or absence, gives log loss.">
+  <g>
+    <rect class="card" x="0" y="0" width="1200" height="125" rx="14"/>
+    <path class="t-blue s-blue" stroke-width="3" d="M40,100 C90,100 100,24 130,24 C160,24 170,100 220,100 z"/>
+    <text class="head" x="260" y="56">Normal</text><text class="sm mute" x="260" y="92">A measurement</text>
+    <line class="wire arrow" x1="600" y1="62" x2="700" y2="62"/>
+    <text class="head" x="740" y="72">Squared error</text>
+  </g>
+  <g transform="translate(0 145)">
+    <rect class="card" x="0" y="0" width="1200" height="125" rx="14"/>
+    <g class="f-green"><rect x="40" y="70" width="24" height="30"/><rect x="70" y="40" width="24" height="60"/><rect x="100" y="28" width="24" height="72"/><rect x="130" y="50" width="24" height="50"/><rect x="160" y="74" width="24" height="26"/><rect x="190" y="90" width="24" height="10"/></g>
+    <text class="head" x="260" y="56">Poisson</text><text class="sm mute" x="260" y="92">A count</text>
+    <line class="wire arrow" x1="600" y1="62" x2="700" y2="62"/>
+    <text class="head" x="740" y="72">Poisson deviance</text>
+  </g>
+  <g transform="translate(0 290)">
+    <rect class="card" x="0" y="0" width="1200" height="125" rx="14"/>
+    <g class="f-orange"><rect x="70" y="60" width="50" height="40"/><rect x="140" y="24" width="50" height="76"/></g>
+    <text class="head" x="260" y="56">Bernoulli</text><text class="sm mute" x="260" y="92">Present or absent</text>
+    <line class="wire arrow" x1="600" y1="62" x2="700" y2="62"/>
+    <text class="head" x="740" y="72">Log loss</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+Squared error assumes a Normal outcome. That is why it allows negative counts.
+:::
+
+::: notes
+A loss is not an arbitrary choice. Name the distribution you think produced the data, and the loss follows. The likelihood is the probability of the data at given parameter values, and its negative log is a loss. A Normal outcome gives squared error, a Poisson count gives Poisson deviance, and presence or absence gives log loss. Written out by hand, these reproduce the standard fitting functions exactly.
+:::
+
+## Likelihood reads probability backwards {.example}
+
+::: {.plot}
+::: {.card}
+![](figures/04-how-algorithms-learn/likelihood-and-priors/fig-one-station-1.png){fig-alt="Left, the Poisson probability of counting 3 animals for each expected count, peaking at 3. Right, the same curve for three stations that caught 3, 0 and 11, and their product, which peaks at about 4.7."}
+:::
+:::
+
+::: {.takeaway}
+The best expected count makes all three catches most likely together, here 4.7.
+:::
+
+::: notes
+Probability asks how likely a count is, given the expected count. Likelihood turns that round. Given a count of 3, which expected counts make it most likely? For several stations the likelihoods multiply, and the expected count where the product peaks is the maximum likelihood estimate. For catches of 3, 0 and 11 it is their mean, 4.7.
+:::
+
+## A prior becomes a penalty {.idea}
+
+```{=html}
+<div class="visual">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three priors on a coefficient. A flat prior gives no penalty, which is maximum likelihood. A Normal prior centred on zero gives the squared penalty of ridge regression. A Laplace prior, sharply peaked at zero, gives the absolute penalty of the lasso.">
+  <g>
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Flat prior</text>
+    <g transform="translate(40 100)"><line class="axis" x1="0" y1="160" x2="300" y2="160"/><line class="none s-grey" stroke-width="6" x1="0" y1="110" x2="300" y2="110"/><line class="grid dash" x1="150" y1="20" x2="150" y2="160"/></g>
+    <text class="sm" x="28" y="330">No penalty</text>
+    <text class="sm f-accent" x="28" y="366" font-weight="700">Maximum likelihood</text>
+  </g>
+  <g transform="translate(410 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Normal prior</text>
+    <g transform="translate(40 100)"><line class="axis" x1="0" y1="160" x2="300" y2="160"/><path class="none s-blue" stroke-width="6" d="M0,158 C80,158 100,30 150,30 C200,30 220,158 300,158"/><line class="grid dash" x1="150" y1="20" x2="150" y2="160"/></g>
+    <text class="sm" x="28" y="330">Squared penalty</text>
+    <text class="sm f-accent" x="28" y="366" font-weight="700">Ridge regression</text>
+  </g>
+  <g transform="translate(820 0)">
+    <rect class="card" x="0" y="0" width="380" height="410" rx="14"/>
+    <text class="head" x="28" y="56">Laplace prior</text>
+    <g transform="translate(40 100)"><line class="axis" x1="0" y1="160" x2="300" y2="160"/><path class="none s-orange" stroke-width="6" d="M0,156 C90,150 130,120 150,20 C170,120 210,150 300,156"/><line class="grid dash" x1="150" y1="20" x2="150" y2="160"/></g>
+    <text class="sm" x="28" y="330">Absolute penalty</text>
+    <text class="sm f-accent" x="28" y="366" font-weight="700">Lasso</text>
+  </g>
+</svg>
+</div>
+```
+
+::: {.takeaway}
+A belief that coefficients are small becomes a penalty on large ones.
+:::
+
+::: notes
+A prior is a belief about the parameters before seeing the data, for example that most coefficients are small. Its negative log becomes a penalty added to the loss. A flat prior adds nothing, which is maximum likelihood. A Normal prior centred on zero gives the squared penalty of ridge regression, and a sharply peaked Laplace prior gives the absolute penalty of the lasso. Forests and boosting state no distribution at all, and a penalty weight tuned on the data is a setting, not a prior.
+:::
+
+## Key points {.closing}
+
+::: {.closing}
+::: {.points}
+- A fit makes the average loss as small as it can. The loss decides which misses matter.
+- Linear regression has a formula. Most other models search, and a search can fail quietly.
+- Gradient descent needs a good learning rate and standardised inputs.
+- Every loss assumes a distribution, and every penalty a prior.
+:::
+
+::: {.more}
+The full section, with code in R and Python, is on the [course site](../chapters/04-how-algorithms-learn/index.html).
+:::
+:::
