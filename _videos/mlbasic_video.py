@@ -141,6 +141,8 @@ class VideoScene(Scene):
             figure, aside = sprite(animal, 1.6 if one else 1.4), 3.8 if one else 0
             if sound in SHOUTS:
                 parts, update = shout_cheer(figure, spot, aside, SHOUTS[sound], move)
+            elif sound == "fireworks":
+                parts, update = fireworks_cheer(figure, spot, aside, move)
             else:
                 parts, update = CHEERS[sound](figure, spot, aside)
             group = VGroup(*parts)
@@ -340,9 +342,145 @@ def bubbles_cheer(animal, spot, aside):
     return [animal, *[b for b, *_ in stream]], update
 
 
-def fireworks_cheer(animal, spot, aside):
+def flown(after, pace):
+    """How far a spark has flown, from 0 to 1, `after` seconds after it set off."""
+    return 1 - np.exp(-after / pace)
+
+
+def fading(after, last):
+    """A spark's opacity: full, then fading over the last half second of `last`."""
+    return min(1.0, max(0.0, 2 * (last - after)))
+
+
+# Each burst style returns its sparks and how they move, `after` seconds after the bang
+# at `burst` (before the bang, `after` is negative and they are hidden). `size` is 1
+# beside a lone animal and 0.5 in the recap, where the burst must stay small.
+
+def peony_burst(size):
+    """Two rings of coloured stars."""
+    sparks = VGroup()
+    for ring, (n, reach) in enumerate([(18, 1.0), (10, 0.55)]):
+        for k in range(n):
+            angle = TAU * (k + 0.5 * ring) / n
+            sparks.add(Dot(radius=0.085 - 0.02 * ring, color=SPARKS[(k + ring) % len(SPARKS)]))
+            sparks[-1].way = size * reach * np.array([np.cos(angle), np.sin(angle), 0])
+
+    def move(after, burst):
+        for s in sparks:
+            s.move_to(burst + flown(max(after, 0), 0.22) * s.way + 0.35 * max(after, 0) ** 2 * DOWN)
+            s.set_opacity(fading(after, 1.6) if after >= 0 else 0)
+
+    return sparks, move
+
+
+def willow_burst(size):
+    """Golden stars that trail behind them and droop like a willow's branches."""
+    rng = np.random.default_rng(5)
+    heads, trails = VGroup(), VGroup()
+    for k in range(24):
+        angle = TAU * k / 24 + rng.uniform(-0.1, 0.1)
+        heads.add(Dot(radius=0.06, color=ORANGE))
+        heads[-1].way = size * rng.uniform(0.75, 1.0) * np.array([np.cos(angle), np.sin(angle), 0])
+        trails.add(Line(LEFT, RIGHT, color=ORANGE, stroke_width=4 * max(size, 0.6)))
+
+    def at(way, after, burst):
+        return burst + flown(after, 0.3) * way + 0.45 * size * after ** 2 * DOWN
+
+    def move(after, burst):
+        for head, trail in zip(heads, trails):
+            if after < 0:
+                head.set_opacity(0).move_to(burst)
+                trail.set_stroke(opacity=0)
+                continue
+            tip = at(head.way, after, burst)
+            head.move_to(tip).set_opacity(fading(after, 1.9))
+            trail.put_start_and_end_on(at(head.way, max(after - 0.5, 0), burst), tip + 1e-4 * UP)
+            trail.set_stroke(opacity=0.55 * fading(after, 1.9))
+
+    return VGroup(trails, heads), move
+
+
+def crossette_burst(size):
+    """Six stars fly out, then each splits into four smaller ones in a cross."""
+    split = 0.45
+    colours = [VERMILION, BLUE, GREEN, PURPLE, ORANGE, SKY]
+    mains, children = VGroup(), VGroup()
+    for k, colour in enumerate(colours):
+        angle = TAU * (k + 0.5) / 6
+        mains.add(Dot(radius=0.1, color=colour))
+        mains[-1].way = 0.6 * size * np.array([np.cos(angle), np.sin(angle), 0])
+        for j in range(4):
+            turn = angle + TAU * (j + 0.5) / 4
+            children.add(Dot(radius=0.065, color=colour))
+            children[-1].parent = mains[-1]
+            children[-1].way = 0.42 * size * np.array([np.cos(turn), np.sin(turn), 0])
+
+    def main_at(main, after, burst):
+        return burst + flown(after, 0.2) * main.way + 0.3 * after ** 2 * DOWN
+
+    def move(after, burst):
+        for main in mains:
+            main.move_to(main_at(main, max(after, 0), burst))
+            main.set_opacity(1 if 0 <= after < split else 0)
+        for child in children:
+            later = after - split
+            start = main_at(child.parent, split, burst)
+            child.move_to(start + flown(max(later, 0), 0.18) * child.way
+                          + 0.35 * max(later, 0) ** 2 * DOWN)
+            child.set_opacity(fading(later, 1.4) if later >= 0 else 0)
+
+    return VGroup(mains, children), move
+
+
+def heart_burst(size):
+    """Stars that spread into a heart, which holds its shape as it fades."""
+    sparks = VGroup()
+    for k in range(30):
+        a = TAU * k / 30
+        x = 16 * np.sin(a) ** 3
+        y = 13 * np.cos(a) - 5 * np.cos(2 * a) - 2 * np.cos(3 * a) - np.cos(4 * a)
+        sparks.add(Dot(radius=0.075, color=VERMILION if k % 2 else PURPLE))
+        # Smaller than a peony and set low, as it holds its shape near the text above.
+        sparks[-1].way = size * 0.055 * np.array([x, y, 0])
+
+    def move(after, burst):
+        for s in sparks:
+            s.move_to(burst + flown(max(after, 0), 0.25) * s.way + 0.12 * max(after, 0) ** 2 * DOWN)
+            s.set_opacity(fading(after, 1.7) if after >= 0 else 0)
+
+    return sparks, move
+
+
+def glitter_burst(size):
+    """Little four-pointed stars that twinkle as they drift down, with the crackle."""
+    rng = np.random.default_rng(7)
+    sparks = VGroup()
+    for k in range(26):
+        angle = TAU * k / 26 + rng.uniform(-0.12, 0.12)
+        star = Star(4, outer_radius=0.13, inner_radius=0.04, stroke_width=0, fill_opacity=1,
+                    color=[ORANGE, SKY, BLUE, VERMILION, GREEN][k % 5])
+        star.way = size * rng.uniform(0.55, 1.0) * np.array([np.cos(angle), np.sin(angle), 0])
+        star.phase, star.rate = rng.uniform(0, TAU), rng.uniform(9, 15)
+        sparks.add(resting(star))
+
+    def move(after, burst):
+        for s in sparks:
+            twinkle = abs(np.sin(s.rate * after + s.phase)) if after > 0.25 else 1.0
+            s.become(s.rest).scale(max(0.45 + 0.75 * twinkle, 0.01))
+            s.move_to(burst + flown(max(after, 0), 0.22) * s.way + 0.3 * max(after, 0) ** 2 * DOWN)
+            s.set_opacity((0.3 + 0.7 * twinkle) * fading(after, 1.9) if after >= 0 else 0)
+
+    return sparks, move
+
+
+BURSTS = {"peony": peony_burst, "willow": willow_burst, "crossette": crossette_burst,
+          "heart": heart_burst, "glitter": glitter_burst}
+
+
+def fireworks_cheer(animal, spot, aside, style="peony"):
     """A rocket rises and bursts `aside` units to the animal's side, or above it when
-    `aside` is 0; the sparks drift down and fade."""
+    `aside` is 0, in one of the styles in video_script.FIREWORKS. The bang comes 0.75 s
+    in, with the sound's."""
     resting(animal)
     side = 1 if spot[0] <= 0 else -1
     launch = spot + 0.6 * UP
@@ -352,12 +490,7 @@ def fireworks_cheer(animal, spot, aside):
     size = 1.0 if aside else 0.5
     rocket = Dot(radius=0.07, color=ORANGE)
     trail = Line(launch, launch, color=ORANGE, stroke_width=4)
-    sparks = VGroup()
-    for ring, (n, reach) in enumerate([(18, 1.0), (10, 0.55)]):
-        for k in range(n):
-            angle = 2 * np.pi * (k + 0.5 * ring) / n
-            sparks.add(Dot(radius=0.085 - 0.02 * ring, color=SPARKS[(k + ring) % len(SPARKS)]))
-            sparks[-1].way = size * reach * np.array([np.cos(angle), np.sin(angle), 0])
+    sparks, move = BURSTS[style](size)
 
     def update(t):
         hop = 0.3 * np.sin(np.pi * (t - 0.75) / 0.35) if 0.75 <= t <= 1.1 else 0
@@ -368,19 +501,13 @@ def fireworks_cheer(animal, spot, aside):
         rocket.move_to(head).set_opacity(1 if flying else 0)
         trail.put_start_and_end_on(launch + max(u - 0.25, 0) * (burst - launch) + 1e-4 * UP, head)
         trail.set_stroke(opacity=0.8 if flying else 0)
-        after = t - 0.75
-        for s in sparks:
-            if after < 0:
-                s.set_opacity(0).move_to(burst)
-            else:
-                out = 1 - np.exp(-after / 0.22)
-                s.move_to(burst + out * s.way + 0.35 * after ** 2 * DOWN)
-                s.set_opacity(min(1.0, max(0.0, 1.6 - after / 1.0)))
+        move(t - 0.75, burst)
 
     return [trail, rocket, sparks, animal], update
 
 
-# The effects; a shout (video_script.SHOUTS) is drawn by shout_cheer with its move.
+# The effects; a shout (video_script.SHOUTS) is drawn by shout_cheer with its move,
+# and a firework by fireworks_cheer with its style.
 CHEERS = {"clap": clap_cheer, "fireworks": fireworks_cheer, "bubbles": bubbles_cheer}
 
 
