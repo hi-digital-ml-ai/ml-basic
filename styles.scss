@@ -46,6 +46,24 @@ main {
     margin-bottom: 1.5rem;
   }
 
+  // Holds the video's place while it is being replaced: the same shape, empty.
+  .video-placeholder {
+    max-width: 48rem;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $sidebar-bg;
+    border: 1px solid #e3e8ec;
+    border-radius: 4px;
+
+    p {
+      margin: 0;
+      color: #6b7c88;
+    }
+  }
+
   // Figures get the room the layout was widened for, but stay below the
   // point where a 7in plot starts to look like a poster. The whole block is
   // capped and centred so the caption lines up with the image above it.
@@ -156,9 +174,12 @@ figcaption {
 .quarto-grid-item {
   .card-text { font-size: 0.92rem; }
 
+  // The page name is what a reader scans for, so it stands out from its sentence.
   .listing-title {
     font-size: 1.02rem;
+    font-weight: 600;
     line-height: 1.3;
+    color: $link-color;
   }
 
   // Cards sit outside the prose measure.

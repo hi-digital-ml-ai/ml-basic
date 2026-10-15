@@ -23,6 +23,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Every method takes something for granted about its data, and when that assumption is
 wrong the model still gives an answer, which can be wrong. Machine-learning methods
 assume less about the shape of a relationship than a linear model does, but they still
@@ -31,6 +33,8 @@ simulated survey as the rest of the course, the first two pages show machine lea
 doing without straight lines and bell curves; the other three show what it cannot
 escape: visits to one site that repeat each other, conditions the survey never reached,
 and a rare answer that makes accuracy look good.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=cQogf2VKM1s title="Assumptions: what a good score cannot show" >}}
 

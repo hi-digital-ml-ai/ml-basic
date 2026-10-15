@@ -25,6 +25,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Sometimes there is no answer to learn from: counts of two dozen taxa at every station
 and no list of the habitats they come from. Unsupervised methods look for structure in
 the data itself, and they return an answer for any table, so checking what they find
@@ -32,6 +34,8 @@ matters as much as finding it. This section works on the taxon counts of the sam
 simulated survey as the rest of the course: three pages on sorting stations into groups,
 two on principal components, which turn many columns into a map, and one on the checks a
 pattern must pass before it is reported.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=bt6kDcavjY4 title="Unsupervised learning: finding structure without labels" >}}
 

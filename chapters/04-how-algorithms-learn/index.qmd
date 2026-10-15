@@ -21,6 +21,8 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Fitting a model sounds like a single act, but it is a search: the algorithm scores how
 wrong the model is, changes its parameters to make that score a little smaller, and
 repeats until further changes stop helping. The four pages in this section take that
@@ -28,7 +30,11 @@ loop apart on the same simulated survey as the rest of the course: the score bei
 smaller, the ways the parameters are found, the simplest search, and where each score
 and penalty comes from.
 
-{{< video https://www.youtube.com/watch?v=flduAVOF2rk title="How algorithms learn: the loss, the search and its assumptions" >}}
+## A short tour
+
+::: {.video-placeholder}
+The video for this section is on its way.
+:::
 
 ## Pages in this section
 

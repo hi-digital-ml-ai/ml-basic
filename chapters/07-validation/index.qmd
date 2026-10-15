@@ -25,12 +25,16 @@ listing:
 toc: false
 ---
 
+## Overview
+
 A score is a claim about the future: roughly how well a model will predict data it has
 not seen. This section makes that claim honest in three steps, on the same simulated
 survey as the rest of the course. Cross-validation, with folds of sites, map blocks or
 years, scores a model on data far enough from its training data; the measure is chosen
 to suit the use of the predictions; and resampling the sites puts an interval on the
 score, so two models can be compared fairly.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=yVOEkCqrOec title="Validation: when to believe a score" >}}
 

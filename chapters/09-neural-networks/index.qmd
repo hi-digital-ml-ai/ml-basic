@@ -23,12 +23,16 @@ listing:
 toc: false
 ---
 
+## Overview
+
 Every part of a neural network is something the course has already met: weighted sums
 like those of linear regression, each followed by a bend, with weights learned by the
 same walk downhill as gradient descent. This section builds a small network by hand and
 checks it against arithmetic, trains one on the same simulated survey as the rest of the
 course, and compares it with a random forest to find when a network is worth it. It ends
 with an autoencoder, a network that learns with no response to predict.
+
+## A short tour
 
 {{< video https://www.youtube.com/watch?v=FK9WCkGyZhk title="Neural networks: sums with a bend, and when they pay off" >}}
 
