@@ -36,6 +36,12 @@ with an autoencoder, a network that learns with no response to predict.
 
 {{< video https://www.youtube.com/watch?v=FK9WCkGyZhk title="Neural networks: sums with a bend, and when they pay off" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/09-neural-networks.qmd) cover each page of the section
+  in two or three slides, with speaker notes, for teaching the section or a quick
+  review.
+
 ## Pages in this section
 
 ::: {#pages}

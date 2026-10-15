@@ -39,6 +39,11 @@ makes it look better than it is. The pages build on each other, so read them in 
 
 {{< video https://www.youtube.com/watch?v=O2wC2O4xb9w title="Marine data: understanding and preparing a survey" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/02-marine-data.qmd) cover each page of the section in
+  two or three slides, with speaker notes, for teaching the section or a quick review.
+
 ## Pages in this section
 
 ::: {#pages}

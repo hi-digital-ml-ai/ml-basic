@@ -117,6 +117,7 @@ one-line description, then four headings, the same on every overview:
 
 - **Overview**: one paragraph on what the section covers;
 - **A short tour**: the section's video;
+- **Lecture notes**: a list of the section's slide decks, for now only the Summary slides;
 - **Pages in this section**: a card grid of its pages, one sentence each, the page
   names bold in the link colour;
 - **Further resources**.

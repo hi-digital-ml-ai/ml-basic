@@ -38,6 +38,12 @@ and a rare answer that makes accuracy look good.
 
 {{< video https://www.youtube.com/watch?v=cQogf2VKM1s title="Assumptions: what a good score cannot show" >}}
 
+## Lecture notes
+
+- [Summary slides](../../slides/06-assumptions-limitations.qmd) cover each page of the
+  section in two or three slides, with speaker notes, for teaching the section or a
+  quick review.
+
 ## Pages in this section
 
 ::: {#pages}
