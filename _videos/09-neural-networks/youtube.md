@@ -10,9 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/09-neural-networks/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/09-neural-networks/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 9 |
-| YouTube | <https://www.youtube.com/watch?v=zXEckaRs-Z4> (2026-10-18, with the GitHub Pages end card) |
-| First upload | <https://www.youtube.com/watch?v=FK9WCkGyZhk> (2026-10-15, `ml-basic.pages.dev` on the end card; replaced, so delete it on YouTube) |
-| Embed on | `chapters/09-neural-networks/index.qmd` (the new upload) |
+| YouTube | <https://www.youtube.com/watch?v=zXEckaRs-Z4> |
+| Embed on | `chapters/09-neural-networks/index.qmd` |
 
 ## Title
 
