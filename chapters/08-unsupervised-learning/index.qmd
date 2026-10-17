@@ -37,7 +37,7 @@ pattern must pass before it is reported.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=bt6kDcavjY4 title="Unsupervised learning: finding structure without labels" >}}
+{{< video https://www.youtube.com/watch?v=j3mdEXDjnkQ title="Unsupervised learning: finding structure without labels" >}}
 
 ## Lecture notes
 

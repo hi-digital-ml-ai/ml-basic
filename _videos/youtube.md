@@ -62,8 +62,8 @@ The narration is an AI-generated voice reading scripts written for the course.
 
 All ten were first uploaded on 2026-10-15, with `ml-basic.pages.dev` on the end card.
 The site then moved to GitHub Pages, so all ten are uploaded again with the new end
-card. Once a new upload is embedded on the site, delete the first one; each sheet holds
-both links until then.
+card. The new uploads were embedded on 2026-10-18. Delete the first uploads on YouTube;
+each sheet lists its first upload until then.
 
 ## The ten videos
 
