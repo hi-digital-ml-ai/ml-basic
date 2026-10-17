@@ -10,9 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/10-interpretation/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/10-interpretation/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 10 |
-| YouTube | <https://www.youtube.com/watch?v=zU2KrW-P6q8> (2026-10-18, with the GitHub Pages end card) |
-| First upload | <https://www.youtube.com/watch?v=anfrxEKV4Xk> (2026-10-15, `ml-basic.pages.dev` on the end card; replaced, so delete it on YouTube) |
-| Embed on | `chapters/10-interpretation/index.qmd` (the new upload) |
+| YouTube | <https://www.youtube.com/watch?v=zU2KrW-P6q8> |
+| Embed on | `chapters/10-interpretation/index.qmd` |
 
 ## Title
 
