@@ -36,7 +36,7 @@ and a rare answer that makes accuracy look good.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=cQogf2VKM1s title="Assumptions: what a good score cannot show" >}}
+{{< video https://www.youtube.com/watch?v=9OaFEGTMkIw title="Assumptions: what a good score cannot show" >}}
 
 ## Lecture notes
 

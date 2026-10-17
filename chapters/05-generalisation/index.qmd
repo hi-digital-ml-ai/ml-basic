@@ -32,7 +32,7 @@ rest of the course.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=p60IZT5nnQU title="Generalisation: why a perfect fit is a bad sign" >}}
+{{< video https://www.youtube.com/watch?v=nOswOPMwAeM title="Generalisation: why a perfect fit is a bad sign" >}}
 
 ## Lecture notes
 

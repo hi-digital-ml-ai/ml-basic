@@ -37,7 +37,7 @@ makes it look better than it is. The pages build on each other, so read them in 
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=O2wC2O4xb9w title="Marine data: understanding and preparing a survey" >}}
+{{< video https://www.youtube.com/watch?v=oJ9ZLynRhmI title="Marine data: understanding and preparing a survey" >}}
 
 ## Lecture notes
 

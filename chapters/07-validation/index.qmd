@@ -36,7 +36,7 @@ score, so two models can be compared fairly.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=yVOEkCqrOec title="Validation: when to believe a score" >}}
+{{< video https://www.youtube.com/watch?v=nkAzpHBJhow title="Validation: when to believe a score" >}}
 
 ## Lecture notes
 
