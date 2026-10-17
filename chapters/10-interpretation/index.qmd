@@ -33,7 +33,7 @@ analysis, and a model card that says what the model is for and where it holds.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=anfrxEKV4Xk title="Interpretation: reading a model after it is built" >}}
+{{< video https://www.youtube.com/watch?v=zU2KrW-P6q8 title="Interpretation: reading a model after it is built" >}}
 
 ## Lecture notes
 

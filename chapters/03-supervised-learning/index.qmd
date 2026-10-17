@@ -40,7 +40,7 @@ and the last page narrows the choice between them.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=r9n5rdVd_hs title="Supervised learning: from a straight line to boosting" >}}
+{{< video https://www.youtube.com/watch?v=CS_fvDZilqM title="Supervised learning: from a straight line to boosting" >}}
 
 ## Lecture notes
 

@@ -32,9 +32,7 @@ and penalty comes from.
 
 ## A short tour
 
-::: {.video-placeholder}
-The video for this section is on its way.
-:::
+{{< video https://www.youtube.com/watch?v=h50eUwmMi3Y title="How algorithms learn: the loss, the search and its assumptions" >}}
 
 ## Lecture notes
 

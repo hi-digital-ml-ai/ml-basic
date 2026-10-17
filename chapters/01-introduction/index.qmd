@@ -33,7 +33,7 @@ the pages build on each other, so read them in order.
 
 ## A short tour
 
-{{< video https://www.youtube.com/watch?v=PKAsQDUK98E title="Introduction: a map of machine learning" >}}
+{{< video https://www.youtube.com/watch?v=o8nlf7Mu_jU title="Introduction: a map of machine learning" >}}
 
 ## Lecture notes
 
