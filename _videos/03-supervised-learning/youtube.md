@@ -10,9 +10,8 @@ all ten videos are in `_videos/youtube.md`.
 | Captions | `_videos/03-supervised-learning/captions.srt` (English, United Kingdom) |
 | Thumbnail | `_videos/03-supervised-learning/thumbnail.png` (1280 × 720; made by `_videos/thumbnails.py`) |
 | Playlist | Machine Learning Basics for Marine Science, position 3 |
-| YouTube | <https://www.youtube.com/watch?v=CS_fvDZilqM> (2026-10-18, with the GitHub Pages end card) |
-| First upload | <https://www.youtube.com/watch?v=r9n5rdVd_hs> (2026-10-15, `ml-basic.pages.dev` on the end card; replaced, so delete it on YouTube) |
-| Embed on | `chapters/03-supervised-learning/index.qmd` (the new upload) |
+| YouTube | <https://www.youtube.com/watch?v=CS_fvDZilqM> |
+| Embed on | `chapters/03-supervised-learning/index.qmd` |
 
 ## Title
 
