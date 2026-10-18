@@ -34,6 +34,9 @@ rest of the course.
 
 {{< video https://www.youtube.com/watch?v=nOswOPMwAeM title="Generalisation: why a perfect fit is a bad sign" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/05-generalisation.qmd) cover each page of the section in

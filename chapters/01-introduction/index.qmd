@@ -35,6 +35,9 @@ the pages build on each other, so read them in order.
 
 {{< video https://www.youtube.com/watch?v=o8nlf7Mu_jU title="Introduction: a map of machine learning" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/01-introduction.qmd) cover each page of the section in

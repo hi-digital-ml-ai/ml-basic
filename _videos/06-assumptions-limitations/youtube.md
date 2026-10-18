@@ -38,10 +38,7 @@ In this video:
 5:30 Quiz
 6:02 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/06-assumptions-limitations/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 6 · Assumptions & limitations in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video

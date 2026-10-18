@@ -42,6 +42,9 @@ and the last page narrows the choice between them.
 
 {{< video https://www.youtube.com/watch?v=CS_fvDZilqM title="Supervised learning: from a straight line to boosting" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/03-supervised-learning.qmd) cover each page of the

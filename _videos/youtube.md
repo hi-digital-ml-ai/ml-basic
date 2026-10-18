@@ -21,7 +21,7 @@ all ten, and the order of work.
 
 | Setting | Value |
 | --- | --- |
-| Playlist | Machine Learning Basics for Marine Science (create it with the first upload) |
+| Playlist | Machine Learning Basics for Marine Science, <https://www.youtube.com/playlist?list=PLNam3PcMB508> (linked from the home page and every section overview) |
 | Audience | No, it's not made for kids |
 | Altered or synthetic content | No: the voice is synthetic but does not imitate a real person, and nothing shows real people or events. Check the current wording of the question in YouTube Studio; the AI voice is stated in every description either way |
 | Category | Education |

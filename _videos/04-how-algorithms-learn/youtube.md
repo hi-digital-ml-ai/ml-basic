@@ -38,10 +38,7 @@ In this video:
 8:41 Quiz
 9:16 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/04-how-algorithms-learn/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 4 · How algorithms learn in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video

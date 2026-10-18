@@ -165,8 +165,12 @@ Then we give it next year's survey, and it falls apart.
 ### Publishing checklist
 
 - Upload `captions.srt` (more accurate than auto-captions).
-- Paste `chapters.txt` (timestamps from scene lengths) into the description, with a link
-  to the section page (e.g. `https://hi-digital-ml-ai.github.io/ml-basic/chapters/05-generalisation/`).
+- Paste `chapters.txt` (timestamps from scene lengths) into the description, with the
+  site's address, `https://hi-digital-ml-ai.github.io/ml-basic/`, and the section's menu
+  entry to choose there. Not a deep link to the section page: until the channel has
+  YouTube's advanced features, description links are plain text, and YouTube cuts
+  addresses longer than about 44 characters with "...", so a section address can be
+  neither clicked nor copied (found 2026-10-18).
 - Put the section number in the title and description only; the video has none.
 - State in the description that the narration is AI-generated; check YouTube's current
   rules on labelling synthetic content.

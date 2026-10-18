@@ -38,6 +38,9 @@ and a rare answer that makes accuracy look good.
 
 {{< video https://www.youtube.com/watch?v=9OaFEGTMkIw title="Assumptions: what a good score cannot show" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/06-assumptions-limitations.qmd) cover each page of the

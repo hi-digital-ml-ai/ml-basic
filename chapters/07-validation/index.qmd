@@ -38,6 +38,9 @@ score, so two models can be compared fairly.
 
 {{< video https://www.youtube.com/watch?v=nkAzpHBJhow title="Validation: when to believe a score" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/07-validation.qmd) cover each page of the section in two
