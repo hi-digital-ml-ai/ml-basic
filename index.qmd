@@ -82,6 +82,10 @@ from different generators. The conclusions match; the digits do not.
 | 9 | [Neural networks](chapters/09-neural-networks/index.qmd) | What are they, and when do they help? |
 | 10 | [Interpretation & responsible use](chapters/10-interpretation/index.qmd) | What can I honestly claim from this model? |
 
+Each section opens with a short video, six to ten minutes long, that walks through its
+main ideas. All ten are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Work by participants
 
 The [contributed pages](contributed/index.qmd) are analyses that course participants

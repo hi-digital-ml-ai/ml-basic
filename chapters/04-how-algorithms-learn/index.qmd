@@ -34,6 +34,9 @@ and penalty comes from.
 
 {{< video https://www.youtube.com/watch?v=h50eUwmMi3Y title="How algorithms learn: the loss, the search and its assumptions" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/04-how-algorithms-learn.qmd) cover each page of the

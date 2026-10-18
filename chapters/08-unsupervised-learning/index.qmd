@@ -39,6 +39,9 @@ pattern must pass before it is reported.
 
 {{< video https://www.youtube.com/watch?v=j3mdEXDjnkQ title="Unsupervised learning: finding structure without labels" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/08-unsupervised-learning.qmd) cover each page of the

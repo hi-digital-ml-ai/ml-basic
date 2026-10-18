@@ -35,6 +35,9 @@ analysis, and a model card that says what the model is for and where it holds.
 
 {{< video https://www.youtube.com/watch?v=zU2KrW-P6q8 title="Interpretation: reading a model after it is built" >}}
 
+All ten section videos are in one
+[YouTube playlist](https://www.youtube.com/playlist?list=PLNam3PcMB508), to watch in order.
+
 ## Lecture notes
 
 - [Summary slides](../../slides/10-interpretation.qmd) cover each page of the section in

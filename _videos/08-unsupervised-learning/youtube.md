@@ -38,10 +38,7 @@ In this video:
 6:15 Quiz
 6:51 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/08-unsupervised-learning/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 8 · Unsupervised learning in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video

@@ -39,10 +39,7 @@ In this video:
 8:31 Quiz
 8:59 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/01-introduction/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 1 · Introduction in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video

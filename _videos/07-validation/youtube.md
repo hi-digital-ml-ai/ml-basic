@@ -38,10 +38,7 @@ In this video:
 5:13 Quiz
 5:50 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/07-validation/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 7 · Validation in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video
