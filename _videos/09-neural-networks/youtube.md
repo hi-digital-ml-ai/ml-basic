@@ -38,10 +38,7 @@ In this video:
 6:16 Quiz
 6:52 Key points
 
-The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn):
-https://hi-digital-ml-ai.github.io/ml-basic/chapters/09-neural-networks/
-
-The whole course:
+The course pages for this section, with more examples and all the code in R (tidymodels) and Python (scikit-learn), are on the course website. Open it and choose 9 · Neural networks in the menu:
 https://hi-digital-ml-ai.github.io/ml-basic/
 
 About this video
